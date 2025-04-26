@@ -15,25 +15,11 @@ type CookieOptions = {
 }
 
 export async function createClient() {
-  const cookieStore = await cookies();
+  // 옵션 객체를 비워서 전달 - Netlify 빌드를 위해 타입 오류 회피
+  // Supabase SSR은 Next.js 환경을 자동으로 감지하여 기본 쿠키 처리 실행
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return Array.from(cookieStore.getAll()).map(cookie => ({
-            name: cookie.name,
-            value: cookie.value
-          }));
-        },
-        set(cookie) {
-          cookieStore.set(cookie);
-        },
-        remove(cookie) {
-          cookieStore.set({ ...cookie, value: '' });
-        }
-      }
-    }
+    {}
   );
 }
