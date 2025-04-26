@@ -248,12 +248,7 @@ export default function Profile() {
         <div className="rounded-lg bg-white p-6 shadow-md">
           <h2 className="text-xl font-bold mb-4">계정 관리</h2>
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-            <Link 
-              href="/temp/profile-edit"
-              className="rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 text-center"
-            >
-              프로필 수정
-            </Link>
+            
             <button
               onClick={handleSignOut}
               className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
