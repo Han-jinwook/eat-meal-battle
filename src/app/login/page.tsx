@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 
-export default function Login() {
+// SearchParams를 사용하는 컴포넌트 분리 (useSearchParams는 반드시 Suspense로 감싸야 함)
+function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -191,5 +191,14 @@ export default function Login() {
         </div>
       </div>
     </div>
+  )
+}
+
+// 메인 Login 컴포넌트는 useSearchParams()를 사용하는 LoginContent를 Suspense로 감싸야 함
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="p-4 text-center">로딩 중...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

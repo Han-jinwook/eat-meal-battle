@@ -1,27 +1,36 @@
+// src/lib/supabase-server.ts
+
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createClient() {
+// 쿠키 옵션 타입 정의 (Netlify 빌드를 위해 추가)
+type CookieOptions = {
+  path?: string
+  domain?: string
+  maxAge?: number
+  expires?: Date
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: 'strict' | 'lax' | 'none'
+}
+
+export async function createClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string): Promise<string | undefined> {
-          const cookieStore = await cookies()
-          const allCookies = cookieStore.getAll()
-          const found = allCookies.find(cookie => cookie.name === name)
-          return found?.value
+        get(name: string) {
+          return cookieStore.get(name)?.value;
         },
-        async set(name: string, value: string, options: CookieOptions) {
-          const cookieStore = await cookies()
-          cookieStore.set({ name, value, ...options })
+        set(name: string, value: string, options?: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
         },
-        async remove(name: string, options: CookieOptions) {
-          const cookieStore = await cookies()
-          cookieStore.set({ name, value: '', ...options })
-        },
-      },
+        remove(name: string, options?: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        }
+      }
     }
-  )
+  );
 }

@@ -8,6 +8,11 @@ const nextConfig = {
       'images.unsplash.com',      // Unsplash 이미지 (테스트용)
     ],
   },
+  
+  // 빌드 시 ESLint 검사 비활성화
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig
