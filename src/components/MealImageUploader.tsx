@@ -80,10 +80,24 @@ export default function MealImageUploader({
         body: JSON.stringify({ imageId }),
       });
       
-      const result = await response.json();
+      // 응답 텍스트를 먼저 가져와서 안전하게 처리
+      const responseText = await response.text();
+      let result;
+      
+      try {
+        // JSON으로 파싱 시도
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('검증 API 응답 파싱 오류:', e, responseText);
+        if (!response.ok) {
+          throw new Error(`검증 API 오류: ${response.status} ${response.statusText}`);
+        } else {
+          throw new Error('응답 파싱 오류: 올바른 JSON 응답이 아닙니다');
+        }
+      }
       
       if (!response.ok) {
-        throw new Error(result.error || '이미지 검증 중 오류가 발생했습니다.');
+        throw new Error(result?.error || '이미지 검증 중 오류가 발생했습니다.');
       }
       
       setVerificationResult(result);
@@ -143,13 +157,37 @@ export default function MealImageUploader({
       
       // 4. 응답 처리
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          error: `서버 오류: ${response.status} ${response.statusText}`
-        }));
-        throw new Error(errorData.error || '이미지 업로드 중 오류가 발생했습니다.');
+        // 응답 텍스트를 먼저 확인하여 안전하게 처리
+        const responseText = await response.text();
+        let errorMessage = `서버 오류: ${response.status} ${response.statusText}`;
+        
+        try {
+          // JSON으로 파싱 시도
+          if (responseText.trim().startsWith('{')) {
+            const errorData = JSON.parse(responseText);
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          }
+        } catch (e) {
+          console.error('응답 파싱 오류:', e);
+          // HTML 응답이나 다른 형식일 경우 기본 오류 메시지 사용
+        }
+        
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
       
-      const data = await response.json();
+      // 성공 응답도 안전하게 파싱
+      let data;
+      try {
+        const responseText = await response.text();
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('성공 응답 파싱 오류:', e);
+        setError('응답 데이터 파싱 중 오류가 발생했습니다');
+        throw new Error('응답 데이터 파싱 오류');
+      }
       console.log('업로드 성공:', data);
       uploadedImageId = data.id;
       
@@ -349,7 +387,7 @@ export default function MealImageUploader({
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+    <div className="bg-white rounded-lg shadow-md p-4 mb-6 max-w-xl mx-auto">
       <h3 className="text-lg font-semibold mb-3">급식 사진 업로드</h3>
       
       {/* 업로드된 이미지가 있으면 표시 */}
@@ -357,7 +395,7 @@ export default function MealImageUploader({
         <div className="mb-6">
           <h4 className="text-md font-semibold mb-2">내가 업로드한 이미지</h4>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-            <div className="relative h-56 w-full">
+            <div className="relative h-72 w-full">
               <Image
                 src={uploadedImage.image_url}
                 alt="급식 이미지"
@@ -366,10 +404,7 @@ export default function MealImageUploader({
               />
             </div>
             <div className="p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(uploadedImage.status)} flex items-center justify-center w-8 h-8`}>
-                  {getStatusText(uploadedImage.status)}
-                </span>
+              <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
                   {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}
                 </span>
@@ -425,7 +460,7 @@ export default function MealImageUploader({
           {preview && (
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">미리보기:</p>
-              <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+              <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden">
                 <Image
                   src={preview}
                   alt="업로드 이미지 미리보기"

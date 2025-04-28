@@ -18,15 +18,7 @@ interface MealInfo {
   meal_type: string;
   menu_items: string[];
   kcal: string;
-  nutrition_info: {
-    carbohydrate?: string;
-    protein?: string;
-    fat?: string;
-    calcium?: string;
-    iron?: string;
-    vitamin_a?: string;
-    vitamin_c?: string;
-  };
+  ntr_info?: string;
   origin_info?: string;
   created_at: string;
 }
@@ -212,21 +204,86 @@ export default function MealsPage() {
       result += `🔥 열량: ${meal.kcal}kcal\n\n`;
     }
     
-    const nutritionItems = [
-      { label: '탄수화물', value: meal.nutrition_info?.carbohydrate || '정보 없음' },
-      { label: '단백질', value: meal.nutrition_info?.protein || '정보 없음' },
-      { label: '지방', value: meal.nutrition_info?.fat || '정보 없음' },
-      { label: '칼싘', value: meal.nutrition_info?.calcium || '정보 없음' },
-      { label: '철분', value: meal.nutrition_info?.iron || '정보 없음' },
-      { label: '비타민A', value: meal.nutrition_info?.vitamin_a || '정보 없음' },
-      { label: '비타민C', value: meal.nutrition_info?.vitamin_c || '정보 없음' },
-    ];
-
-    result += nutritionItems
-      .filter(item => item.value !== '정보 없음') // 정보가 없는 항목은 제외
-      .map(item => `• ${item.label}: ${item.value}`)
-      .join('\n');
+    // 영양소 아이콘 매핑
+    const nutrientIcons: Record<string, string> = {
+      '탄수화물': '💎',
+      '단백질': '🍗',
+      '지방': '🧈',
+      '비타민A': '🍉',
+      '비타민C': '🍊',
+      '칼싘': '🥛',
+      '철분': '💪'
+    };
+    
+    // ntr_info가 있는지 확인
+    if (!meal.ntr_info) {
+      return result + '상세 영양 정보가 없습니다.';
+    }
+    
+    try {
+      // <br> 태그로 구분된 항목들 파싱
+      const items = meal.ntr_info.split(/<br\s*\/?>/i);
       
+      // 영양소 그룹 분류
+      const groups: Record<string, Array<{name: string, value: string}>> = {
+        '대표 영양소': [], // 탄수화물, 단백질, 지방
+        '기타 영양소': []  // 나머지 영양소
+      };
+      
+      // 파싱 및 분류
+      items.forEach(item => {
+        // 예: 탄수화물(g) : 73.6
+        const match = item.match(/(.+?)\s*[:\uff1a]\s*(.+)/);
+        if (match) {
+          let name = match[1].trim();
+          const value = match[2].trim();
+          
+          // (g), (mg) 같은 단위 제거
+          name = name.replace(/\s*\([^)]*\)\s*/, '');
+          
+          // 영양소 분류
+          if (['탄수화물', '단백질', '지방'].includes(name)) {
+            groups['대표 영양소'].push({ name, value });
+          } else {
+            groups['기타 영양소'].push({ name, value });
+          }
+        }
+      });
+      
+      // 결과 포맷팅
+      let hasAnyNutrients = false;
+      
+      // 대표 영양소 출력
+      if (groups['대표 영양소'].length > 0) {
+        hasAnyNutrients = true;
+        result += `🍱 대표 영양소\n`;
+        groups['대표 영양소'].forEach(({ name, value }) => {
+          const emoji = nutrientIcons[name] || '•';
+          result += `${emoji} ${name}: ${value}\n`;
+        });
+        result += '\n';
+      }
+      
+      // 기타 영양소 출력
+      if (groups['기타 영양소'].length > 0) {
+        hasAnyNutrients = true;
+        result += `✨ 기타 영양소\n`;
+        groups['기타 영양소'].forEach(({ name, value }) => {
+          const emoji = nutrientIcons[name] || '•';
+          result += `${emoji} ${name}: ${value}\n`;
+        });
+      }
+      
+      // 영양소가 하나도 없는 경우
+      if (!hasAnyNutrients) {
+        result += '상세 영양 정보가 없습니다.';
+      }
+      
+    } catch (error) {
+      console.error('영양정보 파싱 오류:', error);
+      result += '영양정보 표시 오류가 발생했습니다.';
+    }
+    
     return result;
   };
 
@@ -234,63 +291,81 @@ export default function MealsPage() {
   const formatOriginInfo = (originInfo: string) => {
     if (!originInfo) return '원산지 정보가 없습니다.';
 
-    // 중복 제거를 위한 원재료 정리 함수
-    const cleanIngredientName = (name: string): string => {
-      // 괄호 안 내용 제거 (예: "쌀(국내산)" -> "쌀")
-      let cleaned = name.replace(/\([^)]*\)/g, '').trim();
-      
-      // 숫자 제거 (예: "1.돼지고기" -> "돼지고기")
-      cleaned = cleaned.replace(/^\d+\.\s*/, '');
-      
-      // 특수 문자 제거
-      cleaned = cleaned.replace(/[^\w\s가-힣]/g, '').trim();
-      
-      // 앞뒤 공백 제거
-      cleaned = cleaned.trim();
-      
-      // 재료명이 너무 길면 첫 단어만 사용 (예: "돼지고기 뒷다리살" -> "돼지고기")
-      if (cleaned.length > 5) {
-        const firstWord = cleaned.split(' ')[0];
-        if (firstWord.length >= 2) { // 첫 단어가 의미있는 길이인 경우만
-          return firstWord;
-        }
+    // <br>, <br/> 태그를 줄바꿈으로 변환
+    let clean = originInfo.replace(/<br\s*\/?>/gi, '\n');
+
+    // 각 줄별로 정리, "비고", "국내산(한우)" 등 제외
+    const lines = clean
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        return line && 
+               !line.startsWith('비고') &&
+               !line.includes('국내산(한우)') &&
+               !line.includes('쇠고기(종류)');
+      });
+    
+    // 원산지별 재료 분류
+    const originGroups: Record<string, Set<string>> = {};
+    
+    // 특수케이스 제외를 위한 패턴
+    const skipPatterns = [
+      /\(한\uc6b0\):\s*\S+\(\S+\)/i,  // "국내산(한우): 쇠고기(종류)" 패턴 제외
+      /\(종\ub958\)$/i,               // "쇠고기(종류)" 패턴 제외
+    ];
+
+    lines.forEach(line => {
+      // 특수케이스 제외
+      if (skipPatterns.some(pattern => pattern.test(line))) {
+        return;
       }
-      
-      return cleaned;
-    };
 
-    try {
-      // 원산지 정보 파싱 (형식: "재료명(원산지),재료명(원산지),...")
-      const originPairs = originInfo.split(',').map(pair => {
-        // 괄호 기준으로 분리
-        const match = pair.match(/(.+)\(([^)]+)\)/);
-        if (match) {
-          const ingredient = cleanIngredientName(match[1]);
-          const origin = match[2].trim();
-          return { ingredient, origin };
+      // 재료명과 원산지 분리
+      const parts = line.split(' : ');
+      if (parts.length === 2) {
+        let ingredient = parts[0];
+        const origin = parts[1];
+        
+        // 가공품, 식육가공품 등 불필요한 단어 제거
+        ingredient = ingredient
+          .replace(/\s*\uac00\uacf5\ud488$/g, '')
+          .replace(/\s*\uc2dd\uc721\uac00\uacf5\ud488$/g, '')
+          .replace(/\uc2dd\uc721/g, '')
+          // "고기" 중복 제거 (쇠고기 → 쇠, 돼지고기 → 돼지)
+          .replace(/\uace0\uae30$/g, '')
+          .trim();
+        
+        // 원산지별 중복없는 Set 초기화
+        if (!originGroups[origin]) {
+          originGroups[origin] = new Set<string>();
         }
-        return null;
-      }).filter(Boolean);
-
-      // 중복 제거 (같은 원재료는 하나로 합치기)
-      const uniqueOrigins = new Map();
-      originPairs.forEach(pair => {
-        if (pair && pair.ingredient) {
-          uniqueOrigins.set(pair.ingredient, pair.origin);
-        }
-      });
-
-      // 포맷팅된 문자열 생성
-      let formattedText = '';
-      uniqueOrigins.forEach((origin, ingredient) => {
-        formattedText += `• ${ingredient}: ${origin}\n`;
-      });
-
-      return formattedText || '원산지 정보 파싱 중 오류가 발생했습니다.';
-    } catch (error) {
-      console.error('원산지 정보 파싱 오류:', error);
-      return '원산지 정보 형식이 올바르지 않습니다.';
-    }
+        
+        // 중복 없이 저장 (세트 사용)
+        originGroups[origin].add(ingredient);
+      }
+    });
+    
+    // 결과 포맷팅
+    let result = '';
+    
+    // 더 중요한 원산지부터 표시 (우선순위 지정)
+    const priorityOrder = ['국내산', '국산', '중국산', '원양산', '미국산', '호주산'];
+    
+    // 우선순위가 있는 원산지부터 출력
+    priorityOrder.forEach(origin => {
+      if (originGroups[origin] && originGroups[origin].size > 0) {
+        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
+      }
+    });
+    
+    // 나머지 원산지도 출력
+    Object.keys(originGroups).forEach(origin => {
+      if (!priorityOrder.includes(origin) && originGroups[origin].size > 0) {
+        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
+      }
+    });
+    
+    return result || '원산지 정보\n' + lines.join('\n');
   };
 
   // 급식 정보 가져오기
@@ -344,8 +419,10 @@ export default function MealsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <DebugPanel title="급식 정보 디버그" />
+
+
       
-      {/* 모달 (원산지 정보 또는 영양정보) */}
+      {/* 모달 (상세 정보) */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
@@ -509,22 +586,31 @@ export default function MealsPage() {
                         </ul>
                       </div>
                       
+
                       <div className="flex flex-wrap gap-2">
-                        {/* 영양정보 버튼 - 칼로리만 있어도 표시 */}
-                        {(meal.kcal || (meal.nutrition_info && Object.values(meal.nutrition_info).some(val => val))) && (
-                          <button 
-                            onClick={() => showNutritionModal(meal)}
-                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                          >
-                            영양정보
-                          </button>
-                        )}
                         {meal.origin_info && (
                           <button 
-                            onClick={() => showOriginModal(meal.origin_info)}
+                            onClick={() => {
+                              setModalTitle('원산지 정보');
+                              setModalContent(formatOriginInfo(meal.origin_info));
+                              setShowModal(true);
+                            }}
                             className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
                           >
                             원산지 보기
+                          </button>
+                        )}
+                        {/* 영양정보 버튼 - 칼로리나 ntr_info가 있으면 표시 */}
+                        {(meal.kcal || meal.ntr_info) && (
+                          <button 
+                            onClick={() => {
+                              setModalTitle('영양 정보');
+                              setModalContent(formatNutritionInfo(meal));
+                              setShowModal(true);
+                            }}
+                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                          >
+                            영양정보
                           </button>
                         )}
                       </div>
@@ -532,12 +618,6 @@ export default function MealsPage() {
                     
                     <div className="bg-gray-50 p-3 border-t">
                       <div className="mt-2">
-                        <button
-                          onClick={() => alert('아직 개발 중인 기능입니다.')}
-                          className="w-full py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex justify-center items-center"
-                        >
-                          <span className="mr-1">👍</span> 평가하기
-                        </button>
                       </div>
                     </div>
                   </div>
