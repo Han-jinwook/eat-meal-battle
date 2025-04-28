@@ -390,17 +390,7 @@ export async function POST(request: Request) {
     
     // 3. 가져온 급식 정보 DB에 저장
     if (allMeals.length > 0) {
-      // 기존 오늘 데이터 삭제 (중복 방지)
-      const { error: deleteError } = await supabase
-        .from('meal_menus')
-        .delete()
-        .eq('meal_date', today);
-        
-      if (deleteError) {
-        console.error('기존 급식 데이터 삭제 실패:', deleteError);
-      }
-      
-      // 새 데이터 저장
+      // 새 데이터 저장 (삭제 대신 학교/날짜/급식타입별로 확인하여 추가 또는 업데이트)
       const mealRecords = allMeals.map(meal => ({
         school_code: meal.school_code,
         office_code: meal.office_code,
@@ -413,12 +403,65 @@ export async function POST(request: Request) {
         ntr_info: meal.ntr_info
       }));
       
-      const { error: insertError } = await supabase
-        .from('meal_menus')
-        .insert(mealRecords);
-        
-      if (insertError) {
-        throw new Error(`급식 정보 저장 실패: ${insertError.message}`);
+      // 각 급식 데이터별로 처리
+      let updatedCount = 0;
+      let insertedCount = 0;
+      let errorCount = 0;
+      
+      for (const meal of mealRecords) {
+        try {
+          // 해당 학교/날짜/급식 타입에 대한 데이터가 있는지 확인
+          const { data: existingMeal, error: selectError } = await supabase
+            .from('meal_menus')
+            .select('id')
+            .eq('school_code', meal.school_code)
+            .eq('meal_date', meal.meal_date)
+            .eq('meal_type', meal.meal_type)
+            .maybeSingle();
+            
+          if (selectError && selectError.code !== 'PGRST116') { // PGRST116: 결과 없음
+            console.error(`급식 데이터 조회 오류: ${selectError.message}`);
+            errorCount++;
+            continue;
+          }
+          
+          if (existingMeal) {
+            // 기존 데이터가 있으면 업데이트
+            const { error: updateError } = await supabase
+              .from('meal_menus')
+              .update({
+                menu_items: meal.menu_items,
+                kcal: meal.kcal,
+                nutrition_info: meal.nutrition_info,
+                origin_info: meal.origin_info,
+                ntr_info: meal.ntr_info,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingMeal.id);
+              
+            if (updateError) {
+              console.error(`급식 데이터 업데이트 오류: ${updateError.message}`);
+              errorCount++;
+            } else {
+              updatedCount++;
+            }
+          } else {
+            // 없으면 새로 추가
+            const { error: insertError } = await supabase
+              .from('meal_menus')
+              .insert([meal]);
+              
+            if (insertError) {
+              console.error(`급식 데이터 추가 오류: ${insertError.message}`);
+              errorCount++;
+            } else {
+              insertedCount++;
+            }
+          }
+        } catch (err) {
+          console.error(`급식 데이터 처리 중 예외 발생: ${err.message}`);
+          errorCount++;
+        }
       }
       
       return NextResponse.json({
