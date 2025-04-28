@@ -85,12 +85,24 @@ export default function Home() {
           {loading ? (
             <div className="h-5 w-20 bg-gray-200 animate-pulse rounded-md"></div>
           ) : user ? (
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <Link
                 href="/profile"
-                className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700"
               >
                 내 프로필
+              </Link>
+              <Link
+                href="/temp/school-search"
+                className="rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
+              >
+                학교설정
+              </Link>
+              <Link
+                href="/temp/meals"
+                className="rounded-md bg-orange-600 px-3 py-2 text-sm text-white hover:bg-orange-700"
+              >
+                급식보기
               </Link>
             </div>
           ) : (
@@ -114,77 +126,35 @@ export default function Home() {
           {!user && (
             <Link
               href="/login"
-              className="rounded-md bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700 inline-block"
+              className="inline-block py-3 px-5 bg-indigo-600 text-white font-medium text-center rounded-md hover:bg-indigo-700 transition"
             >
-              지금 시작하기
+              로그인하러 가기
             </Link>
           )}
 
           {user && (
-            <div className="mt-4 p-4 bg-green-50 rounded-md text-green-700 text-sm">
-              <strong>{user.app_metadata?.provider}</strong> 계정으로 로그인되었습니다.
-              <div className="mt-2 text-xs text-gray-600">
-                사용자 ID: {user.id}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 디버깅 정보 영역 */}
-        <div className="p-6 rounded-lg bg-gray-50 border border-gray-200 w-full max-w-3xl">
-          <h3 className="text-lg font-bold mb-2">로그인 상태 디버깅</h3>
-          <div className="bg-gray-100 p-3 rounded text-sm font-mono break-all">
-            {debugInfo || '디버깅 정보 없음'}
-          </div>
-          
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-bold">세션 정보</h4>
-              <div className="bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
-                {session ? (
-                  <pre className="text-xs">
-                    {JSON.stringify({ 
-                      access_token: session.access_token ? '존재함' : '없음',
-                      refresh_token: session.refresh_token ? '존재함' : '없음',
-                      expires_at: session.expires_at,
-                      user_id: session.user?.id
-                    }, null, 2)}
-                  </pre>
-                ) : '세션 없음'}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-bold">사용자 정보</h4>
-              <div className="bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
-                {user ? (
-                  <pre className="text-xs">
-                    {JSON.stringify({
-                      id: user.id,
-                      email: user.email,
-                      provider: user.app_metadata?.provider,
-                      created_at: user.created_at
-                    }, null, 2)}
-                  </pre>
-                ) : '사용자 정보 없음'}
-              </div>
-            </div>
-          </div>
-          
-          {user && (
-            <div className="mt-4 flex justify-end">
-              <button 
-                onClick={async () => {
-                  const { error } = await supabase.auth.signOut();
-                  if (error) {
-                    console.error('로그아웃 오류:', error);
-                    setDebugInfo('Sign-out error: ' + error.message);
-                  }
-                }}
-                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
+              <Link
+                href="/profile"
+                className="flex flex-col items-center justify-center p-4 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition"
               >
-                로그아웃
-              </button>
+                <span className="text-2xl mb-2">👤</span>
+                <span className="font-medium text-indigo-700">내 프로필</span>
+              </Link>
+              <Link
+                href="/temp/school-search"
+                className="flex flex-col items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition"
+              >
+                <span className="text-2xl mb-2">🏫</span>
+                <span className="font-medium text-green-700">학교설정</span>
+              </Link>
+              <Link
+                href="/temp/meals"
+                className="flex flex-col items-center justify-center p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition"
+              >
+                <span className="text-2xl mb-2">🍱</span>
+                <span className="font-medium text-orange-700">급식보기</span>
+              </Link>
             </div>
           )}
         </div>
@@ -198,9 +168,9 @@ export default function Home() {
           </div>
 
           <div className="p-6 rounded-lg bg-white shadow-md">
-            <h3 className="text-xl font-bold mb-3">회원 관리</h3>
+            <h3 className="text-xl font-bold mb-3">급식 평가</h3>
             <p className="text-gray-600 mb-4">
-              로그아웃 및 회원 탈퇴 기능으로 계정을 안전하게 관리할 수 있습니다.
+              매일 학교 급식을 평가하고 다른 학생들과 의견을 나눠보세요.
             </p>
           </div>
         </div>

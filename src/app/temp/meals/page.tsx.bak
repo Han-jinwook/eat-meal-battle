@@ -1,0 +1,587 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
+import Link from 'next/link';
+import MealImageUploader from '@/components/MealImageUploader';
+import MealImageList from '@/components/MealImageList';
+import DebugPanel from '@/components/DebugPanel';
+
+// 급식 정보 타입 정의
+interface MealInfo {
+  id: string;
+  school_code: string;
+  office_code: string;
+  school_name?: string; // UI에 표시할 학교명
+  meal_date: string;
+  meal_type: string;
+  menu_items: string[];
+  kcal: string;
+  nutrition_info: {
+    carbohydrate?: string;
+    protein?: string;
+    fat?: string;
+    calcium?: string;
+    iron?: string;
+    vitamin_a?: string;
+    vitamin_c?: string;
+  };
+  origin_info?: string;
+  created_at: string;
+}
+
+export default function MealsPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);  // 사용자 정보
+  const [userSchool, setUserSchool] = useState<any>(null); // 학교 정보
+  const [meals, setMeals] = useState<MealInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [dataSource, setDataSource] = useState(''); // 데이터 소스 추적 (database 또는 api)
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  
+  // 모달 관련 상태
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState('');
+  const [modalTitle, setModalTitle] = useState('');
+  
+  // 이미지 업로드 관련 상태
+  const [refreshImageList, setRefreshImageList] = useState(0);
+
+  // 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD)
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr || dateStr.length !== 8) return dateStr;
+    return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+  };
+
+  // YYYY-MM-DD -> YYYYMMDD
+  const formatApiDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    return dateStr.replace(/-/g, '');
+  };
+
+  // 현재 날짜를 YYYY-MM-DD 형식으로 가져오기
+  const getCurrentDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 사용자 정보 및 학교 정보 가져오기
+  useEffect(() => {
+    const getUserInfo = async () => {
+      try {
+        setIsLoading(true);
+
+        // 1. 세션 및 사용자 정보 가져오기
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error) {
+          throw error;
+        }
+
+        if (user) {
+          setUser(user);
+
+          // 2. 사용자의 학교 정보 가져오기
+          const { data: schoolInfo, error: schoolError } = await supabase
+            .from('school_infos')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (schoolError && schoolError.code !== 'PGRST116') { 
+            // PGRST116: 결과 없음 오류는 무시 (학교 정보가 없을 수 있음)
+            throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
+          }
+
+          if (schoolInfo) {
+            console.log('학교 정보 가져오기 성공:', schoolInfo);
+            setUserSchool(schoolInfo); // 학교 정보 상태 저장
+          }
+          
+          // 현재 날짜 설정 (초기 API 호출 없이 날짜만 설정)
+          const today = getCurrentDate();
+          setSelectedDate(today);
+        } else {
+          // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+          setError('로그인이 필요합니다');
+          setTimeout(() => {
+            router.push('/login');
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('정보 로딩 오류:', err);
+        setError(`정보를 불러오는 중 오류가 발생했습니다: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getUserInfo();
+  }, [supabase, router]);
+
+  // 주말 체크 함수
+  const isWeekend = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0: 일요일, 6: 토요일
+  };
+
+  // 교육청 코드 파악 함수
+  const getOfficeCode = (region: string): string => {
+    // 교육청 코드 매핑
+    const officeCodes: { [key: string]: string } = {
+      '서울': 'B10',
+      '부산': 'C10',
+      '대구': 'D10',
+      '인천': 'E10',
+      '광주': 'F10',
+      '대전': 'G10',
+      '울산': 'H10',
+      '세종': 'I10',
+      '경기': 'J10',
+      '강원': 'K10',
+      '충북': 'M10',
+      '충남': 'N10',
+      '전북': 'P10',
+      '전남': 'Q10',
+      '경북': 'R10',
+      '경남': 'S10',
+      '제주': 'T10'
+    };
+
+    // 지역명에서 첫 2글자만 추출하여 매칭
+    for (const [key, code] of Object.entries(officeCodes)) {
+      if (region && region.includes(key)) {
+        return code;
+      }
+    }
+
+    // 기본값: 서울
+    return 'B10';
+  };
+
+  // 날짜 변경 핸들러 - 날짜만 변경하고 자동 조회는 하지 않음
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+    // 날짜 변경 시 기존 오류 메시지 초기화
+    setError('');
+  };
+
+  // 급식 타입별 아이콘
+  const getMealTypeIcon = (mealType: string) => {
+    switch(mealType) {
+      case '조식':
+        return '🍳'; // 아침
+      case '중식':
+        return '🍚'; // 점심
+      case '석식':
+        return '🍲'; // 저녁
+      case '간식':
+        return '🍪'; // 간식
+      default:
+        return '🍽️'; // 기본
+    }
+  };
+
+  // 모달 표시 함수
+  const showOriginModal = (originInfo: string) => {
+    setModalTitle('원산지 정보');
+    setModalContent(formatOriginInfo(originInfo));
+    setShowModal(true);
+  };
+
+  // 영양정보 모달 표시 함수
+  const showNutritionModal = (meal: MealInfo) => {
+    setModalTitle('영양 정보');
+    setModalContent(formatNutritionInfo(meal));
+    setShowModal(true);
+  };
+
+  // 영양정보 포맷팅 함수
+  const formatNutritionInfo = (meal: MealInfo): string => {
+    const nutritionItems = [
+      { label: '열량', value: meal.kcal ? `${meal.kcal}kcal` : '정보 없음' },
+      { label: '탄수화물', value: meal.nutrition_info?.carbohydrate || '정보 없음' },
+      { label: '단백질', value: meal.nutrition_info?.protein || '정보 없음' },
+      { label: '지방', value: meal.nutrition_info?.fat || '정보 없음' },
+      { label: '칼슘', value: meal.nutrition_info?.calcium || '정보 없음' },
+      { label: '철분', value: meal.nutrition_info?.iron || '정보 없음' },
+      { label: '비타민A', value: meal.nutrition_info?.vitamin_a || '정보 없음' },
+      { label: '비타민C', value: meal.nutrition_info?.vitamin_c || '정보 없음' },
+    ];
+
+    return nutritionItems
+      .filter(item => item.value !== '정보 없음') // 정보가 없는 항목은 제외
+      .map(item => `${item.label}: ${item.value}`)
+      .join('\n');
+  };
+
+  // 원산지 정보 포맷팅
+  const formatOriginInfo = (originInfo: string) => {
+    if (!originInfo) return '원산지 정보가 없습니다.';
+
+    // 중복 제거를 위한 원재료 정리 함수
+    const cleanIngredientName = (name: string): string => {
+      // 괄호 안 내용 제거 (예: "쌀(국내산)" -> "쌀")
+      let cleaned = name.replace(/\([^)]*\)/g, '').trim();
+      
+      // 숫자 제거 (예: "1.돼지고기" -> "돼지고기")
+      cleaned = cleaned.replace(/^\d+\.\s*/, '');
+      
+      // 특수 문자 제거
+      cleaned = cleaned.replace(/[^\w\s가-힣]/g, '').trim();
+      
+      // 앞뒤 공백 제거
+      cleaned = cleaned.trim();
+      
+      // 재료명이 너무 길면 첫 단어만 사용 (예: "돼지고기 뒷다리살" -> "돼지고기")
+      if (cleaned.length > 5) {
+        const firstWord = cleaned.split(' ')[0];
+        if (firstWord.length >= 2) { // 첫 단어가 의미있는 길이인 경우만
+          return firstWord;
+        }
+      }
+      
+      return cleaned;
+    };
+
+    try {
+      // 원산지 정보 파싱 (형식: "재료명(원산지),재료명(원산지),...")
+      const originPairs = originInfo.split(',').map(pair => {
+        // 괄호 기준으로 분리
+        const match = pair.match(/(.+)\(([^)]+)\)/);
+        if (match) {
+          const ingredient = cleanIngredientName(match[1]);
+          const origin = match[2].trim();
+          return { ingredient, origin };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // 중복 제거 (같은 원재료는 하나로 합치기)
+      const uniqueOrigins = new Map();
+      originPairs.forEach(pair => {
+        if (pair && pair.ingredient) {
+          uniqueOrigins.set(pair.ingredient, pair.origin);
+        }
+      });
+
+      // 포맷팅된 문자열 생성
+      let formattedText = '';
+      uniqueOrigins.forEach((origin, ingredient) => {
+        formattedText += `• ${ingredient}: ${origin}\n`;
+      });
+
+      return formattedText || '원산지 정보 파싱 중 오류가 발생했습니다.';
+    } catch (error) {
+      console.error('원산지 정보 파싱 오류:', error);
+      return '원산지 정보 형식이 올바르지 않습니다.';
+    }
+  };
+
+  // 급식 정보 가져오기
+  const fetchMealInfo = async (schoolCode: string, date: string) => {
+    if (!schoolCode || !date) {
+      setError('학교 코드와 날짜가 필요합니다.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError('');
+
+      // 사용자 학교 정보에서 교육청 코드 가져오기
+      const officeCode = userSchool?.office_code || getOfficeCode(userSchool?.region || '');
+      
+      // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
+      const apiDate = formatApiDate(date);
+      
+      // API 호출
+      const response = await fetch(`/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      
+      if (!response.ok) {
+        throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
+      }
+      
+      const data = await response.json();
+      
+      // 데이터 소스 표시
+      setDataSource(data.source || 'unknown');
+      
+      // 급식 정보 설정
+      if (data.meals && data.meals.length > 0) {
+        setMeals(data.meals);
+        setError('');
+      } else {
+        setMeals([]);
+        setError(isWeekend(date) 
+          ? '주말에는 학교 급식이 제공되지 않습니다.' 
+          : '해당 날짜의 급식 정보가 없습니다.');
+      }
+    } catch (err) {
+      console.error('급식 정보 조회 오류:', err);
+      setMeals([]);
+      setError(`급식 정보를 가져오는 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <DebugPanel title="급식 정보 디버그" />
+      
+      {/* 모달 (원산지 정보 또는 영양정보) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">{modalTitle}</h3>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="text-gray-600 whitespace-pre-line">
+              {modalContent}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="max-w-4xl mx-auto">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">학교 급식 정보</h1>
+          <Link href="/" className="text-blue-600 hover:text-blue-800">
+            홈으로
+          </Link>
+        </div>
+
+        {/* 학교 정보 표시 */}
+        {userSchool ? (
+          <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+            <h2 className="font-semibold text-lg mb-2">
+              {userSchool.school_name}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {userSchool.region} {userSchool.school_type}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  학교 정보가 등록되어 있지 않습니다.
+                </p>
+                <p className="mt-1 text-xs text-yellow-600">
+                  <Link href="/profile" className="font-medium underline hover:text-yellow-800">
+                    프로필 페이지에서 학교 정보를 등록해주세요.
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 날짜 선택 및 조회 버튼 */}
+        <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                날짜 선택
+              </label>
+              <input
+                type="date"
+                id="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => userSchool && fetchMealInfo(userSchool.school_code, selectedDate)}
+                disabled={isLoading || !userSchool}
+                className={`w-full px-4 py-2 rounded-md text-white font-medium ${
+                  isLoading || !userSchool
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    조회 중...
+                  </span>
+                ) : (
+                  '급식 정보 조회'
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* 에러 메시지 */}
+          {error && !meals.length && (
+            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* 급식 정보 표시 */}
+        {!isLoading && (
+          <>
+            {meals.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {meals.map((meal, index) => (
+                  <div key={index} className="bg-white shadow-md rounded-lg overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center">
+                            <span className="mr-2">{getMealTypeIcon(meal.meal_type)}</span>
+                            {meal.meal_type}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {formatDisplayDate(meal.meal_date)}
+                          </p>
+                        </div>
+                        
+                        {meal.kcal && (
+                          <div className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            {meal.kcal}kcal
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mb-4">
+                        <ul className="space-y-1">
+                          {meal.menu_items.map((item, idx) => (
+                            <li key={idx} className="text-gray-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {(meal.nutrition_info && Object.values(meal.nutrition_info).some(val => val)) && (
+                          <button 
+                            onClick={() => showNutritionModal(meal)}
+                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                          >
+                            영양정보
+                          </button>
+                        )}
+                        {meal.origin_info && (
+                          <button 
+                            onClick={() => showOriginModal(meal.origin_info)}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            원산지 보기
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-3 border-t">
+                      <MealImageUploader 
+                        mealId={meal.id}
+                        schoolCode={meal.school_code}
+                        mealDate={meal.meal_date}
+                        mealType={meal.meal_type}
+                        onUploadSuccess={() => {
+                          setRefreshImageList(prev => prev + 1);
+                        }}
+                        onUploadError={(error) => {
+                          setError(error);
+                          setTimeout(() => setError(''), 3000);
+                        }}
+                      />
+                      
+                      <div className="mt-4">
+                        <MealImageList 
+                          mealId={meal.id}
+                          refreshTrigger={refreshImageList}
+                        />
+                      </div>
+                      
+                      <div className="mt-4">
+                        <button
+                          onClick={() => alert('아직 개발 중인 기능입니다.')}
+                          className="w-full py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex justify-center items-center"
+                        >
+                          <span className="mr-1">👍</span> 평가하기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* 데이터 소스 정보 표시 */}
+                {dataSource && (
+                  <div className="col-span-1 md:col-span-2 mt-2 text-right">
+                    <p className="text-xs text-gray-500">
+                      데이터 소스: <span className="font-medium">{dataSource}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white shadow-md rounded-lg p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="bg-yellow-100 rounded-full p-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-medium text-center mb-2">
+                  {userSchool?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
+                </h3>
+
+                <div className="bg-gray-50 p-4 rounded-md text-center">
+                  <p className="text-gray-700 font-medium">
+                    {error || (isWeekend(selectedDate) 
+                      ? '주말에는 학교 급식이 제공되지 않습니다.' 
+                      : '해당 날짜의 급식 정보가 없습니다.')}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    다른 날짜를 선택해보세요.
+                  </p>
+                  {dataSource && (
+                    <p className="text-xs text-gray-500 mt-4">
+                      데이터 소스: <span className="font-medium">{dataSource}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

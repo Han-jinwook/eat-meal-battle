@@ -6,6 +6,7 @@ const nextConfig = {
       'k.kakaocdn.net',           // 카카오 프로필 이미지
       'i.imgur.com',              // Imgur 이미지 (테스트용)
       'images.unsplash.com',      // Unsplash 이미지 (테스트용)
+      'izkumvvlkrkgiuuczffp.supabase.co', // Supabase Storage 이미지
     ],
   },
   

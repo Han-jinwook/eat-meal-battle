@@ -12,6 +12,7 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(null)
+  const [schoolInfo, setSchoolInfo] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -50,6 +51,17 @@ export default function Profile() {
             console.log('사용자 DB 프로필:', data)
             setUserProfile(data)
             setDbStatus('success')
+            
+            // 학교 정보 가져오기 - user_id로 직접 조회
+            const { data: schoolData, error: schoolError } = await supabase
+              .from('school_infos')
+              .select('*')
+              .eq('user_id', user.id)
+              .single()
+              
+            if (!schoolError && schoolData) {
+              setSchoolInfo(schoolData)
+            }
           } else {
             setDbStatus('error')
             setError('사용자 데이터를 찾을 수 없습니다. DB에 저장되지 않았을 수 있습니다.')
@@ -244,6 +256,65 @@ export default function Profile() {
           )}
         </div>
         
+        {/* 학교 정보 */}
+        <div className="rounded-lg bg-white p-6 shadow-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">학교 정보</h2>
+            <Link
+              href="/temp/school-search"
+              className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+            >
+              {schoolInfo ? '학교 정보 수정' : '학교 정보 설정'}
+            </Link>
+          </div>
+          
+          {schoolInfo ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">학교명</span>
+                  <span className="font-medium">{schoolInfo.school_name}</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">학교 유형</span>
+                  <span className="font-medium">{schoolInfo.school_type}</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">지역</span>
+                  <span className="font-medium">{schoolInfo.region}</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">주소</span>
+                  <span className="font-medium text-sm">{schoolInfo.address}</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">학년</span>
+                  <span className="font-medium">{schoolInfo.grade}학년</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm text-gray-500">반</span>
+                  <span className="font-medium">{schoolInfo.class_number}반</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-yellow-50 rounded-md">
+              <p className="text-yellow-700 text-sm">아직 학교 정보가 업로드 되지 않았습니다.</p>
+              <Link 
+                href="/temp/school-search"
+                className="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+              >
+                학교 정보 설정하기
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* 관리 버튼 */}
         <div className="rounded-lg bg-white p-6 shadow-md">
           <h2 className="text-xl font-bold mb-4">계정 관리</h2>
