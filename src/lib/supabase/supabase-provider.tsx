@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { type Session } from '@supabase/supabase-js';
+import { type SupabaseClient } from '@supabase/supabase-js';
 
 const SupabaseContext = createContext<{
   supabase: ReturnType<typeof createBrowserClient>;
