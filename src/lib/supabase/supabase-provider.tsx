@@ -6,7 +6,7 @@ import { type Session } from '@supabase/supabase-js';
 import { type SupabaseClient } from '@supabase/supabase-js';
 
 const SupabaseContext = createContext<{
-  supabase: ReturnType<typeof createBrowserClient>;
+  supabase: SupabaseClient;
   session: Session | null;
 }>({
   supabase: createBrowserClient(
