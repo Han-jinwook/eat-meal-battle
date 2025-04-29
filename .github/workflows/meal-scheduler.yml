@@ -5,7 +5,7 @@ on:
     # 매일 오전 10시에 실행 (한국 시간, UTC+9)
     # UTC 기준으로는 오전 1시
     - cron: '0 1 * * *'
-  
+
   # 수동으로도 실행 가능하도록 설정
   workflow_dispatch:
 
@@ -16,22 +16,25 @@ jobs:
       # 작업 시작
       - name: 급식 정보 업데이트 작업 시작
         run: echo "급식 정보 업데이트 작업 시작: $(date)"
-      
-      # 네트리파이 API 호출 (오류 무시)
-      - name: Netlify API 호출 - 오류 무시
+
+      # 네트리파이 API 호출
+      - name: Netlify API 호출 # 이름에서 '오류 무시' 제거
         env:
           API_KEY: ${{ secrets.CRON_API_KEY }}
           NETLIFY_URL: ${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}
         run: |
           echo "급식 업데이트 API 호출"
-          
+
           # 전체 URL 출력
           echo "NETLIFY_URL: ${NETLIFY_URL}"
-          
-          # curl 명령 실행 (오류 무시)
-          curl -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}" || true
-          
-          echo "급식 정보 업데이트 작업 완료. 오류가 발생해도 무시하고 작업을 성공으로 처리합니다."
-          
-          # 성공으로 처리
-          exit 0
+          echo "호출 URL: ${NETLIFY_URL}/api/cron/meals?api_key=***" # API 키는 로그에 남기지 않음
+
+          # curl 명령 실행 (오류 시 워크플로우 실패)
+          # -v: 상세 출력 (헤더 등)
+          # -f: HTTP 오류(4xx, 5xx) 시 non-zero exit code 반환 (워크플로우 실패 유발)
+          # -s: 진행률 표시 숨김
+          # -S: -s 사용 시 에러 메시지는 표시
+          curl -fsS -v "${NETLIFY_URL}/api/cron/meals?api_key=${API_KEY}"
+
+          # curl 명령 성공 시 메시지 출력 (curl이 성공해야 여기 도달)
+          echo "급식 정보 업데이트 API 호출 성공."
