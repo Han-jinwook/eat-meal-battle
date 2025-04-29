@@ -12,7 +12,7 @@ jobs:
       - name: Call Netlify Function
         env:
           API_KEY: ${{ secrets.CRON_API_KEY }}
-          NETLIFY_URL: ${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}
+          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
         run: |
           echo "Starting API call"
           curl -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}" || true
