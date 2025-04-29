@@ -34,7 +34,7 @@ jobs:
           # -f: HTTP 오류(4xx, 5xx) 시 non-zero exit code 반환 (워크플로우 실패 유발)
           # -s: 진행률 표시 숨김
           # -S: -s 사용 시 에러 메시지는 표시
-          curl -fsS -v "${NETLIFY_URL}/api/cron/meals?api_key=${API_KEY}"
+          curl -fsS -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}"
 
           # curl 명령 성공 시 메시지 출력 (curl이 성공해야 여기 도달)
           echo "급식 정보 업데이트 API 호출 성공."
