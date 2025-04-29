@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { headers } from 'next/headers';
 
 // OpenAI 클라이언트 초기화 (환경 변수가 있는 경우에만)
 let openai: OpenAI | null = null;
@@ -185,13 +186,53 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. 결과 반환
+    // 9. 승인된 경우 알림 전송
+    if (isMatch) {
+      try {
+        console.log('이미지가 승인되어 알림을 전송합니다.');
+        
+        // 내부 API 경로를 사용하여 fetch 호출
+        const notificationApiUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/notifications/send`;
+        
+        // 알림 데이터 준비 - 간략한 안내 메시지로 변경
+        const notificationData = {
+          schoolId: imageData.school_id, // 학교 ID
+          mealImageId: imageId, // 급식 이미지 ID
+          title: '급식 사진이 업데이트 되었습니다!',
+          message: '급식 사진이 업데이트 되었습니다. 급식 평가 하러 가보세요!'
+        };
+        
+        console.log('알림 전송 시도:', { notificationApiUrl, notificationData });
+        
+        // 알림 API 호출
+        const notificationResponse = await fetch(notificationApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // 서비스 롤 키를 헤더에 추가하여 인증
+            'x-supabase-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+          },
+          body: JSON.stringify(notificationData),
+          // Cache 방지
+          cache: 'no-store'
+        });
+        
+        const notificationResult = await notificationResponse.json();
+        console.log('알림 전송 결과:', notificationResult);
+      } catch (notificationError) {
+        // 알림 전송 실패는 전체 프로세스를 실패시키지 않음
+        console.error('알림 전송 중 오류 발생 (무시됨):', notificationError);
+      }
+    }
+    
+    // 10. 결과 반환
     return NextResponse.json({
       success: true,
       matchScore,
       status: isMatch ? 'approved' : 'rejected',
       isMatch,
-      explanation
+      explanation,
+      notificationSent: isMatch // 알림 전송 시도 여부
     });
 
   } catch (error: any) {
