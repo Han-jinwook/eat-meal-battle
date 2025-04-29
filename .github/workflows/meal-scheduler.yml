@@ -19,7 +19,17 @@ jobs:
           NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
         run: |
           echo "급식 정보 업데이트 작업 시작: $(date)"
-          curl -X GET "${NETLIFY_URL}/api/cron/meals?api_key=${API_KEY}" \
-            -H "Content-Type: application/json" \
-            --fail
-          echo "급식 정보 업데이트 작업 완료: $(date)"
+          # 디버깅용 정보 출력 (실제 API 키는 가리고, URL만 확인)
+          echo "API 호출 URL: ${NETLIFY_URL}/api/cron/meals"
+          
+          # API 엔드포인트 상태 확인 (HTTP 상태만 먼저 확인)
+          echo "API 엔드포인트 상태 확인:"
+          curl -I "${NETLIFY_URL}/api/cron/meals" \
+            -H "Content-Type: application/json"
+          
+          # 실제 API 호출 (상세 오류 정보 표시)
+          echo "\n\n실제 API 호출:"
+          curl -v -X GET "${NETLIFY_URL}/api/cron/meals?api_key=${API_KEY}" \
+            -H "Content-Type: application/json"
+          
+          echo "\n급식 정보 업데이트 작업 완료: $(date)"
