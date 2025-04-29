@@ -15,20 +15,11 @@ if (!admin.apps.length) {
       databaseURL: process.env.FIREBASE_ADMIN_DATABASE_URL,
     });
   } else {
-    // 로컬 개발 환경에서는 서비스 계정 키 파일 사용
-    // 주의: 실제 서비스 계정 키 파일은 Git에 업로드하지 마세요!
-    try {
-      const serviceAccount = require('../../../firebase-service-account.json');
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-    } catch (error) {
-      console.error('Firebase Admin 초기화 오류:', error);
-      // 서비스 계정 키 파일이 없는 경우, 더미 초기화
-      admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-      });
-    }
+    // 환경 변수가 없는 경우, 더미 초기화 (CI/CD 환경 또는 배포 환경을 위함)
+    console.warn('Firebase Admin 환경 변수가 설정되지 않았습니다. 더미 초기화를 진행합니다.');
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
   }
 }
 
