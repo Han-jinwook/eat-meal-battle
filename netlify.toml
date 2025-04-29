@@ -16,9 +16,5 @@
   status = 200
   force = true
 
-# 특정 API 엔드포인트 리다이렉트
-[[redirects]]
-  from = "/api/cron/meals"
-  to = "/.netlify/functions/cron-meals"
-  status = 200
-  force = true
+# 특정 API 엔드포인트 리다이렉트 제거 - Next.js API 라우트가 처리하도록 함
+# Next.js는 src/pages/api/cron/meals.ts 파일을 통해 이 경로를 처리합니다
