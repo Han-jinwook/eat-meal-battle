@@ -8,6 +8,7 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = {
   // Netlify에서 API 라우트 지원을 위한 설정
+  output: 'standalone',
   trailingSlash: false,
   images: {
     domains: [

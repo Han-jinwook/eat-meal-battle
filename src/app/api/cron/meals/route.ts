@@ -20,7 +20,8 @@ export async function GET(request: Request) {
     }
     
     // 내부 급식 메뉴 API 호출 (POST 메서드로 호출)
-    const response = await fetch(`${request.headers.get('origin')}/api/meals`, {
+    const baseUrl = process.env.NETLIFY_URL || request.headers.get('origin') || 'https://lunbat.com';
+    const response = await fetch(`${baseUrl}/api/meals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,13 +39,15 @@ export async function GET(request: Request) {
       message: '급식 정보 업데이트 완료',
       result
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('급식 스케줄러 오류:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
     
     return NextResponse.json(
       { 
         success: false,
-        error: `급식 스케줄러 처리 중 오류가 발생했습니다: ${error.message}` 
+        error: `급식 스케줄러 처리 중 오류가 발생했습니다: ${errorMessage}` 
       },
       { status: 500 }
     );
