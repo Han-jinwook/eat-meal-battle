@@ -3,13 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import SupabaseProvider from '@/lib/supabase/supabase-provider';
-import dynamic from 'next/dynamic';
-
-// 클라이언트 사이드에서만 로드되도록 설정
-const FirebaseMessaging = dynamic(
-  () => import('@/components/firebase/FirebaseMessaging'),
-  { ssr: false }
-);
+import FirebaseMessagingWrapper from '@/components/firebase/FirebaseMessagingWrapper';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +37,7 @@ export default function RootLayout({
       >
         <SupabaseProvider>
           {children}
-          <FirebaseMessaging />
+          <FirebaseMessagingWrapper />
           <Toaster />
         </SupabaseProvider>
       </body>

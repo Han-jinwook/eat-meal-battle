@@ -7,6 +7,8 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
+  // Netlify에서 API 라우트 지원을 위한 설정
+  trailingSlash: false,
   images: {
     domains: [
       'lh3.googleusercontent.com', // Google 프로필 이미지
