@@ -74,6 +74,8 @@ async function fetchMealData() {
 exports.handler = async function(event, context) {
   // API 키 검증
   const apiKey = event.queryStringParameters?.api_key;
+  // skip_notification 파라미터 추출 - GitHub Actions에서 호출 시 사용
+  const skipNotification = event.queryStringParameters?.skip_notification === 'true';
   
   if (!apiKey || apiKey !== CRON_API_KEY) {
     return {
@@ -91,7 +93,8 @@ exports.handler = async function(event, context) {
     
     // 알림 전송 시도 코드 제거 - 급식 사진 검증 시 별도로 처리해야 함
     console.log('급식 정보만 업데이트하고 알림은 보내지 않습니다.');
-    const notificationStatus = 'disabled'; // 알림 기능 비활성화 상태
+    // GitHub Actions에서 요청한 경우 skipped_by_request로 표시
+    const notificationStatus = skipNotification ? 'skipped_by_request' : 'disabled';
     
     // 응답 반환
     return {
@@ -101,7 +104,8 @@ exports.handler = async function(event, context) {
         message: '급식 정보 업데이트 완료',
         date: mealData.date,
         menu: mealData.menu,
-        notificationStatus: notificationStatus
+        notificationStatus: notificationStatus,
+        skipNotification: skipNotification // 요청에서 skip_notification 파라미터가 지정되었는지 표시
       })
     };
   } catch (error) {

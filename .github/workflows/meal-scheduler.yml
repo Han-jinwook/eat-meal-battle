@@ -30,8 +30,9 @@ jobs:
             -H "User-Agent: GitHub-Actions-Workflow"
           
           # 실제 API 호출 (상세 오류 정보 표시)
+          # skip_notification=true 파라미터를 추가하여 알림 기능을 명시적으로 비활성화
           echo "\n\n실제 API 호출:"
-          curl -v -X GET "https://lunbat.com/.netlify/functions/cron-meals?api_key=${API_KEY}" \
+          curl -v -X GET "https://lunbat.com/.netlify/functions/cron-meals?api_key=${API_KEY}&skip_notification=true" \
             -H "Content-Type: application/json" \
             -H "Origin: https://github.com" \
             -H "User-Agent: GitHub-Actions-Workflow" \
