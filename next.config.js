@@ -3,7 +3,7 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development', // 개발 환경에서 비활성화
+  disable: true, // 일시적으로 PWA 비활성화
 });
 
 const nextConfig = {
