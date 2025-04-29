@@ -19,19 +19,19 @@ jobs:
         run: |
           echo "급식 정보 업데이트 작업 시작: $(date)"
           
-          # 하드코딩된 URL 사용 (NETLIFY_URL 환경 변수 문제 회피)
-          echo "API 호출 URL: https://lunbat.com/api/cron/meals"
+          # Netlify 함수 엔드포인트 사용
+          echo "API 호출 URL: https://lunbat.com/.netlify/functions/cron-meals"
           
           # API 엔드포인트 상태 확인 (HTTP 상태만 먼저 확인)
           echo "API 엔드포인트 상태 확인:"
-          curl -I "https://lunbat.com/api/cron/meals" \
+          curl -I "https://lunbat.com/.netlify/functions/cron-meals" \
             -H "Content-Type: application/json" \
             -H "Origin: https://github.com" \
             -H "User-Agent: GitHub-Actions-Workflow"
           
           # 실제 API 호출 (상세 오류 정보 표시)
           echo "\n\n실제 API 호출:"
-          curl -v -X GET "https://lunbat.com/api/cron/meals?api_key=${API_KEY}" \
+          curl -v -X GET "https://lunbat.com/.netlify/functions/cron-meals?api_key=${API_KEY}" \
             -H "Content-Type: application/json" \
             -H "Origin: https://github.com" \
             -H "User-Agent: GitHub-Actions-Workflow" \

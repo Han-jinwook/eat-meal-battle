@@ -8,11 +8,13 @@ export default function TestPage() {
   const testApi = async () => {
     setLoading(true);
     try {
-      // API 엔드포인트 직접 호출
-      const response = await fetch(`/api/cron/meals?api_key=${apiKey}`, {
+      // Netlify 함수 엔드포인트 직접 호출
+      const response = await fetch(`/.netlify/functions/cron-meals?api_key=${apiKey}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Origin': window.location.origin,
+          'User-Agent': 'Test-Page-Browser',
         },
       });
 

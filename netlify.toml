@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -8,7 +9,16 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Next.js API 라우트 리다이렉트
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/nextjs-server"
   status = 200
+  force = true
+
+# 특정 API 엔드포인트 리다이렉트
+[[redirects]]
+  from = "/api/cron/meals"
+  to = "/.netlify/functions/cron-meals"
+  status = 200
+  force = true
