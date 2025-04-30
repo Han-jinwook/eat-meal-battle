@@ -37,11 +37,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // 내부 급식 메뉴 API 호출 (POST 메서드로 호출)
     const baseUrl = process.env.NETLIFY_URL || req.headers.origin || 'https://lunbat.com';
+    console.log('급식 API 호출 URL:', `${baseUrl}/api/meals`);
+    
+    // 오늘 날짜 가져오기
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
+    
+    // POST 요청 보내기 - 스케줄러에서 호출하는 것임을 명시
     const response = await fetch(`${baseUrl}/api/meals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Scheduler': 'true',
+        'X-API-Key': validApiKey
       },
+      body: JSON.stringify({
+        date: dateStr,
+        force_update: true,
+        source: 'scheduler'
+      })
     });
     
     const result = await response.json();
