@@ -2,9 +2,9 @@ name: meal-update
 
 on:
   schedule:
-    # 매일 오후 12시에 실행 (한국 시간, UTC+9)
-    # UTC 기준으로는 오전 3시
-    - cron: '0 3 * * *'
+    # 매일 오후 1시에 실행 (한국 시간, UTC+9)
+    # UTC 기준으로는 오전 4시
+    - cron: '0 4 * * *'
   workflow_dispatch: {}
 
 jobs:
