@@ -6,7 +6,7 @@ on:
     # UTC 기준으로는 오전 1시
     - cron: '0 1 * * *'
   # 수동으로도 실행 가능하도록 설정
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   update-meals:
