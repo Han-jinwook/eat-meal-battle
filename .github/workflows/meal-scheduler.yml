@@ -17,5 +17,5 @@ jobs:
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
         run: |
           echo "Starting API call"
-          curl -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}" || true
+          curl -v "${NETLIFY_URL}/api/cron/meals?api_key=${API_KEY}" || true
           echo "API call completed"
