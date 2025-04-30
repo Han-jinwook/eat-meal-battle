@@ -3,7 +3,7 @@ name: meal-update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '40 13 * * *'
 
 jobs:
   update-meals:
