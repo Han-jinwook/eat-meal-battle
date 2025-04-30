@@ -3,7 +3,9 @@ name: meal-update
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 1 * * *'
+    # 매일 오전 10시 40분에 실행 (한국 시간, UTC+9)
+    # UTC 기준으로는 오전 1시 40분
+    - cron: '40 1 * * *'
 
 jobs:
   update-meals:
@@ -14,6 +16,46 @@ jobs:
           API_KEY: ${{ secrets.CRON_API_KEY }}
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
         run: |
-          echo "Starting API call"
-          curl -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}" || true
-          echo "API call completed"
+          echo "급식 정보 업데이트 작업 시작: $(date)"
+          
+          # API 엔드포인트 URL 구성
+          API_ENDPOINT="${NETLIFY_URL}/.netlify/functions/cron-meals"
+          echo "API 호출 URL: ${API_ENDPOINT}"
+          
+          # 최대 3번 재시도 로직
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "\n시도 ${i}/${MAX_RETRIES}:"
+            
+            # API 호출 및 응답 저장
+            RESPONSE=$(curl -s -w "\n%{http_code}" "${API_ENDPOINT}?api_key=${API_KEY}" \
+              -H "Content-Type: application/json" \
+              -H "Origin: https://github.com" \
+              -H "User-Agent: GitHub-Actions-Workflow")
+            
+            # HTTP 상태 코드 추출 (응답의 마지막 줄)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            # 실제 응답 본문 추출 (마지막 줄 제외)
+            BODY=$(echo "$RESPONSE" | sed \$d)
+            
+            echo "상태 코드: ${HTTP_CODE}"
+            echo "응답 본문: ${BODY}"
+            
+            # 성공 여부 확인 (200 OK 및 응답에 success:true 포함)
+            if [[ "$HTTP_CODE" == "200" ]] && [[ "$BODY" == *"\"success\":true"* ]]; then
+              echo "✅ API 호출 성공!"
+              break
+            else
+              echo "❌ API 호출 실패"
+              
+              # 마지막 시도가 아니면 재시도
+              if [[ $i -lt $MAX_RETRIES ]]; then
+                echo "5초 후 재시도..."
+                sleep 5
+              else
+                echo "최대 재시도 횟수 도달. 작업 종료."
+              fi
+            fi
+          done
+          
+          echo "\n급식 정보 업데이트 작업 완료: $(date)"
