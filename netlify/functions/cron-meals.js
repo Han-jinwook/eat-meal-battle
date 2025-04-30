@@ -90,7 +90,38 @@ exports.handler = async function(event, context) {
     // 직접 급식 정보 가져오기
     const mealData = await fetchMealData();
     console.log('급식 정보 가져오기 성공:', JSON.stringify(mealData));
-    
+    // --- DB 저장 로직 시작 ---
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const { data: dbData, error } = await supabase
+    .from('meal_menus')
+    .upsert([
+      {
+        school_code: mealData.school_code,
+        office_code: mealData.office_code,
+        meal_date: mealData.meal_date,
+        meal_type: mealData.meal_type,
+        menu_items: mealData.menu_items,
+        kcal: mealData.kcal,
+        nutrition_info: mealData.nutrition_info,
+        origin_info: mealData.origin_info,
+        ntr_info: mealData.ntr_info
+      }
+    ], { onConflict: 'school_code,office_code,meal_date,meal_type' });
+  if (error) {
+    console.error('DB 저장 오류:', error);
+    throw new Error(`DB 저장 실패: ${error.message}`);
+  }
+  console.log('급식 정보 DB 저장 성공:', dbData);
+} catch (dbError) {
+  console.error('Supabase DB 저장 오류:', dbError);
+  throw new Error(`Supabase DB 저장 실패: ${dbError.message}`);
+}
+// --- DB 저장 로직 끝 ---
     // 알림 전송 시도 코드 제거 - 급식 사진 검증 시 별도로 처리해야 함
     console.log('급식 정보만 업데이트하고 알림은 보내지 않습니다.');
     // GitHub Actions에서 요청한 경우 skipped_by_request로 표시
