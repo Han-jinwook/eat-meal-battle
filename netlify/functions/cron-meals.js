@@ -1,83 +1,30 @@
 // Netlify 서버리스 함수: 급식 정보 업데이트
-const https = require('https');
-const { parse } = require('url');
+// mealUpdater 모듈 직접 사용 (Next.js API 호출 방식에서 변경됨)
+const { updateAllMeals } = require('../../src/lib/mealUpdater');
 
-// 환경 변수에서 API 키 가져오기
-const CRON_API_KEY = process.env.CRON_API_KEY;
-
-// HTTP 요청 함수
-async function fetchWithPromise(url, options) {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = parse(url);
-    const req = https.request(
-      {
-        hostname: parsedUrl.hostname,
-        path: parsedUrl.path,
-        method: options.method || 'GET',
-        headers: options.headers || {}
-      }, 
-      (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode,
-            headers: res.headers,
-            body: data
-          });
-        });
-      }
-    );
-
-    req.on('error', (error) => {
-      reject(error);
-    });
-
-    if (options.body) {
-      req.write(options.body);
-    }
-    req.end();
-  });
-}
-
-// 오늘 날짜 가져오기 (YYYY-MM-DD 형식)
-function getTodayDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// 네이버 급식 정보 가져오기 (예시)
-async function fetchMealData() {
-  // 실제로는 여기서 네이버나 다른 소스에서 급식 정보를 가져올 수 있습니다
-  // 이 예제에서는 더미 데이터를 반환합니다
-  const today = getTodayDate();
-  
-  return {
-    date: today,
-    menu: [
-      '쌀밥',
-      '미역국',
-      '불고기',
-      '김치',
-      '요구르트'
-    ],
-    updatedAt: new Date().toISOString()
-  };
-}
+// 등록된 학교 목록은 이미 모듈 내에서 처리되므로 여기서는 단순하게 설정
+const DEFAULT_SCHOOLS = [
+  // 실제 학교 코드는 DB에서 가져와서 사용합니다
+  // 임시 예시 데이터로, 모듈에서 DB 쿼리하여 사용
+  { school_code: "7380292", office_code: "E10" }
+];
 
 // Netlify 서버리스 함수 핸들러
 exports.handler = async function(event, context) {
   // API 키 검증
   const apiKey = event.queryStringParameters?.api_key;
-  // skip_notification 파라미터 추출 - GitHub Actions에서 호출 시 사용
-  const skipNotification = event.queryStringParameters?.skip_notification === 'true';
   
-  if (!apiKey || apiKey !== CRON_API_KEY) {
+  // 환경 변수에서 API 키 가져오기
+  const validApiKey = process.env.CRON_API_KEY;
+  if (!validApiKey) {
+    console.log('환경 변수 CRON_API_KEY가 설정되지 않았습니다!');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Server configuration error: CRON_API_KEY not set' })
+    };
+  }
+  
+  if (!apiKey || apiKey !== validApiKey) {
     return {
       statusCode: 401,
       body: JSON.stringify({ error: 'Unauthorized: Invalid API key' })
@@ -85,37 +32,39 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    console.log('급식 정보 업데이트 시작');
+    console.log('급식 정보 업데이트 시작 - 직접 DB 저장 방식');
     
-    // 직접 급식 정보 가져오기
-    const mealData = await fetchMealData();
-    console.log('급식 정보 가져오기 성공:', JSON.stringify(mealData));
+    // 환경 변수 확인 (디버깅용)
+    console.log('SUPABASE_URL 설정됨:', !!process.env.SUPABASE_URL);
+    console.log('SUPABASE_SERVICE_KEY 설정됨:', !!process.env.SUPABASE_SERVICE_KEY);
+    console.log('NEIS_API_KEY 설정됨:', !!process.env.NEIS_API_KEY);
     
-    // 알림 전송 시도 코드 제거 - 급식 사진 검증 시 별도로 처리해야 함
-    console.log('급식 정보만 업데이트하고 알림은 보내지 않습니다.');
-    // GitHub Actions에서 요청한 경우 skipped_by_request로 표시
-    const notificationStatus = skipNotification ? 'skipped_by_request' : 'disabled';
+    // 공용 모듈로 급식 정보 업데이트 직접 실행 (API 호출 없이)
+    const result = await updateAllMeals(DEFAULT_SCHOOLS);
     
-    // 응답 반환
+    console.log('급식 업데이트 결과:', JSON.stringify(result));
+    
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
         message: '급식 정보 업데이트 완료',
-        date: mealData.date,
-        menu: mealData.menu,
-        notificationStatus: notificationStatus,
-        skipNotification: skipNotification // 요청에서 skip_notification 파라미터가 지정되었는지 표시
+        date: new Date().toISOString(),
+        stats: {
+          total: result.total,
+          updated: result.updated,
+          inserted: result.inserted,
+          errors: result.errorCount
+        }
       })
     };
   } catch (error) {
-    console.error('급식 정보 업데이트 오류:', error);
+    console.error('급식 업데이트 실패:', error);
     
     return {
       statusCode: 500,
       body: JSON.stringify({
         success: false,
-        message: '급식 정보 업데이트 중 오류 발생',
         error: error instanceof Error ? error.message : String(error)
       })
     };
