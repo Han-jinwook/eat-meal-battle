@@ -297,7 +297,7 @@ exports.handler = async function(event, context) {
             ntr_info: {}
           };
           
-          // DB에 급식 없음 상태 저장
+          // DB에 급식 없음 상태 저장 - upsert 사용(테이블에 unique 제약조건 있음)
           const { data, error } = await supabase
             .from('meal_menus')
             .upsert([emptyMealData], { 
@@ -326,6 +326,7 @@ exports.handler = async function(event, context) {
         }
         
         // 3. DB에 저장 (meal_menus 테이블)
+        // 3. DB에 저장 (meal_menus 테이블) - upsert 사용(테이블에 unique 제약조간 있음)
         const { data, error } = await supabase
           .from('meal_menus')
           .upsert([mealData], { 
