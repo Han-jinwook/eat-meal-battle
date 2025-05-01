@@ -120,7 +120,6 @@ function parseMealInfo(data) {
         meal_type: mealType,
         menu_items: menuItems,
         kcal: meal.CAL_INFO || '정보 없음',
-        nutrition_info: meal.NTR_INFO || '정보 없음',
         origin_info: meal.ORPLC_INFO || '정보 없음',
         ntr_info: {}
       });
