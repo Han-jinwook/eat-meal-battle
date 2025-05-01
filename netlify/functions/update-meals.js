@@ -13,7 +13,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
 
 // 교육부 API 키
-const NEIS_API_KEY = process.env.NEIS_API_KEY || '';
+// 상수 선언이 아닌 반복 사용을 피하기 위해 상수 선언 제거
 
 // HTTP 요청 함수 (Node.js 환경에서 fetch 대신 사용)
 async function fetchWithPromise(url) {
@@ -96,7 +96,6 @@ function parseMealInfo(data) {
     for (const meal of mealRows) {
       // 기본 정보
       const schoolCode = meal.SD_SCHUL_CODE;
-      const officeCode = meal.ATPT_OFCDC_SC_CODE;
       
       // 날짜 형식 YYYYMMDD를 YYYY-MM-DD로 변경
       const dateStr = meal.MLSV_YMD; // YYYYMMDD 형식
@@ -116,7 +115,6 @@ function parseMealInfo(data) {
       
       meals.push({
         school_code: schoolCode,
-        office_code: officeCode,
         meal_date: mealDate,
         meal_type: mealType,
         menu_items: menuItems,
@@ -148,6 +146,9 @@ async function fetchMealData(schoolCode) {
     
     console.log(`급식 정보 조회: ${schoolCode} - ${dateStr}`);
     
+    // NEIS API 키 설정 여부 출력
+    console.log('NEIS_API_KEY 설정 여부:', process.env.NEIS_API_KEY ? '설정됨' : '설정되지 않음');
+    
     // NEIS API 호출 URL 구성
     const apiUrl = `${NEIS_API_BASE_URL}/mealServiceDietInfo`;
     const params = {
@@ -168,7 +169,7 @@ async function fetchMealData(schoolCode) {
     console.log('급식 API 응답 연결 성공');
     
     // API 키 설정 확인
-    console.log('NEIS_API_KEY 설정 여부:', NEIS_API_KEY ? '설정됨' : '설정되지 않음');
+    console.log('NEIS_API_KEY 설정 여부:', process.env.NEIS_API_KEY ? '설정됨' : '설정되지 않음');
     
     // 응답 처리 - 기존 parseMealInfo 함수 사용
     const meals = parseMealInfo(data);
@@ -177,7 +178,6 @@ async function fetchMealData(schoolCode) {
       // 데이터가 없는 경우 기본 값 반환
       return {
         school_code: schoolCode,
-        office_code: officeCode,
         meal_date: today,
         meal_type: 'lunch',
         menu_items: ['급식 정보가 없습니다'],
@@ -196,7 +196,6 @@ async function fetchMealData(schoolCode) {
     // 오류 발생 시 기본 데이터 반환
     return {
       school_code: schoolCode,
-      office_code: officeCode,
       meal_date: getTodayDate(),
       meal_type: 'lunch',
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
@@ -285,7 +284,7 @@ exports.handler = async function(event, context) {
         const { data, error } = await supabase
           .from('meal_menus')
           .upsert([mealData], { 
-            onConflict: 'school_code,office_code,meal_date,meal_type' 
+            onConflict: 'school_code,meal_date,meal_type' 
           });
           
         if (error) {
