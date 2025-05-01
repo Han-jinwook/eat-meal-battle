@@ -385,8 +385,8 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
-      // API 호출
-      const response = await fetch(`/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      // Netlify 함수로 API 호출 경로 변경
+      const response = await fetch(`/.netlify/functions/nextjs-server/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
       
       if (!response.ok) {
         throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);

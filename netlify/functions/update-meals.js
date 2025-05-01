@@ -282,9 +282,13 @@ exports.handler = async function(event, context) {
         // 급식 정보 가져오기 - 학교정보 테이블에서 가져온 교육청 코드 사용
         const mealData = await fetchMealData(school.school_code, school.office_code);
         
-        // 급식 정보 체크 - 아예 비어있거나 "급식 정보가 없습니다" 같은 기본 메시지만 있는 경우
+        // 급식 정보 체크 - 아예 비어있거나 "급식 정보가 없습니다" 같은 기본 메시지만 있는 경우 또는 fetch 오류 메시지를 포함하는 경우
         if (!mealData || !mealData.menu_items || mealData.menu_items.length === 0 || 
-            (mealData.menu_items.length === 1 && mealData.menu_items[0] === '급식 정보가 없습니다')) {
+            (mealData.menu_items.length === 1 && (
+              mealData.menu_items[0].includes('급식 정보가 없습니다') || 
+              mealData.menu_items[0].includes('오류가 발생') ||
+              mealData.menu_items[0].includes('정보 없음')
+            ))) {
           console.log(`[${school.school_code}] 학교 급식 정보 없음`);
           
           // 급식 없음 정보도 DB에 명시적으로 저장
