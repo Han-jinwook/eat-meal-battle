@@ -141,7 +141,7 @@ function parseMealInfo(data) {
  * @param officeCode 교육청 코드
  * @returns 급식 정보 객체
  */
-async function fetchMealData(schoolCode = 'J100000001', officeCode = 'B10') {
+async function fetchMealData(schoolCode = '7181040', officeCode = 'B10') {
   try {
     // 한국 시간 기준 오늘 날짜 (YYYYMMDD 형식)
     const dateStr = getTodayDate('YYYYMMDD');
@@ -231,12 +231,7 @@ exports.handler = async function(event, context) {
   }
   
   try {
-    // 1. 급식 정보 가져오기
-    console.log('급식 정보 가져오기 시작');
-    const mealData = await fetchMealData();
-    console.log('급식 정보 가져오기 성공:', JSON.stringify(mealData));
-    
-    // 2. Supabase에 저장
+    // Supabase 설정 확인
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Supabase 환경 변수가 설정되지 않았습니다');
     }
@@ -244,28 +239,96 @@ exports.handler = async function(event, context) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     console.log('Supabase 클라이언트 초기화 완료');
     
-    // 3. DB에 저장 (meal_menus 테이블)
-    const { data, error } = await supabase
-      .from('meal_menus')
-      .upsert([mealData], { 
-        onConflict: 'school_code,office_code,meal_date,meal_type' 
-      });
-      
-    if (error) {
-      console.error('Supabase DB 저장 오류:', error);
-      throw new Error(`DB 저장 실패: ${error.message}`);
+    // 1. DB에서 등록된 학교 정보 가져오기
+    console.log('등록된 학교 정보 조회 시작');
+    const { data: schoolData, error: schoolError } = await supabase
+      .from('school_infos')
+      .select('school_code, office_code, region');
+    
+    if (schoolError) {
+      throw new Error(`학교 정보 조회 실패: ${schoolError.message}`);
     }
     
-    console.log('급식 정보 DB 저장 성공');
+    if (!schoolData || schoolData.length === 0) {
+      throw new Error('등록된 학교 정보가 없습니다');
+    }
+    
+    console.log(`총 ${schoolData.length}개 학교의 급식 정보 업데이트 시작`);
+    
+    // 기본 결과 저장용 변수
+    const results = {
+      success: 0,
+      empty: 0,
+      error: 0,
+      details: []
+    };
+    
+    // 2. 각 학교별 급식 정보 가져오기
+    for (const school of schoolData) {
+      try {
+        console.log(`[${school.school_code}] 학교 급식 조회 시작`);
+        
+        // 급식 정보 가져오기
+        const mealData = await fetchMealData(school.school_code, school.office_code);
+        
+        // 급식 정보 체크 - 아예 비어있거나 "급식 정보가 없습니다" 같은 기본 메시지만 있는 경우
+        if (!mealData || !mealData.menu_items || mealData.menu_items.length === 0 || 
+            (mealData.menu_items.length === 1 && mealData.menu_items[0] === '급식 정보가 없습니다')) {
+          console.log(`[${school.school_code}] 학교 급식 정보 없음`);
+          results.empty++;
+          results.details.push({
+            school_code: school.school_code,
+            status: 'empty',
+            message: '급식 정보 없음'
+          });
+          continue; // 다음 학교로 이동
+        }
+        
+        // 3. DB에 저장 (meal_menus 테이블)
+        const { data, error } = await supabase
+          .from('meal_menus')
+          .upsert([mealData], { 
+            onConflict: 'school_code,office_code,meal_date,meal_type' 
+          });
+          
+        if (error) {
+          console.error(`[${school.school_code}] 학교 급식 정보 저장 오류:`, error);
+          results.error++;
+          results.details.push({
+            school_code: school.school_code,
+            status: 'error',
+            message: error.message
+          });
+        } else {
+          console.log(`[${school.school_code}] 학교 급식 정보 저장 성공`);
+          results.success++;
+          results.details.push({
+            school_code: school.school_code,
+            status: 'success',
+            menu_count: mealData.menu_items.length
+          });
+        }
+      } catch (schoolError) {
+        console.error(`[${school.school_code}] 학교 처리 중 오류:`, schoolError);
+        results.error++;
+        results.details.push({
+          school_code: school.school_code,
+          status: 'error',
+          message: schoolError.message
+        });
+      }
+      
+      // API 호출 제한을 위한 지연
+      await new Promise(resolve => setTimeout(resolve, 500)); 
+    }
     
     // 응답 반환
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: '급식 정보 업데이트 완료',
-        date: mealData.meal_date,
-        menu: mealData.menu_items,
+        message: `급식 정보 업데이트 완료: 성공 ${results.success}, 없음 ${results.empty}, 오류 ${results.error}`,
+        results: results,
         updated_at: new Date().toISOString()
       })
     };
