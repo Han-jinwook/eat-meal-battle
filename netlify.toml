@@ -18,10 +18,17 @@
   schedule = "30 10 * * *" # UTC 기준 10:30 (한국 시간 19:30)
   # 현재 한국시간 19:25 → 19:30에 실행
 
-# Next.js API 라우트 리다이렉트
+# Next.js API 라우트 리다이렉트 - 기본 설정
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/nextjs-server"
+  status = 200
+  force = true
+
+# 학교 검색 API 구체적 리다이렉트
+[[redirects]]
+  from = "/api/schools*"
+  to = "/.netlify/functions/nextjs-server/api/schools:splat"
   status = 200
   force = true
 
