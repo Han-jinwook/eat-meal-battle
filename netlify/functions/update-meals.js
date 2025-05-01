@@ -54,6 +54,88 @@ function getTodayDate(format = 'YYYY-MM-DD') {
 }
 
 /**
+ * NEIS API 응답에서 급식 정보 파싱
+ * @param {Object} data API 응답 객체
+ * @returns 파싱된 급식 정보 배열
+ */
+function parseMealInfo(data) {
+  // 결과값을 저장할 배열
+  const meals = [];
+  
+  try {
+    // API 응답에 급식 정보가 있는지 확인
+    if (!data.mealServiceDietInfo) {
+      console.log('급식 정보가 없습니다:', JSON.stringify(data));
+      return meals; // 급식 정보가 없으면 빈 배열 반환
+    }
+    
+    const mealServiceDietInfo = data.mealServiceDietInfo;
+    
+    // 헤더와 바디 분리 (표준 NEIS API 형식)
+    if (!mealServiceDietInfo[0] || !mealServiceDietInfo[0].head) {
+      console.log('응답 형식 오류 (head 없음):', JSON.stringify(mealServiceDietInfo));
+      return meals;
+    }
+    
+    const header = mealServiceDietInfo[0].head;
+    
+    // 응답 성공 여부 확인
+    if (!header[1] || !header[1].RESULT || header[1].RESULT.CODE !== 'INFO-000') {
+      console.log('급식 조회 응답 에러:', header[1]?.RESULT?.MESSAGE || 'Unknown error');
+      return meals;
+    }
+    
+    // 데이터 확인
+    if (!mealServiceDietInfo[1] || !mealServiceDietInfo[1].row || mealServiceDietInfo[1].row.length === 0) {
+      console.log('검색된 급식 정보가 없습니다.');
+      return meals;
+    }
+    
+    // 모든 급식 객체 처리
+    const mealRows = mealServiceDietInfo[1].row;
+    for (const meal of mealRows) {
+      // 기본 정보
+      const schoolCode = meal.SD_SCHUL_CODE;
+      const officeCode = meal.ATPT_OFCDC_SC_CODE;
+      
+      // 날짜 형식 YYYYMMDD를 YYYY-MM-DD로 변경
+      const dateStr = meal.MLSV_YMD; // YYYYMMDD 형식
+      const mealDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+      
+      // 식단 파싱 (구분자 <br/>)
+      const menuText = meal.DDISH_NM;
+      const menuItems = menuText ? menuText.split('<br/>') : [];
+      
+      // 급식 종류 파싱 (1: 조식, 2: 중식, 3: 석식)
+      let mealType = 'lunch'; // 기본값
+      if (meal.MMEAL_SC_CODE) {
+        if (meal.MMEAL_SC_CODE === '1') mealType = 'breakfast';
+        else if (meal.MMEAL_SC_CODE === '2') mealType = 'lunch';
+        else if (meal.MMEAL_SC_CODE === '3') mealType = 'dinner';
+      }
+      
+      meals.push({
+        school_code: schoolCode,
+        office_code: officeCode,
+        meal_date: mealDate,
+        meal_type: mealType,
+        menu_items: menuItems,
+        kcal: meal.CAL_INFO || '정보 없음',
+        nutrition_info: meal.NTR_INFO || '정보 없음',
+        origin_info: meal.ORPLC_INFO || '정보 없음',
+        ntr_info: {}
+      });
+    }
+    
+    console.log(`파싱된 급식 정보: ${meals.length}개`);
+    return meals;
+  } catch (error) {
+    console.error('급식 정보 파싱 오류:', error);
+    return meals;
+  }
+}
+
+/**
  * 급식 정보 가져오기 함수
  * @param schoolCode 학교 코드
  * @param officeCode 교육청 코드
@@ -85,16 +167,16 @@ async function fetchMealData(schoolCode = 'J100000001', officeCode = 'B10') {
     // API 호출
     const data = await fetchWithPromise(fullUrl);
     
-    // 응답 데이터 파싱
-    if (!data.mealServiceDietInfo) {
-      console.log('급식 정보가 없습니다: ', JSON.stringify(data));
-      throw new Error('교육부 API 응답 형식 오류');
-    }
+    // 응답 데이터 간단한 로그
+    console.log('급식 API 응답 연결 성공');
     
-    const [header, body] = [data.mealServiceDietInfo[0].head, data.mealServiceDietInfo[1].row];
+    // API 키 설정 확인
+    console.log('NEIS_API_KEY 설정 여부:', NEIS_API_KEY ? '설정됨' : '설정되지 않음');
     
-    if (header[1].RESULT.CODE !== 'INFO-000' || !body || body.length === 0) {
-      console.log('급식 정보가 없습니다: ', header[1].RESULT.MESSAGE);
+    // 응답 처리 - 기존 parseMealInfo 함수 사용
+    const meals = parseMealInfo(data);
+    
+    if (meals.length === 0) {
       // 데이터가 없는 경우 기본 값 반환
       return {
         school_code: schoolCode,
@@ -109,27 +191,8 @@ async function fetchMealData(schoolCode = 'J100000001', officeCode = 'B10') {
       };
     }
     
-    // 급식 메뉴 파싱
-    const mealInfo = body[0];
-    const menuItems = mealInfo.DDISH_NM.split('<br/>');
-    
-    // 영양 정보 파싱
-    const nutritionInfo = mealInfo.NTR_INFO || '정보 없음';
-    
-    // 원산지 정보 파싱
-    const originInfo = mealInfo.ORPLC_INFO || '정보 없음';
-    
-    return {
-      school_code: schoolCode,
-      office_code: officeCode,
-      meal_date: today,
-      meal_type: 'lunch',
-      menu_items: menuItems,
-      kcal: mealInfo.CAL_INFO || '정보 없음',
-      nutrition_info: nutritionInfo,
-      origin_info: originInfo,
-      ntr_info: {}
-    };
+    // 처음 찾은 급식 정보 반환
+    return meals[0];
   } catch (error) {
     console.error('급식 정보 조회 실패:', error);
     
