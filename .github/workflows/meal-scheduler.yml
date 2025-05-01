@@ -5,27 +5,21 @@ on:
     # 매일 오전 10시에 실행 (한국 시간, UTC+9)
     # UTC 기준으로는 오전 1시
     - cron: '0 1 * * *'
-  # 수동으로도 실행 가능하도록 설정
   workflow_dispatch: {}
 
 jobs:
   update-meals:
     runs-on: ubuntu-latest
     steps:
-      # 작업 시작
       - name: 급식 정보 업데이트 작업 시작
         run: echo "급식 정보 업데이트 작업 시작: $(date)"
 
-      # 네트리파이 함수 직접 호출
       - name: Netlify 함수 호출
         env:
           API_KEY: ${{ secrets.CRON_API_KEY }}
-          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+          NETLIFY_URL: ${{ secrets.NETLIFY_URL }}
         run: |
           echo "급식 업데이트 함수 호출 시작"
-          echo "호출 URL: ${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=***"
-          
-          # Netlify 함수 직접 호출
-          curl -f -s -S -v "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}"
-          
+          echo "호출 URL: ${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}"
+          curl -f -s -S "${NETLIFY_URL}/.netlify/functions/cron-meals?api_key=${API_KEY}"
           echo "급식 정보 업데이트 함수 호출 완료!"
