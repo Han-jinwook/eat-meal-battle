@@ -63,9 +63,15 @@ export default function SchoolSearchPage() {
     setError('');
 
     try {
-      // 실제 API 호출
-      const response = await fetch(`/api/schools?keyword=${encodeURIComponent(keyword)}`);
+      // 실제 API 호출 - 절대 경로 사용
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const apiUrl = `${baseUrl}/api/schools?keyword=${encodeURIComponent(keyword)}`;
+      
+      console.log('학교 검색 API 요청 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       if (!response.ok) {
+        console.error('학교 검색 API 응답 오류:', response.status, response.statusText);
         throw new Error('학교 검색에 실패했습니다');
       }
       const data = await response.json();
