@@ -96,6 +96,7 @@ function parseMealInfo(data) {
     for (const meal of mealRows) {
       // 기본 정보
       const schoolCode = meal.SD_SCHUL_CODE;
+      const officeCode = meal.ATPT_OFCDC_SC_CODE; // 교육청 코드 기록
       
       // 날짜 형식 YYYYMMDD를 YYYY-MM-DD로 변경
       const dateStr = meal.MLSV_YMD; // YYYYMMDD 형식
@@ -136,15 +137,16 @@ function parseMealInfo(data) {
 /**
  * 급식 정보 가져오기 함수
  * @param schoolCode 학교 코드
+ * @param officeCode 교육청 코드
  * @returns 급식 정보 객체
  */
-async function fetchMealData(schoolCode) {
+async function fetchMealData(schoolCode, officeCode) {
   try {
     // 한국 시간 기준 오늘 날짜 (YYYYMMDD 형식)
     const dateStr = getTodayDate('YYYYMMDD');
-    const today = getTodayDate(); // YYYY-MM-DD 형식
+    const today = getTodayDate();
     
-    console.log(`급식 정보 조회: ${schoolCode} - ${dateStr}`);
+    console.log(`급식 정보 조회: ${schoolCode} (${officeCode}) - ${dateStr}`);
     
     // NEIS API 키 설정 여부 출력
     console.log('NEIS_API_KEY 설정 여부:', process.env.NEIS_API_KEY ? '설정됨' : '설정되지 않음');
@@ -154,9 +156,10 @@ async function fetchMealData(schoolCode) {
     const params = {
       KEY: process.env.NEIS_API_KEY,
       Type: 'json',
-      SD_SCHUL_CODE: schoolCode,     // 학교 코드
-      MLSV_YMD: dateStr,             // 조회할 날짜(YYYYMMDD)
-      pSize: 100                     // 가져올 항목 수
+      ATPT_OFCDC_SC_CODE: officeCode, // 교육청 코드 (필수값)
+      SD_SCHUL_CODE: schoolCode,      // 학교 코드
+      MLSV_YMD: dateStr,              // 조회할 날짜(YYYYMMDD)
+      pSize: 100                      // 가져올 항목 수
     };
     const queryParams = new URLSearchParams(params);
     const fullUrl = `${apiUrl}?${queryParams.toString()}`;
@@ -239,7 +242,7 @@ exports.handler = async function(event, context) {
     console.log('등록된 학교 정보 조회 시작');
     const { data: schoolData, error: schoolError } = await supabase
       .from('school_infos')
-      .select('school_code');
+      .select('school_code, office_code');
     
     if (schoolError) {
       throw new Error(`학교 정보 조회 실패: ${schoolError.message}`);
@@ -264,8 +267,20 @@ exports.handler = async function(event, context) {
       try {
         console.log(`[${school.school_code}] 학교 급식 조회 시작`);
         
-        // 급식 정보 가져오기 - 교육청 코드는 함수 내부에서 자동으로 추정
-        const mealData = await fetchMealData(school.school_code);
+        // 교육청 코드 유효성 확인
+        if (!school.office_code) {
+          console.log(`[${school.school_code}] 학교의 교육청 코드가 없습니다`);
+          results.error++;
+          results.details.push({
+            school_code: school.school_code,
+            status: 'error',
+            message: '교육청 코드 없음'
+          });
+          continue; // 다음 학교로 이동
+        }
+        
+        // 급식 정보 가져오기 - 학교정보 테이블에서 가져온 교육청 코드 사용
+        const mealData = await fetchMealData(school.school_code, school.office_code);
         
         // 급식 정보 체크 - 아예 비어있거나 "급식 정보가 없습니다" 같은 기본 메시지만 있는 경우
         if (!mealData || !mealData.menu_items || mealData.menu_items.length === 0 || 
