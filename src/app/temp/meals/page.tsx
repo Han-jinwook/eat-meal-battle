@@ -391,12 +391,15 @@ export default function MealsPage() {
       // DB에서 바로 조회하도록 수정 - 네트워크 요청 없이 직접 DB 접근
       try {
         // 1. Supabase에서 직접 급식 정보 조회
+        // 날짜 형식을 DB와 맞추기 (2025-04-25 -> 20250425)
         const formattedDate = date.replace(/-/g, '');
+        console.log(`DB 조회 날짜 형식 변환: ${date} -> ${formattedDate}`);
+        
         const { data: mealData, error: mealError } = await supabase
           .from('meal_menus')
           .select('*')
           .eq('school_code', schoolCode)
-          .eq('meal_date', date)
+          .eq('meal_date', formattedDate) // 하이픈 제거한 형식으로 조회
           .order('meal_type', { ascending: true });
           
         if (mealError) {

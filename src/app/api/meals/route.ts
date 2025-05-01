@@ -87,15 +87,7 @@ function parseMealInfo(apiResponse: any) {
           meal_type: meal.MMEAL_SC_NM, // 조식, 중식, 석식
           menu_items: menuItems,
           kcal: meal.CAL_INFO || null,
-          nutrition_info: {
-            carbohydrate: meal.CRBHYD || null,
-            protein: meal.PROTN || null,
-            fat: meal.FAT || null,
-            calcium: meal.CA || null,
-            iron: meal.FE || null,
-            vitamin_a: meal.VITA || null,
-            vitamin_c: meal.VITC || null,
-          },
+          // nutrition_info 필드 제거
           origin_info: meal.ORPLC_INFO || null,
           ntr_info: meal.NTR_INFO || null,
           raw_data: meal,
@@ -402,7 +394,7 @@ export async function POST(request: Request) {
         meal_type: meal.meal_type,
         menu_items: meal.menu_items,
         kcal: meal.kcal,
-        nutrition_info: meal.nutrition_info,
+        // nutrition_info 필드 제거
         origin_info: meal.origin_info,
         ntr_info: meal.ntr_info
       }));
@@ -436,7 +428,7 @@ export async function POST(request: Request) {
               .update({
                 menu_items: meal.menu_items,
                 kcal: meal.kcal,
-                nutrition_info: meal.nutrition_info,
+                // nutrition_info 필드 제거
                 origin_info: meal.origin_info,
                 ntr_info: meal.ntr_info,
                 updated_at: new Date().toISOString()
