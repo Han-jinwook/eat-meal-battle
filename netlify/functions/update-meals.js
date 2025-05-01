@@ -185,7 +185,6 @@ async function fetchMealData(schoolCode, officeCode) {
         meal_type: 'lunch',
         menu_items: ['급식 정보가 없습니다'],
         kcal: '0kcal',
-        nutrition_info: '정보 없음',
         origin_info: '정보 없음',
         ntr_info: {}
       };
@@ -203,7 +202,6 @@ async function fetchMealData(schoolCode, officeCode) {
       meal_type: 'lunch',
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
       kcal: '0kcal',
-      nutrition_info: '정보 없음',
       origin_info: '정보 없음',
       ntr_info: {}
     };
