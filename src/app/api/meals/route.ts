@@ -224,9 +224,9 @@ export async function GET(request: Request) {
           meal_type: meal.meal_type,
           menu_items: meal.menu_items,
           kcal: meal.kcal,
-          nutrition_info: meal.nutrition_info,
+          // nutrition_info 필드 제거 (DB 스키마 변경에 맞추기)
           origin_info: meal.origin_info,
-          ntr_info: meal.ntr_info
+          ntr_info: meal.ntr_info || {}
         }));
         
         // DB에 저장
@@ -246,22 +246,26 @@ export async function GET(request: Request) {
           office_code: officeCode,
           meal_date: date,
           meal_type: 'empty', // 빈 급식 정보를 표시하는 특별 타입
-          menu_items: [],
-          kcal: null,
-          nutrition_info: {},
+          menu_items: ['급식 정보가 없습니다'],
+          kcal: '0kcal',
+          // nutrition_info 필드 제거
           origin_info: null,
-          ntr_info: null
+          ntr_info: {}
         };
         
-        // DB에 빈 급식 정보 저장
-        const { error: insertEmptyError } = await supabase
-          .from('meal_menus')
-          .insert([emptyRecord]);
-          
-        if (insertEmptyError) {
-          console.error('빈 급식 정보 DB 저장 오류:', insertEmptyError);
-        } else {
-          console.log(`${date} 날짜의 빈 급식 정보를 DB에 저장했습니다.`);
+        try {
+          // DB에 빈 급식 정보 저장
+          const { error: emptyInsertError } = await supabase
+            .from('meal_menus')
+            .insert([emptyRecord]);
+            
+          if (emptyInsertError) {
+            console.error('빈 급식 정보 DB 저장 오류:', emptyInsertError);
+          } else {
+            console.log('빈 급식 정보를 DB에 저장했습니다.');
+          }
+        } catch (saveError) {
+          console.error('빈 급식 정보 저장 오류:', saveError);
         }
         
         // API 응답에 오류 코드가 있는지 확인
