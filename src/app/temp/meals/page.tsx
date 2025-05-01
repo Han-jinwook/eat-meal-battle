@@ -385,8 +385,37 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
-      // Netlify 함수로 API 호출 경로 변경
-      const response = await fetch(`/.netlify/functions/nextjs-server/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      // 원래 API 경로로 돌아가기
+      console.log(`급식 정보 API 호출: /api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      
+      // DB에서 바로 조회하도록 수정 - 네트워크 요청 없이 직접 DB 접근
+      try {
+        // 1. Supabase에서 직접 급식 정보 조회
+        const formattedDate = date.replace(/-/g, '');
+        const { data: mealData, error: mealError } = await supabase
+          .from('meal_menus')
+          .select('*')
+          .eq('school_code', schoolCode)
+          .eq('meal_date', date)
+          .order('meal_type', { ascending: true });
+          
+        if (mealError) {
+          throw new Error(`DB 조회 오류: ${mealError.message}`);
+        }
+        
+        if (mealData && mealData.length > 0) {
+          // DB에서 가져온 기존 급식 정보 사용
+          setMeals(mealData);
+          setDataSource('database');
+          setError('');
+          return;
+        }
+      } catch (dbErr) {
+        console.error('DB 조회 오류:', dbErr);
+      }
+      
+      // 2. DB에 없으면 전통적인 API 호출 시도
+      const response = await fetch(`/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
       
       if (!response.ok) {
         throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
