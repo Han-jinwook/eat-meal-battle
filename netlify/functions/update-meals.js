@@ -138,29 +138,26 @@ function parseMealInfo(data) {
 /**
  * 급식 정보 가져오기 함수
  * @param schoolCode 학교 코드
- * @param officeCode 교육청 코드
  * @returns 급식 정보 객체
  */
-async function fetchMealData(schoolCode = '7181040', officeCode = 'B10') {
+async function fetchMealData(schoolCode) {
   try {
     // 한국 시간 기준 오늘 날짜 (YYYYMMDD 형식)
     const dateStr = getTodayDate('YYYYMMDD');
     const today = getTodayDate(); // YYYY-MM-DD 형식
     
-    console.log(`급식 정보 조회: ${schoolCode}(${officeCode}) - ${dateStr}`);
+    console.log(`급식 정보 조회: ${schoolCode} - ${dateStr}`);
     
     // NEIS API 호출 URL 구성
     const apiUrl = `${NEIS_API_BASE_URL}/mealServiceDietInfo`;
-    const queryParams = new URLSearchParams({
-      KEY: NEIS_API_KEY,
+    const params = {
+      KEY: process.env.NEIS_API_KEY,
       Type: 'json',
-      pIndex: '1',
-      pSize: '100',
-      ATPT_OFCDC_SC_CODE: officeCode, // 시도교육청코드
-      SD_SCHUL_CODE: schoolCode,      // 표준학교코드
-      MLSV_YMD: dateStr,              // 급식일자
-    });
-    
+      SD_SCHUL_CODE: schoolCode,     // 학교 코드
+      MLSV_YMD: dateStr,             // 조회할 날짜(YYYYMMDD)
+      pSize: 100                     // 가져올 항목 수
+    };
+    const queryParams = new URLSearchParams(params);
     const fullUrl = `${apiUrl}?${queryParams.toString()}`;
     console.log(`급식 API 요청 URL: ${fullUrl}`);
     
@@ -243,7 +240,7 @@ exports.handler = async function(event, context) {
     console.log('등록된 학교 정보 조회 시작');
     const { data: schoolData, error: schoolError } = await supabase
       .from('school_infos')
-      .select('school_code, office_code, region');
+      .select('school_code');
     
     if (schoolError) {
       throw new Error(`학교 정보 조회 실패: ${schoolError.message}`);
@@ -268,8 +265,8 @@ exports.handler = async function(event, context) {
       try {
         console.log(`[${school.school_code}] 학교 급식 조회 시작`);
         
-        // 급식 정보 가져오기
-        const mealData = await fetchMealData(school.school_code, school.office_code);
+        // 급식 정보 가져오기 - 교육청 코드는 함수 내부에서 자동으로 추정
+        const mealData = await fetchMealData(school.school_code);
         
         // 급식 정보 체크 - 아예 비어있거나 "급식 정보가 없습니다" 같은 기본 메시지만 있는 경우
         if (!mealData || !mealData.menu_items || mealData.menu_items.length === 0 || 
