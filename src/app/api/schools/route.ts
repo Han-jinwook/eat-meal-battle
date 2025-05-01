@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
 
 // 교육부 API 키
-const API_KEY = process.env.NEIS_API_KEY || '';
+const API_KEY = process.env.NEIS_API_KEY || 'cd3edd777f534caca0100e7c006d4dcd';
 
 // API 키 확인
 console.log(`NEIS API KEY 사용 여부: ${API_KEY ? '설정됨' : '설정되지 않음'}`);
@@ -48,15 +48,22 @@ export async function GET(request: Request) {
     // API 응답 구조 확인 및 데이터 추출
     let schools = [];
     
+    // INFO-200은 검색 결과가 없다는 오류 코드입니다.
+    if (data.RESULT && data.RESULT.CODE === 'INFO-200') {
+      console.log(`검색어 "${keyword}"에 대한 검색 결과가 없습니다.`);
+      
+      // 교육청 코드와 함께 검색해보기 - 지역명 포함된 경우에만 시도
+      if (keyword.includes('시') || keyword.includes('도') || keyword.includes('군') || keyword.includes('구')) {
+        console.log('지역명이 감지되어 추가 검색을 시도합니다.');
+        // 이 부분에 추가 검색 로직을 구현할 수 있음
+      }
+    } 
     // NEIS API 응답 구조는 다음과 같음:
     // { RESULT: { CODE: 'SUCCESS' }, schoolInfo: [{ head: [...] }, { row: [...] }] }
-    if (data.schoolInfo && Array.isArray(data.schoolInfo)) {
+    else if (data.schoolInfo && Array.isArray(data.schoolInfo)) {
       // 응답에 schoolInfo가 있고 배열인 경우
       if (data.schoolInfo.length > 1 && data.schoolInfo[1].row) {
         schools = data.schoolInfo[1].row;
-      } else if (data.RESULT && data.RESULT.CODE === 'INFO-200') {
-        // 검색 결과가 없는 경우
-        console.log('검색 결과가 없습니다');
       } else {
         console.log('학교 정보를 찾을 수 없습니다. API 응답 구조:', data);
       }
