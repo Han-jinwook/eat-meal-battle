@@ -9,6 +9,14 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Netlify 스케줄된 함수 설정
+[functions.update-meals]
+  # 실제 운영 스케줄 (주석 처리)
+  # schedule = "0 1 * * *" # 매일 한국 시간 오전 10시 (UTC 기준 오전 1시)
+  
+  # 테스트용 스케줄 (5분 후 실행)
+  schedule = "30 * * * *" # 매 시간 30분에 실행 (현재 09:24 → 09:30에 실행)
+
 # Next.js API 라우트 리다이렉트
 [[redirects]]
   from = "/api/*"
@@ -16,5 +24,9 @@
   status = 200
   force = true
 
-# 특정 API 엔드포인트 리다이렉트 제거 - Next.js API 라우트가 처리하도록 함
-# Next.js는 src/pages/api/cron/meals.ts 파일을 통해 이 경로를 처리합니다
+# 급식 업데이트 API 엔드포인트 접근 허용
+[[redirects]]
+  from = "/.netlify/functions/update-meals"
+  to = "/.netlify/functions/update-meals"
+  status = 200
+  force = true
