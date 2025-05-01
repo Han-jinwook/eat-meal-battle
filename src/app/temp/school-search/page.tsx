@@ -11,6 +11,8 @@ interface School {
   LCTN_SC_NM: string; // 지역명
   SCHUL_KND_SC_NM: string; // 학교 종류
   ORG_RDNMA: string; // 주소
+  ATPT_OFCDC_SC_CODE: string; // 교육청 코드
+  ORG_RDNDA?: string; // 상세 주소(선택적)
 }
 
 // 학년/반 데이터 타입
@@ -143,7 +145,8 @@ export default function SchoolSearchPage() {
         region: selectedSchool.LCTN_SC_NM,
         address: `${selectedSchool.ORG_RDNMA} ${selectedSchool.ORG_RDNDA || ''}`.trim(),
         grade: parseInt(classInfo.grade),
-        class_number: parseInt(classInfo.classNumber)
+        class_number: parseInt(classInfo.classNumber),
+        office_code: selectedSchool.ATPT_OFCDC_SC_CODE // 교육청 코드 저장
       };
       
       // 1. school_infos 테이블에 학교 정보 저장 (upsert - 이미 있으면 업데이트)
