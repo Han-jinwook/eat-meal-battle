@@ -286,12 +286,42 @@ exports.handler = async function(event, context) {
         if (!mealData || !mealData.menu_items || mealData.menu_items.length === 0 || 
             (mealData.menu_items.length === 1 && mealData.menu_items[0] === '급식 정보가 없습니다')) {
           console.log(`[${school.school_code}] 학교 급식 정보 없음`);
-          results.empty++;
-          results.details.push({
+          
+          // 급식 없음 정보도 DB에 명시적으로 저장
+          const emptyMealData = {
             school_code: school.school_code,
-            status: 'empty',
-            message: '급식 정보 없음'
-          });
+            meal_date: getTodayDate(),
+            meal_type: 'lunch',
+            menu_items: ['급식 정보가 없습니다'],
+            kcal: '0kcal',
+            ntr_info: {}
+          };
+          
+          // DB에 급식 없음 상태 저장
+          const { data, error } = await supabase
+            .from('meal_menus')
+            .upsert([emptyMealData], { 
+              onConflict: 'school_code,meal_date,meal_type' 
+            });
+            
+          if (error) {
+            console.error(`[${school.school_code}] 급식 없음 정보 저장 오류:`, error);
+            results.error++;
+            results.details.push({
+              school_code: school.school_code,
+              status: 'error',
+              message: `급식 없음 정보 저장 실패: ${error.message}`
+            });
+          } else {
+            console.log(`[${school.school_code}] 급식 없음 정보 저장 성공`);
+            results.empty++;
+            results.details.push({
+              school_code: school.school_code,
+              status: 'empty_saved',
+              message: '급식 정보 없음 (저장됨)'
+            });
+          }
+          
           continue; // 다음 학교로 이동
         }
         
