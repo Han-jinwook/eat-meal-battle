@@ -63,9 +63,18 @@ export default function SchoolSearchPage() {
     setError('');
 
     try {
-      // 실제 API 호출 - 절대 경로 사용
+      // 실제 API 호출 - 프로덕션과 개발 환경 구분
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const apiUrl = `${baseUrl}/api/schools?keyword=${encodeURIComponent(keyword)}`;
+      let apiUrl;
+      
+      // 프로덕션 환경에서는 Netlify Functions를 사용
+      if (baseUrl.includes('lunbat.com') || baseUrl.includes('netlify')) {
+        // Netlify Functions 경로로 호출
+        apiUrl = `${baseUrl}/.netlify/functions/schools?keyword=${encodeURIComponent(keyword)}`;
+      } else {
+        // 개발 환경에서는 기존 API 경로 유지
+        apiUrl = `${baseUrl}/api/schools?keyword=${encodeURIComponent(keyword)}`;
+      }
       
       console.log('학교 검색 API 요청 URL:', apiUrl);
       
