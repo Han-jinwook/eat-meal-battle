@@ -417,9 +417,17 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
-      // API 호출 - 절대 URL 사용 (프로덕션 환경 호환성)
+      // API 호출 - 프로덕션/개발 환경 구분하여 처리
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const response = await fetch(`${baseUrl}/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      const isProduction = baseUrl.includes('lunbat.com');
+      
+      // 프로덕션 환경에서는 netlify 함수로 직접 요청
+      const apiUrl = isProduction 
+        ? `${baseUrl}/.netlify/functions/___netlify-server-handler/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`
+        : `${baseUrl}/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
+      
+      console.log(`API 요청 URL: ${apiUrl}`);
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
