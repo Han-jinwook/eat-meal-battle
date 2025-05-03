@@ -269,15 +269,21 @@ exports.handler = async function(event, context) {
   
   try {
     // 쿼리 파라미터 파싱
-    const { school_code, office_code, date } = event.queryStringParameters || {};
+    const queryParams = event.queryStringParameters || {};
+    const { school_code, office_code, date } = queryParams;
+    
+    console.log('수신된 쿼리 파라미터:', JSON.stringify(queryParams));
+    console.log('호출 URL:', event.rawUrl || event.path);
     
     // 필수 파라미터 체크
     if (!school_code || !office_code) {
+      console.log('필수 파라미터 누락:', { school_code, office_code });
       return {
         statusCode: 400,
         body: JSON.stringify({ 
           error: '파라미터 오류', 
-          message: 'school_code와 office_code는 필수 파라미터입니다' 
+          message: 'school_code와 office_code는 필수 파라미터입니다',
+          received: queryParams
         })
       };
     }

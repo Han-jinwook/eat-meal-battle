@@ -39,5 +39,9 @@
   status = 200
   force = true
 
-# update-meals 함수 직접 접근 (리다이렉트 규칙 수정)
-# Netlify는 /.netlify 경로로 시작하는 리다이렉트를 허용하지 않음
+# API 경로를 Netlify Functions로 리다이렉트
+[[redirects]]
+  from = "/api/meals"
+  to = "/.netlify/functions/meals"
+  status = 200
+  force = true

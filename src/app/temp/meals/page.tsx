@@ -408,28 +408,34 @@ export default function MealsPage() {
     }
 
     try {
-      setIsLoading(true);
-      setError('');
-
-      // 사용자 학교 정보에서 교육청 코드 가져오기
-      const officeCode = userSchool?.office_code || getOfficeCode(userSchool?.region || '');
-      
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
-      
-      // API 호출 - 상대 경로 사용 (어느 환경에서도 동일하게 동작)
-      // Next.js와 Netlify의 통합 환경에서는 상대 경로를 사용하는 것이 가장 안정적
+
+      // 기본 API URL 구성 - 상대 경로
       const apiUrl = `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
-      
+
+      // 로직의 명확성을 위해 경로를 출력
       console.log(`API 요청 URL: ${apiUrl}`);
-      const response = await fetch(apiUrl);
-      
+
+      // 첫번째 시도 - 기본 API 경로 (상대경로)
+      let response = await fetch(apiUrl);
+
+      // 기본 API 요청이 실패하면 Netlify Functions로 직접 시도
       if (!response.ok) {
-        throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
+        console.log(`첫번째 시도 실패: ${response.status}. Netlify Functions으로 재시도합니다.`);
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const netlifyFunctionUrl = `${baseUrl}/.netlify/functions/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
+
+        console.log(`Netlify Functions 요청 URL: ${netlifyFunctionUrl}`);
+        response = await fetch(netlifyFunctionUrl);
+
+        if (!response.ok) {
+          throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
+        }
       }
-      
+
       const data = await response.json();
-      
+
       // 데이터 소스 표시
       setDataSource(data.source || 'unknown');
       
