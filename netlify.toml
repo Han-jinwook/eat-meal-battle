@@ -39,9 +39,5 @@
   status = 200
   force = true
 
-# 급식 업데이트 API 엔드포인트 접근 허용
-[[redirects]]
-  from = "/.netlify/functions/update-meals"
-  to = "/.netlify/functions/update-meals"
-  status = 200
-  force = true
+# update-meals 함수 직접 접근 (리다이렉트 규칙 수정)
+# Netlify는 /.netlify 경로로 시작하는 리다이렉트를 허용하지 않음
