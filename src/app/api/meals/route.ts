@@ -273,11 +273,11 @@ export async function GET(request: Request) {
           school_code: schoolCode,
           office_code: officeCode,
           meal_date: formattedDate,  // 통일된 날짜 형식 사용
-          meal_type: 'empty', // 빈 급식 정보를 표시하는 특별 타입
+          meal_type: '중식', // 빈 급식 정보 표시용, 스케줄러와 형식 통일
           menu_items: ['급식 정보가 없습니다'],
           kcal: '0 kcal',    // 통일한 형식으로 변경
           // nutrition_info 필드 제거
-          origin_info: null,
+          origin_info: [],
           ntr_info: {}
         };
         
@@ -364,10 +364,10 @@ export async function GET(request: Request) {
           school_code: schoolCode,
           office_code: officeCode,
           meal_date: formattedDate,
-          meal_type: 'empty',
+          meal_type: '중식',
           menu_items: ['급식 정보가 없습니다 (주말 또는 공휴일)'],
           kcal: '0 kcal',
-          origin_info: null,
+          origin_info: [],
           ntr_info: {}
         };
         

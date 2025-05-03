@@ -316,11 +316,15 @@ export default function MealsPage() {
   };
 
   // 원산지 정보 포맷팅
-  const formatOriginInfo = (originInfo: string) => {
-    if (!originInfo) return '원산지 정보가 없습니다.';
+  const formatOriginInfo = (originInfo: any) => {
+    // originInfo가 없거나 빈 배열이거나 빈 문자열일 경우 처리
+    if (!originInfo || (Array.isArray(originInfo) && originInfo.length === 0) || originInfo === '[]') {
+      return '상세 원산지 정보가 없습니다.';
+    }
 
-    // <br>, <br/> 태그를 줄바꿈으로 변환
-    let clean = originInfo.replace(/<br\s*\/?>/gi, '\n');
+    // 문자열로 변환 및 <br>, <br/> 태그를 줄바꿈으로 변환
+    let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+    let clean = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
 
     // 각 줄별로 정리, "비고", "국내산(한우)" 등 제외
     const lines = clean
@@ -502,13 +506,27 @@ export default function MealsPage() {
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
                 날짜 선택
               </label>
-              <input
-                type="date"
-                id="date"
-                value={selectedDate}
-                onChange={handleDateChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="flex items-center">
+                <input
+                  type="date"
+                  id="date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+                {selectedDate && (
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    {(() => {
+                      const date = new Date(selectedDate);
+                      if (!isNaN(date.getTime())) {
+                        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                        return `(${weekdays[date.getDay()]})`; // 요일 표시
+                      }
+                      return '';
+                    })()}
+                  </span>
+                )}
+              </div>
             </div>
             {isLoading && (
               <div className="flex items-center text-gray-600 mt-2">
