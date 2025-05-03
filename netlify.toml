@@ -32,6 +32,13 @@
   status = 200
   force = true
 
+# 급식 정보 API 구체적 리다이렉트
+[[redirects]]
+  from = "/api/meals*"
+  to = "/.netlify/functions/nextjs-server/api/meals:splat"
+  status = 200
+  force = true
+
 # 급식 업데이트 API 엔드포인트 접근 허용
 [[redirects]]
   from = "/.netlify/functions/update-meals"
