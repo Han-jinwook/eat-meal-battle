@@ -411,13 +411,29 @@ export default function MealsPage() {
       setIsLoading(true);
       setError('');
       
-      // 사용자 학교 정보에서 교육청 코드 가져오기
-      const officeCode = userSchool?.office_code || getOfficeCode(userSchool?.region || '');
+      // 교육청 코드 가져오기 (중요!)
+      // 기본값 설정으로 인첩 교육청 코드 'E10' 사용
+      let officeCode = 'E10';
+      
+      if (userSchool) {
+        // 학교 정보에 교육청 코드가 있으면 사용
+        if (userSchool.office_code) {
+          officeCode = userSchool.office_code;
+          console.log(`학교 office_code 사용: ${officeCode}`);
+        }
+        // 없으면 지역 정보에서 추출 시도
+        else if (userSchool.region) {
+          officeCode = getOfficeCode(userSchool.region);
+          console.log(`지역에서 office_code 추출: ${officeCode}, 지역: ${userSchool.region}`);
+        }
+      }
+
+      console.log(`최종 사용 office_code: ${officeCode}`);
       
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
-
-      // 기본 API URL 구성 - 상대 경로
+      
+      // API URL 구성
       const apiUrl = `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
 
       // 로직의 명확성을 위해 경로를 출력
