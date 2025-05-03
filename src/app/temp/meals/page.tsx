@@ -408,6 +408,12 @@ export default function MealsPage() {
     }
 
     try {
+      setIsLoading(true);
+      setError('');
+      
+      // 사용자 학교 정보에서 교육청 코드 가져오기
+      const officeCode = userSchool?.office_code || getOfficeCode(userSchool?.region || '');
+      
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
 
