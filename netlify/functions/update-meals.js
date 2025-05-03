@@ -107,11 +107,28 @@ function parseMealInfo(data) {
       const menuItems = menuText ? menuText.split('<br/>') : [];
       
       // 급식 종류 파싱 (1: 조식, 2: 중식, 3: 석식)
-      let mealType = 'lunch'; // 기본값
+      let mealType = '중식'; // 기본값
       if (meal.MMEAL_SC_CODE) {
-        if (meal.MMEAL_SC_CODE === '1') mealType = 'breakfast';
-        else if (meal.MMEAL_SC_CODE === '2') mealType = 'lunch';
-        else if (meal.MMEAL_SC_CODE === '3') mealType = 'dinner';
+        if (meal.MMEAL_SC_CODE === '1') mealType = '조식';
+        else if (meal.MMEAL_SC_CODE === '2') mealType = '중식';
+        else if (meal.MMEAL_SC_CODE === '3') mealType = '석식';
+      }
+      
+      // NTR_INFO 처리 (영양정보)
+      let ntrInfo = {};
+      if (meal.NTR_INFO) {
+        try {
+          // 사용자 화면에 표시할 형태로 저장
+          const ntrPairs = meal.NTR_INFO.split('<br/>');
+          ntrPairs.forEach(pair => {
+            const [key, value] = pair.split(' : ');
+            if (key && value) {
+              ntrInfo[key.trim()] = value.trim();
+            }
+          });
+        } catch (e) {
+          console.log('영양정보 파싱 오류:', e);
+        }
       }
       
       meals.push({
@@ -119,9 +136,9 @@ function parseMealInfo(data) {
         meal_date: mealDate,
         meal_type: mealType,
         menu_items: menuItems,
-        kcal: meal.CAL_INFO || '정보 없음',
+        kcal: meal.CAL_INFO || '0 kcal',
         origin_info: meal.ORPLC_INFO || '정보 없음',
-        ntr_info: {}
+        ntr_info: ntrInfo
       });
     }
     
@@ -292,10 +309,11 @@ exports.handler = async function(event, context) {
           const emptyMealData = {
             school_code: school.school_code,
             meal_date: getTodayDate(),
-            meal_type: 'lunch',
+            meal_type: '중식',  // 한글로 변경 ('lunch' -> '중식')
             menu_items: ['급식 정보가 없습니다'],
-            kcal: '0kcal',
-            ntr_info: {}
+            kcal: '0 kcal',  // 표기법 통일
+            ntr_info: {}, 
+            origin_info: '정보 없음'
           };
           
           // DB에 급식 없음 상태 저장 - upsert 사용(테이블에 unique 제약조건 있음)
