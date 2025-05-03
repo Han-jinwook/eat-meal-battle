@@ -417,14 +417,9 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
-      // API 호출 - 프로덕션/개발 환경 구분하여 처리
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const isProduction = baseUrl.includes('lunbat.com');
-      
-      // 프로덕션 환경에서는 netlify 함수로 직접 요청
-      const apiUrl = isProduction 
-        ? `${baseUrl}/.netlify/functions/___netlify-server-handler/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`
-        : `${baseUrl}/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
+      // API 호출 - 상대 경로 사용 (어느 환경에서도 동일하게 동작)
+      // Next.js와 Netlify의 통합 환경에서는 상대 경로를 사용하는 것이 가장 안정적
+      const apiUrl = `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
       
       console.log(`API 요청 URL: ${apiUrl}`);
       const response = await fetch(apiUrl);
