@@ -42,10 +42,24 @@ export default function MealsPage() {
   // 이미지 업로드 관련 상태
   const [refreshImageList, setRefreshImageList] = useState(0);
 
-  // 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD)
+  // 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD) + 요일 표시
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr || dateStr.length !== 8) return dateStr;
-    return `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+    if (!dateStr) return dateStr;
+    
+    // YYYYMMDD 형식을 YYYY-MM-DD로 변환
+    let formattedDate = dateStr;
+    if (dateStr.length === 8 && !dateStr.includes('-')) {
+      formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+    }
+    
+    // 요일 계산
+    const date = new Date(formattedDate);
+    if (isNaN(date.getTime())) return formattedDate; // 유효하지 않은 날짜인 경우
+    
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    
+    return `${formattedDate} (${weekday})`;
   };
 
   // YYYY-MM-DD -> YYYYMMDD
@@ -117,6 +131,15 @@ export default function MealsPage() {
     getUserInfo();
   }, [supabase, router]);
 
+  // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
+  useEffect(() => {
+    // 학교 정보와 날짜가 모두 있을 때만 실행
+    if (userSchool?.school_code && selectedDate && !isLoading) {
+      console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
+      fetchMealInfo(userSchool.school_code, selectedDate);
+    }
+  }, [userSchool?.school_code, selectedDate]);
+
   // 주말 체크 함수
   const isWeekend = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -158,12 +181,17 @@ export default function MealsPage() {
     return 'B10';
   };
 
-  // 날짜 변경 핸들러 - 날짜만 변경하고 자동 조회는 하지 않음
+  // 날짜 변경 핸들러 - 날짜 변경 시 자동으로 조회
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
     setSelectedDate(newDate);
     // 날짜 변경 시 기존 오류 메시지 초기화
     setError('');
+    
+    // 학교 정보가 있으면 자동으로 급식 정보 조회
+    if (userSchool?.school_code) {
+      fetchMealInfo(userSchool.school_code, newDate);
+    }
   };
 
   // 급식 타입별 아이콘
@@ -467,10 +495,10 @@ export default function MealsPage() {
           <div className="mb-6"></div>
         )}
 
-        {/* 날짜 선택 및 조회 버튼 */}
+        {/* 날짜 선택 */}
         <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
                 날짜 선택
               </label>
@@ -482,29 +510,15 @@ export default function MealsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => userSchool && fetchMealInfo(userSchool.school_code, selectedDate)}
-                disabled={isLoading || !userSchool}
-                className={`w-full px-4 py-2 rounded-md text-white font-medium ${
-                  isLoading || !userSchool
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    조회 중...
-                  </span>
-                ) : (
-                  '급식 정보 조회'
-                )}
-              </button>
-            </div>
+            {isLoading && (
+              <div className="flex items-center text-gray-600 mt-2">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-sm">급식 정보를 가져오는 중...</span>
+              </div>
+            )}
           </div>
           
           {/* 에러 메시지 */}
