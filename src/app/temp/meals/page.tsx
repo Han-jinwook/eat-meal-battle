@@ -417,8 +417,9 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
-      // API 호출
-      const response = await fetch(`/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
+      // API 호출 - 절대 URL 사용 (프로덕션 환경 호환성)
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`);
       
       if (!response.ok) {
         throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
