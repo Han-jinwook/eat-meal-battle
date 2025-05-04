@@ -436,8 +436,10 @@ export default function MealsPage() {
       // API 호출 전 파라미터 로그
       console.log('API 호출 파라미터:', { schoolCode, officeCode, date: apiDate });
 
-      // API URL 구성
-      const apiUrl = `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
+      // 로컬(127.0.0.1/localhost/사설IP) 여부에 따라 Netlify Functions 프리픽스 결정
+      const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.|192\.168\.)/.test(window.location.hostname);
+      const apiPrefix = isLocalhost ? '/api' : '/.netlify/functions';
+      const apiUrl = `${apiPrefix}/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
 
       // 로직의 명확성을 위해 경로를 출력
       console.log(`API 요청 URL: ${apiUrl}`);

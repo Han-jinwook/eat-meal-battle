@@ -346,6 +346,11 @@ export async function GET(request: Request) {
       if (duplicateCheck && duplicateCheck.length > 0) {
         console.log(`이미 ${duplicateCheck.length}개의 동일한 레코드가 있어 저장하지 않습니다.`);
         // 기존 데이터 사용
+        console.log('DB 쿼리 조건:', {
+          school_code: schoolCode,
+          office_code: officeCode,
+          meal_date: formattedDate,
+        });
         const { data: existingData } = await supabase
           .from('meal_menus')
           .select('*')

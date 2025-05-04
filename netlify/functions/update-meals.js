@@ -142,8 +142,10 @@ function parseMealInfo(data) {
       });
     }
     
-    console.log(`파싱된 급식 정보: ${meals.length}개`);
-    return meals;
+    // '중식'만 필터링해서 반환
+    const lunchMeals = meals.filter(meal => meal.meal_type === '중식');
+    console.log(`파싱된 중식 급식 정보: ${lunchMeals.length}개`);
+    return lunchMeals;
   } catch (error) {
     console.error('급식 정보 파싱 오류:', error);
     return meals;
