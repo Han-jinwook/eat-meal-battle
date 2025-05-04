@@ -117,6 +117,12 @@ export default function MealImageUploader({
       return;
     }
 
+    // mealId 유효성 검사 (빈 문자열 또는 undefined 방지)
+    if (!mealId) {
+      setError('급식 정보가 없어 사진을 업로드할 수 없습니다.');
+      return;
+    }
+
     setUploading(true);
     setError(null);
     setVerificationResult(null);
@@ -486,9 +492,9 @@ export default function MealImageUploader({
           <div className="flex justify-end">
             <button
               onClick={handleUpload}
-              disabled={uploading || verifying || !preview}
+              disabled={uploading || verifying || !preview || !mealId}
               className={`px-4 py-2 rounded-md text-white ${
-                uploading || verifying || !preview
+                uploading || verifying || !preview || !mealId
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}

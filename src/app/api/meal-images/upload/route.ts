@@ -26,9 +26,11 @@ export async function POST(request: Request) {
       userId
     });
 
-    if (!file || !mealId || !userId) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (!file || !userId || !uuidRegex.test(mealId || '')) {
       return NextResponse.json(
-        { error: '필수 정보가 누락되었습니다.' },
+        { error: 'meal_id가 올바르지 않거나 필수 정보가 누락되었습니다.' },
         { status: 400 }
       );
     }
