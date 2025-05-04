@@ -4,9 +4,12 @@
   functions = "netlify/functions"
 
 [functions]
-  # 모든 함수의 타임아웃을 30초로 설정
+  # 모든 함수의 설정
   node_bundler = "esbuild"
   external_node_modules = ["sharp"]
+
+# 함수 타임아웃 설정
+[functions.verify-meal-image]
   timeout = 30
 
 [build.environment]
