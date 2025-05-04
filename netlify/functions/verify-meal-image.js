@@ -208,31 +208,28 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
       // 5. 이미지가 승인된 경우 같은 학교 사용자들에게 알림 전송
       if (isMatch) {
         try {
-          // 이미지 업로더의 학교 ID 가져오기
-          const { data: userData, error: userError } = await supabaseAdmin
-            .from('profiles')
-            .select('school_id')
+          // 이미지 업로더의 학교 정보 가져오기
+          const { data: schoolInfoData, error: schoolInfoError } = await supabaseAdmin
+            .from('school_infos')
+            .select('school_code, school_name')
             .eq('user_id', imageData.uploaded_by)
             .single();
             
-          if (userError) {
-            console.error('사용자 학교 정보 조회 오류:', userError);
-          } else if (userData && userData.school_id) {
-            // 학교 정보 가져오기
-            const { data: schoolData, error: schoolError } = await supabaseAdmin
-              .from('schools')
-              .select('name')
-              .eq('id', userData.school_id)
-              .single();
+          if (schoolInfoError) {
+            console.error('사용자 학교 정보 조회 오류:', schoolInfoError);
+          } else if (schoolInfoData && schoolInfoData.school_code) {
+            console.log('사용자 학교 정보 가져오기 성공:', schoolInfoData);
+            
+            // 학교 정보를 이미 가져왔으므로 추가 조회 필요 없음
+            const schoolName = schoolInfoData.school_name;
               
-            if (schoolError) {
-              console.error('학교 정보 조회 오류:', schoolError);
-            } else {
+            // 이제 바로 알림 전송 시도
+            {
               // 알림 전송 API 호출
-              console.log('알림 전송 시도:', { schoolId: userData.school_id, mealImageId: imageId });
+              console.log('알림 전송 시도:', { schoolCode: schoolInfoData.school_code, mealImageId: imageId });
               
               try {
-                const notificationTitle = `${schoolData.name} 급식 사진이 등록되었습니다!`;
+                const notificationTitle = `${schoolName} 급식 사진이 등록되었습니다!`;
                 const notificationMessage = '새로운 급식 사진이 등록되었습니다. 지금 확인해보세요!';
                 
                 // 알림 레코드 DB에 직접 저장
@@ -242,7 +239,7 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
                     title: notificationTitle,
                     message: notificationMessage,
                     sender_id: imageData.uploaded_by,
-                    school_code: userData.school_id, // NotificationBell 컴포넌트와 필드명 일치시킴
+                    school_code: schoolInfoData.school_code, // school_code 필드에 실제 school_code 값 저장
                     related_type: 'meal_image',
                     related_id: imageId,
                   })
@@ -256,9 +253,9 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
                   
                   // 해당 학교 학생들의 ID 가져오기
                   const { data: studentsData, error: studentsError } = await supabaseAdmin
-                    .from('profiles')
+                    .from('school_infos')
                     .select('user_id')
-                    .eq('school_id', userData.school_id);
+                    .eq('school_code', schoolInfoData.school_code);
                   
                   if (studentsError) {
                     console.error('학생 정보 조회 오류:', studentsError);
