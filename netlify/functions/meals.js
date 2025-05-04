@@ -104,19 +104,16 @@ function parseMealInfo(data) {
       }
       
       // NTR_INFO 처리 (영양정보)
-      let ntrInfo = {};
-      if (meal.NTR_INFO) {
+      // 로컬 환경과 동일하게 원본 문자열을 그대로 저장
+      let ntrInfo = meal.NTR_INFO || '';
+      
+      // 영양정보가 있지만 문자열이 아닌 경우 문자열로 변환
+      if (ntrInfo && typeof ntrInfo !== 'string') {
         try {
-          // 사용자 화면에 표시할 형태로 저장
-          const ntrPairs = meal.NTR_INFO.split('<br/>');
-          ntrPairs.forEach(pair => {
-            const [key, value] = pair.split(' : ');
-            if (key && value) {
-              ntrInfo[key.trim()] = value.trim();
-            }
-          });
+          ntrInfo = JSON.stringify(ntrInfo);
         } catch (e) {
-          console.log('영양정보 파싱 오류:', e);
+          console.log('영양정보 문자열 변환 오류:', e);
+          ntrInfo = '';
         }
       }
       
