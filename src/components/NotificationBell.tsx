@@ -156,10 +156,17 @@ export default function NotificationBell() {
       // 읽지 않은 알림 카운트 감소
       setUnreadCount(current => Math.max(0, current - 1));
       
-      // API 호출 시도
+      // 세션 액세스 토큰 추출
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
+      // API 호출 시도 (Bearer 토큰 포함)
       const response = await fetch('/api/notifications/read', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ notificationId })
       });
 
@@ -179,11 +186,17 @@ export default function NotificationBell() {
   // 모든 알림 읽음 처리
   const markAllAsRead = async () => {
     try {
-      // 파라미터 없이 API 호출하면 모든 알림 읽음 처리
+      // 세션 액세스 토큰 포함하여 파라미터 없이 호출 (모든 알림 읽음)
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
       const response = await fetch('/api/notifications/read', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}) // notificationId 없이 호출하면 모든 알림 처리
+        headers,
+        body: JSON.stringify({}) // notificationId 없이 호출
       });
       
       if (!response.ok) {
