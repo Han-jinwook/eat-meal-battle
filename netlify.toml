@@ -18,13 +18,6 @@
   schedule = "16 12 3 5 *" # UTC 기준 12:16 (2025년 5월 3일), 한국 시간으로는 21:16
   # 현재 한국시간 21:06 → 21:16에 실행
 
-# Next.js API 라우트 리다이렉트 - 기본 설정
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/nextjs-server/api/:splat"
-  status = 200
-  force = true
-
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
   from = "/api/meals"
