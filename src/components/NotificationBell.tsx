@@ -156,36 +156,18 @@ export default function NotificationBell() {
       // 읽지 않은 알림 카운트 감소
       setUnreadCount(current => Math.max(0, current - 1));
       
-      // 수퍼베이스 직접 업데이트 시도
-      try {
-        const { data, error } = await supabase
-          .from('notification_recipients')
-          .update({ is_read: true, read_at: new Date().toISOString() })
-          .eq('notification_id', notificationId)
-          .eq('recipient_id', user?.id || '')
-          .select();
-        
-        console.log('수퍼베이스 직접 업데이트 결과:', data, error);
-        
-        if (error) {
-          throw new Error('수퍼베이스 업데이트 실패: ' + error.message);
-        }
-      } catch (dbError) {
-        console.error('수퍼베이스 업데이트 오류:', dbError);
-        
-        // 수퍼베이스 업데이트 실패 시 API 호출 시도
-        const response = await fetch('/api/notifications/read', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notificationId })
-        });
+      // API 호출 시도
+      const response = await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId })
+      });
 
-        const result = await response.json();
-        console.log('알림 읽음 처리 API 응답:', result);
+      const result = await response.json();
+      console.log('알림 읽음 처리 API 응답:', result);
 
-        if (!response.ok) {
-          console.warn('API 호출 실패지만 UI는 업데이트됨');
-        }
+      if (!response.ok) {
+        console.warn('API 호출 실패지만 UI는 업데이트됨');
       }
     } catch (error) {
       console.error('알림 상태 업데이트 오류:', error);

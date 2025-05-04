@@ -12,19 +12,36 @@ export async function POST(request: Request) {
   const supabase = createClient();
   const supabaseAdmin = createAdminClient();
   
-  try {
-    // 사용자 인증 확인
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  // ------------------------------------------------------------
+  // 사용자 식별: Authorization 헤더의 JWT 우선, 없으면 세션 쿠키
+  // ------------------------------------------------------------
+  const authHeader = request.headers.get('Authorization');
+  let userId: string | null = null;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error: tokenErr } = await supabase.auth.getUser(token);
+    if (tokenErr) {
+      console.warn('토큰 기반 사용자 조회 오류:', tokenErr);
     }
-    
+    userId = user?.id ?? null;
+  }
+  // 쿠키 기반(Next.js helper) 세션도 시도 (fallback)
+  if (!userId) {
+    const { data: { session } } = await supabase.auth.getSession();
+    userId = session?.user?.id ?? null;
+  }
+
+  if (!userId) {
+    return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+  }
+  
+  try {
     // 요청 파라미터 추출
     const { notificationId } = await request.json();
     
     console.log('알림 읽음 처리 API 호출:', { 
-      userId: session.user.id,
+      userId,
       notificationId 
     });
     
@@ -39,7 +56,7 @@ export async function POST(request: Request) {
           is_read: true,
           read_at: now
         })
-        .eq('recipient_id', session.user.id)
+        .eq('recipient_id', userId)
         .eq('notification_id', notificationId);
       
       console.log('알림 업데이트 결과:', updateResult, '오류:', updateError);
@@ -59,7 +76,7 @@ export async function POST(request: Request) {
           const { data: recipients } = await supabaseAdmin
             .from('notification_recipients')
             .select('id')
-            .eq('recipient_id', session.user.id)
+            .eq('recipient_id', userId)
             .eq('notification_id', notification.id)
             .eq('is_read', false);
           
@@ -99,7 +116,7 @@ export async function POST(request: Request) {
           is_read: true,
           read_at: now
         })
-        .eq('recipient_id', session.user.id)
+        .eq('recipient_id', userId)
         .eq('is_read', false);
       
       console.log('모든 알림 읽음 처리 결과:', { data, error, count });
