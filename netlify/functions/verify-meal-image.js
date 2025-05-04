@@ -1,20 +1,14 @@
 // 파일 경로: netlify/functions/verify-meal-image.js
 const { createClient } = require('@supabase/supabase-js');
-const { Configuration, OpenAIApi } = require('openai');
+const axios = require('axios');
 const axios = require('axios');
 
 // Supabase 환경 변수
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// OpenAI 클라이언트 초기화
-let openai = null;
-if (process.env.OPENAI_API_KEY) {
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  openai = new OpenAIApi(configuration);
-}
+// OpenAI API 키 검사
+const openaiApiKey = process.env.OPENAI_API_KEY;
 
 exports.handler = async (event, context) => {
   // CORS 헤더 설정
