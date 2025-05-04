@@ -8,6 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // OpenAI API 키 검사
 const openaiApiKey = process.env.OPENAI_API_KEY;
+console.log('OpenAI API 키 상태:', openaiApiKey ? '설정됨' : '설정되지 않음');
 
 exports.handler = async (event, context) => {
   // CORS 헤더 설정
@@ -99,9 +100,11 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: '이미지 검증 서비스를 사용할 수 없습니다.' })
+        body: JSON.stringify({ error: '이미지 검증 서비스를 사용할 수 없습니다. API 키가 설정되지 않았습니다.' })
       };
     }
+    
+    console.log('이미지 URL 확인:', imageData.image_url);
 
     // 메뉴 목록을 텍스트로 변환
     const menuText = imageData.meal_menus.menu_items.join(', ');
@@ -144,7 +147,7 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${openaiApiKey}`
           }
         }
       );
@@ -207,6 +210,7 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
       };
     } catch (error) {
       console.error('OpenAI API 오류:', error.response?.data || error.message);
+      console.error('전체 오류 객체:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
       return {
         statusCode: 500,
         headers,
