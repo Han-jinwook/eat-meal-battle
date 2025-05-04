@@ -1,7 +1,6 @@
 // 파일 경로: netlify/functions/verify-meal-image.js
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-const axios = require('axios');
 
 // Supabase 환경 변수
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -95,7 +94,7 @@ exports.handler = async (event, context) => {
     }
 
     // 3. OpenAI API를 사용한 이미지 검증
-    if (!openai) {
+    if (!openaiApiKey) {
       console.error('OpenAI API 키가 설정되지 않았습니다.');
       return {
         statusCode: 500,
