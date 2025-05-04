@@ -47,6 +47,16 @@ export default function MealImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // mealId 존재 여부 사전 체크
+    if (!mealId) {
+      setError('급식 정보가 없어 이미지를 업로드할 수 없습니다. 다른 날짜/끼니를 선택해주세요.');
+      // 미리보기·파일 입력 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     // 파일 유효성 검사
     if (!file.type.startsWith('image/')) {
       setError('이미지 파일만 업로드할 수 있습니다.');
@@ -114,12 +124,6 @@ export default function MealImageUploader({
   const handleUpload = async () => {
     if (!fileInputRef.current?.files?.[0]) {
       setError('업로드할 이미지를 선택해주세요.');
-      return;
-    }
-
-    // mealId 유효성 검사 (빈 문자열 또는 undefined 방지)
-    if (!mealId) {
-      setError('급식 정보가 없어 사진을 업로드할 수 없습니다.');
       return;
     }
 
@@ -492,9 +496,9 @@ export default function MealImageUploader({
           <div className="flex justify-end">
             <button
               onClick={handleUpload}
-              disabled={uploading || verifying || !preview || !mealId}
+              disabled={uploading || verifying || !preview}
               className={`px-4 py-2 rounded-md text-white ${
-                uploading || verifying || !preview || !mealId
+                uploading || verifying || !preview
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
