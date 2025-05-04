@@ -15,6 +15,15 @@ export async function POST(request: Request) {
     const mealDate = formData.get('meal_date') as string;
     const mealType = formData.get('meal_type') as string;
     const userId = formData.get('user_id') as string;
+    
+    // 특별히 'undefined' 문자열 처리
+    if (mealId === 'undefined') {
+      console.error('mealId가 문자열 "undefined"로 전달됨');
+      return NextResponse.json(
+        { error: '급식 정보가 없습니다. 다른 날짜를 선택해주세요.' },
+        { status: 400 }
+      );
+    }
 
     console.log('요청 데이터:', { 
       mealId, 
@@ -26,11 +35,20 @@ export async function POST(request: Request) {
       userId
     });
 
+    // UUID 형식 검증 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    if (!file || !userId || !uuidRegex.test(mealId || '')) {
+    if (!file || !userId) {
       return NextResponse.json(
-        { error: 'meal_id가 올바르지 않거나 필수 정보가 누락되었습니다.' },
+        { error: '파일과 사용자 정보는 필수입니다.' },
+        { status: 400 }
+      );
+    }
+    
+    if (!uuidRegex.test(mealId || '')) {
+      console.error('유효하지 않은 mealId 형식:', mealId);
+      return NextResponse.json(
+        { error: '급식 정보가 올바르지 않습니다. 날짜를 다시 선택해주세요.' },
         { status: 400 }
       );
     }
