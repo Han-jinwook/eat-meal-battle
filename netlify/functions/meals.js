@@ -119,6 +119,7 @@ function parseMealInfo(data) {
       
       meals.push({
         school_code: schoolCode,
+        office_code: officeCode, // 교육청 코드 추가 (기존 로직은 그대로)
         meal_date: mealDate,
         meal_type: mealType,
         menu_items: menuItems,
