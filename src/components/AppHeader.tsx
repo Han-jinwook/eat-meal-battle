@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import NotificationBell from './NotificationBell';
 
 export default function AppHeader() {
   const [user, setUser] = useState<any>(null);
@@ -25,18 +26,25 @@ export default function AppHeader() {
         </Link>
         
         <nav>
-          <ul className="flex space-x-4">
-            <li>
-              <Link href="/" className="text-gray-600 hover:text-gray-900">
-                홈
-              </Link>
-            </li>
-            <li>
-              <Link href="/profile" className="text-gray-600 hover:text-gray-900">
-                프로필
-              </Link>
-            </li>
-          </ul>
+          <div className="flex items-center space-x-4">
+            <ul className="flex space-x-4">
+              <li>
+                <Link href="/" className="text-gray-600 hover:text-gray-900">
+                  홈
+                </Link>
+              </li>
+              <li>
+                <Link href="/profile" className="text-gray-600 hover:text-gray-900">
+                  프로필
+                </Link>
+              </li>
+            </ul>
+            {user && (
+              <div className="relative">
+                <NotificationBell />
+              </div>
+            )}
+          </div>
         </nav>
       </div>
     </header>
