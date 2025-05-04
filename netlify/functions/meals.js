@@ -129,6 +129,7 @@ function parseMealInfo(data) {
       });
     }
     
+    // meal_type 조건 없이 전체 급식 정보 반환
     console.log(`파싱된 급식 정보: ${meals.length}개`);
     return meals;
   } catch (error) {
@@ -295,10 +296,14 @@ exports.handler = async function(event, context) {
     // 급식 정보 조회
     const mealData = await fetchMealInfo(school_code, office_code, mealDate);
     
-    // 응답 반환
+    // 응답 JSON을 프론트엔드 기대 형식으로 래핑
     return {
       statusCode: 200,
-      body: JSON.stringify(mealData)
+      body: JSON.stringify({
+        success: true,
+        meals: Array.isArray(mealData) ? mealData : (mealData ? [mealData] : []),
+        source: 'api'
+      })
     };
     
   } catch (error) {
