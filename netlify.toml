@@ -21,21 +21,21 @@
 # Next.js API 라우트 리다이렉트 - 기본 설정
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/nextjs-server"
+  to = "/.netlify/functions/nextjs-server/:splat"
   status = 200
   force = true
 
 # 학교 검색 API 구체적 리다이렉트
 [[redirects]]
-  from = "/api/schools*"
-  to = "/.netlify/functions/nextjs-server/api/schools:splat"
+  from = "/api/schools/*"
+  to = "/.netlify/functions/nextjs-server/api/schools/:splat"
   status = 200
   force = true
 
 # 급식 정보 API 구체적 리다이렉트
 [[redirects]]
-  from = "/api/meals*"
-  to = "/.netlify/functions/nextjs-server/api/meals:splat"
+  from = "/api/meals/*"
+  to = "/.netlify/functions/nextjs-server/api/meals/:splat"
   status = 200
   force = true
 
