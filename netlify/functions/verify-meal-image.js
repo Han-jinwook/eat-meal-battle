@@ -242,7 +242,7 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
                     title: notificationTitle,
                     message: notificationMessage,
                     sender_id: imageData.uploaded_by,
-                    school_id: userData.school_id,
+                    school_code: userData.school_id, // NotificationBell 컴포넌트와 필드명 일치시킴
                     related_type: 'meal_image',
                     related_id: imageId,
                   })
