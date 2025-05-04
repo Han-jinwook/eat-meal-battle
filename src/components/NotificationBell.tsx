@@ -146,21 +146,7 @@ export default function NotificationBell() {
     try {
       console.log('알림 읽음 처리 시도:', { notificationId });
       
-      // API 호출로 변경
-      const response = await fetch('/api/notifications/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationId })
-      });
-
-      const result = await response.json();
-      console.log('알림 읽음 처리 응답:', result);
-
-      if (!response.ok) {
-        throw new Error('알림 읽음 처리 실패');
-      }
-      
-      // 로컬 상태 업데이트
+      // 먼저 로컬 상태 업데이트 (사용자 경험 개선을 위해 즉시 반영)
       setNotifications(current => 
         current.map(n => 
           n.notification_id === notificationId ? { ...n, is_read: true } : n
@@ -169,8 +155,42 @@ export default function NotificationBell() {
       
       // 읽지 않은 알림 카운트 감소
       setUnreadCount(current => Math.max(0, current - 1));
+      
+      // 수퍼베이스 직접 업데이트 시도
+      try {
+        const { data, error } = await supabase
+          .from('notification_recipients')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('notification_id', notificationId)
+          .eq('recipient_id', user?.id || '')
+          .select();
+        
+        console.log('수퍼베이스 직접 업데이트 결과:', data, error);
+        
+        if (error) {
+          throw new Error('수퍼베이스 업데이트 실패: ' + error.message);
+        }
+      } catch (dbError) {
+        console.error('수퍼베이스 업데이트 오류:', dbError);
+        
+        // 수퍼베이스 업데이트 실패 시 API 호출 시도
+        const response = await fetch('/api/notifications/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationId })
+        });
+
+        const result = await response.json();
+        console.log('알림 읽음 처리 API 응답:', result);
+
+        if (!response.ok) {
+          console.warn('API 호출 실패지만 UI는 업데이트됨');
+        }
+      }
     } catch (error) {
       console.error('알림 상태 업데이트 오류:', error);
+      
+      // 오류가 발생해도 UI는 업데이트된 상태 유지 (사용자 경험 개선)
     }
   };
   
