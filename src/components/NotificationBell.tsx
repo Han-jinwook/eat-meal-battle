@@ -297,7 +297,7 @@ export default function NotificationBell() {
                         href={`/temp/meals?notification=${notification.related_id}`}
                         onClick={() => {
                           if (!notification.is_read) {
-                            markAsRead(notification.id);
+                            markAsRead(notification.notification_id);
                           }
                           setIsOpen(false);
                         }}
@@ -316,7 +316,7 @@ export default function NotificationBell() {
                     </div>
                     {!notification.is_read && (
                       <button
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => markAsRead(notification.notification_id)}
                         className="ml-2 text-gray-400 hover:text-gray-600"
                         aria-label="읽음 표시"
                       >
