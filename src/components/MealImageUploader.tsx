@@ -183,9 +183,17 @@ export default function MealImageUploader({
       });
       
       // 3. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
-      const response = await fetch('/api/meal-images/upload', {
-        method: 'POST',
-        body: formData, // FormData는 Content-Type을 자동으로 설정함
+      // 환경에 따라 다른 API 엔드포인트 사용
+      const isLocalhost = /^(localhost|127\.|\/api)/.test(window.location.hostname);
+      const apiUrl = isLocalhost 
+        ? '/api/meal-images/upload'
+        : '/.netlify/functions/upload-meal-image';
+      
+      console.log('업로드 API 요청 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: formData
       });
       
       // 4. 응답 처리
