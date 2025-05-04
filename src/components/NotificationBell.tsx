@@ -144,12 +144,17 @@ export default function NotificationBell() {
   // 알림 읽음 처리
   const markAsRead = async (notificationId: string) => {
     try {
+      console.log('알림 읽음 처리 시도:', { notificationId });
+      
       // API 호출로 변경
       const response = await fetch('/api/notifications/read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notificationId })
       });
+
+      const result = await response.json();
+      console.log('알림 읽음 처리 응답:', result);
 
       if (!response.ok) {
         throw new Error('알림 읽음 처리 실패');
