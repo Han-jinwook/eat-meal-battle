@@ -433,6 +433,9 @@ export default function MealsPage() {
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
       
+      // API 호출 전 파라미터 로그
+      console.log('API 호출 파라미터:', { schoolCode, officeCode, date: apiDate });
+
       // API URL 구성
       const apiUrl = `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
 
