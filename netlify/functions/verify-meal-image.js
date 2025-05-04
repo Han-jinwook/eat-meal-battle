@@ -137,7 +137,10 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
                 },
                 {
                   type: "image_url",
-                  image_url: imageData.image_url
+                  image_url: { 
+                    url: imageData.image_url,
+                    detail: "low" // 이미지 처리 비용 절감을 위해 낮은 해상도 사용
+                  }
                 }
               ]
             }
