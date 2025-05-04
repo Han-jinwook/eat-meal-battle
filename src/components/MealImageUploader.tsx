@@ -47,19 +47,16 @@ export default function MealImageUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // mealId 존재 여부 사전 체크
-    if (!mealId) {
-      setError('급식 정보가 없어 이미지를 업로드할 수 없습니다. 다른 날짜/끼니를 선택해주세요.');
-      // 미리보기·파일 입력 초기화
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      return;
-    }
+    console.log('파일 선택됨:', { 
+      fileName: file.name, 
+      fileSize: file.size, 
+      mealId: mealId || 'undefined',
+      fileType: file.type
+    });
 
     // 파일 유효성 검사
     if (!file.type.startsWith('image/')) {
-      setError('이미지 파일만 업로드할 수 있습니다.');
+      setError('이미지 파일만 업로드할 수 없습니다.');
       return;
     }
 
@@ -76,6 +73,16 @@ export default function MealImageUploader({
     reader.readAsDataURL(file);
     setError(null);
     setVerificationResult(null);
+    // 이전 상태 리셋
+    setUploading(false);
+    setVerifying(false);
+    
+    console.log('파일 로드 완료, 상태:', {
+      file: !!file,
+      previewSet: !!e.target?.files?.[0],
+      uploading: false,
+      verifying: false
+    });
   };
 
   const verifyImage = async (imageId: string) => {
@@ -126,6 +133,13 @@ export default function MealImageUploader({
       setError('업로드할 이미지를 선택해주세요.');
       return;
     }
+
+    console.log('업로드 시도:', {
+      fileName: fileInputRef.current.files[0].name,
+      fileSize: fileInputRef.current.files[0].size,
+      mealId: mealId || 'undefined',
+      preview: !!preview
+    });
 
     setUploading(true);
     setError(null);
@@ -495,8 +509,17 @@ export default function MealImageUploader({
 
           <div className="flex justify-end">
             <button
-              onClick={handleUpload}
+
               disabled={uploading || verifying || !preview}
+              onClick={() => {
+                console.log('업로드 버튼 클릭, 상태:', {
+                  uploading,
+                  verifying,
+                  preview: !!preview,
+                  isDisabled: uploading || verifying || !preview
+                });
+                handleUpload();
+              }}
               className={`px-4 py-2 rounded-md text-white ${
                 uploading || verifying || !preview
                   ? 'bg-gray-400 cursor-not-allowed'
