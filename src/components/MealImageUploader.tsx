@@ -89,7 +89,15 @@ export default function MealImageUploader({
     try {
       setVerifying(true);
       
-      const response = await fetch('/api/meal-images/verify', {
+      // 환경에 따라 다른 API 엔드포인트 사용
+      const isLocalhost = /^(localhost|127\.|\/api)/.test(window.location.hostname);
+      const apiUrl = isLocalhost 
+        ? '/api/meal-images/verify'
+        : '/.netlify/functions/verify-meal-image';
+      
+      console.log('검증 API 요청 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,12 +112,13 @@ export default function MealImageUploader({
       try {
         // JSON으로 파싱 시도
         result = JSON.parse(responseText);
+        console.log('검증 API 응답:', result);
       } catch (e) {
         console.error('검증 API 응답 파싱 오류:', e, responseText);
-        if (!response.ok) {
-          throw new Error(`검증 API 오류: ${response.status} ${response.statusText}`);
-        } else {
+        if (response.ok) {
           throw new Error('응답 파싱 오류: 올바른 JSON 응답이 아닙니다');
+        } else {
+          throw new Error(`검증 API 오류: ${response.status} ${response.statusText}`);
         }
       }
       
@@ -119,10 +128,10 @@ export default function MealImageUploader({
       
       setVerificationResult(result);
       return result;
-    } catch (error: any) {
-      console.error('이미지 검증 오류:', error);
-      setError(error.message || '이미지 검증 중 오류가 발생했습니다.');
-      throw error;
+    } catch (e: any) {
+      console.error('이미지 검증 오류:', e);
+      setError(e.message || '이미지 검증 중 오류가 발생했습니다.');
+      throw e;
     } finally {
       setVerifying(false);
     }
