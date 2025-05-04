@@ -91,7 +91,9 @@ function parseMealInfo(data) {
       
       // 식단 파싱 (구분자 <br/>)
       const menuText = meal.DDISH_NM;
-      const menuItems = menuText ? menuText.split('<br/>') : [];
+      const menuItems = menuText 
+        ? menuText.split('<br/>').map(item => item.replace(/\([0-9\.]+\)/g, '').trim()).filter(item => item)
+        : [];
       
       // 급식 종류 파싱 (1: 조식, 2: 중식, 3: 석식)
       let mealType = '중식'; // 기본값
