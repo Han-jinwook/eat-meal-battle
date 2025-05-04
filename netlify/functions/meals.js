@@ -227,6 +227,52 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     
     // DB에 저장
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // 기존 데이터 확인 (이미지 참조 여부 확인)
+    const { data: existingData, error: existingError } = await supabase
+      .from('meal_menus')
+      .select('id')
+      .eq('school_code', meals[0].school_code)
+      .eq('meal_date', meals[0].meal_date)
+      .eq('meal_type', meals[0].meal_type)
+      .single();
+    
+    // 기존 ID가 있는지 확인
+    if (!existingError && existingData && existingData.id) {
+      // 해당 ID를 참조하는 이미지가 있는지 확인
+      const { data: imageData, error: imageError } = await supabase
+        .from('meal_images')
+        .select('id')
+        .eq('meal_id', existingData.id)
+        .limit(1);
+      
+      if (!imageError && imageData && imageData.length > 0) {
+        console.log(`이미지 참조가 있는 급식 데이터 업데이트: ${existingData.id}`);
+        
+        // ID를 유지하면서 나머지 데이터 업데이트
+        const { data: updatedData, error: updateError } = await supabase
+          .from('meal_menus')
+          .update({
+            menu_items: meals[0].menu_items,
+            kcal: meals[0].kcal,
+            ntr_info: meals[0].ntr_info,
+            origin_info: meals[0].origin_info
+          })
+          .eq('id', existingData.id);
+        
+        if (updateError) {
+          console.error(`급식 정보 업데이트 오류:`, updateError);
+        } else {
+          console.log(`기존 ID 유지하면서 급식 정보 업데이트 성공`);
+        }
+        
+        // 기존 데이터에 ID 설정
+        meals[0].id = existingData.id;
+        return meals[0];
+      }
+    }
+    
+    // 이미지 참조가 없는 경우 새로 삽입 또는 업데이트
     const { data: savedData, error: saveError } = await supabase
       .from('meal_menus')
       .upsert([meals[0]], { 
