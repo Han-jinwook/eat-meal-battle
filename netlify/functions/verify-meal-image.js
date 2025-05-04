@@ -188,11 +188,9 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
         .from('meal_images')
         .update({
           status: status,
-          is_verified: true,
           is_shared: isMatch, // 매칭된 경우에만 공유 설정
           match_score: Math.round(matchScore * 100), // 퍼센트로 저장
-          explanation: explanation,
-          verified_at: new Date().toISOString()
+          explanation: explanation
         })
         .eq('id', imageId);
 
