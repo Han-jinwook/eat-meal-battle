@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -85,7 +86,10 @@ export default function Home() {
           {loading ? (
             <div className="h-5 w-20 bg-gray-200 animate-pulse rounded-md"></div>
           ) : user ? (
-            <div className="flex gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative mr-2">
+                <NotificationBell />
+              </div>
               <Link
                 href="/profile"
                 className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700"
