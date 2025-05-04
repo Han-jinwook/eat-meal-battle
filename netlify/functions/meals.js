@@ -3,6 +3,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const https = require('https');
+const { v4: uuidv4 } = require('uuid'); // UUID 생성 라이브러리 임포트
 
 // Supabase 환경 변수
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -117,7 +118,9 @@ function parseMealInfo(data) {
         }
       }
       
+      // 각 meal 객체에 고유 ID 생성 - UUID 형식
       meals.push({
+        id: uuidv4(), // 고유 ID 생성
         school_code: schoolCode,
         office_code: officeCode, // 교육청 코드 추가 (기존 로직은 그대로)
         meal_date: mealDate,
