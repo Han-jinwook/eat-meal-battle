@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import MealImageUploader from '@/components/MealImageUploader';
 import MealImageList from '@/components/MealImageList';
-import DebugPanel from '@/components/DebugPanel';
+// 디버그 패널 제거
 
 // 급식 정보 타입 정의
 interface MealInfo {
@@ -487,7 +487,7 @@ export default function MealsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <DebugPanel title="급식 정보 디버그" />
+      {/* 디버그 패널 제거 */}
 
 
       
