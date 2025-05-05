@@ -73,13 +73,14 @@ export default function MealsPage() {
     return dateStr.replace(/-/g, '');
   };
 
-  // 현재 날짜를 YYYY-MM-DD 형식으로 가져오기
+  // 현재 날짜를 YYYYMMDD 형식으로 가져오기
   const getCurrentDate = () => {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // 하이픈 없는 YYYYMMDD 형식으로 반환 (자동 로드 시 문제 해결)
+    return `${year}${month}${day}`;
   };
 
   // 사용자 정보 및 학교 정보 가져오기

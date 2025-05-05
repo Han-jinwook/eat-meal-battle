@@ -40,6 +40,24 @@ function formatApiDate(dateStr) {
   return dateStr.replace(/-/g, '');
 }
 
+// 날짜 형식을 DB에 저장할 YYYY-MM-DD 형식으로 변환
+function formatDbDate(dateStr) {
+  if (!dateStr) return '';
+  
+  // 이미 YYYY-MM-DD 형식이면 그대로 반환
+  if (dateStr.includes('-') && dateStr.length === 10) {
+    return dateStr;
+  }
+  
+  // YYYYMMDD 형식을 YYYY-MM-DD로 변환
+  if (dateStr.length === 8 && !dateStr.includes('-')) {
+    return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+  }
+  
+  // 기타 형식은 그대로 반환
+  return dateStr;
+}
+
 /**
  * NEIS API 응답에서 급식 정보 파싱
  * @param {Object} data API 응답 객체
@@ -201,7 +219,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       const emptyMealData = {
         school_code: schoolCode,
         office_code: officeCode, // 교육청 코드 추가
-        meal_date: date,
+        meal_date: formatDbDate(date), // 일관된 형식으로 변환
         meal_type: '중식',  // 한글로 변경
         menu_items: ['급식 정보가 없습니다'],
         kcal: '0 kcal',
@@ -236,6 +254,10 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       .eq('meal_date', meals[0].meal_date)
       .eq('meal_type', meals[0].meal_type)
       .single();
+    
+    // 기존 데이터 확인 전에 meal_date 형식 일관성 유지
+    meals[0].meal_date = formatDbDate(meals[0].meal_date);
+    console.log(`DB에 저장할 날짜 형식: ${meals[0].meal_date}`);
     
     // 기존 ID가 있는지 확인
     if (!existingError && existingData && existingData.id) {
@@ -294,7 +316,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     const mealData = {
       school_code: schoolCode,
       office_code: officeCode, // 교육청 코드 추가
-      meal_date: date,
+      meal_date: formatDbDate(date), // 일관된 형식으로 변환
       meal_type: '중식',
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
       kcal: '0 kcal',
