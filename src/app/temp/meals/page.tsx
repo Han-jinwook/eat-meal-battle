@@ -415,6 +415,11 @@ export default function MealsPage() {
                        .replace(/수입산/, '').trim()
                        .replace(/산$/, '').trim(); // '산' 제거 (예: 중국산 -> 중국)
         
+        // '국내산'을 '국내'로 변경
+        if (origin === '국내산' || origin === '국산') {
+          origin = '국내';
+        }
+        
         // 가공품, 식육가공품 등 불필요한 단어 제거
         ingredient = ingredient
           .replace(/\s*\uac00\uacf5\ud488$/g, '')
@@ -438,8 +443,8 @@ export default function MealsPage() {
     let result = '';
     
     // 더 중요한 원산지부터 표시 (우선순위 지정)
-    // 국내산이 제일 먼저, 그 다음 원양산, 그리고 나라들 순서
-    const priorityOrder = ['국내산', '국산', '원양산', '러시아', '베트남', '중국', '미국', '호주', '칠레', '페루', '아르헨티나'];
+    // 국내가 제일 먼저, 그 다음 러시아, 베트남, 원양산 순서
+    const priorityOrder = ['국내', '러시아', '베트남', '원양산', '중국', '미국', '호주', '칠레', '페루', '아르헨티나'];
     
     // 우선순위가 있는 원산지부터 출력
     priorityOrder.forEach(origin => {
