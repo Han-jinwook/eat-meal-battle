@@ -136,7 +136,7 @@ export default function MainHeader() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsProfileOpen(false)}
                 >
-                  학교 설정<span className="text-xs text-gray-500">(학부모도 가능)</span>
+                  학교설정 <span className="text-xs text-gray-500">(학부모가능)</span>
                 </Link>
                 <button
                   onClick={logout}
