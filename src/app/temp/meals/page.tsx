@@ -345,14 +345,34 @@ export default function MealsPage() {
                !line.includes('수산가공품') && // 수산가공품 제외
                !line.includes('식육가공품'); // 식육가공품 제외
       });
+      
+    // 한우 처리를 위한 한우 관련 줄 찾기
+    const hanwooLine = clean
+      .split('\n')
+      .find(line => line.includes('한우') || line.includes('쇠고기(종류)') || (line.includes('쇠고기') && line.includes('국내산')));
     
     // 원산지별 재료 분류
     const originGroups: Record<string, Set<string>> = {};
     
+    // 한우가 있는 경우 국내산에 쇠고기 추가
+    if (hanwooLine) {
+      if (!originGroups['국내산']) {
+        originGroups['국내산'] = new Set<string>();
+      }
+      originGroups['국내산'].add('쇠고기');
+    }
+    
+    // 한우 관련 줄 제외
+    const filteredLines = lines.filter(line => 
+      !line.includes('한우') && 
+      !line.includes('쇠고기(종류)') && 
+      !(line.includes('쇠고기') && line.includes('국내산(한우)'))
+    );
+    
     // skipPatterns에 일치하는 원산지 정보는 건너뛀
     const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
 
-    lines.forEach(line => {
+    filteredLines.forEach(line => {
       // 특수케이스 제외
       if (skipPatterns.some(pattern => pattern.test(line))) {
         return;
@@ -439,6 +459,15 @@ export default function MealsPage() {
         // 쇠고기(종류) 제거
         if (ingredient.includes('(종류)')) {
           ingredient = ingredient.replace(/\(\uc885\ub958\)/g, '').trim();
+          
+          // 쇠고기는 국내산으로 처리
+          if (ingredient === '쇠고기' || ingredient.includes('한우')) {
+            if (!originGroups['국내산']) {
+              originGroups['국내산'] = new Set<string>();
+            }
+            originGroups['국내산'].add('쇠고기');
+            return;
+          }
         }
         
         // 원산지별 중복없는 Set 초기화
@@ -456,7 +485,7 @@ export default function MealsPage() {
     
     // 더 중요한 원산지부터 표시 (우선순위 지정)
     // 스크린샷에 맞게 국내산이 제일 먼저, 그 다음 러시아, 베트남, 원양산 순서
-    const priorityOrder = ['국내산', '러시아', '베트남', '원양산', '중국', '미국', '호주', '칠레', '페루', '아르헨티나'];
+    const priorityOrder = ['국내산', '러시아', '베트남', '중국', '원양산', '미국', '호주', '칠레', '페루', '아르헨티나'];
     
     // 우선순위가 있는 원산지부터 출력
     priorityOrder.forEach(origin => {
