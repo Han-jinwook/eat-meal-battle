@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/NotificationBell';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // 네비게이션 항목 정의
 type NavItem = {
@@ -15,6 +15,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: '급식', href: '/temp/meals' },
+  { label: '퀴즈', href: '/quiz' },
   { label: '배틀', href: '/battle' },
   { label: '랭킹', href: '/ranking' },
 ];
@@ -24,6 +25,26 @@ export default function MainHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  // 사용자 정보 가져오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+    
+    fetchUser();
+    
+    // 인증 상태 변경 리스너
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+    
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const toggleProfile = () => setIsProfileOpen((p) => !p);
   const logout = async () => {
@@ -55,23 +76,34 @@ export default function MainHeader() {
         </nav>
 
         <div className="flex items-center gap-4">
-          {/* 알림 벨 */}
-          <NotificationBell />
+          {/* 알림 벨 - 로그인 상태일 때만 표시 */}
+          {user && <NotificationBell />}
 
-          {/* 프로필 */}
+          {/* 프로필 또는 로그인 버튼 */}
           <div className="relative">
-            <button
-              onClick={toggleProfile}
-              className="h-8 w-8 overflow-hidden rounded-full border border-gray-300"
-            >
-              <Image
-                src="/default-avatar.png"
-                alt="avatar"
-                width={32}
-                height={32}
-              />
-            </button>
-            {isProfileOpen && (
+            {user ? (
+              // 로그인 상태: 사용자 프로필 이미지 표시
+              <button
+                onClick={toggleProfile}
+                className="h-8 w-8 overflow-hidden rounded-full border border-gray-300"
+              >
+                <Image
+                  src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+                  alt="avatar"
+                  width={32}
+                  height={32}
+                />
+              </button>
+            ) : (
+              // 비로그인 상태: 로그인 버튼 표시
+              <Link href="/login" className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                로그인
+              </Link>
+            )}
+            {user && isProfileOpen && (
               <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-md border bg-white shadow-lg">
                 <Link
                   href="/profile"
