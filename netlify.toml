@@ -35,6 +35,14 @@
   # 테스트용 스케줄 (3분 후 실행)
   schedule = "45 14 5 5 *" # UTC 기준 14:45 (2025년 5월 5일), 한국 시간으로는 23:45
 
+# 오후 5시 자동 이미지 생성 함수 - 이미지가 없는 급식을 자동으로 생성
+[functions.auto-generate-meal-images]
+  # 실제 운영 스케줄
+  # schedule = "0 8 * * *" # 매일 UTC 8:00 (한국시간 17:00)
+  
+  # 테스트용 스케줄 (5분 후 실행)
+  schedule = "15 15 6 5 *" # UTC 기준 15:15 (2025년 5월 6일), 한국 시간으로는 00:15
+
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
   from = "/api/meals"

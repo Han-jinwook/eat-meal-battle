@@ -1,5 +1,8 @@
 // 12:30에 자동 실행되는 스케줄러 함수
-// 이미지가 없거나 공유되지 않은 급식을 찾아 플래그 설정
+// 이미지가 없거나 공유되지 않은 급식을 찾음
+// 1. 휴일이거나 급식 정보가 없으면 실행하지 않음
+// 2. 오늘 날짜(당일)의 급식만 처리
+// 3. 기능은 사용자가 해당 페이지 방문시 표시되는 버튼으로 구현
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -19,13 +22,35 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
     
-    // 오늘 날짜 가져오기
+    // 오늘 날짜 확인 - 오늘의 급식만 처리
     const today = new Date().toISOString().split('T')[0];
+    console.log(`[check-missing-meal-images] 실행 날짜: ${today}`);
     
-    console.log(`[check-missing-meal-images] 실행 시작: ${today}`);
+    // 휴일 체크
+    const { data: holidays, error: holidaysError } = await supabase
+      .from('holidays')
+      .select('date')
+      .eq('date', today);
     
-    // 오늘 등록된 모든 급식 가져오기
-    const { data: todayMeals, error: mealsError } = await supabase
+    if (holidaysError) {
+      throw new Error(`휴일 조회 오류: ${holidaysError.message}`);
+    }
+    
+    if (holidays && holidays.length > 0) {
+      console.log(`[check-missing-meal-images] 오늘(${today})은 휴일입니다.`);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          message: '오늘은 휴일입니다.',
+          isHoliday: true
+        })
+      };
+    }
+    
+    // 이미지 생성이 필요한 급식 항목 식별
+    // 1) 이미지가 없거나
+    // 2) 이미지는 있지만 공유되지 않은(is_shared=false) 급식
+    const { data: meals, error: mealsError } = await supabase
       .from('meals')
       .select(`
         id,
@@ -41,11 +66,22 @@ exports.handler = async (event) => {
       throw new Error(`급식 조회 오류: ${mealsError.message}`);
     }
     
-    if (!todayMeals || todayMeals.length === 0) {
-      console.log('[check-missing-meal-images] 오늘 등록된 급식이 없습니다.');
+    if (mealsError) {
+      console.error(`[check-missing-meal-images] 급식 조회 오류: ${mealsError.message}`);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: mealsError.message })
+      };
+    }
+    
+    if (!meals || meals.length === 0) {
+      console.log(`[check-missing-meal-images] 오늘(${today})은 급식이 없는 날입니다. 휴일 또는 급식 정보 미등록.`);
       return {
         statusCode: 200,
-        body: JSON.stringify({ message: '오늘 등록된 급식이 없습니다.' })
+        body: JSON.stringify({ 
+          message: '오늘은 급식이 없는 날입니다. 휴일 또는 급식 정보 미등록.',
+          isHoliday: true
+        })
       };
     }
     

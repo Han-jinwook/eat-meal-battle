@@ -49,34 +49,54 @@ export default function MealImageUploader({
   // AI 이미지 생성 버튼 표시 여부 확인
   useEffect(() => {
     const checkIfAiImageNeeded = async () => {
-      // 테스트를 위해 시간 체크 로직은 임시로 항상 true 반환
-      // 실제 구현 시에는 아래 주석 해제
-      /*
+      if (!mealId) return;
+
+      // 당일 날짜인지 확인 (오늘 날짜와 급식 날짜 비교)
+      const today = new Date().toISOString().split('T')[0];
+      
+      // 1. 메뉴 날짜 확인
+      const { data: mealData } = await supabase
+        .from('meals')
+        .select('meal_date')
+        .eq('id', mealId)
+        .single();
+      
+      // 급식 날짜가 오늘이 아니면 버튼 숨김
+      if (!mealData || mealData.meal_date !== today) {
+        console.log('AI 이미지 생성 버튼 숨김: 당일 날짜가 아님', {
+          today,
+          mealDate: mealData?.meal_date
+        });
+        setShowAiGenButton(false);
+        return;
+      }
+      
+      // 2. 시간 조건 확인 (12:30 이후)
       const now = new Date();
       const isAfterLunchTime = now.getHours() > 12 || (now.getHours() === 12 && now.getMinutes() >= 30);
       
       if (!isAfterLunchTime) {
+        console.log('AI 이미지 생성 버튼 숨김: 12:30 이전');
         setShowAiGenButton(false);
         return;
       }
-      */
-      const isAfterLunchTime = true; // 테스트용
       
-      if (!mealId || !isAfterLunchTime) return;
-      
-      // 1. 현재 급식의 이미지 확인
+      // 3. 현재 급식의 이미지 여부 확인
       const { data: images } = await supabase
         .from('meal_images')
         .select('id, is_shared, match_score')
         .eq('meal_id', mealId);
         
-      // 2. 버튼 표시 조건:
+      // 4. 버튼 표시 조건:
       // - 이미지가 없거나
       // - 이미지는 있지만 모두 is_shared=false인 경우
       const shouldShow = !images || images.length === 0 || !images.some(img => img.is_shared);
       
       console.log('AI 이미지 생성 버튼 표시 여부:', {
         mealId,
+        today,
+        mealDate: mealData.meal_date,
+        isAfterLunchTime,
         imagesCount: images?.length || 0,
         hasSharedImages: images?.some(img => img.is_shared),
         shouldShow
@@ -92,10 +112,94 @@ export default function MealImageUploader({
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
-    // 실제 구현 전 테스트용 로깅
-    console.log('AI 이미지 생성 버튼 클릭!');
-    alert('AI 이미지 생성 버튼이 클릭되었습니다. 이 기능은 아직 구현 중입니다.');
-    // 추후 실제 기능 구현
+    try {
+      console.log('AI 이미지 생성 버튼 클릭!');
+      
+      setUploading(true);
+      setError(null);
+      setVerifying(false);
+      setImageStatus('generating');
+      
+      // 1. 메뉴 정보 가져오기
+      const { data: mealData, error: mealError } = await supabase
+        .from('meals')
+        .select('menu_items')
+        .eq('id', mealId)
+        .single();
+        
+      if (mealError || !mealData) {
+        throw new Error('메뉴 정보를 찾을 수 없습니다.');
+      }
+      
+      // 2. OpenAI API 호출하여 이미지 생성
+      const isLocalhost = /^(localhost|127\.|192\.|\/api)/.test(window.location.hostname);
+      const apiUrl = isLocalhost 
+        ? '/api/meal-images/generate'
+        : '/.netlify/functions/generate-meal-image';
+      
+      console.log('AI 이미지 생성 API 요청 URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          menu_items: mealData.menu_items,
+          meal_id: mealId,
+          school_code: schoolCode,
+          meal_date: mealDate,
+          meal_type: mealType
+        }),
+      });
+      
+      // 응답 텍스트를 먼저 가져와서 안전하게 처리
+      const responseText = await response.text();
+      let result;
+      
+      try {
+        // JSON으로 파싱 시도
+        result = JSON.parse(responseText);
+        console.log('AI 이미지 생성 API 응답:', result);
+      } catch (e) {
+        console.error('AI 이미지 생성 API 응답 파싱 오류:', e, responseText);
+        throw new Error('응답 처리 중 오류가 발생했습니다.');
+      }
+      
+      if (!result.success) {
+        throw new Error(result.error || 'AI 이미지 생성에 실패했습니다.');
+      }
+      
+      // 3. 생성된 이미지 정보로 상태 업데이트
+      setUploadedImage(result.image);
+      setVerificationResult({
+        match_score: result.image.match_score,
+        status: 'approved',
+        message: 'AI가 생성한 이미지입니다.'
+      });
+      
+      // 4. 버튼 숨기기
+      setShowAiGenButton(false);
+      
+      // 5. 성공 콜백 호출
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
+      setImageStatus('complete');
+      
+    } catch (error: any) {
+      console.error('AI 이미지 생성 오류:', error);
+      setError(error.message || 'AI 이미지 생성 중 오류가 발생했습니다.');
+      setImageStatus('error');
+      
+      // 오류 콜백
+      if (onUploadError) {
+        onUploadError(error.message || 'AI 이미지 생성 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
