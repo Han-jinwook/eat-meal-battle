@@ -342,7 +342,8 @@ export default function MealsPage() {
         return line && 
                !line.startsWith('비고') &&
                !line.includes('국내산(한우)') &&
-               !line.includes('쇠고기(종류)');
+               !line.includes('쇠고기(종류)') &&
+               !line.includes('수산'); // '수산'이 포함된 항목 제외 (명태수산 등)
       });
     
     // 원산지별 재료 분류
@@ -352,6 +353,7 @@ export default function MealsPage() {
     const skipPatterns = [
       /\(한\uc6b0\):\s*\S+\(\S+\)/i,  // "국내산(한우): 쇠고기(종류)" 패턴 제외
       /\(종\ub958\)$/i,               // "쇠고기(종류)" 패턴 제외
+      /수산/i,                    // "수산"이 포함된 항목 제외 (명태수산 등)
     ];
 
     lines.forEach(line => {
@@ -364,7 +366,34 @@ export default function MealsPage() {
       const parts = line.split(' : ');
       if (parts.length === 2) {
         let ingredient = parts[0];
-        const origin = parts[1];
+        // 원산지 처리
+        let origin = parts[1];
+        
+        // 괄호와 그 안의 내용 추출 (예: 외국산(미국, 호주 등) -> 미국, 호주 등)
+        const bracketMatch = origin.match(/\(([^)]*)\)/);
+        
+        // 괄호 안에 나라 이름이 있는 경우 그것을 사용
+        if (bracketMatch && bracketMatch[1] && bracketMatch[1].includes(',')) {
+          // 괄호 안의 나라 이름들을 각각 처리
+          const countries = bracketMatch[1].split(',').map(c => c.trim().replace(/ \ub4f1$/, ''));
+          
+          // 각 나라마다 재료 추가
+          countries.forEach(country => {
+            if (country && country !== '등') {
+              if (!originGroups[country]) {
+                originGroups[country] = new Set<string>();
+              }
+              originGroups[country].add(ingredient);
+            }
+          });
+          return; // 각 나라로 처리했으니 더 이상 처리 안함
+        }
+        
+        // 괄호가 없거나 단일 나라인 경우
+        // '외국산' 등의 단어 제거
+        origin = origin.replace(/\([^)]*\)/g, '').trim()
+                       .replace(/외국산/, '').trim()
+                       .replace(/산$/, '').trim(); // '산' 제거 (예: 중국산 -> 중국)
         
         // 가공품, 식육가공품 등 불필요한 단어 제거
         ingredient = ingredient
@@ -389,7 +418,7 @@ export default function MealsPage() {
     let result = '';
     
     // 더 중요한 원산지부터 표시 (우선순위 지정)
-    const priorityOrder = ['국내산', '국산', '중국산', '원양산', '미국산', '호주산'];
+    const priorityOrder = ['국내산', '국산', '원양산', '중국', '미국', '호주', '러시아', '베트남'];
     
     // 우선순위가 있는 원산지부터 출력
     priorityOrder.forEach(origin => {
