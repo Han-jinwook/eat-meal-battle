@@ -31,8 +31,6 @@ export default function MealImageUploader({
   const [userId, setUserId] = useState<string | null>(null);
   const [isButtonReady, setIsButtonReady] = useState(false);
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
-  const [uploadStage, setUploadStage] = useState<'ready' | 'uploading' | 'analyzing' | 'complete' | 'error'>('ready'); // 업로드 단계
-  const [progressPercent, setProgressPercent] = useState(0); // 진행률 표시용
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 사용자 정보 가져오기
@@ -93,18 +91,13 @@ export default function MealImageUploader({
     setUploading(false);
     setVerifying(false);
     
-    setUploadStage('ready');
-    setProgressPercent(0);
-    
     console.log('파일 로드 완료, 상태:', {
       file: !!file,
       previewSet: !!e.target?.files?.[0],
       uploading: false,
       verifying: false,
       isButtonReady: false,
-      imageStatus: 'processing',
-      uploadStage: 'ready',
-      progressPercent: 0
+      imageStatus: 'processing'
     });
   };
 
@@ -176,8 +169,6 @@ export default function MealImageUploader({
     setUploading(true);
     setError(null);
     setVerificationResult(null);
-    setUploadStage('uploading');
-    setProgressPercent(20);
     let uploadedImageId = '';
 
     try {
@@ -259,8 +250,6 @@ export default function MealImageUploader({
       
       // 5. 이미지 검증 API 호출
       try {
-        setUploadStage('analyzing');
-        setProgressPercent(60);
         const verificationResult = await verifyImage(uploadedImageId);
         console.log('검증 결과:', verificationResult);
         
@@ -279,9 +268,6 @@ export default function MealImageUploader({
         if (onUploadSuccess) {
           onUploadSuccess();
         }
-        
-        setUploadStage('complete');
-        setProgressPercent(100);
       } catch (verifyError) {
         console.error('검증 오류:', verifyError);
         
@@ -315,8 +301,6 @@ export default function MealImageUploader({
     } catch (error: any) {
       console.error('이미지 업로드 오류:', error);
       setError(error.message || '이미지 업로드 중 오류가 발생했습니다.');
-      setUploadStage('error');
-      setProgressPercent(0);
       
       if (onUploadError) {
         onUploadError(error.message || '이미지 업로드 중 오류가 발생했습니다.');
@@ -326,28 +310,232 @@ export default function MealImageUploader({
     }
   };
 
+  const getVerificationStatusText = () => {
+    if (!verificationResult) return null;
+    
+    const { isMatch, matchScore, explanation } = verificationResult;
+    const score = Math.round((matchScore || 0) * 100);
+    
+    if (isMatch) {
+      return (
+        <div className="p-3 bg-green-50 text-green-700 rounded-md text-sm">
+          <p className="font-semibold">사진등록 성공! (일치도: {score}%)</p>
+          <p>이미지가 메뉴와 일치하여 등록되었습니다.</p>
+          {explanation && (
+            <p className="text-xs mt-2 border-t border-green-200 pt-2">
+              <span className="font-semibold">분석 결과:</span> {explanation}
+            </p>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+          <div className="flex items-center">
+            <span className="text-orange-600 text-xl mr-2">✗</span>
+            <div>
+              <p className="font-semibold">매칭실패 (일치도: {score}%)</p>
+              <p>이미지가 메뉴와 충분히 일치하지 않습니다.</p>
+            </div>
+          </div>
+          {explanation && (
+            <p className="text-xs mt-2 border-t border-gray-200 pt-2">
+              <span className="font-semibold">사유:</span> {explanation}
+            </p>
+          )}
+        </div>
+      );
+    }
+  };
+
+  // 이미지 삭제 처리 함수
+  const handleDeleteImage = async () => {
+    if (!uploadedImage) return;
+    
+    try {
+      // 이미지 삭제 전 확인
+      const { data: imageData } = await supabase
+        .from('meal_images')
+        .select('*')
+        .eq('id', uploadedImage.id)
+        .single();
+
+      if (!imageData) {
+        throw new Error('이미지를 찾을 수 없습니다.');
+      }
+
+      // 공유된 이미지는 삭제 불가
+      if (imageData.is_shared || imageData.status === 'approved') {
+        setError('승인되거나 공유된 이미지는 삭제할 수 없습니다.');
+        return;
+      }
+
+      // DB에서 이미지 레코드 삭제
+      const { error: deleteError } = await supabase
+        .from('meal_images')
+        .delete()
+        .eq('id', uploadedImage.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      // 스토리지의 이미지 삭제 시도
+      try {
+        // URL에서 파일명 추출
+        const url = new URL(imageData.image_url);
+        const pathSegments = url.pathname.split('/');
+        // 마지막 세그먼트는 파일명
+        const fileName = pathSegments[pathSegments.length - 1];
+        // Storage 버킷에 직접 저장된 파일
+        const filePath = fileName;
+        
+        console.log('삭제할 파일 경로:', filePath);
+        
+        const { error: storageError } = await supabase.storage
+          .from('meal-images')
+          .remove([filePath]);
+          
+        if (storageError) {
+          console.error('스토리지 이미지 삭제 오류:', storageError);
+        }
+      } catch (err) {
+        console.error('파일 경로 추출 오류:', err);
+      }
+      
+      // 상태 초기화
+      setUploadedImage(null);
+      setVerificationResult(null);
+      setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // 성공 콜백 호출
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+    } catch (err: any) {
+      console.error('이미지 삭제 오류:', err);
+      setError(err.message || '이미지 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
 // ...
+
+  // 상태에 따른 색상 반환
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'rejected': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // 상태 텍스트 반환
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'approved': return '사진등록';
+      case 'pending': return '검증중';
+      case 'rejected': return '매칭실패';
+      default: return '-';
+    }
+  };
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-6 max-w-xl mx-auto">
+      <h3 className="text-lg font-semibold mb-3">급식 사진 업로드</h3>
+      
+      {/* 업로드된 이미지가 있으면 표시 */}
+      {uploadedImage ? (
+        <div className="mb-6">
+          <h4 className="text-md font-semibold mb-2">내가 업로드한 이미지</h4>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div className="relative h-72 w-full">
+              <Image
+                src={uploadedImage.image_url}
+                alt="급식 이미지"
+                fill
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+            <div className="p-3">
+              <div className="flex justify-end items-center mb-2">
+                <span className="text-xs text-gray-500">
+                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}
+                </span>
+              </div>
+              
+              {uploadedImage.match_score !== undefined && uploadedImage.match_score !== null && (
+                <div className="text-sm mb-2">
+                  <span className="font-semibold">메뉴 일치도:</span> {uploadedImage.match_score}% 
+                  {uploadedImage.status === 'rejected' && (
+                    <span className="text-orange-600 ml-1">(매칭실패, 업로드 불가)</span>
+                  )}
+                </div>
+              )}
+              
+              {uploadedImage.status === 'rejected' && uploadedImage.explanation && (
+                <div className="text-sm text-gray-700 mb-2">
+                  <span className="font-semibold">사유:</span> {uploadedImage.explanation}
+                </div>
+              )}
+              
+              {!uploadedImage.is_shared && uploadedImage.status !== 'approved' && (
+                <button
+                  onClick={handleDeleteImage}
+                  className="mt-2 text-sm text-red-600 hover:text-red-800"
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              오늘의 급식 사진을 공유해보세요!
+            </label>
+            
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+            />
+          </div>
+
+          {preview && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">미리보기:</p>
+              <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden">
+                <Image
+                  src={preview}
+                  alt="업로드 이미지 미리보기"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+              {preview && !isButtonReady && (
+                <div className="mt-2 text-sm text-blue-600">
+                  AI 분석 준비 중입니다. 잠시만 기다려주세요...
+                </div>
+              )}
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
               {error}
-            </div>
-          )}
-
-          {/* 진행 상태 표시기 */}
-          {preview && !uploadedImage && uploadStage !== 'ready' && (
-            <div className="mb-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className={`h-2.5 rounded-full ${uploadStage === 'error' ? 'bg-red-500' : 'bg-blue-600'}`}
-                  style={{ width: `${progressPercent}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-1 text-xs text-gray-500">
-                <div className={`${uploadStage === 'uploading' || uploadStage === 'analyzing' || uploadStage === 'complete' ? 'text-blue-600 font-medium' : ''}`}>업로드</div>
-                <div className={`${uploadStage === 'analyzing' || uploadStage === 'complete' ? 'text-blue-600 font-medium' : ''}`}>AI 분석</div>
-                <div className={`${uploadStage === 'complete' ? 'text-blue-600 font-medium' : ''}`}>완료</div>
-              </div>
             </div>
           )}
 
@@ -360,7 +548,7 @@ export default function MealImageUploader({
           <div className="flex justify-end">
             <button
 
-// ...
+              disabled={uploading || verifying || !preview || !isButtonReady}
               onClick={() => {
                 console.log('업로드 버튼 클릭, 상태:', {
                   uploading,
