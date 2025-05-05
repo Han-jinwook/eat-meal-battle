@@ -27,6 +27,14 @@
   schedule = "16 12 3 5 *" # UTC 기준 12:16 (2025년 5월 3일), 한국 시간으로는 21:16
   # 현재 한국시간 21:06 → 21:16에 실행
 
+# AI 이미지 생성 필요 여부 확인 함수 (12:30에 실행)
+[functions.check-missing-meal-images]
+  # 실제 운영 스케줄
+  # schedule = "30 3 * * *" # 매일 UTC 3:30 (한국시간 12:30)
+  
+  # 테스트용 스케줄 (3분 후 실행)
+  schedule = "45 14 5 5 *" # UTC 기준 14:45 (2025년 5월 5일), 한국 시간으로는 23:45
+
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
   from = "/api/meals"

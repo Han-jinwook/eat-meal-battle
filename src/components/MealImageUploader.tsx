@@ -31,6 +31,7 @@ export default function MealImageUploader({
   const [userId, setUserId] = useState<string | null>(null);
   const [isButtonReady, setIsButtonReady] = useState(false);
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
+  const [showAiGenButton, setShowAiGenButton] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 사용자 정보 가져오기
@@ -44,6 +45,58 @@ export default function MealImageUploader({
     
     fetchUserInfo();
   }, [supabase]);
+
+  // AI 이미지 생성 버튼 표시 여부 확인
+  useEffect(() => {
+    const checkIfAiImageNeeded = async () => {
+      // 테스트를 위해 시간 체크 로직은 임시로 항상 true 반환
+      // 실제 구현 시에는 아래 주석 해제
+      /*
+      const now = new Date();
+      const isAfterLunchTime = now.getHours() > 12 || (now.getHours() === 12 && now.getMinutes() >= 30);
+      
+      if (!isAfterLunchTime) {
+        setShowAiGenButton(false);
+        return;
+      }
+      */
+      const isAfterLunchTime = true; // 테스트용
+      
+      if (!mealId || !isAfterLunchTime) return;
+      
+      // 1. 현재 급식의 이미지 확인
+      const { data: images } = await supabase
+        .from('meal_images')
+        .select('id, is_shared, match_score')
+        .eq('meal_id', mealId);
+        
+      // 2. 버튼 표시 조건:
+      // - 이미지가 없거나
+      // - 이미지는 있지만 모두 is_shared=false인 경우
+      const shouldShow = !images || images.length === 0 || !images.some(img => img.is_shared);
+      
+      console.log('AI 이미지 생성 버튼 표시 여부:', {
+        mealId,
+        imagesCount: images?.length || 0,
+        hasSharedImages: images?.some(img => img.is_shared),
+        shouldShow
+      });
+      
+      setShowAiGenButton(shouldShow);
+    };
+    
+    if (mealId) {
+      checkIfAiImageNeeded();
+    }
+  }, [mealId, supabase]);
+
+  // AI 이미지 생성 처리 함수 (버튼용)
+  const handleAiImageGeneration = async () => {
+    // 실제 구현 전 테스트용 로깅
+    console.log('AI 이미지 생성 버튼 클릭!');
+    alert('AI 이미지 생성 버튼이 클릭되었습니다. 이 기능은 아직 구현 중입니다.');
+    // 추후 실제 기능 구현
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -541,9 +594,8 @@ export default function MealImageUploader({
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end space-x-2">
             <button
-
               disabled={uploading || verifying || !preview || !isButtonReady}
               onClick={() => {
                 console.log('업로드 버튼 클릭, 상태:', {
@@ -588,6 +640,18 @@ export default function MealImageUploader({
                 '업로드 및 AI 검증'
               )}
             </button>
+            
+            {showAiGenButton && (
+              <button
+                onClick={handleAiImageGeneration}
+                className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                AI 이미지 생성
+              </button>
+            )}
           </div>
         </>
       )}
