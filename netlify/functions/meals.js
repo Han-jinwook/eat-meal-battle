@@ -200,6 +200,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       // DB에도 없는 경우, 빈 급식 정보 생성 후 DB 저장
       const emptyMealData = {
         school_code: schoolCode,
+        office_code: officeCode, // 교육청 코드 추가
         meal_date: date,
         meal_type: '중식',  // 한글로 변경
         menu_items: ['급식 정보가 없습니다'],
@@ -290,8 +291,9 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     console.error('급식 정보 조회 실패:', error);
     
     // 오류 발생 시 기본 데이터 반환
-    return {
+    const mealData = {
       school_code: schoolCode,
+      office_code: officeCode, // 교육청 코드 추가
       meal_date: date,
       meal_type: '중식',
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
@@ -299,6 +301,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       origin_info: [],
       ntr_info: {}
     };
+    return mealData;
   }
 }
 

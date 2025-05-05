@@ -65,6 +65,11 @@ export default function MealsPage() {
   // YYYY-MM-DD -> YYYYMMDD
   const formatApiDate = (dateStr: string) => {
     if (!dateStr) return '';
+    // 이미 YYYYMMDD 형식인 경우 그대로 반환
+    if (dateStr.length === 8 && !dateStr.includes('-')) {
+      console.log(`이미 API 형식인 날짜: ${dateStr}`);
+      return dateStr;
+    }
     return dateStr.replace(/-/g, '');
   };
 
@@ -136,6 +141,8 @@ export default function MealsPage() {
     // 학교 정보와 날짜가 모두 있을 때만 실행
     if (userSchool?.school_code && selectedDate && !isLoading) {
       console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
+      // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
+      console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
       fetchMealInfo(userSchool.school_code, selectedDate);
     }
   }, [userSchool?.school_code, selectedDate]);
@@ -430,8 +437,28 @@ export default function MealsPage() {
 
       console.log(`최종 사용 office_code: ${officeCode}`);
       
+      // 학교 정보에 office_code가 없는 경우 DB에 업데이트
+      if (userSchool && !userSchool.office_code && officeCode) {
+        console.log(`학교 정보에 office_code 업데이트: ${officeCode}`);
+        try {
+          const { error } = await supabase
+            .from('school_infos')
+            .update({ office_code: officeCode })
+            .eq('school_code', schoolCode);
+          
+          if (error) {
+            console.error('학교 정보 office_code 업데이트 오류:', error);
+          } else {
+            console.log('학교 정보 office_code 업데이트 성공');
+          }
+        } catch (err) {
+          console.error('학교 정보 업데이트 중 오류:', err);
+        }
+      }
+      
       // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
       const apiDate = formatApiDate(date);
+      console.log(`날짜 변환: ${date} -> ${apiDate}`);
       
       // API 호출 전 파라미터 로그
       console.log('API 호출 파라미터:', { schoolCode, officeCode, date: apiDate });
