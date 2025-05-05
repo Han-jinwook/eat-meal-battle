@@ -9,6 +9,9 @@ const { v4: uuidv4 } = require('uuid'); // UUID 생성 라이브러리 임포트
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Supabase 클라이언트 초기화 (전역 변수로 한 번만 선언)
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 // 교육부 NEIS Open API 주소
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
 
@@ -178,7 +181,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     console.log(`급식 정보 조회: ${schoolCode} (${officeCode}) - ${formattedDate}`);
     
     // 1. 먼저 DB에서 급식 정보 조회
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // 전역에서 선언된 supabase 클라이언트 사용
     
     // DB에서 급식 정보 조회
     const { data: existingMealData, error: existingError } = await supabase
@@ -233,13 +236,14 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       
       // DB에도 없는 경우, 빈 급식 정보 생성 후 DB 저장
       const emptyMealData = {
+        id: uuidv4(),
         school_code: schoolCode,
         office_code: officeCode, // 교육청 코드 추가
         meal_date: formatDbDate(date), // 일관된 형식으로 변환
         meal_type: '중식',  // 한글로 변경
         menu_items: ['급식 정보가 없습니다'],
         kcal: '0 kcal',
-        ntr_info: {}, 
+        ntr_info: '', 
         origin_info: []  // 빈 배열로 저장
       };
       
@@ -262,8 +266,6 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     }
     
     // DB에 저장
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
     // 기존 데이터 확인 (이미지 참조 여부 확인)
     const { data: existingData, error: existingError } = await supabase
       .from('meal_menus')
