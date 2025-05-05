@@ -132,11 +132,11 @@ export default function MainHeader() {
                   프로필
                 </Link>
                 <Link
-                  href="/settings/school"
+                  href="/temp/school-search"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsProfileOpen(false)}
                 >
-                  학교 설정
+                  학교 설정<span className="text-xs text-gray-500">(학부모도 가능)</span>
                 </Link>
                 <button
                   onClick={logout}
