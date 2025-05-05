@@ -167,10 +167,41 @@ function parseMealInfo(data) {
  */
 async function fetchMealInfo(schoolCode, officeCode, date) {
   try {
-    // 날짜를 YYYYMMDD 형식으로 변환
-    const apiDate = formatApiDate(date);
+    // 날짜 형식 확인 및 통일 (DB 조회 전)
+    let formattedDate = date;
+    // YYYYMMDD 형식이면 YYYY-MM-DD로 변환
+    if (date && date.length === 8 && !date.includes('-')) {
+      formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
+      console.log(`날짜 형식 변환 (조회 전): ${date} -> ${formattedDate}`);
+    }
     
-    console.log(`급식 정보 조회: ${schoolCode} (${officeCode}) - ${apiDate}`);
+    console.log(`급식 정보 조회: ${schoolCode} (${officeCode}) - ${formattedDate}`);
+    
+    // 1. 먼저 DB에서 급식 정보 조회
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // DB에서 급식 정보 조회
+    const { data: existingMealData, error: existingError } = await supabase
+      .from('meal_menus')
+      .select('*')
+      .eq('school_code', schoolCode)
+      .eq('meal_date', formattedDate)
+      .eq('meal_type', '중식');
+    
+    // DB에 데이터가 있으면 바로 반환
+    if (!existingError && existingMealData && existingMealData.length > 0) {
+      console.log(`DB에 저장된 급식 정보 사용: ${schoolCode}, ${formattedDate}`);
+      // DB에서 가져온 데이터임을 표시
+      const dbMealData = existingMealData[0];
+      dbMealData.source = 'database';
+      return dbMealData;
+    }
+    
+    // 2. DB에 없으면 API 호출
+    console.log('DB에 없는 데이터입니다. API 호출을 시도합니다.');
+    
+    // 날짜를 YYYYMMDD 형식으로 변환 (API 호출용)
+    const apiDate = formatApiDate(date);
     
     // NEIS API 키 설정 여부 출력
     console.log('NEIS_API_KEY 설정 여부:', process.env.NEIS_API_KEY ? '설정됨' : '설정되지 않음');
@@ -199,21 +230,6 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     const meals = parseMealInfo(data);
     
     if (meals.length === 0) {
-      // 데이터가 없는 경우, 먼저 기존에 DB에 저장된 급식 정보 확인
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      
-      // DB에서 급식 정보 조회
-      const { data: existingMealData, error: existingError } = await supabase
-        .from('meal_menus')
-        .select('*')
-        .eq('school_code', schoolCode)
-        .eq('meal_date', date)
-        .eq('meal_type', '중식');  // 한글로 변경
-      
-      if (!existingError && existingMealData && existingMealData.length > 0) {
-        console.log(`DB에 저장된 급식 정보 사용: ${schoolCode}, ${date}`);
-        return existingMealData[0];
-      }
       
       // DB에도 없는 경우, 빈 급식 정보 생성 후 DB 저장
       const emptyMealData = {
@@ -240,6 +256,8 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
         console.log(`급식 없음 정보 저장 성공`);
       }
       
+      // 빈 데이터도 DB에서 가져온 것으로 표시
+      emptyMealData.source = 'database';
       return emptyMealData;
     }
     
@@ -307,7 +325,8 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       console.log(`급식 정보 저장 성공`);
     }
     
-    // 처음 찾은 급식 정보 반환
+    // 처음 찾은 급식 정보 반환 (API에서 가져온 데이터)
+    meals[0].source = 'api';
     return meals[0];
   } catch (error) {
     console.error('급식 정보 조회 실패:', error);
@@ -321,7 +340,8 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
       kcal: '0 kcal',
       origin_info: [],
-      ntr_info: {}
+      ntr_info: {},
+      source: 'error' // 오류 상태를 표시
     };
     return mealData;
   }
@@ -370,12 +390,21 @@ exports.handler = async function(event, context) {
     const mealData = await fetchMealInfo(school_code, office_code, mealDate);
     
     // 응답 JSON을 프론트엔드 기대 형식으로 래핑
+    // 데이터 소스를 정확히 표시
+    const source = mealData.source || 'api';
+    
+    // 데이터에서 source 필드 제거 (프론트엔드에서는 응답 전체의 source 필드를 사용)
+    if (mealData.source) {
+      delete mealData.source;
+    }
+    
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
         meals: Array.isArray(mealData) ? mealData : (mealData ? [mealData] : []),
-        source: 'api'
+        source: source,
+        date: date // 날짜 정보 추가
       })
     };
     
