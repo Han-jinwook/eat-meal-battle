@@ -267,7 +267,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     
     // DB에 저장
     // 기존 데이터 확인 (이미지 참조 여부 확인)
-    const { data: existingData, error: existingError } = await supabase
+    const { data: existingData, error: mealExistingError } = await supabase
       .from('meal_menus')
       .select('id')
       .eq('school_code', meals[0].school_code)
@@ -280,7 +280,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
     console.log(`DB에 저장할 날짜 형식: ${meals[0].meal_date}`);
     
     // 기존 ID가 있는지 확인
-    if (!existingError && existingData && existingData.id) {
+    if (!mealExistingError && existingData && existingData.id) {
       // 해당 ID를 참조하는 이미지가 있는지 확인
       const { data: imageData, error: imageError } = await supabase
         .from('meal_images')
