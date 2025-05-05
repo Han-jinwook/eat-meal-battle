@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/NotificationBell';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // 네비게이션 항목 정의
 type NavItem = {
@@ -26,6 +26,7 @@ export default function MainHeader() {
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -45,6 +46,24 @@ export default function MainHeader() {
       authListener?.subscription.unsubscribe();
     };
   }, [supabase]);
+  
+  // 프로필 메뉴 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    
+    // 프로필 메뉴가 열려있을 때만 이벤트 리스너 추가
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   const toggleProfile = () => setIsProfileOpen((p) => !p);
   const logout = async () => {
@@ -80,7 +99,7 @@ export default function MainHeader() {
           {user && <NotificationBell />}
 
           {/* 프로필 또는 로그인 버튼 */}
-          <div className="relative">
+          <div className="relative" ref={profileRef}>
             {user ? (
               // 로그인 상태: 사용자 프로필 이미지 표시
               <button
