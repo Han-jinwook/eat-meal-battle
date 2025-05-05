@@ -29,6 +29,7 @@ export default function MealImageUploader({
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [uploadedImage, setUploadedImage] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isButtonReady, setIsButtonReady] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 사용자 정보 가져오기
@@ -65,10 +66,19 @@ export default function MealImageUploader({
       return;
     }
 
+    // 버튼 초기화 및 3초 타이머 시작
+    setIsButtonReady(false);
+    
     // 미리보기 생성
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target?.result as string);
+      
+      // 3초 후 버튼 활성화
+      setTimeout(() => {
+        setIsButtonReady(true);
+        console.log('버튼 활성화 타이머 완료');
+      }, 3000);
     };
     reader.readAsDataURL(file);
     setError(null);
@@ -81,7 +91,8 @@ export default function MealImageUploader({
       file: !!file,
       previewSet: !!e.target?.files?.[0],
       uploading: false,
-      verifying: false
+      verifying: false,
+      isButtonReady: false
     });
   };
 
@@ -527,7 +538,7 @@ export default function MealImageUploader({
           <div className="flex justify-end">
             <button
 
-              disabled={uploading || verifying || !preview}
+              disabled={uploading || verifying || !preview || !isButtonReady}
               onClick={() => {
                 console.log('업로드 버튼 클릭, 상태:', {
                   uploading,
@@ -538,7 +549,7 @@ export default function MealImageUploader({
                 handleUpload();
               }}
               className={`px-4 py-2 rounded-md text-white ${
-                uploading || verifying || !preview
+                uploading || verifying || !preview || !isButtonReady
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
