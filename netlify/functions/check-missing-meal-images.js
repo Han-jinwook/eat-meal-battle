@@ -2,7 +2,14 @@
 // 이미지가 없거나 공유되지 않은 급식을 찾아 플래그 설정
 
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+
+// dotenv 사용 - Netlify 환경에서는 필요없지만 로컬 개발용
+// try-catch로 감싸서 오류 방지
+try {
+  require('dotenv').config();
+} catch (e) {
+  console.log('dotenv 모듈을 로드할 수 없습니다. Netlify 환경에서는 정상입니다.');
+}
 
 exports.handler = async (event) => {
   try {
