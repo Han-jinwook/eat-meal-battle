@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { formatApiDate } from '@/utils/DateUtils';
 
 export interface MealInfo {
   id: string;
@@ -47,8 +48,10 @@ export default function useMeals(): UseMealsReturn {
         setIsLoading(true);
         setError('');
 
+        const apiDate = formatApiDate(date); // YYYYMMDD로 변환
+
         const response = await fetch(
-          `/api/meals?school_code=${schoolCode}&meal_date=${date}&office_code=${officeCode}`
+          `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`
         );
         if (!response.ok) {
           throw new Error(`API 호출 실패: ${response.statusText}`);

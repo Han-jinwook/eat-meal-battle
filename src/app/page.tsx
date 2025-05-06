@@ -116,7 +116,7 @@ export default function Home() {
       console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
-      fetchMealInfo(userSchool.school_code, selectedDate);
+      fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
     }
   }, [userSchool?.school_code, selectedDate, pageLoading]);
 
@@ -156,6 +156,19 @@ export default function Home() {
     return 'B10';
   };
 
+  // userSchool 정보 기준 officeCode 결정
+  const resolveOfficeCode = () => {
+    let office = 'E10';
+    if (userSchool) {
+      if (userSchool.office_code) {
+        office = userSchool.office_code;
+      } else if (userSchool.region) {
+        office = getOfficeCode(userSchool.region);
+      }
+    }
+    return office;
+  };
+
   // 날짜 변경 핸들러 - 날짜 변경 시 자동으로 조회
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
@@ -165,7 +178,7 @@ export default function Home() {
     
     // 학교 정보가 있으면 자동으로 급식 정보 조회
     if (userSchool?.school_code) {
-      fetchMealInfo(userSchool.school_code, newDate);
+      fetchMealInfo(userSchool.school_code, newDate, resolveOfficeCode());
     }
   };
 
