@@ -7,6 +7,7 @@ import Link from 'next/link';
 import MealImageList from '@/components/MealImageList';
 import MealCard from '@/components/MealCard';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
+import useMeals from '@/hooks/useMeals';
 // 디버그 패널 제거
 
 // 급식 정보 타입 정의
@@ -29,17 +30,13 @@ export default function Home() {
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);  // 사용자 정보
   const [userSchool, setUserSchool] = useState<any>(null); // 학교 정보
-  const [meals, setMeals] = useState<MealInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [dataSource, setDataSource] = useState(''); // 데이터 소스 추적 (database 또는 api)
   const [selectedDate, setSelectedDate] = useState<string>('');
-  
+
   // 모달 관련 상태
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [modalTitle, setModalTitle] = useState('');
-  
+
   // 이미지 업로드 관련 상태
   const [refreshImageList, setRefreshImageList] = useState(0);
 
@@ -49,7 +46,7 @@ export default function Home() {
   useEffect(() => {
     const getUserInfo = async () => {
       try {
-        setIsLoading(true);
+        setPageLoading(true);
 
         // 1. 세션 및 사용자 정보 가져오기
         const { data: { user }, error } = await supabase.auth.getUser();
@@ -83,32 +80,45 @@ export default function Home() {
           setSelectedDate(today);
         } else {
           // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
-          setError('로그인이 필요합니다');
+          setPageError('로그인이 필요합니다');
           setTimeout(() => {
             router.push('/login');
           }, 2000);
         }
       } catch (err) {
         console.error('정보 로딩 오류:', err);
-        setError(`정보를 불러오는 중 오류가 발생했습니다: ${err.message}`);
+        setPageError(`정보를 불러오는 중 오류가 발생했습니다: ${err.message}`);
       } finally {
-        setIsLoading(false);
+        setPageLoading(false);
       }
     };
 
     getUserInfo();
   }, [supabase, router]);
 
+  // 페이지 자체 로딩/에러 (사용자·학교 정보용)
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageError, setPageError] = useState('');
+
+  // 급식 데이터 훅
+  const {
+    meals,
+    isLoading,
+    error,
+    dataSource,
+    fetchMealInfo,
+  } = useMeals();
+
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
     // 학교 정보와 날짜가 모두 있을 때만 실행
-    if (userSchool?.school_code && selectedDate && !isLoading) {
+    if (userSchool?.school_code && selectedDate && !isLoading && !pageLoading) {
       console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
       fetchMealInfo(userSchool.school_code, selectedDate);
     }
-  }, [userSchool?.school_code, selectedDate]);
+  }, [userSchool?.school_code, selectedDate, isLoading, pageLoading]);
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
 
@@ -151,7 +161,7 @@ export default function Home() {
     const newDate = e.target.value;
     setSelectedDate(newDate);
     // 날짜 변경 시 기존 오류 메시지 초기화
-    setError('');
+    setPageError('');
     
     // 학교 정보가 있으면 자동으로 급식 정보 조회
     if (userSchool?.school_code) {
@@ -461,109 +471,6 @@ export default function Home() {
     return result || '원산지 정보\n' + lines.join('\n');
   };
 
-  // 급식 정보 가져오기
-  const fetchMealInfo = async (schoolCode: string, date: string) => {
-    if (!schoolCode || !date) {
-      setError('학교 코드와 날짜가 필요합니다.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError('');
-      
-      // 교육청 코드 가져오기 (중요!)
-      // 기본값 설정으로 인첩 교육청 코드 'E10' 사용
-      let officeCode = 'E10';
-      
-      if (userSchool) {
-        // 학교 정보에 교육청 코드가 있으면 사용
-        if (userSchool.office_code) {
-          officeCode = userSchool.office_code;
-          console.log(`학교 office_code 사용: ${officeCode}`);
-        }
-        // 없으면 지역 정보에서 추출 시도
-        else if (userSchool.region) {
-          officeCode = getOfficeCode(userSchool.region);
-          console.log(`지역에서 office_code 추출: ${officeCode}, 지역: ${userSchool.region}`);
-        }
-      }
-
-      console.log(`최종 사용 office_code: ${officeCode}`);
-      
-      // 학교 정보에 office_code가 없는 경우 DB에 업데이트
-      if (userSchool && !userSchool.office_code && officeCode) {
-        console.log(`학교 정보에 office_code 업데이트: ${officeCode}`);
-        try {
-          const { error } = await supabase
-            .from('school_infos')
-            .update({ office_code: officeCode })
-            .eq('school_code', schoolCode);
-          
-          if (error) {
-            console.error('학교 정보 office_code 업데이트 오류:', error);
-          } else {
-            console.log('학교 정보 office_code 업데이트 성공');
-          }
-        } catch (err) {
-          console.error('학교 정보 업데이트 중 오류:', err);
-        }
-      }
-      
-      // API 날짜 형식으로 변환 (YYYY-MM-DD -> YYYYMMDD)
-      const apiDate = formatApiDate(date);
-      console.log(`날짜 변환: ${date} -> ${apiDate}`);
-      
-      // API 호출 전 파라미터 로그
-      console.log('API 호출 파라미터:', { schoolCode, officeCode, date: apiDate });
-
-      // 로컬(127.0.0.1/localhost/사설IP) 여부에 따라 Netlify Functions 프리픽스 결정
-      const isLocalhost = typeof window !== 'undefined' && /^(localhost|127\.|192\.168\.)/.test(window.location.hostname);
-      const apiPrefix = isLocalhost ? '/api' : '/.netlify/functions';
-      const apiUrl = `${apiPrefix}/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
-
-      // 로직의 명확성을 위해 경로를 출력
-      console.log(`API 요청 URL: ${apiUrl}`);
-
-      // 첫번째 시도 - 기본 API 경로 (상대경로)
-      let response = await fetch(apiUrl);
-
-      // 기본 API 요청이 실패하면 Netlify Functions로 직접 시도
-      if (!response.ok) {
-        console.log(`첫번째 시도 실패: ${response.status}. Netlify Functions으로 재시도합니다.`);
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const netlifyFunctionUrl = `${baseUrl}/.netlify/functions/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`;
-
-        console.log(`Netlify Functions 요청 URL: ${netlifyFunctionUrl}`);
-        response = await fetch(netlifyFunctionUrl);
-
-        if (!response.ok) {
-          throw new Error(`급식 정보를 가져오는데 실패했습니다. (${response.status})`);
-        }
-      }
-
-      const data = await response.json();
-
-      // 데이터 소스 표시
-      setDataSource(data.source || 'unknown');
-      
-      // 급식 정보 설정
-      if (data.meals && data.meals.length > 0) {
-        setMeals(data.meals);
-        setError('');
-      } else {
-        setMeals([]);
-        setError('해당 날짜의 급식 정보가 없습니다.');
-      }
-    } catch (err) {
-      console.error('급식 정보 조회 오류:', err);
-      setMeals([]);
-      setError(`급식 정보를 가져오는 중 오류가 발생했습니다: ${err.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       {/* 디버그 패널 제거 */}
@@ -644,7 +551,7 @@ export default function Home() {
                 )}
               </div>
             </div>
-            {isLoading && (
+            {(isLoading || pageLoading) && (
               <div className="flex items-center text-gray-600 mt-2">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -656,15 +563,15 @@ export default function Home() {
           </div>
           
           {/* 에러 메시지 */}
-          {error && !meals.length && (
+          {(error || pageError) && !meals.length && (
             <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
-              {error}
+              {error || pageError}
             </div>
           )}
         </div>
 
         {/* 급식 정보 표시 */}
-        {!isLoading && (
+        {!isLoading && !pageLoading && (
           <>
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -684,8 +591,8 @@ export default function Home() {
                     }}
                     onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
                     onUploadError={(e) => {
-                      setError(e);
-                      setTimeout(() => setError(''), 3000);
+                      setPageError(e);
+                      setTimeout(() => setPageError(''), 3000);
                     }}
                   />
                 ))}
@@ -715,7 +622,7 @@ export default function Home() {
 
                 <div className="bg-gray-50 p-4 rounded-md text-center">
                   <p className="text-gray-700 font-medium">
-                    {error || '해당 날짜의 급식 정보가 없습니다.'}
+                    {(error || pageError) || '해당 날짜의 급식 정보가 없습니다.'}
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
                     다른 날짜를 선택해보세요.
