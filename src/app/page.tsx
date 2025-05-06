@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
-import MealImageUploader from '@/components/MealImageUploader';
 import MealImageList from '@/components/MealImageList';
+import MealCard from '@/components/MealCard';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 // 디버그 패널 제거
 
@@ -668,89 +668,26 @@ export default function Home() {
           <>
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {meals.map((meal, index) => (
-                  <div key={index} className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <div className="bg-gray-50 p-3 border-b">
-                      {/* 급식 사진 업로더 - 메뉴 앞으로 이동 */}
-                      <MealImageUploader 
-                        mealId={meal.id}
-                        schoolCode={meal.school_code}
-                        mealDate={meal.meal_date}
-                        mealType={meal.meal_type}
-                        onUploadSuccess={() => setRefreshImageList(prev => prev + 1)}
-                        onUploadError={(error) => {
-                          setError(error);
-                          setTimeout(() => setError(''), 3000);
-                        }}
-                      />
-                      
-                      {/* 이미지 목록은 MealImageUploader에서 직접 표시하므로 제거 */}
-                    </div>
-
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-lg font-semibold flex items-center">
-                            <span className="mr-2">{getMealTypeIcon(meal.meal_type)}</span>
-                            {meal.meal_type}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {formatDisplayDate(meal.meal_date)}
-                          </p>
-                        </div>
-                        
-                        {meal.kcal && (
-                          <div className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                            {meal.kcal}kcal
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="mb-4">
-                        <ul className="space-y-1">
-                          {meal.menu_items.map((item, idx) => (
-                            <li key={idx} className="text-gray-700">
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-
-                      <div className="flex flex-wrap gap-2">
-                        {meal.origin_info && (
-                          <button 
-                            onClick={() => {
-                              setModalTitle('원산지 정보');
-                              setModalContent(formatOriginInfo(meal.origin_info));
-                              setShowModal(true);
-                            }}
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                          >
-                            원산지 보기
-                          </button>
-                        )}
-                        {/* 영양정보 버튼 - 칼로리나 ntr_info가 있으면 표시 */}
-                        {(meal.kcal || meal.ntr_info) && (
-                          <button 
-                            onClick={() => {
-                              setModalTitle('영양 정보');
-                              setModalContent(formatNutritionInfo(meal));
-                              setShowModal(true);
-                            }}
-                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                          >
-                            영양정보
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-3 border-t">
-                      <div className="mt-2">
-                      </div>
-                    </div>
-                  </div>
+                {meals.map((meal) => (
+                  <MealCard
+                    key={meal.id}
+                    meal={meal}
+                    onShowOrigin={(info) => {
+                      setModalTitle('원산지 정보');
+                      setModalContent(formatOriginInfo(info));
+                      setShowModal(true);
+                    }}
+                    onShowNutrition={(m) => {
+                      setModalTitle('영양 정보');
+                      setModalContent(formatNutritionInfo(m));
+                      setShowModal(true);
+                    }}
+                    onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                    onUploadError={(e) => {
+                      setError(e);
+                      setTimeout(() => setError(''), 3000);
+                    }}
+                  />
                 ))}
                 
                 {/* 데이터 소스 정보 표시 */}
