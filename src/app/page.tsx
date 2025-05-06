@@ -9,6 +9,8 @@ import MealImageList from '@/components/MealImageList';
 import MealCard from '@/components/MealCard';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useMeals from '@/hooks/useMeals';
+import useModal from '@/hooks/useModal';
+import { MealInfo } from '@/types';
 // 디버그 패널 제거
 
 // 급식 정보 타입 정의
@@ -34,11 +36,6 @@ export default function Home() {
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
 
   const [selectedDate, setSelectedDate] = useState<string>('');
-
-  // 모달 관련 상태
-  const [showModal, setShowModal] = useState(false);
-  const [modalContent, setModalContent] = useState('');
-  const [modalTitle, setModalTitle] = useState('');
 
   // 이미지 업로드 관련 상태
   const [refreshImageList, setRefreshImageList] = useState(0);
@@ -164,17 +161,11 @@ export default function Home() {
   };
 
   // 모달 표시 함수
-  const showOriginModal = (originInfo: string) => {
-    setModalTitle('원산지 정보');
-    setModalContent(formatOriginInfo(originInfo));
-    setShowModal(true);
-  };
+  const { isOpen: showModal, title: modalTitle, content: modalContent, openModal, closeModal } = useModal();
 
   // 영양정보 모달 표시 함수
   const showNutritionModal = (meal: MealInfo) => {
-    setModalTitle('영양 정보');
-    setModalContent(formatNutritionInfo(meal));
-    setShowModal(true);
+    openModal('영양 정보', formatNutritionInfo(meal));
   };
 
   // 영양정보 포맷팅 함수
@@ -462,7 +453,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">{modalTitle}</h3>
               <button 
-                onClick={() => setShowModal(false)}
+                onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -558,14 +549,10 @@ export default function Home() {
                     key={meal.id}
                     meal={meal}
                     onShowOrigin={(info) => {
-                      setModalTitle('원산지 정보');
-                      setModalContent(formatOriginInfo(info));
-                      setShowModal(true);
+                      openModal('원산지 정보', formatOriginInfo(info));
                     }}
                     onShowNutrition={(m) => {
-                      setModalTitle('영양 정보');
-                      setModalContent(formatNutritionInfo(m));
-                      setShowModal(true);
+                      openModal('영양 정보', formatNutritionInfo(m));
                     }}
                     onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
                     onUploadError={(e) => {

@@ -1,6 +1,6 @@
 import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate } from '@/utils/DateUtils';
-import { MealInfo } from '@/app/page'; // re-use type until moved to separate file
+import { MealInfo } from '@/types'; // re-use type until moved to separate file
 
 interface MealCardProps {
   meal: MealInfo;
