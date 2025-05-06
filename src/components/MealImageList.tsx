@@ -14,6 +14,7 @@ interface MealImage {
   is_shared: boolean;
   match_score?: number;
   explanation?: string;
+  source?: 'user' | 'ai';
 }
 
 interface MealMenu {
@@ -43,11 +44,35 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
   const [sharedImages, setSharedImages] = useState<MealImage[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [mealInfo, setMealInfo] = useState<MealMenu | null>(null);
+  const [uploaderNames, setUploaderNames] = useState<{[key: string]: string}>({});
   
   // 모달 관련 상태
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [modalTitle, setModalTitle] = useState('');
+  
+  // 업로더 닉네임 가져오기
+  const fetchUploaderNames = async (images: MealImage[]) => {
+    const uniqueUploaders = Array.from(new Set(images
+      .filter(img => img.uploaded_by && img.uploaded_by !== 'system')
+      .map(img => img.uploaded_by)));
+    
+    if (uniqueUploaders.length === 0) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, nickname')
+      .in('id', uniqueUploaders);
+    
+    if (data) {
+      const nameMap = data.reduce((acc, profile) => {
+        acc[profile.id] = profile.nickname || '사용자';
+        return acc;
+      }, {} as {[key: string]: string});
+      
+      setUploaderNames(nameMap);
+    }
+  };
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -87,6 +112,9 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
           setUserImages(userImgs);
           setSharedImages(sharedImgs);
         }
+        
+        // 업로더 닉네임 가져오기
+        fetchUploaderNames(data || []);
         
         // 급식 메뉴 정보 가져오기
         const { data: mealData, error: mealError } = await supabase
@@ -309,10 +337,24 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
                   />
                 </div>
                 <div className="p-3">
-                  <div className="flex justify-end items-center mb-2">
-                    <span className="text-xs text-gray-500">
-                      {new Date(image.created_at).toLocaleString('ko-KR')}
-                    </span>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(image.status)}`}>
+                        {getStatusText(image.status)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(image.created_at).toLocaleString('ko-KR')}
+                        {image.source === 'ai' ? (
+                          <span className="ml-1 text-xs text-gray-500">(AI생성 참고이미지)</span>
+                        ) : (
+                          image.uploaded_by && uploaderNames[image.uploaded_by] ? (
+                            <span className="ml-1 text-xs text-gray-500">(등록자: {uploaderNames[image.uploaded_by]})</span>
+                          ) : null
+                        )}
+                      </span>
+                    </div>
                   </div>
                   
 
@@ -353,10 +395,24 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
                   />
                 </div>
                 <div className="p-3">
-                  <div className="flex justify-end items-center">
-                    <span className="text-xs text-gray-500">
-                      {new Date(image.created_at).toLocaleString('ko-KR')}
-                    </span>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(image.status)}`}>
+                        {getStatusText(image.status)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(image.created_at).toLocaleString('ko-KR')}
+                        {image.source === 'ai' ? (
+                          <span className="ml-1 text-xs text-gray-500">(AI생성 참고이미지)</span>
+                        ) : (
+                          image.uploaded_by && uploaderNames[image.uploaded_by] ? (
+                            <span className="ml-1 text-xs text-gray-500">(등록자: {uploaderNames[image.uploaded_by]})</span>
+                          ) : null
+                        )}
+                      </span>
+                    </div>
                   </div>
                   
 

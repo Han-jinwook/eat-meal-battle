@@ -124,6 +124,7 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
         status: 'approved', // AI 생성 이미지는 자동 승인
         is_shared: true,    // 자동으로 공유 설정
         match_score: 90,    // 높은 매치 스코어
+        source: 'ai',       // AI 생성 이미지 표시
         explanation: 'AI가 생성한 급식 이미지입니다.'
       })
       .select()
@@ -135,6 +136,61 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
     }
     
     console.log(`[generate-meal-image] 성공: 이미지 ID ${imageRecord.id}`);
+    
+    // 학교 ID 가져오기
+    const { data: mealData } = await supabase
+      .from('meals')
+      .select('school_id')
+      .eq('id', meal_id)
+      .single();
+      
+    if (mealData && mealData.school_id) {
+      // 알림 생성
+      console.log('[generate-meal-image] 알림 생성 중...');
+      try {
+        const { data: notification, error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            type: 'meal_image_ai',
+            title: '오늘의 급식 이미지가 AI에 의해 생성되었습니다',
+            content: '별점으로 오늘의 급식배틀 참여하세요!',
+            related_id: meal_id,
+            created_at: new Date()
+          })
+          .select()
+          .single();
+          
+        if (notificationError) {
+          console.error('[generate-meal-image] 알림 생성 오류:', notificationError);
+        } else if (notification) {
+          // 학교 사용자들에게 알림 전송
+          const { data: schoolUsers } = await supabase
+            .from('user_schools')
+            .select('user_id')
+            .eq('school_id', mealData.school_id);
+            
+          if (schoolUsers && schoolUsers.length > 0) {
+            const notificationRecipients = schoolUsers.map(user => ({
+              notification_id: notification.id,
+              user_id: user.user_id,
+              is_read: false
+            }));
+            
+            const { error: recipientsError } = await supabase
+              .from('notification_recipients')
+              .insert(notificationRecipients);
+              
+            if (recipientsError) {
+              console.error('[generate-meal-image] 알림 수신자 저장 오류:', recipientsError);
+            } else {
+              console.log(`[generate-meal-image] 알림 전송 완료: ${schoolUsers.length}명에게 전송`);
+            }
+          }
+        }
+      } catch (notifyError) {
+        console.error('[generate-meal-image] 알림 처리 중 오류:', notifyError);
+      }
+    }
     
     return {
       statusCode: 200,
