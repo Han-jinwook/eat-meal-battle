@@ -151,48 +151,44 @@ export default function SchoolSearchPage() {
     setError('');
 
     try {
-      // 사용자 프로필 정보 가져오기
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+      // 사용자 학교 정보 존재 여부 확인
+      const { data: schoolInfo, error: schoolInfoError } = await supabase
+        .from('school_infos')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
+      if (schoolInfoError && schoolInfoError.code !== 'PGRST116') {
+        throw schoolInfoError;
       }
 
       // 학교 정보 저장
       const schoolData = {
+        user_id: user.id,
         school_code: selectedSchool.SD_SCHUL_CODE,
         school_name: selectedSchool.SCHUL_NM,
         school_type: selectedSchool.SCHUL_KND_SC_NM,
-        school_region: selectedSchool.LCTN_SC_NM,
-        school_address: selectedSchool.ORG_RDNMA,
+        region: selectedSchool.LCTN_SC_NM,
+        address: selectedSchool.ORG_RDNMA,
         office_code: selectedSchool.ATPT_OFCDC_SC_CODE,
         grade: classInfo.grade,
         class_number: classInfo.classNumber,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
-      // 프로필이 있으면 업데이트, 없으면 생성
-      if (profileData) {
+      if (schoolInfo) {
+        // 기존 레코드가 있으면 업데이트
         const { error: updateError } = await supabase
-          .from('profiles')
+          .from('school_infos')
           .update(schoolData)
-          .eq('id', user.id);
+          .eq('user_id', user.id);
 
         if (updateError) throw updateError;
       } else {
+        // 없으면 새로 추가
         const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: user.id,
-              email: user.email,
-              ...schoolData
-            }
-          ]);
+          .from('school_infos')
+          .insert([schoolData]);
 
         if (insertError) throw insertError;
       }
