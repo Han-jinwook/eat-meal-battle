@@ -6,6 +6,8 @@ const withPWA = require('next-pwa')({
   disable: true, // 일시적으로 PWA 비활성화
 });
 
+const path = require('path');
+
 const nextConfig = {
   // Netlify에서 API 라우트 지원을 위한 설정
   output: 'standalone',
@@ -28,6 +30,12 @@ const nextConfig = {
   // 빌드 시 타입 검사 비활성화 (Netlify 배포를 위한 설정)
   typescript: {
     ignoreBuildErrors: true,
+  },
+
+  // Webpack 설정: '@/...' 별칭을 src 디렉토리로 매핑
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    return config;
   },
 }
 
