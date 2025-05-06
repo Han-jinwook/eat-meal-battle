@@ -112,13 +112,13 @@ export default function Home() {
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
     // 학교 정보와 날짜가 모두 있을 때만 실행
-    if (userSchool?.school_code && selectedDate && !isLoading && !pageLoading) {
+    if (userSchool?.school_code && selectedDate && !pageLoading && !isLoading) {
       console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
       fetchMealInfo(userSchool.school_code, selectedDate);
     }
-  }, [userSchool?.school_code, selectedDate, isLoading, pageLoading]);
+  }, [userSchool?.school_code, selectedDate, pageLoading]);
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
 
