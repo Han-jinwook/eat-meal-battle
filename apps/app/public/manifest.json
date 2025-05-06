@@ -1,0 +1,23 @@
+{
+  "name": "Eat Meal Battle",
+  "short_name": "급식배틀",
+  "description": "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+[2025-05-07 작업 메모]
+=================================
+
+1. 오늘 해결/진행한 사항
+-------------------------
+• public/icons 폴더 이동으로 PWA 아이콘 404 해결
+• useMeals 훅에 404(데이터 없음) graceful-handling 추가
+• MealImageUploader 컴포넌트
+  – Supabase 404 네트워크 에러 억제: HEAD 체크 + maybeSingle 사용
+  – 테이블 없음(42P01)·행 없음(PGRST116)은 debug 로그만 출력
+  – AI 이미지 생성 버튼 조건 로직에 반영
+• dev 서버로 동작 확인: 콘솔 404 및 빨간 error stack 제거 완료
+
+2. 남은 TODO / 내일 우선순위
+-----------------------------
+□ MainHeader 로고 및 ‘급식’ 메뉴 링크를 실제 메인 페이지(/)로 변경
+□ next.config.js 의 images.domains → images.remotePatterns 마이그레이션(Deprecation warning 제거)
+□ PWA manifest/icon 경로 최종 확인 후 Netlify 배포 테스트
+□ 필요 시 MealImageUploader 리팩터링: 상태 enum 정리, UI 작은 다듬기
+
+3. 사용 원칙 / 주의사항
+-----------------------
+• 이미 정상 작동하는 기능은 수정 금지 (사용자 정책)
+• 테스트 코드는 작성하지 않음, 프로덕션 직접 테스트
+• 항상 프로덕션 환경(Netlify) 기준으로 확인
+
+4. 재시작 체크리스트
+---------------------
+1) `npm install` (패키지 변동 시)
+2) `.env.local` 가 존재하는지 확인 (Supabase 키 등)
+3) `npm run dev` 로 로컬 확인 후 Netlify 배포
+
+메모 끝 – 내일 시작 시 이 파일을 먼저 읽고 이어서 작업할 것.
