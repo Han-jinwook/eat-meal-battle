@@ -14,7 +14,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: '급식', href: '/temp/meals' },
+  { label: '급식', href: '/' },
   { label: '퀴즈', href: '/quiz' },
   { label: '배틀', href: '/battle' },
   { label: '랭킹', href: '/ranking' },
@@ -75,7 +75,7 @@ export default function MainHeader() {
     <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
         {/* 로고 */}
-        <Link href="/temp/meals" className="flex items-center text-lg font-bold text-indigo-600">
+        <Link href="/" className="flex items-center text-lg font-bold text-indigo-600">
           <span className="mr-2 hidden sm:inline">🍱</span> 급식배틀
         </Link>
 
@@ -132,7 +132,7 @@ export default function MainHeader() {
                   프로필
                 </Link>
                 <Link
-                  href="/temp/school-search"
+                  href="/school-search"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsProfileOpen(false)}
                 >
