@@ -65,6 +65,15 @@ export default function Home() {
     }
   }, [userError]);
 
+  // 최초 진입 시 날짜 자동 설정
+  useEffect(() => {
+    if (!selectedDate && !userLoading && userSchool) {
+      // 오늘 날짜를 YYYY-MM-DD 형식으로 설정
+      const today = getCurrentDate();
+      setSelectedDate(today);
+    }
+  }, [selectedDate, userLoading, userSchool]);
+
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
     // 학교 정보와 날짜가 모두 있을 때만 실행
