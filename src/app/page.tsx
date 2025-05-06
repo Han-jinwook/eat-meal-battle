@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
+import useUserSchool from '@/hooks/useUserSchool';
 import Link from 'next/link';
 import MealImageList from '@/components/MealImageList';
 import MealCard from '@/components/MealCard';
@@ -28,8 +29,10 @@ interface MealInfo {
 export default function Home() {
   const router = useRouter();
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);  // 사용자 정보
-  const [userSchool, setUserSchool] = useState<any>(null); // 학교 정보
+
+  // 사용자/학교 정보 훅
+  const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+
   const [selectedDate, setSelectedDate] = useState<string>('');
 
   // 모달 관련 상태
@@ -41,60 +44,6 @@ export default function Home() {
   const [refreshImageList, setRefreshImageList] = useState(0);
 
   // 날짜 관련 유틸리티 함수는 @/utils/DateUtils로 이동
-
-  // 사용자 정보 및 학교 정보 가져오기
-  useEffect(() => {
-    const getUserInfo = async () => {
-      try {
-        setPageLoading(true);
-
-        // 1. 세션 및 사용자 정보 가져오기
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error) {
-          throw error;
-        }
-
-        if (user) {
-          setUser(user);
-
-          // 2. 사용자의 학교 정보 가져오기
-          const { data: schoolInfo, error: schoolError } = await supabase
-            .from('school_infos')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-
-          if (schoolError && schoolError.code !== 'PGRST116') { 
-            // PGRST116: 결과 없음 오류는 무시 (학교 정보가 없을 수 있음)
-            throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
-          }
-
-          if (schoolInfo) {
-            console.log('학교 정보 가져오기 성공:', schoolInfo);
-            setUserSchool(schoolInfo); // 학교 정보 상태 저장
-          }
-          
-          // 현재 날짜 설정 (초기 API 호출 없이 날짜만 설정)
-          const today = getCurrentDate();
-          setSelectedDate(today);
-        } else {
-          // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
-          setPageError('로그인이 필요합니다');
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
-        }
-      } catch (err) {
-        console.error('정보 로딩 오류:', err);
-        setPageError(`정보를 불러오는 중 오류가 발생했습니다: ${err.message}`);
-      } finally {
-        setPageLoading(false);
-      }
-    };
-
-    getUserInfo();
-  }, [supabase, router]);
 
   // 페이지 자체 로딩/에러 (사용자·학교 정보용)
   const [pageLoading, setPageLoading] = useState(false);
@@ -109,16 +58,23 @@ export default function Home() {
     fetchMealInfo,
   } = useMeals();
 
+  // userError 발생 시 에러 처리
+  useEffect(() => {
+    if (userError) {
+      setPageError(userError);
+    }
+  }, [userError]);
+
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
     // 학교 정보와 날짜가 모두 있을 때만 실행
-    if (userSchool?.school_code && selectedDate && !pageLoading && !isLoading) {
+    if (userSchool?.school_code && selectedDate && !pageLoading && !isLoading && !userLoading) {
       console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
       fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
     }
-  }, [userSchool?.school_code, selectedDate, pageLoading]);
+  }, [userSchool?.school_code, selectedDate, pageLoading, userLoading]);
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
 
@@ -564,7 +520,7 @@ export default function Home() {
                 )}
               </div>
             </div>
-            {(isLoading || pageLoading) && (
+            {(isLoading || pageLoading || userLoading) && (
               <div className="flex items-center text-gray-600 mt-2">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -576,15 +532,15 @@ export default function Home() {
           </div>
           
           {/* 에러 메시지 */}
-          {(error || pageError) && !meals.length && (
+          {(error || pageError || userError) && !meals.length && (
             <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
-              {error || pageError}
+              {error || pageError || userError}
             </div>
           )}
         </div>
 
         {/* 급식 정보 표시 */}
-        {!isLoading && !pageLoading && (
+        {!isLoading && !pageLoading && !userLoading && (
           <>
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -635,7 +591,7 @@ export default function Home() {
 
                 <div className="bg-gray-50 p-4 rounded-md text-center">
                   <p className="text-gray-700 font-medium">
-                    {(error || pageError) || '해당 날짜의 급식 정보가 없습니다.'}
+                    {(error || pageError || userError) || '해당 날짜의 급식 정보가 없습니다.'}
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
                     다른 날짜를 선택해보세요.
