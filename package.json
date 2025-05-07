@@ -2,15 +2,26 @@
   "name": "eat-meal-battle",
   "version": "0.1.0",
   "private": true,
+  "description": "급식 정보 제공 및 이미지 공유 모노레포",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "npm run dev --workspace=apps/app",
+    "build": "npm run build --workspace=apps/app",
+    "start": "npm run start --workspace=apps/app",
+    "lint": "npm run lint --workspace=apps/app",
+    
+    "dev:app": "npm run dev --workspace=apps/app",
+    "dev:what-to-eat": "npm run dev --workspace=apps/what-to-eat",
+    "build:all": "npm run build --workspaces --if-present",
+    "lint:all": "npm run lint --workspaces --if-present",
+    "test:all": "npm run test --workspaces --if-present",
+    
+    "clean": "rm -rf node_modules && npm run clean:workspaces",
+    "clean:workspaces": "npm run clean --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
     "@firebase/messaging": "^0.12.17",
@@ -40,7 +51,11 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
+    "prettier": "^3.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
