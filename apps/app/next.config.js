@@ -13,13 +13,19 @@ const nextConfig = {
   output: 'standalone',
   trailingSlash: false,
   images: {
-    domains: [
-      'lh3.googleusercontent.com', // Google 프로필 이미지
-      'k.kakaocdn.net',           // 카카오 프로필 이미지
-      'i.imgur.com',              // Imgur 이미지 (테스트용)
-      'images.unsplash.com',      // Unsplash 이미지 (테스트용)
-      'izkumvvlkrkgiuuczffp.supabase.co', // Supabase Storage 이미지
+    remotePatterns: [
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' }, // Google 프로필 이미지
+      { protocol: 'https', hostname: 'k.kakaocdn.net' },           // 카카오 프로필 이미지
+      { protocol: 'https', hostname: 'i.imgur.com' },              // Imgur 이미지 (테스트용)
+      { protocol: 'https', hostname: 'images.unsplash.com' },      // Unsplash 이미지 (테스트용)
+      { 
+        protocol: 'https', 
+        hostname: 'izkumvvlkrkgiuuczffp.supabase.co',
+        pathname: '/storage/v1/object/public/**', // Supabase Storage 패턴 정확히 일치
+      },
     ],
+    // 404 오류 방지를 위한 추가 설정
+    unoptimized: process.env.NODE_ENV === 'development', // 개발 환경에서만 이미지 최적화 비활성화
   },
   
   // 빌드 시 ESLint 검사 비활성화
