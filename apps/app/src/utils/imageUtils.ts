@@ -117,27 +117,5 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event
   }
 };
 
-/**
- * 이미지 로딩 상태를 보여주는 폴백 컴포넌트
- * @param props 컴포넌트 속성
- */
-export const ImageWithFallback = (props: {
-  src: string;
-  alt: string;
-  className?: string;
-  style?: React.CSSProperties;
-}) => {
-  const { src, alt, className = '', style = {} } = props;
-  const safeUrl = getSafeImageUrl(src);
-  
-  return (
-    <img
-      src={safeUrl}
-      alt={alt}
-      className={className}
-      style={style}
-      onError={handleImageError}
-      loading="lazy"
-    />
-  );
-};
+// 리액트 컴포넌트는 별도의 파일로 분리했음 (ImageWithFallback.tsx)
+// 이 파일은 순수한 TypeScript로 유지해야 오류가 발생하지 않음

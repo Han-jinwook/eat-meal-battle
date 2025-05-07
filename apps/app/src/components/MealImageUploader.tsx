@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import { format, isFuture } from 'date-fns';
-import { getSafeImageUrl, handleImageError, ImageWithFallback } from '@/utils/imageUtils';
+import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
+import ImageWithFallback from '@/components/ImageWithFallback';
 
 interface MealImageUploaderProps {
   mealId: string;
