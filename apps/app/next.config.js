@@ -26,6 +26,13 @@ const nextConfig = {
     ],
     // 404 오류 방지를 위한 추가 설정
     unoptimized: process.env.NODE_ENV === 'development', // 개발 환경에서만 이미지 최적화 비활성화
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/webp'],
+    minimumCacheTTL: 60,
+    disableStaticImages: false,
+    dangerouslyAllowSVG: false,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   // 빌드 시 ESLint 검사 비활성화

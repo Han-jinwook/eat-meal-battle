@@ -652,6 +652,16 @@ export default function MealImageUploader({
                 alt="급식 이미지"
                 fill
                 style={{ objectFit: 'cover' }}
+                // 이미지 로딩 오류 처리 - 콘솔 에러 방지
+                onError={(e) => {
+                  // 콘솔 에러 표시하지 않고 조용히 처리
+                  e.currentTarget.style.display = 'none';
+                  // 대체 표시 (부모 요소에 배경색 표시)
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.style.backgroundColor = '#f3f4f6';
+                  }
+                }}
+                unoptimized={process.env.NODE_ENV === 'development'}
               />
             </div>
             <div className="p-3">
@@ -717,6 +727,13 @@ export default function MealImageUploader({
                   alt="업로드 이미지 미리보기"
                   fill
                   style={{ objectFit: 'contain' }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.style.backgroundColor = '#f3f4f6';
+                    }
+                  }}
+                  unoptimized={process.env.NODE_ENV === 'development'}
                 />
               </div>
 
