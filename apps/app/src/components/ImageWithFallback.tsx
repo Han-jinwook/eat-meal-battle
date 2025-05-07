@@ -18,7 +18,9 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   className = '',
   style = {}
 }) => {
-  const safeUrl = getSafeImageUrl(src);
+  // data URL인 경우 그대로 사용하고, 그렇지 않은 경우에만 getSafeImageUrl 적용
+  const isDataUrl = src?.startsWith('data:');
+  const safeUrl = isDataUrl ? src : getSafeImageUrl(src);
   
   return (
     <img
