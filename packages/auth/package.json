@@ -10,7 +10,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
     "@supabase/ssr": "^0.0.10",
-    "@meal-battle/types": "workspace:*"
+    "@meal-battle/types": "0.1.0"
   },
   "devDependencies": {
     "typescript": "^5.1.6"

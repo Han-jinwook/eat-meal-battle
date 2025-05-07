@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "date-fns": "^3.0.0",
-    "@meal-battle/types": "workspace:*",
+    "@meal-battle/types": "0.1.0",
     "react": "^19.0.0"
   },
   "devDependencies": {
