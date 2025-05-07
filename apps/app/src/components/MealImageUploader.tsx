@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import { format, isFuture } from 'date-fns';
-import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
+import { getSafeImageUrl, handleImageError, ImageWithFallback } from '@/utils/imageUtils';
 
 interface MealImageUploaderProps {
   mealId: string;
@@ -649,9 +649,8 @@ export default function MealImageUploader({
           <h4 className="text-md font-semibold mb-2">내가 업로드한 이미지</h4>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <div className="relative h-72 w-full">
-              {/* Next.js Image 컴포넌트 대신 일반 img 태그 사용 */}
-              <img
-                src={getSafeImageUrl(uploadedImage.image_url)}
+              <ImageWithFallback
+                src={uploadedImage.image_url}
                 alt="급식 이미지"
                 style={{
                   objectFit: 'cover', 
@@ -659,8 +658,6 @@ export default function MealImageUploader({
                   width: '100%',
                   height: '100%'
                 }}
-                onError={handleImageError}
-                loading="lazy"
               />
             </div>
             <div className="p-3">
@@ -721,8 +718,8 @@ export default function MealImageUploader({
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">미리보기:</p>
               <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden">
-                <img
-                  src={getSafeImageUrl(preview)}
+                <ImageWithFallback
+                  src={preview}
                   alt="업로드 이미지 미리보기"
                   style={{
                     objectFit: 'contain', 
@@ -730,8 +727,6 @@ export default function MealImageUploader({
                     width: '100%',
                     height: '100%'
                   }}
-                  onError={handleImageError}
-                  loading="lazy"
                 />
               </div>
 

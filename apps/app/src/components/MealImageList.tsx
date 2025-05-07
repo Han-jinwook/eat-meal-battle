@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import Image from 'next/image';
-import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
+import { getSafeImageUrl, handleImageError, ImageWithFallback } from '@/utils/imageUtils';
 
 interface MealImage {
   id: string;
@@ -330,12 +330,17 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
             {userImages.map((image) => (
               <div key={image.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="relative h-72 w-full">
-                  <Image
-                    src={image.image_url}
-                    alt="급식 이미지"
-                    fill
-                    style={{ objectFit: 'cover' }}
-                  />
+                  <div className="absolute inset-0">
+                    <ImageWithFallback
+                      src={image.image_url}
+                      alt="급식 이미지"
+                      style={{ 
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: '100%'
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="p-3">
                   <div className="flex justify-between items-center mb-2">
@@ -388,12 +393,17 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
             {sharedImages.map((image) => (
               <div key={image.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="relative h-72 w-full">
-                  <Image
-                    src={image.image_url}
-                    alt="급식 이미지"
-                    fill
-                    style={{ objectFit: 'cover' }}
-                  />
+                  <div className="absolute inset-0">
+                    <ImageWithFallback
+                      src={image.image_url}
+                      alt="급식 이미지"
+                      style={{ 
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: '100%'
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="p-3">
                   <div className="flex justify-between items-center">

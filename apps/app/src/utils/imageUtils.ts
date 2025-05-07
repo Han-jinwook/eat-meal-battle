@@ -2,13 +2,20 @@
  * 이미지 URL 관련 유틸리티 함수
  */
 
-// 이미지 URL이 유효한지 확인하는 함수 (개발환경에서는 항상 true 반환)
+/**
+ * 이미지 URL이 유효한지 확인하는 함수
+ * @param url 검사할 이미지 URL
+ * @returns URL 유효성 여부
+ */
 export const isValidImageUrl = (url: string): boolean => {
-  if (process.env.NODE_ENV === 'development') {
-    return true; // 개발환경에서는 모든 URL을 유효하다고 간주
+  if (!url) return false;
+  
+  // 개발 환경에서와 로컬 경로는 항상 유효하다고 간주
+  if (process.env.NODE_ENV === 'development' || url.startsWith('/')) {
+    return true;
   }
   
-  // URL이 유효한지 기본 검사
+  // URL 형식 검사
   try {
     new URL(url);
     return true;
@@ -17,52 +24,120 @@ export const isValidImageUrl = (url: string): boolean => {
   }
 };
 
-// 이미지 URL을 안전하게 처리하는 함수
-export const getSafeImageUrl = (url: string): string => {
-  if (!url) {
-    return '/images/placeholder.png'; // 기본 이미지 경로
+/**
+ * 이미지 URL을 예상 오류를 방지하는 안전한 버전으로 변환
+ * @param url 처리할 이미지 URL
+ * @returns 안전하게 처리된 URL
+ */
+export const getSafeImageUrl = (url: string | null | undefined): string => {
+  // URL이 없거나 비어있으면 기본 이미지 반환
+  if (!url || url.trim() === '') {
+    return '/images/placeholder.jpg';
   }
   
-  // Supabase URL 또는 외부 URL이면 프록시 사용
-  if ((url.includes('supabase.co') && url.includes('/storage/')) || url.startsWith('http')) {
-    // 개발 환경에서는 프록시 사용 안 함 (CORS 이슈 방지)
-    if (process.env.NODE_ENV === 'development') {
-      // 개발 환경에서는 캐시 버스팅만 추가
-      return `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+  // 이미 프록시를 통해 처리된 URL은 그대로 반환
+  if (url.startsWith('/api/image-proxy')) {
+    return url;
+  }
+  
+  // 로컬 이미지 경로는 그대로 반환
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    return url;
+  }
+
+  // Supabase Storage URL 또는 외부 URL 처리
+  try {
+    // 1. 모든 상대경로 URL을 절대경로로 변환 (프로토콜 있는지 확인)
+    if (url.startsWith('//')) {
+      url = `https:${url}`;
+    } else if (!url.startsWith('http')) {
+      // 절대 URL이 아니고 프로토콜도 없는 경우 기본 이미지
+      return '/images/placeholder.jpg';
     }
     
-    // 프로덕션 환경에서는 프록시 API 사용
-    const encodedUrl = encodeURIComponent(url);
-    return `/api/image-proxy?url=${encodedUrl}`;
+    // 2. 이제 URL을 처리하여 리턴
+    
+    // 2.1 Supabase 저장소의 이미지 URL인 경우 예외 처리
+    if (url.includes('supabase.co') && url.includes('/storage/')) {
+      // 개발 환경에서는 캐시 버스팅만 추가
+      if (process.env.NODE_ENV === 'development') {
+        return `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      }
+      
+      // 프로덕션 환경에서는 프록시 API 사용
+      const encodedUrl = encodeURIComponent(url);
+      return `/api/image-proxy?url=${encodedUrl}`;
+    }
+    
+    // 2.2 그 외 외부 URL은 프록시를 통해 안전하게 처리
+    if (url.startsWith('http')) {
+      const encodedUrl = encodeURIComponent(url);
+      return `/api/image-proxy?url=${encodedUrl}`;
+    }
+    
+    // 예상치 못한 경우
+    return '/images/placeholder.jpg';
+    
+  } catch (e) {
+    console.warn('이미지 URL 처리 오류:', e);
+    return '/images/placeholder.jpg';
   }
-  
-  return url;
 };
 
-// 이미지 로드 실패 시 폴백 처리 함수
+/**
+ * 이미지 로드 실패 시 자동 폴백 처리
+ * @param e 이미지 에러 이벤트
+ */
 export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>): void => {
-  const imgElement = e.currentTarget;
-  imgElement.style.display = 'none';
-  
-  // 부모 요소에 배경색과 텍스트 추가
-  if (imgElement.parentElement) {
-    imgElement.parentElement.style.backgroundColor = '#f3f4f6';
+  try {
+    const imgElement = e.currentTarget;
     
-    // 대체 텍스트 추가
-    const placeholderText = document.createElement('div');
-    placeholderText.innerText = '이미지를 불러올 수 없습니다';
-    placeholderText.style.display = 'flex';
-    placeholderText.style.alignItems = 'center';
-    placeholderText.style.justifyContent = 'center';
-    placeholderText.style.height = '100%';
-    placeholderText.style.width = '100%';
-    placeholderText.style.color = '#6b7280';
-    placeholderText.style.fontSize = '14px';
+    // 1. 이미지 숨김
+    imgElement.style.display = 'none';
     
-    imgElement.parentElement.appendChild(placeholderText);
+    // 2. 부모 요소에 배경색과 텍스트 추가
+    if (imgElement.parentElement) {
+      imgElement.parentElement.style.backgroundColor = '#f3f4f6';
+      
+      // 대체 텍스트 추가 (이미 있는지 확인)
+      if (!imgElement.parentElement.querySelector('.image-fallback')) {
+        const placeholderText = document.createElement('div');
+        placeholderText.innerText = '이미지를 불러올 수 없습니다';
+        placeholderText.className = 'image-fallback flex items-center justify-center h-full w-full text-gray-500 text-sm';
+        
+        imgElement.parentElement.appendChild(placeholderText);
+      }
+    }
+    
+    // 3. 콘솔 에러 어지
+    e.preventDefault();
+  } catch (err) {
+    // 에러 처리 중 오류 방지 (무한 순환 방지)
+    console.warn('이미지 에러 처리 중 오류 발생', err);
   }
+};
+
+/**
+ * 이미지 로딩 상태를 보여주는 폴백 컴포넌트
+ * @param props 컴포넌트 속성
+ */
+export const ImageWithFallback = (props: {
+  src: string;
+  alt: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
+  const { src, alt, className = '', style = {} } = props;
+  const safeUrl = getSafeImageUrl(src);
   
-  // 콘솔 에러 로깅 차단 (이벤트 중지)
-  e.preventDefault();
-  e.stopPropagation();
+  return (
+    <img
+      src={safeUrl}
+      alt={alt}
+      className={className}
+      style={style}
+      onError={handleImageError}
+      loading="lazy"
+    />
+  );
 };
