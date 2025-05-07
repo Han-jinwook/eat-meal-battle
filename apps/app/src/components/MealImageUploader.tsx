@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
 import Image from 'next/image';
+import { createClient } from '@/lib/supabase';
+import { format, isFuture } from 'date-fns';
+import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 
 interface MealImageUploaderProps {
   mealId: string;
@@ -647,21 +649,18 @@ export default function MealImageUploader({
           <h4 className="text-md font-semibold mb-2">내가 업로드한 이미지</h4>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <div className="relative h-72 w-full">
-              <Image
-                src={uploadedImage.image_url}
+              {/* Next.js Image 컴포넌트 대신 일반 img 태그 사용 */}
+              <img
+                src={getSafeImageUrl(uploadedImage.image_url)}
                 alt="급식 이미지"
-                fill
-                style={{ objectFit: 'cover' }}
-                // 이미지 로딩 오류 처리 - 콘솔 에러 방지
-                onError={(e) => {
-                  // 콘솔 에러 표시하지 않고 조용히 처리
-                  e.currentTarget.style.display = 'none';
-                  // 대체 표시 (부모 요소에 배경색 표시)
-                  if (e.currentTarget.parentElement) {
-                    e.currentTarget.parentElement.style.backgroundColor = '#f3f4f6';
-                  }
+                style={{
+                  objectFit: 'cover', 
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%'
                 }}
-                unoptimized={process.env.NODE_ENV === 'development'}
+                onError={handleImageError}
+                loading="lazy"
               />
             </div>
             <div className="p-3">
@@ -722,18 +721,17 @@ export default function MealImageUploader({
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">미리보기:</p>
               <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden">
-                <Image
-                  src={preview}
+                <img
+                  src={getSafeImageUrl(preview)}
                   alt="업로드 이미지 미리보기"
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    if (e.currentTarget.parentElement) {
-                      e.currentTarget.parentElement.style.backgroundColor = '#f3f4f6';
-                    }
+                  style={{
+                    objectFit: 'contain', 
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%'
                   }}
-                  unoptimized={process.env.NODE_ENV === 'development'}
+                  onError={handleImageError}
+                  loading="lazy"
                 />
               </div>
 

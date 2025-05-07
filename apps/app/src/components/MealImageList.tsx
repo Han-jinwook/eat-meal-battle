@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import Image from 'next/image';
+import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 
 interface MealImage {
   id: string;
