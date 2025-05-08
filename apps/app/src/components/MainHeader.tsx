@@ -120,19 +120,36 @@ export default function MainHeader() {
                 className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 {(() => {
-                  const imageUrl = user.user_metadata?.avatar_url as string | undefined;
+                  // 사용자 메타데이터에서 프로필 이미지 URL과 닉네임 가져오기
+                  const profileImage = user.user_metadata?.profile_image as string | undefined;
                   const nicknameToDisplay = user.user_metadata?.name as string | undefined;
+                  
+                  // profile_image 필드 사용
+                  const imageUrl = profileImage;
 
                   if (imageUrl) {
+                    // 이미지 URL이 있으면 일반 img 태그로 표시하고 오류 처리 추가
                     return (
-                      <ImageWithFallback
+                      <img
                         src={imageUrl}
                         alt={nicknameToDisplay || 'User Avatar'}
                         className="h-full w-full object-cover"
-                        style={{ width: '32px', height: '32px' }}
+                        onError={(e) => {
+                          // 이미지 로드 실패 시 닉네임 이니셜로 대체
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.classList.add('bg-slate-300');
+                            if (nicknameToDisplay) {
+                              parent.textContent = nicknameToDisplay.charAt(0).toUpperCase();
+                              parent.classList.add('flex', 'items-center', 'justify-center', 'text-slate-700', 'text-sm', 'font-semibold');
+                            }
+                          }
+                        }}
                       />
                     );
                   } else if (nicknameToDisplay) {
+                    // 이미지 URL이 없으면 닉네임 첫 글자 표시
                     const initial = nicknameToDisplay.charAt(0).toUpperCase();
                     return (
                       <div className="flex h-full w-full items-center justify-center bg-slate-300 text-slate-700 text-sm font-semibold">
@@ -140,9 +157,12 @@ export default function MainHeader() {
                       </div>
                     );
                   } else {
+                    // 닉네임도 없는 경우 기본 아이콘 표시
                     return (
                       <div className="flex h-full w-full items-center justify-center bg-gray-200">
-                        {/* Fallback placeholder */}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                       </div>
                     );
                   }
