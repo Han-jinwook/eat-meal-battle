@@ -1,10 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/NotificationBell';
+import ImageWithFallback from '@/components/ImageWithFallback';
 import { useState, useEffect, useRef } from 'react';
 
 // 네비게이션 항목 정의
@@ -125,12 +125,11 @@ export default function MainHeader() {
 
                   if (imageUrl) {
                     return (
-                      <Image
+                      <ImageWithFallback
                         src={imageUrl}
                         alt={nicknameToDisplay || 'User Avatar'}
-                        width={32}
-                        height={32}
                         className="h-full w-full object-cover"
+                        style={{ width: '32px', height: '32px' }}
                       />
                     );
                   } else if (nicknameToDisplay) {
