@@ -107,7 +107,7 @@ export default function MainHeader() {
                 className="h-8 w-8 overflow-hidden rounded-full border border-gray-300"
               >
                 <Image
-                  src={user.user_metadata?.avatar_url || "/default-avatar.png"}
+                  src={user.user_metadata?.profile_image || "/default-avatar.png"}
                   alt="avatar"
                   width={32}
                   height={32}
