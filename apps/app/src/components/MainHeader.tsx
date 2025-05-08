@@ -120,33 +120,24 @@ export default function MainHeader() {
                 className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 {(() => {
-                  // DB에서 프로필 이미지 URL 가져오기
-                  const profileImage = user.profile_image as string | undefined;
+                  // 메모에서 언급한 대로 user.user_metadata.avatar_url 사용
+                  const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
                   const nicknameToDisplay = user.user_metadata?.name as string | undefined;
-                  
-                  // 이미지 URL이 있으면 사용, 없으면 user_metadata 확인
-                  const imageUrl = profileImage || user.user_metadata?.profile_image as string | undefined;
 
-                  if (imageUrl) {
-                    // 이미지 URL을 이미지 프록시를 통해 로드
-                    // 카카오 CDN URL은 직접 사용하면 CORS 문제가 발생할 수 있음
-                    const proxyImageUrl = imageUrl.startsWith('/api/') 
-                      ? imageUrl 
-                      : `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
-                      
+                  if (avatarUrl) {
                     return (
                       <img
-                        src={proxyImageUrl}
+                        src={avatarUrl}
                         alt={nicknameToDisplay || 'User Avatar'}
                         className="h-full w-full object-cover"
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer"
-                        loading="eager"
-                        // 이미지 로드 오류 시 아무것도 하지 않음 - 이미지가 반드시 표시되어야 함
                         onError={(e) => {
-                          console.error('Image load error:', imageUrl);
-                          // 이미지 로드 실패 시 다시 시도
-                          e.currentTarget.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}&t=${Date.now()}`;
+                          // 이미지 로드 실패 시 닉네임 이니셜로 대체
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent && nicknameToDisplay) {
+                            parent.classList.add('flex', 'items-center', 'justify-center', 'bg-slate-300');
+                            parent.textContent = nicknameToDisplay.charAt(0).toUpperCase();
+                          }
                         }}
                       />
                     );
