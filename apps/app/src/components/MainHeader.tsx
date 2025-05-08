@@ -32,6 +32,19 @@ export default function MainHeader() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // 사용자 객체 구조 확인을 위한 로그
+      if (session?.user) {
+        console.log('User object structure:', session.user);
+        
+        // 프로필 이미지 관련 필드 확인
+        console.log('Profile image fields:', {
+          'user.profile_image': session.user.profile_image,
+          'user.user_metadata?.profile_image': session.user.user_metadata?.profile_image,
+          'user.user_metadata?.avatar_url': session.user.user_metadata?.avatar_url
+        });
+      }
+      
       setUser(session?.user || null);
     };
     
