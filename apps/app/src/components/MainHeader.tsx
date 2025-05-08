@@ -120,31 +120,33 @@ export default function MainHeader() {
                 className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 {(() => {
-                  // 사용자 메타데이터에서 프로필 이미지 URL과 닉네임 가져오기
-                  const profileImage = user.user_metadata?.profile_image as string | undefined;
+                  // DB에서 프로필 이미지 URL 가져오기
+                  const profileImage = user.profile_image as string | undefined;
                   const nicknameToDisplay = user.user_metadata?.name as string | undefined;
                   
-                  // profile_image 필드 사용
-                  const imageUrl = profileImage;
+                  // 이미지 URL이 있으면 사용, 없으면 user_metadata 확인
+                  const imageUrl = profileImage || user.user_metadata?.profile_image as string | undefined;
 
                   if (imageUrl) {
-                    // 이미지 URL이 있으면 일반 img 태그로 표시하고 오류 처리 추가
+                    // 이미지 URL을 이미지 프록시를 통해 로드
+                    // 카카오 CDN URL은 직접 사용하면 CORS 문제가 발생할 수 있음
+                    const proxyImageUrl = imageUrl.startsWith('/api/') 
+                      ? imageUrl 
+                      : `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+                      
                     return (
                       <img
-                        src={imageUrl}
+                        src={proxyImageUrl}
                         alt={nicknameToDisplay || 'User Avatar'}
                         className="h-full w-full object-cover"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        loading="eager"
+                        // 이미지 로드 오류 시 아무것도 하지 않음 - 이미지가 반드시 표시되어야 함
                         onError={(e) => {
-                          // 이미지 로드 실패 시 닉네임 이니셜로 대체
-                          e.currentTarget.style.display = 'none';
-                          const parent = e.currentTarget.parentElement;
-                          if (parent) {
-                            parent.classList.add('bg-slate-300');
-                            if (nicknameToDisplay) {
-                              parent.textContent = nicknameToDisplay.charAt(0).toUpperCase();
-                              parent.classList.add('flex', 'items-center', 'justify-center', 'text-slate-700', 'text-sm', 'font-semibold');
-                            }
-                          }
+                          console.error('Image load error:', imageUrl);
+                          // 이미지 로드 실패 시 다시 시도
+                          e.currentTarget.src = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}&t=${Date.now()}`;
                         }}
                       />
                     );
