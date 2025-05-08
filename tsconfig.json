@@ -13,15 +13,24 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./apps/app/src/*"],
+      "@meal-battle/ui": ["./packages/ui/src"],
+      "@meal-battle/ui/*": ["./packages/ui/src/*"],
+      "@meal-battle/auth": ["./packages/auth/src"],
+      "@meal-battle/auth/*": ["./packages/auth/src/*"],
+      "@meal-battle/utils": ["./packages/utils/src"],
+      "@meal-battle/utils/*": ["./packages/utils/src/*"],
+      "@meal-battle/types": ["./packages/types/src"],
+      "@meal-battle/types/*": ["./packages/types/src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx"
+  ],
   "exclude": ["node_modules"]
 }
