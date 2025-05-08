@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 // 교육부 NEIS Open API 주소
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
@@ -135,7 +136,15 @@ function parseMealInfo(apiResponse: any) {
  * - date: 날짜 (YYYYMMDD 형식, 기본값: 오늘)
  */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const cookieStore = cookies(); // cookies 함수 호출
+  const supabase = createServerClient( // createServerClient 사용
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: () => cookieStore
+    }
+  );
+
   const { searchParams } = new URL(request.url);
   
   // 파라미터 추출
@@ -428,7 +437,15 @@ export async function GET(request: Request) {
  * 스케줄러에서 호출하는 용도
  */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const cookieStore = cookies(); // cookies 함수 호출
+  const supabase = createServerClient( // createServerClient 사용
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: () => cookieStore
+    }
+  );
+
   const today = formatDate(new Date());
   
   try {

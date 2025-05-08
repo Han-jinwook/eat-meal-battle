@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ['/profile', '/dashboard'];
   const isProtectedPath = protectedPaths.some(path => nextUrl.pathname.startsWith(path));
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (isProtectedPath && (!user || error)) {
