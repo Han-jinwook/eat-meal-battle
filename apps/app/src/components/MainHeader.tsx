@@ -117,14 +117,37 @@ export default function MainHeader() {
               // 로그인 상태: 사용자 프로필 이미지 표시
               <button
                 onClick={toggleProfile}
-                className="h-8 w-8 overflow-hidden rounded-full border border-gray-300"
+                className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
-                <Image
-                  src={user.user_metadata?.profile_image || "/default-avatar.png"}
-                  alt="avatar"
-                  width={32}
-                  height={32}
-                />
+                {(() => {
+                  const profileImageUrlFromDb = user.profile_image as string | undefined;
+                  const userNickname = user.nickname as string | undefined;
+
+                  if (profileImageUrlFromDb) {
+                    return (
+                      <Image
+                        src={profileImageUrlFromDb}
+                        alt={userNickname || 'User Avatar'}
+                        width={32}
+                        height={32}
+                        className="h-full w-full object-cover"
+                      />
+                    );
+                  } else if (userNickname) {
+                    const initial = userNickname.charAt(0).toUpperCase();
+                    return (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-300 text-slate-700 text-sm font-semibold">
+                        {initial}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="flex h-full w-full items-center justify-center bg-gray-200">
+                        {/* Fallback placeholder */}
+                      </div>
+                    );
+                  }
+                })()}
               </button>
             ) : (
               // 비로그인 상태: 로그인 버튼 표시
