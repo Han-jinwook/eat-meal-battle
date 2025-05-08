@@ -120,21 +120,21 @@ export default function MainHeader() {
                 className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 {(() => {
-                  const profileImageUrlFromDb = user.profile_image as string | undefined;
-                  const userNickname = user.nickname as string | undefined;
+                  const imageUrl = user.user_metadata?.avatar_url as string | undefined;
+                  const nicknameToDisplay = user.user_metadata?.name as string | undefined;
 
-                  if (profileImageUrlFromDb) {
+                  if (imageUrl) {
                     return (
                       <Image
-                        src={profileImageUrlFromDb}
-                        alt={userNickname || 'User Avatar'}
+                        src={imageUrl}
+                        alt={nicknameToDisplay || 'User Avatar'}
                         width={32}
                         height={32}
                         className="h-full w-full object-cover"
                       />
                     );
-                  } else if (userNickname) {
-                    const initial = userNickname.charAt(0).toUpperCase();
+                  } else if (nicknameToDisplay) {
+                    const initial = nicknameToDisplay.charAt(0).toUpperCase();
                     return (
                       <div className="flex h-full w-full items-center justify-center bg-slate-300 text-slate-700 text-sm font-semibold">
                         {initial}
