@@ -44,11 +44,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-<<<<<<< HEAD
-    "@netlify/plugin-nextjs": "^4.41.3",
-=======
     "@netlify/plugin-nextjs": "^5.10.7",
->>>>>>> 4ab7e6eb995a93fd327a243deb38f2d9e139029d
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
