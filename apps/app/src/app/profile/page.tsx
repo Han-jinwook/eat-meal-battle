@@ -261,7 +261,7 @@ export default function Profile() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">학교 정보</h2>
             <Link
-              href="/temp/school-search"
+              href="/school-search"
               className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
             >
               {schoolInfo ? '학교 정보 수정' : '학교 정보 설정'}
@@ -306,7 +306,7 @@ export default function Profile() {
             <div className="p-4 bg-yellow-50 rounded-md">
               <p className="text-yellow-700 text-sm">아직 학교 정보가 업로드 되지 않았습니다.</p>
               <Link 
-                href="/temp/school-search"
+                href="/school-search"
                 className="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
               >
                 학교 정보 설정하기
