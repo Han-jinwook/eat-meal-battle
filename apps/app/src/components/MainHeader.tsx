@@ -99,7 +99,10 @@ export default function MainHeader() {
               key={item.href}
               href={item.href}
               className={`text-sm font-medium hover:text-indigo-600 ${
-                pathname.startsWith(item.href) ? 'text-indigo-600' : 'text-gray-700'
+                // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
+                item.href === '/' 
+                  ? (pathname === '/' ? 'text-indigo-600' : 'text-gray-700')
+                  : (pathname.startsWith(item.href) ? 'text-indigo-600' : 'text-gray-700')
               }`}
             >
               {item.label}
@@ -121,7 +124,14 @@ export default function MainHeader() {
               >
                 {(() => {
                   // 메모에서 언급한 대로 user.user_metadata.avatar_url 사용
-                  const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+                  let avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+                  
+                  // 카카오 프로필 이미지 URL이 http로 시작하는 경우 https로 변환
+                  if (avatarUrl && avatarUrl.startsWith('http://')) {
+                    avatarUrl = avatarUrl.replace('http://', 'https://');
+                    console.log('Profile image URL changed to HTTPS:', avatarUrl);
+                  }
+                  
                   const nicknameToDisplay = user.user_metadata?.name as string | undefined;
 
                   if (avatarUrl) {

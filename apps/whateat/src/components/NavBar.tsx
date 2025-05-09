@@ -98,7 +98,7 @@ export default function NavBar() {
                   {user.user_metadata?.avatar_url ? (
                     <img
                       className="h-8 w-8 rounded-full"
-                      src={user.user_metadata.avatar_url}
+                      src={user.user_metadata.avatar_url.replace(/^http:\/\//i, 'https://')}
                       alt="프로필"
                     />
                   ) : (
@@ -198,7 +198,7 @@ export default function NavBar() {
                   {user.user_metadata?.avatar_url ? (
                     <img
                       className="h-10 w-10 rounded-full"
-                      src={user.user_metadata.avatar_url}
+                      src={user.user_metadata.avatar_url.replace(/^http:\/\//i, 'https://')}
                       alt="프로필"
                     />
                   ) : (

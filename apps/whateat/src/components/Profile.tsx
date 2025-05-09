@@ -62,9 +62,9 @@ export default function Profile() {
       <div className="flex items-center space-x-4">
         {user.user_metadata?.avatar_url && (
           <img
-            src={user.user_metadata.avatar_url}
-            alt="Profile"
-            className="w-12 h-12 rounded-full"
+            src={user.user_metadata.avatar_url.replace(/^http:\/\//i, 'https://')}
+            alt="User"
+            className="rounded-full w-24 h-24 mb-4"
           />
         )}
         <div>

@@ -18,6 +18,24 @@ export async function GET(request: NextRequest) {
 
       // 인증 코드로 세션 교환
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      // 인증 성공 시 프로필 이미지 URL이 HTTP로 시작하는지 검사하고 수정
+      if (data?.session?.user?.user_metadata?.avatar_url) {
+        const avatarUrl = data.session.user.user_metadata.avatar_url;
+        if (avatarUrl.startsWith('http://')) {
+          console.log('프로필 이미지 URL을 HTTPS로 변환합니다:', avatarUrl);
+          
+          // 사용자 메타데이터 업데이트
+          const httpsAvatarUrl = avatarUrl.replace('http://', 'https://');
+          await supabase.auth.updateUser({
+            data: { 
+              avatar_url: httpsAvatarUrl 
+            }
+          });
+          
+          console.log('URL이 업데이트되었습니다:', httpsAvatarUrl);
+        }
+      }
 
       if (error) {
         console.error('Session exchange error:', error.message)
