@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { formatApiDate } from '@/utils/DateUtils';
+import { fetchWithAuth, API_ENDPOINTS } from '@/lib/api-helper';
 
 export interface MealInfo {
   id: string;
@@ -50,8 +51,9 @@ export default function useMeals(): UseMealsReturn {
 
         const apiDate = formatApiDate(date); // YYYYMMDD로 변환
 
-        const response = await fetch(
-          `/api/meals?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`
+        // 인증된 API 요청으로 급식 정보 가져오기
+        const response = await fetchWithAuth(
+          `${API_ENDPOINTS.MEALS}?school_code=${schoolCode}&office_code=${officeCode}&date=${apiDate}`
         );
 
         if (response.status === 404) {

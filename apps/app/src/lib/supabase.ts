@@ -16,8 +16,23 @@ export const createClient = () => {
         flowType: 'pkce',
       },
       global: {
-        // 404 요청 등의 불필요한 오류 로깅 방지
+        // API 키 없는 요청 및 404 오류 처리 개선
         fetch: (...args) => {
+          // URL을 파싱해서 검사
+          const urlStr = String(args[0] instanceof URL ? args[0].toString() : args[0]);
+          
+          // Supabase REST API 직접 호출 차단 - 권한 부재 오류 방지
+          if (urlStr.includes('/rest/v1/') && 
+              (!args[1]?.headers || 
+               (!Object.entries(args[1]?.headers || {}).some(([k, v]) => 
+                  k.toLowerCase() === 'apikey' || k.toLowerCase() === 'authorization')))) {
+            console.debug('권한 없는 Supabase REST API 요청 차단:', urlStr);
+            return Promise.resolve(new Response(JSON.stringify({
+              message: "No API key found in request",
+              hint: "No 'apikey' request header or url param was found."
+            }), { status: 401 }));
+          }
+          
           return fetch(...args).catch(err => {
             // 404 에러는 조용히 처리
             if (err.status === 404) {
