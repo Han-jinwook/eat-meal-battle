@@ -206,26 +206,25 @@ export default function SchoolSearchPage() {
     <div className="container mx-auto px-4 py-8 max-w-md">
       <h1 className="text-2xl font-bold mb-6 text-center">학교 검색</h1>
       
-      {/* 검색 바 */}
       <div className="mb-6">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="학교명을 입력하세요"
-            className="flex-grow p-2 border rounded"
-            onKeyDown={(e) => e.key === 'Enter' && searchSchools()}
-          />
-          <button
-            onClick={searchSchools}
-            disabled={isLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            {isLoading ? '검색 중...' : '검색'}
-          </button>
-        </div>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+        <form onSubmit={(e) => { e.preventDefault(); searchSchools(); }}>
+          <div className="flex">
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="flex-grow p-2 border rounded-l"
+              placeholder="학교 이름 입력 (2글자 이상)"
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 rounded-r disabled:bg-gray-400"
+            >
+              검색
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* 검색 결과 */}

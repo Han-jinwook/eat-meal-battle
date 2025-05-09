@@ -211,32 +211,29 @@ export default function SchoolSearchPage() {
   return (
     <div className="max-w-lg mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">학교 설정</h1>
-      
-      {/* 검색 폼 */}
+
+      {/* 학교 검색 폼 */}
       <div className="mb-6">
-        <label htmlFor="school-search" className="block text-sm font-medium text-gray-700 mb-1">
-          학교 이름으로 검색
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            id="school-search"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="학교 이름 입력 (2글자 이상)"
-            className="flex-1 p-2 border rounded"
-          />
-          <button
-            onClick={searchSchools}
-            disabled={isLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            {isLoading ? '검색 중...' : '검색'}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-1">학교 이름의 일부만 입력해도 검색됩니다. (예: "서울중")</p>
+        <form onSubmit={(e) => { e.preventDefault(); searchSchools(); }}>
+          <div className="flex">
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="flex-grow p-2 border rounded-l"
+              placeholder="학교 이름 입력 (2글자 이상)"
+            />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 rounded-r disabled:bg-gray-400"
+            >
+              검색
+            </button>
+          </div>
+        </form>
       </div>
-      
+
       {/* 검색 결과 */}
       {schools.length > 0 && (
         <div className="mb-6">
