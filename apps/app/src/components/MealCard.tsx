@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
 import MealImageUploader from '@/components/MealImageUploader';
-import MealImageList from '@/components/MealImageList';
 import { formatDisplayDate } from '@/utils/DateUtils';
 import { MealInfo } from '@/types'; // re-use type until moved to separate file
 
@@ -35,15 +33,6 @@ export default function MealCard({
   onUploadSuccess,
   onUploadError,
 }: MealCardProps) {
-  // 이미지 리스트 갱신을 위한 상태
-  const [refreshImageList, setRefreshImageList] = useState(0);
-  
-  // 이미지 업로드 성공 시 이미지 리스트 갱신
-  const handleUploadSuccess = () => {
-    setRefreshImageList(prev => prev + 1);
-    onUploadSuccess();
-  };
-  
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* 업로더 영역 */}
@@ -53,14 +42,9 @@ export default function MealCard({
           schoolCode={meal.school_code}
           mealDate={meal.meal_date}
           mealType={meal.meal_type}
-          onUploadSuccess={handleUploadSuccess}
+          onUploadSuccess={onUploadSuccess}
           onUploadError={onUploadError}
         />
-      </div>
-      
-      {/* 이미지 리스트 영역 */}
-      <div className="bg-white p-3 border-b">
-        <MealImageList mealId={meal.id} refreshTrigger={refreshImageList} />
       </div>
 
       {/* 본문 */}

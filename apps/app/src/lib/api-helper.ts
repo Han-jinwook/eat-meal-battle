@@ -51,8 +51,13 @@ export async function fetchWithAuth(
   try {
     // API 키가 필요한 Supabase REST API 호출인지 확인
     if ((url.includes('/rest/v1/') || url.includes('izkumvvlkrgiucczftp.supabase.co/rest/v1/')) && !url.includes('apikey=')) {
-      // API 키가 필요한 요청인데 authorization 헬더가 없는 경우 401 반환
-      if (!options.headers || 
+      // 이미지 관련 API는 제한에서 제외 (MealImageList 컴포넌트의 정상 작동을 위해)
+      if (url.includes('/meal_images') || url.includes('/profiles')) {
+        console.debug('이미지 또는 프로필 관련 API 제한 예외 처리:', url);
+        // 이미지와 프로필 관련 API는 제한을 적용하지 않고 정상 처리
+      }
+      // 그 외 API 키가 필요한 요청인데 authorization 헬더가 없는 경우 401 반환
+      else if (!options.headers || 
           !Object.entries(options.headers).some(([k]) => 
              k.toLowerCase() === 'authorization' || k.toLowerCase() === 'apikey')) {
         console.warn('API 키 없는 요청 차단:', url);
