@@ -206,15 +206,22 @@ export async function POST(request: Request) {
           message: '급식 사진이 업데이트 되었습니다. 급식 평가 하러 가보세요!'
         };
         
-        console.log('알림 전송 시도:', { notificationApiUrl, notificationData });
+        // 현재 요청의 쿠키 헤더 가져오기
+        const headersList = headers();
+        const cookieHeader = headersList.get('cookie') || '';
         
-        // 알림 API 호출
+        console.log('알림 전송 시도:', { 
+          notificationApiUrl, 
+          notificationData,
+          hasCookies: !!cookieHeader
+        });
+        
+        // 알림 API 호출 - 인증을 위해 쿠키 전달
         const notificationResponse = await fetch(notificationApiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            // 서비스 롤 키를 헤더에 추가하여 인증
-            'x-supabase-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+            'Cookie': cookieHeader // 현재 세션 쿠키 전달
           },
           body: JSON.stringify(notificationData),
           // Cache 방지
