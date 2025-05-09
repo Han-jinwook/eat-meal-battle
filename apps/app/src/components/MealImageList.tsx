@@ -76,49 +76,67 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
     }
   };
 
+  // 사용자 정보 가져오기
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+        }
+      } catch (err) {
+        console.error('사용자 정보 로딩 오류:', err);
       }
     };
 
     fetchUserInfo();
   }, [supabase]);
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      setLoading(true);
-      setError(null);
+  // 이미지 목록 가져오기
+  const fetchImages = async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        // 해당 급식에 대한 모든 이미지 가져오기
-        const { data, error } = await supabase
-          .from('meal_images')
-          .select('*')
-          .eq('meal_id', mealId)
-          .order('created_at', { ascending: false });
+    try {
+      // 이미지 상태 초기화로 중복 참조 방지
+      setImages([]);
+      
+      if (!mealId) {
+        setError('급식 ID가 유효하지 않습니다.');
+        return;
+      }
 
-        if (error) {
-          throw error;
-        }
+      // 모든 이미지 가져오기 - 삭제된 것은 실제로 DB에서 제거되어 있음
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select('*')
+        .eq('meal_id', mealId)
+        .order('created_at', { ascending: false });
 
-        setImages(data || []);
+      if (error) {
+        throw error;
+      }
 
-        // 사용자 이미지와 공유 이미지 분리
-        if (userId) {
-          const userImgs = data?.filter(img => img.uploaded_by === userId) || [];
-          const sharedImgs = data?.filter(img => img.is_shared && img.uploaded_by !== userId) || [];
-          
-          setUserImages(userImgs);
-          setSharedImages(sharedImgs);
-        }
+      // 유효한 이미지만 설정
+      const validImages = data || [];
+      setImages(validImages);
+
+      // 사용자 이미지와 공유 이미지 분리 (새 배열로 복사하여 참조 문제 방지)
+      if (userId) {
+        const userImgs = [...validImages.filter(img => img.uploaded_by === userId)];
+        const sharedImgs = [...validImages.filter(img => img.is_shared && img.uploaded_by !== userId)];
         
-        // 업로더 닉네임 가져오기
-        fetchUploaderNames(data || []);
-        
-        // 급식 메뉴 정보 가져오기
+        setUserImages(userImgs);
+        setSharedImages(sharedImgs);
+      }
+      
+      // 업로더 닉네임 가져오기 (이미지가 있는 경우에만)
+      if (validImages.length > 0) {
+        await fetchUploaderNames(validImages);
+      }
+      
+      // 급식 메뉴 정보 가져오기
+      if (mealId) {
         const { data: mealData, error: mealError } = await supabase
           .from('meal_menus')
           .select('*')
@@ -126,82 +144,101 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
           .single();
           
         if (mealError) {
-          console.error('급식 메뉴 정보 로딩 오류:', mealError);
+          if (mealError.code !== 'PGRST116') { // 데이터 없음 에러가 아닌 경우에만 로깅
+            console.error('급식 메뉴 정보 로딩 오류:', mealError);
+          }
         } else {
-          console.log('가져온 급식 메뉴 정보:', mealData); // 가져온 데이터 출력
-          console.log('원산지 정보 데이터:', mealData.origin_info); // 원산지 정보 확인
           setMealInfo(mealData);
         }
-      } catch (err: any) {
-        console.error('이미지 로딩 오류:', err);
-        setError('이미지를 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('이미지 목록 로딩 오류:', err);
+      setError('이미지를 불러오는 중 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // 이미지 목록 갱신 트리거
+  useEffect(() => {
     if (mealId) {
       fetchImages();
     }
-  }, [mealId, refreshTrigger, supabase, userId]);
+    // refreshTrigger가 변경될 때마다 이미지 목록 다시 로드
+  }, [mealId, userId, supabase, refreshTrigger]);
 
+  // 이미지 삭제 처리
   const handleDeleteImage = async (imageId: string) => {
+    if (!confirm('이미지를 삭제하시겠습니까?')) {
+      return;
+    }
+    
     try {
+      // 낙관적 UI 업데이트 - 먼저 화면에서 이미지 제거
+      setUserImages(prev => prev.filter(img => img.id !== imageId));
+      setImages(prev => prev.filter(img => img.id !== imageId));
+      
       // 이미지 삭제 전 확인
-      const { data: imageData } = await supabase
+      const { data: imageCheck, error: checkError } = await supabase
         .from('meal_images')
-        .select('*')
+        .select('id, image_url, uploaded_by, status')
         .eq('id', imageId)
         .single();
-
-      if (!imageData) {
-        throw new Error('이미지를 찾을 수 없습니다.');
+        
+      if (checkError) {
+        throw new Error('이미지 정보를 확인할 수 없습니다.');
       }
-
-      // 공유된 이미지는 삭제 불가
-      if (imageData.is_shared || imageData.status === 'approved') {
-        throw new Error('승인되거나 공유된 이미지는 삭제할 수 없습니다.');
+      
+      // 존재하지 않거나 다른 사용자의 이미지인 경우
+      if (!imageCheck || (userId && imageCheck.uploaded_by !== userId)) {
+        throw new Error('삭제할 수 없는 이미지입니다.');
       }
-
-      // DB에서 이미지 레코드 삭제
+      
+      // 이미지 레코드 삭제 - 상태 변경이 아닌 실제 삭제
       const { error: deleteError } = await supabase
         .from('meal_images')
         .delete()
         .eq('id', imageId);
-
+        
       if (deleteError) {
         throw deleteError;
       }
-
-      // 이미지 목록 업데이트
-      setUserImages(userImages.filter(img => img.id !== imageId));
-      setImages(images.filter(img => img.id !== imageId));
-
-      // 스토리지의 이미지 삭제 시도
+      
+      // 스토리지의 이미지 파일도 삭제 시도
       try {
-        // URL에서 파일명 추출
-        const url = new URL(imageData.image_url);
-        const pathSegments = url.pathname.split('/');
-        // 마지막 세그먼트는 파일명
-        const fileName = pathSegments[pathSegments.length - 1];
-        // Storage 버킷에 직접 저장된 파일
-        const filePath = fileName;
-        
-        console.log('삭제할 파일 경로:', filePath);
-        
-        const { error: storageError } = await supabase.storage
-          .from('meal-images')
-          .remove([filePath]);
+        if (imageCheck.image_url) {
+          // URL에서 파일명 추출
+          const url = new URL(imageCheck.image_url);
+          const pathSegments = url.pathname.split('/');
+          // 마지막 세그먼트는 파일명
+          const filePath = pathSegments[pathSegments.length - 1];
           
-        if (storageError) {
-          console.error('스토리지 이미지 삭제 오류:', storageError);
+          console.log('삭제할 파일 경로:', filePath);
+          
+          const { error: storageError } = await supabase.storage
+            .from('meal-images')
+            .remove([filePath]);
+            
+          if (storageError) {
+            console.error('스토리지 이미지 삭제 오류:', storageError);
+          }
         }
       } catch (err) {
         console.error('파일 경로 추출 오류:', err);
+        // 스토리지 삭제 실패는 치명적이지 않으므로 계속 진행
       }
+      
+      alert('이미지가 삭제되었습니다.');
+      
+      // 변경 내용을 서버에서 다시 불러와 로컬 상태와 일치시킴
+      // setTimeout을 사용해 약간의 지연 후 데이터를 새로고침하여 데이터베이스 업데이트가 완료되도록 함
+      setTimeout(() => fetchImages(), 300);
     } catch (err) {
       console.error('이미지 삭제 오류:', err);
-      alert(err.message || '이미지 삭제 중 오류가 발생했습니다.');
+      alert(`이미지 삭제 실패: ${err.message || '알 수 없는 오류가 발생했습니다.'}`);
+      
+      // 오류 발생 시 이전 상태로 복원하기 위해 이미지 목록 다시 로드
+      fetchImages();
     }
   };
 
