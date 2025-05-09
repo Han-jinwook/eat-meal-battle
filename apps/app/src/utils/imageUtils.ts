@@ -40,6 +40,11 @@ export const getSafeImageUrl = (url: string | null | undefined): string => {
     return url;
   }
   
+  // 프로토콜 없는 외부 URL (예: k.kakaocdn.net/...)은 https://를 자동으로 붙임
+  if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/|$)/.test(url) && !url.startsWith('http')) {
+    url = `https://${url}`;
+  }
+  
   // 로컬 이미지 경로는 그대로 반환
   if (url.startsWith('/') && !url.startsWith('//')) {
     return url;
