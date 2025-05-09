@@ -41,7 +41,11 @@ function LoginContent() {
       
       console.log('구글 로그인 시도 중...')
       // 정확한 포트(3001)를 사용하는 리디렉션 URL 설정
-      const redirectUrl = 'http://localhost:3001/auth/callback'
+      // 개발환경에서는 http, 프로덕션에서는 https 사용
+      const baseUrl = window.location.origin;
+      const redirectUrl = baseUrl.includes('localhost') 
+        ? 'http://localhost:3001/auth/callback'
+        : `${baseUrl}/auth/callback`
       console.log('리디렉션 URL:', redirectUrl)
       
       // 철저한 세션 초기화 - 모든 스토리지 비우기
@@ -91,7 +95,11 @@ function LoginContent() {
       
       console.log('카카오 로그인 시도 중...')
       // 정확한 포트(3001)를 사용하는 리디렉션 URL 설정
-      const redirectUrl = 'http://localhost:3001/auth/callback'
+      // 개발환경에서는 http, 프로덕션에서는 https 사용
+      const baseUrl = window.location.origin;
+      const redirectUrl = baseUrl.includes('localhost') 
+        ? 'http://localhost:3001/auth/callback'
+        : `${baseUrl}/auth/callback`
       console.log('리디렉션 URL:', redirectUrl)
       
       // 철저한 세션 초기화 - 모든 스토리지 비우기

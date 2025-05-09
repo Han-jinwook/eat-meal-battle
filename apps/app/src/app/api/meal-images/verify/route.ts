@@ -192,7 +192,11 @@ export async function POST(request: Request) {
         console.log('이미지가 승인되어 알림을 전송합니다.');
         
         // 내부 API 경로를 사용하여 fetch 호출
-        const notificationApiUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/notifications/send`;
+        // 개발 환경과 배포 환경에 맞는 URL 생성
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+        const notificationApiUrl = baseUrl.includes('localhost') || baseUrl === '' 
+          ? 'http://localhost:3000/api/notifications/send' 
+          : `${baseUrl}/api/notifications/send`;
         
         // 알림 데이터 준비 - 간략한 안내 메시지로 변경
         const notificationData = {
