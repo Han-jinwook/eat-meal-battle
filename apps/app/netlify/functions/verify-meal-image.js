@@ -222,12 +222,67 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
             
             // 학교 정보를 이미 가져왔으니 추가 조회 필요 없음
             const schoolName = schoolInfoData.school_name;
-            console.log('알림 생성은 API 라우트에서 처리됩니다:', { 
-              schoolCode: schoolInfoData.school_code, 
-              schoolName: schoolName,
-              mealImageId: imageId 
-            });
-            // 중복 알림 생성 코드 제거함 - API 라우트를 통해 알림이 전송됨
+              
+            // 이제 바로 알림 전송 시도
+            {
+              // 알림 전송 시도
+              console.log('알림 전송 시도:', { schoolCode: schoolInfoData.school_code, mealImageId: imageId });
+              
+              try {
+                const notificationTitle = `${schoolName} 급식 사진이 등록되었습니다!`;
+                const notificationMessage = '새로운 급식 사진이 등록되었습니다. 지금 확인해보세요!';
+                
+                // 알림 레코드 DB에 직접 저장
+                const { data: notificationData, error: notificationError } = await supabaseAdmin
+                  .from('notifications')
+                  .insert({
+                    title: notificationTitle,
+                    message: notificationMessage,
+                    sender_id: imageData.uploaded_by,
+                    school_code: schoolInfoData.school_code, // school_code 필드에 실제 school_code 값 저장
+                    related_type: 'meal_image',
+                    related_id: imageId,
+                  })
+                  .select()
+                  .single();
+                
+                if (notificationError) {
+                  console.error('알림 레코드 저장 오류:', notificationError);
+                } else if (notificationData) {
+                  console.log('알림 레코드 저장 성공:', notificationData.id);
+                  
+                  // 해당 학교 학생들의 ID 가져오기
+                  const { data: studentsData, error: studentsError } = await supabaseAdmin
+                    .from('school_infos')
+                    .select('user_id')
+                    .eq('school_code', schoolInfoData.school_code);
+                  
+                  if (studentsError) {
+                    console.error('학생 정보 조회 오류:', studentsError);
+                  } else if (studentsData && studentsData.length > 0) {
+                    // 알림 수신자 레코드 일괄 생성
+                    const recipientRecords = studentsData.map(student => ({
+                      notification_id: notificationData.id,
+                      recipient_id: student.user_id,
+                      is_read: false
+                    }));
+                    
+                    const { error: recipientsError } = await supabaseAdmin
+                      .from('notification_recipients')
+                      .insert(recipientRecords);
+                    
+                    if (recipientsError) {
+                      console.error('알림 수신자 저장 오류:', recipientsError);
+                    } else {
+                      console.log(`알림이 ${studentsData.length}명의 학생에게 전송되었습니다.`);
+                    }
+                  }
+                }
+              } catch (notificationError) {
+                console.error('알림 생성 오류:', notificationError);
+                // 알림 전송 실패는 전체 프로세스를 실패시키지 않음
+              }
+            }
           }
         } catch (notificationSetupError) {
           console.error('알림 설정 오류:', notificationSetupError);

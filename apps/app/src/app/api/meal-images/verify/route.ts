@@ -186,54 +186,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. 승인된 경우 알림 전송
+    // 9. Netlify 함수에서 알림 전송을 처리하므로 여기서는 로그만 남김
     if (isMatch) {
-      try {
-        console.log('이미지가 승인되어 알림을 전송합니다.');
-        
-        // 내부 API 경로를 사용하여 fetch 호출
-        // 개발 환경과 배포 환경에 맞는 URL 생성
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
-        const notificationApiUrl = baseUrl.includes('localhost') || baseUrl === '' 
-          ? 'http://localhost:3000/api/notifications/send' 
-          : `${baseUrl}/api/notifications/send`;
-        
-        // 알림 데이터 준비 - 간략한 안내 메시지로 변경
-        const notificationData = {
-          schoolId: imageData.school_id, // 학교 ID
-          mealImageId: imageId, // 급식 이미지 ID
-          title: '급식 사진이 업데이트 되었습니다!',
-          message: '급식 사진이 업데이트 되었습니다. 급식 평가 하러 가보세요!'
-        };
-        
-        // 현재 요청의 쿠키 헤더 가져오기
-        const headersList = headers();
-        const cookieHeader = headersList.get('cookie') || '';
-        
-        console.log('알림 전송 시도:', { 
-          notificationApiUrl, 
-          notificationData,
-          hasCookies: !!cookieHeader
-        });
-        
-        // 알림 API 호출 - 인증을 위해 쿠키 전달
-        const notificationResponse = await fetch(notificationApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieHeader // 현재 세션 쿠키 전달
-          },
-          body: JSON.stringify(notificationData),
-          // Cache 방지
-          cache: 'no-store'
-        });
-        
-        const notificationResult = await notificationResponse.json();
-        console.log('알림 전송 결과:', notificationResult);
-      } catch (notificationError) {
-        // 알림 전송 실패는 전체 프로세스를 실패시키지 않음
-        console.error('알림 전송 중 오류 발생 (무시됨):', notificationError);
-      }
+      console.log('이미지가 승인되었습니다. 알림은 Netlify 함수에서 처리합니다.');
     }
     
     // 10. 결과 반환
