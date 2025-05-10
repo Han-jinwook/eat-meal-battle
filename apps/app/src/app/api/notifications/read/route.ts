@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       if (updateError) {
         log('알림 업데이트 오류 발생! 디버깅 정보:', {
           error: updateError,
-          query: `UPDATE notification_recipients SET is_read = true, read_at = '${now}' WHERE id = '${notificationId}'`
+          query: `UPDATE notification_recipients SET is_read = true, read_at = '${now}' WHERE notification_id = '${notificationId}' AND recipient_id = '${userId}'`
         });
         
         // 바로 실패 응답
