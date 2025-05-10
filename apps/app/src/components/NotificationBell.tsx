@@ -154,14 +154,6 @@ export default function NotificationBell() {
         return;
       }
       
-      // 수신자 레코드의 실제 ID 사용 (이것이 핵심 수정사항 - notification_id가 아니라 id 사용)
-      const recipientId = notificationToUpdate.id;
-      
-      console.log('실제 사용할 수신자 레코드 ID:', {
-        recipientId,
-        notificationId: notificationToUpdate.notification_id
-      });
-      
       // 먼저 로컬 상태 업데이트 (사용자 경험 개선을 위해 즉시 반영)
       setNotifications(current => 
         current.map(n => 
@@ -179,11 +171,12 @@ export default function NotificationBell() {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
       
-      // API 호출 시도 - notification_recipients 테이블의 id 전달
+      // API 호출 - notification_id를 전달하여 API에서 올바르게 처리할 수 있도록 함
+      // notification_id가 실제 notifications 테이블의 id에 해당
       const response = await fetch('/api/notifications/read', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ notificationId: recipientId })
+        body: JSON.stringify({ notificationId })
       });
 
       const result = await response.json();
