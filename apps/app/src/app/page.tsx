@@ -70,6 +70,10 @@ export default function Home() {
     if (notificationId) {
       // notification_id로 관련된 급식 정보 조회
       const fetchNotificationMeal = async () => {
+        // ============== TEST LOG START ============== 
+        console.log('CASCADE_TEST_LOG: fetchNotificationMeal called with notificationId:', notificationId, 'at', new Date().toISOString());
+        // ============== TEST LOG END ============== 
+
         try {
           // 1. Fetch notification (as list to avoid 406)
           const { data: notificationsData, error: notificationFetchError } = await supabase
