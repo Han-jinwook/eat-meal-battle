@@ -333,7 +333,7 @@ export default function NotificationBell() {
                         href={`/?notification=${notification.related_id}`}
                         onClick={() => {
                           if (!notification.is_read) {
-                            markAsRead(notification.id); // notification_recipients의 ID로 변경
+                            markAsRead(notification.notification_id); // notifications 테이블의 ID 사용
                           }
                           setIsOpen(false);
                         }}

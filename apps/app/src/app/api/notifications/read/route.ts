@@ -67,7 +67,8 @@ export async function POST(request: Request) {
           is_read: true,
           read_at: now
         })
-        .eq('id', notificationId)
+        .eq('notification_id', notificationId)
+        .eq('recipient_id', userId)
         .select();
       
       log('업데이트 결과:', updateResult, '오류:', updateError);
