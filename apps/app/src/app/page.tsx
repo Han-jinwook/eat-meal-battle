@@ -78,22 +78,28 @@ export default function Home() {
             .eq('id', notificationId)
             .limit(1); // Ensure only one if multiple somehow exist for an id
 
-          let notification: any = null;
-          if (notificationsData && notificationsData.length > 0) {
-            notification = notificationsData[0];
-          }
-
           if (notificationFetchError) {
             console.error('Error fetching notification:', notificationFetchError);
-            // Decide if this error is critical. For now, let it proceed.
-            // If notification is null, subsequent logic will handle it.
-          }
-
-          if (!notification?.related_id) {
-            console.log('Notification not found or has no related_id for id:', notificationId);
-            setSelectedDate(getCurrentDate()); // Set to today if no specific meal to show
+            setSelectedDate(getCurrentDate());
             return;
           }
+
+          const notification = (notificationsData && notificationsData.length > 0) ? notificationsData[0] : null;
+
+          if (!notification) { // 알림 객체 자체가 없는 경우
+            console.log('Notification not found for id:', notificationId);
+            setSelectedDate(getCurrentDate());
+            return;
+          }
+
+          // related_id가 null, undefined, 빈 문자열 등 Falsy 값인지 확인
+          if (!notification.related_id) { 
+            console.log('Notification found, but no valid related_id for id:', notificationId, 'Notification object:', notification);
+            setSelectedDate(getCurrentDate());
+            return;
+          }
+
+          console.log('Proceeding to fetch meal with related_id:', notification.related_id);
 
           // 2. 급식 정보 조회
           const { data: meal, error: mealError } = await supabase
@@ -105,17 +111,17 @@ export default function Home() {
           // Check for meal data first, then for error if data is missing
           if (!meal?.meal_date) {
             console.log('Meal not found for related_id:', notification.related_id);
-            if (mealError) {
+            if (mealError && mealError.code !== 'PGRST116') { // PGRST116 (0 rows) is expected for maybeSingle if not found
               console.error('Error fetching meal (when meal data is missing):', mealError);
             }
             setSelectedDate(getCurrentDate()); // Set to today if no specific meal to show
             return;
           }
 
-          // If meal data exists but there was still some other error (less likely for .maybeSingle() on 404)
-          if (mealError) {
-            console.error('Error fetching meal (even when meal data might exist):', mealError);
-            // Potentially throw or handle, but data is prioritized if available
+          // If meal data exists but there was still some other error
+          if (mealError && mealError.code !== 'PGRST116') {
+              console.error('Error fetching meal (even when meal data might exist):', mealError);
+              // Potentially throw or handle, but data is prioritized if available
           }
 
           // YYYYMMDD 형식을 YYYY-MM-DD로 변환
