@@ -62,14 +62,50 @@ export default function Home() {
     }
   }, [userError]);
 
-  // 최초 진입 시 날짜 자동 설정
+  // URL 파라미터에서 notification ID 가져오기
   useEffect(() => {
-    if (!selectedDate && !userLoading && userSchool) {
-      // 오늘 날짜를 YYYY-MM-DD 형식으로 설정
-      const today = getCurrentDate();
-      setSelectedDate(today);
+    const params = new URLSearchParams(window.location.search);
+    const notificationId = params.get('notification');
+
+    if (notificationId) {
+      // notification_id로 관련된 급식 정보 조회
+      const fetchNotificationMeal = async () => {
+        try {
+          const { data: notification, error } = await supabase
+            .from('notifications')
+            .select('related_id, created_at')
+            .eq('id', notificationId)
+            .single();
+
+          if (error) throw error;
+          if (!notification?.related_id) return;
+
+          // 급식 정보 조회
+          const { data: meal, error: mealError } = await supabase
+            .from('meals')
+            .select('meal_date')
+            .eq('id', notification.related_id)
+            .single();
+
+          if (mealError) throw mealError;
+          if (!meal?.meal_date) return;
+
+          // YYYYMMDD 형식을 YYYY-MM-DD로 변환
+          const formattedDate = meal.meal_date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
+          setSelectedDate(formattedDate);
+        } catch (error) {
+          console.error('알림 관련 급식 정보 조회 실패:', error);
+          // 오류 시 오늘 날짜로 설정
+          setSelectedDate(getCurrentDate());
+        }
+      };
+
+      fetchNotificationMeal();
+    } else if (!selectedDate && !userLoading && userSchool) {
+      // notification이 없는 경우 오늘 날짜로 설정
+      setSelectedDate(getCurrentDate());
     }
-  }, [selectedDate, userLoading, userSchool]);
+  }, [userLoading, userSchool, supabase]);
 
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
