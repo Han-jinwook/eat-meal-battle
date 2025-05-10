@@ -49,15 +49,14 @@ export async function POST(request: Request) {
     
     // 특정 알림 ID가 제공된 경우
     if (notificationId) {
-      // 관리자 권한으로 직접 업데이트 시도
+      // 관리자 권한으로 직접 업데이트 시도 - notification_recipients 테이블의 id로 조회
       const { data: updateResult, error: updateError } = await supabaseAdmin
         .from('notification_recipients')
         .update({
           is_read: true,
           read_at: now
         })
-        .eq('recipient_id', userId)
-        .eq('notification_id', notificationId);
+        .eq('id', notificationId);
       
       console.log('알림 업데이트 결과:', updateResult, '오류:', updateError);
       
