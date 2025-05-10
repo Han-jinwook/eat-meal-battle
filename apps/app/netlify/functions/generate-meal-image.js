@@ -145,17 +145,27 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
       .single();
       
     if (mealData && mealData.school_id) {
-      // 알림 생성
+      // 알림 생성 - 필드 이름 통일하여 중복 방지
       console.log('[generate-meal-image] 알림 생성 중...');
       try {
+        // 학교 이름 가져오기
+        const { data: schoolData, error: schoolError } = await supabase
+          .from('schools')
+          .select('name')
+          .eq('id', mealData.school_id)
+          .single();
+          
+        const schoolName = schoolData?.name || '학교';
+        
         const { data: notification, error: notificationError } = await supabase
           .from('notifications')
           .insert({
-            type: 'meal_image_ai',
-            title: '오늘의 급식 이미지가 AI에 의해 생성되었습니다',
-            content: '별점으로 오늘의 급식배틀 참여하세요!',
-            related_id: meal_id,
-            created_at: new Date()
+            title: `${schoolName} 급식 사진이 AI에 의해 생성되었습니다!`,
+            message: '새로운 급식 사진이 등록되었습니다. 지금 확인해보세요!',
+            sender_id: userId,
+            school_code: school_code,
+            related_type: 'meal_image',
+            related_id: imageRecord.id
           })
           .select()
           .single();
