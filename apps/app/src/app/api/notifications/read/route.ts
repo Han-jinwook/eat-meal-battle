@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 
+// 디버깅 상수
+const DEBUG_MODE = true;
+
 /**
  * 알림을 읽음 처리하는 API
  * 
