@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 
 // 디버깅 상수
-const DEBUG_MODE = true;
+const DEBUG_MODE = false; // 프로덕션에서는 로그 비활성화
 const log = (...args: any[]) => {
   if (DEBUG_MODE) {
     console.log('[API Logs]', ...args);

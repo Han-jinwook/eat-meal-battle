@@ -171,19 +171,58 @@ export default function NotificationBell() {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
       
-      // API 호출 - notification_id 전달
-      const response = await fetch('/api/notifications/read', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ notificationId })
-      });
+      // API 호출 - 타임아웃 및 재시도 로직 추가
+      const callApi = async (retryCount = 0, maxRetries = 2) => {
+        try {
+          // 타임아웃 설정
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
 
-      const result = await response.json();
-      console.log('알림 읽음 처리 API 응답:', result);
+          try {
+            const response = await fetch('/.netlify/functions/notifications-read', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ notificationId }),
+              signal: controller.signal
+            });
 
-      if (!response.ok) {
-        console.warn('API 호출 실패지만 UI는 업데이트됨');
-      }
+            clearTimeout(timeoutId);
+
+            // 성공
+            if (response.ok) {
+              const result = await response.json();
+              console.log('알림 읽음 처리 API 성공:', result);
+              return;
+            }
+
+            // 서버 오류인 경우 재시도
+            if (response.status >= 500 && retryCount < maxRetries) {
+              console.warn(`API 호출 실패 (${response.status}), ${retryCount + 1}번째 재시도...`);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+              return callApi(retryCount + 1, maxRetries);
+            }
+
+            console.warn('API 호출 실패지만 UI는 업데이트됨:', response.status);
+          } catch (error) {
+            clearTimeout(timeoutId);
+
+            // 타임아웃이나 네트워크 오류의 경우 재시도
+            if (error.name === 'AbortError' || error.name === 'TypeError') {
+              if (retryCount < maxRetries) {
+                console.warn(`API 호출 시간 초과, ${retryCount + 1}번째 재시도...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                return callApi(retryCount + 1, maxRetries);
+              }
+            }
+            throw error;
+          }
+        } catch (error) {
+          console.error('알림 읽음 시도 중 오류:', error);
+        }
+      };
+      
+      // API 호출 시도
+      await callApi();
     } catch (error) {
       console.error('알림 상태 업데이트 오류:', error);
       
