@@ -314,6 +314,36 @@ export default function NotificationBell() {
               notifications.map(notification => (
                 <div
                   key={notification.id}
+                  className={`p-4 border-b ${notification.is_read ? 'bg-white' : 'bg-blue-50'} hover:bg-gray-50`}
+                >
+                  <div className="flex">
+                    <div className="flex-shrink-0 mr-3">
+                      {getNotificationIcon(notification.related_type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Link 
+                        href={`/?notification=${notification.related_id}`}
+                        onClick={() => {
+                          if (!notification.is_read) {
+                            markAsRead(notification.notification_id);
+                          }
+                          setIsOpen(false);
+                        }}
+                        className="block"
+                      >
+                        <p className={`text-sm ${notification.is_read ? 'font-normal' : 'font-medium'} text-gray-900`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {formatDate(notification.created_at)}
+                        </p>
+                      </Link>
+                    </div>
+                    {!notification.is_read && (
+                      <button
                         onClick={() => markAsRead(notification.notification_id)}
                         className="ml-2 text-gray-400 hover:text-gray-600"
                         aria-label="읽음 표시"
