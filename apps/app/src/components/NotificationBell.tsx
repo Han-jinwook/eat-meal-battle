@@ -154,14 +154,6 @@ export default function NotificationBell() {
         return;
       }
       
-      // notification_recipients 테이블의 실제 ID 사용 (이것이 핵심임)
-      const recipientId = notificationToUpdate.id;
-      
-      console.log('실제 사용할 수신자 레코드 ID:', {
-        recipientId,
-        notificationId: notificationToUpdate.notification_id
-      });
-      
       // 먼저 로컬 상태 업데이트 (사용자 경험 개선을 위해 즉시 반영)
       setNotifications(current => 
         current.map(n => 
@@ -179,11 +171,11 @@ export default function NotificationBell() {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
       
-      // API 호출 - notification_recipients 테이블의 id 값 전달
+      // API 호출 - notification_id 전달
       const response = await fetch('/api/notifications/read', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ notificationId: recipientId })
+        body: JSON.stringify({ notificationId })
       });
 
       const result = await response.json();
@@ -322,36 +314,6 @@ export default function NotificationBell() {
               notifications.map(notification => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b ${!notification.is_read ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50`}
-                >
-                  <div className="flex">
-                    <div className="flex-shrink-0 mr-3">
-                      {getNotificationIcon(notification.related_type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <Link 
-                        href={`/?notification=${notification.related_id}`}
-                        onClick={() => {
-                          if (!notification.is_read) {
-                            markAsRead(notification.notification_id); // notifications 테이블의 ID 사용
-                          }
-                          setIsOpen(false);
-                        }}
-                        className="block"
-                      >
-                        <p className={`text-sm ${!notification.is_read ? 'font-medium' : 'font-normal'} text-gray-900`}>
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-gray-500 truncate">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {formatDate(notification.created_at)}
-                        </p>
-                      </Link>
-                    </div>
-                    {!notification.is_read && (
-                      <button
                         onClick={() => markAsRead(notification.notification_id)}
                         className="ml-2 text-gray-400 hover:text-gray-600"
                         aria-label="읽음 표시"
