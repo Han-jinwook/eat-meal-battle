@@ -50,6 +50,16 @@ exports.handler = async (event, context) => {
     let fileBuffer = null;
     let fileName = '';
     let fileType = '';
+
+    // Busboy 오류 처리기 추가
+    bb.on('error', (err) => {
+      console.error('Busboy parsing error:', err);
+      return resolve({
+        statusCode: 400, // 클라이언트 요청 데이터 문제일 가능성이 높으므로 400 사용
+        headers,
+        body: JSON.stringify({ error: '요청 데이터 파싱 중 오류가 발생했습니다.', details: err.message })
+      });
+    });
     
     // 필드 파싱
     bb.on('field', (name, val) => {
