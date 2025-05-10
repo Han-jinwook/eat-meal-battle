@@ -98,22 +98,39 @@ export default function MealsPage() {
 
         if (user) {
           setUser(user);
+          console.log('Current user object in getUserInfo:', JSON.stringify(user, null, 2));
+          console.log('Current user ID in getUserInfo:', user.id);
 
           // 2. 사용자의 학교 정보 가져오기
-          const { data: schoolInfo, error: schoolError } = await supabase
+          // Fetch as a list to avoid strict single-object requirement from PostgREST
+          const { data: schoolInfosData, error: schoolFetchError } = await supabase
             .from('school_infos')
-            .select('*')
+            .select('id, user_id, school_code, office_code, region, created_at')
             .eq('user_id', user.id)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
-          if (schoolError && schoolError.code !== 'PGRST116') { 
-            // PGRST116: 결과 없음 오류는 무시 (학교 정보가 없을 수 있음)
-            throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
+          let schoolInfo: any = null;
+          if (schoolInfosData && schoolInfosData.length > 0) {
+            schoolInfo = schoolInfosData[0];
+          }
+
+          // Handle potential errors from the fetch operation
+          if (schoolFetchError) {
+            // Log the error and decide if it needs to be thrown or handled
+            console.error('Error fetching school info:', schoolFetchError);
+            // If the error is critical, re-throw or set error state
+            // For now, we'll let it proceed, schoolInfo will be null if data wasn't fetched
+            // throw schoolFetchError; // Uncomment to make it a hard error
           }
 
           if (schoolInfo) {
-            console.log('학교 정보 가져오기 성공:', schoolInfo);
+            console.log('학교 정보 가져오기 성공 (getUserInfo):', schoolInfo);
             setUserSchool(schoolInfo); // 학교 정보 상태 저장
+          } else {
+            // This case means no school info was found, or an error occurred during fetch
+            console.log('학교 정보가 없거나 가져오기 실패 (getUserInfo)');
+            setUserSchool(null); // Ensure userSchool is null if no info
           }
           
           // 현재 날짜 설정 (초기 API 호출 없이 날짜만 설정)
@@ -369,7 +386,7 @@ export default function MealsPage() {
       !(line.includes('쇠고기') && line.includes('국내산(한우)'))
     );
     
-    // skipPatterns에 일치하는 원산지 정보는 건너뛀
+    // skipPatterns에 일치하는 원산지 정보는 건너뛸
     const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
 
     filteredLines.forEach(line => {

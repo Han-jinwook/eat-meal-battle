@@ -71,31 +71,60 @@ export default function Home() {
       // notification_id로 관련된 급식 정보 조회
       const fetchNotificationMeal = async () => {
         try {
-          const { data: notification, error } = await supabase
+          // 1. Fetch notification (as list to avoid 406)
+          const { data: notificationsData, error: notificationFetchError } = await supabase
             .from('notifications')
             .select('related_id, created_at')
             .eq('id', notificationId)
-            .single();
+            .limit(1); // Ensure only one if multiple somehow exist for an id
 
-          if (error) throw error;
-          if (!notification?.related_id) return;
+          let notification: any = null;
+          if (notificationsData && notificationsData.length > 0) {
+            notification = notificationsData[0];
+          }
 
-          // 급식 정보 조회
+          if (notificationFetchError) {
+            console.error('Error fetching notification:', notificationFetchError);
+            // Decide if this error is critical. For now, let it proceed.
+            // If notification is null, subsequent logic will handle it.
+          }
+
+          if (!notification?.related_id) {
+            console.log('Notification not found or has no related_id for id:', notificationId);
+            setSelectedDate(getCurrentDate()); // Set to today if no specific meal to show
+            return;
+          }
+
+          // 2. 급식 정보 조회
           const { data: meal, error: mealError } = await supabase
             .from('meals')
-            .select('meal_date')
+            .select('meal_date') // Original select in code
             .eq('id', notification.related_id)
-            .single();
+            .maybeSingle();
 
-          if (mealError) throw mealError;
-          if (!meal?.meal_date) return;
+          // Check for meal data first, then for error if data is missing
+          if (!meal?.meal_date) {
+            console.log('Meal not found for related_id:', notification.related_id);
+            if (mealError) {
+              console.error('Error fetching meal (when meal data is missing):', mealError);
+            }
+            setSelectedDate(getCurrentDate()); // Set to today if no specific meal to show
+            return;
+          }
+
+          // If meal data exists but there was still some other error (less likely for .maybeSingle() on 404)
+          if (mealError) {
+            console.error('Error fetching meal (even when meal data might exist):', mealError);
+            // Potentially throw or handle, but data is prioritized if available
+          }
 
           // YYYYMMDD 형식을 YYYY-MM-DD로 변환
           const formattedDate = meal.meal_date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
           setSelectedDate(formattedDate);
+
         } catch (error) {
-          console.error('알림 관련 급식 정보 조회 실패:', error);
-          // 오류 시 오늘 날짜로 설정
+          // This catch is for unexpected errors during the async operations
+          console.error('알림 관련 급식 정보 조회 중 예기치 않은 실패:', error);
           setSelectedDate(getCurrentDate());
         }
       };
