@@ -330,7 +330,7 @@ export default function NotificationBell() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <Link 
-                        href={`/temp/meals?notification=${notification.related_id}`}
+                        href={`/?notification=${notification.related_id}`}
                         onClick={() => {
                           if (!notification.is_read) {
                             markAsRead(notification.id); // notification_recipients의 ID로 변경
