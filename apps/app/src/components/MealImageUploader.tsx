@@ -234,12 +234,20 @@ export default function MealImageUploader({
       }
       
       // 3. 생성된 이미지 정보로 상태 업데이트
+      console.log('AI 이미지 생성 성공:', result.image);
+      
+      // 이미지 정보 업데이트 - 검증 과정 생략
       setUploadedImage(result.image);
+      
+      // 검증 결과를 직접 설정하여 검증 과정 생략
       setVerificationResult({
-        match_score: result.image.match_score,
-        status: 'approved',
-        message: 'AI가 생성한 이미지입니다.'
+        isMatch: true,
+        matchScore: 1.0, // 100% 일치
+        explanation: 'AI가 생성한 이미지입니다. 메뉴에 맞게 자동 생성되었습니다.'
       });
+      
+      // 이미지 상태 완료로 설정
+      setImageStatus('complete');
       
       // 4. 버튼 숨기기
       setShowAiGenButton(false);
