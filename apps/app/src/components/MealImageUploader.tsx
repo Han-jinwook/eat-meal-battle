@@ -166,16 +166,29 @@ export default function MealImageUploader({
       setVerifying(false);
       setImageStatus('generating');
       
-      // 1. 메뉴 정보 가져오기
-      const { data: mealData, error: mealError } = await supabase
-        .from('meals')
+      // 1. 메뉴 정보 가져오기 - meal_menus 테이블에서 조회
+      console.log('메뉴 정보 조회 시도:', { mealId });
+      
+      const { data: mealMenuData, error: mealMenuError } = await supabase
+        .from('meal_menus')
         .select('menu_items')
-        .eq('id', mealId)
+        .eq('meal_id', mealId)
         .single();
         
-      if (mealError || !mealData) {
+      if (mealMenuError) {
+        console.error('메뉴 정보 조회 오류:', mealMenuError);
         throw new Error('메뉴 정보를 찾을 수 없습니다.');
       }
+      
+      if (!mealMenuData || !mealMenuData.menu_items || mealMenuData.menu_items.length === 0) {
+        console.error('메뉴 정보가 없습니다:', mealMenuData);
+        throw new Error('급식 메뉴 정보가 없습니다.');
+      }
+      
+      console.log('메뉴 정보 조회 성공:', { 
+        menuItems: mealMenuData.menu_items,
+        menuCount: mealMenuData.menu_items.length 
+      });
       
       // 2. OpenAI API 호출하여 이미지 생성
       // 테스트를 위해 항상 Netlify 함수 사용
@@ -189,7 +202,7 @@ export default function MealImageUploader({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          menu_items: mealData.menu_items,
+          menu_items: mealMenuData.menu_items,
           meal_id: mealId,
           school_code: schoolCode,
           meal_date: mealDate,
