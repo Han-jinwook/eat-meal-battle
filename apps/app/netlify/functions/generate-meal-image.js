@@ -112,6 +112,12 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
     
     // DB에 이미지 정보 저장
     console.log('[generate-meal-image] 이미지 정보 DB에 저장 중...');
+    console.log(`[generate-meal-image] 저장할 데이터:`, {
+      meal_id,
+      school_code,
+      // meal_date와 meal_type 필드는 테이블에 존재하지 않음
+    });
+    
     const { data: imageRecord, error: dbError } = await supabase
       .from('meal_images')
       .insert({
@@ -119,8 +125,7 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
         image_url: publicUrl,
         uploaded_by: userId,
         school_code: school_code,
-        meal_date: meal_date,
-        meal_type: meal_type,
+        // meal_date와 meal_type 필드 제거 - 테이블에 없는 필드
         status: 'approved', // AI 생성 이미지는 자동 승인
         is_shared: true,    // 자동으로 공유 설정
         match_score: 90,    // 높은 매치 스코어
