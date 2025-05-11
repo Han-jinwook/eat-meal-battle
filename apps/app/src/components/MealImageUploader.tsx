@@ -167,12 +167,15 @@ export default function MealImageUploader({
       setImageStatus('generating');
       
       // 1. 메뉴 정보 가져오기 - meal_menus 테이블에서 조회
-      console.log('메뉴 정보 조회 시도:', { mealId });
+      console.log('메뉴 정보 조회 시도:', { schoolCode, mealDate, mealType });
       
+      // meal_menus 테이블 구조에 맞게 수정: school_code, meal_date, meal_type으로 조회
       const { data: mealMenuData, error: mealMenuError } = await supabase
         .from('meal_menus')
-        .select('menu_items')
-        .eq('meal_id', mealId)
+        .select('id, menu_items, meal_date, meal_type, school_code')
+        .eq('school_code', schoolCode)
+        .eq('meal_date', mealDate)
+        .eq('meal_type', mealType)
         .single();
         
       if (mealMenuError) {
@@ -187,7 +190,10 @@ export default function MealImageUploader({
       
       console.log('메뉴 정보 조회 성공:', { 
         menuItems: mealMenuData.menu_items,
-        menuCount: mealMenuData.menu_items.length 
+        menuCount: mealMenuData.menu_items.length,
+        mealDate: mealMenuData.meal_date,
+        mealType: mealMenuData.meal_type,
+        schoolCode: mealMenuData.school_code
       });
       
       // 2. OpenAI API 호출하여 이미지 생성
@@ -204,9 +210,9 @@ export default function MealImageUploader({
         body: JSON.stringify({
           menu_items: mealMenuData.menu_items,
           meal_id: mealId,
-          school_code: schoolCode,
-          meal_date: mealDate,
-          meal_type: mealType
+          school_code: mealMenuData.school_code || schoolCode,
+          meal_date: mealMenuData.meal_date || mealDate,
+          meal_type: mealMenuData.meal_type || mealType
         }),
       });
       
