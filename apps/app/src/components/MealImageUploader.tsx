@@ -70,7 +70,7 @@ export default function MealImageUploader({
         if (mealHeadError.code === '42P01') {
           console.debug('meals 테이블이 없습니다. AI 버튼 숨김');
         } else {
-          console.error('급식 존재 여부 확인 오류:', mealHeadError);
+          console.debug(`급식 ID(${mealId}) 존재 여부 확인 중 예상된 오류 (아마도 삭제된 급식):`, mealHeadError.message);
         }
         setShowAiGenButton(false);
         return;
