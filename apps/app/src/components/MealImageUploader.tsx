@@ -224,17 +224,23 @@ export default function MealImageUploader({
         }),
       });
       
+      // 응답 상태 코드 확인
+      console.log('AI 이미지 생성 API 응답 상태 코드:', response.status, response.statusText);
+      
       // 응답 텍스트를 먼저 가져와서 안전하게 처리
       const responseText = await response.text();
+      console.log('AI 이미지 생성 API 응답 텍스트(처음 200자):', responseText.substring(0, 200));
+      
       let result;
       
       try {
         // JSON으로 파싱 시도
         result = JSON.parse(responseText);
-        console.log('AI 이미지 생성 API 응답:', result);
+        console.log('AI 이미지 생성 API 응답 파싱 결과:', result);
       } catch (e) {
-        console.error('AI 이미지 생성 API 응답 파싱 오류:', e, responseText);
-        throw new Error('응답 처리 중 오류가 발생했습니다.');
+        console.error('AI 이미지 생성 API 응답 파싱 오류:', e);
+        console.error('파싱 오류 발생한 응답의 처음 부분:', responseText.substring(0, 50));
+        throw new Error(`응답 처리 중 오류가 발생했습니다. 상태 코드: ${response.status}`);
       }
       
       if (!result.success) {
