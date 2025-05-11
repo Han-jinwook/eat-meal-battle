@@ -49,57 +49,34 @@ exports.handler = async (event) => {
     
     // DALL-E 3으로 이미지 생성
     console.log('[generate-meal-image] OpenAI API 호출 중...');
-    // GPT-4o 모델을 사용하여 이미지 생성 (멀티모달 지원)
-    console.log('[generate-meal-image] GPT-4o API로 이미지 생성 시도');
+    // OpenAI 이미지 생성 API 호출
+    console.log('[generate-meal-image] 이미지 생성 API 호출 시도');
     
-    // GPT-4o를 이용한 이미지 생성 API 호출
-    const imageResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system", 
-          content: "You are an expert image creator. Create photorealistic images based on the user's description."
-        },
-        {
-          role: "user", 
-          content: `Generate a detailed, appetizing photo of a Korean school lunch served on a traditional stainless steel compartment tray containing: ${menuString}. The tray has several compartments for different dishes. Show a top-down view to clearly display all food items. Make the food look authentic to Korean school lunch cuisine with proper portion sizes and traditional presentation.`
-        }
-      ],
-      max_tokens: 1000,
-      response_format: { type: "image_url" }
+    // images.generate API를 사용하여 이미지 생성
+    const imageResponse = await openai.images.generate({
+      model: "dall-e-3", // 클라이언트가 요청한 대로 DALL-E 3 사용 (품질 향상)
+      prompt: `A detailed, appetizing photo of a Korean school lunch served on a traditional stainless steel compartment tray containing: ${menuString}.
+
+Specific tray structure: The tray has 6 compartments - 4 small rectangular compartments on the top row for side dishes, a wide shallow rectangular compartment on the bottom left for rice/main dish, and a deep circular bowl-shaped compartment on the bottom right for soup.
+
+Style requirements: Soft metallic sheen on the stainless steel tray, evenly diffused lighting, solid neutral background, photorealistic style. Capture from a top-down view to clearly show all food items in their designated compartments.
+
+Make sure the food appears authentic to Korean school lunch cuisine with proper portion sizes and traditional presentation.`,
+      n: 1,
+      size: "1024x1024",
+      response_format: "url" // url 형식으로 응답 받음
     });
     
-    console.log('[generate-meal-image] GPT-4o API 호출 성공:', JSON.stringify(imageResponse).substring(0, 100) + '...');
+    console.log('[generate-meal-image] 이미지 생성 API 호출 성공:', JSON.stringify(imageResponse).substring(0, 100) + '...');
     
-    // GPT-4o 응답에서 이미지 URL 추출
-    if (!imageResponse || !imageResponse.choices || imageResponse.choices.length === 0) {
+    // 이미지 URL 추출
+    if (!imageResponse || !imageResponse.data || imageResponse.data.length === 0) {
       throw new Error('이미지 생성에 실패했습니다. 응답이 비어있습니다.');
     }
     
-    // 이미지 URL 추출 시도
-    const content = imageResponse.choices[0].message.content;
-    
-    if (!content) {
-      throw new Error('이미지 URL이 응답에 포함되지 않았습니다.');
-    }
-    
-    // imageUrl 변수를 try 블록 외부에 선언
-    let imageUrl;
-    
-    try {
-      // URL 추출 시도
-      const imageUrlMatch = content.match(/https?:\/\/[^\s"]+/i);
-      if (!imageUrlMatch) {
-        throw new Error('이미지 URL을 찾을 수 없습니다.');
-      }
-      
-      imageUrl = imageUrlMatch[0];
-      console.log(`[generate-meal-image] 이미지 생성 완료, URL: ${imageUrl.substring(0, 30)}...`);
-    } catch (error) {
-      console.error('[generate-meal-image] 이미지 URL 추출 중 오류:', error);
-      console.log('전체 GPT-4o 응답:', JSON.stringify(imageResponse.choices[0].message));
-      throw new Error('이미지 URL 추출에 실패했습니다.');
-    }
+    // 이미지 URL 가져오기
+    const imageUrl = imageResponse.data[0].url;
+    console.log(`[generate-meal-image] 이미지 생성 완료, URL: ${imageUrl.substring(0, 30)}...`);
     
     // 이미지 다운로드
     console.log('[generate-meal-image] 이미지 다운로드 중...');
