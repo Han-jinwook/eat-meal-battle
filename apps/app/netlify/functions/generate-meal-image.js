@@ -16,7 +16,7 @@ exports.handler = async (event) => {
   
   try {
     // 요청 데이터 파싱
-    const { menu_items, meal_id, school_code, meal_date, meal_type } = JSON.parse(event.body);
+    const { menu_items, meal_id, school_code, meal_date, meal_type, user_id } = JSON.parse(event.body);
     
     if (!menu_items || !meal_id) {
       throw new Error('필수 매개변수가 누락되었습니다 (menu_items, meal_id)');
