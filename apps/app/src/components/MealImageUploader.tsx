@@ -34,7 +34,7 @@ export default function MealImageUploader({
   const [userId, setUserId] = useState<string | null>(null);
   const [isButtonReady, setIsButtonReady] = useState(false);
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
-  const [showAiGenButton, setShowAiGenButton] = useState(false);
+  const [showAiGenButton, setShowAiGenButton] = useState(true); // 테스트를 위해 항상 true로 설정
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 사용자 정보 가져오기
@@ -49,8 +49,8 @@ export default function MealImageUploader({
     fetchUserInfo();
   }, [supabase]);
 
-  // AI 이미지 생성 버튼 표시 여부 확인
-  useEffect(() => {
+  // AI 이미지 생성 버튼 표시 여부 확인 - 테스트를 위해 주석 처리
+  /*useEffect(() => {
     const checkIfAiImageNeeded = async () => {
       if (!mealId) return;
 
@@ -148,7 +148,13 @@ export default function MealImageUploader({
     if (mealId) {
       checkIfAiImageNeeded();
     }
-  }, [mealId, supabase]);
+  }, [mealId, supabase]);*/
+  
+  // 테스트를 위해 항상 AI 이미지 생성 버튼 표시
+  useEffect(() => {
+    console.log('테스트 모드: AI 이미지 생성 버튼 항상 표시');
+    setShowAiGenButton(true);
+  }, []);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
@@ -172,10 +178,8 @@ export default function MealImageUploader({
       }
       
       // 2. OpenAI API 호출하여 이미지 생성
-      const isLocalhost = /^(localhost|127\.|192\.|\/api)/.test(window.location.hostname);
-      const apiUrl = isLocalhost 
-        ? '/api/meal-images/generate'
-        : '/.netlify/functions/generate-meal-image';
+      // 테스트를 위해 항상 Netlify 함수 사용
+      const apiUrl = '/.netlify/functions/generate-meal-image';
       
       console.log('AI 이미지 생성 API 요청 URL:', apiUrl);
       
