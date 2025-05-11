@@ -43,11 +43,37 @@ exports.handler = async (event) => {
       throw new Error('Supabase 환경 변수가 올바르게 설정되지 않았습니다.');
     }
     
-    // 메뉴 항목을 문자열로 변환
+    // 메뉴 항목 구조화
+    console.log(`[generate-meal-image] 전체 메뉴 항목:`, menu_items);
+    
+    // 메뉴 항목 분류
+    const riceMenu = menu_items.find(item => 
+      item.includes('쌀') || item.includes('밥') || item.includes('보리') || item.includes('환경') || item.includes('친환경')
+    ) || '';
+    
+    const soupMenu = menu_items.find(item => 
+      item.includes('국') || item.includes('탕') || item.includes('찜') || item.includes('찌개')
+    ) || '';
+    
+    // 나머지 메뉴는 반찬으로 간주
+    const sideMenus = menu_items.filter(item => 
+      item !== riceMenu && item !== soupMenu
+    );
+    
+    // 각 항목을 문자열로 변환
     const menuString = menu_items.join(', ');
     console.log(`[generate-meal-image] 메뉴 문자열: ${menuString}`);
+    console.log(`[generate-meal-image] 밥 메뉴: ${riceMenu}`);
+    console.log(`[generate-meal-image] 국/집 메뉴: ${soupMenu}`);
+    console.log(`[generate-meal-image] 반찬 메뉴:`, sideMenus);
     
-    // DALL-E 3은 한국어 프롬프트도 인식하니 추가 처리 없이 그대로 사용
+    // 구조화된 메뉴 문자열 생성
+    const structuredMenuString = `
+    * 밥/메인: ${riceMenu || '없음'}
+    * 국/집요리: ${soupMenu || '없음'}
+    * 반찬: ${sideMenus.join(', ') || '없음'}`;
+    
+    console.log(`[generate-meal-image] 구조화된 메뉴 정보: ${structuredMenuString}`);
     console.log('[generate-meal-image] DALL-E 3에 한국어 메뉴 전달 예정');
     
     // DALL-E 3으로 이미지 생성
@@ -58,13 +84,18 @@ exports.handler = async (event) => {
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
       model: "dall-e-3", // 클라이언트가 요청한 대로 DALL-E 3 사용 (품질 향상)
-      prompt: `스테인리스 스틸 6칸 식판 위에, 함께 제공되는 다음 메뉴를 실제 급식판처럼 배치한 포토리얼리즘 사진: ${menuString}
+      prompt: `스테인리스 스틸 6칸 식판 위에, 다음 한국 식단을 정확히 배치한 사실적인 급식 사진.${structuredMenuString}
 
-– 상단 4개 작은 직사각형 칸: 메뉴 목록 중 처음 4개의 반찬 항목을 각각 한 칸씩 알맞게 배치
-– 하단 왼쪽 넓고 얼은 직사각형 칸: 밥 또는 메인 요리 항목 배치
-– 하단 오른쪽 깊고 원형인 칸: 국 항목 배치
+배치 방법:
+– 하단 왼쪽 넓고 얼은 직사각형 칸: ${riceMenu || '밥'} 배치
+– 하단 오른쪽 깊고 원형인 칸: ${soupMenu || '국'} 배치
+– 상단 4개 작은 직사각형 칸: 다음 반찬들을 각각 한 칸씩 알맞게 배치: ${sideMenus.join(', ')}
 
-균일하게 확산된 조명, 단색 중립 배경, 탑다운 뷰로 촬영하여 모든 음식이 지정된 칸에 명확히 보이도록 해주세요.`,
+특별 지침:
+- 만일 반찬이 4개보다 적으면 나머지 칸에는 한국식 다른 일반적인 반찬 추가 가능
+- 만일 반찬이 4개보다 많으면 가장 중요한 4개만 상단에 배치
+
+스타일 요구사항: 스테인리스 식판 위의 진짜 한국 급식처럼 보여야 함. 상세한 음식 표현, 균일한 조명, 단색 배경, 탑다운 시점에서 촬영하여 모든 음식이 각 칸에 명확히 보여야 함.`,
       n: 1,
       size: "1024x1024",
       response_format: "url" // url 형식으로 응답 받음

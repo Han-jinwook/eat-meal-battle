@@ -13,6 +13,10 @@
 [functions.verify-meal-image]
   timeout = 30
 
+# AI 이미지 생성 함수 타임아웃 설정
+[functions.generate-meal-image]
+  timeout = 30
+
 [build.environment]
   NODE_VERSION = "18"
 
