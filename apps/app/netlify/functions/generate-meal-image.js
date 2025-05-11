@@ -110,26 +110,22 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
       
     const userId = adminUser?.id || 'system';
     
-    // DB에 이미지 정보 저장
+    // DB에 이미지 정보 저장 (단순화된 버전)
     console.log('[generate-meal-image] 이미지 정보 DB에 저장 중...');
-    console.log(`[generate-meal-image] 저장할 데이터:`, {
-      meal_id,
-      school_code,
-      // meal_date와 meal_type 필드는 테이블에 존재하지 않음
-    });
+    console.log(`[generate-meal-image] 저장할 데이터:`, { meal_id });
     
+    // meal_images 테이블 구조에 맞게 이미지 정보 저장
+    // status와 is_shared를 적절히 설정하면 트리거로 자동 알림 발송
     const { data: imageRecord, error: dbError } = await supabase
       .from('meal_images')
       .insert({
         meal_id: meal_id,
         image_url: publicUrl,
         uploaded_by: userId,
-        school_code: school_code,
-        // meal_date와 meal_type 필드 제거 - 테이블에 없는 필드
-        status: 'approved', // AI 생성 이미지는 자동 승인
-        is_shared: true,    // 자동으로 공유 설정
-        match_score: 90,    // 높은 매치 스코어
-        source: 'ai',       // AI 생성 이미지 표시
+        status: 'approved',    // 중요: AI 이미지는 자동 승인
+        is_shared: true,       // 중요: 공유 활성화 설정
+        match_score: 100,      // 100% 일치 (최대값으로 설정)
+        source: 'ai',          // 이미지 출처 표시
         explanation: 'AI가 생성한 급식 이미지입니다.'
       })
       .select()
@@ -142,70 +138,10 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
     
     console.log(`[generate-meal-image] 성공: 이미지 ID ${imageRecord.id}`);
     
-    // 학교 ID 가져오기
-    const { data: mealData } = await supabase
-      .from('meals')
-      .select('school_id')
-      .eq('id', meal_id)
-      .single();
-      
-    if (mealData && mealData.school_id) {
-      // 알림 생성 - 필드 이름 통일하여 중복 방지
-      console.log('[generate-meal-image] 알림 생성 중...');
-      try {
-        // 학교 이름 가져오기
-        const { data: schoolData, error: schoolError } = await supabase
-          .from('schools')
-          .select('name')
-          .eq('id', mealData.school_id)
-          .single();
-          
-        const schoolName = schoolData?.name || '학교';
-        
-        const { data: notification, error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            title: `${schoolName} 급식 사진이 AI에 의해 생성되었습니다!`,
-            message: '새로운 급식 사진이 등록되었습니다. 지금 확인해보세요!',
-            sender_id: userId,
-            school_code: school_code,
-            related_type: 'meal_image',
-            related_id: imageRecord.id
-          })
-          .select()
-          .single();
-          
-        if (notificationError) {
-          console.error('[generate-meal-image] 알림 생성 오류:', notificationError);
-        } else if (notification) {
-          // 학교 사용자들에게 알림 전송
-          const { data: schoolUsers } = await supabase
-            .from('user_schools')
-            .select('user_id')
-            .eq('school_id', mealData.school_id);
-            
-          if (schoolUsers && schoolUsers.length > 0) {
-            const notificationRecipients = schoolUsers.map(user => ({
-              notification_id: notification.id,
-              user_id: user.user_id,
-              is_read: false
-            }));
-            
-            const { error: recipientsError } = await supabase
-              .from('notification_recipients')
-              .insert(notificationRecipients);
-              
-            if (recipientsError) {
-              console.error('[generate-meal-image] 알림 수신자 저장 오류:', recipientsError);
-            } else {
-              console.log(`[generate-meal-image] 알림 전송 완료: ${schoolUsers.length}명에게 전송`);
-            }
-          }
-        }
-      } catch (notifyError) {
-        console.error('[generate-meal-image] 알림 처리 중 오류:', notifyError);
-      }
-    }
+    // 중요: 알림 관련 로직 제거
+    // meal_images 테이블에 이미지 정보가 저장되면 트리거로 자동 알림 발송
+    // status와 is_shared 값이 적절히 설정되어 있으므로 추가 작업 필요 없음
+    console.log('[generate-meal-image] 이미지 저장 완료 - 자동 트리거로 알림 처리 예상');
     
     return {
       statusCode: 200,
