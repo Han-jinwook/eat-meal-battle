@@ -47,6 +47,9 @@ exports.handler = async (event) => {
     const menuString = menu_items.join(', ');
     console.log(`[generate-meal-image] 메뉴 문자열: ${menuString}`);
     
+    // DALL-E 3은 한국어 프롬프트도 인식하니 추가 처리 없이 그대로 사용
+    console.log('[generate-meal-image] DALL-E 3에 한국어 메뉴 전달 예정');
+    
     // DALL-E 3으로 이미지 생성
     console.log('[generate-meal-image] OpenAI API 호출 중...');
     // OpenAI 이미지 생성 API 호출
@@ -55,13 +58,13 @@ exports.handler = async (event) => {
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
       model: "dall-e-3", // 클라이언트가 요청한 대로 DALL-E 3 사용 (품질 향상)
-      prompt: `A detailed, appetizing photo of a Korean school lunch served on a traditional stainless steel compartment tray containing: ${menuString}.
+      prompt: `스테인리스 스틸 6칸 식판 위에, 함께 제공되는 다음 메뉴를 실제 급식판처럼 배치한 포토리얼리즘 사진: ${menuString}
 
-Specific tray structure: The tray has 6 compartments - 4 small rectangular compartments on the top row for side dishes, a wide shallow rectangular compartment on the bottom left for rice/main dish, and a deep circular bowl-shaped compartment on the bottom right for soup.
+– 상단 4개 작은 직사각형 칸: 메뉴 목록 중 처음 4개의 반찬 항목을 각각 한 칸씩 알맞게 배치
+– 하단 왼쪽 넓고 얼은 직사각형 칸: 밥 또는 메인 요리 항목 배치
+– 하단 오른쪽 깊고 원형인 칸: 국 항목 배치
 
-Style requirements: Soft metallic sheen on the stainless steel tray, evenly diffused lighting, solid neutral background, photorealistic style. Capture from a top-down view to clearly show all food items in their designated compartments.
-
-Make sure the food appears authentic to Korean school lunch cuisine with proper portion sizes and traditional presentation.`,
+균일하게 확산된 조명, 단색 중립 배경, 탑다운 뷰로 촬영하여 모든 음식이 지정된 칸에 명확히 보이도록 해주세요.`,
       n: 1,
       size: "1024x1024",
       response_format: "url" // url 형식으로 응답 받음
