@@ -100,15 +100,11 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
     const publicUrl = urlData.publicUrl;
     console.log(`[generate-meal-image] 공개 URL 생성: ${publicUrl.substring(0, 30)}...`);
     
-    // 시스템 사용자 정보 가져오기 (관리자 또는 시스템)
-    const { data: adminUser } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-      .limit(1)
-      .single();
-      
-    const userId = adminUser?.id || 'system';
+    // 클라이언트에서 보낸 user_id 사용
+    console.log('[generate-meal-image] 사용자 ID 확인:', { user_id });
+    
+    // 요청에서 받은 user_id 사용
+    const userId = user_id;
     
     // DB에 이미지 정보 저장 (단순화된 버전)
     console.log('[generate-meal-image] 이미지 정보 DB에 저장 중...');

@@ -219,7 +219,8 @@ export default function MealImageUploader({
           meal_id: mealId,
           school_code: mealMenuData.school_code || schoolCode,
           meal_date: mealMenuData.meal_date || mealDate,
-          meal_type: mealMenuData.meal_type || mealType
+          meal_type: mealMenuData.meal_type || mealType,
+          user_id: userId // 현재 로그인된 사용자 ID 추가
         }),
       });
       
