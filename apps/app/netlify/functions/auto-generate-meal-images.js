@@ -216,7 +216,7 @@ exports.handler = async (event) => {
             meal_type: meal.meal_type,
             status: 'approved',      // AI 생성 이미지는 자동 승인
             match_score: 90,         // 높은 매치 스코어
-            source: 'ai',            // AI 생성 이미지 표시
+            source: 'auto_ai',      // 자동 시스템에 의해 생성된 AI 이미지 표시
             explanation: '[자동생성] AI가 생성한 급식 이미지입니다.'
           })
           .select()

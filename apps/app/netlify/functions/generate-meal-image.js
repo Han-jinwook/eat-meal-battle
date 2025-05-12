@@ -172,7 +172,7 @@ exports.handler = async (event) => {
         uploaded_by: userId,
         status: 'approved',    // 중요: AI 이미지는 자동 승인
         match_score: 100,      // 100% 일치 (최대값으로 설정)
-        source: 'ai',          // 이미지 출처 표시
+        source: 'user_ai',      // 사용자가 요청한 AI 이미지 표시
         explanation: 'AI가 생성한 급식 이미지입니다.'
       })
       .select()
