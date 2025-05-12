@@ -8,6 +8,7 @@
   # 모든 함수의 설정
   node_bundler = "esbuild"
   external_node_modules = ["sharp"]
+  background_timeout = 900  # 최대 15분까지 실행 가능
 
 # 함수 타임아웃 설정
 [functions.verify-meal-image]

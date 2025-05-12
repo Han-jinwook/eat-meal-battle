@@ -11,7 +11,19 @@ try {
   console.log('dotenv 모듈을 로드할 수 없습니다. Netlify 환경에서는 정상입니다.');
 }
 
+// Background Function 형태로 변경
+// 최대 15분까지 실행 가능
 exports.handler = async (event) => {
+  return await backgroundHandler(event);
+};
+
+// 실제 배경 처리를 담당하는 함수
+exports.handler.background = async (event) => {
+  return await backgroundHandler(event);
+};
+
+// 공통으로 사용할 핸들러 함수
+async function backgroundHandler(event) {
   console.log('[generate-meal-image] 함수 시작');
   
   try {
