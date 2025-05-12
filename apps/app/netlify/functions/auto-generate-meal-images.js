@@ -93,8 +93,8 @@ exports.handler = async (event) => {
       const hasImages = meal.meal_images && meal.meal_images.length > 0;
       if (!hasImages) return true; // 이미지 없음
       
-      // 이미지는 있지만 공유된 이미지가 없는 경우
-      return !meal.meal_images.some(img => img.is_shared === true);
+      // 이미지는 있지만 승인된 이미지가 없는 경우
+      return !meal.meal_images.some(img => img.status === 'approved');
     });
     
     console.log(`[auto-generate-meal-images] 이미지 생성이 필요한 급식 수: ${mealsNeedingImages.length}`);
@@ -190,7 +190,6 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
             meal_date: meal.meal_date,
             meal_type: meal.meal_type,
             status: 'approved',      // AI 생성 이미지는 자동 승인
-            is_shared: true,         // 자동으로 공유 설정
             match_score: 90,         // 높은 매치 스코어
             source: 'ai',            // AI 생성 이미지 표시
             explanation: '[자동생성] AI가 생성한 급식 이미지입니다.'
