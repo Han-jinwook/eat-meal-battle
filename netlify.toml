@@ -5,18 +5,14 @@
   functions = "apps/app/netlify/functions"
 
 [functions]
-  # 모든 함수의 설정
   node_bundler = "esbuild"
   external_node_modules = ["sharp"]
-  background_timeout = 900  # 최대 15분까지 실행 가능
 
-# 함수 타임아웃 설정
+[functions.generate-meal-image]
+  background = true
+
 [functions.verify-meal-image]
   timeout = 30
-
-# AI 이미지 생성 함수 타임아웃 설정 (GPT-4o 모델은 시간이 더 길어서 90초로 증가)
-[functions.generate-meal-image]
-  timeout = 90
 
 [build.environment]
   NODE_VERSION = "18"
@@ -37,11 +33,9 @@
   # 실제 운영 스케줄
   schedule = "30 3 * * *" # 매일 UTC 3:30 (한국시간 12:30)
 
-# 오후 5시 자동 이미지 생성 함수 - 이미지가 없는 급식을 자동으로 생성
 [functions.auto-generate-meal-images]
-  timeout = 90 # GPT-4o 모델 사용을 위해 타임아웃 증가
-  # 실제 운영 스케줄
-  schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
+  background = true
+  schedule = "0 5 * * *"
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
