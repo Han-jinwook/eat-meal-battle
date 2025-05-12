@@ -124,13 +124,13 @@ export default function MealImageUploader({
       // 3. 현재 급식의 이미지 여부 확인
       const { data: images } = await supabase
         .from('meal_images')
-        .select('id, is_shared, match_score')
+        .select('id, status, match_score')
         .eq('meal_id', mealId);
         
       // 4. 버튼 표시 조건:
       // - 이미지가 없거나
-      // - 이미지는 있지만 모두 is_shared=false인 경우
-      const shouldShow = !images || images.length === 0 || !images.some(img => img.is_shared);
+      // - 이미지는 있지만 모두 승인되지 않은 경우
+      const shouldShow = !images || images.length === 0 || !images.some(img => img.status === 'approved');
       
       console.log('AI 이미지 생성 버튼 표시 여부:', {
         mealId,
@@ -138,7 +138,7 @@ export default function MealImageUploader({
         mealDate: mealData.meal_date,
         isAfterLunchTime,
         imagesCount: images?.length || 0,
-        hasSharedImages: images?.some(img => img.is_shared),
+        hasApprovedImages: images?.some(img => img.status === 'approved'),
         shouldShow
       });
       
@@ -607,7 +607,7 @@ export default function MealImageUploader({
       }
 
       // 공유된 이미지는 삭제 불가
-      if (imageData.is_shared || imageData.status === 'approved') {
+      if (imageData.status === 'approved') {
         setError('승인되거나 공유된 이미지는 삭제할 수 없습니다.');
         return;
       }
@@ -728,7 +728,7 @@ export default function MealImageUploader({
                 </div>
               )}
               
-              {!uploadedImage.is_shared && uploadedImage.status !== 'approved' && (
+              {uploadedImage.status !== 'approved' && (
                 <button
                   onClick={handleDeleteImage}
                   className="mt-2 text-sm text-red-600 hover:text-red-800"

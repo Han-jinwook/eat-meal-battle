@@ -163,7 +163,7 @@ exports.handler = async (event) => {
     console.log(`[generate-meal-image] 저장할 데이터:`, { meal_id });
     
     // meal_images 테이블 구조에 맞게 이미지 정보 저장
-    // status와 is_shared를 적절히 설정하면 트리거로 자동 알림 발송
+    // status='approved'로 설정하면 트리거로 자동 알림 발송
     const { data: imageRecord, error: dbError } = await supabase
       .from('meal_images')
       .insert({
@@ -171,7 +171,6 @@ exports.handler = async (event) => {
         image_url: publicUrl,
         uploaded_by: userId,
         status: 'approved',    // 중요: AI 이미지는 자동 승인
-        is_shared: true,       // 중요: 공유 활성화 설정
         match_score: 100,      // 100% 일치 (최대값으로 설정)
         source: 'ai',          // 이미지 출처 표시
         explanation: 'AI가 생성한 급식 이미지입니다.'
@@ -188,7 +187,7 @@ exports.handler = async (event) => {
     
     // 중요: 알림 관련 로직 제거
     // meal_images 테이블에 이미지 정보가 저장되면 트리거로 자동 알림 발송
-    // status와 is_shared 값이 적절히 설정되어 있으므로 추가 작업 필요 없음
+    // status='approved'로 설정되어 있으므로 추가 작업 필요 없음
     console.log('[generate-meal-image] 이미지 저장 완료 - 자동 트리거로 알림 처리 예상');
     
     return {

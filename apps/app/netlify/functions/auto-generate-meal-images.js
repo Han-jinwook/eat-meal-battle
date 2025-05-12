@@ -64,7 +64,7 @@ exports.handler = async (event) => {
         meal_date,
         meal_type,
         menu_items,
-        meal_images:meal_images(id, is_shared)
+        meal_images:meal_images(id, status)
       `)
       .eq('meal_date', today)
       .eq('meal_type', '중식'); // 점심 급식만 대상으로
@@ -88,13 +88,11 @@ exports.handler = async (event) => {
       };
     }
     
-    // 이미지 없거나 공유되지 않은 급식 필터링
+    // 이미지가 없거나 승인되지 않은 급식 필터링
     const mealsNeedingImages = meals.filter(meal => {
-      const hasImages = meal.meal_images && meal.meal_images.length > 0;
-      if (!hasImages) return true; // 이미지 없음
-      
-      // 이미지는 있지만 공유된 이미지가 없는 경우
-      return !meal.meal_images.some(img => img.is_shared === true);
+      const hasApprovedImages = meal.meal_images && 
+                               meal.meal_images.some(img => img.status === 'approved');
+      return !hasApprovedImages; // 승인된 이미지가 없는 급식만 반환
     });
     
     console.log(`[auto-generate-meal-images] 이미지 생성이 필요한 급식 수: ${mealsNeedingImages.length}`);
@@ -203,7 +201,6 @@ exports.handler = async (event) => {
             meal_date: meal.meal_date,
             meal_type: meal.meal_type,
             status: 'approved',      // AI 생성 이미지는 자동 승인
-            is_shared: true,         // 자동으로 공유 설정
             match_score: 90,         // 높은 매치 스코어
             source: 'ai',            // AI 생성 이미지 표시
             explanation: '[자동생성] AI가 생성한 급식 이미지입니다.'
@@ -224,54 +221,9 @@ exports.handler = async (event) => {
           .eq('id', meal.id)
           .single();
           
-        // 알림 생성
-        if (mealData && mealData.school_id) {
-          try {
-            console.log(`[auto-generate-meal-images] 급식 ID ${meal.id} 알림 생성 중...`);
-            
-            const { data: notification, error: notificationError } = await supabase
-              .from('notifications')
-              .insert({
-                type: 'meal_image_ai',
-                title: '오늘의 급식 이미지가 AI에 의해 생성되었습니다',
-                content: '별점으로 오늘의 급식배틀 참여하세요!',
-                related_id: meal.id,
-                created_at: new Date()
-              })
-              .select()
-              .single();
-              
-            if (notificationError) {
-              console.error('[auto-generate-meal-images] 알림 생성 오류:', notificationError);
-            } else if (notification) {
-              // 학교 사용자들에게 알림 전송
-              const { data: schoolUsers } = await supabase
-                .from('user_schools')
-                .select('user_id')
-                .eq('school_id', mealData.school_id);
-                
-              if (schoolUsers && schoolUsers.length > 0) {
-                const notificationRecipients = schoolUsers.map(user => ({
-                  notification_id: notification.id,
-                  user_id: user.user_id,
-                  is_read: false
-                }));
-                
-                const { error: recipientsError } = await supabase
-                  .from('notification_recipients')
-                  .insert(notificationRecipients);
-                  
-                if (recipientsError) {
-                  console.error('[auto-generate-meal-images] 알림 수신자 저장 오류:', recipientsError);
-                } else {
-                  console.log(`[auto-generate-meal-images] 알림 전송 완료: ${schoolUsers.length}명에게 전송`);
-                }
-              }
-            }
-          } catch (notifyError) {
-            console.error('[auto-generate-meal-images] 알림 처리 중 오류:', notifyError);
-          }
-        }
+        // 알림 생성 코드 제거 - 트리거로 대체
+        // meal_images에 status='approved'로 이미지 저장시 트리거가 자동으로 알림 생성
+        console.log(`[auto-generate-meal-images] 급식 ID ${meal.id} 이미지 생성 완료 - 알림은 트리거로 자동 생성됩니다.`);
         
         results.success.push({
           meal_id: meal.id,

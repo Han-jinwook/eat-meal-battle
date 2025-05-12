@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     // 일반 클라이언트도 생성 (사용자 정보 확인용)
     const supabase = createClient();
     
-    const { meal_id, image_url, user_id, status, is_shared } = await request.json();
-    console.log('요청 데이터:', { meal_id, image_url, user_id, status, is_shared });
+    const { meal_id, image_url, user_id, status } = await request.json();
+    console.log('요청 데이터:', { meal_id, image_url, user_id, status });
 
     if (!meal_id || !image_url || !user_id) {
       return NextResponse.json(
@@ -34,8 +34,7 @@ export async function POST(request: Request) {
         meal_id,
         image_url,
         uploaded_by: user_id,
-        status: status || 'pending',
-        is_shared: is_shared || false
+        status: status || 'pending'
       })
       .select()
       .single();
