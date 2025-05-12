@@ -129,7 +129,8 @@ exports.handler = async (event) => {
 
 배치: 하단왼쪽=밥, 하단오른쪽=국, 상단 4개 칸=반찬. 탑다운 구도, 실제 생생한 표현.`,
           n: 1,
-          size: "512x512", // 이미지 크기를 줄여 처리 시간 개선
+          size: "1536x1024", // 식판은 가로가 더 길기 때문에 가로형 이미지 사용
+          quality: "low",    // 데이터 가볍고 처리 속도 빠름(low, medium, high 중 선택)
         });
         
         if (!imageResponse.data || imageResponse.data.length === 0) {
