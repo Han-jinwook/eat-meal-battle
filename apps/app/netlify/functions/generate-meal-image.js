@@ -90,8 +90,8 @@ exports.handler = async (event) => {
 
 반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
       n: 1,
-      size: "1024x1024",
-      response_format: "url" // url 형식으로 응답 받음
+      size: "1024x1024"
+      // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
     console.log('[generate-meal-image] 이미지 생성 API 호출 성공:', JSON.stringify(imageResponse).substring(0, 100) + '...');
