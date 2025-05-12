@@ -11,19 +11,7 @@ try {
   console.log('dotenv 모듈을 로드할 수 없습니다. Netlify 환경에서는 정상입니다.');
 }
 
-// Background Function 형태로 변경
-// 최대 15분까지 실행 가능
 exports.handler = async (event) => {
-  return await backgroundHandler(event);
-};
-
-// 실제 배경 처리를 담당하는 함수
-exports.handler.background = async (event) => {
-  return await backgroundHandler(event);
-};
-
-// 공통으로 사용할 핸들러 함수
-async function backgroundHandler(event) {
   console.log('[auto-generate-meal-images] 함수 시작');
   
   try {
@@ -141,7 +129,7 @@ async function backgroundHandler(event) {
 
 배치: 하단왼쪽=밥, 하단오른쪽=국, 상단 4개 칸=반찬. 탑다운 구도, 실제 생생한 표현.`,
           n: 1,
-          size: "1024x1024",
+          size: "512x512", // 이미지 크기를 줄여 처리 시간 개선
         });
         
         if (!imageResponse.data || imageResponse.data.length === 0) {

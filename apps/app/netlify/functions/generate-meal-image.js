@@ -11,19 +11,7 @@ try {
   console.log('dotenv 모듈을 로드할 수 없습니다. Netlify 환경에서는 정상입니다.');
 }
 
-// Background Function 형태로 변경
-// 최대 15분까지 실행 가능
 exports.handler = async (event) => {
-  return await backgroundHandler(event);
-};
-
-// 실제 배경 처리를 담당하는 함수
-exports.handler.background = async (event) => {
-  return await backgroundHandler(event);
-};
-
-// 공통으로 사용할 핸들러 함수
-async function backgroundHandler(event) {
   console.log('[generate-meal-image] 함수 시작');
   
   try {
@@ -102,7 +90,7 @@ async function backgroundHandler(event) {
 
 반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
       n: 1,
-      size: "1024x1024"
+      size: "512x512" // 이미지 크기를 줄여 처리 시간 개선
       // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
