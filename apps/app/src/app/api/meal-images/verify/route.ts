@@ -167,7 +167,6 @@ export async function POST(request: Request) {
     const updateData = {
       match_score: matchScoreInt,
       status: isMatch ? 'approved' : 'rejected',
-      is_shared: isMatch, // 매칭 성공 시 공유 상태로 변경
       explanation: explanation // 검증 결과 설명 추가
     };
     

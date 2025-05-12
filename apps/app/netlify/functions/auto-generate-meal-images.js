@@ -64,7 +64,7 @@ exports.handler = async (event) => {
         meal_date,
         meal_type,
         menu_items,
-        meal_images:meal_images(id, is_shared)
+        meal_images:meal_images(id, status)
       `)
       .eq('meal_date', today)
       .eq('meal_type', '중식'); // 점심 급식만 대상으로
@@ -88,7 +88,7 @@ exports.handler = async (event) => {
       };
     }
     
-    // 이미지 없거나 공유되지 않은 급식 필터링
+    // 이미지가 없거나 승인되지 않은 급식 필터링
     const mealsNeedingImages = meals.filter(meal => {
       const hasImages = meal.meal_images && meal.meal_images.length > 0;
       if (!hasImages) return true; // 이미지 없음
@@ -122,30 +122,43 @@ exports.handler = async (event) => {
         // 메뉴 항목을 문자열로 변환
         const menuString = meal.menu_items.join(', ');
         
-        // DALL-E 3으로 이미지 생성
+        // GPT-4o 이미지 생성 모델로 이미지 생성
         const imageResponse = await openai.images.generate({
-          model: "dall-e-3",
-          prompt: `A detailed, appetizing photo of a Korean school lunch served on a traditional stainless steel compartment tray containing: ${menuString}.
+          model: "gpt-image-1", // GPT-4o의 이미지 생성 모델
+          prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질. 메뉴: ${menuString}.
 
-Specific tray structure: The tray has 6 compartments - 4 small rectangular compartments on the top row for side dishes, a wide shallow rectangular compartment on the bottom left for rice/main dish, and a deep circular bowl-shaped compartment on the bottom right for soup.
-
-Style requirements: Soft metallic sheen on the stainless steel tray, evenly diffused lighting, solid neutral background, photorealistic style. Capture from a top-down view to clearly show all food items in their designated compartments.
-
-Make sure the food appears authentic to Korean school lunch cuisine with proper portion sizes and traditional presentation.`,
+배치: 하단왼쪽=밥, 하단오른쪽=국, 상단 4개 칸=반찬. 탑다운 구도, 실제 생생한 표현.`,
           n: 1,
-          size: "1024x1024",
+          size: "1536x1024", // 식판은 가로가 더 길기 때문에 가로형 이미지 사용
+          quality: "low",    // 데이터 가볍고 처리 속도 빠름(low, medium, high 중 선택)
         });
         
         if (!imageResponse.data || imageResponse.data.length === 0) {
           throw new Error('이미지 생성에 실패했습니다.');
         }
         
-        const imageUrl = imageResponse.data[0].url;
+        // 이미지 데이터 처리
+        const item = imageResponse.data[0];
+        let imageData;
         
-        // 이미지 다운로드
-        const imageRes = await fetch(imageUrl);
-        const imageBuffer = await imageRes.arrayBuffer();
-        const base64Image = Buffer.from(imageBuffer).toString('base64');
+        // URL 또는 b64_json 여부 확인
+        if (item.url) {
+          // URL이 있는 경우 다운로드 후 처리
+          console.log(`[auto-generate-meal-images] URL 형식의 이미지 데이터 받음`);
+          console.log('[auto-generate-meal-images] 이미지 다운로드 중...');
+          const imageRes = await fetch(item.url);
+          const imageBuffer = await imageRes.arrayBuffer();
+          imageData = Buffer.from(imageBuffer).toString('base64');
+        } else if (item.b64_json) {
+          // Base64 데이터가 바로 있는 경우
+          console.log('[auto-generate-meal-images] b64_json 형식의 이미지 데이터 받음');
+          imageData = item.b64_json;
+        } else {
+          throw new Error('이미지 데이터가 없습니다.');
+        }
+        
+        console.log(`[auto-generate-meal-images] 이미지 데이터 길이=${imageData.length}`);
+        const base64Image = imageData; // 사용하는 변수명 유지
         
         // 파일명 생성
         const fileName = `ai_auto_${meal.id}_${Date.now()}.png`;
@@ -210,54 +223,9 @@ Make sure the food appears authentic to Korean school lunch cuisine with proper 
           .eq('id', meal.id)
           .single();
           
-        // 알림 생성
-        if (mealData && mealData.school_id) {
-          try {
-            console.log(`[auto-generate-meal-images] 급식 ID ${meal.id} 알림 생성 중...`);
-            
-            const { data: notification, error: notificationError } = await supabase
-              .from('notifications')
-              .insert({
-                type: 'meal_image_ai',
-                title: '오늘의 급식 이미지가 AI에 의해 생성되었습니다',
-                content: '별점으로 오늘의 급식배틀 참여하세요!',
-                related_id: meal.id,
-                created_at: new Date()
-              })
-              .select()
-              .single();
-              
-            if (notificationError) {
-              console.error('[auto-generate-meal-images] 알림 생성 오류:', notificationError);
-            } else if (notification) {
-              // 학교 사용자들에게 알림 전송
-              const { data: schoolUsers } = await supabase
-                .from('user_schools')
-                .select('user_id')
-                .eq('school_id', mealData.school_id);
-                
-              if (schoolUsers && schoolUsers.length > 0) {
-                const notificationRecipients = schoolUsers.map(user => ({
-                  notification_id: notification.id,
-                  user_id: user.user_id,
-                  is_read: false
-                }));
-                
-                const { error: recipientsError } = await supabase
-                  .from('notification_recipients')
-                  .insert(notificationRecipients);
-                  
-                if (recipientsError) {
-                  console.error('[auto-generate-meal-images] 알림 수신자 저장 오류:', recipientsError);
-                } else {
-                  console.log(`[auto-generate-meal-images] 알림 전송 완료: ${schoolUsers.length}명에게 전송`);
-                }
-              }
-            }
-          } catch (notifyError) {
-            console.error('[auto-generate-meal-images] 알림 처리 중 오류:', notifyError);
-          }
-        }
+        // 알림 생성 코드 제거 - 트리거로 대체
+        // meal_images에 status='approved'로 이미지 저장시 트리거가 자동으로 알림 생성
+        console.log(`[auto-generate-meal-images] 급식 ID ${meal.id} 이미지 생성 완료 - 알림은 트리거로 자동 생성됩니다.`);
         
         results.success.push({
           meal_id: meal.id,

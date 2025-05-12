@@ -116,8 +116,7 @@ export async function POST(request: Request) {
         meal_id: mealId,
         image_url: urlData.publicUrl,
         uploaded_by: userId,
-        status: 'pending',
-        is_shared: false
+        status: 'pending'
       })
       .select()
       .single();

@@ -49,7 +49,7 @@ exports.handler = async (event) => {
     
     // 이미지 생성이 필요한 급식 항목 식별
     // 1) 이미지가 없거나
-    // 2) 이미지는 있지만 공유되지 않은(is_shared=false) 급식
+    // 2) 이미지는 있지만 승인되지 않은(status!='approved') 급식
     const { data: meals, error: mealsError } = await supabase
       .from('meals')
       .select(`
@@ -85,16 +85,16 @@ exports.handler = async (event) => {
       };
     }
     
-    console.log(`[check-missing-meal-images] 오늘의 급식 수: ${todayMeals.length}`);
+    console.log(`[check-missing-meal-images] 오늘의 급식 수: ${meals.length}`);
     
     // 각 급식에 대해 이미지 상태 확인
-    const mealsWithoutSharedImages = [];
+    const mealsWithoutApprovedImages = [];
     
-    for (const meal of todayMeals) {
+    for (const meal of meals) {
       // 이미지 조회
       const { data: images, error: imagesError } = await supabase
         .from('meal_images')
-        .select('id, is_shared, match_score')
+        .select('id, status, match_score')
         .eq('meal_id', meal.id);
       
       if (imagesError) {
@@ -102,11 +102,11 @@ exports.handler = async (event) => {
         continue;
       }
       
-      // 이미지가 없거나, 공유된 이미지가 없는 경우 플래그 추가
-      const hasSharedImage = images && images.some(img => img.is_shared === true);
+      // 이미지가 없거나, 승인된 이미지가 없는 경우 플래그 추가
+      const hasApprovedImage = images && images.some(img => img.status === 'approved');
       
-      if (!images || images.length === 0 || !hasSharedImage) {
-        mealsWithoutSharedImages.push({
+      if (!images || images.length === 0 || !hasApprovedImage) {
+        mealsWithoutApprovedImages.push({
           id: meal.id,
           school_code: meal.school_code,
           meal_date: meal.meal_date,
@@ -116,16 +116,20 @@ exports.handler = async (event) => {
       }
     }
     
-    console.log(`[check-missing-meal-images] AI 이미지가 필요한 급식 수: ${mealsWithoutSharedImages.length}`);
+    console.log(`[check-missing-meal-images] AI 이미지가 필요한 급식 수: ${mealsWithoutApprovedImages.length}`);
     
     // 결과를 Redis나 다른 캐시 저장소에 저장 (추후 구현)
     // 현재는 콘솔 로그로 확인만 함
     
+    const result = {
+      mealsWithoutImages: mealsWithoutApprovedImages.map(m => m.id)
+    };
+    
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: `${mealsWithoutSharedImages.length}개의 급식에 AI 이미지가 필요합니다.`,
-        meals: mealsWithoutSharedImages.map(m => m.id)
+        message: `${mealsWithoutApprovedImages.length}개의 급식에 이미지가 필요합니다.`,
+        meals: result.mealsWithoutImages
       })
     };
   } catch (error) {

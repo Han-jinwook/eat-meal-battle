@@ -74,49 +74,58 @@ exports.handler = async (event) => {
     * 반찬: ${sideMenus.join(', ') || '없음'}`;
     
     console.log(`[generate-meal-image] 구조화된 메뉴 정보: ${structuredMenuString}`);
-    console.log('[generate-meal-image] DALL-E 3에 한국어 메뉴 전달 예정');
+    console.log('[generate-meal-image] GPT-4o 이미지 생성 모델에 한국어 메뉴 전달 예정');
     
-    // DALL-E 3으로 이미지 생성
+    // GPT-4o 이미지 생성 모델로 이미지 생성
     console.log('[generate-meal-image] OpenAI API 호출 중...');
     // OpenAI 이미지 생성 API 호출
     console.log('[generate-meal-image] 이미지 생성 API 호출 시도');
     
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
-      model: "dall-e-3", // 클라이언트가 요청한 대로 DALL-E 3 사용 (품질 향상)
-      prompt: `스테인리스 스틸 6칸 식판 위에, 다음 한국 식단을 정확히 배치한 사실적인 급식 사진.${structuredMenuString}
+      model: "gpt-image-1", // GPT-4o의 이미지 생성 모델 사용 (품질 및 정확도 향상)
+      prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질.${structuredMenuString}
 
-배치 방법:
-– 하단 왼쪽 넓고 얼은 직사각형 칸: ${riceMenu || '밥'} 배치
-– 하단 오른쪽 깊고 원형인 칸: ${soupMenu || '국'} 배치
-– 상단 4개 작은 직사각형 칸: 다음 반찬들을 각각 한 칸씩 알맞게 배치: ${sideMenus.join(', ')}
+배치: 하단왼쪽 칸(사각형)=${riceMenu || '밥'}, 하단오른쪽 칸(원형)=${soupMenu || '국'}, 상단 4개 칸=반찬(${sideMenus.join(', ')}).
 
-특별 지침:
-- 만일 반찬이 4개보다 적으면 나머지 칸에는 한국식 다른 일반적인 반찬 추가 가능
-- 만일 반찬이 4개보다 많으면 가장 중요한 4개만 상단에 배치
-
-스타일 요구사항: 스테인리스 식판 위의 진짜 한국 급식처럼 보여야 함. 상세한 음식 표현, 균일한 조명, 단색 배경, 탑다운 시점에서 촬영하여 모든 음식이 각 칸에 명확히 보여야 함.`,
+반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
       n: 1,
-      size: "1024x1024",
-      response_format: "url" // url 형식으로 응답 받음
+      size: "1536x1024", // 식판은 가로가 더 길기 때문에 가로형 이미지 사용
+      quality: "low"     // 데이터 가볍고 처리 속도 빠름(low, medium, high 중 선택)
+      // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
-    console.log('[generate-meal-image] 이미지 생성 API 호출 성공:', JSON.stringify(imageResponse).substring(0, 100) + '...');
+    console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
     
-    // 이미지 URL 추출
+    // 이미지 데이터 추출
     if (!imageResponse || !imageResponse.data || imageResponse.data.length === 0) {
       throw new Error('이미지 생성에 실패했습니다. 응답이 비어있습니다.');
     }
     
-    // 이미지 URL 가져오기
-    const imageUrl = imageResponse.data[0].url;
-    console.log(`[generate-meal-image] 이미지 생성 완료, URL: ${imageUrl.substring(0, 30)}...`);
+    // 이미지 데이터 처리 
+    console.log(`[generate-meal-image] 이미지 생성 완료, 응답 처리 중...`);
     
-    // 이미지 다운로드
-    console.log('[generate-meal-image] 이미지 다운로드 중...');
-    const imageRes = await fetch(imageUrl);
-    const imageBuffer = await imageRes.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    const item = imageResponse.data[0];
+    let imageData;
+    
+    // URL 또는 b64_json 여부 확인
+    if (item.url) {
+      // URL이 있는 경우 다운로드 후 처리
+      console.log(`[generate-meal-image] URL 형식의 이미지 데이터 받음`);
+      console.log('[generate-meal-image] 이미지 다운로드 중...');
+      const imageRes = await fetch(item.url);
+      const imageBuffer = await imageRes.arrayBuffer();
+      imageData = Buffer.from(imageBuffer).toString('base64');
+    } else if (item.b64_json) {
+      // Base64 데이터가 바로 있는 경우
+      console.log('[generate-meal-image] b64_json 형식의 이미지 데이터 받음');
+      imageData = item.b64_json;
+    } else {
+      throw new Error('이미지 데이터가 없습니다.');
+    }
+    
+    console.log(`[generate-meal-image] 이미지 데이터 길이=${imageData.length}`);
+    const base64Image = imageData; // 사용하는 변수명 유지
     
     // 파일명 생성
     const fileName = `ai_generated_${meal_id}_${Date.now()}.png`;
@@ -154,7 +163,7 @@ exports.handler = async (event) => {
     console.log(`[generate-meal-image] 저장할 데이터:`, { meal_id });
     
     // meal_images 테이블 구조에 맞게 이미지 정보 저장
-    // status와 is_shared를 적절히 설정하면 트리거로 자동 알림 발송
+    // status='approved'로 설정하면 트리거로 자동 알림 발송
     const { data: imageRecord, error: dbError } = await supabase
       .from('meal_images')
       .insert({
@@ -162,7 +171,6 @@ exports.handler = async (event) => {
         image_url: publicUrl,
         uploaded_by: userId,
         status: 'approved',    // 중요: AI 이미지는 자동 승인
-        is_shared: true,       // 중요: 공유 활성화 설정
         match_score: 100,      // 100% 일치 (최대값으로 설정)
         source: 'ai',          // 이미지 출처 표시
         explanation: 'AI가 생성한 급식 이미지입니다.'
@@ -179,7 +187,7 @@ exports.handler = async (event) => {
     
     // 중요: 알림 관련 로직 제거
     // meal_images 테이블에 이미지 정보가 저장되면 트리거로 자동 알림 발송
-    // status와 is_shared 값이 적절히 설정되어 있으므로 추가 작업 필요 없음
+    // status='approved'로 설정되어 있으므로 추가 작업 필요 없음
     console.log('[generate-meal-image] 이미지 저장 완료 - 자동 트리거로 알림 처리 예상');
     
     return {

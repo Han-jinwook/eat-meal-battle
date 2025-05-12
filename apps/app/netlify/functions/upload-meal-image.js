@@ -180,8 +180,7 @@ exports.handler = async (event, context) => {
             meal_id: finalMealId,  // 검증된 meal_id 또는 null
             image_url: publicUrl,
             uploaded_by: user_id,
-            status: 'pending',
-            is_shared: false
+            status: 'pending'
           }])
           .select()
           .single();

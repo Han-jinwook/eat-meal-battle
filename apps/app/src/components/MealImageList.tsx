@@ -13,7 +13,6 @@ interface MealImage {
   uploaded_by: string;
   created_at: string;
   status: 'pending' | 'approved' | 'rejected';
-  is_shared: boolean;
   match_score?: number;
   explanation?: string;
   source?: 'user' | 'ai';
@@ -124,7 +123,7 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
       // 사용자 이미지와 공유 이미지 분리 (새 배열로 복사하여 참조 문제 방지)
       if (userId) {
         const userImgs = [...validImages.filter(img => img.uploaded_by === userId)];
-        const sharedImgs = [...validImages.filter(img => img.is_shared && img.uploaded_by !== userId)];
+        const sharedImgs = [...validImages.filter(img => img.status === 'approved' && img.uploaded_by !== userId)];
         
         setUserImages(userImgs);
         setSharedImages(sharedImgs);
@@ -409,7 +408,7 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
                     </div>
                   )}
                   
-                  {!image.is_shared && image.status !== 'approved' && (
+                  {image.status !== 'approved' && (
                     <button
                       onClick={() => handleDeleteImage(image.id)}
                       className="mt-2 text-sm text-red-600 hover:text-red-800"
