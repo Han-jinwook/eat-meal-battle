@@ -122,16 +122,12 @@ exports.handler = async (event) => {
         // 메뉴 항목을 문자열로 변환
         const menuString = meal.menu_items.join(', ');
         
-        // DALL-E 3으로 이미지 생성
+        // GPT-4o 이미지 생성 모델로 이미지 생성
         const imageResponse = await openai.images.generate({
-          model: "dall-e-3",
-          prompt: `A detailed, appetizing photo of a Korean school lunch served on a traditional stainless steel compartment tray containing: ${menuString}.
+          model: "gpt-image-1", // GPT-4o의 이미지 생성 모델
+          prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질. 메뉴: ${menuString}.
 
-Specific tray structure: The tray has 6 compartments - 4 small rectangular compartments on the top row for side dishes, a wide shallow rectangular compartment on the bottom left for rice/main dish, and a deep circular bowl-shaped compartment on the bottom right for soup.
-
-Style requirements: Soft metallic sheen on the stainless steel tray, evenly diffused lighting, solid neutral background, photorealistic style. Capture from a top-down view to clearly show all food items in their designated compartments.
-
-Make sure the food appears authentic to Korean school lunch cuisine with proper portion sizes and traditional presentation.`,
+배치: 하단왼쪽=밥, 하단오른쪽=국, 상단 4개 칸=반찬. 탑다운 구도, 실제 생생한 표현.`,
           n: 1,
           size: "1024x1024",
         });
