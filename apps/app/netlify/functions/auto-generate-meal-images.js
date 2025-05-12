@@ -137,12 +137,28 @@ exports.handler = async (event) => {
           throw new Error('이미지 생성에 실패했습니다.');
         }
         
-        const imageUrl = imageResponse.data[0].url;
+        // 이미지 데이터 처리
+        const item = imageResponse.data[0];
+        let imageData;
         
-        // 이미지 다운로드
-        const imageRes = await fetch(imageUrl);
-        const imageBuffer = await imageRes.arrayBuffer();
-        const base64Image = Buffer.from(imageBuffer).toString('base64');
+        // URL 또는 b64_json 여부 확인
+        if (item.url) {
+          // URL이 있는 경우 다운로드 후 처리
+          console.log(`[auto-generate-meal-images] URL 형식의 이미지 데이터 받음`);
+          console.log('[auto-generate-meal-images] 이미지 다운로드 중...');
+          const imageRes = await fetch(item.url);
+          const imageBuffer = await imageRes.arrayBuffer();
+          imageData = Buffer.from(imageBuffer).toString('base64');
+        } else if (item.b64_json) {
+          // Base64 데이터가 바로 있는 경우
+          console.log('[auto-generate-meal-images] b64_json 형식의 이미지 데이터 받음');
+          imageData = item.b64_json;
+        } else {
+          throw new Error('이미지 데이터가 없습니다.');
+        }
+        
+        console.log(`[auto-generate-meal-images] 이미지 데이터 길이=${imageData.length}`);
+        const base64Image = imageData; // 사용하는 변수명 유지
         
         // 파일명 생성
         const fileName = `ai_auto_${meal.id}_${Date.now()}.png`;

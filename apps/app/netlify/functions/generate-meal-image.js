@@ -95,22 +95,37 @@ exports.handler = async (event) => {
       // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
-    console.log('[generate-meal-image] 이미지 생성 API 호출 성공:', JSON.stringify(imageResponse).substring(0, 100) + '...');
+    console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
     
-    // 이미지 URL 추출
+    // 이미지 데이터 추출
     if (!imageResponse || !imageResponse.data || imageResponse.data.length === 0) {
       throw new Error('이미지 생성에 실패했습니다. 응답이 비어있습니다.');
     }
     
-    // 이미지 URL 가져오기
-    const imageUrl = imageResponse.data[0].url;
-    console.log(`[generate-meal-image] 이미지 생성 완료, URL: ${imageUrl.substring(0, 30)}...`);
+    // 이미지 데이터 처리 
+    console.log(`[generate-meal-image] 이미지 생성 완료, 응답 처리 중...`);
     
-    // 이미지 다운로드
-    console.log('[generate-meal-image] 이미지 다운로드 중...');
-    const imageRes = await fetch(imageUrl);
-    const imageBuffer = await imageRes.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    const item = imageResponse.data[0];
+    let imageData;
+    
+    // URL 또는 b64_json 여부 확인
+    if (item.url) {
+      // URL이 있는 경우 다운로드 후 처리
+      console.log(`[generate-meal-image] URL 형식의 이미지 데이터 받음`);
+      console.log('[generate-meal-image] 이미지 다운로드 중...');
+      const imageRes = await fetch(item.url);
+      const imageBuffer = await imageRes.arrayBuffer();
+      imageData = Buffer.from(imageBuffer).toString('base64');
+    } else if (item.b64_json) {
+      // Base64 데이터가 바로 있는 경우
+      console.log('[generate-meal-image] b64_json 형식의 이미지 데이터 받음');
+      imageData = item.b64_json;
+    } else {
+      throw new Error('이미지 데이터가 없습니다.');
+    }
+    
+    console.log(`[generate-meal-image] 이미지 데이터 길이=${imageData.length}`);
+    const base64Image = imageData; // 사용하는 변수명 유지
     
     // 파일명 생성
     const fileName = `ai_generated_${meal_id}_${Date.now()}.png`;
