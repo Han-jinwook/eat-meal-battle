@@ -97,8 +97,7 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
     setError(null);
 
     try {
-      // 이미지 상태 초기화로 중복 참조 방지
-      setImages([]);
+      // 이미지 상태 초기화 제거 (페이지 나갔다가 돌아와도 이미지 유지)
       
       if (!mealId) {
         setError('급식 ID가 유효하지 않습니다.');
