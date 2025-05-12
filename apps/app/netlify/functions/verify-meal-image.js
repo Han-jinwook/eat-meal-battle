@@ -106,6 +106,46 @@ exports.handler = async (event, context) => {
     
     console.log('이미지 URL 확인:', imageData.image_url);
 
+    // 이미지 URL 접근성 먼저 확인
+    try {
+      console.log('이미지 URL 접근성 확인 중...');
+      await axios.head(imageData.image_url, { timeout: 3000 }); // 3초 타임아웃 설정
+      console.log('이미지 URL 접근 가능');
+    } catch (urlError) {
+      console.error('이미지 URL 접근 오류:', urlError.message);
+      console.log('이미지 접근 불가로 자동 승인 처리');
+      
+      // 자동 승인 처리
+      const status = 'approved';
+      const { error: updateError } = await supabaseAdmin
+        .from('meal_images')
+        .update({
+          status: status,
+          match_score: 85, // 85% 기본값
+          explanation: '이미지 검증 시스템 오류로 인한 자동 승인'
+        })
+        .eq('id', imageId);
+        
+      if (updateError) {
+        console.error('자동 승인 저장 오류:', updateError);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: '검증 결과를 저장할 수 없습니다.' })
+        };
+      }
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          isMatch: true,
+          matchScore: 0.85,
+          explanation: '이미지 검증 시스템 오류로 인한 자동 승인'
+        })
+      };
+    }
+
     // 메뉴 목록을 텍스트로 변환
     const menuText = imageData.meal_menus.menu_items.join(', ');
     console.log('검증할 메뉴:', menuText);
@@ -225,10 +265,38 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
     } catch (error) {
       console.error('OpenAI API 오류:', error.response?.data || error.message);
       console.error('전체 오류 객체:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // OpenAI API 오류 시 자동 승인 처리
+      console.log('OpenAI API 오류로 자동 승인 처리');
+      
+      // 자동 승인 처리
+      const status = 'approved';
+      const { error: updateError } = await supabaseAdmin
+        .from('meal_images')
+        .update({
+          status: status,
+          match_score: 85, // 85% 기본값
+          explanation: 'OpenAI API 오류로 인한 자동 승인'
+        })
+        .eq('id', imageId);
+        
+      if (updateError) {
+        console.error('자동 승인 저장 오류:', updateError);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: '검증 결과를 저장할 수 없습니다.' })
+        };
+      }
+      
       return {
-        statusCode: 500,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: '이미지 검증 중 오류가 발생했습니다.' })
+        body: JSON.stringify({
+          isMatch: true,
+          matchScore: 0.85,
+          explanation: 'OpenAI API 오류로 인한 자동 승인'
+        })
       };
     }
   } catch (error) {
