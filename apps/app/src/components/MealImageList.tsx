@@ -102,31 +102,43 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
         return;
       }
 
-      // 먼저 approved 이미지가 있는지 확인
+      // 먼저 approved 이미지가 있는지 확인 - 어떤 사용자든 동일한 이미지를 보기 위해 가장 먼저 조회
       const { data: approvedData, error: approvedError } = await supabase
         .from('meal_images')
         .select('*')
         .eq('meal_id', mealId)
         .eq('status', 'approved')
+        .order('created_at', { ascending: false })
         .limit(1);
 
       if (approvedError) {
-        throw approvedError;
+        console.error('승인된 이미지 조회 오류:', approvedError);
+        // 오류가 발생해도 계속 진행
       }
 
-      // approved 이미지가 있으면 그것만 표시
+      // approved 이미지가 있으면 그것만 표시 (중요: 어떤 사용자든 동일한 이미지 보장)
       if (approvedData && approvedData.length > 0) {
+        console.log('승인된 이미지 발견:', approvedData[0].id);
+        
+        // 사용자 자신의 이미지인지 확인
+        const isUserImage = userId && approvedData.some(img => img.uploaded_by === userId);
+        
+        // 이미지 상태 설정
         setImages(approvedData);
-        setSharedImages(approvedData.filter(img => img.uploaded_by !== userId));
-        setUserImages(approvedData.filter(img => img.uploaded_by === userId));
+        
+        // 사용자/공유 이미지 구분 - UI에서 사용자 이미지 섹션 제거했으니 이제 모든 이미지는 공유 이미지로 처리
+        setUserImages([]);
+        setSharedImages(approvedData);
         
         // 업로더 닉네임 가져오기
         await fetchUploaderNames(approvedData);
         return;
       }
       
-      // approved 이미지가 없으면 사용자 이미지만 표시
+      // approved 이미지가 없으면 사용자 이미지 조회 (사용자가 로그인한 경우만)
       if (userId) {
+        console.log('승인된 이미지 없음, 사용자 이미지 조회');
+        
         const { data: userData, error: userError } = await supabase
           .from('meal_images')
           .select('*')
@@ -135,21 +147,30 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
           .order('created_at', { ascending: false });
           
         if (userError) {
-          throw userError;
+          console.error('사용자 이미지 조회 오류:', userError);
+          // 오류가 발생해도 계속 진행
         }
         
-        if (userData) {
+        if (userData && userData.length > 0) {
+          console.log('사용자 이미지 발견:', userData.length, '개');
+          
+          // 이미지 상태 설정
           setImages(userData);
           setUserImages(userData);
           setSharedImages([]);
           
           // 업로더 닉네임 가져오기
-          if (userData.length > 0) {
-            await fetchUploaderNames(userData);
-          }
+          await fetchUploaderNames(userData);
+        } else {
+          // 사용자 이미지도 없음
+          console.log('사용자 이미지 없음');
+          setImages([]);
+          setUserImages([]);
+          setSharedImages([]);
         }
       } else {
         // 사용자 ID가 없는 경우 빈 배열로 초기화
+        console.log('사용자 ID 없음, 이미지 없음');
         setImages([]);
         setUserImages([]);
         setSharedImages([]);
