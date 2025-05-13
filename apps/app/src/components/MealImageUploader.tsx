@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
-import { format, isFuture } from 'date-fns';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 
@@ -155,6 +154,35 @@ export default function MealImageUploader({
     console.log('테스트 모드: AI 이미지 생성 버튼 항상 표시');
     setShowAiGenButton(true);
   }, []);
+  
+  // 컴포넌트 마운트 시 승인된 이미지 자동 로드
+  useEffect(() => {
+    if (!mealId) return;
+    
+    (async () => {
+      console.log('마운트 시 승인된 이미지 조회:', mealId);
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select('*')
+        .eq('meal_id', mealId)
+        .eq('status', 'approved')
+        .single();
+        
+      if (error) {
+        if (error.code !== 'PGRST116') { // PGRST116 = 결과 없음 오류는 정상적인 상태
+          console.debug('기존 승인 이미지 조회 오류:', error);
+        }
+        return;
+      }
+      
+      if (data) {
+        console.log('승인된 이미지 발견:', data.id);
+        setUploadedImage(data);
+        // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
+        setShowAiGenButton(false);
+      }
+    })();
+  }, [mealId, supabase]);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
