@@ -213,6 +213,9 @@ export default function Home() {
     // 날짜 변경 시 기존 오류 메시지 초기화
     setPageError('');
     
+    // 이미지 목록 새로고침 트리거
+    setRefreshImageList(prev => prev + 1);
+    
     // 학교 정보가 있으면 자동으로 급식 정보 조회
     if (userSchool?.school_code) {
       fetchMealInfo(userSchool.school_code, newDate, resolveOfficeCode());
