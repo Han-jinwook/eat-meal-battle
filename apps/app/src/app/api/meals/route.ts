@@ -92,8 +92,6 @@ function parseMealInfo(apiResponse: any) {
                 .trim()
             )
             .filter(Boolean);
-            })
-            .filter((item: string) => item);
         }
 
         // 날짜 형식 통일 (YYYYMMDD -> YYYY-MM-DD)
