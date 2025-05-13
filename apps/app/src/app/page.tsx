@@ -674,29 +674,21 @@ export default function Home() {
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {meals.map((meal) => (
-                  <div key={meal.id}>
-                    {/* 급식 이미지 목록 */}
-                    <MealImageList
-                      mealId={meal.id}
-                      refreshTrigger={refreshImageList}
-                    />
-                    
-                    {/* 급식 카드 */}
-                    <MealCard
-                      meal={meal}
-                      onShowOrigin={(info) => {
-                        openModal('원산지 정보', formatOriginInfo(info));
-                      }}
-                      onShowNutrition={(m) => {
-                        openModal('영양 정보', formatNutritionInfo(m));
-                      }}
-                      onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
-                      onUploadError={(e) => {
-                        setPageError(e);
-                        setTimeout(() => setPageError(''), 3000);
-                      }}
-                    />
-                  </div>
+                  <MealCard
+                    key={meal.id}
+                    meal={meal}
+                    onShowOrigin={(info) => {
+                      openModal('원산지 정보', formatOriginInfo(info));
+                    }}
+                    onShowNutrition={(m) => {
+                      openModal('영양 정보', formatNutritionInfo(m));
+                    }}
+                    onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                    onUploadError={(e) => {
+                      setPageError(e);
+                      setTimeout(() => setPageError(''), 3000);
+                    }}
+                  />
                 ))}
                 
                 {/* 데이터 소스 정보 표시 */}
