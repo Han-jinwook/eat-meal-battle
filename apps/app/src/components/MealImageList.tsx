@@ -197,13 +197,11 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
     }
   };
 
-  // 이미지 목록 갱신 트리거
+  // 이미지 목록 가져오기 - 컴포넌트 마운트, mealId 변경, 또는 refreshTrigger 변경 시 실행
   useEffect(() => {
-    if (mealId) {
-      fetchImages();
-    }
-    // refreshTrigger가 변경될 때마다 이미지 목록 다시 로드
-  }, [mealId, userId, supabase, refreshTrigger]);
+    console.log('이미지 목록 새로고침:', { mealId, refreshTrigger });
+    fetchImages();
+  }, [mealId, refreshTrigger]);
 
   // 이미지 삭제 처리
   const handleDeleteImage = async (imageId: string) => {
