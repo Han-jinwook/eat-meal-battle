@@ -720,7 +720,6 @@ export default function MealImageUploader({
       {/* 업로드된 이미지가 있으면 표시 */}
       {uploadedImage ? (
         <div className="mb-6">
-          <h4 className="text-md font-semibold mb-2">내가 업로드한 이미지</h4>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <div className="relative h-72 w-full">
               <ImageWithFallback
@@ -738,6 +737,11 @@ export default function MealImageUploader({
               <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
                   {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}
+                  {uploadedImage.source === 'auto-ai' ? (
+                    <span className="ml-1">(앱 자동생성)</span>
+                  ) : uploadedImage.source === 'user' || uploadedImage.source === 'user-ai' ? (
+                    <span className="ml-1">(사용자: {uploadedImage.uploader_nickname || '익명'})</span>
+                  ) : null}
                 </span>
               </div>
               
