@@ -86,11 +86,31 @@ function parseMealInfo(apiResponse: any) {
           menuItems = meal.DDISH_NM
             .split('<br/>')
             .map((item: string) => {
-              // 1. 괴호와 그 안의 내용 제거
-              let cleanedItem = item.replace(/\([^)]*\)/g, '');
+              // 1. 모든 종류의 괄호와 그 안의 내용 제거 (알레르기 정보 등)
+              let cleanedItem = item
+                .replace(/\([^)]*\)/g, '') // 일반 괄호 ()
+                .replace(/\[[^\]]*\]/g, '') // 대괄호 []
+                .replace(/\{[^}]*\}/g, '') // 중괄호 {}
+                .replace(/\<[^>]*\>/g, ''); // 화살괄호 <>
               
-              // 2. -u 접미사만 정확히 제거 (용량은 유지)
-              cleanedItem = cleanedItem.replace(/-u\b/gi, '');
+              // 2. -u 접미사 제거 (여러 형태 처리)
+              cleanedItem = cleanedItem
+                // 기본 패턴들
+                .replace(/-u\b/gi, '')
+                .replace(/-U\b/gi, '')
+                .replace(/\s+-u\b/gi, '')
+                
+                // 슬래시 관련 패턴 (예: 닭텐팔솔/130ml-u)
+                .replace(/\/([0-9]+ml)-u\b/gi, '/$1')
+                .replace(/\/([^/]*)-u\b/gi, '/$1')
+                
+                // 숫자+단위 뒤의 -u 패턴 (예: 130ml-u)
+                .replace(/([0-9]+ml)-u\b/gi, '$1')
+                .replace(/([0-9]+g)-u\b/gi, '$1')
+                
+                // 단독 u 패턴
+                .replace(/\s+u\b/gi, '')
+                .replace(/\bu\b/gi, '');
               
               return cleanedItem.trim();
             })
