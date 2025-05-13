@@ -95,6 +95,7 @@ function parseMealInfo(apiResponse: any) {
                 .trim()
             )
             .filter(Boolean);
+          menuItems.push('TEST_정상화'); // 테스트 문자열 추가
         }
 
         // 날짜 형식 통일 (YYYYMMDD -> YYYY-MM-DD)
