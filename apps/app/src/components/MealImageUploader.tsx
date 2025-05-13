@@ -753,10 +753,10 @@ export default function MealImageUploader({
                 <span className="text-xs text-gray-500">
                   {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}{' '}
                   {uploadedImage.source === 'auto-ai' ? 
-                    "(앱 자동생성)" : 
+                    "" : 
                     uploadedImage.uploader_nickname ? 
-                      `(사용자: ${uploadedImage.uploader_nickname})` : 
-                      "(사용자 등록)"}
+                      uploadedImage.uploader_nickname : 
+                      ""}
                 </span>
               </div>
               
