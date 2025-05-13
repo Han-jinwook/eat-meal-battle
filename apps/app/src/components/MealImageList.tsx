@@ -99,10 +99,14 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
     try {
       if (!mealId) {
         setError('급식 ID가 유효하지 않습니다.');
+        setLoading(false);
         return;
       }
 
+      console.log('이미지 조회 시작:', mealId);
+      
       // 먼저 approved 이미지가 있는지 확인 - 어떤 사용자든 동일한 이미지를 보기 위해 가장 먼저 조회
+      // RLS 정책을 피하기 위해 서비스 로드 키를 사용하는 방법도 고려해볼 수 있음
       const { data: approvedData, error: approvedError } = await supabase
         .from('meal_images')
         .select('*')
@@ -120,18 +124,15 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
       if (approvedData && approvedData.length > 0) {
         console.log('승인된 이미지 발견:', approvedData[0].id);
         
-        // 사용자 자신의 이미지인지 확인
-        const isUserImage = userId && approvedData.some(img => img.uploaded_by === userId);
-        
         // 이미지 상태 설정
         setImages(approvedData);
-        
-        // 사용자/공유 이미지 구분 - UI에서 사용자 이미지 섹션 제거했으니 이제 모든 이미지는 공유 이미지로 처리
         setUserImages([]);
         setSharedImages(approvedData);
         
         // 업로더 닉네임 가져오기
         await fetchUploaderNames(approvedData);
+        
+        setLoading(false);
         return;
       }
       
@@ -148,29 +149,25 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
           
         if (userError) {
           console.error('사용자 이미지 조회 오류:', userError);
-          // 오류가 발생해도 계속 진행
+          setLoading(false);
+          return;
         }
         
         if (userData && userData.length > 0) {
-          console.log('사용자 이미지 발견:', userData.length, '개');
-          
-          // 이미지 상태 설정
+          console.log('사용자 이미지 발견:', userData.length);
           setImages(userData);
           setUserImages(userData);
           setSharedImages([]);
-          
-          // 업로더 닉네임 가져오기
           await fetchUploaderNames(userData);
         } else {
-          // 사용자 이미지도 없음
           console.log('사용자 이미지 없음');
           setImages([]);
           setUserImages([]);
           setSharedImages([]);
         }
       } else {
-        // 사용자 ID가 없는 경우 빈 배열로 초기화
-        console.log('사용자 ID 없음, 이미지 없음');
+        // 로그인하지 않은 사용자는 이미지를 볼 수 없음
+        console.log('로그인하지 않은 사용자');
         setImages([]);
         setUserImages([]);
         setSharedImages([]);
