@@ -547,23 +547,21 @@ export default function Home() {
     // 결과 포맷팅
     let result = '';
     
-    // 더 중요한 원산지부터 표시 (우선순위 지정)
-    // 스크린샷에 맞게 국내산이 제일 먼저, 그 다음 러시아, 베트남, 원양산 순서
-    const priorityOrder = ['국내산', '러시아', '베트남', '중국', '원양산', '미국', '호주', '칠레', '페루', '아르헨티나'];
+    // 국내산을 가장 먼저 표시하고, 나머지는 알파벳 순서로 정렬
+    // 국내산 먼저 출력
+    if (originGroups['국내산'] && originGroups['국내산'].size > 0) {
+      result += `국내산 : ${Array.from(originGroups['국내산']).join(', ')}\n`;
+    }
     
-    // 우선순위가 있는 원산지부터 출력
-    priorityOrder.forEach(origin => {
-      if (originGroups[origin] && originGroups[origin].size > 0) {
-        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
-      }
-    });
-    
-    // 나머지 원산지도 출력
-    Object.keys(originGroups).forEach(origin => {
-      if (!priorityOrder.includes(origin) && originGroups[origin].size > 0) {
-        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
-      }
-    });
+    // 나머지 원산지는 알파벳 순서로 정렬하여 출력
+    Object.keys(originGroups)
+      .filter(origin => origin !== '국내산') // 국내산 제외
+      .sort() // 알파벳 순서로 정렬
+      .forEach(origin => {
+        if (originGroups[origin].size > 0) {
+          result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
+        }
+      });
     
     return result || '원산지 정보\n' + lines.join('\n');
   };

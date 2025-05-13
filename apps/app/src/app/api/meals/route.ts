@@ -86,31 +86,19 @@ function parseMealInfo(apiResponse: any) {
           menuItems = meal.DDISH_NM
             .split('<br/>')
             .map((item: string) => {
-              // 1. 모든 종류의 괄호와 그 안의 내용 제거 (알레르기 정보 등)
-              let cleanedItem = item
-                .replace(/\([^)]*\)/g, '') // 일반 괄호 ()
-                .replace(/\[[^\]]*\]/g, '') // 대괄호 []
-                .replace(/\{[^}]*\}/g, '') // 중괄호 {}
-                .replace(/\<[^>]*\>/g, ''); // 화살괄호 <>
-              
-              // 2. -u 접미사 제거 (여러 형태 처리)
-              cleanedItem = cleanedItem
-                // 기본 패턴들
-                .replace(/-u\b/gi, '')
-                .replace(/-U\b/gi, '')
-                .replace(/\s+-u\b/gi, '')
-                
-                // 슬래시 관련 패턴 (예: 닭텐팔솔/130ml-u)
-                .replace(/\/([0-9]+ml)-u\b/gi, '/$1')
-                .replace(/\/([^/]*)-u\b/gi, '/$1')
-                
-                // 숫자+단위 뒤의 -u 패턴 (예: 130ml-u)
-                .replace(/([0-9]+ml)-u\b/gi, '$1')
-                .replace(/([0-9]+g)-u\b/gi, '$1')
-                
-                // 단독 u 패턴
-                .replace(/\s+u\b/gi, '')
-                .replace(/\bu\b/gi, '');
+              // 메뉴명 정규화 - 괄호와 -u 접미사 제거
+              const cleanedItem = item
+                .replace(/\([^)]*\)/g, '')     // 일반 괄호 () 제거
+                .replace(/\[[^\]]*\]/g, '')     // 대괄호 [] 제거
+                .replace(/\{[^}]*\}/g, '')     // 중괄호 {} 제거
+                .replace(/\<[^>]*\>/g, '')     // 화살괄호 <> 제거
+                .replace(/\/([0-9]+ml)-u\b/gi, '/$1')  // 슬래시 뒤 숫자+단위+u 패턴 처리
+                .replace(/\/([^/]*)-u\b/gi, '/$1')     // 슬래시 뒤 -u 패턴 처리
+                .replace(/([0-9]+(?:ml|g))-u\b/gi, '$1') // 숫자+단위 뒤 -u 패턴
+                .replace(/-u\b/gi, '')         // 기본 -u 패턴 제거
+                .replace(/\s+u\b/gi, '')       // 공백 후 u 패턴 제거
+                .replace(/\bu\b/gi, '')        // 단독 u 패턴 제거
+                .trim()                       // 앞뒤 공백 제거
               
               return cleanedItem.trim();
             })
@@ -133,6 +121,47 @@ function parseMealInfo(apiResponse: any) {
           mealType = '석식';
         }
 
+        // 원산지 정보 정규화 (formatOriginInfo 함수 참고)
+        let originInfo = meal.ORPLC_INFO || null;
+        if (originInfo) {
+          // 문자열로 변환 및 HTML 태그 제거
+          let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+          strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+          
+          // 불필요한 텍스트 제거 (비고, 가공품 등)
+          const lines = strOriginInfo
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => {
+              return line && 
+                     !line.startsWith('비고') &&
+                     line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
+                     !line.includes('수산가공품') && // 수산가공품 제외
+                     !line.includes('식육가공품'); // 식육가공품 제외
+            });
+          
+          // skipPatterns에 일치하는 원산지 정보는 건너뛰
+          const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
+          
+          // 정규화된 원산지 정보를 저장
+          originInfo = lines
+            .filter(line => !skipPatterns.some(pattern => pattern.test(line)))
+            .join('\n');
+        }
+        
+        // 영양소 정보 정규화 (formatNutritionInfo 함수 참고)
+        let ntrInfo = meal.NTR_INFO || null;
+        if (ntrInfo) {
+          // 문자열이면 그대로 사용, 그렇지 않으면 문자열로 변환
+          let strNtrInfo = typeof ntrInfo === 'string' ? ntrInfo : JSON.stringify(ntrInfo);
+          
+          // HTML 태그 제거
+          strNtrInfo = strNtrInfo.replace(/<br\s*\/?>/gi, '\n');
+          
+          // 정규화된 영양소 정보를 저장
+          ntrInfo = strNtrInfo;
+        }
+        
         meals.push({
           school_code: meal.SD_SCHUL_CODE,
           office_code: meal.ATPT_OFCDC_SC_CODE,
@@ -141,8 +170,8 @@ function parseMealInfo(apiResponse: any) {
           menu_items: menuItems,
           kcal: meal.CAL_INFO || '0 kcal',
           // nutrition_info 필드 제거
-          origin_info: meal.ORPLC_INFO || null,
-          ntr_info: meal.NTR_INFO || {}, // 누락되지 않도록 기본값 설정
+          origin_info: originInfo,
+          ntr_info: ntrInfo, // 정규화된 영양소 정보
           raw_data: meal,
         });
       }

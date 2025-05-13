@@ -40,13 +40,71 @@ function parseMealInfo(apiResponse: any) {
     if (apiResponse.mealServiceDietInfo.length > 1 && apiResponse.mealServiceDietInfo[1].row) {
       const mealRows = apiResponse.mealServiceDietInfo[1].row;
       for (const meal of mealRows) {
+        // 메뉴 항목 파싱 (불필요한 문자 제거)
         let menuItems = [];
         if (meal.DDISH_NM) {
           menuItems = meal.DDISH_NM
             .split('<br/>')
-            .map((item: string) => item.replace(/\([0-9\.]+\)/g, '').trim())
+            .map((item: string) => {
+              // 메뉴명 정규화 - 괄호와 -u 접미사 제거
+              const cleanedItem = item
+                .replace(/\([^)]*\)/g, '')     // 일반 괄호 () 제거
+                .replace(/\[[^\]]*\]/g, '')     // 대괄호 [] 제거
+                .replace(/\{[^}]*\}/g, '')     // 중괄호 {} 제거
+                .replace(/\<[^>]*\>/g, '')     // 화살괄호 <> 제거
+                .replace(/\/([0-9]+ml)-u\b/gi, '/$1')  // 슬래시 뒤 숫자+단위+u 패턴 처리
+                .replace(/\/([^/]*)-u\b/gi, '/$1')     // 슬래시 뒤 -u 패턴 처리
+                .replace(/([0-9]+(?:ml|g))-u\b/gi, '$1') // 숫자+단위 뒤 -u 패턴
+                .replace(/-u\b/gi, '')         // 기본 -u 패턴 제거
+                .replace(/\s+u\b/gi, '')       // 공백 후 u 패턴 제거
+                .replace(/\bu\b/gi, '')        // 단독 u 패턴 제거
+                .trim()                       // 앞뒤 공백 제거
+              
+              return cleanedItem.trim();
+            })
             .filter((item: string) => item);
         }
+        // 원산지 정보 정규화 (formatOriginInfo 함수 참고)
+        let originInfo = meal.ORPLC_INFO || null;
+        if (originInfo) {
+          // 문자열로 변환 및 HTML 태그 제거
+          let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+          strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+          
+          // 불필요한 텍스트 제거 (비고, 가공품 등)
+          const lines = strOriginInfo
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => {
+              return line && 
+                     !line.startsWith('비고') &&
+                     line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
+                     !line.includes('수산가공품') && // 수산가공품 제외
+                     !line.includes('식육가공품'); // 식육가공품 제외
+            });
+          
+          // skipPatterns에 일치하는 원산지 정보는 건너뛰
+          const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
+          
+          // 정규화된 원산지 정보를 저장
+          originInfo = lines
+            .filter(line => !skipPatterns.some(pattern => pattern.test(line)))
+            .join('\n');
+        }
+        
+        // 영양소 정보 정규화 (formatNutritionInfo 함수 참고)
+        let ntrInfo = meal.NTR_INFO || null;
+        if (ntrInfo) {
+          // 문자열이면 그대로 사용, 그렇지 않으면 문자열로 변환
+          let strNtrInfo = typeof ntrInfo === 'string' ? ntrInfo : JSON.stringify(ntrInfo);
+          
+          // HTML 태그 제거
+          strNtrInfo = strNtrInfo.replace(/<br\s*\/?>/gi, '\n');
+          
+          // 정규화된 영양소 정보를 저장
+          ntrInfo = strNtrInfo;
+        }
+        
         meals.push({
           school_code: meal.SD_SCHUL_CODE,
           office_code: meal.ATPT_OFCDC_SC_CODE,
@@ -63,8 +121,8 @@ function parseMealInfo(apiResponse: any) {
             vitamin_a: meal.VITA || null,
             vitamin_c: meal.VITC || null,
           },
-          origin_info: meal.ORPLC_INFO || null,
-          ntr_info: meal.NTR_INFO || null,
+          origin_info: originInfo,
+          ntr_info: ntrInfo,
           raw_data: meal,
         });
       }
