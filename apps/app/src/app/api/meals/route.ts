@@ -88,7 +88,10 @@ function parseMealInfo(apiResponse: any) {
             .map(item =>
               item
                 .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
-                .replace(/-?u$/gi, '')
+                .replace(/(\/[0-9a-zA-Z가-힣]+)-u\b/gi, '$1')
+                .replace(/(\/[0-9a-zA-Z가-힣]+)u\b/gi, '$1')
+                .replace(/-u\b/gi, '')
+                .replace(/u\b/gi, '')
                 .trim()
             )
             .filter(Boolean);
