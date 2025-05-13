@@ -30,14 +30,14 @@ interface MealInfo {
 
 export default function Home() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
 
   // URL에서 날짜 매개변수 가져오기
-  const dateParam = searchParams.get('date');
+  // 클라이언트 사이드에서만 처리
+  const [dateParam, setDateParam] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   
   // URL 매개변수를 사용하여 날짜 갱신하는 함수
@@ -45,14 +45,21 @@ export default function Home() {
     // 상태 업데이트
     setSelectedDate(date);
     
-    // 현재 URL 매개변수 복사
-    const params = new URLSearchParams(searchParams.toString());
-    // 날짜 매개변수 업데이트
-    params.set('date', date);
-    
-    // 히스토리 상태 업데이트 (페이지 새로고침 없이)
-    const url = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', url);
+    // 클라이언트에서만 실행 (window 객체 존재 확인)
+    if (typeof window !== 'undefined') {
+      try {
+        // 현재 URL 매개변수 복사
+        const params = new URLSearchParams(window.location.search);
+        // 날짜 매개변수 업데이트
+        params.set('date', date);
+        
+        // 히스토리 상태 업데이트 (페이지 새로고침 없이)
+        const url = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, '', url);
+      } catch (error) {
+        console.error('주소 갱신 오류:', error);
+      }
+    }
   };
 
   // 이미지 업로드 관련 상태
@@ -73,15 +80,28 @@ export default function Home() {
     fetchMealInfo,
   } = useMeals();
 
-  // userError 발생 시 에러 처리
+  // userError 발생 시 오류 처리
   useEffect(() => {
     if (userError) {
       setPageError(userError);
     }
   }, [userError]);
 
+  // 클라이언트 사이드에서 URL 매개변수 초기화
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const dateFromUrl = params.get('date');
+      setDateParam(dateFromUrl);
+    }
+  }, []);
+
   // URL 파라미터에서 notification ID 가져오기
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     const params = new URLSearchParams(window.location.search);
     const notificationId = params.get('notification');
 
@@ -163,7 +183,7 @@ export default function Home() {
     else if (!selectedDate && !userLoading && userSchool) {
       updateDateWithUrl(getCurrentDate());
     }
-  }, [dateParam, userLoading, userSchool, supabase, searchParams]);
+  }, [dateParam, userLoading, userSchool, supabase]);
 
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
@@ -584,7 +604,7 @@ export default function Home() {
               {userSchool.school_name}
             </h2>
             <p className="text-gray-600 text-sm">
-              {userSchool.region} {userSchool.school_type}
+              {userSchool.region} {/* school_type 필드가 없어서 제거 */}
             </p>
           </div>
         ) : (
