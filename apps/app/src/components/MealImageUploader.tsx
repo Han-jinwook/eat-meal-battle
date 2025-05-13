@@ -177,6 +177,21 @@ export default function MealImageUploader({
       
       if (data) {
         console.log('승인된 이미지 발견:', data.id);
+        
+        // 업로드한 사용자 정보 가져오기 (있는 경우)
+        if (data.uploaded_by) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('nickname')
+            .eq('id', data.uploaded_by)
+            .single();
+            
+          if (!userError && userData) {
+            // 사용자 닉네임 정보 추가
+            data.uploader_nickname = userData.nickname;
+          }
+        }
+        
         setUploadedImage(data);
         // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
         setShowAiGenButton(false);
@@ -736,12 +751,12 @@ export default function MealImageUploader({
             <div className="p-3">
               <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
-                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}
-                  {uploadedImage.source === 'auto-ai' ? (
-                    <span className="ml-1">(앱 자동생성)</span>
-                  ) : uploadedImage.source === 'user' || uploadedImage.source === 'user-ai' ? (
-                    <span className="ml-1">(사용자: {uploadedImage.uploader_nickname || '익명'})</span>
-                  ) : null}
+                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}{' '}
+                  {uploadedImage.source === 'auto-ai' ? 
+                    "(앱 자동생성)" : 
+                    uploadedImage.uploader_nickname ? 
+                      `(사용자: ${uploadedImage.uploader_nickname})` : 
+                      "(사용자 등록)"}
                 </span>
               </div>
               
