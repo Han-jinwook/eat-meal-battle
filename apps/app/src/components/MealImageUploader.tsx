@@ -751,7 +751,8 @@ export default function MealImageUploader({
             <div className="p-3">
               <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
-                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR')}{' '}
+                  {uploadedImage.source === 'ai' ? "AI로 생성한 이미지 " : ""}
+                  ({`${new Date(uploadedImage.created_at).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/:\d{2}\s/, ' ')}`}){' '}
                   {uploadedImage.source === 'auto-ai' ? 
                     "" : 
                     uploadedImage.uploader_nickname ? 
@@ -760,9 +761,8 @@ export default function MealImageUploader({
                 </span>
               </div>
               
-              {uploadedImage.match_score !== undefined && uploadedImage.match_score !== null && (
+              {uploadedImage.status === 'rejected' && (
                 <div className="text-sm mb-2">
-                  <span className="font-semibold">메뉴 일치도:</span> {uploadedImage.match_score}% 
                   {uploadedImage.status === 'rejected' && (
                     <span className="text-orange-600 ml-1">(매칭실패, 업로드 불가)</span>
                   )}
