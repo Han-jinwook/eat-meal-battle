@@ -235,18 +235,30 @@ export default function NotificationBell() {
     try {
       // 세션 액세스 토큰 포함하여 파라미터 없이 호출 (모든 알림 읽음)
       const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
+      
+      if (!session?.user?.id) {
+        console.error('사용자 세션을 찾을 수 없습니다.');
+        return;
       }
       
-      const response = await fetch('/api/notifications/read', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({}) // notificationId 없이 호출
-      });
+      // 읽지 않은 알림만 필터링
+      const unreadNotifications = notifications.filter(n => !n.is_read);
+      if (unreadNotifications.length === 0) {
+        return; // 읽지 않은 알림이 없으면 연산 스킵
+      }
       
-      if (!response.ok) {
+      // 직접 Supabase 업데이트 실행
+      const { error } = await supabase
+        .from('notification_recipients')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString()
+        })
+        .eq('recipient_id', session.user.id)
+        .eq('is_read', false);
+      
+      if (error) {
+        console.error('모든 알림 읽음 처리 실패:', error);
         throw new Error('모든 알림 읽음 처리 실패');
       }
       
