@@ -86,11 +86,11 @@ function parseMealInfo(apiResponse: any) {
           menuItems = meal.DDISH_NM
             .split('<br/>')
             .map((item: string) => {
-              // 1. 모든 괄호와 그 안의 내용 제거 (알레르기 정보 등)
+              // 1. 괴호와 그 안의 내용 제거
               let cleanedItem = item.replace(/\([^)]*\)/g, '');
               
-              // 2. -u, u 등의 접미사 제거
-              cleanedItem = cleanedItem.replace(/\s*-u\b|\s*u\b/gi, '');
+              // 2. -u 접미사만 정확히 제거 (용량은 유지)
+              cleanedItem = cleanedItem.replace(/-u\b/gi, '');
               
               return cleanedItem.trim();
             })
@@ -557,13 +557,13 @@ export async function POST(request: Request) {
             errorCount++;
             continue;
           }
-          
+
           if (existingMeal) {
             // 기존 데이터가 있으면 업데이트
             const { error: updateError } = await supabase
               .from('meal_menus')
               .update({
-                menu_items: meal.menu_items,
+                menu_items: meal.menu_items.map(item => item.replace(/-u$/, '')), // -u 접미사만 정확히 제거
                 kcal: meal.kcal,
                 // nutrition_info 필드 제거
                 origin_info: meal.origin_info,
@@ -571,7 +571,7 @@ export async function POST(request: Request) {
                 updated_at: new Date().toISOString()
               })
               .eq('id', existingMeal.id);
-              
+
             if (updateError) {
               console.error(`급식 데이터 업데이트 오류: ${updateError.message}`);
               errorCount++;
