@@ -84,23 +84,14 @@ function parseMealInfo(apiResponse: any) {
         let menuItems = [];
         if (meal.DDISH_NM) {
           menuItems = meal.DDISH_NM
-            .split('<br/>')
-            .map((item: string) => {
-              // 메뉴명 정규화 - 괄호와 -u 접미사 제거
-              const cleanedItem = item
-                .replace(/\([^)]*\)/g, '')     // 일반 괄호 () 제거
-                .replace(/\[[^\]]*\]/g, '')     // 대괄호 [] 제거
-                .replace(/\{[^}]*\}/g, '')     // 중괄호 {} 제거
-                .replace(/\<[^>]*\>/g, '')     // 화살괄호 <> 제거
-                .replace(/\/([0-9]+ml)-u\b/gi, '/$1')  // 슬래시 뒤 숫자+단위+u 패턴 처리
-                .replace(/\/([^/]*)-u\b/gi, '/$1')     // 슬래시 뒤 -u 패턴 처리
-                .replace(/([0-9]+(?:ml|g))-u\b/gi, '$1') // 숫자+단위 뒤 -u 패턴
-                .replace(/-u\b/gi, '')         // 기본 -u 패턴 제거
-                .replace(/\s+u\b/gi, '')       // 공백 후 u 패턴 제거
-                .replace(/\bu\b/gi, '')        // 단독 u 패턴 제거
-                .trim()                       // 앞뒤 공백 제거
-              
-              return cleanedItem.trim();
+            .split(/<br\s*\/?\>/i)
+            .map(item =>
+              item
+                .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
+                .replace(/-?u$/gi, '')
+                .trim()
+            )
+            .filter(Boolean);
             })
             .filter((item: string) => item);
         }
