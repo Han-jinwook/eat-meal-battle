@@ -86,8 +86,13 @@ function parseMealInfo(apiResponse: any) {
           menuItems = meal.DDISH_NM
             .split('<br/>')
             .map((item: string) => {
-              // 모든 괄호와 그 안의 내용 제거 (알레르기 정보 등)
-              return item.replace(/\([^)]*\)/g, '').trim();
+              // 1. 모든 괄호와 그 안의 내용 제거 (알레르기 정보 등)
+              let cleanedItem = item.replace(/\([^)]*\)/g, '');
+              
+              // 2. -u, u 등의 접미사 제거
+              cleanedItem = cleanedItem.replace(/\s*-u\b|\s*u\b/gi, '');
+              
+              return cleanedItem.trim();
             })
             .filter((item: string) => item);
         }
