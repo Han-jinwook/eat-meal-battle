@@ -333,7 +333,7 @@ export default function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800"
+                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
               >
                 모두 읽음 표시
               </button>
@@ -402,17 +402,7 @@ export default function NotificationBell() {
             )}
           </div>
           
-          {notifications.length > 0 && (
-            <div className="p-2 bg-gray-50 text-center border-t">
-              <Link
-                href="/notifications"
-                className="text-xs text-blue-600 hover:text-blue-800"
-                onClick={() => setIsOpen(false)}
-              >
-                모든 알림 보기
-              </Link>
-            </div>
-          )}
+          {/* "모든 알림 보기" 기능 삭제 */}
         </div>
       )}
     </div>
