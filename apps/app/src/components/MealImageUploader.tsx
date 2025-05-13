@@ -751,13 +751,11 @@ export default function MealImageUploader({
             <div className="p-3">
               <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
-                  {uploadedImage.source === 'ai' ? "AI로 생성한 이미지 " : ""}
-                  ({`${new Date(uploadedImage.created_at).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }).replace(/:\d{2}\s/, ' ')}`}){' '}
-                  {uploadedImage.source === 'auto-ai' ? 
-                    "" : 
-                    uploadedImage.uploader_nickname ? 
-                      uploadedImage.uploader_nickname : 
-                      ""}
+                  {uploadedImage.source === 'user_ai' || uploadedImage.source === 'auto_ai' ? "AI로 생성한 이미지 " : ""}
+                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR').replace(/(.*?)\s(\S+:\S+):\S+/, '$1 ( $2 )')}{' '}
+                  {uploadedImage.uploader_nickname && !['user_ai', 'auto_ai'].includes(uploadedImage.source) ? 
+                    uploadedImage.uploader_nickname : 
+                    ""}
                 </span>
               </div>
               
