@@ -84,11 +84,14 @@ function parseMealInfo(apiResponse: any) {
         let menuItems = [];
         if (meal.DDISH_NM) {
           menuItems = meal.DDISH_NM
-            .split(/<br\s*\/?\>/gi)
+            .replace(/<br\s*\/?\>/gi, '\n')
+            .split('\n')
             .map(item =>
               item
                 .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
-                .replace(/-?u$/i, '')
+                .split('/')
+                .map(part => part.trim().replace(/[\-~]?u$/gi, ''))
+                .join('/')
                 .trim()
             )
             .filter(Boolean);
