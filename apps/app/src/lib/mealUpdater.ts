@@ -146,47 +146,26 @@ export async function updateAllMeals(schools: Array<{ school_code: string; offic
     await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
-  for (const meal of allMeals) {
-    try {
-      const { data: existingMeal, error: selectError } = await supabase
-        .from('meal_menus')
-        .select('id')
-        .eq('school_code', meal.school_code)
-        .eq('meal_date', meal.meal_date)
-        .eq('meal_type', meal.meal_type)
-        .maybeSingle();
-      if (selectError && selectError.code !== 'PGRST116') {
-        errorCount++;
-        continue;
-      }
-      if (existingMeal) {
-        const { error: updateError } = await supabase
-          .from('meal_menus')
-          .update({
-            menu_items: meal.menu_items,
-            kcal: meal.kcal,
-            nutrition_info: meal.nutrition_info,
-            origin_info: meal.origin_info,
-            ntr_info: meal.ntr_info,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingMeal.id);
-        if (updateError) {
-          errorCount++;
-        } else {
-          updatedCount++;
-        }
-      } else {
-        const { error: insertError } = await supabase.from('meal_menus').insert([meal]);
-        if (insertError) {
-          errorCount++;
-        } else {
-          insertedCount++;
-        }
-      }
-    } catch (err) {
-      errorCount++;
+  // 모든 meal 저장을 Next.js API 라우트로 위임
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/meals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meals: allMeals }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || 'API route 오류');
     }
+    updatedCount = result.updated || 0;
+    insertedCount = result.inserted || 0;
+    errorCount = result.errorCount || 0;
+    if (result.errors) {
+      errors.push(...result.errors);
+    }
+  } catch (err: any) {
+    errorCount = allMeals.length;
+    errors.push({ error: err.message || 'API 호출 실패' });
   }
 
   return {
