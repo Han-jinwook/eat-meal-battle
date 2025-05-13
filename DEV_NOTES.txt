@@ -1,33 +1,84 @@
 [2025-05-12 개발 현황 메모]
 =================================
 
-1. 오늘 해결/진행한 사항
--------------------------
-• public/icons 폴더 이동으로 PWA 아이콘 404 해결
-• useMeals 훅에 404(데이터 없음) graceful-handling 추가
-• MealImageUploader 컴포넌트
-  – Supabase 404 네트워크 에러 억제: HEAD 체크 + maybeSingle 사용
-  – 테이블 없음(42P01)·행 없음(PGRST116)은 debug 로그만 출력
-  – AI 이미지 생성 버튼 조건 로직에 반영
-• dev 서버로 동작 확인: 콘솔 404 및 빨간 error stack 제거 완료
 
-2. 남은 TODO / 내일 우선순위
------------------------------
-□ MainHeader 로고 및 ‘급식’ 메뉴 링크를 실제 메인 페이지(/)로 변경
-□ next.config.js 의 images.domains → images.remotePatterns 마이그레이션(Deprecation warning 제거)
-□ PWA manifest/icon 경로 최종 확인 후 Netlify 배포 테스트
-□ 필요 시 MealImageUploader 리팩터링: 상태 enum 정리, UI 작은 다듬기
 
-3. 사용 원칙 / 주의사항
------------------------
-• 이미 정상 작동하는 기능은 수정 금지 (사용자 정책)
-• 테스트 코드는 작성하지 않음, 프로덕션 직접 테스트
-• 항상 프로덕션 환경(Netlify) 기준으로 확인
 
-5. 재시작 체크리스트
----------------------
-1) `npm install` (패키지 변동 시)
-2) `.env.local` 가 존재하는지 확인 (Supabase 키 등)
-3) `npm run dev` 로 로컬 확인 후 Netlify 배포
+DataBase 스키마  (25년 5월13일 현재)
 
-메모 끝 – 내일 시작 시 이 파일을 먼저 읽고 이어서 작업할 것.
+### Table: meal_images
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
+| explanation | text | YES |  |
+| id | uuid | NO |  |
+| image_url | text | NO |  |
+| match_score | integer | YES |  |
+| meal_id | uuid | YES |  |
+| source | text | YES |  |
+| status | text | YES |  |
+| uploaded_by | uuid | NO |  |
+
+### Table: meal_menus
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
+| id | uuid | NO |  |
+| is_empty_result | boolean | YES |  |
+| is_temporary | boolean | YES |  |
+| kcal | text | YES |  |
+| meal_date | text | NO |  |
+| meal_type | text | NO |  |
+| menu_items | jsonb | YES |  |
+| ntr_info | text | YES |  |
+| office_code | character varying | YES | 20 |
+| origin_info | text | YES |  |
+| school_code | text | NO |  |
+| updated_at | timestamp with time zone | YES |  |
+
+### Table: notification_recipients
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
+| id | uuid | NO |  |
+| is_read | boolean | YES |  |
+| notification_id | uuid | NO |  |
+| read_at | timestamp with time zone | YES |  |
+| recipient_id | uuid | NO |  |
+
+### Table: notifications
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
+| id | uuid | NO |  |
+| message | text | NO |  |
+| related_id | uuid | YES |  |
+| related_type | text | YES |  |
+| school_code | text | YES |  |
+| sender_id | uuid | YES |  |
+| title | text | NO |  |
+
+### Table: school_infos
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| address | text | YES |  |
+| class_number | integer | YES |  |
+| created_at | timestamp with time zone | YES |  |
+| grade | integer | YES |  |
+| office_code | character varying | YES | 10 |
+| region | text | YES |  |
+| school_code | text | YES |  |
+| school_name | text | YES |  |
+| school_type | text | YES |  |
+| updated_at | timestamp with time zone | YES |  |
+| user_id | uuid | NO |  |
+
+### Table: users
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| birth_date | date | YES |  |
+| created_at | timestamp with time zone | YES |  |
+| email | character varying | NO | 255 |
+| fcm_token | text | YES |  |
+| id | uuid | NO |  |
+| is_student | boolean | NO |  |
+| nickname | character varying | NO | 50 |
+| profile_image | text | NO |  |
+| provider | character varying | NO | 30 |
+| provider_id | character varying | NO | 100 |
+| updated_at | timestamp with time zone | YES |  |
+| user_type | character varying | NO |  |

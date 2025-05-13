@@ -97,40 +97,62 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
     setError(null);
 
     try {
-      // 이미지 상태 초기화 제거 (페이지 나갔다가 돌아와도 이미지 유지)
-      
       if (!mealId) {
         setError('급식 ID가 유효하지 않습니다.');
         return;
       }
 
-      // 모든 이미지 가져오기 - 삭제된 것은 실제로 DB에서 제거되어 있음
-      const { data, error } = await supabase
+      // 먼저 approved 이미지가 있는지 확인
+      const { data: approvedData, error: approvedError } = await supabase
         .from('meal_images')
         .select('*')
         .eq('meal_id', mealId)
-        .order('created_at', { ascending: false });
+        .eq('status', 'approved')
+        .limit(1);
 
-      if (error) {
-        throw error;
+      if (approvedError) {
+        throw approvedError;
       }
 
-      // 유효한 이미지만 설정
-      const validImages = data || [];
-      setImages(validImages);
-
-      // 사용자 이미지와 공유 이미지 분리 (새 배열로 복사하여 참조 문제 방지)
-      if (userId) {
-        const userImgs = [...validImages.filter(img => img.uploaded_by === userId)];
-        const sharedImgs = [...validImages.filter(img => img.status === 'approved' && img.uploaded_by !== userId)];
+      // approved 이미지가 있으면 그것만 표시
+      if (approvedData && approvedData.length > 0) {
+        setImages(approvedData);
+        setSharedImages(approvedData.filter(img => img.uploaded_by !== userId));
+        setUserImages(approvedData.filter(img => img.uploaded_by === userId));
         
-        setUserImages(userImgs);
-        setSharedImages(sharedImgs);
+        // 업로더 닉네임 가져오기
+        await fetchUploaderNames(approvedData);
+        return;
       }
       
-      // 업로더 닉네임 가져오기 (이미지가 있는 경우에만)
-      if (validImages.length > 0) {
-        await fetchUploaderNames(validImages);
+      // approved 이미지가 없으면 사용자 이미지만 표시
+      if (userId) {
+        const { data: userData, error: userError } = await supabase
+          .from('meal_images')
+          .select('*')
+          .eq('meal_id', mealId)
+          .eq('uploaded_by', userId)
+          .order('created_at', { ascending: false });
+          
+        if (userError) {
+          throw userError;
+        }
+        
+        if (userData) {
+          setImages(userData);
+          setUserImages(userData);
+          setSharedImages([]);
+          
+          // 업로더 닉네임 가져오기
+          if (userData.length > 0) {
+            await fetchUploaderNames(userData);
+          }
+        }
+      } else {
+        // 사용자 ID가 없는 경우 빈 배열로 초기화
+        setImages([]);
+        setUserImages([]);
+        setSharedImages([]);
       }
       
       // 급식 메뉴 정보 가져오기
@@ -361,7 +383,6 @@ export default function MealImageList({ mealId, refreshTrigger = 0 }: MealImageL
       
       {userImages.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold mb-3">내가 업로드한 이미지</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {userImages.map((image) => (
               <div key={image.id} className="bg-white rounded-lg shadow-md overflow-hidden">

@@ -27,6 +27,26 @@ export async function POST(request: Request) {
     }
 
     // 서비스 롤 키를 사용하여 RLS 정책을 우회
+    // 오늘 혹은 과거 날짜에 대해 이미 approved 상태인 이미지가 있는지 확인
+    const { data: existingApproved, error: checkError } = await supabaseAdmin
+      .from('meal_images')
+      .select('id')
+      .eq('meal_id', meal_id)
+      .eq('status', 'approved')
+      .limit(1);
+    if (checkError) {
+      console.error('기존 승인 이미지 조회 오류:', checkError);
+      return NextResponse.json(
+        { error: '기존 승인 이미지 조회 중 오류가 발생했습니다.' },
+        { status: 500 }
+      );
+    }
+    if (existingApproved && existingApproved.length) {
+      return NextResponse.json(
+        { error: '이미 승인된 급식사진이 있습니다.' },
+        { status: 409 }
+      );
+    }
     console.log('서비스 롤 키로 데이터 삽입 시도...');
     const { data, error } = await supabaseAdmin
       .from('meal_images')
