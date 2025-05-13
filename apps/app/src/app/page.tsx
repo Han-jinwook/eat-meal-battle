@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
 import useUserSchool from '@/hooks/useUserSchool';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import MealCard from '@/components/MealCard';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useMeals from '@/hooks/useMeals';
 import useModal from '@/hooks/useModal';
-import { MealInfo } from '@/types';
+// import { MealInfo } from '@/types'; // 중복 타입 제거
 // 디버그 패널 제거
 
 // 급식 정보 타입 정의
@@ -30,12 +30,30 @@ interface MealInfo {
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
 
+  // URL에서 날짜 매개변수 가져오기
+  const dateParam = searchParams.get('date');
   const [selectedDate, setSelectedDate] = useState<string>('');
+  
+  // URL 매개변수를 사용하여 날짜 갱신하는 함수
+  const updateDateWithUrl = (date: string) => {
+    // 상태 업데이트
+    setSelectedDate(date);
+    
+    // 현재 URL 매개변수 복사
+    const params = new URLSearchParams(searchParams.toString());
+    // 날짜 매개변수 업데이트
+    params.set('date', date);
+    
+    // 히스토리 상태 업데이트 (페이지 새로고침 없이)
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', url);
+  };
 
   // 이미지 업로드 관련 상태
   const [refreshImageList, setRefreshImageList] = useState(0);
@@ -75,31 +93,23 @@ export default function Home() {
         // ============== TEST LOG END ============== 
 
         try {
-          // 1. Fetch notification (as list to avoid 406)
-          const { data: notificationsData, error: notificationFetchError } = await supabase
+          // 1. 알림 정보 조회
+          const { data: notification, error: notificationError } = await supabase
             .from('notifications')
-            .select('related_id, created_at')
+            .select('type, related_id')
             .eq('id', notificationId)
-            .limit(1); // Ensure only one if multiple somehow exist for an id
+            .maybeSingle();
 
-          if (notificationFetchError) {
-            console.error('Error fetching notification:', notificationFetchError);
-            setSelectedDate(getCurrentDate());
+          if (notificationError && notificationError.code !== 'PGRST116') {
+            console.error('알림 조회 오류:', notificationError);
+            setPageLoading(false);
+            updateDateWithUrl(getCurrentDate());
             return;
           }
 
-          const notification = (notificationsData && notificationsData.length > 0) ? notificationsData[0] : null;
-
-          if (!notification) { // 알림 객체 자체가 없는 경우
-            console.log('Notification not found for id:', notificationId);
-            setSelectedDate(getCurrentDate());
-            return;
-          }
-
-          // related_id가 null, undefined, 빈 문자열 등 Falsy 값인지 확인
-          if (!notification.related_id) { 
+          if (!notification || !notification.related_id) {
             console.log('Notification found, but no valid related_id for id:', notificationId, 'Notification object:', notification);
-            setSelectedDate(getCurrentDate());
+            updateDateWithUrl(getCurrentDate());
             return;
           }
 
@@ -118,33 +128,42 @@ export default function Home() {
             if (mealError && mealError.code !== 'PGRST116') { // PGRST116 (0 rows) is expected for maybeSingle if not found
               console.error('Error fetching meal (when meal data is missing):', mealError);
             }
-            setSelectedDate(getCurrentDate()); // Set to today if no specific meal to show
+            updateDateWithUrl(getCurrentDate()); // Set to today if no specific meal to show
             return;
           }
 
           // If meal data exists but there was still some other error
           if (mealError && mealError.code !== 'PGRST116') {
-              console.error('Error fetching meal (even when meal data might exist):', mealError);
-              // Potentially throw or handle, but data is prioritized if available
+            // Potentially throw or handle, but data is prioritized if available
           }
 
           // YYYYMMDD 형식을 YYYY-MM-DD로 변환
           const formattedDate = meal.meal_date.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
-          setSelectedDate(formattedDate);
+          updateDateWithUrl(formattedDate);
 
         } catch (error) {
           // This catch is for unexpected errors during the async operations
           console.error('알림 관련 급식 정보 조회 중 예기치 않은 실패:', error);
-          setSelectedDate(getCurrentDate());
+          updateDateWithUrl(getCurrentDate());
         }
       };
 
       fetchNotificationMeal();
-    } else if (!selectedDate && !userLoading && userSchool) {
-      // notification이 없는 경우 오늘 날짜로 설정
-      setSelectedDate(getCurrentDate());
     }
-  }, [userLoading, userSchool, supabase]);
+    // URL에 날짜 파라미터가 있는 경우
+    else if (dateParam && !userLoading) {
+      // 유효한 날짜 형식인지 확인
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        updateDateWithUrl(dateParam);
+      } else {
+        updateDateWithUrl(getCurrentDate());
+      }
+    }
+    // 다른 파라미터 없을 경우 오늘 날짜로 설정
+    else if (!selectedDate && !userLoading && userSchool) {
+      updateDateWithUrl(getCurrentDate());
+    }
+  }, [dateParam, userLoading, userSchool, supabase, searchParams]);
 
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
@@ -209,7 +228,8 @@ export default function Home() {
   // 날짜 변경 핸들러 - 날짜 변경 시 자동으로 조회
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
-    setSelectedDate(newDate);
+    // URL 파라미터와 상태 동시 업데이트
+    updateDateWithUrl(newDate);
     // 날짜 변경 시 기존 오류 메시지 초기화
     setPageError('');
     
