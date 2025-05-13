@@ -44,15 +44,14 @@ function parseMealInfo(apiResponse: any) {
         let menuItems = [];
         if (meal.DDISH_NM) {
           menuItems = meal.DDISH_NM
-            .split(/<br\s*\/?\>/i)
+            .split(/<br\s*\/?>/gi)
             .map(item =>
               item
+                .replace(/-?u$/i, '')
                 .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
-                .replace(/-?u$/gi, '')
                 .trim()
             )
             .filter(Boolean);
-            .filter((item: string) => item);
         }
         // 원산지 정보 정규화 (formatOriginInfo 함수 참고)
         let originInfo = meal.ORPLC_INFO || null;
