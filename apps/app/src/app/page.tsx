@@ -92,7 +92,16 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const dateFromUrl = params.get('date');
+      
+      // URL에서 날짜 파라미터가 있으면 그 값을 사용, 없으면 오늘 날짜 사용
+      const dateToUse = dateFromUrl || getCurrentDate();
+      console.log('URL에서 날짜 초기화:', { dateFromUrl, dateToUse });
+      
+      // 상태 업데이트 - selectedDate를 설정하여 날짜 기억
       setDateParam(dateFromUrl);
+      setSelectedDate(dateToUse);
+      
+      // 기존 handleDateChange 함수에서 급식 정보를 가져오는 로직이 있으므로 여기서는 하지 않음
     }
   }, []);
 
