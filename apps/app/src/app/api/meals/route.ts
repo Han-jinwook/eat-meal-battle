@@ -563,7 +563,7 @@ export async function POST(request: Request) {
             const { error: updateError } = await supabase
               .from('meal_menus')
               .update({
-                menu_items: meal.menu_items.map(item => item.replace(/-u$/, '')), // -u 접미사만 정확히 제거
+                menu_items: meal.menu_items, // 이미 정규화된 데이터를 그대로 사용
                 kcal: meal.kcal,
                 // nutrition_info 필드 제거
                 origin_info: meal.origin_info,
