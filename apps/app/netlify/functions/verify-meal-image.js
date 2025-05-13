@@ -109,7 +109,7 @@ exports.handler = async (event, context) => {
     // 이미지 URL 접근성 먼저 확인
     try {
       console.log('이미지 URL 접근성 확인 중...');
-      await axios.head(imageData.image_url, { timeout: 3000 }); // 3초 타임아웃 설정
+      await axios.head(imageData.image_url, { timeout: 10000 }); // 10초 타임아웃 설정
       console.log('이미지 URL 접근 가능');
     } catch (urlError) {
       console.error('이미지 URL 접근 오류:', urlError.message);
@@ -191,7 +191,8 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${openaiApiKey}`
-          }
+          },
+          timeout: 30000 // 30초 타임아웃 설정
         }
       );
 
