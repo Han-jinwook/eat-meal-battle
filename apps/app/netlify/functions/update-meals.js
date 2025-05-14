@@ -163,6 +163,26 @@ function parseMealInfo(data) {
         }
       }
       
+      // 영양소 정보
+      if (meal.NTR_INFO) {
+        console.log(`Processing nutrition info for meal ${meal.MLSV_YMD} ${meal.MMEAL_SC_NM}`);
+        console.log(`Original NTR_INFO: ${meal.NTR_INFO}`);
+        
+        // 원본 영양소 정보 저장
+        const originalNtrInfo = meal.NTR_INFO;
+        
+        // 정규화된 영양소 정보 생성
+        const formattedNtrInfo = formatNutritionInfo(meal.NTR_INFO);
+        console.log(`Formatted NTR_INFO: ${formattedNtrInfo}`);
+        
+        // ntr_info 필드에 이미 정규화된 정보가 있는지 확인
+        if (meal.ntr_info !== formattedNtrInfo) {
+          console.log(`Nutrition info update needed for meal ${meal.MLSV_YMD} ${meal.MMEAL_SC_NM}`);
+          meal.ntr_info = formattedNtrInfo;
+          needUpdate = true;
+        }
+      }
+      
       // 원산지 정보 정규화
       let originInfo = meal.ORPLC_INFO || null;
       
@@ -234,11 +254,101 @@ function parseMealInfo(data) {
     // '중식'만 필터링해서 반환
     const lunchMeals = meals.filter(meal => meal.meal_type === '중식');
     console.log(`파싱된 중식 급식 정보: ${lunchMeals.length}개`);
-    return lunchMeals;
-  } catch (error) {
-    console.error('급식 정보 파싱 오류:', error);
-    return meals;
+    return { ...meal, school, mlsv_ymd, mmeal_sc, orplc_info: originInfo };
+  } catch (err) {
+    console.error(`Error parsing meal info for ${meal.MLSV_YMD}:`, err);
+    return meal;
   }
+}
+
+/**
+ * 영양소 정보를 서버 측에서 정규화하는 함수
+ * @param {string} ntrInfo - NEIS API에서 받은 원본 영양소 정보
+ * @returns {string} - 정규화된 영양소 정보 (영양소명 : 수치(단위) 형식)
+ */
+function formatNutritionInfo(ntrInfo) {
+  if (!ntrInfo) return '';
+  
+  // HTML 태그 제거 및 줄바꾸기 처리
+  const cleanNtrInfo = ntrInfo.replace(/<br\s*\/?>/gi, '\n');
+  const items = cleanNtrInfo.split(/\n/).map(item => item.trim()).filter(Boolean);
+  
+  // 주요 영양소 순서 정의 (탄수화물, 단백질, 지방 순)
+  const mainNutrientOrder = ['탄수화물', '단백질', '지방'];
+  
+  // 영양소 분류
+  const mainNutrients = [];
+  const otherNutrients = [];
+  
+  // 영양소 파싱 및 분류
+  items.forEach(item => {
+    // 예: 탄수화물(g) : 73.6
+    const match = item.match(/(.+?)\s*[:\uff1a]\s*(.+)/);
+    if (match) {
+      let nutrientName = match[1].trim();
+      let value = match[2].trim();
+      
+      // 영양소 이름과 단위 분리
+      let baseName = nutrientName;
+      let unit = '';
+      
+      // (g) 같은 단위가 있는지 추출
+      const unitMatch = nutrientName.match(/\(([^)]+)\)/);
+      if (unitMatch) {
+        unit = unitMatch[1];
+        // 영양소 이름에서 단위 제거
+        baseName = nutrientName.replace(/\s*\([^)]*\)\s*/, '');
+      }
+      
+      // 숫자 값 추출 - 정렬을 위해 필요
+      const numericValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+      
+      // '영양소명 : 수치(단위)' 형식으로 변경
+      const formattedText = unit 
+        ? `${baseName} : ${numericValue}(${unit})` 
+        : `${baseName} : ${numericValue}`;
+      
+      // 영양소 분류
+      if (mainNutrientOrder.includes(baseName)) {
+        mainNutrients.push({ 
+          name: baseName, 
+          formattedText,
+          numeric: numericValue,
+          order: mainNutrientOrder.indexOf(baseName) // 정렬을 위한 순서 값
+        });
+      } else {
+        otherNutrients.push({ 
+          name: baseName, 
+          formattedText,
+          numeric: numericValue
+        });
+      }
+    }
+  });
+  
+  // 주요 영양소는 정해진 순서로, 기타 영양소는 값 기준 내림차순 정렬
+  const sortedMainNutrients = mainNutrients.sort((a, b) => a.order - b.order);
+  const sortedOtherNutrients = otherNutrients.sort((a, b) => b.numeric - a.numeric);
+  
+  // 정렬된 영양소 목록 생성
+  let result = '';
+  
+  // 주요 영양소 출력
+  sortedMainNutrients.forEach(nutrient => {
+    result += `${nutrient.formattedText}\n`;
+  });
+  
+  // 구분을 위한 개행 (주요 영양소와 기타 영양소 사이)
+  if (sortedMainNutrients.length > 0 && sortedOtherNutrients.length > 0) {
+    result += '\n';
+  }
+  
+  // 기타 영양소 출력
+  sortedOtherNutrients.forEach(nutrient => {
+    result += `${nutrient.formattedText}\n`;
+  });
+  
+  return result.trim();
 }
 
 /**
