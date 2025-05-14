@@ -514,7 +514,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">{modalTitle}</h3>
+              <h3 className="text-lg font-medium text-center">{modalTitle}</h3>
               <button 
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-800"
@@ -524,7 +524,7 @@ export default function Home() {
                 </svg>
               </button>
             </div>
-            <div className="whitespace-pre-wrap break-words text-center">
+            <div className="whitespace-pre-wrap break-words text-left">
               {modalContent}
             </div>
           </div>

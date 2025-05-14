@@ -76,14 +76,24 @@ export async function POST(request: Request) {
       );
     }
     console.log('서비스 롤 키로 데이터 삽입 시도...');
+    
+    // 유니크 제약조건 문제 해결을 위해 upsert 방식 사용
+    // meal_id + status 조합으로 충돌 처리 (동일 meal에 대해 동일 status를 가진 경우 업데이트)
     const { data, error } = await supabaseAdmin
       .from('meal_images')
-      .insert({
-        meal_id,
-        image_url,
-        uploaded_by: user_id,
-        status: status || 'pending'
-      })
+      .upsert(
+        {
+          meal_id,
+          image_url,
+          uploaded_by: user_id,
+          status: status || 'pending',
+          updated_at: new Date().toISOString() // 업데이트 시간 추가
+        },
+        { 
+          onConflict: 'meal_id,status',  // 충돌 기준 설정
+          ignoreDuplicates: false         // 중복 무시하지 않고 업데이트
+        }
+      )
       .select()
       .single();
 
