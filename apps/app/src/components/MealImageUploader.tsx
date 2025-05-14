@@ -772,9 +772,12 @@ export default function MealImageUploader({
                     // 소스에 따른 표시 방식
                     if (uploadedImage.source === 'user_ai') {
                       // user_ai인 경우: AI 생성 텍스트 + 날짜 + 닉네임
-                      return uploadedImage.uploader_nickname ? 
-                        `AI로 생성한 이미지 ${dateStr} ${uploadedImage.uploader_nickname}` : 
-                        `AI로 생성한 이미지 ${dateStr}`;
+                      const uploaderNickname = uploadedImage.uploader_nickname && typeof uploadedImage.uploader_nickname === 'string' 
+                        ? uploadedImage.uploader_nickname 
+                        : uploadedImage.user?.nickname; // Fallback to user.nickname if direct uploader_nickname is not present
+                      return uploaderNickname
+                        ? `AI로 생성한 이미지 ${dateStr} ${uploaderNickname}`
+                        : `AI로 생성한 이미지 ${dateStr}`;
                     } else if (uploadedImage.source === 'auto_ai') {
                       // auto_ai인 경우: AI 생성 텍스트 + 날짜
                       return `AI로 생성한 이미지 ${dateStr}`;

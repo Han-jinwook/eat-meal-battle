@@ -28,9 +28,9 @@ export async function POST(request: Request) {
     console.log('요청 데이터:', { meal_id, image_url, user_id, status, source });
 
     // 필수 필드 검증
-    if (!meal_id || !image_url) {
+    if (!meal_id || !image_url || !source) {
       return NextResponse.json(
-        { error: '필수 정보가 누락되었습니다.' },
+        { error: '필수 정보가 누락되었습니다. (meal_id, image_url, source)' },
         { status: 400 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     
     // 유니크 제약조건 문제 해결을 위해 upsert 방식 사용
     // meal_id + status 조합으로 충돌 처리 (동일 meal에 대해 동일 status를 가진 경우 업데이트)
-    const { data, error } = await supabaseAdmin
+    const { data: insertedMealImage, error } = await supabaseAdmin
       .from('meal_images')
       .upsert(
         {
@@ -87,11 +87,12 @@ export async function POST(request: Request) {
           image_url,
           uploaded_by: user_id,
           status: status || 'pending',
-          updated_at: new Date().toISOString() // 업데이트 시간 추가
+          source,
+          updated_at: new Date().toISOString(),
         },
         { 
-          onConflict: 'meal_id,status',  // 충돌 기준 설정
-          ignoreDuplicates: false         // 중복 무시하지 않고 업데이트
+          onConflict: 'meal_id,status',  
+          ignoreDuplicates: false         
         }
       )
       .select()
@@ -104,10 +105,41 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    
-    console.log('이미지 정보 저장 성공:', data);
 
-    return NextResponse.json(data);
+    if (!insertedMealImage) {
+      console.error('Upsert 후 반환된 데이터가 없습니다.');
+      return NextResponse.json(
+        { error: '이미지 정보 저장 후 데이터를 받지 못했습니다.' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('이미지 정보 저장 성공:', insertedMealImage);
+
+    // 업로더 닉네임 조회
+    let uploaderNickname = null;
+    if (insertedMealImage.uploaded_by) {
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('nickname')
+        .eq('id', insertedMealImage.uploaded_by)
+        .single();
+
+      if (userError) {
+        console.error('업로더 닉네임 조회 오류:', userError);
+      } else if (userData) {
+        uploaderNickname = userData.nickname;
+      }
+    }
+
+    const responseData = {
+      ...insertedMealImage,
+      uploader_nickname: uploaderNickname,
+    };
+
+    console.log('최종 반환 데이터:', responseData);
+
+    return NextResponse.json(responseData);
   } catch (error: unknown) {
     // 에러 처리 개선 - 에러 타입 처리 및 로깅 강화
     const errorMessage = error instanceof Error 
