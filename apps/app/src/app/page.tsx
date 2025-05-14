@@ -124,7 +124,7 @@ export default function Home() {
           // 1. 알림 정보 조회
           const { data: notification, error: notificationError } = await supabase
             .from('notifications')
-            .select('type, related_id')
+            .select('related_type, related_id')
             .eq('id', notificationId)
             .maybeSingle();
 
