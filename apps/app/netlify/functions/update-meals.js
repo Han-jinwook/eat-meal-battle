@@ -189,55 +189,15 @@ function parseMealInfo(data) {
       console.log(`[원산지 디버깅] 원본 원산지 정보:`, originInfo);
       
       if (originInfo) {
-        // 문자열로 변환 및 HTML 태그 제거
-        let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
-        
         // 원본 정보 기록
-        console.log(`[원산지 디버깅] 문자열 변환 후:`, strOriginInfo);
+        const originalOriginInfo = originInfo;
         
-        // HTML 태그 제거
-        strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+        // 정규화된 원산지 정보 생성
+        const formattedOriginInfo = formatOriginInfo(originInfo);
+        console.log(`[원산지 디버깅] 정규화된 원산지 정보:`, formattedOriginInfo);
         
-        // 불필요한 텍스트 제거 (비고, 가공품 등)
-        const lines = strOriginInfo
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => {
-            return line && 
-                   !line.startsWith('비고') &&
-                   line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
-                   !line.includes('수산가공품') && // 수산가공품 제외
-                   !line.includes('식육가공품'); // 식육가공품 제외
-          });
-        
-        // 원산지 정보 디버깅
-        console.log(`[원산지 디버깅] 필터링 후 원산지 줄 개수:`, lines.length);
-        console.log(`[원산지 디버깅] 필터링 후 원산지 정보:`, lines);
-        
-        // skipPatterns에 일치하는 원산지 정보는 건너뛰
-        const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
-        
-        // 정규화된 원산지 정보를 저장
-        const processedLines = lines
-          .filter(line => !skipPatterns.some(pattern => pattern.test(line)));
-        
-        // 추가 디버깅 로그  
-        console.log(`[원산지 디버깅] 최종 처리된 원산지 정보:`, processedLines);
-          
-        // 처리된 원산지 정보가 있는 경우에만 사용, 아니면 원본 ORPLC_INFO 유지
-        if (processedLines.length > 0) {
-          originInfo = processedLines.join('\n');
-          console.log(`[원산지 디버깅] 처리된 원산지 정보 사용:`, originInfo);
-        } else if (strOriginInfo.trim()) {
-          originInfo = strOriginInfo.trim();
-          console.log(`[원산지 디버깅] 원본 원산지 정보 사용:`, originInfo);
-        } else {
-          originInfo = '정보 없음';
-          console.log(`[원산지 디버깅] 기본 문구 사용`);
-        }
-      } else {
-        originInfo = '정보 없음';
-        console.log(`[원산지 디버깅] 원본 정보 없음`);
+        // 최종 원산지 정보 저장
+        originInfo = formattedOriginInfo;
       }
       
       meals.push({
@@ -352,11 +312,46 @@ function formatNutritionInfo(ntrInfo) {
 }
 
 /**
- * 급식 정보 가져오기 함수
- * @param schoolCode 학교 코드
- * @param officeCode 교육청 코드
- * @returns 급식 정보 객체
+ * 원산지 정보를 서버 측에서 정규화하는 함수
+ * @param {string|object} originInfo - NEIS API에서 받은 원본 원산지 정보
+ * @returns {string} - 정규화된 원산지 정보 (식재료 : 원산지 형식)
  */
+function formatOriginInfo(originInfo) {
+  if (!originInfo) return null;
+  
+  // 문자열로 변환 및 HTML 태그 제거
+  let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+  
+  // HTML 태그 제거
+  strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+  
+  // 불필요한 텍스트 제거 (비고, 가공품 등)
+  const lines = strOriginInfo
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => {
+      return line && 
+             !line.startsWith('비고') &&
+             line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
+             !line.includes('수산가공품') && // 수산가공품 제외
+             !line.includes('식육가공품'); // 식육가공품 제외
+    });
+  
+  // 정규화된 원산지 정보 생성
+  const normalizedLines = lines.map(line => {
+    // '쇠고기(종류) : 국내산(육우)' -> '쇠고기(종류) : 국내산(육우)'
+    // 이미 포맷이 잘 되어 있으므로 그대로 사용
+    return line.trim();
+  });
+  
+  // 정규화된 원산지 정보를 줄바꿈으로 구분하여 반환
+  return normalizedLines.join('\n');
+}
+
+// 급식 정보 가져오기 함수
+// @param schoolCode 학교 코드
+// @param officeCode 교육청 코드
+// @returns 급식 정보 객체
 async function fetchMealData(schoolCode, officeCode) {
   try {
     // 한국 시간 기준 오늘 날짜 (YYYYMMDD 형식)
