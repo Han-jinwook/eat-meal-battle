@@ -156,6 +156,34 @@ function parseMealInfo(data) {
         }
       }
       
+      // 원산지 정보 정규화
+      let originInfo = meal.ORPLC_INFO || null;
+      if (originInfo) {
+        // 문자열로 변환 및 HTML 태그 제거
+        let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+        strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+        
+        // 불필요한 텍스트 제거 (비고, 가공품 등)
+        const lines = strOriginInfo
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => {
+            return line && 
+                   !line.startsWith('비고') &&
+                   line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
+                   !line.includes('수산가공품') && // 수산가공품 제외
+                   !line.includes('식육가공품'); // 식육가공품 제외
+          });
+        
+        // skipPatterns에 일치하는 원산지 정보는 건너뛰
+        const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
+        
+        // 정규화된 원산지 정보를 저장
+        originInfo = lines
+          .filter(line => !skipPatterns.some(pattern => pattern.test(line)))
+          .join('\n');
+      }
+
       // 각 meal 객체에 고유 ID 생성 - UUID 형식
       meals.push({
         id: uuidv4(), // 고유 ID 생성
@@ -165,7 +193,7 @@ function parseMealInfo(data) {
         meal_type: mealType,
         menu_items: menuItems,
         kcal: meal.CAL_INFO || '0 kcal',
-        origin_info: meal.ORPLC_INFO || [],
+        origin_info: originInfo,
         ntr_info: ntrInfo
       });
     }

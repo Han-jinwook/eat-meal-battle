@@ -138,17 +138,86 @@ function parseMealInfo(data) {
       let ntrInfo = {};
       if (meal.NTR_INFO) {
         try {
+          // 문자열로 변환 및 HTML 태그 제거
+          let strNtrInfo = typeof meal.NTR_INFO === 'string' ? meal.NTR_INFO : JSON.stringify(meal.NTR_INFO);
+          strNtrInfo = strNtrInfo.replace(/<br\s*\/?>/gi, '\n');
+          
           // 사용자 화면에 표시할 형태로 저장
-          const ntrPairs = meal.NTR_INFO.split('<br/>');
+          const ntrPairs = strNtrInfo.split('\n');
           ntrPairs.forEach(pair => {
+            if (!pair.includes(' : ')) return; // ' : '가 없는 행은 무시
+            
             const [key, value] = pair.split(' : ');
             if (key && value) {
-              ntrInfo[key.trim()] = value.trim();
+              const trimmedKey = key.trim();
+              // 필요한 키만 처리 (영양소, 탈럽류, 지방 등)
+              if (trimmedKey && !trimmedKey.includes('비고') && !trimmedKey.includes('여부')) {
+                ntrInfo[trimmedKey] = value.trim();
+              }
             }
           });
         } catch (e) {
           console.log('영양정보 파싱 오류:', e);
+          // 오류 발생 시 원본 데이터 보존
+          ntrInfo = meal.NTR_INFO; 
         }
+      }
+      
+      // 원산지 정보 정규화
+      let originInfo = meal.ORPLC_INFO || null;
+      
+      console.log(`[원산지 디버깅] 원본 원산지 정보:`, originInfo);
+      
+      if (originInfo) {
+        // 문자열로 변환 및 HTML 태그 제거
+        let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
+        
+        // 원본 정보 기록
+        console.log(`[원산지 디버깅] 문자열 변환 후:`, strOriginInfo);
+        
+        // HTML 태그 제거
+        strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
+        
+        // 불필요한 텍스트 제거 (비고, 가공품 등)
+        const lines = strOriginInfo
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => {
+            return line && 
+                   !line.startsWith('비고') &&
+                   line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
+                   !line.includes('수산가공품') && // 수산가공품 제외
+                   !line.includes('식육가공품'); // 식육가공품 제외
+          });
+        
+        // 원산지 정보 디버깅
+        console.log(`[원산지 디버깅] 필터링 후 원산지 줄 개수:`, lines.length);
+        console.log(`[원산지 디버깅] 필터링 후 원산지 정보:`, lines);
+        
+        // skipPatterns에 일치하는 원산지 정보는 건너뛰
+        const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
+        
+        // 정규화된 원산지 정보를 저장
+        const processedLines = lines
+          .filter(line => !skipPatterns.some(pattern => pattern.test(line)));
+        
+        // 추가 디버깅 로그  
+        console.log(`[원산지 디버깅] 최종 처리된 원산지 정보:`, processedLines);
+          
+        // 처리된 원산지 정보가 있는 경우에만 사용, 아니면 원본 ORPLC_INFO 유지
+        if (processedLines.length > 0) {
+          originInfo = processedLines.join('\n');
+          console.log(`[원산지 디버깅] 처리된 원산지 정보 사용:`, originInfo);
+        } else if (strOriginInfo.trim()) {
+          originInfo = strOriginInfo.trim();
+          console.log(`[원산지 디버깅] 원본 원산지 정보 사용:`, originInfo);
+        } else {
+          originInfo = '정보 없음';
+          console.log(`[원산지 디버깅] 기본 문구 사용`);
+        }
+      } else {
+        originInfo = '정보 없음';
+        console.log(`[원산지 디버깅] 원본 정보 없음`);
       }
       
       meals.push({
@@ -157,7 +226,7 @@ function parseMealInfo(data) {
         meal_type: mealType,
         menu_items: menuItems,
         kcal: meal.CAL_INFO || '0 kcal',
-        origin_info: meal.ORPLC_INFO || '정보 없음',
+        origin_info: originInfo,
         ntr_info: ntrInfo
       });
     }
@@ -217,13 +286,55 @@ async function fetchMealData(schoolCode, officeCode) {
     
     if (meals.length === 0) {
       // 데이터가 없는 경우 기본 값 반환
+      console.log(`[디버깅] fetchMealData: 메뉴 정보 없음`);
+      
+      // 기존 데이터 확인 후 없을 경우에만 대체 값 사용
+      try {
+        // 날짜 한 번 더 확인
+        if (today) {
+          console.log(`[디버깅] 데이터 없음 - 대체 값 사용 전 기존 데이터 확인`);
+        }
+        
+        // 기존 DB에 저장된 정보가 있는지 확인
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+        
+        const { data: existingData } = await supabase
+          .from('meal_menus')
+          .select('origin_info, ntr_info')
+          .eq('school_code', schoolCode)
+          .eq('meal_date', today)
+          .eq('meal_type', '중식')
+          .maybeSingle(); // 결과가 없어도 오류 발생 안함
+        
+        if (existingData) {
+          console.log(`[디버깅] 기존 데이터 존재:`, existingData);
+          
+          return {
+            school_code: schoolCode,
+            meal_date: today,
+            meal_type: 'lunch',
+            menu_items: ['급식 정보가 없습니다'],
+            kcal: '0kcal',
+            origin_info: existingData.origin_info || '정보 없음',
+            ntr_info: existingData.ntr_info || {}
+          };
+        }
+      } catch (e) {
+        console.error(`[디버깅] 기존 데이터 확인 오류:`, e);
+        // 오류 발생 시 기본값 사용
+      }
+      
+      // 기존 데이터 없을 경우 기본 값 사용
       return {
         school_code: schoolCode,
         meal_date: today,
         meal_type: 'lunch',
         menu_items: ['급식 정보가 없습니다'],
         kcal: '0kcal',
-        origin_info: '정보 없음',
+        origin_info: '정보 없음', // 기본값 사용
         ntr_info: {}
       };
     }
@@ -233,15 +344,16 @@ async function fetchMealData(schoolCode, officeCode) {
   } catch (error) {
     console.error('급식 정보 조회 실패:', error);
     
-    // 오류 발생 시 기본 데이터 반환
+    // 오류 발생 시 기본 데이터 반환 (실제 데이터 있을 경우 그 데이터 유지)
     return {
       school_code: schoolCode,
       meal_date: getTodayDate(),
       meal_type: 'lunch',
       menu_items: ['급식 정보를 가져오는 중 오류가 발생했습니다'],
       kcal: '0kcal',
-      origin_info: '정보 없음',
-      ntr_info: {}
+      // 가능한 경우 이전에 저장된 원산지 정보를 가져와서 사용, 없는 경우만 '정보 없음' 사용
+      origin_info: null, // 실제 호출 시점에 결정되도록 null로 설정
+      ntr_info: null // 실제 호출 시점에 결정되도록 null로 설정
     };
   }
 }
@@ -327,6 +439,15 @@ exports.handler = async function(event, context) {
             ))) {
           console.log(`[${school.school_code}] 학교 급식 정보 없음`);
           
+          // 기존 데이터가 있는지 먼저 확인 (원산지 및 영양소 정보)
+          const { data: existingData } = await supabase
+            .from('meal_menus')
+            .select('origin_info, ntr_info')
+            .eq('school_code', school.school_code)
+            .eq('meal_date', getTodayDate())
+            .eq('meal_type', '중식')
+            .single();
+            
           // 급식 없음 정보도 DB에 명시적으로 저장
           const emptyMealData = {
             school_code: school.school_code,
@@ -334,8 +455,11 @@ exports.handler = async function(event, context) {
             meal_type: '중식',  // 한글로 변경 ('lunch' -> '중식')
             menu_items: ['급식 정보가 없습니다'],
             kcal: '0 kcal',  // 표기법 통일
-            ntr_info: {}, 
-            origin_info: '정보 없음'
+            // 기존에 저장된 영양소 정보가 있으면 그대로 유지
+            ntr_info: (existingData && existingData.ntr_info) || {}, 
+            // 기존에 저장된 원산지 정보가 있으면 그대로 유지
+            // 원본 원산지 정보의 항상성을 유지하기 위해 기록
+            origin_info: (existingData && existingData.origin_info) || '정보 없음'
           };
           
           // DB에 급식 없음 상태 저장 - upsert 사용(테이블에 unique 제약조건 있음)
