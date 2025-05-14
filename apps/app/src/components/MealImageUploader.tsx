@@ -751,11 +751,42 @@ export default function MealImageUploader({
             <div className="p-3">
               <div className="flex justify-end items-center mb-2">
                 <span className="text-xs text-gray-500">
-                  {['user_ai', 'auto_ai'].includes(uploadedImage.source) ? "AI로 생성한 이미지 " : ""}
-                  {new Date(uploadedImage.created_at).toLocaleString('ko-KR').replace(/(.*?)\s(\S+:\S+):\S+/, '$1 ( $2 )')}{' '}
-                  {uploadedImage.uploader_nickname && ['user', 'user_ai'].includes(uploadedImage.source) ? 
-                    uploadedImage.uploader_nickname : 
-                    ""}
+                  {(() => {
+                    // 날짜 형식 변환: 2025.5.14 오후 4:38:xx => 25.5.14 (PM 4:38)
+                    const date = new Date(uploadedImage.created_at);
+                    
+                    // 년월일 추출
+                    const year = date.getFullYear().toString().substring(2); // 2자리 년도
+                    const month = date.getMonth() + 1; // 월(0부터 시작하므로 +1)
+                    const day = date.getDate();
+                    
+                    // 오전/오후 및 시간 추출
+                    const hours = date.getHours();
+                    const minutes = date.getMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const formattedHours = hours % 12 || 12; // 12시간제
+                    
+                    // 최종 포맷팅
+                    const dateStr = `${year}.${month}.${day} (${ampm} ${formattedHours}:${minutes < 10 ? '0' + minutes : minutes})`;
+                    
+                    // 소스에 따른 표시 방식
+                    if (uploadedImage.source === 'user_ai') {
+                      // user_ai인 경우: AI 생성 텍스트 + 날짜 + 닉네임
+                      return uploadedImage.uploader_nickname ? 
+                        `AI로 생성한 이미지 ${dateStr} ${uploadedImage.uploader_nickname}` : 
+                        `AI로 생성한 이미지 ${dateStr}`;
+                    } else if (uploadedImage.source === 'auto_ai') {
+                      // auto_ai인 경우: AI 생성 텍스트 + 날짜
+                      return `AI로 생성한 이미지 ${dateStr}`;
+                    } else if (uploadedImage.source === 'user' && uploadedImage.uploader_nickname) {
+                      // user이고 닉네임이 있는 경우: 날짜 + 닉네임
+                      return `${dateStr} ${uploadedImage.uploader_nickname}`;
+                    } else {
+                      // 그 외: 날짜만 표시
+                      return dateStr;
+                    }
+                  })()
+                  }
                 </span>
               </div>
               
