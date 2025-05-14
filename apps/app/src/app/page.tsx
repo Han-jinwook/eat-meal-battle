@@ -311,18 +311,11 @@ export default function Home() {
         return '영양 정보가 없습니다.';
       }
       
-      // 결과 구성 (이모티콘 없이)
-      let result = '';
+      // 하나의 이모티콘 사용
+      const nutrientIcon = '💠'; // 파란색 다이아몬드(💠)
       
-      // 각 줄 처리하면서 '지방' 항목 다음에 한 줄 여백 추가
-      for (let i = 0; i < items.length; i++) {
-        result += items[i] + '\n';
-        
-        // '지방' 항목 다음에 한 줄 여백 추가
-        if (items[i].includes('지방')) {
-          result += '\n';
-        }
-      }
+      // 각 줄에 이모티콘 추가
+      let result = items.map(item => `${nutrientIcon} ${item}`).join('\n');
       
       return result.trim();
     } catch (error) {
@@ -331,7 +324,7 @@ export default function Home() {
     }
   };
 
-  // 원산지 정보 포맷팅 - 서버에서 정규화된 데이터 사용
+  // 원산지 정보 포맷팅 - 단순화 버전 (서버에서 이미 정렬과 처리가 완료된 정보를 표시)
   const formatOriginInfo = (originInfo: any) => {
     // originInfo가 없거나 빈 배열이거나 빈 문자열일 경우 처리
     if (!originInfo || (Array.isArray(originInfo) && originInfo.length === 0) || originInfo === '[]') {
@@ -340,14 +333,10 @@ export default function Home() {
 
     // 문자열로 변환 및 <br>, <br/> 태그를 줄바꿈으로 변환
     let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
-    let clean = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
-
-    // 서버에서 받은 정보 그대로 표시 (줄 단위로 정리)
-    const formattedLines = clean.split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
+    let formattedInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
     
-    return formattedLines.length > 0 ? formattedLines.join('\n') : '원산지 정보가 없습니다.';
+    // 이미 서버에서 정렬과 가공이 완료되었으므로 그대로 반환
+    return formattedInfo;
   };
 
   return (

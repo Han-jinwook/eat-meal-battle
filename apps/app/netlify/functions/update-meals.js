@@ -317,16 +317,17 @@ function formatNutritionInfo(ntrInfo) {
  * @returns {string} - 정규화된 원산지 정보 (식재료 : 원산지 형식)
  */
 function formatOriginInfo(originInfo) {
-  if (!originInfo) return null;
-  
-  // 문자열로 변환 및 HTML 태그 제거
+  // originInfo가 없거나 빈 배열이거나 빈 문자열일 경우 처리
+  if (!originInfo || (Array.isArray(originInfo) && originInfo.length === 0) || originInfo === '[]') {
+    return null;
+  }
+
+  // 문자열로 변환 및 <br>, <br/> 태그를 줄바꿈으로 변환
   let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
-  
-  // HTML 태그 제거
-  strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
-  
-  // 불필요한 텍스트 제거 (비고, 가공품 등)
-  const lines = strOriginInfo
+  let clean = strOriginInfo.replace(/\<br\s*\/?>\>/gi, '\n');
+
+  // 각 줄별로 정리, "비고" 등 제외
+  const lines = clean
     .split('\n')
     .map(line => line.trim())
     .filter(line => {
@@ -336,16 +337,161 @@ function formatOriginInfo(originInfo) {
              !line.includes('수산가공품') && // 수산가공품 제외
              !line.includes('식육가공품'); // 식육가공품 제외
     });
+    
+  // 한우 처리를 위한 한우 관련 줄 찾기
+  const hanwooLine = clean
+    .split('\n')
+    .find(line => line.includes('한우') || line.includes('쇠고기(종류)') || (line.includes('쇠고기') && line.includes('국내산')));
   
-  // 정규화된 원산지 정보 생성
-  const normalizedLines = lines.map(line => {
-    // '쇠고기(종류) : 국내산(육우)' -> '쇠고기(종류) : 국내산(육우)'
-    // 이미 포맷이 잘 되어 있으므로 그대로 사용
-    return line.trim();
+  // 원산지별 재료 분류
+  const originGroups = {};
+  
+  // 한우가 있는 경우 국내산에 쇠고기 추가
+  if (hanwooLine) {
+    if (!originGroups['국내산']) {
+      originGroups['국내산'] = new Set();
+    }
+    originGroups['국내산'].add('쇠고기');
+  }
+  
+  // 한우 관련 줄 제외
+  const filteredLines = lines.filter(line => 
+    !line.includes('한우') && 
+    !line.includes('쇠고기(종류)') && 
+    !(line.includes('쇠고기') && line.includes('국내산(한우)'))
+  );
+  
+  // skipPatterns에 일치하는 원산지 정보는 건너뛸
+  const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
+
+  filteredLines.forEach(line => {
+    // 특수케이스 제외
+    if (skipPatterns.some(pattern => pattern.test(line))) {
+      return;
+    }
+
+    // 재료명과 원산지 분리
+    const parts = line.split(' : ');
+    if (parts.length === 2) {
+      let ingredient = parts[0];
+      let origin = parts[1];
+      
+      // 괄호와 그 안의 내용 추출 (예: 수입산(중국외) -> 중국)
+      const bracketMatch = origin.match(/\(([^)]*)\)/);
+      
+      // 원산지가 '국내산' 또는 '국산'인 경우 '국내산'으로 통일
+      if (origin === '국내산' || origin === '국산') {
+        if (!originGroups['국내산']) {
+          originGroups['국내산'] = new Set();
+        }
+        originGroups['국내산'].add(ingredient);
+        return;
+      } 
+
+      // 괄호 안에 나라 이름이 있는 경우 그것을 사용
+      if (bracketMatch && bracketMatch[1]) {
+        let countryText = bracketMatch[1];
+        
+        // '외', '등' 등의 불필요한 단어 제거
+        countryText = countryText.replace(/\s*\uc678$/, '').replace(/\s*\ub4f1$/, '');
+        
+        // 콤마로 구분된 나라들이 있는 경우
+        if (countryText.includes(',')) {
+          // 괄호 안의 나라 이름들을 각각 처리
+          const countries = countryText.split(',').map(c => c.trim().replace(/\s*\ub4f1$/, '').replace(/\s*\uc678$/, ''));
+        
+          // 각 나라마다 재료 추가
+          countries.forEach(country => {
+            if (country && country !== '등' && country !== '외') {
+              if (!originGroups[country]) {
+                originGroups[country] = new Set();
+              }
+              originGroups[country].add(ingredient);
+            }
+          });
+          return; // 각 나라로 처리했으니 더 이상 처리 안함
+        } else {
+          // 단일 나라인 경우
+          if (countryText && countryText !== '등' && countryText !== '외') {
+            if (!originGroups[countryText]) {
+              originGroups[countryText] = new Set();
+            }
+            originGroups[countryText].add(ingredient);
+            return; // 처리 완료
+          }
+        }
+      }
+      
+      // 괄호가 없거나 괄호 안에 유의미한 값이 없는 경우
+      // 원산지 처리
+      origin = origin.replace(/\([^)]*\)/g, '').trim();
+      
+      // '수입산'이 있는 경우 건너뛸
+      if (origin === '수입산') {
+        return;
+      }
+      
+      // '외국산'이 있는 경우 건너뛸
+      if (origin === '외국산') {
+        return;
+      }
+      
+      // '러시아', '베트남' 등 나라 이름은 그대로 사용
+      
+      // 가공품, 식육가공품 등 불필요한 단어 제거
+      ingredient = ingredient
+        .replace(/\s*\uac00\uacf5\ud488$/g, '')
+        .replace(/\s*\uc2dd\uc721\uac00\uacf5\ud488$/g, '')
+        .replace(/\uc2dd\uc721/g, '')
+        .replace(/\uc218\uc0b0/g, '')
+        // "고기" 중복 제거 (쇠고기 → 쇠, 돼지고기 → 돼지)
+        .replace(/\uace0\uae30$/g, '')
+        .trim();
+      
+      // 쇠고기(종류) 제거
+      if (ingredient.includes('(종류)')) {
+        ingredient = ingredient.replace(/\(\uc885\ub958\)/g, '').trim();
+        
+        // 쇠고기는 국내산으로 처리
+        if (ingredient === '쇠고기' || ingredient.includes('한우')) {
+          if (!originGroups['국내산']) {
+            originGroups['국내산'] = new Set();
+          }
+          originGroups['국내산'].add('쇠고기');
+          return;
+        }
+      }
+      
+      // 원산지별 중복없는 Set 초기화
+      if (!originGroups[origin]) {
+        originGroups[origin] = new Set();
+      }
+      
+      // 중복 없이 저장 (세트 사용)
+      originGroups[origin].add(ingredient);
+    }
   });
   
-  // 정규화된 원산지 정보를 줄바꿈으로 구분하여 반환
-  return normalizedLines.join('\n');
+  // 결과 포맷팅
+  let result = '';
+  
+  // 국내산을 가장 먼저 표시하고, 나머지는 알파벳 순서로 정렬
+  // 국내산 먼저 출력
+  if (originGroups['국내산'] && originGroups['국내산'].size > 0) {
+    result += `국내산 : ${Array.from(originGroups['국내산']).join(', ')}\n`;
+  }
+  
+  // 나머지 원산지는 알파벳 순서로 정렬하여 출력
+  Object.keys(originGroups)
+    .filter(origin => origin !== '국내산') // 국내산 제외
+    .sort() // 알파벳 순서로 정렬
+    .forEach(origin => {
+      if (originGroups[origin].size > 0) {
+        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
+      }
+    });
+  
+  return result.trim() || normalizedLines.join('\n');
 }
 
 // 급식 정보 가져오기 함수
