@@ -329,20 +329,44 @@ export default function Home() {
         // 예: 탄수화물(g) : 73.6
         const match = item.match(/(.+?)\s*[:\uff1a]\s*(.+)/);
         if (match) {
-          let name = match[1].trim();
-          const value = match[2].trim();
+          let nutrientName = match[1].trim();
+          let value = match[2].trim();
           
-          // (g), (mg) 같은 단위 제거
-          name = name.replace(/\s*\([^)]*\)\s*/, '');
+          // 영양소 이름과 단위 분리
+          let baseName = nutrientName;
+          let unit = '';
+          
+          // (g) 같은 단위가 있는지 추출
+          const unitMatch = nutrientName.match(/\(([^)]+)\)/);
+          if (unitMatch) {
+            unit = unitMatch[1];
+            // 영양소 이름에서 단위 제거
+            baseName = nutrientName.replace(/\s*\([^)]*\)\s*/, '');
+          }
           
           // 숫자 값 추출 - 정렬을 위해 필요
           const numericValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
           
+          // '영양소명 : 수치(단위)' 형식으로 변경
+          const formattedText = unit 
+            ? `${baseName} : ${numericValue}(${unit})` 
+            : `${baseName} : ${numericValue}`;
+          
           // 영양소 분류
-          if (mainNutrientOrder.includes(name)) {
-            mainNutrients.push({ name, value, numeric: numericValue });
+          if (mainNutrientOrder.includes(baseName)) {
+            mainNutrients.push({ 
+              name: baseName, 
+              value, 
+              numeric: numericValue,
+              displayText: formattedText
+            });
           } else {
-            otherNutrients.push({ name, value, numeric: numericValue });
+            otherNutrients.push({ 
+              name: baseName, 
+              value, 
+              numeric: numericValue,
+              displayText: formattedText
+            });
           }
         }
       });
@@ -364,8 +388,9 @@ export default function Home() {
       if (sortedMainNutrients.length > 0) {
         hasAnyNutrients = true;
         
-        sortedMainNutrients.forEach(({ name, value }) => {
-          result += `${nutrientIcon} ${name}: ${value}\n`;
+        sortedMainNutrients.forEach((nutrient) => {
+          // '영양소명 : 수치(단위)' 형식 사용
+          result += `${nutrientIcon} ${nutrient.displayText}\n`;
         });
         
         // 구분을 위한 개행
@@ -378,8 +403,9 @@ export default function Home() {
       if (sortedOtherNutrients.length > 0) {
         hasAnyNutrients = true;
         
-        sortedOtherNutrients.forEach(({ name, value }) => {
-          result += `${nutrientIcon} ${name}: ${value}\n`;
+        sortedOtherNutrients.forEach((nutrient) => {
+          // 원본 데이터 형식 그대로 사용
+          result += `${nutrientIcon} ${nutrient.displayText}\n`;
         });
       }
       
@@ -589,14 +615,14 @@ export default function Home() {
               <h3 className="text-lg font-medium">{modalTitle}</h3>
               <button 
                 onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-800"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="text-gray-600 whitespace-pre-line">
+            <div className="whitespace-pre-wrap break-words text-center">
               {modalContent}
             </div>
           </div>
