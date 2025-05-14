@@ -296,28 +296,24 @@ export default function Home() {
     openModal('영양 정보', formatNutritionInfo(meal));
   };
 
-  // 영양정보 포맷팅 함수
+  // 영양정보 포맷팅 함수 - 개선된 형태
   const formatNutritionInfo = (meal: MealInfo): string => {
-    // 칼로리를 맨 위에 출력
+    // 영양소 결과 문자열 초기화 (칼로리는 외부에서 표시하므로 생략)
     let result = '';
-    if (meal.kcal) {
-      result += `🔥 열량: ${meal.kcal}kcal\n\n`;
-    }
     
-    // 영양소 아이콘 매핑
-    const nutrientIcons: Record<string, string> = {
-      '탄수화물': '💎',
-      '단백질': '🍗',
-      '지방': '🧈',
-      '비타민A': '🍉',
-      '비타민C': '🍊',
-      '칼싘': '🥛',
-      '철분': '💪'
-    };
+    // 영양소 대표 아이콘 - 하나만 사용
+    const nutrientIcon = '💠'; // 미네랄(다이아몬드) 이모티콘
+    
+    // 대표 영양소 순서 정의 (고정 순서)
+    const mainNutrientOrder = [
+      '탄수화물',
+      '단백질',
+      '지방'
+    ];
     
     // ntr_info가 있는지 확인
     if (!meal.ntr_info) {
-      return result + '상세 영양 정보가 없습니다.';
+      return '상세 영양 정보가 없습니다.';
     }
     
     try {
@@ -325,10 +321,8 @@ export default function Home() {
       const items = meal.ntr_info.split(/<br\s*\/?>/i);
       
       // 영양소 그룹 분류
-      const groups: Record<string, Array<{name: string, value: string}>> = {
-        '대표 영양소': [], // 탄수화물, 단백질, 지방
-        '기타 영양소': []  // 나머지 영양소
-      };
+      const mainNutrients: Array<{name: string, value: string, numeric: number}> = [];
+      const otherNutrients: Array<{name: string, value: string, numeric: number}> = [];
       
       // 파싱 및 분류
       items.forEach(item => {
@@ -341,11 +335,14 @@ export default function Home() {
           // (g), (mg) 같은 단위 제거
           name = name.replace(/\s*\([^)]*\)\s*/, '');
           
+          // 숫자 값 추출 - 정렬을 위해 필요
+          const numericValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+          
           // 영양소 분류
-          if (['탄수화물', '단백질', '지방'].includes(name)) {
-            groups['대표 영양소'].push({ name, value });
+          if (mainNutrientOrder.includes(name)) {
+            mainNutrients.push({ name, value, numeric: numericValue });
           } else {
-            groups['기타 영양소'].push({ name, value });
+            otherNutrients.push({ name, value, numeric: numericValue });
           }
         }
       });
@@ -353,24 +350,36 @@ export default function Home() {
       // 결과 포맷팅
       let hasAnyNutrients = false;
       
-      // 대표 영양소 출력
-      if (groups['대표 영양소'].length > 0) {
+      // 대표 영양소 정렬 (고정 순서대로: 탄수화물, 단백질, 지방)
+      const sortedMainNutrients = [...mainNutrients].sort((a, b) => {
+        const indexA = mainNutrientOrder.indexOf(a.name);
+        const indexB = mainNutrientOrder.indexOf(b.name);
+        return indexA - indexB;
+      });
+      
+      // 기타 영양소는 값이 많은 순서로 정렬 (많은 순서에서 적은 순서로)
+      const sortedOtherNutrients = [...otherNutrients].sort((a, b) => b.numeric - a.numeric);
+      
+      // 대표 영양소 출력 (제목 없이, 하나의 아이콘만 사용)
+      if (sortedMainNutrients.length > 0) {
         hasAnyNutrients = true;
-        result += `🍱 대표 영양소\n`;
-        groups['대표 영양소'].forEach(({ name, value }) => {
-          const emoji = nutrientIcons[name] || '•';
-          result += `${emoji} ${name}: ${value}\n`;
+        
+        sortedMainNutrients.forEach(({ name, value }) => {
+          result += `${nutrientIcon} ${name}: ${value}\n`;
         });
-        result += '\n';
+        
+        // 구분을 위한 개행
+        if (sortedOtherNutrients.length > 0) {
+          result += '\n';
+        }
       }
       
-      // 기타 영양소 출력
-      if (groups['기타 영양소'].length > 0) {
+      // 기타 영양소 출력 (제목 없이, 동일한 아이콘 사용)
+      if (sortedOtherNutrients.length > 0) {
         hasAnyNutrients = true;
-        result += `✨ 기타 영양소\n`;
-        groups['기타 영양소'].forEach(({ name, value }) => {
-          const emoji = nutrientIcons[name] || '•';
-          result += `${emoji} ${name}: ${value}\n`;
+        
+        sortedOtherNutrients.forEach(({ name, value }) => {
+          result += `${nutrientIcon} ${name}: ${value}\n`;
         });
       }
       
