@@ -311,8 +311,19 @@ export default function Home() {
         return '영양 정보가 없습니다.';
       }
       
+      // 지방 항목 아래에 한 줄 띄우기 추가
+      const modifiedItems = [];
+      for (let i = 0; i < items.length; i++) {
+        modifiedItems.push(items[i]);
+        
+        // 지방 항목 다음에 한 줄 띄우기
+        if (items[i].includes('지방') && i < items.length - 1) {
+          modifiedItems.push(''); // 빈 줄 추가
+        }
+      }
+      
       // 각 줄 그대로 표시 (이모티콘 없이)
-      let result = items.join('\n');
+      let result = modifiedItems.join('\n');
       
       return result.trim();
     } catch (error) {
