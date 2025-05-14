@@ -113,7 +113,25 @@ function parseMealInfo(data) {
       // 식단 파싱 (구분자 <br/>)
       const menuText = meal.DDISH_NM;
       const menuItems = menuText 
-        ? menuText.split('<br/>').map(item => item.replace(/\([0-9\.]+\)/g, '').trim()).filter(item => item)
+        ? menuText.split('<br/>').map(item => {
+            // 메뉴 항목 처리 (3단계로 진행)
+            return item
+              // 1. 알레르기 정보 등 괄호 내용 제거
+              .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
+              // 2. 각 항목을 슬래시(/)로 분리하고 개별 처리 후 다시 합치기
+              .split('/')
+              .map(part => {
+                return part
+                  // 3. 각 부분에서 끝에 붙은 u, -u, .u 등 제거 (다양한 패턴 처리)
+                  .trim()
+                  .replace(/[\-\.]?u$/gi, '') // -u, .u, u 등 제거
+                  .replace(/[\-~]?\d*$/, '') // 끝에 붙은 -1, -2 등의 숫자 제거
+                  .trim();
+              })
+              .join('/')
+              .trim();
+          })
+          .filter(item => item && item.length > 0) // 빈 항목 제거
         : [];
       
       // 급식 종류 파싱 (1: 조식, 2: 중식, 3: 석식)

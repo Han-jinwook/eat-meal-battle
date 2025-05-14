@@ -84,18 +84,27 @@ function parseMealInfo(apiResponse: any) {
         let menuItems = [];
         if (meal.DDISH_NM) {
           menuItems = meal.DDISH_NM
-            .replace(/<br\s*\/?\>/gi, '\n')
+            .replace(/<br\s*\/?>\>/gi, '\n')
             .split('\n')
-            .map(item =>
-              item
+            .map(item => {
+              // 메뉴 항목 처리 (3단계로 진행)
+              return item
+                // 1. 알레르기 정보 등 괄호 내용 제거
                 .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
+                // 2. 각 항목을 슬래시(/)로 분리하고 개별 처리 후 다시 합치기
                 .split('/')
-                .map(part => part.trim().replace(/[\-~]?u$/gi, ''))
+                .map(part => {
+                  return part
+                    // 3. 각 부분에서 끝에 붙은 u, -u, .u 등 제거 (다양한 패턴 처리)
+                    .trim()
+                    .replace(/[\-\.]?u$/gi, '') // -u, .u, u 등 제거
+                    .replace(/[\-~]?\d*$/, '') // 끝에 붙은 -1, -2 등의 숫자 제거
+                    .trim();
+                })
                 .join('/')
-                .trim()
-            )
-            .filter(Boolean);
-          menuItems.push('TEST_정상화'); // 테스트 문자열 추가
+                .trim();
+            })
+            .filter(item => item && item.length > 0); // 빈 항목 제거
         }
 
         // 날짜 형식 통일 (YYYYMMDD -> YYYY-MM-DD)
@@ -191,7 +200,18 @@ export async function GET(request: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: () => cookieStore
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // Next.js cookies() API는 객체를 반환하고 메서드는 더 이상 Promise를 반환하지 않음
+          cookieStore.set(name, value, options);
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set(name, "", { ...options, maxAge: 0 });
+        }
+      }
     }
   );
 
@@ -485,14 +505,28 @@ export async function GET(request: Request) {
 /**
  * 모든 등록된 학교의 급식 정보를 가져와 DB에 저장 (POST)
  * 스케줄러에서 호출하는 용도
+ * 
+ * @param {Request} request - HTTP 요청 객체
+ * @returns {Promise<NextResponse>} HTTP 응답 객체
  */
-export async function POST(request: Request) {
-  const cookieStore = cookies(); // cookies 함수 호출
-  const supabase = createServerClient( // createServerClient 사용
+export async function POST(request: Request): Promise<NextResponse> {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: () => cookieStore
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // Next.js App Router에서 cookies() API 사용
+          cookieStore.set(name, value, options);
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set(name, "", { ...options, maxAge: 0 });
+        }
+      }
     }
   );
 

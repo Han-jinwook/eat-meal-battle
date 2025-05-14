@@ -41,18 +41,30 @@ function parseMealInfo(apiResponse: any) {
       const mealRows = apiResponse.mealServiceDietInfo[1].row;
       for (const meal of mealRows) {
         // 메뉴 항목 파싱 (불필요한 문자 제거)
-        let menuItems = [];
-        if (meal.DDISH_NM) {
-          menuItems = meal.DDISH_NM
-            .split(/<br\s*\/?>/gi)
-            .map(item =>
-              item
-                .replace(/-?u$/i, '')
-                .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
-                .trim()
-            )
-            .filter(Boolean);
-        }
+        const menuItems = meal.DDISH_NM
+          .replace(/<br\s*\/?>|\\n/g, '\n') // HTML 및 문자열 내 \n 줄바꿈을 실제 줄바꿈으로 변환
+          .split('\n')
+          .map(item => {
+            // 메뉴 항목 처리 (3단계로 진행)
+            return item
+              // 1. 알레르기 정보 등 괄호 내용 제거
+              .replace(/\([^)]*\)|\[[^\]]*\]|\{[^}]*\}|<[^>]*>/g, '')
+              // 2. 각 항목을 슬래시(/)로 분리하고 개별 처리 후 다시 합치기
+              .split('/')
+              .map(part => {
+                return part
+                  // 3. 각 부분에서 끝에 붙은 u, -u, .u 등 제거 (다양한 패턴 처리)
+                  .trim()
+                  .replace(/[\-\.]?u$/gi, '') // -u, .u, u 등 제거
+                  .replace(/[\-~]?\d*$/, '') // 끝에 붙은 -1, -2 등의 숫자 제거
+                  .trim();
+              })
+              .join('/')
+              .trim();
+          })
+          // 공백으로만 이루어진 항목은 제외
+          .filter(item => item && item.length > 0);
+
         // 원산지 정보 정규화 (formatOriginInfo 함수 참고)
         let originInfo = meal.ORPLC_INFO || null;
         if (originInfo) {
