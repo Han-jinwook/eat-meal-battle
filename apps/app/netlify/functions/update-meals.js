@@ -475,23 +475,26 @@ function formatOriginInfo(originInfo) {
   // 결과 포맷팅
   let result = '';
   
-  // 국내산을 가장 먼저 표시하고, 나머지는 알파벳 순서로 정렬
+  // 국내산을 가장 먼저 표시하고, 나머지는 가나다순으로 정렬
   // 국내산 먼저 출력
   if (originGroups['국내산'] && originGroups['국내산'].size > 0) {
-    result += `국내산 : ${Array.from(originGroups['국내산']).join(', ')}\n`;
+    const sortedDomestic = Array.from(originGroups['국내산']).sort((a, b) => a.localeCompare(b, 'ko'));
+    result += `국내산 : ${sortedDomestic.join(', ')}\n`;
   }
   
-  // 나머지 원산지는 알파벳 순서로 정렬하여 출력
+  // 나머지 원산지는 가나다순으로 정렬하여 출력 (한글 정렬)
   Object.keys(originGroups)
     .filter(origin => origin !== '국내산') // 국내산 제외
-    .sort() // 알파벳 순서로 정렬
+    .sort((a, b) => a.localeCompare(b, 'ko')) // 가나다순 정렬 (한글 정렬)
     .forEach(origin => {
       if (originGroups[origin].size > 0) {
-        result += `${origin} : ${Array.from(originGroups[origin]).join(', ')}\n`;
+        // 각 원산지 내에서도 재료를 가나다순 정렬
+        const sortedIngredients = Array.from(originGroups[origin]).sort((a, b) => a.localeCompare(b, 'ko'));
+        result += `${origin} : ${sortedIngredients.join(', ')}\n`;
       }
     });
   
-  return result.trim() || normalizedLines.join('\n');
+  return result.trim();
 }
 
 // 급식 정보 가져오기 함수

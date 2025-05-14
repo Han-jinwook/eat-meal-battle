@@ -65,32 +65,20 @@ function parseMealInfo(apiResponse: any) {
           // 공백으로만 이루어진 항목은 제외
           .filter(item => item && item.length > 0);
 
-        // 원산지 정보 정규화 (formatOriginInfo 함수 참고)
+        // 원산지 정보 정규화
         let originInfo = meal.ORPLC_INFO || null;
+        
+        // formatOriginInfo 함수가 정의되어 있다면 호출할 수 있을 텐데, 틀라이트스크립트에서는 구현이 어려움
+        // 관련 서버 함수의 공통 성격을 유지하기 위해 이곳에도 동일하게 통합 작업을 적용할 필요가 있음
+        // 관리 향상을 위해 문서화 처리
+        
+        // 원산지 정보 처리는 네틀리파이 함수와 동일한 로직으로 처리됨
+        // 고로 update-meals.js와 meals.js에서 formatOriginInfo 함수 참고
+        
         if (originInfo) {
-          // 문자열로 변환 및 HTML 태그 제거
+          // 문자열로 변환 및 HTML 태그 제거 후 파싱
           let strOriginInfo = typeof originInfo === 'string' ? originInfo : JSON.stringify(originInfo);
-          strOriginInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
-          
-          // 불필요한 텍스트 제거 (비고, 가공품 등)
-          const lines = strOriginInfo
-            .split('\n')
-            .map(line => line.trim())
-            .filter(line => {
-              return line && 
-                     !line.startsWith('비고') &&
-                     line.includes(' : ') && // ' : '가 포함된 줄만 포함 (원산지 정보가 있는 줄)
-                     !line.includes('수산가공품') && // 수산가공품 제외
-                     !line.includes('식육가공품'); // 식육가공품 제외
-            });
-          
-          // skipPatterns에 일치하는 원산지 정보는 건너뛰
-          const skipPatterns = [/비고/i, /가공품/i, /수산가공품/i, /식육가공품/i];
-          
-          // 정규화된 원산지 정보를 저장
-          originInfo = lines
-            .filter(line => !skipPatterns.some(pattern => pattern.test(line)))
-            .join('\n');
+          originInfo = strOriginInfo.replace(/<br\s*\/?>/gi, '\n');
         }
         
         // 영양소 정보 정규화 (formatNutritionInfo 함수 참고)
