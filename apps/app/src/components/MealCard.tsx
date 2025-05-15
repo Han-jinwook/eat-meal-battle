@@ -50,15 +50,24 @@ export default function MealCard({
 
       {/* 본문 */}
       <div className="p-4">
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <h3 className="text-lg font-semibold flex items-center">
-              <span className="mr-2">{getMealTypeIcon(meal.meal_type)}</span>
-              {meal.meal_type}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {formatDisplayDate(meal.meal_date)}
-            </p>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            {meal.origin_info && (
+              <button
+                onClick={() => onShowOrigin(meal.origin_info!)}
+                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+              >
+                원산지
+              </button>
+            )}
+            {(meal.kcal || meal.ntr_info) && (
+              <button
+                onClick={() => onShowNutrition(meal)}
+                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+              >
+                영양정보
+              </button>
+            )}
           </div>
           {meal.kcal && (
             <div className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
@@ -78,25 +87,7 @@ export default function MealCard({
           </ul>
         </div>
 
-        {/* 버튼들 */}
-        <div className="flex flex-wrap gap-2">
-          {meal.origin_info && (
-            <button
-              onClick={() => onShowOrigin(meal.origin_info!)}
-              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-            >
-              원산지 보기
-            </button>
-          )}
-          {(meal.kcal || meal.ntr_info) && (
-            <button
-              onClick={() => onShowNutrition(meal)}
-              className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-            >
-              영양정보
-            </button>
-          )}
-        </div>
+        {/* 버튼들 상단으로 이동함 */}
       </div>
     </div>
   );
