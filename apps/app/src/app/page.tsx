@@ -392,51 +392,39 @@ export default function Home() {
           <div className="mb-6"></div>
         )}
 
-        {/* 날짜 선택 */}
-        <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              {/* 날짜 선택 레이블 제거 */}
-              <div className="flex items-center">
-                <input
-                  type="date"
-                  id="date"
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base font-medium"
-                />
-                {selectedDate && (
-                  <span className="ml-1 text-base font-medium text-blue-600">
-                    {(() => {
-                      const date = new Date(selectedDate);
-                      if (!isNaN(date.getTime())) {
-                        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-                        return `(${weekdays[date.getDay()]})`; // 요일 표시
-                      }
-                      return '';
-                    })()}
-                  </span>
-                )}
-              </div>
-            </div>
-            {(isLoading || pageLoading || userLoading) && (
-              <div className="flex items-center text-gray-600 mt-2">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="text-sm">급식 정보를 가져오는 중...</span>
+        {/* 날짜 선택 - 불필요한 박스 제거하고 간격 줄임 */}
+        <div className="mb-3 mt-1 flex items-center">
+          <div className="relative w-full">
+            <input
+              type="date"
+              id="date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base font-medium"
+            />
+            {selectedDate && (
+              <div className="absolute inset-0 flex items-center justify-start px-3 pointer-events-none">
+                <span className="text-base font-medium">
+                  {(() => {
+                    const date = new Date(selectedDate);
+                    if (!isNaN(date.getTime())) {
+                      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                      return `${selectedDate} (${weekdays[date.getDay()]})`;
+                    }
+                    return selectedDate;
+                  })()}
+                </span>
               </div>
             )}
           </div>
-          
-          {/* 에러 메시지 */}
-          {(error || pageError || userError) && !meals.length && (
-            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
-              {error || pageError || userError}
-            </div>
-          )}
         </div>
+        
+        {/* 에러 메시지 */}
+        {(error || pageError || userError) && !meals.length && (
+          <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
+            {error || pageError || userError}
+          </div>
+        )}
 
         {/* 급식 정보 표시 */}
         {!isLoading && !pageLoading && !userLoading && (
