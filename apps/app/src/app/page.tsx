@@ -392,31 +392,52 @@ export default function Home() {
           <div className="mb-6"></div>
         )}
 
-        {/* 날짜 선택 - 불필요한 박스 제거하고 간격 줄임 */}
-        <div className="mb-3 mt-1 flex items-center">
-          <div className="relative w-full">
-            <input
-              type="date"
-              id="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base font-medium"
-            />
-            {selectedDate && (
-              <div className="absolute inset-0 flex items-center justify-start px-3 pointer-events-none">
-                <span className="text-base font-medium">
-                  {(() => {
-                    const date = new Date(selectedDate);
-                    if (!isNaN(date.getTime())) {
-                      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-                      return `${selectedDate} (${weekdays[date.getDay()]})`;
-                    }
-                    return selectedDate;
-                  })()}
-                </span>
-              </div>
-            )}
-          </div>
+        {/* 날짜 선택 - 공간 최적화 원칙에 맞게 수정 */}
+        <div className="mb-2 mt-1">
+          <input
+            type="date"
+            id="date"
+            value={selectedDate}
+            onChange={handleDateChange}
+            className="sr-only" // 화면에서 숨김
+          />
+          <button 
+            onClick={() => document.getElementById('date')?.showPicker()} 
+            className="w-full flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded border border-blue-100 shadow-sm"
+          >
+            {selectedDate && (() => {
+              const date = new Date(selectedDate);
+              if (!isNaN(date.getTime())) {
+                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const weekday = weekdays[date.getDay()];
+                
+                return (
+                  <>
+                    <div className="flex items-center">
+                      <span className="text-blue-600 mr-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {`${year}-${month}-${day}`}
+                      </span>
+                      <span className="ml-1 text-xs font-medium px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                        {weekday}
+                      </span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                );
+              }
+              return selectedDate;
+            })()}
+          </button>
         </div>
         
         {/* 에러 메시지 */}
