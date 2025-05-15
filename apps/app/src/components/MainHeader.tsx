@@ -92,17 +92,17 @@ export default function MainHeader() {
           <span className="mr-2 hidden sm:inline">🍱</span> 급식배틀
         </Link>
 
-        {/* 메인 메뉴 */}
-        <nav className="hidden gap-6 sm:flex">
+        {/* 메인 메뉴 - 모바일에서도 표시 */}
+        <nav className="flex overflow-x-auto gap-3 sm:gap-6 px-1 py-1 -mx-1 scrollbar-hide">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`text-sm font-medium hover:text-indigo-600 ${
+              className={`text-xs sm:text-sm font-medium whitespace-nowrap px-2 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
                 // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
                 item.href === '/' 
-                  ? (pathname === '/' ? 'text-indigo-600' : 'text-gray-700')
-                  : (pathname.startsWith(item.href) ? 'text-indigo-600' : 'text-gray-700')
+                  ? (pathname === '/' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
+                  : (pathname.startsWith(item.href) ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
               }`}
             >
               {item.label}
