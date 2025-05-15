@@ -376,23 +376,19 @@ export default function Home() {
       )}
       
       <div className="max-w-4xl mx-auto">
-        {/* 헤더 */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">학교 급식 정보</h1>
-          <Link href="/" className="text-blue-600 hover:text-blue-800">
-            홈으로
-          </Link>
-        </div>
+        {/* 헤더 삭제 */}
 
         {/* 학교 정보 표시 */}
         {userSchool ? (
-          <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-            <h2 className="font-semibold text-lg mb-2">
-              {userSchool.school_name}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg rounded-lg p-6 mb-6 border-l-4 border-blue-500">
+            <h2 className="flex items-center">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-2xl font-bold">
+                {userSchool.school_name}
+              </span>
+              <span className="ml-3 text-gray-600 text-sm bg-white px-2 py-1 rounded-full shadow-sm">
+                {userSchool.region}
+              </span>
             </h2>
-            <p className="text-gray-600 text-sm">
-              {userSchool.region} {/* school_type 필드가 없어서 제거 */}
-            </p>
           </div>
         ) : (
           <div className="mb-6"></div>
