@@ -1,0 +1,196 @@
+# 급식 배틀 프로젝트 기능별 인덱스
+
+## 이미지 관리 기능
+
+- MealImageUploader
+  - 경로: apps/app/src/components/MealImageUploader.tsx
+  - 함수: handleAiImageGeneration() - AI 이미지 생성, handleFileChange() - 파일 업로드 처리, handleUpload() - 이미지 업로드 및 검증, verifyImage() - AI 검증, handleDeleteImage() - 이미지 삭제
+
+- 이미지 API 엔드포인트
+  - 경로: apps/app/src/app/api/meal-images/upload/route.ts
+  - 함수: POST() - 이미지 업로드 처리 API
+  
+  - 경로: apps/app/src/app/api/meal-images/verify/route.ts
+  - 함수: POST() - 이미지 AI 검증 API
+  
+  - 경로: apps/app/src/app/api/meal-images/create/route.ts
+  - 함수: POST() - 이미지 정보 생성 API
+
+- 이미지 유틸리티
+  - 경로: apps/app/src/utils/imageUtils.ts
+  - 함수: getSafeImageUrl() - 안전한 이미지 URL 생성, handleImageError() - 이미지 로드 오류 처리
+
+- ImageWithFallback
+  - 경로: apps/app/src/components/ImageWithFallback.tsx
+  - 컴포넌트: 이미지 로드 실패 시 폴백 이미지 표시
+
+## 급식 정보 관리
+
+- MealCard
+  - 경로: apps/app/src/components/MealCard.tsx
+  - 컴포넌트: 급식 정보 카드 표시, getMealTypeIcon() - 급식 타입별 아이콘 표시
+
+- useMeals 훅
+  - 경로: apps/app/src/hooks/useMeals.ts
+  - 함수: fetchMealInfo() - 급식 정보 조회 및 상태 관리
+
+- 급식 API 엔드포인트
+  - 경로: apps/app/src/app/api/meals/route.ts
+  - 함수: GET() - 급식 정보 조회 API, POST() - 급식 정보 생성/수정 API
+
+- 날짜 유틸리티
+  - 경로: apps/app/src/utils/DateUtils.ts
+  - 함수: formatDisplayDate() - 표시용 날짜 포맷, formatApiDate() - API 요청용 날짜 포맷, getCurrentDate() - 현재 날짜 가져오기
+
+## 사용자 관리
+
+- useUserSchool 훅
+  - 경로: apps/app/src/hooks/useUserSchool.ts
+  - 함수: fetchUserSchool() - 사용자 및 학교 정보 조회
+
+- 계정 삭제 API
+  - 경로: apps/app/src/app/api/delete-account/route.ts
+  - 함수: POST() - 사용자 계정 삭제 처리
+
+## 학교 정보 관리
+
+- 학교 검색 페이지
+  - 경로: apps/app/src/app/school-search/page.tsx
+  - 컴포넌트: 학교 검색 및 선택 기능
+
+- 학교 API 엔드포인트
+  - 경로: apps/app/src/app/api/schools/route.ts
+  - 함수: GET() - 학교 정보 검색 API
+
+## 알림 관리
+
+- NotificationBell
+  - 경로: apps/app/src/components/NotificationBell.tsx
+  - 컴포넌트: 알림 벨 아이콘 및 카운터 표시
+
+- 알림 API 엔드포인트
+  - 경로: apps/app/src/app/api/notifications/create/route.ts
+  - 함수: POST() - 알림 생성 API
+  
+  - 경로: apps/app/src/app/api/notifications/read/route.ts
+  - 함수: POST() - 알림 읽음 처리 API
+  
+  - 경로: apps/app/src/app/api/notifications/send/route.ts
+  - 함수: POST() - 알림 발송 API
+
+## Firebase 메시징
+
+- FirebaseMessaging
+  - 경로: apps/app/src/components/firebase/FirebaseMessaging.tsx
+  - 컴포넌트: Firebase 메시징 설정 및 토큰 관리
+  
+- FirebaseMessagingWrapper
+  - 경로: apps/app/src/components/firebase/FirebaseMessagingWrapper.tsx
+  - 컴포넌트: Firebase 메시징 래퍼 컴포넌트
+
+- Firebase 설정
+  - 경로: apps/app/src/lib/firebase/firebaseConfig.ts
+  - 함수: initializeFirebase() - Firebase 앱 초기화, fetchToken() - FCM 토큰 가져오기, onMessageListener() - 포그라운드 메시지 수신 처리
+
+- Firebase Admin
+  - 경로: apps/app/src/lib/firebase/firebaseAdmin.ts
+  - 함수: 서버 측 Firebase 관리 기능
+
+## UI 컴포넌트
+
+- AppHeader
+  - 경로: apps/app/src/components/AppHeader.tsx
+  - 컴포넌트: 앱 헤더 표시
+
+- MainHeader
+  - 경로: apps/app/src/components/MainHeader.tsx
+  - 컴포넌트: 메인 페이지 헤더 표시
+
+- useModal 훅
+  - 경로: apps/app/src/hooks/useModal.ts
+  - 함수: 모달 상태 관리 및 표시
+
+## 스케줄러 기능
+
+- 급식 정보 업데이트 스케줄러
+  - 경로: apps/app/netlify/functions/update-meals.js
+  - 기능: 교육부 NEIS Open API에서 급식 정보를 가져와 데이터베이스에 업데이트
+  - 실행 주기: 정기적으로 실행
+
+- AI 이미지 자동 생성 스케줄러
+  - 경로: apps/app/netlify/functions/auto-generate-meal-images.js
+  - 기능: 이미지가 없거나 공유되지 않은 급식에 대해 AI로 이미지 자동 생성
+  - 실행 주기: 오후 5시에 자동 실행
+
+- 이미지 누락 확인 스케줄러
+  - 경로: apps/app/netlify/functions/check-missing-meal-images.js
+  - 기능: 이미지가 없거나 공유되지 않은 급식을 찾아 목록화
+  - 실행 주기: 12:30에 자동 실행
+
+- 급식 업데이터 유틸리티
+  - 경로: apps/app/src/lib/mealUpdater.ts
+  - 함수: updateAllMeals() - 여러 학교의 급식 정보 일괄 업데이트, parseMealInfo() - API 응답 파싱, fetchMealInfo() - 급식 정보 가져오기
+
+## 백엔드 함수
+
+- 급식 이미지 검증
+  - 경로: apps/app/netlify/functions/verify-meal-image.js
+  - 함수: 업로드된 급식 이미지 AI 검증
+
+- 급식 이미지 업로드
+  - 경로: apps/app/netlify/functions/upload-meal-image.js
+  - 함수: 급식 이미지 업로드 처리
+
+- 급식 이미지 생성
+  - 경로: apps/app/netlify/functions/generate-meal-image.js
+  - 함수: 사용자 요청에 의한 급식 이미지 생성
+
+## API 헬퍼
+
+- API 헬퍼
+  - 경로: apps/app/src/lib/api-helper.ts
+  - 함수: fetchWithAuth() - 인증된 API 요청 처리, API_ENDPOINTS - API 엔드포인트 정의
+
+## Supabase 통합
+
+- Supabase 클라이언트
+  - 경로: apps/app/src/lib/supabase.ts
+  - 함수: createClient() - Supabase 클라이언트 생성
+
+- Supabase 서버
+  - 경로: apps/app/src/lib/supabase-server.ts
+  - 함수: 서버 측 Supabase 클라이언트 및 인증 관련 기능
+
+- Supabase Admin
+  - 경로: apps/app/src/lib/supabaseAdmin.ts
+  - 함수: 관리자 권한으로 Supabase 접근 기능
+
+- Supabase Provider
+  - 경로: apps/app/src/lib/supabase/supabase-provider.tsx
+  - 컴포넌트: Supabase 컨텍스트 제공자
+
+## 페이지
+
+- 메인 페이지
+  - 경로: apps/app/src/app/page.tsx
+  - 컴포넌트: 급식 정보 표시 및 이미지 업로드 기능
+
+- 프로필 페이지
+  - 경로: apps/app/src/app/profile/page.tsx
+  - 컴포넌트: 사용자 프로필 정보 표시 및 관리
+
+- 로그인 페이지
+  - 경로: apps/app/src/app/login/page.tsx
+  - 컴포넌트: 사용자 로그인 및 회원가입
+
+- 배틀 페이지 (준비 중)
+  - 경로: apps/app/src/app/battle/page.tsx
+  - 컴포넌트: 급식 배틀 기능 (준비 중)
+
+- 퀴즈 페이지
+  - 경로: apps/app/src/app/quiz/page.tsx
+  - 컴포넌트: 급식 관련 퀴즈 기능
+
+- 랭킹 페이지
+  - 경로: apps/app/src/app/ranking/page.tsx
+  - 컴포넌트: 사용자 랭킹 표시
