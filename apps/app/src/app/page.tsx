@@ -380,15 +380,13 @@ export default function Home() {
 
         {/* 학교 정보 표시 */}
         {userSchool ? (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg rounded-lg p-6 mb-6 border-l-4 border-blue-500">
-            <h2 className="flex items-center">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-2xl font-bold">
-                {userSchool.school_name}
-              </span>
-              <span className="ml-3 text-gray-600 text-sm bg-white px-2 py-1 rounded-full shadow-sm">
-                {userSchool.region}
-              </span>
-            </h2>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+              {userSchool.school_name}
+            </span>
+            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+              {userSchool.region}
+            </span>
           </div>
         ) : (
           <div className="mb-6"></div>
@@ -398,19 +396,17 @@ export default function Home() {
         <div className="bg-white shadow-md rounded-lg p-4 mb-6">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                날짜 선택
-              </label>
+              {/* 날짜 선택 레이블 제거 */}
               <div className="flex items-center">
                 <input
                   type="date"
                   id="date"
                   value={selectedDate}
                   onChange={handleDateChange}
-                  className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base font-medium"
                 />
                 {selectedDate && (
-                  <span className="ml-2 text-sm font-medium text-gray-700">
+                  <span className="ml-1 text-base font-medium text-blue-600">
                     {(() => {
                       const date = new Date(selectedDate);
                       if (!isNaN(date.getTime())) {
