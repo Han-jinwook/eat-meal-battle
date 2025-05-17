@@ -23,4 +23,7 @@ export interface MealMenuItem {
   item_order: number;
   created_at: string;
   updated_at: string;
+  avg_rating?: number;   // 평균 별점
+  rating_count?: number; // 평가 횟수
+  user_rating?: number;  // 현재 사용자가 매긴 별점
 }

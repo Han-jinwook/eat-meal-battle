@@ -1,6 +1,9 @@
 import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate } from '@/utils/DateUtils';
 import { MealInfo, MealMenuItem } from '@/types'; // 메뉴 아이템 타입 추가
+import StarRating from '@/components/StarRating';
+import { useState, useEffect } from 'react';
+import { useUser } from '@supabase/auth-helpers-react';
 
 interface MealCardProps {
   meal: MealInfo;
@@ -9,6 +12,112 @@ interface MealCardProps {
   onUploadSuccess(): void;
   onUploadError(error: string): void;
 }
+
+// 메뉴 아이템 별점 저장 함수
+async function saveRating(menuItemId: string, rating: number) {
+  try {
+    const token = localStorage.getItem('supabase.auth.token');
+    
+    const response = await fetch('/api/menu-ratings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        menu_item_id: menuItemId,
+        rating
+      })
+    });
+    
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error('별점 저장 오류:', error);
+    return false;
+  }
+}
+
+// 메뉴 아이템 별점 조회 함수
+async function fetchRating(menuItemId: string) {
+  try {
+    const token = localStorage.getItem('supabase.auth.token');
+    
+    const response = await fetch(`/api/menu-ratings?menu_item_id=${menuItemId}`, {
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : ''
+      }
+    });
+    
+    return await response.json();
+  } catch (error) {
+    console.error('별점 조회 오류:', error);
+    return null;
+  }
+}
+
+// 메뉴 아이템 컴포넌트
+const MenuItemWithRating = ({ item }: { item: MealMenuItem }) => {
+  const [rating, setRating] = useState<number | undefined>(item.user_rating);
+  const [avgRating, setAvgRating] = useState<number | undefined>(item.avg_rating);
+  const [ratingCount, setRatingCount] = useState<number | undefined>(item.rating_count);
+  const [isLoading, setIsLoading] = useState(false);
+  const user = useUser();
+  
+  useEffect(() => {
+    // 컴포넌트 마운트 시 최신 별점 정보 조회
+    const getRating = async () => {
+      if (item.id) {
+        const ratingData = await fetchRating(item.id);
+        if (ratingData) {
+          setAvgRating(ratingData.avg_rating);
+          setRatingCount(ratingData.rating_count);
+          setRating(ratingData.user_rating);
+        }
+      }
+    };
+    
+    getRating();
+  }, [item.id]);
+  
+  const handleRating = async (value: number) => {
+    if (!user || isLoading) return;
+    
+    setIsLoading(true);
+    setRating(value); // 즉시 UI 업데이트
+    
+    const success = await saveRating(item.id, value);
+    if (success) {
+      // 저장 성공 후 업데이트된 정보 조회
+      const updatedData = await fetchRating(item.id);
+      if (updatedData) {
+        setAvgRating(updatedData.avg_rating);
+        setRatingCount(updatedData.rating_count);
+      }
+    } else {
+      // 저장 실패 시 롤백
+      setRating(item.user_rating);
+    }
+    
+    setIsLoading(false);
+  };
+  
+  return (
+    <li className="flex justify-between items-center py-2 border-b border-gray-100">
+      <div className="text-gray-700">{item.item_name}</div>
+      <div className="rating-container">
+        <StarRating 
+          value={rating || 0}
+          onChange={handleRating}
+          interactive={!!user}
+          showValue={true}
+          ratingCount={ratingCount}
+          size="small"
+        />
+      </div>
+    </li>
+  );
+};
 
 // 간단한 타입별 아이콘 헬퍼 (추후 유틸로 이동 가능)
 const getMealTypeIcon = (mealType: string) => {
@@ -78,13 +187,11 @@ export default function MealCard({
 
         {/* 메뉴 목록 */}
         <div className="mb-4">
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {meal.menuItems && meal.menuItems.length > 0 ? (
-              // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용)
+              // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
               meal.menuItems.map((item) => (
-                <li key={item.id} className="text-gray-700">
-                  {item.item_name}
-                </li>
+                <MenuItemWithRating key={item.id} item={item} />
               ))
             ) : (
               // 기존 menu_items 배열 사용 (하위 호환성 유지)

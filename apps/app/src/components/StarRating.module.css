@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  align-items: center;
+}
+
+.starRating {
+  display: flex;
+  align-items: center;
+}
+
+.star {
+  margin-right: 2px;
+}
+
+.small .star {
+  font-size: 0.9rem;
+}
+
+.medium .star {
+  font-size: 1.2rem;
+}
+
+.large .star {
+  font-size: 1.5rem;
+}
+
+.filled {
+  color: #ffc107;
+}
+
+.halfFilled {
+  color: #ffc107;
+}
+
+.empty {
+  color: #e4e5e9;
+}
+
+.positive {
+  color: #4caf50;
+}
+
+.neutral {
+  color: #ff9800;
+}
+
+.negative {
+  color: #f44336;
+}
+
+.ratingInfo {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.ratingValue {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.ratingCount {
+  margin-left: 4px;
+  color: #757575;
+  font-size: 0.8rem;
+}
