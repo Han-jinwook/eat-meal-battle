@@ -3,7 +3,14 @@ import { formatDisplayDate } from '@/utils/DateUtils';
 import { MealInfo, MealMenuItem } from '@/types'; // 메뉴 아이템 타입 추가
 import StarRating from '@/components/StarRating';
 import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUser } from '@supabase/auth-helpers-react';
+
+// Supabase 클라이언트 초기화
+const supabase = createClientComponentClient();
+
+// 디버깅용 콘솔 로그
+console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화');
 
 interface MealCardProps {
   meal: MealInfo;
@@ -13,111 +20,159 @@ interface MealCardProps {
   onUploadError(error: string): void;
 }
 
-// 메뉴 아이템 별점 저장 함수
-async function saveRating(menuItemId: string, rating: number) {
-  try {
-    // 현재 Supabase 세션 토큰 가져오기 (이전 방식 대신 직접 API 토큰 사용)
-    // 개발용으로 토큰 없이도 작동하도록 설정
-    console.log('별점 저장 시도:', menuItemId, rating);
-    
-    const response = await fetch('/api/menu-ratings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-        // 개발 테스트를 위해 인증 헤더 제거
-        // 'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        menu_item_id: menuItemId,
-        rating,
-        test_mode: true // 테스트 모드 플래그 추가
-      })
-    });
-    
-    const data = await response.json();
-    console.log('별점 저장 응답:', data);
-    return data.success || true; // 테스트를 위해 항상 성공 처리
-  } catch (error) {
-    console.error('별점 저장 오류:', error);
-    alert('별점 저장 중 오류가 발생했습니다.');
-    return false;
-  }
-}
-
-// 메뉴 아이템 별점 조회 함수
-async function fetchRating(menuItemId: string) {
-  try {
-    const token = localStorage.getItem('supabase.auth.token');
-    
-    const response = await fetch(`/api/menu-ratings?menu_item_id=${menuItemId}`, {
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : ''
-      }
-    });
-    
-    return await response.json();
-  } catch (error) {
-    console.error('별점 조회 오류:', error);
-    return null;
-  }
-}
-
-// 메뉴 아이템 컴포넌트
-const MenuItemWithRating = ({ item }: { item: MealMenuItem }) => {
-  const [rating, setRating] = useState<number | undefined>(item.user_rating);
-  const [avgRating, setAvgRating] = useState<number | undefined>(item.avg_rating);
-  const [ratingCount, setRatingCount] = useState<number | undefined>(item.rating_count);
-  const [isLoading, setIsLoading] = useState(false);
+// 별점 지정/표시 컴포넌트
+function MenuItemWithRating({ item }: { item: MealMenuItem }) {
   const user = useUser();
+  const [rating, setRating] = useState<number | null>(item.user_rating || null);
+  const [avgRating, setAvgRating] = useState<number | null>(item.avg_rating || null);
+  const [ratingCount, setRatingCount] = useState<number | null>(item.rating_count || null);
+  const [isLoading, setIsLoading] = useState(false);
   
+  // 사용자 로그인 상태 콘솔에 표시 (디버깅용)
   useEffect(() => {
-    // 컴포넌트 마운트 시 최신 별점 정보 조회
+    console.log('MenuItemWithRating - 사용자 로그인 상태:', user ? '로그인됨' : '로그인 안됨');
+  }, [user]);
+
+  // 사용자 별점 저장 함수
+  const saveRating = async (menuItemId: string, rating: number) => {
+    try {
+      if (!user) {
+        console.log('사용자 인증 없음, 별점 저장 불가');
+        return false;
+      }
+      
+      console.log('별점 저장 시도:', menuItemId, rating, '사용자:', user.id);
+      
+      const { error } = await supabase
+        .from('menu_item_ratings')
+        .upsert({
+          user_id: user.id,
+          menu_item_id: menuItemId,
+          rating,
+          updated_at: new Date().toISOString()
+        }, { 
+          onConflict: 'user_id,menu_item_id' 
+        });
+      
+      if (error) {
+        console.error('Supabase 저장 오류:', error);
+        return false;
+      }
+      
+      console.log('별점 저장 성공!');
+      return true;
+    } catch (error) {
+      console.error('별점 저장 중 오류:', error);
+      return false;
+    }
+  };
+
+  // 별점 조회 함수
+  const fetchRating = async (menuItemId: string) => {
+    try {
+      console.log('별점 정보 조회 시도:', menuItemId);
+      
+      // 평균 별점 및 평가 개수 조회
+      const { data: statsData, error: statsError } = await supabase
+        .rpc('get_menu_item_rating_stats', { item_id: menuItemId });
+        
+      console.log('통계 함수 결과:', statsData, statsError);
+
+      // 사용자 별점 조회 (if logged in)
+      let userRating = null;
+      if (user) {
+        const { data: ratingData, error: ratingError } = await supabase
+          .from('menu_item_ratings')
+          .select('rating')
+          .eq('menu_item_id', menuItemId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        console.log('사용자 별점 조회 결과:', ratingData, ratingError);
+
+        userRating = ratingData?.rating;
+      }
+
+      if (statsError) {
+        console.error('평균 별점 조회 오류:', statsError);
+        return null;
+      }
+      
+      const result = {
+        avg_rating: statsData?.avg_rating || 0,
+        rating_count: statsData?.rating_count || 0,
+        user_rating: userRating
+      };
+      
+      console.log('최종 별점 조회 결과:', result);
+      return result;
+    } catch (error) {
+      console.error('별점 정보 조회 오류:', error);
+      return null;
+    }
+  };
+
+  // 초기 별점 조회
+  useEffect(() => {
     const getRating = async () => {
-      if (item.id) {
-        const ratingData = await fetchRating(item.id);
-        if (ratingData) {
-          setAvgRating(ratingData.avg_rating);
-          setRatingCount(ratingData.rating_count);
-          setRating(ratingData.user_rating);
-        }
+      // 이미 아이템에 사용자 별점이 있으면 가져옴
+      if (item.user_rating) {
+        setRating(item.user_rating);
+        setAvgRating(item.avg_rating);
+        setRatingCount(item.rating_count);
+        return;
+      }
+
+      // 사용자 권한 없으면 평균만 표시
+      if (!user) {
+        setAvgRating(item.avg_rating);
+        setRatingCount(item.rating_count);
+        return;
+      }
+
+      // 서버에서 데이터 가져오기
+      const data = await fetchRating(item.id);
+      if (data) {
+        setRating(data.user_rating);
+        setAvgRating(data.avg_rating);
+        setRatingCount(data.rating_count);
       }
     };
-    
+
     getRating();
-  }, [item.id]);
-  
+  }, [item.id, user]);
+
   // 별점 클릭 이벤트 처리 함수
   const handleRating = async (value: number) => {
-    console.log('별점 클릭 발생!', value);
-    
-    // 사용자 로그인 여부 체크 제거 (UX 테스트 용)
-    if (isLoading) return;
-    
+    // 로그인 여부 확인
+    if (!user || isLoading) return;
+
     setIsLoading(true);
     setRating(value); // 즉시 UI 업데이트
-    
+
     try {
-      // 로컬 상태 업데이트를 위해 가상 데이터 사용
-      // 개발 중에는 수동으로 업데이트
-      const prevAvg = avgRating || 0;
-      const prevCount = ratingCount || 0;
-      const newCount = prevCount + 1;
-      const newAvg = ((prevAvg * prevCount) + value) / newCount;
-      
-      setAvgRating(newAvg);
-      setRatingCount(newCount);
-      
-      // 비동기로 API 호출 (결과 기다리지 않음)
-      saveRating(item.id, value).then(success => {
-        console.log('별점 저장 결과:', success);
-      });
-    } catch (err) {
-      console.error('처리 오류:', err);
+      // Supabase로 별점 저장
+      const success = await saveRating(item.id, value);
+
+      if (success) {
+        // 저장 성공 후 업데이트된 정보 조회
+        const updatedData = await fetchRating(item.id);
+        if (updatedData) {
+          setAvgRating(updatedData.avg_rating);
+          setRatingCount(updatedData.rating_count);
+        }
+      } else {
+        // 저장 실패 시 롤백
+        setRating(item.user_rating);
+      }
+    } catch (error) {
+      console.error('별점 처리 중 오류:', error);
+      setRating(item.user_rating); // 오류 발생 시 원래 별점으로 롤백
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <li className="flex justify-between items-center py-2 border-b border-gray-100">
       {/* 별점 영역 - 왼쪽으로 이동 */}
