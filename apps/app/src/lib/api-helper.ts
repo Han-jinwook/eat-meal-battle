@@ -17,8 +17,23 @@ if (typeof window !== 'undefined') {
   // URL 추출
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
   
-  // Supabase 직접 REST API 호출 감지
+  // 수파베이스 직접 REST API 호출 감지
   if (url.includes('izkumvvlkrkgiuuczffp.supabase.co/rest/v1/')) {
+    // 예외 처리할 엔드포인트 정의
+    const exemptEndpoints = [
+      '/meal_images', 
+      '/profiles', 
+      '/menu_item_ratings'
+    ];
+    
+    // 예외 처리 검사
+    const isExemptEndpoint = exemptEndpoints.some(endpoint => url.includes(endpoint));
+    
+    if (isExemptEndpoint) {
+      console.debug('예외 처리 엔드포인트 요청 허용 (api-helper.ts):', url);
+      return originalFetch(input, init); // 예외 엔드포인트는 직접 요청 전송
+    }
+    
     // API 키 헬더 확인
     let apiKeyPresent = false; 
     if (init?.headers) {
@@ -59,9 +74,18 @@ export async function fetchWithAuth(
   try {
     // API 키가 필요한 Supabase REST API 호출인지 확인
     if ((url.includes('/rest/v1/') || url.includes('izkumvvlkrkgiuuczffp.supabase.co/rest/v1/')) && !url.includes('apikey=')) {
-      // 이미지 관련 API는 제한에서 제외 (MealImageList 컴포넌트의 정상 작동을 위해)
-      if (url.includes('/meal_images') || url.includes('/profiles')) {
-        console.debug('이미지 또는 프로필 관련 API 제한 예외 처리 (fetchWithAuth):', url);
+      // 예외 처리할 엔드포인트 정의 (이미지, 프로필, 별점 관련)
+      const exemptEndpoints = [
+        '/meal_images', 
+        '/profiles', 
+        '/menu_item_ratings'
+      ];
+      
+      // 예외 처리 검사
+      const isExemptEndpoint = exemptEndpoints.some(endpoint => url.includes(endpoint));
+      
+      if (isExemptEndpoint) {
+        console.debug('예외 처리 엔드포인트 요청 허용 (fetchWithAuth):', url);
       } else {
         // API 키 헤더 확인
         let apiKeyPresent = false;

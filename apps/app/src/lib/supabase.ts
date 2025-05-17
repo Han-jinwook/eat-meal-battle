@@ -21,8 +21,19 @@ export const createClient = () => {
           // URL을 파싱해서 검사
           const urlStr = String(args[0] instanceof URL ? args[0].toString() : args[0]);
           
-          // Supabase REST API 직접 호출 차단 - 권한 부재 오류 방지
+          // 예외 처리할 엔드포인트 정의
+          const exemptEndpoints = [
+            '/meal_images', 
+            '/profiles', 
+            '/menu_item_ratings'
+          ];
+          
+          // 예외 처리 검사
+          const isExemptEndpoint = exemptEndpoints.some(endpoint => urlStr.includes(endpoint));
+          
+          // Supabase REST API 직접 호출 차단 - 권한 부재 오류 방지 (예외 엔드포인트 제외)
           if (urlStr.includes('/rest/v1/') && 
+              !isExemptEndpoint &&
               (!args[1]?.headers || 
                (!Object.entries(args[1]?.headers || {}).some(([k, v]) => 
                   k.toLowerCase() === 'apikey' || k.toLowerCase() === 'authorization')))) {
