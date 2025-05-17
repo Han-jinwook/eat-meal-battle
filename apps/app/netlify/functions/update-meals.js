@@ -800,8 +800,9 @@ exports.handler = async function(event, context) {
           
           // 급식 정보 저장 성공 후 메뉴 아이템 개별 저장 시도
           try {
-            // 저장된 급식의 ID 가져오기
-            const { data: savedMeal, error: selectError } = await supabase
+            console.log(`[${school.school_code}] 저장된 급식의 ID 조회 시도 (meal_date: ${mealData.meal_date})`);
+            // 저장된 급식의 ID 가져오기 - 서비스 롤 키 사용
+            const { data: savedMeal, error: selectError } = await supabaseAdmin
               .from('meal_menus')
               .select('id')
               .eq('school_code', school.school_code)
@@ -812,8 +813,13 @@ exports.handler = async function(event, context) {
             if (selectError) {
               console.error(`[${school.school_code}] 급식 ID 조회 오류:`, selectError);
             } else if (savedMeal && savedMeal.id) {
+              console.log(`[${school.school_code}] 급식 ID 조회 성공: ${savedMeal.id}`);
+              console.log(`[${school.school_code}] 메뉴 아이템 ${mealData.menu_items.length}개 저장 시도`);
               // 메뉴 아이템 개별 저장 함수 호출
-              await saveMenuItems(savedMeal.id, mealData.menu_items, school.school_code);
+              const saveResult = await saveMenuItems(savedMeal.id, mealData.menu_items, school.school_code);
+              console.log(`[${school.school_code}] 메뉴 아이템 저장 결과: ${saveResult ? '성공' : '실패'}`);
+            } else {
+              console.error(`[${school.school_code}] 급식 ID를 찾을 수 없음`);
             }
           } catch (menuItemError) {
             console.error(`[${school.school_code}] 메뉴 아이템 저장 중 오류:`, menuItemError);
