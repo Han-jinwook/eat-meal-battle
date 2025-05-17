@@ -8,9 +8,16 @@ const { v4: uuidv4 } = require('uuid'); // UUID 생성 라이브러리 임포트
 // Supabase 환경 변수
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Supabase 클라이언트 초기화 (전역 변수로 한 번만 선언)
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Supabase Admin 클라이언트 초기화 (RLS 우회용)
+const supabaseAdmin = createClient(
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY
+);
 
 // 교육부 NEIS Open API 주소
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
@@ -615,16 +622,21 @@ exports.handler = async function(event, context) {
     // 급식 ID가 있는 경우 메뉴 아이템 조회
     if (mealData && mealData.id) {
       try {
-        // 급식에 대한 메뉴 아이템 조회
-        const { data: menuItems, error: menuItemsError } = await supabase
+        console.log(`급식 ${mealData.id}의 메뉴 아이템 조회 시도 (서비스 롤 키 사용)`);
+        // 급식에 대한 메뉴 아이템 조회 - 서비스 롤 키 사용하여 RLS 정책 우회
+        const { data: menuItems, error: menuItemsError } = await supabaseAdmin
           .from('meal_menu_items')
           .select('*')
           .eq('meal_id', mealData.id)
           .order('item_order', { ascending: true });
         
-        if (!menuItemsError && menuItems && menuItems.length > 0) {
+        if (menuItemsError) {
+          console.error(`급식 ${mealData.id}의 메뉴 아이템 조회 오류:`, menuItemsError);
+          mealData.menuItems = [];
+        } else if (menuItems && menuItems.length > 0) {
           // 기존 menu_items 배열은 유지하면서 새로운 menuItems 객체 배열 추가
-          console.log(`급식 ${mealData.id}의 메뉴 아이템 ${menuItems.length}개 조회 성공`);
+          console.log(`급식 ${mealData.id}의 메뉴 아이템 ${menuItems.length}개 조회 성공:`, 
+            JSON.stringify(menuItems.slice(0, 2)) + (menuItems.length > 2 ? '...' : ''));
           mealData.menuItems = menuItems;
         } else {
           console.log(`급식 ${mealData.id}의 메뉴 아이템 없음`);

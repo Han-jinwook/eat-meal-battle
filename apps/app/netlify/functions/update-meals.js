@@ -9,6 +9,18 @@ const CRON_API_KEY = process.env.CRON_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Supabase 클라이언트 초기화
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
+
+// Supabase Admin 클라이언트 초기화 (RLS 우회용)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
 // 교육부 NEIS Open API 주소
 const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
 
@@ -831,11 +843,22 @@ exports.handler = async function(event, context) {
     
     // 메뉴 아이템 개별 저장 함수
 async function saveMenuItems(mealId, menuItems, schoolCode) {
-  console.log(`[${schoolCode}] 메뉴 아이템 저장 시작: 항목 수 ${menuItems.length}`);
+  console.log(`[${schoolCode}] 메뉴 아이템 저장 시작: 항목 수 ${menuItems.length}, 급식 ID: ${mealId}`);
+  
+  if (!mealId) {
+    console.error(`[${schoolCode}] 급식 ID가 없어 메뉴 아이템을 저장할 수 없습니다.`);
+    return false;
+  }
+  
+  if (!menuItems || menuItems.length === 0) {
+    console.error(`[${schoolCode}] 저장할 메뉴 아이템이 없습니다.`);
+    return false;
+  }
   
   try {
-    // 기존 메뉴 아이템 삭제 (재저장 시 중복 방지)
-    const { error: deleteError } = await supabase
+    console.log(`[${schoolCode}] 기존 메뉴 아이템 삭제 시도 (meal_id: ${mealId})`);
+    // 기존 메뉴 아이템 삭제 (재저장 시 중복 방지) - 서비스 롤 키 사용
+    const { error: deleteError } = await supabaseAdmin
       .from('meal_menu_items')
       .delete()
       .eq('meal_id', mealId);
@@ -852,7 +875,11 @@ async function saveMenuItems(mealId, menuItems, schoolCode) {
       item_order: index + 1
     }));
     
-    const { data, error } = await supabase
+    console.log(`[${schoolCode}] 새 메뉴 아이템 ${menuItemsToInsert.length}개 저장 시도:`, 
+      JSON.stringify(menuItemsToInsert.slice(0, 2)) + (menuItemsToInsert.length > 2 ? '...' : ''));
+    
+    // 서비스 롤 키를 사용하여 RLS 정책 우회
+    const { data, error } = await supabaseAdmin
       .from('meal_menu_items')
       .insert(menuItemsToInsert);
     
