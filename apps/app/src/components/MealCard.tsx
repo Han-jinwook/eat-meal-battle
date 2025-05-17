@@ -22,7 +22,7 @@ interface MealCardProps {
 
 // 별점 지정/표시 컴포넌트
 function MenuItemWithRating({ item }: { item: MealMenuItem }) {
-  const user = useUser();
+  const { user } = useUser(); // useUser에서 user 프로퍼티만 구조분해할당
   const [rating, setRating] = useState<number | null>(item.user_rating || null);
   const [avgRating, setAvgRating] = useState<number | null>(item.avg_rating || null);
   const [ratingCount, setRatingCount] = useState<number | null>(item.rating_count || null);
@@ -31,17 +31,19 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
   // 사용자 로그인 상태 콘솔에 표시 (디버깅용)
   useEffect(() => {
     console.log('MenuItemWithRating - 사용자 로그인 상태:', user ? '로그인됨' : '로그인 안됨');
+    if (user) console.log('사용자 ID:', user.id); // 사용자 ID 디버깅 로그 추가
   }, [user]);
 
   // 사용자 별점 저장 함수
   const saveRating = async (menuItemId: string, rating: number) => {
     try {
       if (!user) {
-        console.log('사용자 인증 없음, 별점 저장 불가');
+        console.log("사용자 인증 없음, 별점 저장 불가");
         return false;
       }
       
-      console.log('별점 저장 시도:', menuItemId, rating, '사용자:', user.id);
+      console.log("별점 저장 시도:", menuItemId, rating, "사용자:", user.id);
+      console.log('사용자 객체 내용:', user); // 디버깅용 추가 로그
       
       const { error } = await supabase
         .from('menu_item_ratings')
@@ -144,30 +146,35 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
 
   // 별점 클릭 이벤트 처리 함수
   const handleRating = async (value: number) => {
-    // 로그인 여부 확인
-    if (!user || isLoading) return;
-
+    // 로그인되지 않은 경우 로그만 출력
+    if (!user) {
+      console.log('로그인되지 않은 사용자는 별점을 남길 수 없습니다');
+      // 어러트 추가 - 사용자에게 로그인 필요함을 알리기
+      alert('별점을 남기려면 로그인해주세요!'); 
+      return;
+    }
+    
+    // 디버깅용 사용자 ID 확인
+    console.log('별점 클릭 시 사용자 ID:', user.id);
+    
     setIsLoading(true);
-    setRating(value); // 즉시 UI 업데이트
-
-    try {
-      // Supabase로 별점 저장
-      const success = await saveRating(item.id, value);
-
-      if (success) {
-        // 저장 성공 후 업데이트된 정보 조회
-        const updatedData = await fetchRating(item.id);
-        if (updatedData) {
-          setAvgRating(updatedData.avg_rating);
-          setRatingCount(updatedData.rating_count);
-        }
-      } else {
-        // 저장 실패 시 롤백
-        setRating(item.user_rating);
+    setRating(value); // 화면에 바로 반영
+    
+    console.log('별점 만들기 시도:', value, '메뉴아이템 ID:', item.id);
+    
+    // Supabase에 저장
+    const success = await saveRating(item.id, value);
+    
+    if (success) {
+      // 성공 시 새로운 평균 별점 조회
+      const updatedData = await fetchRating(item.id);
+      if (updatedData) {
+        setAvgRating(updatedData.avg_rating);
+        setRatingCount(updatedData.rating_count);
       }
-    } catch (error) {
-      console.error('별점 처리 중 오류:', error);
-      setRating(item.user_rating); // 오류 발생 시 원래 별점으로 롤백
+    } else {
+      // 저장 실패 시 롤백
+      setRating(item.user_rating);
     } finally {
       setIsLoading(false);
     }
