@@ -862,8 +862,21 @@ async function saveMenuItems(mealId, menuItems, schoolCode) {
   }
   
   try {
+    // DB 연결 테스트
+    const { data: testData, error: testError } = await supabaseAdmin
+      .from('meal_menu_items')
+      .select('count(*)')
+      .limit(1);
+      
+    if (testError) {
+      console.error(`[${schoolCode}] DB 연결 테스트 실패:`, testError);
+    } else {
+      console.log(`[${schoolCode}] DB 연결 테스트 성공:`, testData);
+    }
+    
     console.log(`[${schoolCode}] 기존 메뉴 아이템 삭제 시도 (meal_id: ${mealId})`);
-    // 기존 메뉴 아이템 삭제 (재저장 시 중복 방지) - 서비스 롤 키 사용
+    
+    // 기존 메뉴 아이템 삭제 (재저장 시 중복 방지)
     const { error: deleteError } = await supabaseAdmin
       .from('meal_menu_items')
       .delete()
@@ -884,17 +897,32 @@ async function saveMenuItems(mealId, menuItems, schoolCode) {
     console.log(`[${schoolCode}] 새 메뉴 아이템 ${menuItemsToInsert.length}개 저장 시도:`, 
       JSON.stringify(menuItemsToInsert.slice(0, 2)) + (menuItemsToInsert.length > 2 ? '...' : ''));
     
-    // 서비스 롤 키를 사용하여 RLS 정책 우회
+    // 메뉴 아이템 삽입
     const { data, error } = await supabaseAdmin
       .from('meal_menu_items')
-      .insert(menuItemsToInsert);
+      .insert(menuItemsToInsert)
+      .select('id');
     
     if (error) {
       console.error(`[${schoolCode}] 메뉴 아이템 저장 오류:`, error);
       return false;
     }
     
-    console.log(`[${schoolCode}] 메뉴 아이템 ${menuItemsToInsert.length}개 저장 완료`);
+    console.log(`[${schoolCode}] 메뉴 아이템 ${menuItemsToInsert.length}개 저장 완료. 응답:`, data ? `${data.length} 항목 반환` : '반환된 데이터 없음');
+    
+    // 저장된 메뉴 아이템 확인
+    const { data: savedItems, error: checkError } = await supabaseAdmin
+      .from('meal_menu_items')
+      .select('id, item_name')
+      .eq('meal_id', mealId)
+      .limit(5);
+      
+    if (checkError) {
+      console.error(`[${schoolCode}] 저장된 메뉴 아이템 확인 오류:`, checkError);
+    } else {
+      console.log(`[${schoolCode}] 저장된 메뉴 아이템 확인 결과:`, savedItems);
+    }
+    
     return true;
   } catch (err) {
     console.error(`[${schoolCode}] 메뉴 아이템 저장 중 예외 발생:`, err);

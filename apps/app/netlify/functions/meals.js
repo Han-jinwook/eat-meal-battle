@@ -622,7 +622,20 @@ exports.handler = async function(event, context) {
     // 급식 ID가 있는 경우 메뉴 아이템 조회
     if (mealData && mealData.id) {
       try {
-        console.log(`급식 ${mealData.id}의 메뉴 아이템 조회 시도 (서비스 롤 키 사용)`);
+        console.log(`[급식 정보 API] 급식 ${mealData.id}의 메뉴 아이템 조회 시도 (서비스 롤 키 사용) - 학교코드: ${mealData.school_code}, 날짜: ${mealData.meal_date}`);
+        
+        // DB 연결 테스트
+        const { data: testData, error: testError } = await supabaseAdmin
+          .from('meal_menu_items')
+          .select('count(*)')
+          .limit(1);
+          
+        if (testError) {
+          console.error(`[급식 정보 API] DB 연결 테스트 실패:`, testError);
+        } else {
+          console.log(`[급식 정보 API] DB 연결 테스트 성공:`, testData);
+        }
+        
         // 급식에 대한 메뉴 아이템 조회 - 서비스 롤 키 사용하여 RLS 정책 우회
         const { data: menuItems, error: menuItemsError } = await supabaseAdmin
           .from('meal_menu_items')
@@ -631,15 +644,24 @@ exports.handler = async function(event, context) {
           .order('item_order', { ascending: true });
         
         if (menuItemsError) {
-          console.error(`급식 ${mealData.id}의 메뉴 아이템 조회 오류:`, menuItemsError);
+          console.error(`[급식 정보 API] 급식 ${mealData.id}의 메뉴 아이템 조회 오류:`, menuItemsError);
           mealData.menuItems = [];
         } else if (menuItems && menuItems.length > 0) {
           // 기존 menu_items 배열은 유지하면서 새로운 menuItems 객체 배열 추가
-          console.log(`급식 ${mealData.id}의 메뉴 아이템 ${menuItems.length}개 조회 성공:`, 
-            JSON.stringify(menuItems.slice(0, 2)) + (menuItems.length > 2 ? '...' : ''));
+          console.log(`[급식 정보 API] 급식 ${mealData.id}의 메뉴 아이템 ${menuItems.length}개 조회 성공`);
+          console.log(`[급식 정보 API] 처음 ${Math.min(3, menuItems.length)}개 아이템:`, 
+            JSON.stringify(menuItems.slice(0, 3)));
           mealData.menuItems = menuItems;
         } else {
-          console.log(`급식 ${mealData.id}의 메뉴 아이템 없음`);
+          console.log(`[급식 정보 API] 급식 ${mealData.id}의 메뉴 아이템 없음. 기존 menu_items 사용`);
+          
+          // 기존 menu_items가 있는지 확인
+          if (mealData.menu_items && mealData.menu_items.length > 0) {
+            console.log(`[급식 정보 API] 기존 menu_items ${mealData.menu_items.length}개 사용`);
+          } else {
+            console.log(`[급식 정보 API] 기존 menu_items도 없음`);
+          }
+          
           mealData.menuItems = [];
         }
       } catch (menuItemError) {
