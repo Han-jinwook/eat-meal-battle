@@ -22,7 +22,8 @@ interface MealCardProps {
 
 // 별점 지정/표시 컴포넌트
 function MenuItemWithRating({ item }: { item: MealMenuItem }) {
-  const { user } = useUser(); // useUser에서 user 프로퍼티만 구조분해할당
+  const userContext = useUser();
+  const user = userContext?.user || null; // null 값 처리
   const [rating, setRating] = useState<number | null>(item.user_rating || null);
   const [avgRating, setAvgRating] = useState<number | null>(item.avg_rating || null);
   const [ratingCount, setRatingCount] = useState<number | null>(item.rating_count || null);
