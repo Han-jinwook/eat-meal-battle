@@ -12,4 +12,15 @@ export interface MealInfo {
   ntr_info?: string;
   origin_info?: string;
   created_at: string;
+  menuItems?: MealMenuItem[]; // 개별 메뉴 아이템 배열
+}
+
+// 메뉴 아이템 타입
+export interface MealMenuItem {
+  id: string;
+  meal_id: string;
+  item_name: string;
+  item_order: number;
+  created_at: string;
+  updated_at: string;
 }

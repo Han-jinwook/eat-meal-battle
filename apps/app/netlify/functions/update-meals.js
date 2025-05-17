@@ -733,6 +733,29 @@ exports.handler = async function(event, context) {
             });
           } else {
             console.log(`[${school.school_code}] 급식 없음 정보 저장 성공`);
+            
+            // 급식 없음 정보도 메뉴 아이템 테이블에 저장
+            try {
+              // 저장된 급식의 ID 가져오기
+              const { data: savedMeal, error: selectError } = await supabase
+                .from('meal_menus')
+                .select('id')
+                .eq('school_code', school.school_code)
+                .eq('meal_date', getTodayDate())
+                .eq('meal_type', '중식')
+                .single();
+              
+              if (selectError) {
+                console.error(`[${school.school_code}] 급식 없음 ID 조회 오류:`, selectError);
+              } else if (savedMeal && savedMeal.id) {
+                // 메뉴 아이템 개별 저장 함수 호출
+                await saveMenuItems(savedMeal.id, emptyMealData.menu_items, school.school_code);
+              }
+            } catch (menuItemError) {
+              console.error(`[${school.school_code}] 급식 없음 메뉴 아이템 저장 중 오류:`, menuItemError);
+              // 메뉴 아이템 저장 실패는 전체 급식 업데이트 결과에 영향을 주지 않음
+            }
+            
             results.empty++;
             results.details.push({
               school_code: school.school_code,
@@ -762,6 +785,29 @@ exports.handler = async function(event, context) {
           });
         } else {
           console.log(`[${school.school_code}] 학교 급식 정보 저장 성공`);
+          
+          // 급식 정보 저장 성공 후 메뉴 아이템 개별 저장 시도
+          try {
+            // 저장된 급식의 ID 가져오기
+            const { data: savedMeal, error: selectError } = await supabase
+              .from('meal_menus')
+              .select('id')
+              .eq('school_code', school.school_code)
+              .eq('meal_date', mealData.meal_date)
+              .eq('meal_type', mealData.meal_type)
+              .single();
+            
+            if (selectError) {
+              console.error(`[${school.school_code}] 급식 ID 조회 오류:`, selectError);
+            } else if (savedMeal && savedMeal.id) {
+              // 메뉴 아이템 개별 저장 함수 호출
+              await saveMenuItems(savedMeal.id, mealData.menu_items, school.school_code);
+            }
+          } catch (menuItemError) {
+            console.error(`[${school.school_code}] 메뉴 아이템 저장 중 오류:`, menuItemError);
+            // 메뉴 아이템 저장 실패는 전체 급식 업데이트 결과에 영향을 주지 않음
+          }
+          
           results.success++;
           results.details.push({
             school_code: school.school_code,
@@ -783,7 +829,47 @@ exports.handler = async function(event, context) {
       await new Promise(resolve => setTimeout(resolve, 500)); 
     }
     
-    // 응답 반환
+    // 메뉴 아이템 개별 저장 함수
+async function saveMenuItems(mealId, menuItems, schoolCode) {
+  console.log(`[${schoolCode}] 메뉴 아이템 저장 시작: 항목 수 ${menuItems.length}`);
+  
+  try {
+    // 기존 메뉴 아이템 삭제 (재저장 시 중복 방지)
+    const { error: deleteError } = await supabase
+      .from('meal_menu_items')
+      .delete()
+      .eq('meal_id', mealId);
+    
+    if (deleteError) {
+      console.error(`[${schoolCode}] 기존 메뉴 아이템 삭제 오류:`, deleteError);
+      return false;
+    }
+    
+    // 새 메뉴 아이템 저장
+    const menuItemsToInsert = menuItems.map((item, index) => ({
+      meal_id: mealId,
+      item_name: item,
+      item_order: index + 1
+    }));
+    
+    const { data, error } = await supabase
+      .from('meal_menu_items')
+      .insert(menuItemsToInsert);
+    
+    if (error) {
+      console.error(`[${schoolCode}] 메뉴 아이템 저장 오류:`, error);
+      return false;
+    }
+    
+    console.log(`[${schoolCode}] 메뉴 아이템 ${menuItemsToInsert.length}개 저장 완료`);
+    return true;
+  } catch (err) {
+    console.error(`[${schoolCode}] 메뉴 아이템 저장 중 예외 발생:`, err);
+    return false;
+  }
+}
+
+// 응답 반환
     return {
       statusCode: 200,
       body: JSON.stringify({

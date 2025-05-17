@@ -1,6 +1,6 @@
 import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate } from '@/utils/DateUtils';
-import { MealInfo } from '@/types'; // re-use type until moved to separate file
+import { MealInfo, MealMenuItem } from '@/types'; // 메뉴 아이템 타입 추가
 
 interface MealCardProps {
   meal: MealInfo;
@@ -79,11 +79,21 @@ export default function MealCard({
         {/* 메뉴 목록 */}
         <div className="mb-4">
           <ul className="space-y-1">
-            {meal.menu_items.map((item, idx) => (
-              <li key={idx} className="text-gray-700">
-                {item}
-              </li>
-            ))}
+            {meal.menuItems && meal.menuItems.length > 0 ? (
+              // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용)
+              meal.menuItems.map((item) => (
+                <li key={item.id} className="text-gray-700">
+                  {item.item_name}
+                </li>
+              ))
+            ) : (
+              // 기존 menu_items 배열 사용 (하위 호환성 유지)
+              meal.menu_items.map((item, idx) => (
+                <li key={idx} className="text-gray-700">
+                  {item}
+                </li>
+              ))
+            )}
           </ul>
         </div>
 

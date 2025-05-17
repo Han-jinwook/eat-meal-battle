@@ -14,6 +14,16 @@ export interface MealInfo {
   ntr_info?: string;
   origin_info?: string;
   created_at: string;
+  menuItems?: MealMenuItem[];
+}
+
+export interface MealMenuItem {
+  id: string;
+  meal_id: string;
+  item_name: string;
+  item_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UseMealsReturn {

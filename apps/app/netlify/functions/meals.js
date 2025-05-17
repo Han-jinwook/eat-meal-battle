@@ -612,6 +612,31 @@ exports.handler = async function(event, context) {
       delete mealData.source;
     }
     
+    // 급식 ID가 있는 경우 메뉴 아이템 조회
+    if (mealData && mealData.id) {
+      try {
+        // 급식에 대한 메뉴 아이템 조회
+        const { data: menuItems, error: menuItemsError } = await supabase
+          .from('meal_menu_items')
+          .select('*')
+          .eq('meal_id', mealData.id)
+          .order('item_order', { ascending: true });
+        
+        if (!menuItemsError && menuItems && menuItems.length > 0) {
+          // 기존 menu_items 배열은 유지하면서 새로운 menuItems 객체 배열 추가
+          console.log(`급식 ${mealData.id}의 메뉴 아이템 ${menuItems.length}개 조회 성공`);
+          mealData.menuItems = menuItems;
+        } else {
+          console.log(`급식 ${mealData.id}의 메뉴 아이템 없음`);
+          mealData.menuItems = [];
+        }
+      } catch (menuItemError) {
+        console.error('메뉴 아이템 조회 오류:', menuItemError);
+        mealData.menuItems = [];
+      }
+    }
+    
+    // 응답 반환
     return {
       statusCode: 200,
       body: JSON.stringify({

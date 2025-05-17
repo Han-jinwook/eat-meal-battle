@@ -9,23 +9,8 @@ import MealCard from '@/components/MealCard';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useMeals from '@/hooks/useMeals';
 import useModal from '@/hooks/useModal';
-// import { MealInfo } from '@/types'; // 중복 타입 제거
+import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
 // 디버그 패널 제거
-
-// 급식 정보 타입 정의
-interface MealInfo {
-  id: string;
-  school_code: string;
-  office_code: string;
-  school_name?: string; // UI에 표시할 학교명
-  meal_date: string;
-  meal_type: string;
-  menu_items: string[];
-  kcal: string;
-  ntr_info?: string;
-  origin_info?: string;
-  created_at: string;
-}
 
 export default function Home() {
   const router = useRouter();
