@@ -104,17 +104,28 @@ const MenuItemWithRating = ({ item }: { item: MealMenuItem }) => {
   
   return (
     <li className="flex justify-between items-center py-2 border-b border-gray-100">
-      <div className="text-gray-700">{item.item_name}</div>
-      <div className="rating-container">
-        <StarRating 
-          value={rating || 0}
-          onChange={handleRating}
-          interactive={!!user}
-          showValue={true}
-          ratingCount={ratingCount}
-          size="small"
-        />
+      {/* 별점 영역 - 왼쪽으로 이동 */}
+      <div className="flex items-center">
+        <div className="rating-container mr-3">
+          {/* 사용자 여부와 관계없이 항상 클릭 가능하게 */}
+          {/* 별표 크기 키움 */}
+          <StarRating 
+            value={rating || 0}
+            onChange={handleRating}
+            interactive={true}
+            showValue={false}
+            size="medium"
+          />
+        </div>
+        <div className="text-gray-700">{item.item_name}</div>
       </div>
+      
+      {/* 평균 별점 표시 */}
+      {avgRating && ratingCount ? (
+        <div className="text-sm text-gray-500">
+          {avgRating.toFixed(1)} ({ratingCount}명)
+        </div>
+      ) : null}
     </li>
   );
 };

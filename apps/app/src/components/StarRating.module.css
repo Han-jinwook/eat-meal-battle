@@ -25,15 +25,15 @@
 }
 
 .filled {
-  color: #ffc107;
+  color: #ffb700; /* 더 진한 노란색 */
 }
 
 .halfFilled {
-  color: #ffc107;
+  color: #ffb700;
 }
 
 .empty {
-  color: #e4e5e9;
+  color: #bdbdbd; /* 더 어두운 회색 */
 }
 
 .positive {
