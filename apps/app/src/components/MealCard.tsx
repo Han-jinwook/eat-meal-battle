@@ -146,35 +146,40 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
 
   // 별점 클릭 이벤트 처리 함수
   const handleRating = async (value: number) => {
-    // 로그인되지 않은 경우 로그만 출력
-    if (!user) {
-      console.log('로그인되지 않은 사용자는 별점을 남길 수 없습니다');
-      // 어러트 추가 - 사용자에게 로그인 필요함을 알리기
-      alert('별점을 남기려면 로그인해주세요!'); 
-      return;
-    }
-    
-    // 디버깅용 사용자 ID 확인
-    console.log('별점 클릭 시 사용자 ID:', user.id);
-    
-    setIsLoading(true);
-    setRating(value); // 화면에 바로 반영
-    
-    console.log('별점 만들기 시도:', value, '메뉴아이템 ID:', item.id);
-    
-    // Supabase에 저장
-    const success = await saveRating(item.id, value);
-    
-    if (success) {
-      // 성공 시 새로운 평균 별점 조회
-      const updatedData = await fetchRating(item.id);
-      if (updatedData) {
-        setAvgRating(updatedData.avg_rating);
-        setRatingCount(updatedData.rating_count);
+    try {
+      // 로그인되지 않은 경우 로그만 출력
+      if (!user) {
+        console.log('로그인되지 않은 사용자는 별점을 남길 수 없습니다');
+        // 어러트 추가 - 사용자에게 로그인 필요함을 알리기
+        alert('별점을 남기려면 로그인해주세요!'); 
+        return;
       }
-    } else {
-      // 저장 실패 시 롤백
-      setRating(item.user_rating);
+      
+      // 디버깅용 사용자 ID 확인
+      console.log('별점 클릭 시 사용자 ID:', user.id);
+      
+      setIsLoading(true);
+      setRating(value); // 화면에 바로 반영
+      
+      console.log('별점 만들기 시도:', value, '메뉴아이템 ID:', item.id);
+      
+      // Supabase에 저장
+      const success = await saveRating(item.id, value);
+      
+      if (success) {
+        // 성공 시 새로운 평균 별점 조회
+        const updatedData = await fetchRating(item.id);
+        if (updatedData) {
+          setAvgRating(updatedData.avg_rating);
+          setRatingCount(updatedData.rating_count);
+        }
+      } else {
+        // 저장 실패 시 롤백
+        setRating(item.user_rating);
+      }
+    } catch (error) {
+      console.error('별점 처리 중 오류:', error);
+      setRating(item.user_rating); // 오류 발생 시 원래 별점으로 롤백
     } finally {
       setIsLoading(false);
     }
