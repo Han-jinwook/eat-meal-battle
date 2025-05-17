@@ -544,6 +544,54 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       console.error(`급식 정보 저장 오류:`, saveError);
     } else {
       console.log(`급식 정보 저장 성공`);
+      
+      try {
+        // 급식 ID 조회
+        const { data: mealIdData, error: mealIdError } = await supabaseAdmin
+          .from('meal_menus')
+          .select('id')
+          .eq('school_code', meals[0].school_code)
+          .eq('meal_date', meals[0].meal_date)
+          .eq('meal_type', meals[0].meal_type)
+          .single();
+        
+        if (mealIdError) {
+          console.error(`급식 ID 조회 오류:`, mealIdError);
+        } else if (mealIdData && mealIdData.id) {
+          console.log(`API에서 가져온 급식의 메뉴 아이템 저장 시도 (meal_id: ${mealIdData.id})`);
+          
+          // 기존 메뉴 아이템 삭제
+          const { error: deleteError } = await supabaseAdmin
+            .from('meal_menu_items')
+            .delete()
+            .eq('meal_id', mealIdData.id);
+          
+          if (deleteError) {
+            console.error(`기존 메뉴 아이템 삭제 오류:`, deleteError);
+          } else {
+            // 각 메뉴 아이템 저장
+            const menuItemsToInsert = meals[0].menu_items.map((item, index) => ({
+              meal_id: mealIdData.id,
+              item_name: item,
+              item_order: index + 1
+            }));
+            
+            console.log(`메뉴 아이템 ${menuItemsToInsert.length}개 삽입 시도`);
+            
+            const { data: insertData, error: insertError } = await supabaseAdmin
+              .from('meal_menu_items')
+              .insert(menuItemsToInsert);
+            
+            if (insertError) {
+              console.error(`메뉴 아이템 삽입 오류:`, insertError);
+            } else {
+              console.log(`메뉴 아이템 ${menuItemsToInsert.length}개 삽입 성공`);
+            }
+          }
+        }
+      } catch (menuItemError) {
+        console.error(`메뉴 아이템 저장 중 오류:`, menuItemError);
+      }
     }
     
     // 처음 찾은 급식 정보 반환 (API에서 가져온 데이터)
