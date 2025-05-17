@@ -214,10 +214,10 @@ function parseMealInfo(data) {
     // '중식'만 필터링해서 반환
     const lunchMeals = meals.filter(meal => meal.meal_type === '중식');
     console.log(`파싱된 중식 급식 정보: ${lunchMeals.length}개`);
-    return { ...meal, school, mlsv_ymd, mmeal_sc, orplc_info: originInfo };
+    return lunchMeals;
   } catch (err) {
-    console.error(`Error parsing meal info for ${meal.MLSV_YMD}:`, err);
-    return meal;
+    console.error('급식 정보 조회 실패:', err);
+    return [];
   }
 }
 
