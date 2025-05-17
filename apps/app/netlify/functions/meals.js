@@ -624,10 +624,10 @@ exports.handler = async function(event, context) {
       try {
         console.log(`[급식 정보 API] 급식 ${mealData.id}의 메뉴 아이템 조회 시도 (서비스 롤 키 사용) - 학교코드: ${mealData.school_code}, 날짜: ${mealData.meal_date}`);
         
-        // DB 연결 테스트
+        // DB 연결 테스트 - id 필드를 사용해서 테스트
         const { data: testData, error: testError } = await supabaseAdmin
           .from('meal_menu_items')
-          .select('count(*)')
+          .select('id')
           .limit(1);
           
         if (testError) {

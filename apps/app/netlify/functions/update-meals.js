@@ -862,10 +862,10 @@ async function saveMenuItems(mealId, menuItems, schoolCode) {
   }
   
   try {
-    // DB 연결 테스트
+    // DB 연결 테스트 - id 필드를 사용해서 테스트
     const { data: testData, error: testError } = await supabaseAdmin
       .from('meal_menu_items')
-      .select('count(*)')
+      .select('id')
       .limit(1);
       
     if (testError) {
