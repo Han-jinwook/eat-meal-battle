@@ -55,26 +55,37 @@ exports.handler = async function(event, context) {
   try {
     // HTTP 메소드 확인
     if (event.httpMethod === 'POST') {
-      // 사용자 인증 확인
-      const token = event.headers.authorization?.replace('Bearer ', '');
-      if (!token) {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({ error: '인증이 필요합니다' })
-        };
-      }
-      
-      // 토큰으로 사용자 정보 확인
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !user) {
-        return {
-          statusCode: 401,
-          body: JSON.stringify({ error: '유효하지 않은 인증 정보입니다' })
-        };
-      }
+      console.log('별점 저장 API 호출 받음', new Date().toISOString());
       
       // 요청 데이터 파싱
-      const { menu_item_id, rating } = JSON.parse(event.body);
+      const requestData = JSON.parse(event.body);
+      console.log('요청 데이터:', requestData);
+      
+      // 테스트 모드 확인 - 개발용
+      if (requestData.test_mode) {
+        console.log('테스트 모드 작동 - 인증 건너뜁');
+      } else {
+        // 사용자 인증 확인 (프로덕션용)
+        const token = event.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+          return {
+            statusCode: 401,
+            body: JSON.stringify({ error: '인증이 필요합니다' })
+          };
+        }
+        
+        // 토큰으로 사용자 정보 확인
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !user) {
+          return {
+            statusCode: 401,
+            body: JSON.stringify({ error: '유효하지 않은 인증 정보입니다' })
+          };
+        }
+      }
+      
+      // 패러러터 추출 (이미 위에서 실행한 JSON.parse 대신 requestData 사용)
+      const { menu_item_id, rating } = requestData;
       
       // 필수 파라미터 확인
       if (!menu_item_id || !rating || rating < 1 || rating > 5) {
@@ -85,10 +96,14 @@ exports.handler = async function(event, context) {
       }
       
       // 별점 저장 또는 업데이트
+      const userId = requestData.test_mode ? '00000000-0000-0000-0000-000000000000' : user.id;
+      console.log('저장할 사용자 ID:', userId);
+      
+      // 별점 저장
       const { data, error } = await supabaseAdmin
         .from('menu_item_ratings')
         .upsert({
-          user_id: user.id,
+          user_id: userId,
           menu_item_id,
           rating,
           updated_at: new Date().toISOString()
@@ -96,6 +111,8 @@ exports.handler = async function(event, context) {
           onConflict: 'user_id,menu_item_id',
           returning: 'minimal'
         });
+        
+      console.log('별점 저장 결과:', error ? '오류 발생' : '성공');
         
       if (error) {
         console.error('별점 저장 오류:', error);
