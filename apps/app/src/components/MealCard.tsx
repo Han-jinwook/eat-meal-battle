@@ -196,7 +196,7 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     }
   }, [item.id, user, item]);
 
-  // 별점 클릭 이벤트 처리 함수 - 단순화된 버전
+  // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결
   const handleRating = async (value: number) => {
     try {
       // 로그인 확인
@@ -212,30 +212,38 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
       
       console.log('⭐ 별점 선택:', value);
       
-      // 화면에 바로 반영 및 로딩 상태 설정
+      // 일시적으로 로딩 상태로 전환하지만 별점은 그대로 유지
       setIsLoading(true);
+      // 클릭한 값을 상태에 즉시 반영
+      const previousRating = rating;
       setRating(value); 
       
       // 별점 저장
       const success = await saveRating(item.id, value);
       
       if (success) {
-        // 저장 성공 시 새로운 통계 조회
-        const updatedData = await fetchRating(item.id);
+        // 저장 성공해도 클릭한 값 유지 (UI 응답성)
+        console.log('별점 저장 성공, 화면에 유지:', value);
         
-        if (updatedData) {
-          // 상태 업데이트
-          setRating(updatedData.user_rating);
-          setAvgRating(updatedData.avg_rating);
-          setRatingCount(updatedData.rating_count);
+        // 백그라운드에서 새 통계만 가져옴
+        try {
+          const updatedData = await fetchRating(item.id);
+          if (updatedData && updatedData.avg_rating) {
+            // 평균과 개수만 업데이트
+            setAvgRating(updatedData.avg_rating);
+            setRatingCount(updatedData.rating_count);
+          }
+        } catch (fetchError) {
+          console.error('통계 조회 실패, 화면은 유지함:', fetchError);
         }
       } else {
-        // 저장 실패 시 원래 상태로 되돌림
-        setRating(item.user_rating);
+        // 저장 실패 시에만 이전 상태로 되돌림
+        setRating(previousRating);
+        console.warn('별점 저장 실패, 이전 상태로 복원');
       }
     } catch (error) {
       console.error('별점 처리 중 오류:', error);
-      setRating(item.user_rating); 
+      // 에러 발생 시 별점 유지 (새로고침하면 DB 상태로 돌아감)
     } finally {
       setIsLoading(false);
     }
