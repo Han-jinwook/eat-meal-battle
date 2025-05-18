@@ -1,11 +1,3 @@
-[2025-05-12 개발 현황 메모]
-=================================
-
-
-
-
-DataBase 스키마  (25년 5월13일 현재)
-
 ### Table: meal_images
 
 | 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
@@ -17,6 +9,17 @@ DataBase 스키마  (25년 5월13일 현재)
 | source | text | YES |  |
 | status | text | YES |  |
 | uploaded_by | uuid | NO |  |
+
+### Table: meal_menu_items
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| avg_rating | double precision | YES |  |
+| created_at | timestamp with time zone | YES |  |
+| id | uuid | NO |  |
+| item_name | text | NO |  |
+| item_order | integer | NO |  |
+| meal_id | uuid | NO |  |
+| rating_count | integer | YES |  |
+| updated_at | timestamp with time zone | YES |  |
 
 ### Table: meal_menus
 
@@ -33,6 +36,35 @@ DataBase 스키마  (25년 5월13일 현재)
 | origin_info | text | YES |  |
 | school_code | text | NO |  |
 | updated_at | timestamp with time zone | YES |  |
+
+### Table: meal_rating_stats
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| avg_rating | real | YES |  |
+| grade | integer | YES |  |
+| id | uuid | NO |  |
+| meal_id | uuid | NO |  |
+| rating_count | integer | YES |  |
+| school_code | text | NO |  |
+| updated_at | timestamp with time zone | YES |  |
+
+### Table: menu_item_rating_stats
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| avg_rating | real | YES |  |
+| grade | integer | YES |  |
+| id | uuid | NO |  |
+| menu_item_id | uuid | NO |  |
+| rating_count | integer | YES |  |
+| school_code | text | NO |  |
+| updated_at | timestamp with time zone | YES |  |
+
+### Table: menu_item_ratings
+
+| 컬럼명 | 자료형 | 널 허용 | 길이 |\n|:---|:---|:---|:---|\n| created_at | timestamp with time zone | YES |  |
+| id | uuid | NO |  |
+| menu_item_id | uuid | NO |  |
+| rating | integer | NO |  |
+| updated_at | timestamp with time zone | YES |  |
+| user_id | uuid | NO |  |
 
 ### Table: notification_recipients
 

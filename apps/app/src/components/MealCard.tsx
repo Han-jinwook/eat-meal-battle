@@ -5,6 +5,7 @@ import StarRating from '@/components/StarRating';
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUser } from '@supabase/auth-helpers-react';
+import MyMealRating from '@/components/MyMealRating';
 
 // Supabase 클라이언트 초기화
 const supabase = createClientComponentClient();
@@ -47,47 +48,44 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     if (user) console.log('사용자 ID:', user.id); // 사용자 ID 디버깅 로그 추가
   }, [user]);
 
-  // 사용자 별점 저장 함수 - 개선된 오류 처리 및 로깅
+  // 사용자 별점 저장 함수 - 단순화된 버전, 타입 변환 오류 수정
   const saveRating = async (menuItemId: string, rating: number) => {
     try {
       // 사용자 인증 확인
       if (!user || !user.id) {
-        console.error('❌ 사용자 로그인 가능한 상태가 아닙니다 - user:', user);
+        console.error('❌ 사용자 로그인 상태가 아닙니다');
         alert('별점을 남기려면 로그인해주세요!');
         return false;
       }
       
-      // 메뉴 아이템 ID 확인
       if (!menuItemId) {
         console.error('❌ 메뉴 아이템 ID가 없습니다');
         return false;
       }
       
-      console.log('💾 별점 저장 시도 - 메뉴아이템:', menuItemId, '별점:', rating, '사용자:', user.id);
+      console.log('💾 별점 저장 시도:', menuItemId, rating);
       
-      // Supabase에 별점 저장 - UPSERT 사용(업데이트 또는 삽입)
-      const { data, error } = await supabase
+      // Supabase에 별점 저장 - UPSERT 사용
+      const { error } = await supabase
         .from('menu_item_ratings')
         .upsert({
           user_id: user.id,
           menu_item_id: menuItemId,
-          rating,
+          rating: rating,  // 명시적으로 숫자 전달
           updated_at: new Date().toISOString()
         }, { 
-          onConflict: 'user_id,menu_item_id',
-          returning: 'minimal'  // 반환데이터 최소화
+          onConflict: 'user_id,menu_item_id'
         });
       
-      // 오류 처리
       if (error) {
-        console.error('❌ Supabase 저장 오류:', error.message);
+        console.error('❌ 저장 오류:', error.message);
         return false;
       }
       
       console.log('✅ 별점 저장 성공!');
       return true;
     } catch (error) {
-      console.error('❌ 별점 저장 중 예상치 못한 오류:', error);
+      console.error('❌ 별점 저장 중 오류:', error);
       return false;
     }
   };
@@ -102,11 +100,25 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
         return null;
       }
       
-      // 평균 별점 및 평가 개수 조회
-      const { data: statsData, error: statsError } = await supabase
-        .rpc('get_menu_item_rating_stats', { item_id: menuItemId });
+      // 먼저 개별 메뉴 항목의 평균 평점 직접 계산
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('menu_item_ratings')
+        .select('rating')
+        .eq('menu_item_id', menuItemId);
         
-      console.log('통계 함수 결과:', statsData, statsError ? `오류: ${statsError.message}` : '성공');
+      if (ratingsError) {
+        console.error('평점 데이터 조회 오류:', ratingsError.message);
+        return null;
+      }
+
+      // 평균 및 개수 계산
+      const ratings = ratingsData || [];
+      const avgRating = ratings.length > 0 
+        ? ratings.reduce((sum, item) => sum + item.rating, 0) / ratings.length
+        : 0;
+      const ratingCount = ratings.length;
+
+      console.log('계산된 통계:', { avgRating, ratingCount });
 
       // 사용자 별점 조회 (if logged in)
       let userRating = null;
@@ -128,27 +140,17 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
       } else {
         console.log('로그인되지 않아 사용자 별점을 조회하지 않습니다.');
       }
-
-      if (statsError) {
-        console.error('평균 별점 조회 오류:', statsError.message);
-        // 통계 실패에도 사용자 별점은 반환
-        return {
-          avg_rating: 0,
-          rating_count: 0,
-          user_rating: userRating
-        };
-      }
       
       const result = {
-        avg_rating: statsData?.avg_rating || 0,
-        rating_count: statsData?.rating_count || 0,
+        avg_rating: avgRating,
+        rating_count: ratingCount,
         user_rating: userRating
       };
       
       console.log('✅ 최종 별점 조회 결과:', result);
       return result;
     } catch (error) {
-      console.error('크리티커 별점 정보 조회 오류:', error);
+      console.error('별점 정보 조회 오류:', error);
       // 오류 발생시 기본값 반환
       return {
         avg_rating: 0,
@@ -158,111 +160,83 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     }
   };
 
-  // 별점 상태 갱신 함수 - 재사용성을 위해 분리
-  const updateRatingState = async (menuItemId: string, forceRefresh = false) => {
-    console.log('⏲️ 별점 상태 갱신 시도:', menuItemId, forceRefresh ? '(강제 새로고침)' : '');
-    
+  // 별점 상태 초기화 함수 - 단순화된 버전
+  const initRatingState = async () => {
     try {
-      // forceRefresh가 아니고 이미 아이템에 사용자 별점이 있으면 가져옴
-      if (!forceRefresh && item.user_rating !== undefined) {
-        console.log('이미 별점 정보가 있어 사용함:', {
-          user_rating: item.user_rating,
-          avg_rating: item.avg_rating,
-          rating_count: item.rating_count
-        });
-        
+      // 이미 별점 정보가 있으면 사용
+      if (item.user_rating !== undefined) {
         setRating(item.user_rating);
         setAvgRating(item.avg_rating);
         setRatingCount(item.rating_count);
         return;
       }
 
-      // 항상 평균 별점과 전체 평가 개수는 가져옴
-      const data = await fetchRating(menuItemId);
+      // 서버에서 데이터 조회
+      const data = await fetchRating(item.id);
       
       if (data) {
-        console.log('✅ 별점 상태 갱신 성공:', data);
         setRating(data.user_rating);
         setAvgRating(data.avg_rating);
         setRatingCount(data.rating_count);
       } else {
-        console.warn('⚠️ 별점 상태 갱신 실패 - 기본값 사용');
+        // 조회 실패 시 기본값 사용
         setRating(null);
         setAvgRating(0);
         setRatingCount(0);
       }
     } catch (error) {
-      console.error('별점 상태 갱신 중 오류:', error);
+      console.error('별점 데이터 초기화 중 오류:', error);
     }
   };
 
-  // 초기 별점 조회 및 사용자 변경 시 재조회
+  // 초기 별점 조회 및 사용자/아이템 변경 시 재조회
   useEffect(() => {
     if (item && item.id) {
-      updateRatingState(item.id, false);
+      initRatingState();
     }
-  }, [item.id, user]);
-  
-  // 상위 컴포넌트에서 날짜 변경 시 새로고침을 위한 개선
-  useEffect(() => {
-    // item 객체가 변경되면 강제 새로고침
-    console.log('메뉴 아이템 변경 감지 - 별점 데이터 강제 새로고침');
-    if (item && item.id) {
-      updateRatingState(item.id, true);
-    }
-  }, [item]);
+  }, [item.id, user, item]);
 
-  // 별점 클릭 이벤트 처리 함수 - 엔드투엔드 개선
+  // 별점 클릭 이벤트 처리 함수 - 단순화된 버전
   const handleRating = async (value: number) => {
     try {
-      // 로그인되지 않은 경우 로그만 출력
+      // 로그인 확인
       if (!user) {
-        console.log('로그인되지 않은 사용자는 별점을 남길 수 없습니다');
-        // 어러트 추가 - 사용자에게 로그인 필요함을 알리기
         alert('별점을 남기려면 로그인해주세요!'); 
         return;
       }
       
-      // 분리에 대비
       if (!item.id) {
         console.error('메뉴 아이템 ID가 없습니다');
         return;
       }
       
-      console.log('⭐ 별점 클릭 번호:', value, '메뉴아이템:', item.id, '사용자:', user.id);
+      console.log('⭐ 별점 선택:', value);
       
-      // 로딩 상태로 전환 및 UI 즉시 업데이트
+      // 화면에 바로 반영 및 로딩 상태 설정
       setIsLoading(true);
-      setRating(value); // 화면에 바로 반영 (사용자 경험 향상)
+      setRating(value); 
       
-      // Supabase에 저장
+      // 별점 저장
       const success = await saveRating(item.id, value);
       
       if (success) {
-        console.log('별점 저장 후 새로운 통계 데이터 조회 시도');
-        
-        // 저장 성공시 반드시 새로 갱신된 통계 조회
+        // 저장 성공 시 새로운 통계 조회
         const updatedData = await fetchRating(item.id);
         
         if (updatedData) {
-          console.log('✅ 성공적으로 새로운 통계 받음:', updatedData);
-          setRating(updatedData.user_rating); // 필요한 경우만 상태 갱신
+          // 상태 업데이트
+          setRating(updatedData.user_rating);
           setAvgRating(updatedData.avg_rating);
           setRatingCount(updatedData.rating_count);
-        } else {
-          console.warn('⚠️ 새로운 통계 가져오기 실패, 그래도 저장은 성공!');
         }
       } else {
-        // 저장 실패 시 UI 롤백
-        console.error('❌ 별점 저장 실패, 원래 상태로 롤백');
+        // 저장 실패 시 원래 상태로 되돌림
         setRating(item.user_rating);
       }
     } catch (error) {
-      console.error('❌ 별점 처리 중 오류:', error);
-      setRating(item.user_rating); // 오류 발생 시 원래 별점으로 롤백
+      console.error('별점 처리 중 오류:', error);
+      setRating(item.user_rating); 
     } finally {
-      // 데이터 강제 갱신 - 딜레이 없이 즉시 실행
-      updateRatingState(item.id, true); // 전체 데이터 강제 갱신
       setIsLoading(false);
     }
   };
@@ -360,6 +334,9 @@ export default function MealCard({
             </div>
           )}
         </div>
+
+        {/* 오늘 나의 평가는? 섹션 */}
+        <MyMealRating mealId={meal.id} />
 
         {/* 메뉴 목록 */}
         <div className="mb-4">
