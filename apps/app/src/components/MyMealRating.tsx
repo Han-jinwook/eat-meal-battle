@@ -9,15 +9,22 @@ interface MyMealRatingProps {
   mealId: string;
 }
 
+interface MenuItemRating {
+  menu_item_id: string;
+  rating: number;
+}
+
 /**
  * 급식 전체에 대한 평균 평점을 표시하고 사용자가 평점을 매길 수 있는 컴포넌트
  * 평균 평점은 "(4.2)" 형식으로 표시됨
+ * 급식 평점은 해당 급식의 메뉴 아이템 평점들의 평균으로 계산됨
  */
 const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const [user, setUser] = useState<any>(null);
   const [myRating, setMyRating] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [menuItemRatings, setMenuItemRatings] = useState<MenuItemRating[]>([]);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -28,13 +35,89 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     getUser();
   }, []);
 
-  // 내 평점 조회 함수
+  // 급식의 메뉴 아이템 ID 목록 조회
+  const fetchMenuItems = async () => {
+    if (!mealId) return [];
+
+    try {
+      console.log('급식 메뉴 아이템 조회 시작:', mealId);
+      
+      // 해당 급식의 메뉴 아이템 ID 목록 조회
+      const { data, error } = await supabase
+        .from('meal_menu_items')
+        .select('menu_item_id')
+        .eq('meal_id', mealId);
+        
+      if (error) {
+        console.error('메뉴 아이템 조회 오류:', error.message);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('메뉴 아이템이 없음');
+        return [];
+      }
+      
+      console.log('메뉴 아이템 조회 결과:', data.length, '개 항목');
+      return data.map(item => item.menu_item_id);
+    } catch (error) {
+      console.error('메뉴 아이템 조회 중 오류 발생:', error);
+      return [];
+    }
+  };
+
+  // 메뉴 아이템 별점의 평균을 계산하여 급식 평점 저장
+  const calculateAndSaveMealRating = async () => {
+    if (!mealId || !user) return;
+
+    try {
+      // 메뉴 아이템 ID 목록 조회
+      const menuItemIds = await fetchMenuItems();
+      if (menuItemIds.length === 0) return;
+      
+      console.log('내 메뉴 아이템 평점 조회 시작:', menuItemIds.length, '개 항목');
+      
+      // 사용자의 메뉴 아이템 평점 조회
+      const { data, error } = await supabase
+        .from('menu_item_ratings')
+        .select('menu_item_id, rating')
+        .eq('user_id', user.id)
+        .in('menu_item_id', menuItemIds);
+        
+      if (error) {
+        console.error('메뉴 아이템 평점 조회 오류:', error.message);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('메뉴 아이템 평점이 없음');
+        setMenuItemRatings([]);
+        return;
+      }
+      
+      console.log('메뉴 아이템 평점 조회 결과:', data.length, '개 항목');
+      setMenuItemRatings(data);
+      
+      // 메뉴 아이템 별점의 평균 계산
+      const avgItemRating = calculateAverageRating(data);
+      
+      // 계산된 평균을 meal_ratings 테이블에 저장
+      if (avgItemRating !== null) {
+        // 상태 업데이트
+        setMyRating(avgItemRating);
+        // DB에 저장
+        await saveRating(avgItemRating);
+      }
+    } catch (error) {
+      console.error('메뉴 아이템 평점 조회 중 오류 발생:', error);
+    }
+  };
+
+  // 내 급식 평점 조회 함수
   const fetchMyRating = async () => {
     if (!mealId || !user) return;
 
     try {
-      console.log('내 급식 평점 조회 시작:', mealId, user.id);
-      
       // meal_ratings 테이블에서 내 평점 조회
       const { data, error } = await supabase
         .from('meal_ratings')
@@ -50,24 +133,22 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
       // 내 평점이 있으면 상태 업데이트
       if (data) {
-        console.log('내 평점 찾음:', data.rating);
         setMyRating(data.rating);
       } else {
-        console.log('내 평점 없음');
         setMyRating(null);
+        // 메뉴 아이템 별점의 평균을 계산하여 급식 평점 저장
+        await calculateAndSaveMealRating();
       }
     } catch (error) {
       console.error('내 평점 조회 중 오류 발생:', error);
     }
   };
 
-  // 평균 평점 조회 함수
-  const fetchAverageRating = async () => {
+  // 급식 평점 통계 조회 함수
+  const fetchMealRatingStats = async () => {
     if (!mealId) return;
 
     try {
-      console.log('급식 평균 평점 조회 시작:', mealId);
-      
       // meal_rating_stats 테이블에서 평균 평점 조회
       const { data, error } = await supabase
         .from('meal_rating_stats')
@@ -76,21 +157,30 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('평균 평점 조회 오류:', error.message);
+        console.error('급식 평점 통계 조회 오류:', error.message);
         return;
       }
 
       // 평균 평점이 있으면 상태 업데이트
       if (data && data.avg_rating) {
-        console.log('평균 평점 찾음:', data.avg_rating);
         setAvgRating(data.avg_rating);
       } else {
-        console.log('평균 평점 없음');
         setAvgRating(null);
       }
     } catch (error) {
-      console.error('평균 평점 조회 중 오류 발생:', error);
+      console.error('급식 평점 통계 조회 중 오류 발생:', error);
     }
+  };
+
+  // 평점 평균 계산 함수
+  const calculateAverageRating = (ratings: MenuItemRating[]): number | null => {
+    if (!ratings || ratings.length === 0) return null;
+    
+    const sum = ratings.reduce((total, item) => total + item.rating, 0);
+    const avg = sum / ratings.length;
+    
+    console.log('평점 평균 계산:', sum, '/', ratings.length, '=', avg);
+    return Math.round(avg * 10) / 10; // 소수점 첫째 자리까지 반올림
   };
 
   // 평점 저장 함수
@@ -120,9 +210,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
       console.log('평점 저장 성공!');
       
-      // 저장 성공 후 평점 다시 조회
-      await fetchMyRating();
-      await fetchAverageRating();
+      // 저장 성공 후 평점 통계 다시 조회
+      await fetchMealRatingStats();
       
       return true;
     } catch (error) {
@@ -133,33 +222,43 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   };
 
-  // 평점 변경 핸들러
-  const handleRatingChange = async (value: number) => {
-    // 로그인 확인
-    if (!user) {
-      alert('별점을 남기려면 로그인해주세요!');
-      return;
-    }
-    
-    console.log('별점 선택:', value);
-    
-    // 클릭한 값을 상태에 즉시 반영 (UI 응답성)
-    const previousRating = myRating;
-    setMyRating(value);
-    
-    // 별점 저장
-    const success = await saveRating(value);
-    
-    if (!success) {
-      // 저장 실패 시 이전 상태로 되돌림
-      setMyRating(previousRating);
-      console.warn('별점 저장 실패, 이전 상태로 복원');
+  // 메뉴 아이템 평점 저장 함수
+  const saveMenuItemRating = async (menuItemId: string, rating: number) => {
+    if (!user) return false;
+
+    try {
+      console.log('메뉴 아이템 평점 저장 시작:', menuItemId, user.id, rating);
+      
+      // menu_item_ratings 테이블에 평점 저장 (upsert)
+      const { error } = await supabase
+        .from('menu_item_ratings')
+        .upsert({
+          user_id: user.id,
+          menu_item_id: menuItemId,
+          rating: rating,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,menu_item_id'
+        });
+
+      if (error) {
+        console.error('메뉴 아이템 평점 저장 오류:', error.message);
+        return false;
+      }
+
+      console.log('메뉴 아이템 평점 저장 성공!');
+      return true;
+    } catch (error) {
+      console.error('메뉴 아이템 평점 저장 중 오류 발생:', error);
+      return false;
     }
   };
 
+
+
   // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
   useEffect(() => {
-    fetchAverageRating();
+    fetchMealRatingStats();
     if (user) {
       fetchMyRating();
     }
@@ -167,25 +266,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   return (
     <div className="my-4">
-      <div className="text-lg font-medium mb-2">
+      <div className="text-lg font-medium">
         오늘 나의 평가는?
         {avgRating !== null && avgRating > 0 && (
           <span className="ml-1">({avgRating.toFixed(1)})</span>
-        )}
-      </div>
-      
-      {/* 별점 입력 컴포넌트 */}
-      <div className="flex items-center">
-        <StarRating
-          value={myRating || 0}
-          onChange={handleRatingChange}
-          interactive={true}
-          size="large"
-          showValue={false}
-        />
-        
-        {isLoading && (
-          <span className="ml-2 text-sm text-gray-500">저장 중...</span>
         )}
       </div>
     </div>
