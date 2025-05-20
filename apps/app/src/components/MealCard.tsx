@@ -151,9 +151,13 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
 
       // 평균 및 개수 계산
       const ratings = ratingsData || [];
-      const avgRating = ratings.length > 0 
-        ? ratings.reduce((sum, item) => sum + item.rating, 0) / ratings.length
-        : 0;
+      let avgRating = 0;
+      if (ratings.length > 0) {
+        // 소수점 둘째 자리에서 반올림하여 결과 값 생성
+        const sum = ratings.reduce((sum, item) => sum + item.rating, 0);
+        const avg = sum / ratings.length;
+        avgRating = Math.round(avg * 10) / 10; // 소수점 둘째 자리에서 반올림
+      }
       const ratingCount = ratings.length;
 
       console.log('계산된 통계:', { avgRating, ratingCount });
@@ -352,7 +356,7 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
         <div className="text-gray-700">{item.item_name}</div>
       </div>
       
-      {/* 평균 별점 표시 */}
+      {/* 평균 별점 표시 - 소수점 첨째자리까지만 표시 */}
       {avgRating && ratingCount ? (
         <div className="text-sm text-gray-500">
           {avgRating.toFixed(1)} ({ratingCount}명)

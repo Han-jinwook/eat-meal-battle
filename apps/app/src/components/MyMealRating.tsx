@@ -220,7 +220,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           .upsert({
             user_id: user.id,
             meal_id: mealId,
-            rating: rating,
+            rating: rating, // 소수점 값 그대로 저장 (meal_ratings 테이블의 rating 컬럼은 float4 타입)
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'user_id,meal_id'
