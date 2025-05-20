@@ -43,9 +43,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       console.log('급식 메뉴 아이템 조회 시작:', mealId);
       
       // 해당 급식의 메뉴 아이템 ID 목록 조회
+      // 'menu_item_id' 대신 'id' 컴럼 사용 - 테이블 구조에 맞게 수정
       const { data, error } = await supabase
         .from('meal_menu_items')
-        .select('menu_item_id')
+        .select('id')
         .eq('meal_id', mealId);
         
       if (error) {
@@ -59,7 +60,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       }
       
       console.log('메뉴 아이템 조회 결과:', data.length, '개 항목');
-      return data.map(item => item.menu_item_id);
+      // item.menu_item_id 대신 item.id 사용
+      return data.map(item => item.id);
     } catch (error) {
       console.error('메뉴 아이템 조회 중 오류 발생:', error);
       return [];
