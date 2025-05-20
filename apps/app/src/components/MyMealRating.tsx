@@ -280,7 +280,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       <div className="text-lg font-medium">
         오늘 나의 평가는?
         {/* 로그인 + 별점 입력한 유저만 평점 표시, 0점도 표시 */}
-        {user && typeof myRating === "number" && (
+        {user && myRating !== null && (
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
