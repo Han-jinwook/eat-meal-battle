@@ -274,24 +274,64 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
 
 
-  // 화면에서 별점 변경이 있을 때 급식 평점 재계산
+  // 화면에서 별점 변경이 있을 때 급식 평점 재계산 - 실시간 UI 업데이트 개선
   useEffect(() => {
     // 메뉴 아이템 별점 변경 이벤트 감지
-    const handleMenuItemRatingChange = () => {
-      console.log('🔔 메뉴 아이템 별점 변경 감지 - 급식 평점 재계산');
+    const handleMenuItemRatingChange = async (event: CustomEvent) => {
+      console.log('🔔 메뉴 아이템 별점 변경 감지 - 급식 평점 재계산', event.detail);
+      
       if (user && mealId) {
-        calculateAndSaveMealRating();
+        // 1. 낙관적 UI 업데이트: 데이터 가져오기 전에 상태 임시 변경
+        // 삭제인 경우와 새 별점 등록 경우 구분
+        const detail = event.detail as any;
+        
+        // UI에 즉시 변화가 보이도록 임시 표시
+        if (detail.deleted && myRating) {
+          // 삭제 처리인 경우 - 현재 모든 별점이 삭제되면 myRating도 null 처리
+          // 실제 값은 아래에서 calculateAndSaveMealRating()에서 검증
+          if (menuItemRatings.length <= 1) {
+            setMyRating(null);
+          }
+        } else if (detail.newRating && !myRating) {
+          // 처음 별점을 주는 경우 - 임시로 값 표시
+          setMyRating(detail.newRating);
+        } else if (detail.newRating && myRating) {
+          // 기존 별점 변경 - 임시 계산
+          // 실제 값은 아래에서 calculateAndSaveMealRating()에서 검증
+          const tempRating = detail.newRating;
+          setMyRating(tempRating);
+        }
+        
+        // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
+        // 약간의 지연 후 유저 시각적 방해 없이 계산
+        setTimeout(async () => {
+          await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+          
+          // 3. UI 업데이트를 위해 정확한 데이터 재조회
+          await fetchMyRating(); // 내 별점 조회
+          await fetchMealRatingStats(); // 전체 평점 통계 조회
+        }, 300);
       }
     };
 
-    // 이벤트 리스너 등록
-    window.addEventListener('menu-item-rating-change', handleMenuItemRatingChange);
+    // 이벤트 리스너 등록 (커스텀 이벤트이뮼로 타입 선언)
+    window.addEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
+
+    // 포커스를 가질 때마다 재조회하여 최신 데이터 보장
+    const handleFocus = () => {
+      if (user && mealId) {
+        fetchMyRating();
+        fetchMealRatingStats();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
 
     // 컴포넌트 언마운트 시 이벤트 리스너 제거
     return () => {
-      window.removeEventListener('menu-item-rating-change', handleMenuItemRatingChange);
+      window.removeEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [mealId, user]);
+  }, [mealId, user, menuItemRatings, myRating]); // menuItemRatings와 myRating 의존성 추가
 
   // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
   useEffect(() => {

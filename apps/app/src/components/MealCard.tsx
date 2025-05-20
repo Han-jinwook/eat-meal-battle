@@ -255,40 +255,77 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
         setRating(null); // UI에서 별점 제거
         const deleted = await deleteRating(item.id);
         if (deleted) {
-          // 별점 삭제 성공 시 평균/개수 갱신
-          try {
-            const updatedData = await fetchRating(item.id);
-            setAvgRating(updatedData?.avg_rating || 0);
-            setRatingCount(updatedData?.rating_count || 0);
-          } catch (fetchError) {
-            console.error('통계 조회 실패, 화면은 유지함:', fetchError);
-          }
-        } else {
-          // 삭제 실패 시 이전 상태 복원
-          setRating(previousRating);
-          alert('별점 삭제에 실패했습니다.');
         }
-        return;
-      }
-
-      // 별점 신규 지정/수정
-      setRating(value);
-      const success = await saveRating(item.id, value);
-      if (success) {
-        // 저장 성공해도 클릭한 값 유지 (UI 응답성)
-        console.log('별점 저장 성공, 화면에 유지:', value);
-        try {
-          const updatedData = await fetchRating(item.id);
-          if (updatedData && updatedData.avg_rating !== undefined) {
-            setAvgRating(updatedData.avg_rating);
-            setRatingCount(updatedData.rating_count);
-          }
-        } catch (fetchError) {
-          console.error('통계 조회 실패, 화면은 유지함:', fetchError);
+        
+        console.log('클릭한 별점이 이미 저장된 별점과 같음, 별점 삭제 시도');
+        
+        // 이벤트 발생 - 다른 컴포넌트에 변경 알리기
+        const event = new CustomEvent('menu-item-rating-change', {
+          detail: { menuItemId: item.id, deleted: true, previousRating }
+        });
+        window.dispatchEvent(event);
+        
+        // 서버에 삭제 요청 전송
+        const success = await deleteRating(item.id);
+        
+        if (!success) {
+          // 삭제 실패시 이전 상태로 되돌리기
+          console.warn('별점 삭제 실패, 이전 상태 유지');
+          setRating(previousRating);
+          // 위에서 변경한 평균도 되돌려야 함
+          await fetchRating(item.id); // 실제 최신 데이터로 다시 재조회
+        } else {
+          console.log('별점 삭제 성공, UI 이미 업데이트됨');
+          
+          // 약간의 지연 후 실제 데이터로 업데이트 (최종 확인)
+          setTimeout(async () => {
+            await fetchRating(item.id);
+          }, 500);
         }
       } else {
-        setRating(previousRating);
-        console.warn('별점 저장 실패, 이전 상태로 복원');
+        // 새로운 별점 저장 - 이곳도 낙관적 업데이트 적용
+        setRating(value);
+        
+        // 평균 별점 및 카운트 임시 업데이트 (단순 예상)
+        if (avgRating && ratingCount) {
+          const oldSum = avgRating * ratingCount;
+          // 처음 별점이면 카운트 증가, 그렇지 않으면 이전 별점 반영
+          const newCount = previousRating === null ? ratingCount + 1 : ratingCount;
+          const newSum = previousRating === null ? oldSum + value : oldSum - previousRating + value;
+          const newAvg = newSum / newCount;
+          setAvgRating(Math.round(newAvg * 10) / 10);
+          setRatingCount(newCount);
+        } else {
+          // 처음 별점이면 바로 설정
+          setAvgRating(value);
+          setRatingCount(1);
+        }
+        
+        console.log('새로운 별점 저장 시도:', value);
+        
+        // 이벤트 발생 - 다른 컴포넌트에 변경 알리기
+        const event = new CustomEvent('menu-item-rating-change', {
+          detail: { menuItemId: item.id, newRating: value, previousRating }
+        });
+        window.dispatchEvent(event);
+        
+        // 서버에 저장 요청 전송
+        const success = await saveRating(item.id, value);
+        
+        if (!success) {
+          // 저장 실패시 이전 상태로 되돌리기
+          console.warn('별점 저장 실패, 이전 상태로 복원');
+          setRating(previousRating);
+          // 위에서 변경한 평균도 되돌려야 함
+          await fetchRating(item.id); // 실제 최신 데이터로 다시 재조회
+        } else {
+          console.log('별점 저장 성공, UI 이미 업데이트됨');
+          
+          // 약간의 지연 후 실제 데이터로 업데이트 (최종 확인)
+          setTimeout(async () => {
+            await fetchRating(item.id);
+          }, 500);
+        }
       }
     } catch (error) {
       console.error('별점 처리 중 오류:', error);
