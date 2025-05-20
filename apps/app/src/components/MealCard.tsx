@@ -37,6 +37,42 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     
     getUser();
   }, []);
+  
+  // 실시간 구독 설정: menu_item_rating_stats 테이블 변경 감지
+  useEffect(() => {
+    if (!item || !item.id) return;
+    
+    console.log('🔌 menu_item_rating_stats 테이블 실시간 구독 설정 - 아이템 ID:', item.id);
+    
+    // 실시간 업데이트를 위한 채널 생성
+    const channel = supabase
+      .channel(`menu_item_rating_stats:${item.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'menu_item_rating_stats',
+          filter: `menu_item_id=eq.${item.id}` 
+        }, 
+        (payload) => {
+          console.log('🔄 아이템평점 실시간 업데이트 수신:', payload);
+          // 새 데이터로 상태 업데이트
+          if (payload.new) {
+            const newData = payload.new;
+            setAvgRating(newData.avg_rating || 0);
+            setRatingCount(newData.rating_count || 0);
+            console.log('✅ 아이템평점 UI 업데이트 완료:', newData.avg_rating, newData.rating_count);
+          }
+        }
+      )
+      .subscribe();
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('🔌 menu_item_rating_stats 테이블 구독 해제 - 아이템 ID:', item.id);
+      supabase.removeChannel(channel);
+    };
+  }, [item?.id]); // 아이템 ID가 변경될 때만 재실행
   const [rating, setRating] = useState<number | null>(item.user_rating || null);
   const [avgRating, setAvgRating] = useState<number | null>(item.avg_rating || null);
   const [ratingCount, setRatingCount] = useState<number | null>(item.rating_count || null);
