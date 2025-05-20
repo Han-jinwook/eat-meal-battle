@@ -125,29 +125,33 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     if (!mealId || !user) return;
 
     try {
-      // meal_ratings 테이블에서 내 평점 조회
+      console.log(' 내 급식 평점 조회 시도 - 급식 ID:', mealId, '사용자 ID:', user.id);
+      
+      // meal_ratings 테이블에서 내 평점 조회 - maybeSingle 대신 limit(1) 사용
       const { data, error } = await supabase
         .from('meal_ratings')
         .select('rating')
         .eq('meal_id', mealId)
         .eq('user_id', user.id)
-        .maybeSingle();
+        .limit(1);
 
       if (error) {
-        console.error('내 평점 조회 오류:', error.message);
+        console.error(' 내 평점 조회 오류:', error.message);
         return;
       }
 
-      // 내 평점이 있으면 상태 업데이트
-      if (data) {
-        setMyRating(data.rating);
+      // 데이터 배열에서 첫 번째 항목 사용 (없으면 null 처리)
+      if (data && data.length > 0) {
+        console.log(' 내 평점 조회 성공:', data[0].rating);
+        setMyRating(data[0].rating);
       } else {
+        console.log(' 내 급식 평점 없음, 메뉴 아이템 평점 기반으로 계산 시도');
         setMyRating(null);
         // 메뉴 아이템 별점의 평균을 계산하여 급식 평점 저장
         await calculateAndSaveMealRating();
       }
     } catch (error) {
-      console.error('내 평점 조회 중 오류 발생:', error);
+      console.error(' 내 평점 조회 중 오류 발생:', error);
     }
   };
 
@@ -156,22 +160,27 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     if (!mealId) return;
 
     try {
-      // meal_rating_stats 테이블에서 평균 평점 조회
+      console.log('급식 평점 통계 조회 시작 - 급식 ID:', mealId);
+      
+      // meal_rating_stats 테이블에서 평균 평점 조회 - maybeSingle 대신 get 사용
       const { data, error } = await supabase
         .from('meal_rating_stats')
         .select('avg_rating')
         .eq('meal_id', mealId)
-        .maybeSingle();
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
       if (error) {
         console.error('급식 평점 통계 조회 오류:', error.message);
         return;
       }
 
-      // 평균 평점이 있으면 상태 업데이트
-      if (data && data.avg_rating) {
-        setAvgRating(data.avg_rating);
+      // 데이터 배열에서 첫 번째 항목 사용 (없으면 null 처리)
+      if (data && data.length > 0 && data[0].avg_rating) {
+        console.log('급식 평점 통계 조회 성공:', data[0].avg_rating);
+        setAvgRating(data[0].avg_rating);
       } else {
+        console.log('급식 평점 통계 없음');
         setAvgRating(null);
       }
     } catch (error) {

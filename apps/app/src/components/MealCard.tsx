@@ -198,23 +198,29 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
 
       console.log('계산된 통계:', { avgRating, ratingCount });
 
-      // 사용자 별점 조회 (if logged in)
+      // 사용자 별점 조회
       let userRating = null;
       if (user && user.id) {
-        console.log('사용자 ID로 별점 조회 시도:', user.id);
-        
+        // 현재 사용자의 별점 조회 - single() 대신 limit(1) 사용
         const { data: ratingData, error: ratingError } = await supabase
           .from('menu_item_ratings')
           .select('rating')
           .eq('menu_item_id', menuItemId)
           .eq('user_id', user.id)
-          .maybeSingle();
-          
-        console.log('사용자 별점 조회 결과:', 
-          ratingData ? `별점: ${ratingData.rating}` : '별점 없음', 
-          ratingError ? `오류: ${ratingError.message}` : '성공');
+          .limit(1);
 
-        userRating = ratingData?.rating;
+        // 오류 처리
+        if (ratingError) {
+          console.error('❌ 사용자 별점 조회 오류:', ratingError.message);
+        } else {
+          // 배열에서 첫 번째 항목 사용 (존재할 경우)
+          if (ratingData && ratingData.length > 0) {
+            userRating = ratingData[0].rating;
+            console.log('✅ 사용자 별점 조회 성공:', userRating);
+          } else {
+            console.log('ℹ️ 사용자 별점 기록 없음');
+          }
+        }
       } else {
         console.log('로그인되지 않아 사용자 별점을 조회하지 않습니다.');
       }
