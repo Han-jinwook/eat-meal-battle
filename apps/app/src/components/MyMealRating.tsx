@@ -188,14 +188,15 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     return Math.round(avg * 10) / 10; // 소수점 첫째 자리까지 반올림
   };
 
-  // 평점 저장 함수 (null이면 row 삭제, 숫자면 upsert)
+  // 평점 저장 함수 (1~5만 upsert, 그 외는 무조건 삭제)
   const saveRating = async (rating: number | null) => {
     if (!mealId || !user) return false;
 
     try {
       setIsLoading(true);
-      if (rating === null) {
-        // 모든 별점이 삭제된 경우 급식 평점 row도 삭제
+      // rating이 1~5가 아니면 무조건 삭제
+      if (rating === null || rating < 1 || rating > 5) {
+        // CHECK 제약조건: rating은 1~5만 허용
         console.log('급식 평점 row 삭제 시도:', mealId, user.id);
         const { error } = await supabase
           .from('meal_ratings')
@@ -210,7 +211,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         await fetchMealRatingStats();
         return true;
       } else {
-        // meal_ratings 테이블에 평점 저장 (upsert)
+        // rating이 1~5인 경우에만 upsert
         console.log('급식 평점 저장 시작:', mealId, user.id, rating);
         const { error } = await supabase
           .from('meal_ratings')
@@ -237,6 +238,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       setIsLoading(false);
     }
   };
+
 
   // 메뉴 아이템 평점 저장 함수
   const saveMenuItemRating = async (menuItemId: string, rating: number) => {
