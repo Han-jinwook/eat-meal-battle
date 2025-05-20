@@ -274,6 +274,25 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
 
 
+  // 화면에서 별점 변경이 있을 때 급식 평점 재계산
+  useEffect(() => {
+    // 메뉴 아이템 별점 변경 이벤트 감지
+    const handleMenuItemRatingChange = () => {
+      console.log('🔔 메뉴 아이템 별점 변경 감지 - 급식 평점 재계산');
+      if (user && mealId) {
+        calculateAndSaveMealRating();
+      }
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener('menu-item-rating-change', handleMenuItemRatingChange);
+
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => {
+      window.removeEventListener('menu-item-rating-change', handleMenuItemRatingChange);
+    };
+  }, [mealId, user]);
+
   // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
   useEffect(() => {
     fetchMealRatingStats();

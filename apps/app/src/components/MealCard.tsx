@@ -112,6 +112,14 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
         console.error('❌ 삭제 오류:', error.message);
         return false;
       }
+      
+      // 메뉴 아이템 별점 삭제 후 급식 평점 재계산 이벤트 발생
+      console.log('🔄 메뉴 아이템 별점 삭제 성공, 급식 평점 재계산 필요');
+      // 전역 이벤트 발생 - 급식 평점 재계산 요청
+      const event = new CustomEvent('menu-item-rating-change', {
+        detail: { menuItemId, deleted: true }
+      });
+      window.dispatchEvent(event);
       console.log('✅ 별점 삭제 성공!');
       return true;
     } catch (error) {
