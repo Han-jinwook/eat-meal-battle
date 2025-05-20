@@ -187,7 +187,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     const avg = sum / ratings.length;
     
     console.log('평점 평균 계산:', sum, '/', ratings.length, '=', avg);
-    return Math.round(avg * 10) / 10; // 소수점 첫째 자리까지 반올림
+    return Math.round(avg * 100) / 100; // 소수점 둘째 자리까지 반올림 (4.0 대신 4.5, 4.3 등으로 표시)
   };
 
   // 평점 저장 함수 (1~5만 upsert, 그 외는 무조건 삭제)
@@ -360,7 +360,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         오늘 나의 평가는?
         {/* 로그인 + 별점 입력한 유저만 평점 표시, 0점도 표시 */}
         {user && myRating !== null && (
-          <span className="ml-1">({myRating.toFixed(1)})</span>
+          <span className="ml-1">({myRating.toFixed(2)})</span>
         )}
       </div>
     </div>
