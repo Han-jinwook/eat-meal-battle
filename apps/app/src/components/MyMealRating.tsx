@@ -264,13 +264,14 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   }, [mealId, user]);
 
+  // 로그인 + 별점 입력한 유저만 상단 평균 표시
+  if (!user || myRating === null) return null;
+
   return (
     <div className="my-4">
       <div className="text-lg font-medium">
         오늘 나의 평가는?
-        {avgRating !== null && avgRating > 0 && (
-          <span className="ml-1">({avgRating.toFixed(1)})</span>
-        )}
+        <span className="ml-1">({myRating.toFixed(1)})</span>
       </div>
     </div>
   );
