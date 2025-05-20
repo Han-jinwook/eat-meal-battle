@@ -264,14 +264,17 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   }, [mealId, user]);
 
-  // 로그인 + 별점 입력한 유저만 상단 평균 표시
-  if (!user || myRating === null) return null;
+  // 로딩 중에는 아무것도 표시하지 않음
+  if (isLoading) return null;
 
   return (
     <div className="my-4">
       <div className="text-lg font-medium">
         오늘 나의 평가는?
-        <span className="ml-1">({myRating.toFixed(1)})</span>
+        {/* 로그인 + 별점 입력한 유저만 평점 표시 */}
+        {user && myRating !== null && (
+          <span className="ml-1">({myRating.toFixed(1)})</span>
+        )}
       </div>
     </div>
   );
