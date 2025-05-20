@@ -73,7 +73,13 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     try {
       // 메뉴 아이템 ID 목록 조회
       const menuItemIds = await fetchMenuItems();
-      if (menuItemIds.length === 0) return;
+      if (menuItemIds.length === 0) {
+        // 메뉴 아이템 자체가 없으면 급식 평점도 삭제
+        await saveRating(null);
+        setMenuItemRatings([]);
+        setMyRating(null);
+        return;
+      }
       
       console.log('내 메뉴 아이템 평점 조회 시작:', menuItemIds.length, '개 항목');
       
@@ -90,8 +96,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       }
       
       if (!data || data.length === 0) {
-        console.log('메뉴 아이템 평점이 없음');
+        // 메뉴 아이템 별점이 모두 삭제된 경우 급식 평점도 삭제
+        console.log('메뉴 아이템 평점이 없음, 급식 평점 row 삭제');
         setMenuItemRatings([]);
+        setMyRating(null);
+        await saveRating(null);
         return;
       }
       
@@ -102,12 +111,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       const avgItemRating = calculateAverageRating(data);
       
       // 계산된 평균을 meal_ratings 테이블에 저장
-      if (avgItemRating !== null) {
-        // 상태 업데이트
-        setMyRating(avgItemRating);
-        // DB에 저장
-        await saveRating(avgItemRating);
-      }
+      await saveRating(avgItemRating); // avgItemRating이 null이면 삭제
+      setMyRating(avgItemRating);
     } catch (error) {
       console.error('메뉴 아이템 평점 조회 중 오류 발생:', error);
     }
@@ -183,39 +188,50 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     return Math.round(avg * 10) / 10; // 소수점 첫째 자리까지 반올림
   };
 
-  // 평점 저장 함수
-  const saveRating = async (rating: number) => {
+  // 평점 저장 함수 (null이면 row 삭제, 숫자면 upsert)
+  const saveRating = async (rating: number | null) => {
     if (!mealId || !user) return false;
 
     try {
       setIsLoading(true);
-      console.log('급식 평점 저장 시작:', mealId, user.id, rating);
-      
-      // meal_ratings 테이블에 평점 저장 (upsert)
-      const { error } = await supabase
-        .from('meal_ratings')
-        .upsert({
-          user_id: user.id,
-          meal_id: mealId,
-          rating: rating,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,meal_id'
-        });
-
-      if (error) {
-        console.error('평점 저장 오류:', error.message);
-        return false;
+      if (rating === null) {
+        // 모든 별점이 삭제된 경우 급식 평점 row도 삭제
+        console.log('급식 평점 row 삭제 시도:', mealId, user.id);
+        const { error } = await supabase
+          .from('meal_ratings')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('meal_id', mealId);
+        if (error) {
+          console.error('평점 row 삭제 오류:', error.message);
+          return false;
+        }
+        console.log('평점 row 삭제 성공!');
+        await fetchMealRatingStats();
+        return true;
+      } else {
+        // meal_ratings 테이블에 평점 저장 (upsert)
+        console.log('급식 평점 저장 시작:', mealId, user.id, rating);
+        const { error } = await supabase
+          .from('meal_ratings')
+          .upsert({
+            user_id: user.id,
+            meal_id: mealId,
+            rating: rating,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,meal_id'
+          });
+        if (error) {
+          console.error('평점 저장 오류:', error.message);
+          return false;
+        }
+        console.log('평점 저장 성공!');
+        await fetchMealRatingStats();
+        return true;
       }
-
-      console.log('평점 저장 성공!');
-      
-      // 저장 성공 후 평점 통계 다시 조회
-      await fetchMealRatingStats();
-      
-      return true;
     } catch (error) {
-      console.error('평점 저장 중 오류 발생:', error);
+      console.error('평점 저장/삭제 중 오류 발생:', error);
       return false;
     } finally {
       setIsLoading(false);
