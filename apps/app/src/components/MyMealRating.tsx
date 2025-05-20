@@ -264,15 +264,23 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   }, [mealId, user]);
 
-  // 로딩 중에는 아무것도 표시하지 않음
-  if (isLoading) return null;
+  // 로딩 중에도 메시지는 항상 표시
+  if (isLoading) {
+    return (
+      <div className="my-4">
+        <div className="text-lg font-medium">
+          오늘 나의 평가는?
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-4">
       <div className="text-lg font-medium">
         오늘 나의 평가는?
-        {/* 로그인 + 별점 입력한 유저만 평점 표시 */}
-        {user && myRating !== null && (
+        {/* 로그인 + 별점 입력한 유저만 평점 표시, 0점도 표시 */}
+        {user && typeof myRating === "number" && (
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
