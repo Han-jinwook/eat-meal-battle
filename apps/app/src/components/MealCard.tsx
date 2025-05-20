@@ -90,6 +90,36 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     }
   };
 
+  // 사용자 별점 삭제 함수
+  const deleteRating = async (menuItemId: string) => {
+    try {
+      if (!user || !user.id) {
+        console.error('❌ 사용자 로그인 상태가 아닙니다');
+        alert('별점을 남기려면 로그인해주세요!');
+        return false;
+      }
+      if (!menuItemId) {
+        console.error('❌ 메뉴 아이템 ID가 없습니다');
+        return false;
+      }
+      console.log('🗑️ 별점 삭제 시도:', menuItemId);
+      const { error } = await supabase
+        .from('menu_item_ratings')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('menu_item_id', menuItemId);
+      if (error) {
+        console.error('❌ 삭제 오류:', error.message);
+        return false;
+      }
+      console.log('✅ 별점 삭제 성공!');
+      return true;
+    } catch (error) {
+      console.error('❌ 별점 삭제 중 오류:', error);
+      return false;
+    }
+  };
+
   // 별점 조회 함수 - 개선된 오류 처리 및 로깅 추가
   const fetchRating = async (menuItemId: string) => {
     try {
@@ -196,40 +226,52 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
     }
   }, [item.id, user, item]);
 
-  // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결
+  // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결 + 별점 취소(삭제) 지원
   const handleRating = async (value: number) => {
     try {
       // 로그인 확인
       if (!user) {
-        alert('별점을 남기려면 로그인해주세요!'); 
+        alert('별점을 남기려면 로그인해주세요!');
         return;
       }
-      
       if (!item.id) {
         console.error('메뉴 아이템 ID가 없습니다');
         return;
       }
-      
       console.log('⭐ 별점 선택:', value);
-      
-      // 일시적으로 로딩 상태로 전환하지만 별점은 그대로 유지
       setIsLoading(true);
-      // 클릭한 값을 상태에 즉시 반영
       const previousRating = rating;
-      setRating(value); 
-      
-      // 별점 저장
+
+      // 이미 선택된 별을 다시 클릭하면 별점 삭제
+      if (rating === value) {
+        setRating(null); // UI에서 별점 제거
+        const deleted = await deleteRating(item.id);
+        if (deleted) {
+          // 별점 삭제 성공 시 평균/개수 갱신
+          try {
+            const updatedData = await fetchRating(item.id);
+            setAvgRating(updatedData?.avg_rating || 0);
+            setRatingCount(updatedData?.rating_count || 0);
+          } catch (fetchError) {
+            console.error('통계 조회 실패, 화면은 유지함:', fetchError);
+          }
+        } else {
+          // 삭제 실패 시 이전 상태 복원
+          setRating(previousRating);
+          alert('별점 삭제에 실패했습니다.');
+        }
+        return;
+      }
+
+      // 별점 신규 지정/수정
+      setRating(value);
       const success = await saveRating(item.id, value);
-      
       if (success) {
         // 저장 성공해도 클릭한 값 유지 (UI 응답성)
         console.log('별점 저장 성공, 화면에 유지:', value);
-        
-        // 백그라운드에서 새 통계만 가져옴
         try {
           const updatedData = await fetchRating(item.id);
-          if (updatedData && updatedData.avg_rating) {
-            // 평균과 개수만 업데이트
+          if (updatedData && updatedData.avg_rating !== undefined) {
             setAvgRating(updatedData.avg_rating);
             setRatingCount(updatedData.rating_count);
           }
@@ -237,13 +279,11 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
           console.error('통계 조회 실패, 화면은 유지함:', fetchError);
         }
       } else {
-        // 저장 실패 시에만 이전 상태로 되돌림
         setRating(previousRating);
         console.warn('별점 저장 실패, 이전 상태로 복원');
       }
     } catch (error) {
       console.error('별점 처리 중 오류:', error);
-      // 에러 발생 시 별점 유지 (새로고침하면 DB 상태로 돌아감)
     } finally {
       setIsLoading(false);
     }
