@@ -533,7 +533,13 @@ export default function MealCard({
   // 이미지 업로드/승인 시 호출되는 함수 (로컨 핸들러)
   const handleImageChange = useCallback(() => {
     console.log('📣 이미지 변경 알림 받음, 목록 새로고침');
-    fetchMealImages(); // 이미지 목록 다시 로드
+    
+    // 지연 시간 추가 후 이미지 목록 다시 로드 (10초 지연)
+    console.log('⏱️ 이미지 목록 새로고침 대기 중... (10초)');
+    setTimeout(() => {
+      console.log('⏱️ 이미지 목록 새로고침 타이머 완료, fetchMealImages 호출');
+      fetchMealImages(); // 이미지 목록 다시 로드
+    }, 10000); // 10초 지연
     
     // 최상위 컴포넌트의 콜백도 호출 (있는 경우)
     if (onUploadSuccess) {
