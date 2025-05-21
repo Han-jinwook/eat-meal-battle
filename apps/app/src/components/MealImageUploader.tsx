@@ -304,19 +304,24 @@ export default function MealImageUploader({
       });
       
       // 이미지 상태 완료로 설정
+      setImageStatus('complete');
+      
+      // 성공 콜백 호출 - 지연 시간 추가
+      console.log('⏱️ 이미지 업로드 후 콜백 호출 대기 중...');
+      setTimeout(() => {
         console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
         if (onUploadSuccess) {
           onUploadSuccess();
         }
-      }, 2000); // 2초 지연으로 증가
+      }, 4000); // 4초 지연
 
-      setImageStatus('complete');
-      setError(error.message || 'AI 이미지 생성 중 오류가 발생했습니다.');
+      const errorMessage = error ? (typeof error === 'object' && error.message ? error.message : 'AI 이미지 생성 중 오류가 발생했습니다.') : 'AI 이미지 생성 중 오류가 발생했습니다.';
+      setError(errorMessage);
       setImageStatus('error');
       
       // 오류 콜백
       if (onUploadError) {
-        onUploadError(error.message || 'AI 이미지 생성 중 오류가 발생했습니다.');
+        onUploadError(errorMessage);
       }
     } finally {
       setUploading(false);
