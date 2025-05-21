@@ -9,10 +9,10 @@
   external_node_modules = ["sharp"]
 
 [functions.generate-meal-image]
-  timeout = 30
+  timeout = 60
 
 [functions.verify-meal-image]
-  timeout = 30
+  timeout = 60
 
 [build.environment]
   NODE_VERSION = "18"
@@ -34,7 +34,7 @@
   schedule = "30 3 * * *" # 매일 UTC 3:30 (한국시간 12:30)
 
 [functions.auto-generate-meal-images]
-  timeout = 30
+  timeout = 60
   schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
 
 # API 경로를 Netlify Functions로 리다이렉트

@@ -27,3 +27,18 @@ export interface MealMenuItem {
   rating_count?: number; // 평가 횟수
   user_rating?: number;  // 현재 사용자가 매긴 별점
 }
+
+// 급식 이미지 타입
+export interface MealImage {
+  id: string;
+  meal_id: string;
+  image_url: string;
+  uploaded_by: string;
+  created_at: string;
+  status: string; // 'pending', 'approved', 'rejected'
+  source?: string; // 'user', 'ai'
+  profiles?: {
+    nickname?: string;
+    profile_image?: string;
+  };
+}

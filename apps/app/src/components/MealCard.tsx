@@ -1,8 +1,9 @@
 import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate } from '@/utils/DateUtils';
-import { MealInfo, MealMenuItem } from '@/types'; // 메뉴 아이템 타입 추가
+import { MealInfo, MealMenuItem, MealImage } from '@/types'; // 이미지 타입 추가
 import StarRating from '@/components/StarRating';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
@@ -431,6 +432,95 @@ export default function MealCard({
   onUploadSuccess,
   onUploadError,
 }: MealCardProps) {
+  // 이미지 목록 상태 관리
+  const [approvedImages, setApprovedImages] = useState<MealImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(false);
+  
+  // 이미지 목록 가져오기 함수
+  const fetchMealImages = useCallback(async () => {
+    if (!meal?.id) return;
+    
+    try {
+      setLoadingImages(true);
+      
+      // 승인된 이미지만 조회
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select(`
+          *,
+          profiles:uploaded_by (nickname, profile_image)
+        `)
+        .eq('meal_id', meal.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ 이미지 로드 오류:', error);
+        return;
+      }
+      
+      setApprovedImages(data || []);
+      console.log('✅ 이미지 목록 로드 완료:', data?.length || 0, '개');
+    } catch (error) {
+      console.error('❌ 이미지 조회 중 오류:', error);
+    } finally {
+      setLoadingImages(false);
+    }
+  }, [meal?.id]); // meal.id가 바뀔 때만 함수 재생성
+  
+  // 컴포넌트 마운트 시 이미지 목록 로드
+  useEffect(() => {
+    if (meal?.id) {
+      fetchMealImages();
+    }
+  }, [meal?.id, fetchMealImages]);
+  
+  // meal_images 테이블의 변경사항 실시간 구독 설정
+  useEffect(() => {
+    if (!meal?.id) return;
+    
+    console.log('🔗 meal_images 테이블 실시간 구독 설정 - meal_id:', meal.id);
+    
+    // 실시간 업데이트를 위한 채널 생성
+    const channel = supabase
+      .channel(`meal-images-${meal.id}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', // 모든 이벤트(INSERT, UPDATE, DELETE) 감지
+          schema: 'public', 
+          table: 'meal_images',
+          filter: `meal_id=eq.${meal.id}` // 현재 meal.id에 해당하는 변경만 감지
+        }, 
+        (payload) => {
+          console.log('🔄 이미지 실시간 업데이트 수신:', payload);
+          
+          // 상태 변경 (승인/반려 등) 또는 새 이미지 업로드시 발생
+          fetchMealImages(); // 이미지 목록 다시 불러와 상태 갱신
+        }
+      )
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ meal_images 구독 성공:', meal.id);
+        }
+      });
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('🔗 meal_images 테이블 구독 해제:', meal.id);
+      supabase.removeChannel(channel);
+    };
+  }, [meal?.id, fetchMealImages]); // meal.id가 바뀔 때만 재실행
+  
+  // 이미지 업로드/승인 시 호출되는 함수 (로컨 핸들러)
+  const handleImageChange = useCallback(() => {
+    console.log('📣 이미지 변경 알림 받음, 목록 새로고침');
+    fetchMealImages(); // 이미지 목록 다시 로드
+    
+    // 최상위 컴포넌트의 콜백도 호출 (있는 경우)
+    if (onUploadSuccess) {
+      onUploadSuccess();
+    }
+  }, [fetchMealImages, onUploadSuccess]);
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* 업로더 영역 */}
@@ -441,7 +531,7 @@ export default function MealCard({
           schoolCode={meal.school_code}
           mealDate={meal.meal_date}
           mealType={meal.meal_type}
-          onUploadSuccess={onUploadSuccess}
+          onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
           onUploadError={onUploadError}
         />
       </div>
@@ -496,6 +586,36 @@ export default function MealCard({
           </ul>
         </div>
 
+        {/* 승인된 이미지 보기 */}
+        {approvedImages.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-lg font-medium mb-2">승인된 이미지</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {approvedImages.map((img) => (
+                <div key={img.id} className="relative group">
+                  <a href={img.image_url} target="_blank" rel="noopener noreferrer">
+                    <ImageWithFallback
+                      src={img.image_url}
+                      alt={`급식 이미지 - ${meal.meal_date} ${meal.meal_type}`}
+                      className="w-full h-40 object-cover rounded-md"
+                      width={150}
+                      height={150}
+                    />
+                  </a>
+                  
+                  {/* 사용자 닉네임 표시 */}
+                  {img.profiles?.nickname && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-1 text-xs
+                                  text-center truncate">
+                      {img.profiles.nickname}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         {/* 버튼들 상단으로 이동함 */}
       </div>
     </div>
