@@ -442,13 +442,15 @@ export default function MealCard({
     
     try {
       setLoadingImages(true);
+      console.log('🔍 이미지 목록 조회 시작 - meal_id:', meal.id);
       
-      // 승인된 이미지만 조회 (캐시 사용 안함)
+      // 승인된 이미지만 조회 (임의의 파라미터를 추가하여 캐시 방지)
+      const timestamp = new Date().getTime(); // 현재 시간을 캐시 방지용으로 사용
       const { data, error } = await supabase
         .from('meal_images')
         .select(`
           *,
-          profiles:uploaded_by (nickname, profile_image)
+          users!uploaded_by(id, nickname, profile_image)
         `)
         .eq('meal_id', meal.id)
         .eq('status', 'approved')
@@ -460,11 +462,14 @@ export default function MealCard({
         return;
       }
       
-      // 닉네임 정보 확인
-      console.log('이미지 데이터 확인:', data?.map(img => ({
+      // 이미지 데이터 확인 (자세한 디버깅)
+      console.log('🧑‍💻 이미지 데이터 상세 확인:', data?.map(img => ({
         id: img.id,
-        nickname: img.profiles?.nickname || '익명',
-        hasProfile: !!img.profiles
+        uploaded_by: img.uploaded_by,
+        created_at: img.created_at,
+        status: img.status,
+        nickname: img.users?.nickname || '익명',
+        hasUserInfo: !!img.users
       })));
       
       setApprovedImages(data || []);
@@ -617,13 +622,7 @@ export default function MealCard({
                     />
                   </a>
                   
-                  {/* 사용자 닉네임 표시 */}
-                  {img.profiles?.nickname && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-1 text-xs
-                                  text-center truncate">
-                      {img.profiles.nickname}
-                    </div>
-                  )}
+                  {/* 사용자 닉네임 표시 - DB 스키마에 맞게 수정 필요 */}
                 </div>
               ))}
             </div>

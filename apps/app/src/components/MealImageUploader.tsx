@@ -304,20 +304,13 @@ export default function MealImageUploader({
       });
       
       // 이미지 상태 완료로 설정
-      setImageStatus('complete');
-      
-      // 4. 버튼 숨기기
-      setShowAiGenButton(false);
-      
-      // 5. 성공 콜백 호출
-      if (onUploadSuccess) {
-        onUploadSuccess();
-      }
+        console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
+      }, 2000); // 2초 지연으로 증가
 
       setImageStatus('complete');
-      
-    } catch (error: any) {
-      console.error('AI 이미지 생성 오류:', error);
       setError(error.message || 'AI 이미지 생성 중 오류가 발생했습니다.');
       setImageStatus('error');
       
@@ -549,10 +542,14 @@ export default function MealImageUploader({
           setUploadedImage(imageData);
         }
         
-        // 성공 콜백 호출
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
+        // 성공 콜백 호출 - 지연 시간 추가
+        console.log('⏱️ 이미지 업로드 후 콜백 호출 대기 중...');
+        setTimeout(() => {
+          console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
+          if (onUploadSuccess) {
+            onUploadSuccess();
+          }
+        }, 4000); // 4초 지연으로 증가
       } catch (verifyError) {
         console.error('검증 오류:', verifyError);
         

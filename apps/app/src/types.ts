@@ -37,8 +37,4 @@ export interface MealImage {
   created_at: string;
   status: string; // 'pending', 'approved', 'rejected'
   source?: string; // 'user', 'ai'
-  profiles?: {
-    nickname?: string;
-    profile_image?: string;
-  };
 }
