@@ -554,7 +554,7 @@ export default function MealImageUploader({
           if (onUploadSuccess) {
             onUploadSuccess();
           }
-        }, 4000); // 4초 지연으로 증가
+        }, 2000); // 2초 지연으로 증가
       } catch (verifyError) {
         console.error('검증 오류:', verifyError);
         
