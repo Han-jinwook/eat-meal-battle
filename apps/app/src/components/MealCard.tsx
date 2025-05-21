@@ -443,7 +443,7 @@ export default function MealCard({
     try {
       setLoadingImages(true);
       
-      // 승인된 이미지만 조회
+      // 승인된 이미지만 조회 (캐시 사용 안함)
       const { data, error } = await supabase
         .from('meal_images')
         .select(`
@@ -452,12 +452,20 @@ export default function MealCard({
         `)
         .eq('meal_id', meal.id)
         .eq('status', 'approved')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20); // 이미지 수 제한
       
       if (error) {
         console.error('❌ 이미지 로드 오류:', error);
         return;
       }
+      
+      // 닉네임 정보 확인
+      console.log('이미지 데이터 확인:', data?.map(img => ({
+        id: img.id,
+        nickname: img.profiles?.nickname || '익명',
+        hasProfile: !!img.profiles
+      })));
       
       setApprovedImages(data || []);
       console.log('✅ 이미지 목록 로드 완료:', data?.length || 0, '개');
@@ -495,12 +503,18 @@ export default function MealCard({
           console.log('🔄 이미지 실시간 업데이트 수신:', payload);
           
           // 상태 변경 (승인/반려 등) 또는 새 이미지 업로드시 발생
-          fetchMealImages(); // 이미지 목록 다시 불러와 상태 갱신
+          // 지연을 주어 DB에 변경사항이 완전히 반영되도록 함
+          setTimeout(() => {
+            console.log('🔄 이미지 목록 새로고침 시작');
+            fetchMealImages(); // 이미지 목록 다시 불러와 상태 갱신
+          }, 500);
         }
       )
       .subscribe(status => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ meal_images 구독 성공:', meal.id);
+          // 구독 성공 후 초기 데이터 로드
+          fetchMealImages();
         }
       });
     
