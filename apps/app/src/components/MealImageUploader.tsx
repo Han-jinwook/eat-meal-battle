@@ -547,10 +547,12 @@ export default function MealImageUploader({
           .single();
           
         if (imageData) {
-          // 사용자 별명 추가
+          // 사용자 별명 추가 및 검증 결과 반영
           const updatedImageData = {
             ...imageData,
-            uploader_nickname: imageData.users?.nickname || null
+            uploader_nickname: imageData.users?.nickname || null,
+            status: verificationResult.isMatch ? 'approved' : 'rejected',
+            explanation: verificationResult.explanation || null
           };
           setUploadedImage(updatedImageData);
         }
@@ -578,10 +580,12 @@ export default function MealImageUploader({
             .single();
             
           if (imageData) {
-            // 사용자 별명 추가
+            // 사용자 별명 추가 및 검증 실패 상태 반영
             const updatedImageData = {
               ...imageData,
-              uploader_nickname: imageData.users?.nickname || null
+              uploader_nickname: imageData.users?.nickname || null,
+              status: 'rejected',
+              explanation: '이미지 검증 중 오류가 발생했습니다.'
             };
             setUploadedImage(updatedImageData);
           }
