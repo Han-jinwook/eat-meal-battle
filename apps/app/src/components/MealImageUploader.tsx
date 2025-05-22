@@ -536,15 +536,23 @@ export default function MealImageUploader({
         const verificationResult = await verifyImage(uploadedImageId);
         console.log('검증 결과:', verificationResult);
         
-        // 업로드된 이미지 정보 가져오기
+        // 업로드된 이미지 정보 가져오기 (사용자 정보 포함)
         const { data: imageData } = await supabase
           .from('meal_images')
-          .select('*')
+          .select(`
+            *,
+            users:uploaded_by(id, nickname, profile_image)
+          `)
           .eq('id', uploadedImageId)
           .single();
           
         if (imageData) {
-          setUploadedImage(imageData);
+          // 사용자 별명 추가
+          const updatedImageData = {
+            ...imageData,
+            uploader_nickname: imageData.users?.nickname || null
+          };
+          setUploadedImage(updatedImageData);
         }
         
         // 성공 콜백 호출 - 지연 시간 추가
@@ -558,16 +566,24 @@ export default function MealImageUploader({
       } catch (verifyError) {
         console.error('검증 오류:', verifyError);
         
-        // 업로드된 이미지 정보 가져오기
+        // 업로드된 이미지 정보 가져오기 (사용자 정보 포함)
         try {
           const { data: imageData } = await supabase
             .from('meal_images')
-            .select('*')
+            .select(`
+              *,
+              users:uploaded_by(id, nickname, profile_image)
+            `)
             .eq('id', uploadedImageId)
             .single();
             
           if (imageData) {
-            setUploadedImage(imageData);
+            // 사용자 별명 추가
+            const updatedImageData = {
+              ...imageData,
+              uploader_nickname: imageData.users?.nickname || null
+            };
+            setUploadedImage(updatedImageData);
           }
         } catch (err) {
           console.error('이미지 정보 조회 오류:', err);
@@ -834,12 +850,6 @@ export default function MealImageUploader({
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
               {error}
-            </div>
-          )}
-
-          {verificationResult && (
-            <div className="mb-4">
-              {getVerificationStatusText()}
             </div>
           )}
 
