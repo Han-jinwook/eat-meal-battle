@@ -1,6 +1,6 @@
 # 급식 배틀 프로젝트 구조 및 기능 문서
 
-**버전**: 1.0.0  
+**버전**: 1.1.0  
 **최종 업데이트**: 2025-05-22
 
 ## 목차
@@ -164,23 +164,85 @@ React 커스텀 훅이 위치합니다.
 
 ## 컴포넌트 (Components)
 
+### MealImageUploader.tsx
+**경로**: `apps/app/src/components/MealImageUploader.tsx`
+**설명**: 급식 이미지 업로드 및 검증 컴포넌트
+**주요 함수**:
+- `handleFileChange(e)`: 파일 선택 시 미리보기 생성 및 상태 설정
+- `verifyImage(imageId)`: 업로드된 이미지의 검증 API 호출
+- `handleUpload()`: 이미지 업로드 및 검증 처리, 사용자 정보(닉네임)를 함께 가져와 표시
+- `handleAiImageGeneration()`: AI를 통한 이미지 생성 처리
+- `getVerificationStatusText()`: 검증 결과에 따른 메시지 생성
+- `handleDeleteImage()`: 업로드된 이미지 삭제 처리
+
 ### MealCard
 **경로**: `apps/app/src/components/MealCard.tsx`
 **설명**: 급식 정보를 시각적으로 표현하는 카드 컴포넌트
-**주요 기능**:
-- 급식 메뉴 항목 표시
-- 급식 이미지 표시
-- 별점 평가 기능
+**주요 함수**:
+- `fetchMealImages()`: 급식 이미지 목록 조회, 사용자 정보(닉네임) 포함
+- `handleImageUpload()`: 이미지 업로드 완료 후 처리
+- `handleImageChange()`: 이미지 변경 알림 처리 및 목록 새로고침
+- `renderMealInfo()`: 급식 정보 렌더링
 - 이미지 업로드 버튼 제공
+
+### AppHeader
+**경로**: `apps/app/src/components/AppHeader.tsx`
+**설명**: 앱 상단 헤더 컴포넌트
+**주요 함수**:
+- `getUser()`: 사용자 정보 가져오기
+
+### MainHeader
+**경로**: `apps/app/src/components/MainHeader.tsx`
+**설명**: 메인 헤더 컴포넌트, 네비게이션 및 사용자 프로필 표시
+**주요 함수**:
+- `fetchUser()`: 사용자 정보 가져오기
+- `toggleProfile()`: 프로필 메뉴 토글
+- `logout()`: 로그아웃 처리
+
+### ImageWithFallback
+**경로**: `apps/app/src/components/ImageWithFallback.tsx`
+**설명**: 이미지 로딩 오류를 자동으로 처리하는 안전한 이미지 컴포넌트
+**주요 함수**:
+- `handleImageError()`: 이미지 로드 오류 처리
+
+### NotificationBell
+**경로**: `apps/app/src/components/NotificationBell.tsx`
+**설명**: 사용자 알림을 표시하는 벨 아이콘 및 드롭다운 컴포넌트
+**주요 함수**:
+- `fetchNotifications()`: 알림 데이터 가져오기
+- `markAsRead(notificationId)`: 알림 읽음 처리
+- `setupSubscription()`: 실시간 알림 구독 설정
+
+### StarRating
+**경로**: `apps/app/src/components/StarRating.tsx`
+**설명**: 별점 평가 컴포넌트
+**주요 함수**:
+- `renderStar(index)`: 별 아이콘 렌더링
+- `handleClick(index)`: 별점 클릭 이벤트 처리
+
+### MyMealRating
+**경로**: `apps/app/src/components/MyMealRating.tsx`
+**설명**: 급식 전체에 대한 평균 평점을 표시하고 사용자가 평점을 매길 수 있는 컴포넌트
+**주요 함수**:
+- `fetchMenuItems()`: 급식의 메뉴 아이템 ID 목록 조회
+- `calculateAndSaveMealRating()`: 메뉴 아이템 별점의 평균을 계산하여 급식 평점 저장
+- `fetchMyRating()`: 내 급식 평점 조회
+
+### FirebaseMessaging
+**경로**: `apps/app/src/components/firebase/FirebaseMessaging.tsx`
+**설명**: Firebase Cloud Messaging 관련 기능을 처리하는 컴포넌트
+**주요 함수**:
+- `registerToken()`: FCM 토큰 등록
+- `setTokenToDatabase(token)`: 사용자 프로필에 FCM 토큰 저장
 
 ### MealImageUploader
 **경로**: `apps/app/src/components/MealImageUploader.tsx`
 **설명**: 급식 이미지 업로드 컴포넌트
-**주요 기능**:
-- 이미지 파일 선택
-- 이미지 업로드 및 저장
-- AI를 통한 이미지 검증
-- AI 이미지 자동 생성
+**주요 함수**:
+- `handleFileChange(event)`: 파일 선택 처리
+- `handleUpload(file)`: 파일 업로드 함수
+- `verifyImage(imageUrl)`: AI 이미지 검증 함수
+- `handleDeleteImage(imageId)`: 이미지 삭제 함수
 
 ### StarRating
 **경로**: `apps/app/src/components/StarRating.tsx`
