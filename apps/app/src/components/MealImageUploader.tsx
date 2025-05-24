@@ -24,17 +24,21 @@ export default function MealImageUploader({
   onUploadError
 }: MealImageUploaderProps) {
   // 커스텀 성공 핸들러 - 이미지 리로드 후 콜백 실행
-  const handleSuccess = useCallback(() => {
+  const handleSuccess = useCallback(async () => {
     console.log('🔄 이미지 업로드 성공 처리 - 승인된 이미지 새로고침');
     
-    // 승인된 이미지 다시 로드
-    fetchApprovedImage().then(() => {
+    try {
+      // 승인된 이미지 다시 로드
+      await fetchApprovedImage();
+      
       // 부모 컴포넌트 콜백 호출
       if (onUploadSuccess) {
         console.log('🔄 상위 컴포넌트 onUploadSuccess 콜백 호출');
         onUploadSuccess();
       }
-    });
+    } catch (error) {
+      console.error('❌ 승인된 이미지 가져오기 중 오류:', error);
+    }
   }, [onUploadSuccess, fetchApprovedImage]);
   const supabase = createClient();
   const [uploading, setUploading] = useState(false);
