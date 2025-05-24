@@ -435,67 +435,64 @@ export default function MealCard({
 }: MealCardProps) {
   // 이미지 업로드 성공 시 호출되는 함수
   const handleImageChange = useCallback(() => {
-    console.log('📣 이미지 변경 알림 받음 - 실시간 업데이트 또는 상태 변경');
+    console.log('📣 이미지 변경 알림 받음');
     
-    // 최상위 컴포넌트의 콜백 호출 (있는 경우)
+    // 최상위 컴포넌트의 콜백 호출
     if (onUploadSuccess) {
-      console.log('💬 onUploadSuccess 콜백 호출 시작');
       onUploadSuccess();
-      console.log('💬 onUploadSuccess 콜백 호출 완료');
     }
   }, [onUploadSuccess]);
 
   // 실시간 구독 설정
   useEffect(() => {
-    if (!meal?.id) {
-      console.log('❌ meal_id가 없어 실시간 구독 설정 스킵');
-      return;
-    }
+    if (!meal?.id) return;
     
-    console.log('🔗 meal_images 테이블 실시간 구독 설정 시작 - meal_id:', meal.id);
+    console.log('🔗 meal_images 테이블 실시간 구독 설정 - meal_id:', meal.id);
     
     // 실시간 업데이트를 위한 채널 생성
-    try {
-      const channelName = `meal-images-${meal.id}`;
-      console.log('🔗 채널 이름:', channelName);
-      
-      const channel = supabase
-        .channel(channelName)
-        .on('postgres_changes', 
-          { 
-            event: '*', // 모든 이벤트(INSERT, UPDATE, DELETE) 감지
-            schema: 'public', 
-            table: 'meal_images',
-            filter: `meal_id=eq.${meal.id}` // 현재 meal.id에 해당하는 변경만 감지
-          }, 
-          (payload) => {
-            console.log('🔄 이미지 실시간 업데이트 수신 - 이벤트 타입:', payload.eventType);
-            console.log('🔄 이미지 실시간 업데이트 수신 - 페이로드:', payload);
-            
-            // 이미지 변경 알림 - 새로고침 없이 UI 업데이트
-            handleImageChange();
-          }
-        )
-        .subscribe((status) => {
-          console.log('🔗 구독 상태 변경:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ meal_images 구독 성공 - meal_id:', meal.id);
-          } else {
-            console.log('❌ meal_images 구독 실패 - 상태:', status);
-          }
-        });
-      
-      // 컴포넌트 언마운트 시 구독 해제
-      return () => {
-        console.log('🔗 meal_images 테이블 구독 해제 시작 - meal_id:', meal.id);
-        supabase.removeChannel(channel);
-        console.log('🔗 meal_images 테이블 구독 해제 완료 - meal_id:', meal.id);
-      };
-    } catch (error) {
-      console.error('❌ 실시간 구독 설정 오류:', error);
-      return () => {}; // 오류 발생 시 빈 cleanup 함수 반환
-    }
-  }, [meal?.id, handleImageChange]); // meal.id가 바뀔 때만 재실행, handleImageChange도 추가
+    const channel = supabase
+      .channel(`meal-images-${meal.id}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'meal_images',
+          filter: `meal_id=eq.${meal.id}` 
+        }, 
+        (payload) => {
+          console.log('🔄 이미지 추가 이벤트 받음:', payload);
+          handleImageChange();
+        }
+      )
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'meal_images',
+          filter: `meal_id=eq.${meal.id}` 
+        }, 
+        (payload) => {
+          console.log('🔄 이미지 업데이트 이벤트 받음:', payload);
+          handleImageChange();
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔗 구독 상태 변경:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ meal_images 구독 성공 - meal_id:', meal.id);
+        } else {
+          console.log('❌ meal_images 구독 실패 - 상태:', status);
+        }
+      });
+    
+    console.log('🔊 meal_images 실시간 구독 활성화됨:', channel.topic);
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('🔌 meal_images 실시간 구독 해제 - meal_id:', meal.id);
+      supabase.removeChannel(channel);
+    };
+  }, [meal?.id, handleImageChange]); // meal.id나 handleImageChange가 바뀔 때만 재실행
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* 업로더 영역 */}
