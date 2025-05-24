@@ -432,138 +432,15 @@ export default function MealCard({
   onUploadSuccess,
   onUploadError,
 }: MealCardProps) {
-  // 이미지 목록 상태 관리
-  const [approvedImages, setApprovedImages] = useState<MealImage[]>([]);
-  const [loadingImages, setLoadingImages] = useState(false);
-  
-  // 이미지 목록 가져오기 함수
-  const fetchMealImages = useCallback(async () => {
-    if (!meal?.id) return;
-    
-    try {
-      setLoadingImages(true);
-      console.log('🔍 이미지 목록 조회 시작 - meal_id:', meal.id);
-      
-      // 승인된 이미지만 조회 (캐시 방지 방법 수정)
-      const timestamp = new Date().getTime(); // 현재 시간을 캐시 방지용으로 사용
-      console.log('🔍 이미지 조회 시간:', timestamp);
-      
-      // 캐시 방지를 위해 상태를 재설정하는 방법 사용
-      // 이미지 업로드 후 사용자 정보가 제대로 조회되지 않는 문제 해결
-      console.log('🔍 새로운 이미지 조회 시도');
-      
-      // 이미지 조회 - 사용자 정보 포함
-      const { data, error } = await supabase
-        .from('meal_images')
-        .select(`
-          *,
-          users!uploaded_by(id, nickname, profile_image)
-        `)
-        .eq('meal_id', meal.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(20); // 이미지 수 제한
-      
-      if (error) {
-        console.error('❌ 이미지 로드 오류:', error);
-        return;
-      }
-      
-      // 이미지 데이터 확인 (자세한 디버깅)
-      console.log('🧑‍💻 이미지 데이터 상세 확인:', data?.map(img => ({
-        id: img.id,
-        uploaded_by: img.uploaded_by,
-        created_at: img.created_at,
-        status: img.status,
-        nickname: img.users?.nickname || '익명',
-        hasUserInfo: !!img.users
-      })));
-      
-      setApprovedImages(data || []);
-      console.log('✅ 이미지 목록 로드 완료:', data?.length || 0, '개');
-    } catch (error) {
-      console.error('❌ 이미지 조회 중 오류:', error);
-    } finally {
-      setLoadingImages(false);
-    }
-  }, [meal?.id]); // meal.id가 바뀔 때만 함수 재생성
-  
-  // 컴포넌트 마운트 시 이미지 목록 로드
-  useEffect(() => {
-    if (meal?.id) {
-      fetchMealImages();
-    }
-  }, [meal?.id, fetchMealImages]);
-  
-  // meal_images 테이블의 변경사항 실시간 구독 설정
-  useEffect(() => {
-    if (!meal?.id) return;
-    
-    console.log('🔗 meal_images 테이블 실시간 구독 설정 - meal_id:', meal.id);
-    
-    // 실시간 업데이트를 위한 채널 생성
-    const channel = supabase
-      .channel(`meal-images-${meal.id}`)
-      .on('postgres_changes', 
-        { 
-          event: '*', // 모든 이벤트(INSERT, UPDATE, DELETE) 감지
-          schema: 'public', 
-          table: 'meal_images',
-          filter: `meal_id=eq.${meal.id}` // 현재 meal.id에 해당하는 변경만 감지
-        }, 
-        (payload) => {
-          console.log('🔄 이미지 실시간 업데이트 수신:', payload);
-          
-          // 상태 변경 (승인/반려 등) 또는 새 이미지 업로드시 발생
-          // 지연을 주어 DB에 변경사항이 완전히 반영되도록 함
-          setTimeout(() => {
-            console.log('🔄 이미지 목록 새로고침 시작');
-            fetchMealImages(); // 이미지 목록 다시 불러와 상태 갱신
-          }, 500);
-        }
-      )
-      .subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ meal_images 구독 성공:', meal.id);
-          // 구독 성공 후 초기 데이터 로드
-          fetchMealImages();
-        }
-      });
-    
-    // 컴포넌트 언마운트 시 구독 해제
-    return () => {
-      console.log('🔗 meal_images 테이블 구독 해제:', meal.id);
-      supabase.removeChannel(channel);
-    };
-  }, [meal?.id, fetchMealImages]); // meal.id가 바뀔 때만 재실행
-  
-  // 이미지 업로드/승인 시 호출되는 함수 (로컨 핸들러)
+  // 이미지 업로드 성공 시 호출되는 함수 (단순화됨)
   const handleImageChange = useCallback(() => {
-    console.log('📣 이미지 변경 알림 받음, 목록 새로고침');
+    console.log('📣 이미지 변경 알림 받음');
     
-    // 이미지 업로드 후 데이터가 제대로 로드되지 않는 문제 해결을 위해
-    // 일정 시간 간격으로 여러 번 다시 로드
-    console.log('🔍 이미지 업로드 후 데이터 로드 시도 1');
-    fetchMealImages();
-    
-    // 최상위 컴포넌트의 콜백도 호출 (있는 경우)
+    // 최상위 컴포넌트의 콜백 호출 (있는 경우)
     if (onUploadSuccess) {
       onUploadSuccess();
     }
-    
-    // 여러 번 다시 로드하여 데이터가 정확히 조회되도록 함
-    // 1초 후 다시 조회
-    setTimeout(() => {
-      console.log('🔍 이미지 업로드 후 데이터 로드 시도 2');
-      fetchMealImages();
-    }, 1000);
-    
-    // 3초 후 다시 조회
-    setTimeout(() => {
-      console.log('🔍 이미지 업로드 후 데이터 로드 시도 3');
-      fetchMealImages();
-    }, 3000);
-  }, [fetchMealImages, onUploadSuccess]);
+  }, [onUploadSuccess]);
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* 업로더 영역 */}
@@ -629,9 +506,7 @@ export default function MealCard({
           </ul>
         </div>
 
-        {/* 승인된 이미지 보기 */}
-        {/* 승인된 이미지 섹션 제거됨 */}
-        
+
         {/* 버튼들 상단으로 이동함 */}
       </div>
     </div>
