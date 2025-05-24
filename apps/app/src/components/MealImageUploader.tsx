@@ -23,6 +23,19 @@ export default function MealImageUploader({
   onUploadSuccess,
   onUploadError
 }: MealImageUploaderProps) {
+  // 커스텀 성공 핸들러 - 이미지 리로드 후 콜백 실행
+  const handleSuccess = useCallback(() => {
+    console.log('🔄 이미지 업로드 성공 처리 - 승인된 이미지 새로고침');
+    
+    // 승인된 이미지 다시 로드
+    fetchApprovedImage().then(() => {
+      // 부모 컴포넌트 콜백 호출
+      if (onUploadSuccess) {
+        console.log('🔄 상위 컴포넌트 onUploadSuccess 콜백 호출');
+        onUploadSuccess();
+      }
+    });
+  }, [onUploadSuccess, fetchApprovedImage]);
   const supabase = createClient();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -35,6 +48,45 @@ export default function MealImageUploader({
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
   const [showAiGenButton, setShowAiGenButton] = useState(true); // 테스트를 위해 항상 true로 설정
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 해당 meal_id에 대한 최신 승인된 이미지 가져오기
+  const fetchApprovedImage = useCallback(async () => {
+    if (!mealId) return;
+    
+    console.log('📥 승인된 이미지 조회 시작 - meal_id:', mealId);
+    
+    try {
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select(`
+          *,
+          users:uploaded_by(id, nickname, profile_image)
+        `)
+        .eq('meal_id', mealId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('❌ 승인된 이미지 조회 오류:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log('✅ 승인된 이미지 조회 성공:', data[0]);
+        setUploadedImage(data[0]);
+      } else {
+        console.log('ℹ️ 승인된 이미지 없음 - meal_id:', mealId);
+      }
+    } catch (err) {
+      console.error('❌ 이미지 조회 중 예외 발생:', err);
+    }
+  }, [mealId, supabase]);
+  
+  // 컴포넌트 마운트 시 승인된 이미지 로드
+  useEffect(() => {
+    fetchApprovedImage();
+  }, [fetchApprovedImage]);
   
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -337,6 +389,7 @@ export default function MealImageUploader({
       setTimeout(() => {
         console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
         if (onUploadSuccess) {
+          fetchApprovedImage();
           onUploadSuccess();
         }
       }, 4000); // 4초 지연
@@ -354,113 +407,7 @@ export default function MealImageUploader({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    console.log('파일 선택됨:', { 
-      fileName: file.name, 
-      fileSize: file.size, 
-      mealId: mealId || 'undefined',
-      fileType: file.type
-    });
-
-    // 파일 유효성 검사
-    if (!file.type.startsWith('image/')) {
-      setError('이미지 파일만 업로드할 수 있습니다.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
-    // 버튼 비활성화 - 파일 선택 즉시 시작
-    setIsButtonReady(false);
-    setImageStatus('processing');
-    
-    // 6초 타이머 시작 (파일 선택 즉시)
-    console.log('버튼 타이머 시작');
-    setTimeout(() => {
-      setIsButtonReady(true);
-      console.log('버튼 활성화 타이머 완료');
-    }, 6000);
-    
-    // 미리보기 생성
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    setError(null);
-    setVerificationResult(null);
-    // 이전 상태 리셋
-    setUploading(false);
-    setVerifying(false);
-    
-    console.log('파일 로드 완료, 상태:', {
-      file: !!file,
-      previewSet: !!e.target?.files?.[0],
-      uploading: false,
-      verifying: false,
-      isButtonReady: false,
-      imageStatus: 'processing'
-    });
-  };
-
-  const verifyImage = async (imageId: string) => {
-    try {
-      setVerifying(true);
-      
-      // 환경에 따라 다른 API 엔드포인트 사용
-      const isLocalhost = /^(localhost|127\.|\/api)/.test(window.location.hostname);
-      const apiUrl = isLocalhost 
-        ? '/api/meal-images/verify'
-        : '/.netlify/functions/verify-meal-image';
-      
-      console.log('검증 API 요청 URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageId }),
-      });
-      
-      // 응답 텍스트를 먼저 가져와서 안전하게 처리
-      const responseText = await response.text();
-      let result;
-      
-      try {
-        // JSON으로 파싱 시도
-        result = JSON.parse(responseText);
-        console.log('검증 API 응답:', result);
-      } catch (e) {
-        console.error('검증 API 응답 파싱 오류:', e, responseText);
-        if (response.ok) {
-          throw new Error('응답 파싱 오류: 올바른 JSON 응답이 아닙니다');
-        } else {
-          throw new Error(`검증 API 오류: ${response.status} ${response.statusText}`);
-        }
-      }
-      
-      if (!response.ok) {
-        throw new Error(result?.error || '이미지 검증 중 오류가 발생했습니다.');
-      }
-      
-      setVerificationResult(result);
-      return result;
-    } catch (e: any) {
-      console.error('이미지 검증 오류:', e);
-      setError(e.message || '이미지 검증 중 오류가 발생했습니다.');
-      throw e;
-    } finally {
-      setVerifying(false);
-    }
-  };
+  // ...
 
   const handleUpload = async () => {
     if (!fileInputRef.current?.files?.[0]) {
@@ -588,6 +535,7 @@ export default function MealImageUploader({
         setTimeout(() => {
           console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
           if (onUploadSuccess) {
+            fetchApprovedImage();
             onUploadSuccess();
           }
         }, 2000); // 2초 지연으로 증가
@@ -621,6 +569,7 @@ export default function MealImageUploader({
         
         // 이미지 업로드는 성공했으므로 콜백은 호출
         if (onUploadSuccess) {
+          fetchApprovedImage();
           onUploadSuccess();
         }
       }
@@ -643,45 +592,8 @@ export default function MealImageUploader({
     }
   };
 
-  const getVerificationStatusText = () => {
-    if (!verificationResult) return null;
-    
-    const { isMatch, matchScore, explanation } = verificationResult;
-    const score = Math.round((matchScore || 0) * 100);
-    
-    if (isMatch) {
-      return (
-        <div className="p-3 bg-green-50 text-green-700 rounded-md text-sm">
-          <p className="font-semibold">사진등록 성공! (일치도: {score}%)</p>
-          <p>이미지가 메뉴와 일치하여 등록되었습니다.</p>
-          {explanation && (
-            <p className="text-xs mt-2 border-t border-green-200 pt-2">
-              <span className="font-semibold">분석 결과:</span> {explanation}
-            </p>
-          )}
-        </div>
-      );
-    } else {
-      return (
-        <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
-          <div className="flex items-center">
-            <span className="text-orange-600 text-xl mr-2">✗</span>
-            <div>
-              <p className="font-semibold">매칭실패 (일치도: {score}%)</p>
-              <p>이미지가 메뉴와 충분히 일치하지 않습니다.</p>
-            </div>
-          </div>
-          {explanation && (
-            <p className="text-xs mt-2 border-t border-gray-200 pt-2">
-              <span className="font-semibold">사유:</span> {explanation}
-            </p>
-          )}
-        </div>
-      );
-    }
-  };
+  // ...
 
-  // 이미지 삭제 처리 함수
   const handleDeleteImage = async () => {
     if (!uploadedImage) return;
     
@@ -746,6 +658,7 @@ export default function MealImageUploader({
       
       // 성공 콜백 호출
       if (onUploadSuccess) {
+        fetchApprovedImage();
         onUploadSuccess();
       }
     } catch (err: any) {
