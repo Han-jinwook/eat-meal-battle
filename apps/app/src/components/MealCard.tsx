@@ -630,28 +630,7 @@ export default function MealCard({
         </div>
 
         {/* 승인된 이미지 보기 */}
-        {approvedImages.length > 0 && (
-          <div className="mt-4">
-            <h4 className="text-lg font-medium mb-2">승인된 이미지</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {approvedImages.map((img) => (
-                <div key={img.id} className="relative group">
-                  <a href={img.image_url} target="_blank" rel="noopener noreferrer">
-                    <ImageWithFallback
-                      src={img.image_url}
-                      alt={`급식 이미지 - ${meal.meal_date} ${meal.meal_type}`}
-                      className="w-full h-40 object-cover rounded-md"
-                      width={150}
-                      height={150}
-                    />
-                  </a>
-                  
-                  {/* 사용자 닉네임 표시 - DB 스키마에 맞게 수정 필요 */}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* 승인된 이미지 섹션 제거됨 */}
         
         {/* 버튼들 상단으로 이동함 */}
       </div>
