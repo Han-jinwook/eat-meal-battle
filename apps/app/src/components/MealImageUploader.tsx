@@ -293,6 +293,32 @@ export default function MealImageUploader({
       // 3. 생성된 이미지 정보로 상태 업데이트
       console.log('AI 이미지 생성 성공:', result.image);
       
+      // 이미지 정보에 사용자 별명 정보 추가
+      if (result.image && result.image.uploaded_by) {
+        try {
+          // 사용자 정보 조회
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('nickname, profile_image')
+            .eq('id', result.image.uploaded_by)
+            .single();
+            
+          if (!userError && userData) {
+            console.log('AI 이미지 생성 - 사용자 정보 조회 성공:', userData);
+            // 사용자 별명 정보 추가
+            result.image.uploader_nickname = userData.nickname;
+            result.image.users = { 
+              nickname: userData.nickname, 
+              profile_image: userData.profile_image 
+            };
+          } else {
+            console.error('AI 이미지 생성 - 사용자 정보 조회 오류:', userError);
+          }
+        } catch (e) {
+          console.error('AI 이미지 생성 - 사용자 정보 조회 예외:', e);
+        }
+      }
+      
       // 이미지 정보 업데이트 - 검증 과정 생략
       setUploadedImage(result.image);
       
