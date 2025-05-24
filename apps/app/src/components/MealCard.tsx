@@ -433,48 +433,6 @@ export default function MealCard({
   onUploadSuccess,
   onUploadError,
 }: MealCardProps) {
-  // 승인된 이미지 상태 관리
-  const [approvedImage, setApprovedImage] = useState<MealImage | null>(null);
-  
-  // 최신 승인된 이미지를 가져오는 함수
-  const fetchApprovedImage = useCallback(async () => {
-    if (!meal?.id) return;
-    
-    console.log('🔍 승인된 이미지 가져오기 시작 - meal_id:', meal.id);
-    
-    try {
-      const { data, error } = await supabase
-        .from('meal_images')
-        .select(`
-          *,
-          users!uploaded_by(id, nickname, profile_image)
-        `)
-        .eq('meal_id', meal.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) {
-        console.error('❌ 이미지 가져오기 오류:', error);
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        console.log('✅ 승인된 이미지 가져오기 성공:', data[0]);
-        setApprovedImage(data[0]);
-      }
-    } catch (err) {
-      console.error('❌ 이미지 가져오기 중 예외 발생:', err);
-    }
-  }, [meal?.id]);
-  
-  // 컴포넌트 마운트 시 최초 1회 이미지 로드
-  useEffect(() => {
-    if (meal?.id) {
-      fetchApprovedImage();
-    }
-  }, [meal?.id, fetchApprovedImage]);
-  
   // 실시간 구독 설정
   useEffect(() => {
     if (!meal?.id) return;
@@ -493,9 +451,9 @@ export default function MealCard({
         }, 
         (payload) => {
           console.log('🔄 이미지 실시간 업데이트 수신:', payload);
-          // 상태 변경 (승인/반려 등) 또는 새 이미지 업로드시 발생
-          // 이미지 목록 다시 불러와 상태 갱신
-          fetchApprovedImage();
+          
+          // 이미지 변경 알림 - 새로고침 없이 UI 업데이트
+          handleImageChange();
         }
       )
       .subscribe(status => {
@@ -509,7 +467,7 @@ export default function MealCard({
       console.log('🔗 meal_images 테이블 구독 해제:', meal.id);
       supabase.removeChannel(channel);
     };
-  }, [meal?.id, fetchApprovedImage]); // meal.id가 바뀔 때만 재실행
+  }, [meal?.id]); // meal.id가 바뀔 때만 재실행
   
   // 이미지 업로드 성공 시 호출되는 함수 (단순화됨)
   const handleImageChange = useCallback(() => {
@@ -533,27 +491,6 @@ export default function MealCard({
           onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
           onUploadError={onUploadError}
         />
-        
-        {/* 승인된 이미지 표시 영역 - 실시간 업데이트 */}
-        {approvedImage && (
-          <div className="mt-4 pt-2 border-t border-gray-200">
-            <div className="relative rounded overflow-hidden">
-              <ImageWithFallback
-                src={getSafeImageUrl(approvedImage.image_url)}
-                alt="승인된 급식 이미지"
-                width={300}
-                height={200}
-                className="w-full h-auto object-cover rounded"
-                onError={handleImageError}
-              />
-              {approvedImage.users?.nickname && (
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
-                  {approvedImage.users.nickname}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 본문 */}
