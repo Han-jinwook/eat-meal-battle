@@ -78,6 +78,10 @@ function verifyImage(imageUrl: string): Promise<boolean>
 function handleDeleteImage(imageId: string): Promise<void>
 // @param imageId - 삭제할 이미지 ID
 // @returns - 삭제 결과 Promise
+
+const fetchApprovedImage = useCallback(async (): Promise<void>
+// @description - 승인된 이미지를 실시간으로 가져오는 함수
+// @returns - 없음, 상태 업데이트를 통해 UI에 반영
 ```
 
 **비고**: 이미지 업로드 시 Supabase Storage에 저장되며, AI 검증은 OpenAI API를 통해 이루어집니다.

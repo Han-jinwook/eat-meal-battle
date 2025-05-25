@@ -816,13 +816,13 @@ export default function MealImageUploader({
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6 max-w-xl mx-auto">
+    <div className="bg-white rounded-lg p-3 mb-2 max-w-xl mx-auto">
       <h3 className="text-lg font-semibold mb-3">급식 사진 업로드</h3>
       
       {/* 업로드된 이미지가 있으면 표시 */}
       {uploadedImage ? (
         <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+          <div className="bg-white rounded-lg overflow-hidden">
             <div className="relative h-72 w-full">
               <ImageWithFallback
                 src={uploadedImage.image_url}

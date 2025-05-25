@@ -444,7 +444,7 @@ export default function MealCard({
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* 업로더 영역 */}
-      <div className="bg-gray-50 p-3 border-b">
+      <div className="bg-gray-50 p-2 border-b">
         <MealImageUploader
           key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
           mealId={meal.id}
