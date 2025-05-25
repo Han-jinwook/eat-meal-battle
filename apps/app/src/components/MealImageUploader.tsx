@@ -828,10 +828,11 @@ export default function MealImageUploader({
                 src={uploadedImage.image_url}
                 alt="급식 이미지"
                 style={{
-                  objectFit: 'cover', 
+                  objectFit: 'contain', 
                   position: 'absolute',
                   width: '100%',
-                  height: '100%'
+                  height: '100%',
+                  backgroundColor: '#f9f9f9'
                 }}
               />
             </div>
