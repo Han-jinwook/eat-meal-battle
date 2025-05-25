@@ -816,14 +816,14 @@ export default function MealImageUploader({
   };
   
   return (
-    <div className="bg-white rounded-lg p-2 mb-0 max-w-xl mx-auto">
-      <h3 className="text-md font-semibold mb-1">급식 사진 업로드</h3>
+    <div className="bg-white rounded-t-lg p-0 mb-0 max-w-xl mx-auto">
+      <h3 className="text-sm font-medium px-2 py-1">급식 사진</h3>
       
       {/* 업로드된 이미지가 있으면 표시 */}
       {uploadedImage ? (
-        <div className="mb-0">
-          <div className="bg-white rounded-lg overflow-hidden">
-            <div className="relative h-64 w-full">
+        <div>
+          <div className="overflow-hidden">
+            <div className="relative h-56 w-full">
               <ImageWithFallback
                 src={uploadedImage.image_url}
                 alt="급식 이미지"
@@ -835,7 +835,7 @@ export default function MealImageUploader({
                 }}
               />
             </div>
-            <div className="p-3">
+            <div className="p-1 text-xs">
               <div className="flex justify-end items-center mb-2">
                 {uploadedImage.source === 'user_ai' && uploadedImage.uploader_nickname && (
   <span className="text-xs text-gray-500">AI로 생성한 이미지 ({uploadedImage.uploader_nickname})</span>

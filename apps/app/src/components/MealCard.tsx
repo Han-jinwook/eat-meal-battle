@@ -442,9 +442,9 @@ export default function MealCard({
     }
   }, [onUploadSuccess]);
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
+    <div className="bg-white overflow-hidden">
       {/* 업로더 영역 */}
-      <div className="bg-gray-50 p-0">
+      <div className="p-0 m-0">
         <MealImageUploader
           key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
           mealId={meal.id}
@@ -457,13 +457,13 @@ export default function MealCard({
       </div>
 
       {/* 본문 */}
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-3">
+      <div className="p-2">
+        <div className="flex justify-between items-center mb-1 text-xs">
           <div className="flex items-center gap-2">
             {meal.origin_info && (
               <button
                 onClick={() => onShowOrigin(meal.origin_info!)}
-                className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                className="text-xs px-1 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
               >
                 원산지
               </button>
@@ -471,14 +471,14 @@ export default function MealCard({
             {(meal.kcal || meal.ntr_info) && (
               <button
                 onClick={() => onShowNutrition(meal)}
-                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                className="text-xs px-1 py-0.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
               >
                 영양정보
               </button>
             )}
           </div>
           {meal.kcal && (
-            <div className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <div className="bg-orange-100 text-orange-800 text-xs px-1.5 py-0.5 rounded">
               {meal.kcal}kcal
             </div>
           )}
@@ -488,7 +488,7 @@ export default function MealCard({
         <MyMealRating mealId={meal.id} />
 
         {/* 메뉴 목록 */}
-        <div className="mb-4">
+        <div className="mb-2">
           <ul className="space-y-2">
             {meal.menuItems && meal.menuItems.length > 0 ? (
               // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
