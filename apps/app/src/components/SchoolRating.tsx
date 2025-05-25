@@ -68,17 +68,19 @@ export default function SchoolRating({ schoolCode, className = '' }: SchoolRatin
       );
     }
 
-    // 반 별
+    // 반 별 - 고유한 ID 사용
     if (hasHalfStar) {
+      // 학교 코드를 사용하여 고유한 gradient ID 생성
+      const gradientId = `half-gradient-${schoolCode}`;
       stars.push(
         <svg key="half" className="w-4 h-4 text-yellow-500" viewBox="0 0 24 24">
           <defs>
-            <linearGradient id="half-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="50%" stopColor="currentColor" stopOpacity="1" />
               <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
             </linearGradient>
           </defs>
-          <path fill="url(#half-gradient)" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          <path fill={`url(#${gradientId})`} d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
         </svg>
       );
     }
