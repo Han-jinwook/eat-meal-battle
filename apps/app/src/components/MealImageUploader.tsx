@@ -816,39 +816,37 @@ export default function MealImageUploader({
   };
   
   return (
-    <div className="bg-white rounded-t-lg p-0 mb-0 max-w-xl mx-auto">
-      <h3 className="text-sm font-medium px-2 py-1">급식 사진</h3>
+    <div className="p-0 mb-0 max-w-xl mx-auto">
       
       {/* 업로드된 이미지가 있으면 표시 */}
       {uploadedImage ? (
         <div>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden rounded-lg">
             <div className="relative h-56 w-full">
               <ImageWithFallback
                 src={uploadedImage.image_url}
                 alt="급식 이미지"
                 style={{
-                  objectFit: 'contain', 
+                  objectFit: 'cover', 
                   position: 'absolute',
                   width: '100%',
-                  height: '100%',
-                  backgroundColor: '#f9f9f9'
+                  height: '100%'
                 }}
               />
             </div>
-            <div className="p-1 text-xs">
-              <div className="flex justify-end items-center mb-2">
+            <div className="px-0 py-1 text-xs">
+              <div className="flex justify-end items-center">
                 {uploadedImage.source === 'user_ai' && uploadedImage.uploader_nickname && (
-  <span className="text-xs text-gray-500">AI로 생성한 이미지 ({uploadedImage.uploader_nickname})</span>
+  <span className="text-xs text-gray-500 text-right">AI로 생성한 이미지 ({uploadedImage.uploader_nickname})</span>
 )}
 {uploadedImage.source === 'user_ai' && !uploadedImage.uploader_nickname && (
-  <span className="text-xs text-gray-500">AI로 생성한 이미지</span>
+  <span className="text-xs text-gray-500 text-right">AI로 생성한 이미지</span>
 )}
 {uploadedImage.source === 'auto_ai' && (
-  <span className="text-xs text-gray-500">AI로 생성한 이미지</span>
+  <span className="text-xs text-gray-500 text-right">AI로 생성한 이미지</span>
 )}
 {uploadedImage.source === 'user' && uploadedImage.uploader_nickname && (
-  <span className="text-xs text-gray-500">({uploadedImage.uploader_nickname})</span>
+  <span className="text-xs text-gray-500 text-right">({uploadedImage.uploader_nickname})</span>
 )}
               </div>
               
