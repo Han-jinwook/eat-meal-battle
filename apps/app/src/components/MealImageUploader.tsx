@@ -822,16 +822,15 @@ export default function MealImageUploader({
       {uploadedImage ? (
         <div>
           <div className="overflow-hidden rounded-lg">
-            <div className="relative w-full" style={{aspectRatio: '1/1'}}>
+            <div className="relative w-full h-auto">
               <ImageWithFallback
                 src={uploadedImage.image_url}
                 alt="급식 이미지"
                 style={{
-                  objectFit: 'contain', 
-                  position: 'absolute',
                   width: '100%',
-                  height: '100%',
-                  backgroundColor: '#f9f9f9'
+                  height: 'auto',
+                  maxHeight: '80vh',
+                  display: 'block'
                 }}
               />
             </div>
