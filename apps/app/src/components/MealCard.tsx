@@ -7,6 +7,7 @@ import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
+import SchoolRating from './SchoolRating';
 
 // Supabase 클라이언트 초기화
 const supabase = createClientComponentClient();
@@ -443,18 +444,6 @@ export default function MealCard({
   }, [onUploadSuccess]);
   return (
     <div className="bg-white overflow-hidden">
-      {/* 업로더 영역 */}
-      <div className="p-0 m-0">
-        <MealImageUploader
-          key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
-          mealId={meal.id}
-          schoolCode={meal.school_code}
-          mealDate={meal.meal_date}
-          mealType={meal.meal_type}
-          onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
-          onUploadError={onUploadError}
-        />
-      </div>
 
       {/* 본문 */}
       <div className="p-2">
@@ -484,8 +473,31 @@ export default function MealCard({
           )}
         </div>
 
+        {/* 급식 날짜 및 타입 표시 */}
+        <div className="flex items-center mb-2">
+          <span className="text-sm font-medium">
+            {formatDisplayDate(meal.meal_date)} {getMealTypeName(meal.meal_type)}
+          </span>
+        </div>
+
+        {/* 학교 별점 */}
+        <SchoolRating schoolCode={meal.school_code} className="mb-2" />
+        
+        {/* 이미지 업로더 */}
+        <MealImageUploader
+          key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
+          mealId={meal.id}
+          schoolCode={meal.school_code}
+          mealDate={meal.meal_date}
+          mealType={meal.meal_type}
+          onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
+          onUploadError={onUploadError}
+        />
+
         {/* 오늘 나의 평가는? 섹션 */}
-        <MyMealRating mealId={meal.id} />
+        <div className="mt-3">
+          <MyMealRating mealId={meal.id} />
+        </div>
 
         {/* 메뉴 목록 */}
         <div className="mb-2">
