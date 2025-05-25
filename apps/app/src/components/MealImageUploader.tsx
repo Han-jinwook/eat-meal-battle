@@ -155,49 +155,88 @@ export default function MealImageUploader({
     setShowAiGenButton(true);
   }, []);
   
+  // 승인된 이미지 가져오는 함수 (재사용을 위해 함수로 분리)
+  const fetchApprovedImage = useCallback(async () => {
+    if (!mealId) return;
+    
+    console.log('승인된 이미지 조회:', mealId);
+    const { data, error } = await supabase
+      .from('meal_images')
+      .select('*')
+      .eq('meal_id', mealId)
+      .eq('status', 'approved')
+      .single();
+      
+    if (error) {
+      if (error.code !== 'PGRST116') { // PGRST116 = 결과 없음 오류는 정상적인 상태
+        console.debug('기존 승인 이미지 조회 오류:', error);
+      }
+      return;
+    }
+    
+    if (data) {
+      console.log('승인된 이미지 발견:', data.id);
+      
+      // 업로드한 사용자 정보 가져오기 (있는 경우)
+      if (data.uploaded_by) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('nickname')
+          .eq('id', data.uploaded_by)
+          .single();
+          
+        if (!userError && userData) {
+          // 사용자 닉네임 정보 추가
+          data.uploader_nickname = userData.nickname;
+        }
+      }
+      
+      setUploadedImage(data);
+      // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
+      setShowAiGenButton(false);
+    }
+  }, [mealId, supabase]);
+
   // 컴포넌트 마운트 시 승인된 이미지 자동 로드
+  useEffect(() => {
+    fetchApprovedImage();
+  }, [fetchApprovedImage]);
+  
+  // 실시간 이미지 업데이트를 위한 Supabase 구독 설정
   useEffect(() => {
     if (!mealId) return;
     
-    (async () => {
-      console.log('마운트 시 승인된 이미지 조회:', mealId);
-      const { data, error } = await supabase
-        .from('meal_images')
-        .select('*')
-        .eq('meal_id', mealId)
-        .eq('status', 'approved')
-        .single();
-        
-      if (error) {
-        if (error.code !== 'PGRST116') { // PGRST116 = 결과 없음 오류는 정상적인 상태
-          console.debug('기존 승인 이미지 조회 오류:', error);
-        }
-        return;
-      }
-      
-      if (data) {
-        console.log('승인된 이미지 발견:', data.id);
-        
-        // 업로드한 사용자 정보 가져오기 (있는 경우)
-        if (data.uploaded_by) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('nickname')
-            .eq('id', data.uploaded_by)
-            .single();
+    console.log('실시간 이미지 구독 설정:', mealId);
+    
+    // 현재 meal_id에 대한 meal_images 테이블의 변경사항 감지
+    const channel = supabase
+      .channel(`meal-images-${mealId}`)
+      .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'meal_images', 
+            filter: `meal_id=eq.${mealId}` 
+          }, 
+          (payload) => {
+            console.log('이미지 실시간 업데이트 수신:', payload);
             
-          if (!userError && userData) {
-            // 사용자 닉네임 정보 추가
-            data.uploader_nickname = userData.nickname;
+            // 새로운 이미지가 승인되었거나 상태가 변경된 경우에만 업데이트
+            if (payload.new && (payload.new.status === 'approved' || 
+                (payload.old && payload.old.status !== 'approved' && payload.new.status === 'approved'))) {
+              console.log('승인된 이미지 변경 감지, 이미지 다시 가져오기');
+              fetchApprovedImage();
+            }
           }
-        }
-        
-        setUploadedImage(data);
-        // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
-        setShowAiGenButton(false);
-      }
-    })();
-  }, [mealId, supabase]);
+      )
+      .subscribe();
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('이미지 실시간 구독 해제:', mealId);
+      supabase.removeChannel(channel);
+    };
+  }, [mealId, supabase, fetchApprovedImage]);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
