@@ -445,6 +445,18 @@ export default function MealCard({
   }, [onUploadSuccess]);
   return (
     <div className="bg-white overflow-hidden">
+      {/* 업로더 영역 */}
+      <div className="p-0 m-0">
+        <MealImageUploader
+          key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
+          mealId={meal.id}
+          schoolCode={meal.school_code}
+          mealDate={meal.meal_date}
+          mealType={meal.meal_type}
+          onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
+          onUploadError={onUploadError}
+        />
+      </div>
 
       {/* 본문 */}
       <div className="p-2">
