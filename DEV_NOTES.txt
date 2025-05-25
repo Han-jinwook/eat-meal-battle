@@ -1,2 +1,33 @@
 데브노트
 
+# 급식 평점 통계 시스템 개선 (진행 중)
+
+## 개요
+- 기존 meal_rating_stats 테이블을 확장하여 학교 전체 및 학년별 평점 통계를 제공
+- 각 학년(1~6학년)별 평균 평점 및 평점 수 추적
+- 실시간 업데이트를 위한 데이터베이스 트리거 구현
+
+## 구현 현황
+- [x] meal_rating_stats 테이블 확장 (추가 필드)
+  - 기존 avg_rating → school_avg_rating으로 변경
+  - 기존 rating_count → school_rating_count로 변경
+  - 각 학년별 평균 및 수량 필드 추가 (grade1_avg_rating, grade1_rating_count, ...)
+
+- [x] 통계 업데이트 트리거 함수 구현
+  - meal_ratings와 school_infos 테이블을 user_id로 직접 조인
+  - 학교 코드별, 학년별 통계 자동 계산
+  
+## 남은 작업
+- [ ] 프론트엔드에서 학년별 통계 활용 구현
+  - 학년별 통계를 시각화하는 UI 컴포넌트 필요
+  - SchoolRating 컴포넌트 업데이트
+
+- [ ] 통계 데이터 조회 API 최적화
+  - 학년별 필터링 기능 추가
+  - 캐싱 전략 검토
+
+## 참고사항
+- meal_ratings 테이블은 user_id를 통해 school_infos 테이블과 직접 연결됨
+- meal_rating_stats 테이블에서 grade=0, class_number=0인 레코드는 학교 전체 통계를 나타냄
+- 현재 구현은 학년별 통계만 포함하며, 반별 통계는 성능 이슈로 제외함
+
