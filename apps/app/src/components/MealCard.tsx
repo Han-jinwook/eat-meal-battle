@@ -448,12 +448,6 @@ export default function MealCard({
 
       {/* 본문 */}
       <div className="p-2">
-        {/* 급식 날짜 및 타입 표시 */}
-        <div className="flex items-center mb-2">
-          <span className="text-sm font-medium">
-            {formatDisplayDate(meal.meal_date)} {getMealTypeName(meal.meal_type)}
-          </span>
-        </div>
 
         {/* 학교 별점 */}
         <SchoolRating schoolCode={meal.school_code} className="mb-2" />
