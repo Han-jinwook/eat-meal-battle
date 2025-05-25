@@ -1,5 +1,6 @@
 import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate } from '@/utils/DateUtils';
+import { getMealTypeName } from '@/utils/mealUtils';
 import { MealInfo, MealMenuItem, MealImage } from '@/types'; // 이미지 타입 추가
 import StarRating from '@/components/StarRating';
 import { useState, useEffect, useCallback } from 'react';
@@ -482,17 +483,6 @@ export default function MealCard({
 
         {/* 학교 별점 */}
         <SchoolRating schoolCode={meal.school_code} className="mb-2" />
-        
-        {/* 이미지 업로더 */}
-        <MealImageUploader
-          key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
-          mealId={meal.id}
-          schoolCode={meal.school_code}
-          mealDate={meal.meal_date}
-          mealType={meal.meal_type}
-          onUploadSuccess={handleImageChange} /* 로컨 핸들러로 변경 */
-          onUploadError={onUploadError}
-        />
 
         {/* 오늘 나의 평가는? 섹션 */}
         <div className="mt-3">
