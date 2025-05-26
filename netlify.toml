@@ -6,7 +6,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["sharp"]
+  external_node_modules = ["sharp", "firebase-admin"]
 
 [functions.generate-meal-image]
   timeout = 60
