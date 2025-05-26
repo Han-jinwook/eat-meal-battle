@@ -18,7 +18,7 @@
   - 학교 코드별, 학년별 통계 자동 계산
   
 ## 남은 작업
-- [ ] 프론트엔드에서 학년별 통계 활용 구현
+- [x] 프론트엔드에서 학년별 통계 활용 구현
   - 학년별 통계를 시각화하는 UI 컴포넌트 필요
   - SchoolRating 컴포넌트 업데이트
 
@@ -30,4 +30,29 @@
 - meal_ratings 테이블은 user_id를 통해 school_infos 테이블과 직접 연결됨
 - meal_rating_stats 테이블에서 grade=0, class_number=0인 레코드는 학교 전체 통계를 나타냄
 - 현재 구현은 학년별 통계만 포함하며, 반별 통계는 성능 이슈로 제외함
+
+## 업데이트 기록
+
+### 2025-05-27: RLS 정책 호환성 및 실시간 업데이트 문제 해결
+
+#### 발견된 문제점
+- RLS(Row Level Security) 정책 활성화 시 트리거 함수가 작동하지 않음
+- 테이블 필드명과 컴포넌트 코드 간 불일치
+- 실시간 별점 업데이트 중단
+- 학년별 통계가 화면에 표시되지 않음
+
+#### 해결 방법
+- **트리거 함수 수정**: SECURITY DEFINER 속성 추가로 RLS 정책 우회 가능하게 함
+- **테이블 구조 변경**: 
+  - menu_item_rating_stats: menu_item_id를 PRIMARY KEY로 설정
+  - 필드명 구조 통일 (grade1_avg, grade1_count 등)
+- **컴포넌트 수정**: 
+  - SchoolRating.tsx: 필드명 업데이트 (school_avg_rating → avg_rating 등)
+  - mealId prop 추가하여 현재 급식에 대한 통계만 표시
+- **실시간 업데이트**: Supabase Database Publications 설정 확인 및 활성화
+
+#### 결과
+- RLS 정책 활성화 상태에서도 별점 시스템 정상 작동
+- 실시간 업데이트 기능 복원
+- 학년별 통계 표시 기능 구현 완료
 

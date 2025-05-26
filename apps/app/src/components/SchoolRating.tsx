@@ -5,25 +5,26 @@ import { createClient } from '@/lib/supabase';
 
 interface SchoolRatingProps {
   schoolCode: string;
+  mealId: string; // 급식 ID 추가
   className?: string;
 }
 
 interface GradeRatingStats {
-  grade1_avg_rating: number | null;
-  grade1_rating_count: number;
-  grade2_avg_rating: number | null;
-  grade2_rating_count: number;
-  grade3_avg_rating: number | null;
-  grade3_rating_count: number;
-  grade4_avg_rating: number | null;
-  grade4_rating_count: number;
-  grade5_avg_rating: number | null;
-  grade5_rating_count: number;
-  grade6_avg_rating: number | null;
-  grade6_rating_count: number;
+  grade1_avg: number | null;
+  grade1_count: number;
+  grade2_avg: number | null;
+  grade2_count: number;
+  grade3_avg: number | null;
+  grade3_count: number;
+  grade4_avg: number | null;
+  grade4_count: number;
+  grade5_avg: number | null;
+  grade5_count: number;
+  grade6_avg: number | null;
+  grade6_count: number;
 }
 
-export default function SchoolRating({ schoolCode, className = '' }: SchoolRatingProps) {
+export default function SchoolRating({ schoolCode, mealId, className = '' }: SchoolRatingProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [ratingCount, setRatingCount] = useState<number>(0);
   const [schoolName, setSchoolName] = useState<string>('');
@@ -39,22 +40,23 @@ export default function SchoolRating({ schoolCode, className = '' }: SchoolRatin
         const { data: mealRatingData, error: mealRatingError } = await supabase
           .from('meal_rating_stats')
           .select(`
-            school_avg_rating, 
-            school_rating_count, 
-            grade1_avg_rating, 
-            grade1_rating_count,
-            grade2_avg_rating, 
-            grade2_rating_count,
-            grade3_avg_rating, 
-            grade3_rating_count,
-            grade4_avg_rating, 
-            grade4_rating_count,
-            grade5_avg_rating, 
-            grade5_rating_count,
-            grade6_avg_rating, 
-            grade6_rating_count
+            avg_rating, 
+            rating_count, 
+            grade1_avg, 
+            grade1_count,
+            grade2_avg, 
+            grade2_count,
+            grade3_avg, 
+            grade3_count,
+            grade4_avg, 
+            grade4_count,
+            grade5_avg, 
+            grade5_count,
+            grade6_avg, 
+            grade6_count
           `)
           .eq('school_code', schoolCode)
+          .eq('meal_id', mealId) // 급식 ID로 필터링 추가
           .order('updated_at', { ascending: false })
           .limit(1);
 
@@ -68,23 +70,23 @@ export default function SchoolRating({ schoolCode, className = '' }: SchoolRatin
 
         if (mealRatingData && mealRatingData.length > 0) {
           // 데이터가 있으면 사용
-          setRating(parseFloat(mealRatingData[0].school_avg_rating?.toFixed(1)) || 4.1);
-          setRatingCount(mealRatingData[0].school_rating_count || 150);
+          setRating(parseFloat(mealRatingData[0].avg_rating?.toFixed(1)) || 4.1);
+          setRatingCount(mealRatingData[0].rating_count || 150);
           
           // 학년별 통계 데이터 설정
           setGradeRatings({
-            grade1_avg_rating: mealRatingData[0].grade1_avg_rating,
-            grade1_rating_count: mealRatingData[0].grade1_rating_count || 0,
-            grade2_avg_rating: mealRatingData[0].grade2_avg_rating,
-            grade2_rating_count: mealRatingData[0].grade2_rating_count || 0,
-            grade3_avg_rating: mealRatingData[0].grade3_avg_rating,
-            grade3_rating_count: mealRatingData[0].grade3_rating_count || 0,
-            grade4_avg_rating: mealRatingData[0].grade4_avg_rating,
-            grade4_rating_count: mealRatingData[0].grade4_rating_count || 0,
-            grade5_avg_rating: mealRatingData[0].grade5_avg_rating,
-            grade5_rating_count: mealRatingData[0].grade5_rating_count || 0,
-            grade6_avg_rating: mealRatingData[0].grade6_avg_rating,
-            grade6_rating_count: mealRatingData[0].grade6_rating_count || 0
+            grade1_avg: mealRatingData[0].grade1_avg,
+            grade1_count: mealRatingData[0].grade1_count || 0,
+            grade2_avg: mealRatingData[0].grade2_avg,
+            grade2_count: mealRatingData[0].grade2_count || 0,
+            grade3_avg: mealRatingData[0].grade3_avg,
+            grade3_count: mealRatingData[0].grade3_count || 0,
+            grade4_avg: mealRatingData[0].grade4_avg,
+            grade4_count: mealRatingData[0].grade4_count || 0,
+            grade5_avg: mealRatingData[0].grade5_avg,
+            grade5_count: mealRatingData[0].grade5_count || 0,
+            grade6_avg: mealRatingData[0].grade6_avg,
+            grade6_count: mealRatingData[0].grade6_count || 0
           });
         } else {
           // 데이터가 없으면 기본값 사용
@@ -101,7 +103,7 @@ export default function SchoolRating({ schoolCode, className = '' }: SchoolRatin
     }
 
     fetchSchoolRating();
-  }, [schoolCode, supabase]);
+  }, [schoolCode, mealId, supabase]);
 
   // 별점에 따른 별 아이콘 생성 (SVG 사용)
   const renderStars = (rating: number) => {
@@ -171,8 +173,8 @@ export default function SchoolRating({ schoolCode, className = '' }: SchoolRatin
       {gradeRatings && (
         <div className="flex items-center justify-start mt-1 overflow-x-auto space-x-2 text-xs pb-1">
           {[1, 2, 3, 4, 5, 6].map(grade => {
-            const avgRating = gradeRatings[`grade${grade}_avg_rating` as keyof GradeRatingStats] as number | null;
-            const count = gradeRatings[`grade${grade}_rating_count` as keyof GradeRatingStats] as number;
+            const avgRating = gradeRatings[`grade${grade}_avg` as keyof GradeRatingStats] as number | null;
+            const count = gradeRatings[`grade${grade}_count` as keyof GradeRatingStats] as number;
             
             // 평점이 있고 참여자가 있는 학년만 표시
             if (avgRating && count > 0) {
