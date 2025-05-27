@@ -424,7 +424,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             <p className="mt-1 text-gray-800">{comment.content}</p>
           )}
 
-          {/* 좋아요 및 답글 버튼 */}
+          {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
           <div className="mt-3 flex items-center space-x-4">
             <LikeButton
               count={likesCount}
@@ -442,15 +442,15 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                 }
                 setShowReplies(!showReplies);
               }}
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
+              className="text-sm text-gray-600 hover:text-gray-900 flex items-center px-2 py-1 rounded-md"
             >
-              <span className="mr-1">💬</span>
-              <span>{repliesCount > 0 ? repliesCount : ''} 답글</span>
+              <span className="mr-1">답글{repliesCount > 0 ? repliesCount : ''}</span>
+              <span className="ml-1">💬</span>
             </button>
 
             {user && isStudentOfSchool && (
               <button
-                className="text-sm text-blue-500 hover:text-blue-700 ml-3"
+                className="text-sm text-blue-500 hover:text-blue-700 ml-3 px-2 py-1 rounded-md"
                 onClick={() => {
                   setIsReplyFormVisible(!isReplyFormVisible);
                   if (!showReplies) {
