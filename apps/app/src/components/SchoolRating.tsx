@@ -112,7 +112,7 @@ export default function SchoolRating({ schoolCode, mealId, className = '' }: Sch
           event: '*', 
           schema: 'public', 
           table: 'meal_rating_stats',
-          filter: `school_code=eq.${schoolCode} AND meal_id=eq.${mealId}`
+          filter: `school_code=eq.${schoolCode}`
         }, 
         (payload) => {
           console.log('실시간 업데이트 수신:', payload);
