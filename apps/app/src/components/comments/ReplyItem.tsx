@@ -43,7 +43,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     
     try {
       const { error } = await supabase
-        .from('replies')
+        .from('comment_replies')
         .update({ content: editContent.trim(), updated_at: new Date().toISOString() })
         .eq('id', reply.id);
         
@@ -64,7 +64,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     
     try {
       const { error } = await supabase
-        .from('replies')
+        .from('comment_replies')
         .delete()
         .eq('id', reply.id);
         
@@ -167,10 +167,10 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                 <img
                   src={reply.user.user_metadata.avatar_url}
                   alt="프로필"
-                  className="w-6 h-6 rounded-full"
+                  className="w-5 h-5 rounded-full"
                 />
               ) : (
-                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center">
                   <span className="text-xs text-gray-500">
                     {reply.user.user_metadata?.name?.[0] || reply.user.email[0]?.toUpperCase() || '?'}
                   </span>
@@ -179,15 +179,15 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
             </div>
             <div className="flex-1">
               <div className="flex items-center">
-                <span className="font-medium text-sm">
+                <span className="text-xs text-gray-700">
                   {reply.user.user_metadata?.name || reply.user.email?.split('@')[0] || '사용자'}
                 </span>
-                <span className="ml-2 text-xs text-gray-500">{formattedDate}</span>
+                <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
               </div>
-              <p className="mt-1 text-sm break-words">{reply.content}</p>
+              <p className="mt-1 text-sm font-medium break-words">{reply.content}</p>
               
-              {/* 좋아요 버튼 */}
-              <div className="mt-2 flex items-center space-x-4">
+              {/* 좋아요 버튼 및 수정/삭제 버튼 */}
+              <div className="mt-1 flex items-center justify-between">
                 <LikeButton 
                   count={likesCount} 
                   isLiked={isLiked}
@@ -196,6 +196,24 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   }}
                   disabled={isLikeLoading}
                 />
+                
+                {/* 수정/삭제 버튼 (작성자에게만 표시) */}
+                {isAuthor && (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="text-xs text-gray-500 hover:text-red-500"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

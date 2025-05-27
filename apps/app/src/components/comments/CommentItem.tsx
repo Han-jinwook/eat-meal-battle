@@ -351,21 +351,21 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               <img
                 src={comment.user.user_metadata.avatar_url}
                 alt="프로필"
-                className="h-8 w-8 rounded-full"
+                className="h-6 w-6 rounded-full"
               />
             ) : (
-              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500">
+              <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500 text-xs">
                   {comment.user?.user_metadata?.name?.charAt(0) || '?'}
                 </span>
               </div>
             )}
           </div>
           <div className="ml-2">
-            <span className="font-medium text-gray-900">
+            <span className="text-xs text-gray-700">
               {comment.user?.user_metadata?.name || '익명'}
             </span>
-            <span className="ml-2 text-xs text-gray-500">{formattedDate}</span>
+            <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
           </div>
         </div>
 
@@ -394,7 +394,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             </div>
           </div>
         ) : (
-          <p className="mt-2 text-gray-800">{comment.content}</p>
+          <p className="mt-2 text-sm font-medium text-gray-800">{comment.content}</p>
         )}
 
         {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
@@ -487,7 +487,6 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             )}
           </div>
         )}
-        </div>
       </div>
     </div>
   );
