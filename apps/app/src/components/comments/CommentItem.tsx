@@ -249,6 +249,23 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       console.error('좋아요 개수 가져오기 오류:', err);
     }
   };
+  
+  // 실시간으로 답글 개수를 가져오는 함수
+  const fetchCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('comment_replies')
+        .select('*', { count: 'exact', head: true })
+        .eq('comment_id', comment.id)
+        .eq('is_deleted', false);
+        
+      if (error) throw error;
+      
+      setRepliesCount(count || 0);
+    } catch (err) {
+      console.error('답글 개수 가져오기 오류:', err);
+    }
+  };
 
   // 좋아요 토글 처리
   const handleLikeToggle = async () => {
@@ -343,6 +360,11 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         (payload) => {
           // 답글 변경 시 개수 업데이트
           fetchCount();
+          
+          // 답글 변경 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+          if (showReplies) {
+            loadReplies();
+          }
         }
       )
       .subscribe();
