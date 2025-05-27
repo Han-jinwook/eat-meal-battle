@@ -450,7 +450,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
             {user && isStudentOfSchool && (
               <button
-                className="text-sm text-blue-500 hover:text-blue-700 ml-3 px-2 py-1 rounded-md"
+                className="text-sm text-blue-500 hover:text-blue-700 ml-3 px-2 py-1 rounded-md flex items-center"
                 onClick={() => {
                   setIsReplyFormVisible(!isReplyFormVisible);
                   if (!showReplies) {
@@ -460,8 +460,9 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                     }
                   }
                 }}
+                title="답글 작성"
               >
-                답글 작성
+                <span>✏️</span>
               </button>
             )}
           </div>

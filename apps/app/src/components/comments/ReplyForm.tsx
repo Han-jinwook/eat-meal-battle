@@ -27,28 +27,42 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl+Enter 또는 Cmd+Enter로 제출
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="mt-3">
-      <div className="flex">
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="답글을 입력하세요..."
-          className="flex-grow p-2 border border-gray-300 rounded-l text-sm"
-          autoFocus={autoFocus}
-        />
-        <button
-          type="submit"
-          disabled={!content.trim() || isSubmitting}
-          className={`px-3 py-2 rounded-r text-white text-sm ${
-            !content.trim() || isSubmitting
-              ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600'
-          }`}
-        >
-          {isSubmitting ? '처리 중...' : '답글'}
-        </button>
+      <div className="flex flex-col w-full">
+        <div className="flex">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="답글을 입력하세요... (Shift+Enter로 줄바꿈, Ctrl+Enter로 제출)"
+            className="flex-grow p-2 border border-gray-300 rounded-l text-sm min-h-[40px] max-h-[120px] resize-y"
+            autoFocus={autoFocus}
+            rows={content.split('\n').length > 3 ? 3 : content.split('\n').length || 1}
+          />
+          <button
+            type="submit"
+            disabled={!content.trim() || isSubmitting}
+            className={`px-3 py-2 rounded-r text-white text-sm ${
+              !content.trim() || isSubmitting
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            {isSubmitting ? '처리 중...' : '답글'}
+          </button>
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          Shift+Enter: 줄바꿈 / Ctrl+Enter: 답글 제출
+        </div>
       </div>
     </form>
   );
