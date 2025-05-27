@@ -328,19 +328,37 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   useEffect(() => {
     if (!comment.id) return;
 
-    // 좋아요 변경 구독
-    const likesChannel = supabase
-      .channel(`comment-likes-${comment.id}`)
+    // 좋아요 추가 구독
+    const likesInsertChannel = supabase
+      .channel(`comment-likes-insert-${comment.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'comment_likes',
           filter: `comment_id=eq.${comment.id}`
         },
         (payload) => {
-          // 좋아요 변경 시 개수 가져오기
+          console.log('좋아요 추가:', payload);
+          fetchLikesCount();
+        }
+      )
+      .subscribe();
+      
+    // 좋아요 삭제 구독
+    const likesDeleteChannel = supabase
+      .channel(`comment-likes-delete-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          console.log('좋아요 삭제:', payload);
           fetchLikesCount();
         }
       )
@@ -392,6 +410,8 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
+      supabase.removeChannel(likesInsertChannel);
+      supabase.removeChannel(likesDeleteChannel);
       supabase.removeChannel(repliesChannel);
       supabase.removeChannel(replyLikesChannel);
     };

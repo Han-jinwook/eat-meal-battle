@@ -27,19 +27,37 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   useEffect(() => {
     if (!reply.id) return;
 
-    // 좋아요 변경 구독
-    const likesChannel = supabase
-      .channel(`reply-likes-${reply.id}`)
+    // 좋아요 추가 구독
+    const likesInsertChannel = supabase
+      .channel(`reply-likes-insert-${reply.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'reply_likes',
           filter: `reply_id=eq.${reply.id}`
         },
         (payload) => {
-          // 좋아요 변경 시 개수 가져오기
+          console.log('답글 좋아요 추가:', payload);
+          fetchLikesCount();
+        }
+      )
+      .subscribe();
+      
+    // 좋아요 삭제 구독
+    const likesDeleteChannel = supabase
+      .channel(`reply-likes-delete-${reply.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'reply_likes',
+          filter: `reply_id=eq.${reply.id}`
+        },
+        (payload) => {
+          console.log('답글 좋아요 삭제:', payload);
           fetchLikesCount();
         }
       )
@@ -47,7 +65,8 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
 
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
-      supabase.removeChannel(likesChannel);
+      supabase.removeChannel(likesInsertChannel);
+      supabase.removeChannel(likesDeleteChannel);
     };
   }, [reply.id]);
   
