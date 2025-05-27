@@ -23,6 +23,35 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   const [showMenu, setShowMenu] = useState<boolean>(false);
   
   // 클릭 이벤트 처리 - 외부 클릭 시 메뉴 닫기
+  // 실시간 좋아요 업데이트를 위한 구독 설정
+  useEffect(() => {
+    if (!reply.id) return;
+
+    // 좋아요 변경 구독
+    const likesChannel = supabase
+      .channel(`reply-likes-${reply.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reply_likes',
+          filter: `reply_id=eq.${reply.id}`
+        },
+        (payload) => {
+          // 좋아요 변경 시 개수 가져오기
+          fetchLikesCount();
+        }
+      )
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(likesChannel);
+    };
+  }, [reply.id]);
+  
+  // 외부 클릭 시 메뉴 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -92,6 +121,38 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     }
   };
   
+  // 실시간으로 좋아요 개수를 가져오는 함수
+  const fetchLikesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('reply_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('reply_id', reply.id);
+        
+      if (error) throw error;
+      
+      // 현재 사용자의 좋아요 여부 확인
+      if (user && user.id) {
+        const { data, error: likeError } = await supabase
+          .from('reply_likes')
+          .select('id')
+          .eq('reply_id', reply.id)
+          .eq('user_id', user.id)
+          .single();
+          
+        if (!likeError && data) {
+          setIsLiked(true);
+        } else {
+          setIsLiked(false);
+        }
+      }
+      
+      setLikesCount(count || 0);
+    } catch (err) {
+      console.error('답글 좋아요 개수 가져오기 오류:', err);
+    }
+  };
+
   // 좋아요 토글 처리
   const handleLikeToggle = async () => {
     if (!user || !user.id || isLikeLoading) return;
@@ -134,9 +195,6 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
           throw error;
         }
       }
-      
-      // 백그라운드에서 전체 데이터 새로고침
-      onReplyChange();
     } catch (err) {
       console.error('좋아요 처리 중 오류:', err);
     } finally {
@@ -256,24 +314,6 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
               </div>
             </div>
           </div>
-          
-          {/* 수정/삭제 버튼 (작성자에게만 표시) */}
-          {isAuthor && (
-            <div className="mt-2 flex space-x-2 ml-8">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                수정
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-xs text-gray-500 hover:text-red-500"
-              >
-                삭제
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>

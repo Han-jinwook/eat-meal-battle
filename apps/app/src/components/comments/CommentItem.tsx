@@ -218,6 +218,38 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     loadReplies();
   };
 
+  // 실시간으로 좋아요 개수를 가져오는 함수
+  const fetchLikesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('comment_id', comment.id);
+        
+      if (error) throw error;
+      
+      // 현재 사용자의 좋아요 여부 확인
+      if (user && user.id) {
+        const { data, error: likeError } = await supabase
+          .from('comment_likes')
+          .select('id')
+          .eq('comment_id', comment.id)
+          .eq('user_id', user.id)
+          .single();
+          
+        if (!likeError && data) {
+          setIsLiked(true);
+        } else {
+          setIsLiked(false);
+        }
+      }
+      
+      setLikesCount(count || 0);
+    } catch (err) {
+      console.error('좋아요 개수 가져오기 오류:', err);
+    }
+  };
+
   // 좋아요 토글 처리
   const handleLikeToggle = async () => {
     if (!user || !user.id || isLikeLoading) return;
@@ -275,44 +307,42 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     setRepliesCount(comment.replies_count);
   }, [comment.replies_count]);
 
-  // 답글 실시간 업데이트 설정
+  // 실시간 좋아요 및 답글 업데이트를 위한 구독 설정
   useEffect(() => {
     if (!comment.id) return;
 
-    // 답글 변경 구독
-    const repliesChannel = supabase
-      .channel(`replies-${comment.id}`)
-      .on('postgres_changes',
+    // 좋아요 변경 구독
+    const likesChannel = supabase
+      .channel(`comment-likes-${comment.id}`)
+      .on(
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'replies',
+          table: 'comment_likes',
           filter: `comment_id=eq.${comment.id}`
         },
         (payload) => {
-          console.log('답글 변경:', payload);
-          if (showReplies) {
-            loadReplies(); // 표시된 답글이 있을 때만 새로고침
-          } else {
-            // 답글이 표시되지 않을 때는 개수만 업데이트
-            const fetchCount = async () => {
-              const { count } = await supabase
-                .from('comment_replies')
-                .select('id', { count: 'exact' })
-                .eq('comment_id', comment.id)
-                .eq('is_deleted', false);
-
-              setRepliesCount(count || 0);
-            };
-
-            fetchCount();
-          }
-          onCommentChange(); // 댓글 목록 새로고침 (답글 수 업데이트를 위해)
+          // 좋아요 변경 시 개수 가져오기
+          fetchLikesCount();
         }
       )
       .subscribe();
-
-    // 답글 좋아요 변경 구독
+    
+    // 답글 변경 구독
+    const repliesChannel = supabase
+      .channel(`replies-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comment_replies',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          // 답글 변경 시 개수 업데이트
+          fetchCount();
     const replyLikesChannel = supabase
       .channel(`reply-likes-for-comment-${comment.id}`)
       .on('postgres_changes',
@@ -468,22 +498,32 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               disabled={isLikeLoading}
             />
 
-            {/* 답글 버튼 - 답글이 있을 때만 숫자 표시 */}
-            <button
-              onClick={() => {
-                if (!showReplies && replies.length === 0) {
-                  loadReplies();
-                }
-                setShowReplies(!showReplies);
-              }}
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
-            >
-              {repliesCount > 0 ? (
+            {/* 답글 버튼 - 답글이 있을 때만 표시 */}
+            {repliesCount > 0 ? (
+              <button
+                onClick={() => {
+                  if (!showReplies && replies.length === 0) {
+                    loadReplies();
+                  }
+                  setShowReplies(!showReplies);
+                }}
+                className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
+              >
                 <span>답글{repliesCount}</span>
-              ) : (
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (!showReplies && replies.length === 0) {
+                    loadReplies();
+                  }
+                  setShowReplies(!showReplies);
+                }}
+                className="text-sm text-gray-600 hover:text-gray-900 flex items-center opacity-0 hover:opacity-50"
+              >
                 <span>답글</span>
-              )}
-            </button>
+              </button>
+            )}
 
             {user && isStudentOfSchool && (
               <button
@@ -509,7 +549,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
         {/* 답글 섹션 */}
         {showReplies && (
-          <div className="mt-3 ml-5 border-l border-gray-200 pl-3">
+          <div className="mt-1 ml-5 border-l border-gray-200 pl-3">
             {/* 답글 작성 폼 */}
             {isReplyFormVisible && user && isStudentOfSchool && (
               <ReplyForm onSubmit={handleAddReply} />
