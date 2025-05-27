@@ -92,7 +92,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
       // 답글 목록 가져오기
       const { data: repliesData, error: repliesError } = await supabase
-        .from('replies')
+        .from('comment_replies')
         .select('id, content, created_at, user_id, comment_id')
         .eq('comment_id', comment.id)
         .eq('is_deleted', false)
@@ -193,7 +193,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
     try {
       const { error } = await supabase
-        .from('replies')
+        .from('comment_replies')
         .insert({
           comment_id: comment.id,
           user_id: user.id,
@@ -297,7 +297,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             // 답글이 표시되지 않을 때는 개수만 업데이트
             const fetchCount = async () => {
               const { count } = await supabase
-                .from('replies')
+                .from('comment_replies')
                 .select('id', { count: 'exact' })
                 .eq('comment_id', comment.id)
                 .eq('is_deleted', false);
