@@ -243,7 +243,7 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       )
       .subscribe();
       
-    // 좋아요 삭제 구독
+    // 좋아요 삭제 구독 - 관련 댓글 새로고침
     const likesDeleteChannel = supabase
       .channel(`comment-likes-delete-${mealId}`)
       .on('postgres_changes', 
@@ -254,6 +254,8 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
         }, 
         (payload) => {
           console.log('댓글 좋아요 삭제:', payload);
+          // 전체 댓글 목록 새로고침 
+          // (개별 댓글의 좋아요는 CommentItem에서 처리하민로 여기서는 전체 댓글 목록만 새로고침)
           loadComments(true);
         }
       )

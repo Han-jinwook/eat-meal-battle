@@ -364,22 +364,71 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       )
       .subscribe();
     
-    // 답글 변경 구독
-    const repliesChannel = supabase
-      .channel(`replies-${comment.id}`)
+    // 답글 추가 구독
+    const repliesInsertChannel = supabase
+      .channel(`replies-insert-${comment.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'comment_replies',
           filter: `comment_id=eq.${comment.id}`
         },
         (payload) => {
-          // 답글 변경 시 개수 업데이트
+          console.log('답글 추가:', payload);
+          // 답글 추가 시 개수 가져오기
           fetchCount();
           
-          // 답글 변경 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+          // 답글 추가 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+          if (showReplies) {
+            loadReplies();
+          }
+        }
+      )
+      .subscribe();
+      
+    // 답글 삭제 구독
+    const repliesDeleteChannel = supabase
+      .channel(`replies-delete-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_replies',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          console.log('답글 삭제:', payload);
+          // 답글 삭제 시 개수 가져오기
+          fetchCount();
+          
+          // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+          if (showReplies) {
+            loadReplies();
+          }
+        }
+      )
+      .subscribe();
+      
+    // 답글 업데이트 구독
+    const repliesUpdateChannel = supabase
+      .channel(`replies-update-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'comment_replies',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          console.log('답글 업데이트:', payload);
+          // 답글 업데이트 시 개수 가져오기
+          fetchCount();
+          
+          // 답글 업데이트 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
           if (showReplies) {
             loadReplies();
           }
@@ -412,7 +461,9 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     return () => {
       supabase.removeChannel(likesInsertChannel);
       supabase.removeChannel(likesDeleteChannel);
-      supabase.removeChannel(repliesChannel);
+      supabase.removeChannel(repliesInsertChannel);
+      supabase.removeChannel(repliesDeleteChannel);
+      supabase.removeChannel(repliesUpdateChannel);
       supabase.removeChannel(replyLikesChannel);
     };
   }, [comment.id, showReplies, replies]);
