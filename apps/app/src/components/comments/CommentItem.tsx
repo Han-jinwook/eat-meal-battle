@@ -343,6 +343,10 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         (payload) => {
           // 답글 변경 시 개수 업데이트
           fetchCount();
+        }
+      )
+      .subscribe();
+      
     const replyLikesChannel = supabase
       .channel(`reply-likes-for-comment-${comment.id}`)
       .on('postgres_changes',
