@@ -388,7 +388,11 @@ export default function Home() {
             className="sr-only" // 화면에서 숨김
           />
           <button 
-            onClick={() => document.getElementById('date')?.showPicker()} 
+            onClick={() => {
+              // showPicker 메서드에 대한 타입 안전성 보장
+              const dateInput = document.getElementById('date') as HTMLInputElement;
+              dateInput?.showPicker?.();
+            }} 
             className="w-full flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded border border-blue-100 shadow-sm"
           >
             {selectedDate && (() => {
@@ -455,7 +459,11 @@ export default function Home() {
                       }}
                     />
                     {/* 댓글 섹션 - MealCard 외부에 배치 */}
-                    <CommentSection mealId={meal.id} className="mt-4" />
+                    <CommentSection 
+                      mealId={meal.id} 
+                      className="mt-4" 
+                      schoolCode={meal.school_code} 
+                    />
                   </div>
                 ))}
                 

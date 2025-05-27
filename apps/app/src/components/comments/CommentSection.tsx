@@ -13,11 +13,10 @@ import CommentItem from './CommentItem';
 interface CommentSectionProps {
   mealId: string;
   className?: string;
+  schoolCode?: string; // 학교 코드 추가
 }
 
-
-
-export default function CommentSection({ mealId, className = '' }: CommentSectionProps) {
+export default function CommentSection({ mealId, className = '', schoolCode }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +24,10 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
   const [hasMore, setHasMore] = useState<boolean>(true);
   
   // useUserSchool 후크을 통해 사용자 정보 가져오기
-  const { user } = useUserSchool();
+  const { user, userSchool } = useUserSchool();
+  
+  // 현재 사용자가 해당 학교 학생인지 확인
+  const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;
   const supabase = createClientComponentClient();
   
   const PAGE_SIZE = 10;
@@ -253,8 +255,10 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
       
       {loading ? (
         <p className="text-gray-500 mb-4">로딩 중...</p>
-      ) : user ? (
+      ) : user && isStudentOfSchool ? (
         <CommentForm onSubmit={addComment} />
+      ) : user && !isStudentOfSchool ? (
+        <p className="text-gray-500 mb-4">해당 학교 학생만 댓글을 작성할 수 있습니다.</p>
       ) : (
         <p className="text-gray-500 mb-4">댓글을 작성하려면 로그인하세요.</p>
       )}
@@ -266,6 +270,7 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
               key={comment.id}
               comment={comment}
               onCommentChange={() => loadComments(true)}
+              schoolCode={schoolCode}
             />
           ))
         ) : loading ? (
