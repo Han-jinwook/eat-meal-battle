@@ -450,7 +450,7 @@ export default function MealCard({
       <div className="p-2">
 
         {/* 학교 별점 */}
-        <SchoolRating schoolCode={meal.school_code} className="mb-2" />
+        <SchoolRating schoolCode={meal.school_code} mealId={meal.id} className="mb-2" />
 
         {/* 이미지 업로더 */}
         <MealImageUploader

@@ -62,16 +62,13 @@ export default function SchoolRating({ schoolCode, mealId, className = '' }: Sch
 
         if (mealRatingError) {
           console.error('별점 통계 데이터를 가져오는 중 오류 발생:', mealRatingError);
-          // 오류 발생시 더미 데이터 사용
-          setRating(4.1); // 기본값
-          setRatingCount(150); // 기본값
           return;
         }
 
         if (mealRatingData && mealRatingData.length > 0) {
           // 데이터가 있으면 사용
-          setRating(parseFloat(mealRatingData[0].avg_rating?.toFixed(1)) || 4.1);
-          setRatingCount(mealRatingData[0].rating_count || 150);
+          setRating(mealRatingData[0].avg_rating ? parseFloat(mealRatingData[0].avg_rating.toFixed(1)) : 0);
+          setRatingCount(mealRatingData[0].rating_count || 0);
           
           // 학년별 통계 데이터 설정
           setGradeRatings({
@@ -89,16 +86,16 @@ export default function SchoolRating({ schoolCode, mealId, className = '' }: Sch
             grade6_count: mealRatingData[0].grade6_count || 0
           });
         } else {
-          // 데이터가 없으면 기본값 사용
-          setRating(4.1);
-          setRatingCount(150);
+          // 데이터가 없으면 0으로 초기화
+          setRating(0);
+          setRatingCount(0);
           setGradeRatings(null);
         } 
       } catch (e) {
         console.error('별점 데이터 조회 중 오류:', e);
-        // 오류 발생시 기본값 사용
-        setRating(4.1);
-        setRatingCount(150);
+        // 오류 발생시 0으로 초기화
+        setRating(0);
+        setRatingCount(0);
       }
     }
 
