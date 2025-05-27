@@ -61,7 +61,7 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
           console.log('🔄 아이템평점 실시간 업데이트 수신:', payload);
           // 새 데이터로 상태 업데이트
           if (payload.new) {
-            const newData = payload.new;
+            const newData = payload.new as { avg_rating?: number; rating_count?: number };
             setAvgRating(newData.avg_rating || 0);
             setRatingCount(newData.rating_count || 0);
             console.log('✅ 아이템평점 UI 업데이트 완료:', newData.avg_rating, newData.rating_count);

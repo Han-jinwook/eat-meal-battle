@@ -7,9 +7,8 @@ import { User } from '@supabase/supabase-js';
 import { Comment } from './types';
 import useUserSchool from '@/hooks/useUserSchool';
 
-// 컴포넌트 임포트 순환 참조 해결
-const CommentItem = dynamic(() => import('./CommentItem'), { ssr: false });
-import dynamic from 'next/dynamic';
+// 순환 참조를 피하기 위해 동적 임포트 대신 타입 단언을 사용
+import CommentItem from './CommentItem';
 
 interface CommentSectionProps {
   mealId: string;
@@ -39,22 +38,30 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
       setLoading(true);
       const currentPage = reset ? 0 : page;
       
-      // 댓글 목록 가져오기
-      let query = supabase
+      // 댓글 목록 가져오기 - 조인 방식 오류 해결을 위해 별도 쿼리로 변경
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          users:user_id (id, email, user_metadata)
-        `)
+        .select('id, content, created_at, user_id')
         .eq('meal_id', mealId)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
       
-      const { data: commentsData, error: commentsError } = await query;
+      // 사용자 정보 별도 가져오기
+      let usersData = [];
+      if (commentsData && commentsData.length > 0) {
+        const userIds = commentsData.map(comment => comment.user_id);
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, email, nickname, profile_image')
+          .in('id', userIds);
+          
+        if (usersError) {
+          console.error('사용자 정보 가져오기 오류:', usersError);
+        } else {
+          usersData = users || [];
+        }
+      }
       
       if (commentsError) throw commentsError;
       
@@ -116,10 +123,10 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
         }, {} as Record<string, number>);
       }
       
-      // 데이터 가공 - 타입 캐스팅 명시적으로 추가
+      // 데이터 가공 - 별도 사용자 데이터를 매핑
       const processedComments: Comment[] = commentsData.map(comment => {
-        // Supabase의 조인 쿼리에서 users는 첫 번째 항목만 가져옴
-        const userData = Array.isArray(comment.users) ? comment.users[0] : comment.users;
+        // 가져온 사용자 데이터에서 해당 사용자 찾기
+        const userData = usersData.find(user => user.id === comment.user_id) || null;
         
         return {
           id: comment.id,
@@ -127,11 +134,11 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
           created_at: comment.created_at,
           user_id: comment.user_id,
           user: {
-            id: userData?.id || '',
+            id: userData?.id || comment.user_id || '',
             email: userData?.email || '',
             user_metadata: {
-              name: userData?.user_metadata?.name,
-              avatar_url: userData?.user_metadata?.avatar_url
+              name: userData?.nickname || '',
+              avatar_url: userData?.profile_image || ''
             }
           },
           likes_count: likesCountMap[comment.id] || 0,
@@ -212,6 +219,8 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
     if (!user || !user.id || !mealId || !content.trim()) return false;
     
     try {
+      console.log('댓글 추가 시도:', { mealId, userId: user.id, content: content.trim() });
+      
       const { error } = await supabase
         .from('comments')
         .insert({
@@ -220,9 +229,16 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
           content: content.trim()
         });
         
-      if (error) throw error;
+      if (error) {
+        console.error('댓글 추가 SQL 오류:', error);
+        throw error;
+      }
       
-      // 실시간 구독으로 새 댓글이 자동으로 로드됨
+      console.log('댓글 추가 성공, 새로고침 시도');
+      // 데이터를 수동으로 다시 불러옴
+      await loadComments(true);
+      
+      // 실시간 구독으로 새 댓글이 자동으로 로드되지만, 추가 보호를 위해 수동 로드도 실행
       return true;
     } catch (err) {
       console.error('댓글 추가 중 오류:', err);
@@ -246,10 +262,10 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
       <div className="mt-4 space-y-4">
         {comments.length > 0 ? (
           comments.map(comment => (
-            <CommentItem 
-              key={comment.id} 
-              comment={comment} 
-              onCommentChange={() => loadComments(true)} 
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              onCommentChange={() => loadComments(true)}
             />
           ))
         ) : loading ? (
