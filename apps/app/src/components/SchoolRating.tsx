@@ -100,6 +100,54 @@ export default function SchoolRating({ schoolCode, mealId, className = '' }: Sch
     }
 
     fetchSchoolRating();
+
+    // 실시간 업데이트를 위한 구독 설정
+    if (!schoolCode || !mealId) return;
+    
+    console.log(`실시간 구독 설정: meal_rating_stats:${schoolCode}:${mealId}`);
+    const channel = supabase
+      .channel(`meal_rating_stats:${schoolCode}:${mealId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'meal_rating_stats',
+          filter: `school_code=eq.${schoolCode} AND meal_id=eq.${mealId}`
+        }, 
+        (payload) => {
+          console.log('실시간 업데이트 수신:', payload);
+          if (payload.new) {
+            // 새 데이터로 상태 업데이트
+            setRating(payload.new.avg_rating ? parseFloat(payload.new.avg_rating.toFixed(1)) : 0);
+            setRatingCount(payload.new.rating_count || 0);
+            
+            // 학년별 통계 데이터 설정
+            setGradeRatings({
+              grade1_avg: payload.new.grade1_avg,
+              grade1_count: payload.new.grade1_count || 0,
+              grade2_avg: payload.new.grade2_avg,
+              grade2_count: payload.new.grade2_count || 0,
+              grade3_avg: payload.new.grade3_avg,
+              grade3_count: payload.new.grade3_count || 0,
+              grade4_avg: payload.new.grade4_avg,
+              grade4_count: payload.new.grade4_count || 0,
+              grade5_avg: payload.new.grade5_avg,
+              grade5_count: payload.new.grade5_count || 0,
+              grade6_avg: payload.new.grade6_avg,
+              grade6_count: payload.new.grade6_count || 0
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('구독 상태:', status);
+      });
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('실시간 구독 해제');
+      supabase.removeChannel(channel);
+    };
   }, [schoolCode, mealId, supabase]);
 
   // 별점에 따른 별 아이콘 생성 (SVG 사용)
