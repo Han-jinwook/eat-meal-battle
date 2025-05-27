@@ -8,16 +8,26 @@ interface LikeButtonProps {
 }
 
 export default function LikeButton({ count, isLiked, onToggle, disabled = false }: LikeButtonProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggle();
+  };
+
   return (
     <button
-      onClick={onToggle}
+      onClick={handleClick}
       disabled={disabled}
-      className={`flex items-center text-sm ${
-        isLiked ? 'bg-pink-50 text-black font-medium' : 'text-gray-600 hover:text-gray-900'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} px-2 py-1 rounded-md`}
+      className={`flex items-center ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <span className="mr-1">{isLiked ? '👍' : '👍'}</span>
-      <span>{count}</span>
+      <span className="mr-1">
+        {isLiked ? (
+          <span className="text-yellow-500">👍</span>
+        ) : (
+          <span className="text-gray-400">👍</span>
+        )}
+      </span>
+      <span className="text-xs text-gray-700">{count}</span>
     </button>
   );
 }

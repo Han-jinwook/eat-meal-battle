@@ -43,7 +43,7 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="답글을 입력하세요... (Shift+Enter로 줄바꿈, Ctrl+Enter로 제출)"
+            placeholder="답글을 입력하세요..."
             className="flex-grow p-2 border border-gray-300 rounded-l text-sm min-h-[40px] max-h-[120px] resize-y"
             autoFocus={autoFocus}
             rows={content.split('\n').length > 3 ? 3 : content.split('\n').length || 1}
@@ -60,9 +60,7 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
             {isSubmitting ? '처리 중...' : '답글'}
           </button>
         </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Shift+Enter: 줄바꿈 / Ctrl+Enter: 답글 제출
-        </div>
+
       </div>
     </form>
   );

@@ -343,89 +343,63 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-      <div className="flex items-start">
-        {/* 프로필 이미지 */}
-        <div className="flex-shrink-0 mr-3">
-          {comment.user?.user_metadata?.avatar_url ? (
-            <img
-              src={comment.user.user_metadata.avatar_url}
-              alt={comment.user?.user_metadata?.name || '사용자'}
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-          ) : (
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-gray-500 text-sm">
-                {(comment.user?.user_metadata?.name || comment.user?.email || '?')[0].toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1">
-          {/* 사용자 정보 및 날짜 */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="font-medium text-gray-900">
-                {comment.user?.user_metadata?.name || comment.user?.email || '알 수 없는 사용자'}
-              </span>
-              <span className="ml-2 text-xs text-gray-500">{formattedDate}</span>
-            </div>
-
-            {/* 수정/삭제 버튼 (작성자만 표시) */}
-            {isAuthor && (
-              <div className="flex space-x-2">
-                {!isEditing && (
-                  <>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      className="text-xs text-red-500 hover:text-red-700"
-                    >
-                      삭제
-                    </button>
-                  </>
-                )}
+      <div className="flex flex-col">
+        {/* 사용자 정보 및 날짜 */}
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            {comment.user?.user_metadata?.avatar_url ? (
+              <img
+                src={comment.user.user_metadata.avatar_url}
+                alt="프로필"
+                className="h-8 w-8 rounded-full"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500">
+                  {comment.user?.user_metadata?.name?.charAt(0) || '?'}
+                </span>
               </div>
             )}
           </div>
+          <div className="ml-2">
+            <span className="font-medium text-gray-900">
+              {comment.user?.user_metadata?.name || '익명'}
+            </span>
+            <span className="ml-2 text-xs text-gray-500">{formattedDate}</span>
+          </div>
+        </div>
 
-          {/* 댓글 내용 */}
-          {isEditing ? (
-            <div className="mt-2">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-              />
-              <div className="mt-2 flex justify-end space-x-2">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleEdit}
-                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  저장
-                </button>
-              </div>
+        {/* 댓글 내용 */}
+        {isEditing ? (
+          <div className="mt-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+            />
+            <div className="mt-2 flex justify-end space-x-2">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="px-3 py-1 text-xs text-gray-600 hover:text-gray-900"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleEdit}
+                className="px-3 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                저장
+              </button>
             </div>
-          ) : (
-            <p className="mt-1 text-gray-800">{comment.content}</p>
-          )}
+          </div>
+        ) : (
+          <p className="mt-2 text-gray-800">{comment.content}</p>
+        )}
 
-          {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
-          <div className="mt-3 flex items-center space-x-4">
+        {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <LikeButton
               count={likesCount}
               isLiked={isLiked}
@@ -442,7 +416,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                 }
                 setShowReplies(!showReplies);
               }}
-              className="text-sm text-gray-600 hover:text-gray-900 flex items-center px-2 py-1 rounded-md"
+              className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
             >
               <span className="mr-1">답글{repliesCount > 0 ? repliesCount : ''}</span>
               <span className="ml-1">💬</span>
@@ -450,7 +424,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
             {user && isStudentOfSchool && (
               <button
-                className="text-sm text-blue-500 hover:text-blue-700 ml-3 px-2 py-1 rounded-md flex items-center"
+                className="text-sm text-blue-500 hover:text-blue-700 flex items-center"
                 onClick={() => {
                   setIsReplyFormVisible(!isReplyFormVisible);
                   if (!showReplies) {
@@ -467,33 +441,52 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             )}
           </div>
 
-          {/* 답글 섹션 */}
-          {showReplies && (
-            <div className="mt-3 ml-5 border-l border-gray-200 pl-3">
-              {/* 답글 작성 폼 */}
-              {isReplyFormVisible && user && isStudentOfSchool && (
-                <ReplyForm onSubmit={handleAddReply} />
-              )}
-              
-              {/* 답글 목록 */}
-              {repliesLoading ? (
-                <p className="text-sm text-gray-500 py-2">답글을 불러오는 중...</p>
-              ) : replies.length > 0 ? (
-                <div className="space-y-2 my-2">
-                  {replies.map(reply => (
-                    <ReplyItem 
-                      key={reply.id}
-                      reply={reply}
-                      onReplyChange={handleReplyChange}
-                      schoolCode={schoolCode}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 py-2">아직 답글이 없습니다. 첫 답글을 남겨보세요!</p>
-              )}
+          {/* 수정/삭제 버튼 이동 */}
+          {isAuthor && !isEditing && (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                수정
+              </button>
+              <button
+                onClick={handleDelete}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                삭제
+              </button>
             </div>
           )}
+        </div>
+
+        {/* 답글 섹션 */}
+        {showReplies && (
+          <div className="mt-3 ml-5 border-l border-gray-200 pl-3">
+            {/* 답글 작성 폼 */}
+            {isReplyFormVisible && user && isStudentOfSchool && (
+              <ReplyForm onSubmit={handleAddReply} />
+            )}
+            
+            {/* 답글 목록 */}
+            {repliesLoading ? (
+              <p className="text-sm text-gray-500 py-2">답글을 불러오는 중...</p>
+            ) : replies.length > 0 ? (
+              <div className="space-y-2 my-2">
+                {replies.map(reply => (
+                  <ReplyItem 
+                    key={reply.id}
+                    reply={reply}
+                    onReplyChange={handleReplyChange}
+                    schoolCode={schoolCode}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 py-2">아직 답글이 없습니다. 첫 답글을 남겨보세요!</p>
+            )}
+          </div>
+        )}
         </div>
       </div>
     </div>
