@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CommentReply } from './types';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import useUserSchool from '@/hooks/useUserSchool';
@@ -20,6 +20,22 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   const [isLiked, setIsLiked] = useState<boolean>(reply.user_has_liked);
   const [likesCount, setLikesCount] = useState<number>(reply.likes_count);
   const [isLikeLoading, setIsLikeLoading] = useState<boolean>(false);
+  const [showMenu, setShowMenu] = useState<boolean>(false);
+  
+  // 클릭 이벤트 처리 - 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.reply-menu')) {
+        setShowMenu(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
   
   const { user, userSchool } = useUserSchool();
   const supabase = createClientComponentClient();
@@ -178,16 +194,57 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
               )}
             </div>
             <div className="flex-1">
-              <div className="flex items-center">
-                <span className="text-xs text-gray-700">
-                  {reply.user.user_metadata?.name || reply.user.email?.split('@')[0] || '사용자'}
-                </span>
-                <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-gray-700">
+                    {reply.user.user_metadata?.name || reply.user.email?.split('@')[0] || '사용자'}
+                  </span>
+                  <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
+                </div>
+                
+                {/* 점 3개 아이콘 - 자기가 쓴 글에만 표시 */}
+                {isAuthor && !isEditing && (
+                  <div className="relative reply-menu">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(!showMenu);
+                      }}
+                      className="text-gray-500 hover:text-gray-700 p-1"
+                    >
+                      <span className="text-xl leading-none">⋮</span>
+                    </button>
+                    
+                    {/* 수정/삭제 드롭다운 메뉴 */}
+                    {showMenu && (
+                      <div className="absolute right-0 top-6 bg-white shadow-md rounded-md py-1 z-10 w-20">
+                        <button
+                          onClick={() => {
+                            setIsEditing(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-gray-700"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDelete();
+                            setShowMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-red-500"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <p className="mt-1 text-sm font-medium break-words">{reply.content}</p>
               
-              {/* 좋아요 버튼 및 수정/삭제 버튼 */}
-              <div className="mt-1 flex items-center justify-between">
+              {/* 좋아요 버튼 */}
+              <div className="mt-1 flex items-center">
                 <LikeButton 
                   count={likesCount} 
                   isLiked={isLiked}
@@ -196,24 +253,6 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   }}
                   disabled={isLikeLoading}
                 />
-                
-                {/* 수정/삭제 버튼 (작성자에게만 표시) */}
-                {isAuthor && (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      className="text-xs text-gray-500 hover:text-red-500"
-                    >
-                      삭제
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>

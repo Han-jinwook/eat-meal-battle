@@ -341,32 +341,91 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     };
   }, [comment.id, showReplies, replies]);
 
+  // 수정/삭제 메뉴 토글
+  const [showMenu, setShowMenu] = useState<boolean>(false);
+  
+  // 클릭 이벤트 처리 - 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.comment-menu')) {
+        setShowMenu(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
       <div className="flex flex-col">
         {/* 사용자 정보 및 날짜 */}
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            {comment.user?.user_metadata?.avatar_url ? (
-              <img
-                src={comment.user.user_metadata.avatar_url}
-                alt="프로필"
-                className="h-6 w-6 rounded-full"
-              />
-            ) : (
-              <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500 text-xs">
-                  {comment.user?.user_metadata?.name?.charAt(0) || '?'}
-                </span>
-              </div>
-            )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              {comment.user?.user_metadata?.avatar_url ? (
+                <img
+                  src={comment.user.user_metadata.avatar_url}
+                  alt="프로필"
+                  className="h-6 w-6 rounded-full"
+                />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500 text-xs">
+                    {comment.user?.user_metadata?.name?.charAt(0) || '?'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="ml-2">
+              <span className="text-xs text-gray-700">
+                {comment.user?.user_metadata?.name || '익명'}
+              </span>
+              <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
+            </div>
           </div>
-          <div className="ml-2">
-            <span className="text-xs text-gray-700">
-              {comment.user?.user_metadata?.name || '익명'}
-            </span>
-            <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
-          </div>
+          
+          {/* 점 3개 아이콘 - 자기가 쓴 글에만 표시 */}
+          {isAuthor && !isEditing && (
+            <div className="relative comment-menu">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="text-gray-500 hover:text-gray-700 p-1"
+              >
+                <span className="text-xl leading-none">⋮</span>
+              </button>
+              
+              {/* 수정/삭제 드롭다운 메뉴 */}
+              {showMenu && (
+                <div className="absolute right-0 top-6 bg-white shadow-md rounded-md py-1 z-10 w-20">
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-gray-700"
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDelete();
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-red-500"
+                  >
+                    삭제
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 댓글 내용 */}
@@ -398,7 +457,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         )}
 
         {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2 flex items-center">
           <div className="flex items-center space-x-4">
             <LikeButton
               count={likesCount}
@@ -409,6 +468,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               disabled={isLikeLoading}
             />
 
+            {/* 답글 버튼 - 답글이 있을 때만 숫자 표시 */}
             <button
               onClick={() => {
                 if (!showReplies && replies.length === 0) {
@@ -418,13 +478,16 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               }}
               className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
             >
-              <span className="mr-1">답글{repliesCount > 0 ? repliesCount : ''}</span>
-              <span className="ml-1">💬</span>
+              {repliesCount > 0 ? (
+                <span>답글{repliesCount}</span>
+              ) : (
+                <span>답글</span>
+              )}
             </button>
 
             {user && isStudentOfSchool && (
               <button
-                className="text-sm text-blue-500 hover:text-blue-700 flex items-center"
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
                 onClick={() => {
                   setIsReplyFormVisible(!isReplyFormVisible);
                   if (!showReplies) {
@@ -436,28 +499,12 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                 }}
                 title="답글 작성"
               >
-                <span>✏️</span>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                  <path d="M3,17.25 L3,21 L6.75,21 L17.81,9.94 L14.06,6.19 L3,17.25 Z M21.41,6.34 L17.66,2.59 C17.2706655,2.20798298 16.6593396,2.20857968 16.27,2.59 L13.13,5.73 L16.88,9.48 L20.02,6.34 C20.4,5.96 20.4,5.34 20.02,4.96 L21.41,6.34 Z" />
+                </svg>
               </button>
             )}
           </div>
-
-          {/* 수정/삭제 버튼 이동 */}
-          {isAuthor && !isEditing && (
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                수정
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-xs text-red-500 hover:text-red-700"
-              >
-                삭제
-              </button>
-            </div>
-          )}
         </div>
 
         {/* 답글 섹션 */}
