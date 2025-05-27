@@ -10,6 +10,7 @@ import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUt
 import useMeals from '@/hooks/useMeals';
 import useModal from '@/hooks/useModal';
 import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
+import { CommentSection } from '@/components/comments';
 // 디버그 패널 제거
 
 export default function Home() {
@@ -438,21 +439,24 @@ export default function Home() {
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {meals.map((meal) => (
-                  <MealCard
-                    key={meal.id}
-                    meal={meal}
-                    onShowOrigin={(info) => {
-                      openModal('원산지 정보', formatOriginInfo(info));
-                    }}
-                    onShowNutrition={(m) => {
-                      openModal('영양 정보', formatNutritionInfo(m));
-                    }}
-                    onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
-                    onUploadError={(e) => {
-                      setPageError(e);
-                      setTimeout(() => setPageError(''), 3000);
-                    }}
-                  />
+                  <div key={meal.id} className="meal-wrapper">
+                    <MealCard
+                      meal={meal}
+                      onShowOrigin={(info) => {
+                        openModal('원산지 정보', formatOriginInfo(info));
+                      }}
+                      onShowNutrition={(m) => {
+                        openModal('영양 정보', formatNutritionInfo(m));
+                      }}
+                      onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                      onUploadError={(e) => {
+                        setPageError(e);
+                        setTimeout(() => setPageError(''), 3000);
+                      }}
+                    />
+                    {/* 댓글 섹션 - MealCard 외부에 배치 */}
+                    <CommentSection mealId={meal.id} className="mt-4" />
+                  </div>
                 ))}
                 
                 {/* 데이터 소스 정보 표시 */}

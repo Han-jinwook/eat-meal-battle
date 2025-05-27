@@ -1,0 +1,273 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import CommentForm from './CommentForm';
+import { useUser } from '@supabase/auth-helpers-react';
+import { User } from '@supabase/supabase-js';
+import { Comment } from './types';
+
+// 컴포넌트 임포트 순환 참조 해결
+const CommentItem = dynamic(() => import('./CommentItem'), { ssr: false });
+import dynamic from 'next/dynamic';
+
+interface CommentSectionProps {
+  mealId: string;
+  className?: string;
+}
+
+
+
+export default function CommentSection({ mealId, className = '' }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const user = useUser();
+  const supabase = createClientComponentClient();
+  
+  const PAGE_SIZE = 10;
+
+  // 댓글 로드 함수
+  const loadComments = async (reset = false) => {
+    if (!mealId) return;
+    
+    try {
+      setLoading(true);
+      const currentPage = reset ? 0 : page;
+      
+      // 댓글 목록 가져오기
+      let query = supabase
+        .from('comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          users:user_id (id, email, user_metadata)
+        `)
+        .eq('meal_id', mealId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+      
+      const { data: commentsData, error: commentsError } = await query;
+      
+      if (commentsError) throw commentsError;
+      
+      // 각 댓글별 좋아요 수 가져오기
+      const commentIds = commentsData.map(comment => comment.id);
+      
+      // 좋아요 수 계산을 위한 대체 쿼리 (group 대신 개별 카운트)
+      let likesCountMap: Record<string, number> = {};
+      
+      if (commentIds.length > 0) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .in('comment_id', commentIds);
+          
+        if (likesError) throw likesError;
+        
+        // 수동으로 각 댓글의 좋아요 수 계산
+        likesCountMap = likesData.reduce((acc, item) => {
+          acc[item.comment_id] = (acc[item.comment_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+      }
+      
+      // 각 댓글별 사용자의 좋아요 여부 확인
+      let userLikesMap: Record<string, boolean> = {};
+      
+      if (user && user.id && commentIds.length > 0) {
+        const { data: userLikesData, error: userLikesError } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .in('comment_id', commentIds)
+          .eq('user_id', user.id);
+          
+        if (userLikesError) throw userLikesError;
+        
+        userLikesMap = (userLikesData || []).reduce((acc, item) => {
+          acc[item.comment_id] = true;
+          return acc;
+        }, {} as Record<string, boolean>);
+      }
+      
+      // 각 댓글별 답글 수 가져오기
+      let repliesCountMap: Record<string, number> = {};
+      
+      if (commentIds.length > 0) {
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('comment_replies')
+          .select('comment_id')
+          .in('comment_id', commentIds)
+          .eq('is_deleted', false);
+          
+        if (repliesError) throw repliesError;
+        
+        // 수동으로 각 댓글의 답글 수 계산
+        repliesCountMap = repliesData.reduce((acc, item) => {
+          acc[item.comment_id] = (acc[item.comment_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+      }
+      
+      // 데이터 가공 - 타입 캐스팅 명시적으로 추가
+      const processedComments: Comment[] = commentsData.map(comment => {
+        // Supabase의 조인 쿼리에서 users는 첫 번째 항목만 가져옴
+        const userData = Array.isArray(comment.users) ? comment.users[0] : comment.users;
+        
+        return {
+          id: comment.id,
+          content: comment.content,
+          created_at: comment.created_at,
+          user_id: comment.user_id,
+          user: {
+            id: userData?.id || '',
+            email: userData?.email || '',
+            user_metadata: {
+              name: userData?.user_metadata?.name,
+              avatar_url: userData?.user_metadata?.avatar_url
+            }
+          },
+          likes_count: likesCountMap[comment.id] || 0,
+          user_has_liked: !!userLikesMap[comment.id],
+          replies_count: repliesCountMap[comment.id] || 0
+        };
+      });
+      
+      if (reset) {
+        setComments(processedComments);
+      } else {
+        setComments(prev => [...prev, ...processedComments]);
+      }
+      
+      setHasMore(processedComments.length === PAGE_SIZE);
+      setPage(reset ? 1 : currentPage + 1);
+    } catch (err) {
+      console.error('댓글 로드 중 오류:', err);
+      setError('댓글을 불러오는 중 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 초기 로드
+  useEffect(() => {
+    if (mealId) {
+      loadComments(true);
+    }
+  }, [mealId]);
+  
+  // 실시간 업데이트 설정
+  useEffect(() => {
+    if (!mealId) return;
+    
+    // 댓글 변경 구독
+    const channel = supabase
+      .channel(`comments-${mealId}`)
+      .on('postgres_changes', 
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+          filter: `meal_id=eq.${mealId}`
+        }, 
+        (payload) => {
+          console.log('댓글 변경:', payload);
+          loadComments(true); // 간단하게 전체 새로고침
+        }
+      )
+      .subscribe();
+      
+    // 좋아요 변경 구독
+    const likesChannel = supabase
+      .channel(`comment-likes-${mealId}`)
+      .on('postgres_changes', 
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comment_likes'
+        }, 
+        (payload) => {
+          console.log('댓글 좋아요 변경:', payload);
+          loadComments(true); // 간단하게 전체 새로고침
+        }
+      )
+      .subscribe();
+      
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(likesChannel);
+    };
+  }, [mealId]);
+
+  // 댓글 추가 함수 - CommentForm에서 사용
+  const addComment = async (content: string): Promise<boolean> => {
+    if (!user || !user.id || !mealId || !content.trim()) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          meal_id: mealId,
+          user_id: user.id,
+          content: content.trim()
+        });
+        
+      if (error) throw error;
+      
+      // 실시간 구독으로 새 댓글이 자동으로 로드됨
+      return true;
+    } catch (err) {
+      console.error('댓글 추가 중 오류:', err);
+      setError('댓글을 추가하는 중 문제가 발생했습니다.');
+      return false;
+    }
+  };
+  
+  return (
+    <div className={`mt-4 ${className}`}>
+      <h3 className="text-lg font-bold mb-4">댓글</h3>
+      
+      {user && user.id ? (
+        <CommentForm onSubmit={addComment} />
+      ) : (
+        <p className="text-gray-500 mb-4">댓글을 작성하려면 로그인하세요.</p>
+      )}
+      
+      <div className="mt-4 space-y-4">
+        {comments.length > 0 ? (
+          comments.map(comment => (
+            <CommentItem 
+              key={comment.id} 
+              comment={comment} 
+              onCommentChange={() => loadComments(true)} 
+            />
+          ))
+        ) : loading ? (
+          <p className="text-gray-500">댓글을 불러오는 중...</p>
+        ) : (
+          <p className="text-gray-500">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
+        )}
+      </div>
+      
+      {hasMore && (
+        <button 
+          className="w-full py-2 mt-4 text-sm text-gray-600 hover:text-gray-900"
+          onClick={() => loadComments()}
+          disabled={loading}
+        >
+          {loading ? '불러오는 중...' : '더 보기'}
+        </button>
+      )}
+      
+      {error && (
+        <p className="text-red-500 mt-2">{error}</p>
+      )}
+    </div>
+  );
+}
