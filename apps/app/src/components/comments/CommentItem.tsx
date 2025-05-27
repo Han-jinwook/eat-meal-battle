@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useUser } from '@supabase/auth-helpers-react';
 import { Comment } from './types';
 import LikeButton from './LikeButton';
 import Image from 'next/image';
 import { User } from '@supabase/supabase-js';
+import useUserSchool from '@/hooks/useUserSchool';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
@@ -19,7 +19,7 @@ export default function CommentItem({ comment, onCommentChange }: CommentItemPro
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editContent, setEditContent] = useState<string>(comment.content);
   const [showReplies, setShowReplies] = useState<boolean>(false);
-  const user = useUser();
+  const { user } = useUserSchool();
   const supabase = createClientComponentClient();
   
   const isAuthor = user && user.id === comment.user_id;

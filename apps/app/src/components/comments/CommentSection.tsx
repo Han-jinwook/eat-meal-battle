@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import CommentForm from './CommentForm';
-import { useUser } from '@supabase/auth-helpers-react';
 import { User } from '@supabase/supabase-js';
 import { Comment } from './types';
+import useUserSchool from '@/hooks/useUserSchool';
 
 // 컴포넌트 임포트 순환 참조 해결
 const CommentItem = dynamic(() => import('./CommentItem'), { ssr: false });
@@ -24,7 +24,9 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
-  const user = useUser();
+  
+  // useUserSchool 후크을 통해 사용자 정보 가져오기
+  const { user } = useUserSchool();
   const supabase = createClientComponentClient();
   
   const PAGE_SIZE = 10;
@@ -233,7 +235,9 @@ export default function CommentSection({ mealId, className = '' }: CommentSectio
     <div className={`mt-4 ${className}`}>
       <h3 className="text-lg font-bold mb-4">댓글</h3>
       
-      {user && user.id ? (
+      {loading ? (
+        <p className="text-gray-500 mb-4">로딩 중...</p>
+      ) : user ? (
         <CommentForm onSubmit={addComment} />
       ) : (
         <p className="text-gray-500 mb-4">댓글을 작성하려면 로그인하세요.</p>
