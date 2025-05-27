@@ -346,7 +346,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       )
       .subscribe();
       
-    // 좋아요 삭제 구독
+    // 좋아요 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
     const likesDeleteChannel = supabase
       .channel(`comment-likes-delete-${comment.id}`)
       .on(
@@ -354,12 +354,16 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'comment_likes',
-          filter: `comment_id=eq.${comment.id}`
+          table: 'comment_likes'
+          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
         },
         (payload) => {
           console.log('좋아요 삭제:', payload);
-          fetchLikesCount();
+          const oldData = payload.old as Record<string, any>;
+          // 삭제된 좋아요가 현재 댓글의 좋아요인지 확인
+          if (oldData && oldData.comment_id === comment.id) {
+            fetchLikesCount();
+          }
         }
       )
       .subscribe();
@@ -388,7 +392,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       )
       .subscribe();
       
-    // 답글 삭제 구독
+    // 답글 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
     const repliesDeleteChannel = supabase
       .channel(`replies-delete-${comment.id}`)
       .on(
@@ -396,17 +400,22 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'comment_replies',
-          filter: `comment_id=eq.${comment.id}`
+          table: 'comment_replies'
+          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
         },
         (payload) => {
           console.log('답글 삭제:', payload);
-          // 답글 삭제 시 개수 가져오기
-          fetchCount();
+          const oldData = payload.old as Record<string, any>;
           
-          // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
-          if (showReplies) {
-            loadReplies();
+          // 삭제된 답글이 현재 댓글의 답글인지 확인
+          if (oldData && oldData.comment_id === comment.id) {
+            // 답글 삭제 시 개수 가져오기
+            fetchCount();
+            
+            // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+            if (showReplies) {
+              loadReplies();
+            }
           }
         }
       )

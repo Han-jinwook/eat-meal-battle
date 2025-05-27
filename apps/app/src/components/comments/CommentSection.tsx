@@ -193,19 +193,23 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       )
       .subscribe();
       
-    // 댓글 삭제 구독
+    // 댓글 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
     const commentsDeleteChannel = supabase
       .channel(`comments-delete-${mealId}`)
       .on('postgres_changes', 
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'comments',
-          filter: `meal_id=eq.${mealId}`
+          table: 'comments'
+          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
         }, 
         (payload) => {
           console.log('댓글 삭제:', payload);
-          loadComments(true);
+          const oldData = payload.old as Record<string, any>;
+          // 삭제된 댓글이 현재 meal의 댓글인지 확인
+          if (oldData && oldData.meal_id === mealId) {
+            loadComments(true);
+          }
         }
       )
       .subscribe();
@@ -243,7 +247,7 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       )
       .subscribe();
       
-    // 좋아요 삭제 구독 - 관련 댓글 새로고침
+    // 좋아요 삭제 구독 - 필터링 적용
     const likesDeleteChannel = supabase
       .channel(`comment-likes-delete-${mealId}`)
       .on('postgres_changes', 
@@ -251,12 +255,18 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
           event: 'DELETE',
           schema: 'public',
           table: 'comment_likes'
+          // meal_id와 직접 연결되지 않아 filter를 사용하지 않음
         }, 
         (payload) => {
           console.log('댓글 좋아요 삭제:', payload);
-          // 전체 댓글 목록 새로고침 
-          // (개별 댓글의 좋아요는 CommentItem에서 처리하민로 여기서는 전체 댓글 목록만 새로고침)
-          loadComments(true);
+          const oldData = payload.old as Record<string, any>;
+          if (oldData && oldData.comment_id) {
+            // 현재 표시된 댓글의 ID를 가져와서 비교
+            const commentIds = comments.map(c => c.id);
+            if (commentIds.includes(oldData.comment_id)) {
+              loadComments(true);
+            }
+          }
         }
       )
       .subscribe();

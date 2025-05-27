@@ -45,7 +45,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
       )
       .subscribe();
       
-    // 좋아요 삭제 구독
+    // 좋아요 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
     const likesDeleteChannel = supabase
       .channel(`reply-likes-delete-${reply.id}`)
       .on(
@@ -53,12 +53,16 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'reply_likes',
-          filter: `reply_id=eq.${reply.id}`
+          table: 'reply_likes'
+          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
         },
         (payload) => {
           console.log('답글 좋아요 삭제:', payload);
-          fetchLikesCount();
+          const oldData = payload.old as Record<string, any>;
+          // 삭제된 좋아요가 현재 답글의 좋아요인지 확인
+          if (oldData && oldData.reply_id === reply.id) {
+            fetchLikesCount();
+          }
         }
       )
       .subscribe();
