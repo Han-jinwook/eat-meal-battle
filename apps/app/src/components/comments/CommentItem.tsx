@@ -676,8 +676,17 @@ useEffect(() => {
         {/* 답글 섹션 */}
         {showReplies && (
           <div className="mt-1 ml-5 pl-3 relative">
-            {/* 유튜브 스타일 라인 - 한 줄로 표시 */}
-            <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200" style={{ borderRadius: '0 0 0 8px' }}></div>
+            {/* 유튜브 스타일 라인 - SVG 사용 */}
+            <div className="absolute left-0 top-0 h-full" style={{ width: '16px' }}>
+              <svg width="16" height="100%" className="overflow-visible">
+                <path 
+                  d="M1,0 L1,calc(100% - 8) Q1,calc(100% - 0) 9,calc(100% - 0)" 
+                  stroke="#e5e7eb" 
+                  strokeWidth="1.5" 
+                  fill="none" 
+                />
+              </svg>
+            </div>
             {/* 답글 작성 폼 */}
             {isReplyFormVisible && user && isStudentOfSchool && (
               <ReplyForm onSubmit={handleAddReply} />
