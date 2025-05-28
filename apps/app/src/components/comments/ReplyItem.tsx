@@ -322,7 +322,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   </div>
                 )}
               </div>
-              <p className="mt-1 text-sm font-medium break-words">{reply.content}</p>
+              <p className="mt-1 text-sm font-medium break-words whitespace-pre-wrap">{reply.content}</p>
               
               {/* 좋아요 버튼 */}
               <div className="mt-1 flex items-center">
