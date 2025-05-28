@@ -676,8 +676,9 @@ useEffect(() => {
         {/* 답글 섹션 */}
         {showReplies && (
           <div className="mt-1 ml-5 pl-3 relative">
-            {/* 곡선 연결선 스타일 추가 */}
-            <div className="absolute left-0 top-0 w-2.5 h-4 border-l-2 border-b-2 border-gray-200 rounded-bl-lg"></div>
+            {/* 유튜브 스타일 라인 - 세로 직선과 마지막에 곡선 */}
+            <div className="absolute left-0 top-0 bottom-0 border-l-2 border-gray-200"></div>
+            <div className="absolute left-0 bottom-0 w-2.5 h-4 border-b-2 border-gray-200 rounded-bl-lg"></div>
             {/* 답글 작성 폼 */}
             {isReplyFormVisible && user && isStudentOfSchool && (
               <ReplyForm onSubmit={handleAddReply} />
