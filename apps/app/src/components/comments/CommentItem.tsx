@@ -153,12 +153,8 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               // 내가 좋아요를 취소한 경우 이미 UI가 업데이트되었으므로 패스
               if (user && oldData.user_id === user.id) return;
               
-              // 다른 사용자가 좋아요를 취소한 경우
-              fetchLikesCount();
-              // 내가 좋아요를 눌렀는지 다시 확인
-              if (user) {
-                checkUserLiked();
-              }
+              // 다른 사용자의 좋아요 취소는 리얼타임 업데이트 기능 비활성화
+              // 사용자가 페이지를 새로고침할 때만 변경사항이 반영됨
             }
           }
           // INSERT 이벤트 처리
@@ -438,13 +434,8 @@ useEffect(() => {
         
         // 삭제된 답글이 현재 댓글의 답글인지 확인
         if (oldData && oldData.comment_id === comment.id) {
-          // 답글 삭제 시 개수 가져오기
-          fetchCount();
-          
-          // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
-          if (showReplies) {
-            loadReplies();
-          }
+          // 답글 삭제 시 리얼타임 업데이트 기능 비활성화
+          // 사용자가 페이지를 새로고침할 때만 변경사항이 반영됨
         }
       }
     )
