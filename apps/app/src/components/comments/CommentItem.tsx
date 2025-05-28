@@ -43,6 +43,148 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     addSuffix: true,
     locale: ko
   });
+  
+  // 실시간으로 좋아요 개수를 가져오는 함수
+  const fetchLikesCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact', head: true })
+        .eq('comment_id', comment.id);
+        
+      if (error) throw error;
+      setLikesCount(count || 0);
+    } catch (err) {
+      console.error('댓글 좋아요 개수 가져오기 오류:', err);
+    }
+  };
+  
+  // 현재 사용자의 좋아요 여부 확인 함수
+  const checkUserLiked = async () => {
+    if (!user || !user.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('comment_likes')
+        .select('id')
+        .eq('comment_id', comment.id)
+        .eq('user_id', user.id)
+        .single();
+        
+      setIsLiked(!error && !!data);
+    } catch (err) {
+      console.error('좋아요 여부 확인 오류:', err);
+    }
+  };
+  
+  // 좋아요 토글 처리 함수
+  const handleLikeToggle = async () => {
+    if (!user || !user.id || isLikeLoading) return;
+    
+    setIsLikeLoading(true);
+    
+    try {
+      // 낙관적 UI 업데이트
+      const newIsLiked = !isLiked;
+      setIsLiked(newIsLiked);
+      setLikesCount(prevCount => newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
+      
+      if (newIsLiked) {
+        // 좋아요 추가
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: comment.id,
+            user_id: user.id
+          });
+          
+        if (error) {
+          console.error('좋아요 추가 오류:', error);
+          // 오류 발생 시 UI 롤백
+          setIsLiked(false);
+          setLikesCount(prevCount => Math.max(0, prevCount - 1));
+        }
+      } else {
+        // 좋아요 취소
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', comment.id)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          console.error('좋아요 취소 오류:', error);
+          // 오류 발생 시 UI 롤백
+          setIsLiked(true);
+          setLikesCount(prevCount => prevCount + 1);
+        }
+      }
+      
+      // 백그라운드에서 최신 좋아요 개수 가져오기
+      fetchLikesCount();
+    } catch (err) {
+      console.error('좋아요 처리 중 오류:', err);
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+  
+  // 댓글 좋아요에 대한 실시간 구독 설정
+  useEffect(() => {
+    if (!comment.id) return;
+
+    // 좋아요 변경 구독 (모든 이벤트 구독)
+    const likesChannel = supabase
+      .channel(`comment-likes-all-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE 모두 구독
+          schema: 'public',
+          table: 'comment_likes'
+        },
+        (payload) => {
+          console.log('댓글 좋아요 변경:', payload);
+          
+          // DELETE 이벤트 처리
+          if (payload.eventType === 'DELETE') {
+            const oldData = payload.old as Record<string, any>;
+            if (oldData && oldData.comment_id === comment.id) {
+              // 내가 좋아요를 취소한 경우 이미 UI가 업데이트되었으므로 패스
+              if (user && oldData.user_id === user.id) return;
+              
+              // 다른 사용자가 좋아요를 취소한 경우
+              fetchLikesCount();
+              // 내가 좋아요를 눌렀는지 다시 확인
+              if (user) {
+                checkUserLiked();
+              }
+            }
+          }
+          // INSERT 이벤트 처리
+          else if (payload.eventType === 'INSERT') {
+            const newData = payload.new as Record<string, any>;
+            if (newData && newData.comment_id === comment.id) {
+              // 내가 좋아요를 누른 경우 이미 UI가 업데이트되었으므로 패스
+              if (user && newData.user_id === user.id) return;
+              
+              // 다른 사용자가 좋아요를 누른 경우
+              fetchLikesCount();
+              // 내가 좋아요를 눌렀는지 다시 확인
+              if (user) {
+                checkUserLiked();
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(likesChannel);
+    };
+  }, [comment.id, user]);
 
   // 댓글 수정
   const handleEdit = async () => {
@@ -217,265 +359,153 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   const handleReplyChange = () => {
     loadReplies();
   };
-
-  // 실시간으로 좋아요 개수를 가져오는 함수
-  const fetchLikesCount = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('comment_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('comment_id', comment.id);
-        
-      if (error) throw error;
-      
-      // 현재 사용자의 좋아요 여부 확인
-      if (user && user.id) {
-        const { data, error: likeError } = await supabase
-          .from('comment_likes')
-          .select('id')
-          .eq('comment_id', comment.id)
-          .eq('user_id', user.id)
-          .single();
-          
-        if (!likeError && data) {
-          setIsLiked(true);
-        } else {
-          setIsLiked(false);
-        }
-      }
-      
-      setLikesCount(count || 0);
-    } catch (err) {
-      console.error('좋아요 개수 가져오기 오류:', err);
-    }
-  };
   
-  // 실시간으로 답글 개수를 가져오는 함수
+  // 댓글 및 답글 개수 가져오기
   const fetchCount = async () => {
+    if (!comment.id) return;
+    
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('comment_replies')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('comment_id', comment.id)
         .eq('is_deleted', false);
         
-      if (error) throw error;
-      
-      setRepliesCount(count || 0);
-    } catch (err) {
-      console.error('답글 개수 가져오기 오류:', err);
+      if (!error && data) {
+        setRepliesCount(data.length);
+      }
     }
-  };
+  } catch (err) {
+    console.error('답글 개수 가져오기 오류:', err);
+  }
+};
 
-  // 좋아요 토글 처리
-  const handleLikeToggle = async () => {
-    if (!user || !user.id || isLikeLoading) return;
+// 초기 답글 수 설정
+useEffect(() => {
+  setRepliesCount(comment.replies_count);
+  setIsLiked(comment.user_has_liked);
+  setLikesCount(comment.likes_count);
+  
+  // 초기 로드 시 좋아요 상태 확인
+  if (user && user.id) {
+    checkUserLiked();
+    fetchLikesCount();
+  }
+}, [comment.replies_count, comment.user_has_liked, comment.likes_count, user]);
 
-    setIsLikeLoading(true);
+// 실시간 답글 업데이트를 위한 구독 설정
+useEffect(() => {
+  if (!comment.id) return;
 
-    try {
-      // 낙관적 UI 업데이트 - 즉시 UI 변경
-      const newIsLiked = !isLiked;
-      setIsLiked(newIsLiked);
-      setLikesCount(prevCount => newIsLiked ? prevCount + 1 : prevCount - 1);
-
-      if (isLiked) {
-        // 좋아요 취소
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .eq('comment_id', comment.id)
-          .eq('user_id', user.id);
-
-        if (error) {
-          // 에러 발생 시 UI 롤백
-          setIsLiked(!newIsLiked);
-          setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : prevCount - 1);
-          throw error;
-        }
-      } else {
-        // 좋아요 추가
-        const { error } = await supabase
-          .from('comment_likes')
-          .insert({
-            comment_id: comment.id,
-            user_id: user.id
-          });
-
-        if (error) {
-          // 에러 발생 시 UI 롤백
-          setIsLiked(!newIsLiked);
-          setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : prevCount - 1);
-          throw error;
+  // 답글 추가 구독
+  const repliesInsertChannel = supabase
+    .channel(`replies-insert-${comment.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'comment_replies',
+        filter: `comment_id=eq.${comment.id}`
+      },
+      (payload) => {
+        console.log('답글 추가:', payload);
+        // 답글 추가 시 개수 가져오기
+        fetchCount();
+        
+        // 답글 추가 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+        if (showReplies) {
+          loadReplies();
         }
       }
-
-      // 백그라운드에서 전체 데이터 새로고침
-      onCommentChange();
-    } catch (err) {
-      console.error('좋아요 처리 중 오류:', err);
-    } finally {
-      setIsLikeLoading(false);
-    }
-  };
-
-  // 초기 답글 수 설정
-  useEffect(() => {
-    setRepliesCount(comment.replies_count);
-  }, [comment.replies_count]);
-
-  // 실시간 좋아요 및 답글 업데이트를 위한 구독 설정
-  useEffect(() => {
-    if (!comment.id) return;
-
-    // 좋아요 추가 구독
-    const likesInsertChannel = supabase
-      .channel(`comment-likes-insert-${comment.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'comment_likes',
-          filter: `comment_id=eq.${comment.id}`
-        },
-        (payload) => {
-          console.log('좋아요 추가:', payload);
-          fetchLikesCount();
-        }
-      )
-      .subscribe();
-      
-    // 좋아요 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
-    const likesDeleteChannel = supabase
-      .channel(`comment-likes-delete-${comment.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'comment_likes'
-          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
-        },
-        (payload) => {
-          console.log('좋아요 삭제:', payload);
-          const oldData = payload.old as Record<string, any>;
-          // 삭제된 좋아요가 현재 댓글의 좋아요인지 확인
-          if (oldData && oldData.comment_id === comment.id) {
-            fetchLikesCount();
-          }
-        }
-      )
-      .subscribe();
+    )
+    .subscribe();
     
-    // 답글 추가 구독
-    const repliesInsertChannel = supabase
-      .channel(`replies-insert-${comment.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'comment_replies',
-          filter: `comment_id=eq.${comment.id}`
-        },
-        (payload) => {
-          console.log('답글 추가:', payload);
-          // 답글 추가 시 개수 가져오기
+  // 답글 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
+  const repliesDeleteChannel = supabase
+    .channel(`replies-delete-${comment.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'comment_replies'
+        // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
+      },
+      (payload) => {
+        console.log('답글 삭제:', payload);
+        const oldData = payload.old as Record<string, any>;
+        
+        // 삭제된 답글이 현재 댓글의 답글인지 확인
+        if (oldData && oldData.comment_id === comment.id) {
+          // 답글 삭제 시 개수 가져오기
           fetchCount();
           
-          // 답글 추가 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+          // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
           if (showReplies) {
             loadReplies();
           }
         }
-      )
-      .subscribe();
-      
-    // 답글 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
-    const repliesDeleteChannel = supabase
-      .channel(`replies-delete-${comment.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'comment_replies'
-          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
-        },
-        (payload) => {
-          console.log('답글 삭제:', payload);
-          const oldData = payload.old as Record<string, any>;
-          
-          // 삭제된 답글이 현재 댓글의 답글인지 확인
-          if (oldData && oldData.comment_id === comment.id) {
-            // 답글 삭제 시 개수 가져오기
-            fetchCount();
-            
-            // 답글 삭제 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
-            if (showReplies) {
-              loadReplies();
-            }
-          }
+      }
+    )
+    .subscribe();
+    
+  // 답글 업데이트 구독
+  const repliesUpdateChannel = supabase
+    .channel(`replies-update-${comment.id}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'comment_replies',
+        filter: `comment_id=eq.${comment.id}`
+      },
+      (payload) => {
+        console.log('답글 업데이트:', payload);
+        // 답글 업데이트 시 개수 가져오기
+        fetchCount();
+        
+        // 답글 업데이트 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
+        if (showReplies) {
+          loadReplies();
         }
-      )
-      .subscribe();
-      
-    // 답글 업데이트 구독
-    const repliesUpdateChannel = supabase
-      .channel(`replies-update-${comment.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'comment_replies',
-          filter: `comment_id=eq.${comment.id}`
-        },
-        (payload) => {
-          console.log('답글 업데이트:', payload);
-          // 답글 업데이트 시 개수 가져오기
-          fetchCount();
-          
-          // 답글 업데이트 시, 화면에 표시된 답글이 있다면 답글 목록 갱신
-          if (showReplies) {
-            loadReplies();
-          }
+      }
+    )
+    .subscribe();
+    
+  const replyLikesChannel = supabase
+    .channel(`reply-likes-for-comment-${comment.id}`)
+    .on('postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'reply_likes'
+      },
+      (payload) => {
+        const newData = payload.new as Record<string, any>;
+        const oldData = payload.old as Record<string, any>;
+        const replyId = newData?.reply_id || oldData?.reply_id;
+        
+        if (showReplies && replyId && replies.some(r => r.id === replyId)) {
+          console.log('답글 좋아요 변경:', payload);
+          loadReplies(); // 표시된 답글에 대한 좋아요 변경이 있을 때 새로고침
         }
-      )
-      .subscribe();
-      
-    const replyLikesChannel = supabase
-      .channel(`reply-likes-for-comment-${comment.id}`)
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reply_likes'
-        },
-        (payload) => {
-          const newData = payload.new as Record<string, any>;
-          const oldData = payload.old as Record<string, any>;
-          const replyId = newData?.reply_id || oldData?.reply_id;
-          
-          if (showReplies && replyId && replies.some(r => r.id === replyId)) {
-            console.log('답글 좋아요 변경:', payload);
-            loadReplies(); // 표시된 답글에 대한 좋아요 변경이 있을 때 새로고침
-          }
-        }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe();
+
+    
+
 
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
-      supabase.removeChannel(likesInsertChannel);
-      supabase.removeChannel(likesDeleteChannel);
       supabase.removeChannel(repliesInsertChannel);
       supabase.removeChannel(repliesDeleteChannel);
       supabase.removeChannel(repliesUpdateChannel);
       supabase.removeChannel(replyLikesChannel);
     };
-  }, [comment.id, showReplies, replies]);
+  }, [comment.id, showReplies, replies, user]);
 
   // 수정/삭제 메뉴 토글
   const [showMenu, setShowMenu] = useState<boolean>(false);
