@@ -370,11 +370,10 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       if (!error && data) {
         setRepliesCount(data.length);
       }
+    } catch (err) {
+      console.error('답글 개수 가져오기 오류:', err);
     }
-  } catch (err) {
-    console.error('답글 개수 가져오기 오류:', err);
-  }
-};
+  };
 
 // 초기 답글 수 설정
 useEffect(() => {
