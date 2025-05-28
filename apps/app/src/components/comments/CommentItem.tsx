@@ -676,11 +676,8 @@ useEffect(() => {
         {/* 답글 섹션 */}
         {showReplies && (
           <div className="mt-1 ml-5 pl-3 relative">
-            {/* 유튜브 스타일 라인 - 세로 직선과 45도 라운드 코너 */}
-            <div className="absolute left-0 top-0 h-full w-0.5 bg-gray-200"></div>
-            <div className="absolute left-0 bottom-0 h-8 w-8 overflow-hidden">
-              <div className="absolute left-0 bottom-0 w-16 h-16 border-b-2 border-l-0 border-gray-200 rounded-br-full"></div>
-            </div>
+            {/* 유튜브 스타일 라인 - 한 줄로 표시 */}
+            <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200" style={{ borderRadius: '0 0 0 8px' }}></div>
             {/* 답글 작성 폼 */}
             {isReplyFormVisible && user && isStudentOfSchool && (
               <ReplyForm onSubmit={handleAddReply} />
