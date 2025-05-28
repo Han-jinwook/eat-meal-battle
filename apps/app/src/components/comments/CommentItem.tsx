@@ -635,7 +635,7 @@ useEffect(() => {
                 }}
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
               >
-                <span>답글{repliesCount}</span>
+                <span>답글 {repliesCount}개&gt;</span>
               </button>
             ) : (
               <button
@@ -647,7 +647,7 @@ useEffect(() => {
                 }}
                 className="text-sm text-gray-600 hover:text-gray-900 flex items-center opacity-0 hover:opacity-50"
               >
-                <span>답글</span>
+                <span>답글 &gt;</span>
               </button>
             )}
 
@@ -675,7 +675,9 @@ useEffect(() => {
 
         {/* 답글 섹션 */}
         {showReplies && (
-          <div className="mt-1 ml-5 border-l border-gray-200 pl-3">
+          <div className="mt-1 ml-5 pl-3 relative">
+            {/* 곡선 연결선 스타일 추가 */}
+            <div className="absolute left-0 top-0 w-2.5 h-4 border-l-2 border-b-2 border-gray-200 rounded-bl-lg"></div>
             {/* 답글 작성 폼 */}
             {isReplyFormVisible && user && isStudentOfSchool && (
               <ReplyForm onSubmit={handleAddReply} />
