@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import ConfettiExplosion from 'react-confetti-explosion';
-import { motion } from 'framer-motion';
 
 // 타입 정의
 type Quiz = {
@@ -49,6 +47,50 @@ type ChampionsResponse = {
 };
 
 export default function QuizPage() {
+  // CSS 스타일 정의
+  const styles = `
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100vh) rotate(0deg); }
+      100% { transform: translateY(100vh) rotate(720deg); }
+    }
+    
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+    }
+    
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -10px;
+      opacity: 0.8;
+      animation: confetti-fall 3s linear forwards;
+    }
+    
+    .option-button {
+      transition: all 0.3s ease;
+    }
+    
+    .option-button:hover:not(:disabled) {
+      transform: scale(1.02);
+    }
+    
+    .option-button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    
+    .option-dimmed {
+      opacity: 0.6;
+    }
+  `;
+  
   const supabase = createClientComponentClient();
   const router = useRouter();
   
@@ -61,7 +103,7 @@ export default function QuizPage() {
   const [answerTime, setAnswerTime] = useState<number | null>(null);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
-  const [isExploding, setIsExploding] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -175,8 +217,8 @@ export default function QuizPage() {
 
       // 정답일 경우 축하 애니메이션
       if (data.isCorrect) {
-        setIsExploding(true);
-        setTimeout(() => setIsExploding(false), 3000);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
       }
 
       // 장원 목록 새로고침
@@ -291,14 +333,19 @@ export default function QuizPage() {
 
   return (
     <main className="flex min-h-[80vh] flex-col items-center p-4 md:p-8 max-w-4xl mx-auto">
-      {isExploding && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-          <ConfettiExplosion
-            force={0.8}
-            duration={3000}
-            particleCount={200}
-            width={1600}
-          />
+      {showConfetti && (
+        <div className="confetti-container">
+          {[...Array(50)].map((_, i) => (
+            <div 
+              key={i} 
+              className="confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                backgroundColor: `hsl(${Math.random() * 360}, 80%, 60%)`
+              }}
+            />
+          ))}
         </div>
       )}
 
@@ -329,22 +376,19 @@ export default function QuizPage() {
           {/* 선택지 목록 */}
           <div className="space-y-3">
             {quiz.options.map((option, index) => (
-              <motion.button
+              <button
                 key={index}
                 onClick={() => submitAnswer(index)}
                 disabled={alreadyAnswered || isSubmitting}
-                className={`w-full p-4 text-left rounded-lg transition-all transform hover:scale-102 border ${selectedOption === index 
-                  ? (result?.isCorrect 
+                className={`w-full p-4 text-left rounded-lg transition-all transform hover:scale-102 border option-button
+                  ${selectedOption === index 
+                    ? (result?.isCorrect 
+                        ? 'bg-green-100 border-green-500' 
+                        : 'bg-red-100 border-red-500')
+                    : result && result.correctAnswer === index 
                       ? 'bg-green-100 border-green-500' 
-                      : 'bg-red-100 border-red-500')
-                  : result && result.correctAnswer === index 
-                    ? 'bg-green-100 border-green-500' 
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}
-                whileHover={{ scale: alreadyAnswered ? 1 : 1.02 }}
-                whileTap={{ scale: alreadyAnswered ? 1 : 0.98 }}
-                animate={{
-                  opacity: alreadyAnswered && selectedOption !== index && result?.correctAnswer !== index ? 0.6 : 1
-                }}
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                  ${alreadyAnswered && selectedOption !== index && result?.correctAnswer !== index ? 'option-dimmed' : ''}`}
               >
                 <div className="flex items-center">
                   <span className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white mr-3">
@@ -352,7 +396,7 @@ export default function QuizPage() {
                   </span>
                   <span>{option}</span>
                 </div>
-              </motion.button>
+              </button>
             ))}
           </div>
 
