@@ -7,6 +7,7 @@ import useUserSchool from '@/hooks/useUserSchool';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import LikeButton from './LikeButton';
+import ReplyForm from './ReplyForm';
 
 interface ReplyItemProps {
   reply: CommentReply;
@@ -21,6 +22,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   const [likesCount, setLikesCount] = useState<number>(reply.likes_count);
   const [isLikeLoading, setIsLikeLoading] = useState<boolean>(false);
   const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [isReplyFormVisible, setIsReplyFormVisible] = useState<boolean>(false);
   
   // 클릭 이벤트 처리 - 외부 클릭 시 메뉴 닫기
   // 실시간 좋아요 업데이트를 위한 구독 설정
@@ -225,6 +227,33 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     }
   };
   
+  // 답글에 대한 답글 제출 처리
+  const handleAddNestedReply = async (content: string): Promise<boolean> => {
+    if (!user || !content.trim()) return false;
+    
+    try {
+      // 답글에 대한 답글도 같은 테이블에 저장하되, parent_id를 설정
+      const { data, error } = await supabase
+        .from('comment_replies')
+        .insert({
+          comment_id: reply.comment_id, // 원래 댓글 ID
+          user_id: user.id,
+          content: content.trim(),
+          parent_id: reply.id // 부모 답글 ID 설정
+        });
+        
+      if (error) throw error;
+      
+      // 성공 시 부모 컴포넌트에 알림
+      onReplyChange();
+      setIsReplyFormVisible(false);
+      return true;
+    } catch (err) {
+      console.error('답글 작성 중 오류:', err);
+      return false;
+    }
+  };
+  
   return (
     <div className="py-2 pl-8 border-l border-gray-200">
       {isEditing ? (
@@ -324,8 +353,8 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
               </div>
               <p className="mt-1 text-sm font-medium break-words whitespace-pre-wrap">{reply.content}</p>
               
-              {/* 좋아요 버튼 */}
-              <div className="mt-1 flex items-center">
+              {/* 좋아요 버튼 및 연필 아이콘 */}
+              <div className="mt-1 flex items-center gap-3">
                 <LikeButton 
                   count={likesCount} 
                   isLiked={isLiked}
@@ -334,9 +363,34 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   }}
                   disabled={isLikeLoading}
                 />
+                
+                {/* 연필 아이콘 - 답글 작성용 */}
+                {user && isStudentOfSchool && (
+                  <button
+                    onClick={() => setIsReplyFormVisible(!isReplyFormVisible)}
+                    className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    title="답글 작성"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                      <path d="M3,17.25 L3,21 L6.75,21 L17.81,9.94 L14.06,6.19 L3,17.25 Z M21.41,6.34 L17.66,2.59 C17.2706655,2.20798298 16.6593396,2.20857968 16.27,2.59 L13.13,5.73 L16.88,9.48 L20.02,6.34 C20.4,5.96 20.4,5.34 20.02,4.96 L21.41,6.34 Z" />
+                    </svg>
+                    <span className="text-xs">{isReplyFormVisible ? '취소' : '답글'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
+          
+          {/* 답글에 대한 답글 입력창 */}
+          {isReplyFormVisible && user && isStudentOfSchool && (
+            <div className="mt-2">
+              <ReplyForm 
+                onSubmit={handleAddNestedReply} 
+                placeholder="답글 추가..." 
+                buttonText="답글"
+              />
+            </div>
+          )}
         </>
       )}
     </div>
