@@ -7,9 +7,16 @@ import useUserSchool from '@/hooks/useUserSchool';
 interface ReplyFormProps {
   onSubmit: (content: string) => Promise<boolean>;
   autoFocus?: boolean;
+  placeholder?: string;
+  buttonText?: string;
 }
 
-export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps) {
+export default function ReplyForm({ 
+  onSubmit, 
+  autoFocus = true, 
+  placeholder = '답글 추가...', 
+  buttonText = '답글'
+}: ReplyFormProps) {
   const [content, setContent] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isFocused, setIsFocused] = useState<boolean>(false);
@@ -36,10 +43,10 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
     }
   }, [user]);
 
-  // 텍스트 에어리어 높이 자동 조절
+  // 텍스트 영역 높이 자동 조절
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [content]);
@@ -57,11 +64,16 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
     
     if (!content.trim() || isSubmitting) return;
     
-    setIsSubmitting(true);
     try {
-      const result = await onSubmit(content);
-      if (result) {
-        setContent(''); // 성공 시 입력 필드 초기화
+      setIsSubmitting(true);
+      const success = await onSubmit(content);
+      
+      if (success) {
+        setContent('');
+        setIsFocused(false);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -80,71 +92,70 @@ export default function ReplyForm({ onSubmit, autoFocus = true }: ReplyFormProps
     setContent('');
     setIsFocused(false);
     if (textareaRef.current) {
-      textareaRef.current.style.height = '36px';
+      textareaRef.current.blur();
+      textareaRef.current.style.height = "auto";
     }
   };
   
   return (
-    <form onSubmit={handleSubmit} className="mt-2">
-      <div className="flex items-start gap-2 w-full">
-        {/* 프로필 이미지/아바타 */}
-        <div className="flex-shrink-0 w-6 h-6">
-          {userProfile.avatarUrl ? (
-            <img
-              src={userProfile.avatarUrl}
-              alt="프로필"
-              className="w-6 h-6 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-xs text-gray-600">
-                {userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || '?'}
-              </span>
-            </div>
-          )}
+    <div className="flex items-start gap-2 mt-2">
+      {/* 프로필 이미지 */}
+      <div className="flex-shrink-0 w-6 h-6 overflow-hidden rounded-full">
+        {userProfile.avatarUrl ? (
+          <img 
+            src={userProfile.avatarUrl} 
+            alt="프로필" 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/default-avatar.png';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs">
+            {userProfile.name?.[0] || userProfile.email?.[0]?.toUpperCase() || '?'}
+          </div>
+        )}
+      </div>
+      
+      {/* 입력 폼 */}
+      <form onSubmit={handleSubmit} className="flex-grow">
+        <div className={`border-b ${isFocused ? 'border-black' : 'border-gray-300'} transition-all duration-200`}>
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            placeholder={placeholder}
+            className="w-full p-2 focus:outline-none resize-none overflow-hidden min-h-[36px] text-sm"
+            rows={1}
+          />
         </div>
         
-        {/* 입력 필드 컨테이너 */}
-        <div className="flex-grow relative">
-          {/* 입력 필드 */}
-          <div className={`border rounded-md transition-all ${isFocused ? 'border-blue-400 shadow-sm' : 'border-gray-300'}`}>
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              placeholder="답글을 입력하세요..."
-              className="w-full p-2 focus:outline-none resize-none overflow-hidden min-h-[36px] text-sm whitespace-pre-wrap"
-              rows={1}
-            />
-            
-            {/* 버튼 영역 - 포커스 상태일 때만 표시 */}
-            {isFocused && (
-              <div className="flex justify-end p-1 bg-white border-t border-gray-100">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded">
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!content.trim() || isSubmitting}
-                    className={`px-3 py-1 rounded text-white text-sm ${
-                      !content.trim() || isSubmitting
-                        ? 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-blue-500 hover:bg-blue-600'
-                    }`}>
-                    {isSubmitting ? '처리 중...' : '답글'}
-                  </button>
-                </div>
-              </div>
-            )}
+        {/* 버튼 영역 - 포커스 시에만 표시 */}
+        {isFocused && (
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-full"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={!content.trim() || isSubmitting}
+              className={`px-3 py-1 text-sm font-medium rounded-full ${
+                !content.trim() || isSubmitting
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {isSubmitting ? '게시 중...' : buttonText}
+            </button>
           </div>
-        </div>
-      </div>
-    </form>
+        )}
+      </form>
+    </div>
   );
 }

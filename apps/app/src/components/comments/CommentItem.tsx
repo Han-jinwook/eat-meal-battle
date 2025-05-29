@@ -706,9 +706,7 @@ useEffect(() => {
                   />
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 py-2">아직 답글이 없습니다. 첫 답글을 남겨보세요!</p>
-            )}
+            ) : null}
           </div>
         )}
       </div>
