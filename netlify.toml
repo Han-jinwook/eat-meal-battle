@@ -37,9 +37,20 @@
   timeout = 60
   schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
 
+# 퀴즈 생성 함수 (매일 오전 10시에 실행)
+[functions.generate-meal-quizzes]
+  timeout = 60
+  schedule = "0 1 * * *" # 매일 UTC 1:00 (한국시간 10:00)
+
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
   from = "/api/meals"
   to = "/.netlify/functions/meals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/quiz*"
+  to = "/.netlify/functions/quiz:splat"
   status = 200
   force = true
