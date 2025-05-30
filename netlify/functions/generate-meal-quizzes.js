@@ -4,13 +4,23 @@ const { Configuration, OpenAIApi } = require('openai');
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// 초기화 정보 로깅
+console.log("Supabase URL:", supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : 'Not found');
+console.log("Supabase Service Key:", supabaseServiceKey ? 'Found' : 'Not found');
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+console.log("Supabase client initialized successfully");
 
 // OpenAI 클라이언트 초기화
+const openaiApiKey = process.env.OPENAI_API_KEY;
+console.log("OpenAI API Key:", openaiApiKey ? 'Found' : 'Not found');
+
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: openaiApiKey,
 });
 const openai = new OpenAIApi(configuration);
+console.log("OpenAI client initialized successfully");
 
 // 학년에 따른 난이도 계산 함수
 function calculateDifficulty(grade) {
@@ -107,21 +117,54 @@ async function saveQuizToDatabase(quiz, meal, grade) {
   return true;
 }
 
-// 오늘의 급식 메뉴 조회
+// 오늘의 급식 메뉴 조회 (재시도 로직 추가)
 async function fetchTodayMeals() {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+  console.log("Fetching meals for date:", today);
   
-  const { data, error } = await supabase
-    .from('meal_menus')
-    .select('*')
-    .eq('meal_date', today)
-    .not('menu_items', 'is', null);
+  // 최대 재시도 횟수
+  const maxRetries = 3;
+  let retries = 0;
+  let lastError = null;
+  
+  while (retries < maxRetries) {
+    try {
+      // 테이블 접근 가능 여부 먼저 확인
+      const { count, error: countError } = await supabase
+        .from('meal_menus')
+        .select('id', { count: 'exact', head: true });
+        
+      if (countError) {
+        console.error("Failed to verify meal_menus table:", countError);
+        throw countError;
+      }
+      
+      console.log(`Successfully connected to meal_menus table. Total records: ${count}`);
+      
+      // 실제 데이터 조회
+      const { data, error } = await supabase
+        .from('meal_menus')
+        .select('*')
+        .eq('meal_date', today)
+        .not('menu_items', 'is', null);
 
-  if (error) {
-    console.error("급식 메뉴 조회 중 오류 발생:", error);
-    return [];
+      if (error) {
+        console.error("Error fetching meals:", error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      lastError = error;
+      retries++;
+      console.log(`Attempt ${retries}/${maxRetries} failed. Retrying in 1 second...`);
+      // 1초 대기 후 재시도
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
-  return data || [];
+  
+  console.error(`Failed to fetch meals after ${maxRetries} attempts. Last error:`, lastError);
+  return [];
 }
 
 // 메인 함수
@@ -136,10 +179,39 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    console.log("Handler function started");
+    console.log("퀘즈 생성 함수 실행 시작");
+    console.log("Starting quiz generation process");
+    console.log("Fetching today's meals...");
+    console.log("Current time:", new Date().toISOString());
+    
     // 1. 오늘 날짜의 급식 메뉴 조회
     const meals = await fetchTodayMeals();
     
     if (meals.length === 0) {
+      console.log("No meals found for today");
+      // 테이블이 존재하고 접근 가능한지 확인
+      try {
+        const { count, error } = await supabase
+          .from('meal_menus')
+          .select('id', { count: 'exact', head: true });
+          
+        if (error) {
+          console.error("Unable to access meal_menus table:", error);
+          return {
+            statusCode: 500,
+            body: JSON.stringify({ 
+              message: "데이터베이스 테이블에 접근할 수 없습니다.", 
+              error: error.message 
+            })
+          };
+        }
+        
+        console.log(`meal_menus table is accessible. Total records: ${count}`);
+      } catch (err) {
+        console.error("Error checking table access:", err);
+      }
+      
       return {
         statusCode: 200,
         body: JSON.stringify({ message: "오늘의 급식 정보가 없습니다." })
