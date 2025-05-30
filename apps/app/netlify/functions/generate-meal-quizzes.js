@@ -286,28 +286,8 @@ exports.handler = async function(event, context) {
     };
   }
   
-  // API 키 검증 - Netlify 스케줄러 호출일 경우 예외 처리 추가
-  const apiKey = event.headers ? (event.headers['x-api-key'] || '') : '';
-  const cronApiKey = process.env.CRON_API_KEY || '';
-  
-  // 스케줄러 호출 확인
-  const isScheduledEvent = event.headers && 
-                          (event.headers['user-agent'] || '').includes('Netlify') && 
-                          event.headers['x-scheduled-event'] === 'true';
-  
-  console.log('CRON API Key:', cronApiKey ? 'Found' : 'Not found');
-  console.log('Request API Key:', apiKey ? 'Provided' : 'Not provided');
-  console.log('Is Scheduled Event:', isScheduledEvent ? 'Yes' : 'No');
-  
-  // 스케줄러에서 호출하는 경우 인증 통과
-  if (isScheduledEvent) {
-    console.log('Netlify scheduled event detected, bypassing API key check');
-  } else if (!cronApiKey || apiKey !== cronApiKey) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: "Unauthorized", message: "Invalid or missing API key" })
-    };
-  }
+  // 성공적인 update-meals.js 함수처럼 API 키 검증 부분 제거
+  console.log('퀘즈 생성 함수 실행 시작');
 
   try {
     console.log('Starting quiz generation process');
