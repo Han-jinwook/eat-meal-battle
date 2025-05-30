@@ -26,11 +26,29 @@ export const createClient = () => {
             '/meal_images', 
             '/profiles', 
             '/menu_item_ratings',
-            '/school_infos'
+            '/school_infos',
+            '/quiz'
           ];
           
-          // 예외 처리 검사
-          const isExemptEndpoint = exemptEndpoints.some(endpoint => urlStr.includes(endpoint));
+          // 예외 처리 검사 - URL 파라미터를 포함한 전체 URL 기반 검사
+          const isExemptEndpoint = exemptEndpoints.some(endpoint => 
+            urlStr.includes(endpoint) || 
+            urlStr.includes('school_infos') || 
+            urlStr.includes('/quiz')
+          );
+          
+          // 모든 REST API 요청에 API 키 자동 추가
+          if (urlStr.includes('/rest/v1/')) {
+            const headers = args[1]?.headers || {};
+            args[1] = {
+              ...args[1],
+              headers: {
+                ...headers,
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`
+              }
+            };
+          }
           
           // Supabase REST API 직접 호출 차단 - 권한 부재 오류 방지 (예외 엔드포인트 제외)
           if (urlStr.includes('/rest/v1/') && 
