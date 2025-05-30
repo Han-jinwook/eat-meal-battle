@@ -37,10 +37,10 @@
   timeout = 60
   schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
 
-# 퀴즈 생성 함수 (16:15 실행 테스트)
+# 퀴즈 생성 함수 (17:00 실행 테스트)
 [functions.generate-meal-quizzes]
   timeout = 60
-  schedule = "15 7 * * *" # 매일 UTC 7:15 (한국시간 16:15)
+  schedule = "0 8 * * *" # 매일 UTC 8:00 (한국시간 17:00)
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
