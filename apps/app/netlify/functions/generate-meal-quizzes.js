@@ -1,16 +1,56 @@
 const { createClient } = require('@supabase/supabase-js');
 const { Configuration, OpenAIApi } = require('openai');
 
-// Supabase 클라이언트 초기화
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Supabase 클라이언트 초기화 - 오류 처리 강화
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-// OpenAI 클라이언트 초기화
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+// 디버그를 위한 로그 추가
+console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Not found');
+console.log('Supabase Service Key:', supabaseServiceKey ? 'Found' : 'Not found');
+
+// 오류 처리
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Supabase credentials missing');
+}
+
+// 안전한 초기화
+let supabase;
+try {
+  supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+  console.log('Supabase client initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error);
+  supabase = null;
+}
+
+// OpenAI 클라이언트 초기화 - 오류 처리 강화
+const openaiApiKey = process.env.OPENAI_API_KEY || '';
+
+// 디버그를 위한 로그 추가
+console.log('OpenAI API Key:', openaiApiKey ? 'Found' : 'Not found');
+
+// 오류 처리
+if (!openaiApiKey) {
+  console.error('OpenAI API key missing');
+}
+
+let configuration, openai;
+try {
+  configuration = new Configuration({
+    apiKey: openaiApiKey,
+  });
+  openai = new OpenAIApi(configuration);
+  console.log('OpenAI client initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize OpenAI client:', error);
+  openai = null;
+}
 
 // 학년에 따른 난이도 계산 함수
 function calculateDifficulty(grade) {
@@ -107,85 +147,184 @@ async function saveQuizToDatabase(quiz, meal, grade) {
   return true;
 }
 
-// 오늘의 급식 메뉴 조회
+// 오늘의 급식 메뉴 조회 - 오류 처리 강화
 async function fetchTodayMeals() {
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
-  
-  const { data, error } = await supabase
-    .from('meal_menus')
-    .select('*')
-    .eq('meal_date', today)
-    .not('menu_items', 'is', null);
+  try {
+    // 테스트를 위해 날짜 출력
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    
+    console.log('Current time:', now.toISOString());
+    console.log('Fetching meals for date:', today);
+    
+    if (!supabase) {
+      console.error('Cannot fetch meals: Supabase client not initialized');
+      return [];
+    }
+    
+    // 실제 데이터 조회 전 테이블 존재 확인
+    const { data: tablesData, error: tablesError } = await supabase
+      .from('meal_menus')
+      .select('id')
+      .limit(1);
+      
+    if (tablesError) {
+      console.error('Failed to verify meal_menus table:', tablesError);
+      return [];
+    }
+    
+    console.log('meal_menus table verified, proceeding to fetch data');
+    
+    // 오늘의 급식 조회
+    const { data, error } = await supabase
+      .from('meal_menus')
+      .select('*')
+      .eq('meal_date', today)
+      .not('menu_items', 'is', null);
 
-  if (error) {
-    console.error("급식 메뉴 조회 중 오류 발생:", error);
+    if (error) {
+      console.error("급식 메뉴 조회 중 오류 발생:", error);
+      return [];
+    }
+    
+    console.log(`Found ${data?.length || 0} meals for today`);
+    return data || [];
+  } catch (error) {
+    console.error('급식 조회 중 예상치 못한 오류 발생:', error);
     return [];
   }
-  return data || [];
 }
 
 // 메인 함수
 exports.handler = async function(event, context) {
+  console.log('Handler function started');
+  
+  // 클라이언트 초기화 확인
+  if (!supabase) {
+    console.error('Cannot proceed: Supabase client not initialized');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: "Internal Server Error", 
+        message: "Supabase client initialization failed" 
+      })
+    };
+  }
+  
+  if (!openai) {
+    console.error('Cannot proceed: OpenAI client not initialized');
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ 
+        error: "Internal Server Error", 
+        message: "OpenAI client initialization failed" 
+      })
+    };
+  }
+  
   // API 키 검증
-  const apiKey = event.headers['x-api-key'] || '';
-  if (apiKey !== process.env.CRON_API_KEY) {
+  const apiKey = event.headers ? (event.headers['x-api-key'] || '') : '';
+  const cronApiKey = process.env.CRON_API_KEY || '';
+  
+  console.log('CRON API Key:', cronApiKey ? 'Found' : 'Not found');
+  console.log('Request API Key:', apiKey ? 'Provided' : 'Not provided');
+  
+  if (!cronApiKey || apiKey !== cronApiKey) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: "Unauthorized" })
+      body: JSON.stringify({ error: "Unauthorized", message: "Invalid or missing API key" })
     };
   }
 
   try {
+    console.log('Starting quiz generation process');
+    
     // 1. 오늘 날짜의 급식 메뉴 조회
+    console.log('Fetching today\'s meals...');
     const meals = await fetchTodayMeals();
     
     if (meals.length === 0) {
+      console.log('No meals found for today');
       return {
         statusCode: 200,
         body: JSON.stringify({ message: "오늘의 급식 정보가 없습니다." })
       };
     }
     
+    console.log(`Found ${meals.length} meals, starting quiz generation`);
     let successCount = 0;
     let failCount = 0;
     
-    // 2. 각 학교별, 학년별로 퀴즈 생성
+    // 2. 각 학교별, 학년별로 퀘즈 생성
     for (const meal of meals) {
+      console.log(`Processing meal for school ${meal.school_code}, date ${meal.meal_date}`);
+      
+      // 급식 데이터 검증
+      if (!meal.menu_items || !Array.isArray(meal.menu_items) || meal.menu_items.length === 0) {
+        console.log(`Skipping meal for school ${meal.school_code}: Invalid menu items`);
+        continue;
+      }
+      
       for (let grade = 1; grade <= 6; grade++) {
-        // 3. 난이도 설정 (학년에 따라)
-        const difficulty = calculateDifficulty(grade);
-        
-        // 4. 이미 퀴즈가 있는지 확인
-        const { data: existingQuiz } = await supabase
-          .from('meal_quizzes')
-          .select('id')
-          .eq('school_code', meal.school_code)
-          .eq('grade', grade)
-          .eq('meal_date', meal.meal_date)
-          .limit(1);
-        
-        if (existingQuiz && existingQuiz.length > 0) {
-          console.log(`${meal.school_code} 학교 ${grade}학년 퀴즈가 이미 존재합니다.`);
-          continue; // 이미 존재하면 다음으로
-        }
-        
-        // 5. OpenAI API를 통해 퀴즈 생성
-        const quiz = await generateQuizWithAI(meal, grade, difficulty);
-        
-        // 6. 데이터베이스에 저장
-        const saved = await saveQuizToDatabase(quiz, meal, grade);
-        if (saved) {
-          successCount++;
-        } else {
+        try {
+          console.log(`Generating quiz for grade ${grade}`);
+          
+          // 3. 난이도 설정 (학년에 따라)
+          const difficulty = calculateDifficulty(grade);
+          
+          // 4. 이미 퀘즈가 있는지 확인
+          console.log(`Checking for existing quiz for school ${meal.school_code}, grade ${grade}`);
+          const { data: existingQuiz, error: quizError } = await supabase
+            .from('meal_quizzes')
+            .select('id')
+            .eq('school_code', meal.school_code)
+            .eq('grade', grade)
+            .eq('meal_date', meal.meal_date)
+            .limit(1);
+          
+          if (quizError) {
+            console.error(`Error checking existing quiz: ${quizError.message}`);
+            failCount++;
+            continue;
+          }
+          
+          if (existingQuiz && existingQuiz.length > 0) {
+            console.log(`${meal.school_code} 학교 ${grade}학년 퀘즈가 이미 존재합니다.`);
+            continue; // 이미 존재하면 다음으로
+          }
+          
+          // 5. OpenAI API를 통해 퀘즈 생성
+          console.log(`Generating quiz with OpenAI for grade ${grade}`);
+          const quiz = await generateQuizWithAI(meal, grade, difficulty);
+          
+          if (!quiz || !quiz.question || !quiz.options || !Array.isArray(quiz.options)) {
+            console.error('Generated quiz is invalid:', quiz);
+            failCount++;
+            continue;
+          }
+          
+          // 6. 데이터베이스에 저장
+          console.log(`Saving quiz to database for school ${meal.school_code}, grade ${grade}`);
+          const saved = await saveQuizToDatabase(quiz, meal, grade);
+          if (saved) {
+            console.log(`Successfully saved quiz for school ${meal.school_code}, grade ${grade}`);
+            successCount++;
+          } else {
+            console.error(`Failed to save quiz for school ${meal.school_code}, grade ${grade}`);
+            failCount++;
+          }
+        } catch (gradeError) {
+          console.error(`Error processing grade ${grade}:`, gradeError);
           failCount++;
         }
       }
     }
     
+    console.log(`Quiz generation completed: ${successCount} successful, ${failCount} failed`);
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "퀴즈 생성 완료",
+        message: "퀘즈 생성 완료",
         stats: {
           totalMeals: meals.length,
           successCount,
@@ -194,10 +333,20 @@ exports.handler = async function(event, context) {
       })
     };
   } catch (error) {
-    console.error("퀴즈 생성 중 오류 발생:", error);
+    console.error("퀘즈 생성 중 오류 발생:", error);
+    // 오류 정보를 더 자세히 로깅
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "퀴즈 생성 중 오류가 발생했습니다." })
+      body: JSON.stringify({ 
+        error: "퀘즈 생성 중 오류가 발생했습니다.",
+        details: error.message
+      })
     };
   }
 };
