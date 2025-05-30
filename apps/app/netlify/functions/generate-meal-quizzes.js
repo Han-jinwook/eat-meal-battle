@@ -1,35 +1,44 @@
 const { createClient } = require('@supabase/supabase-js');
 const { Configuration, OpenAIApi } = require('openai');
 
-// Supabase 클라이언트 초기화 - 오류 처리 강화
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// Supabase 클라이언트 초기화 - 환경 변수 문제 해결
+// 환경 변수를 직접 하드코딩하여 테스트
+const supabaseUrl = process.env.SUPABASE_URL || 'https://jxexfhsqlclckohpvnmg.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // 디버그를 위한 로그 추가
-console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Not found');
-console.log('Supabase Service Key:', supabaseServiceKey ? 'Found' : 'Not found');
+console.log(`Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 10) + '...' : 'Not found'}`);
+console.log('Supabase Service Key:', supabaseKey ? 'Found' : 'Not found');
 
 // 오류 처리
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Supabase credentials missing');
+if (!supabaseUrl) {
+  console.error('Supabase URL missing or invalid');
 }
 
-// 안전한 초기화
+if (!supabaseKey) {
+  console.error('Supabase service role key missing');
+}
+
 let supabase;
 try {
-  supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
-  console.log('Supabase client initialized successfully');
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    console.log('Supabase client initialized successfully');
+  } else {
+    console.error('Cannot initialize Supabase client due to missing credentials');
+    supabase = null;
+  }
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
   supabase = null;
 }
 
-// OpenAI 클라이언트 초기화 - 오류 처리 강화
+// OpenAI 클라이언트 초기화 - 새로운 방식으로 변경
 const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
 // 디버그를 위한 로그 추가
@@ -40,12 +49,14 @@ if (!openaiApiKey) {
   console.error('OpenAI API key missing');
 }
 
-let configuration, openai;
+let openai;
 try {
-  configuration = new Configuration({
-    apiKey: openaiApiKey,
+  // 최신 OpenAI Node.js SDK 사용 방식
+  const { OpenAI } = require('openai');
+  
+  openai = new OpenAI({
+    apiKey: openaiApiKey
   });
-  openai = new OpenAIApi(configuration);
   console.log('OpenAI client initialized successfully');
 } catch (error) {
   console.error('Failed to initialize OpenAI client:', error);
@@ -54,97 +65,150 @@ try {
 
 // 학년에 따른 난이도 계산 함수
 function calculateDifficulty(grade) {
-  if (grade <= 2) return 1; // 1-2학년: 쉬움
-  if (grade <= 4) return 2; // 3-4학년: 중간
-  return 3; // 5-6학년: 어려움
+  if (grade <= 2) return 'easy'; // 1-2학년: 쉬움
+  if (grade <= 4) return 'medium'; // 3-4학년: 중간
+  return 'hard'; // 5-6학년: 어려움
 }
 
-// 급식 메뉴 기반 퀴즈 생성 함수
+// OpenAI API를 통한 퀘즈 생성 - 새로운 API 형식 적용
 async function generateQuizWithAI(meal, grade, difficulty) {
-  // 난이도별 프롬프트 조정
-  let difficultyText = "";
-  if (difficulty === 1) {
-    difficultyText = "매우 쉬운 초등학교 1-2학년 수준";
-  } else if (difficulty === 2) {
-    difficultyText = "보통 난이도의 초등학교 3-4학년 수준";
-  } else {
-    difficultyText = "약간 어려운 초등학교 5-6학년 수준";
-  }
-  
-  // OpenAI 프롬프트 구성
-  const prompt = `
+  try {
+    if (!openai) {
+      console.error('OpenAI client not initialized, returning default quiz');
+      return {
+        question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀘즈`,
+        options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
+        answer: 0,
+        explanation: 'OpenAI 클라이언트 초기화 실패'
+      };
+    }
+
+    // 학년에 따른 난이도 텍스트 설정
+    let difficultyText = '';
+    if (difficulty === 'easy') {
+      difficultyText = '초등학교 저학년 수준의';
+    } else if (difficulty === 'medium') {
+      difficultyText = '초등학교 중학년 수준의';
+    } else {
+      difficultyText = '초등학교 고학년 수준의';
+    }
+    
+    console.log(`Generating quiz for ${meal.school_code}, grade ${grade}, difficulty ${difficulty}`);
+    console.log(`Menu items: ${meal.menu_items.join(', ') || 'None'}`);    
+    
+    // 프롬프트 작성
+    const prompt = `
 급식 메뉴: ${meal.menu_items.join(', ')}
 영양소 정보: ${meal.ntr_info || '정보 없음'}
 원산지 정보: ${meal.origin_info || '정보 없음'}
 
-위 급식 메뉴와 관련된 ${difficultyText}의 객관식 퀴즈를 생성해주세요.
-퀴즈는 음식, 영양소, 식재료, 요리 방법 등과 관련된 내용이어야 합니다.
-문제와 4개의 선택지, 그리고 정답 번호(0-3)를 JSON 형식으로 제공해주세요.
-
-결과 형식:
-{
-  "question": "퀴즈 질문",
-  "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
-  "correct_answer": 0
-}
+위 급식 메뉴와 관련된 ${difficultyText}의 객관식 퀘즈를 생성해주세요.
 `;
-
-  // OpenAI API 호출
-  const response = await openai.createChatCompletion({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: "당신은 교육적인 퀴즈를 생성하는 도우미입니다." },
-      { role: "user", content: prompt }
-    ],
-    temperature: 0.7,
-  });
-
-  // 응답 파싱
-  try {
-    const content = response.data.choices[0].message.content;
-    // JSON 형식 추출 ('{...}' 형태의 문자열 찾기)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    throw new Error("유효한 JSON 응답을 받지 못했습니다");
-  } catch (error) {
-    console.error("퀴즈 생성 중 오류 발생:", error);
-    // 오류 발생 시 기본 퀴즈 제공
-    return {
-      question: `${meal.menu_items[0]}에 대한 다음 설명 중 옳은 것은?`,
-      options: [
-        "비타민 C가 풍부하다",
-        "단백질이 풍부하다",
-        "칼슘이 풍부하다",
-        "철분이 풍부하다"
+    
+    // 새로운 OpenAI API 호출 방식
+    console.log('Calling OpenAI API...');
+    const chatCompletion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "다음 형식으로 응답해주세요: {\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"...\"], \"answer\": 0, \"explanation\": \"...\"}. answer는 0부터 시작하는 인덱스로 정확한 답변의 위치를 지정합니다." },
+        { role: "user", content: prompt }
       ],
-      correct_answer: 0
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+    
+    // 새로운 형식에 맞게 응답문 파싱
+    const responseText = chatCompletion.choices[0].message.content.trim();
+    console.log('OpenAI response received');
+    
+    try {
+      // JSON 형식으로 파싱
+      const quizData = JSON.parse(responseText);
+      console.log('퀘즈 생성 성공:', quizData.question);
+      return quizData;
+    } catch (parseError) {
+      console.error('JSON 파싱 오류:', parseError);
+      console.log('원본 응답:', responseText);
+      
+      // 정확한 JSON이 아닌 경우, 정규표현식으로 추출 시도
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const extractedJson = jsonMatch[0];
+          const parsedData = JSON.parse(extractedJson);
+          console.log('정규표현식으로 파싱 성공:', parsedData.question);
+          return parsedData;
+        }
+      } catch (regexError) {
+        console.error('정규표현식 추출 실패:', regexError);
+      }
+      
+      // 기본 퀘즈 반환
+      return {
+        question: `${meal.menu_items[0]}에 대한 퀘즈`,
+        options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
+        answer: 0,
+        explanation: '기본 설명'
+      };
+    }
+  } catch (error) {
+    console.error('퀘즈 생성 중 오류:', error);
+    console.error('Error details:', error.message);
+    // 오류 발생 시 기본 퀘즈 반환
+    return {
+      question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀘즈`,
+      options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
+      answer: 0,
+      explanation: '오류 발생: ' + error.message
     };
   }
 }
 
-// DB에 퀴즈 저장
+// DB에 퀴즈 저장 - 새로운 필드명 대응
 async function saveQuizToDatabase(quiz, meal, grade) {
-  const { data, error } = await supabase
-    .from('meal_quizzes')
-    .insert([{
+  try {
+    if (!supabase) {
+      console.error('Cannot save quiz: Supabase client not initialized');
+      return false;
+    }
+    
+    console.log('Saving quiz to database with data:', {
       school_code: meal.school_code,
       grade: grade,
       meal_date: meal.meal_date,
       meal_id: meal.id,
-      question: quiz.question,
-      options: quiz.options,
-      correct_answer: quiz.correct_answer,
-      difficulty: calculateDifficulty(grade)
-    }])
-    .select();
+      question: quiz.question?.substring(0, 30) + '...' || 'None',
+      options_count: quiz.options?.length || 0,
+      answer: quiz.answer !== undefined ? quiz.answer : (quiz.correct_answer !== undefined ? quiz.correct_answer : null),
+      explanation: quiz.explanation?.substring(0, 30) + '...' || 'None'
+    });
+    
+    // 필드명을 새로운 구조에 맞게 조정 (answer 혹은 correct_answer 중 있는 것 사용)
+    const { data, error } = await supabase
+      .from('meal_quizzes')
+      .insert([{
+        school_code: meal.school_code,
+        grade: grade,
+        meal_date: meal.meal_date,
+        meal_id: meal.id,
+        question: quiz.question,
+        options: quiz.options,
+        correct_answer: quiz.answer !== undefined ? quiz.answer : (quiz.correct_answer !== undefined ? quiz.correct_answer : 0),
+        explanation: quiz.explanation || '',
+        difficulty: calculateDifficulty(grade)
+      }])
+      .select();
 
-  if (error) {
-    console.error("퀴즈 저장 중 오류 발생:", error);
+    if (error) {
+      console.error("퀘즈 저장 중 오류 발생:", error);
+      return false;
+    }
+    console.log('Quiz saved successfully with ID:', data?.[0]?.id || 'Unknown');
+    return true;
+  } catch (error) {
+    console.error('퀘즈 저장 중 예상치 못한 오류:', error);
     return false;
   }
-  return true;
 }
 
 // 오늘의 급식 메뉴 조회 - 오류 처리 강화
