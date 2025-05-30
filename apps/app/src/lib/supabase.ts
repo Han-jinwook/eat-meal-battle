@@ -25,7 +25,8 @@ export const createClient = () => {
           const exemptEndpoints = [
             '/meal_images', 
             '/profiles', 
-            '/menu_item_ratings'
+            '/menu_item_ratings',
+            '/school_infos'
           ];
           
           // 예외 처리 검사
