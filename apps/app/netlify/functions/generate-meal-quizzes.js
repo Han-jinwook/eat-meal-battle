@@ -107,11 +107,11 @@ try {
   console.error('OpenAI client initialization failed:', error);
 }
 
-// 학년에 따른 난이도 계산 함수
+// 학년에 따른 난이도 계산 함수 - 정수형 반환 (1: 쉬움, 2: 중간, 3: 어려움)
 function calculateDifficulty(grade) {
-  if (grade <= 2) return 'easy'; // 1-2학년: 쉬움
-  if (grade <= 4) return 'medium'; // 3-4학년: 중간
-  return 'hard'; // 5-6학년: 어려움
+  if (grade <= 2) return 1; // 1-2학년: 쉬움 (1)
+  if (grade <= 4) return 2; // 3-4학년: 중간 (2)
+  return 3; // 5-6학년: 어려움 (3)
 }
 
 // OpenAI API를 통한 퀘즈 생성 - 새로운 API 형식 적용
