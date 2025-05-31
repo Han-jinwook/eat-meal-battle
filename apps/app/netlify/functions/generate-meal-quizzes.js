@@ -85,7 +85,7 @@ async function fetchWithPromise(url, headers = {}) {
   });
 }
 
-// OpenAI 클라이언트 초기화 - 새로운 방식으로 변경
+// OpenAI 클라이언트 초기화 - 오류 수정
 const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
 // 디버그를 위한 로그 추가
@@ -96,19 +96,12 @@ if (!openaiApiKey) {
   console.error('OpenAI API key missing');
 }
 
-let openai;
-try {
-  // 최신 OpenAI Node.js SDK 사용 방식
-  const { OpenAI } = require('openai');
-  
-  openai = new OpenAI({
-    apiKey: openaiApiKey
-  });
-  console.log('OpenAI client initialized successfully');
-} catch (error) {
-  console.error('Failed to initialize OpenAI client:', error);
-  openai = null;
-}
+// OpenAI API 클라이언트 초기화 (이전 버전 방식 사용)
+const configuration = new Configuration({
+  apiKey: openaiApiKey,
+});
+const openai = new OpenAIApi(configuration);
+console.log('OpenAI client initialized successfully');
 
 // 학년에 따른 난이도 계산 함수
 function calculateDifficulty(grade) {
@@ -152,20 +145,20 @@ async function generateQuizWithAI(meal, grade, difficulty) {
 위 급식 메뉴와 관련된 ${difficultyText}의 객관식 퀘즈를 생성해주세요.
 `;
     
-    // 새로운 OpenAI API 호출 방식
+    // 이전 버전 OpenAI API 호출 방식 사용
     console.log('Calling OpenAI API...');
-    const chatCompletion = await openai.chat.completions.create({
+    const chatCompletion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "다음 형식으로 응답해주세요: {\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"...\"], \"answer\": 0, \"explanation\": \"...\"}. answer는 0부터 시작하는 인덱스로 정확한 답변의 위치를 지정합니다." },
+        { role: "system", content: "다음 형식으로 응답해주세요: {\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"..\"], \"answer\": 0, \"explanation\": \"...\"}. answer는 0부터 시작하는 인덱스로 정확한 답변의 위치를 지정합니다." },
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
       max_tokens: 500,
     });
     
-    // 새로운 형식에 맞게 응답문 파싱
-    const responseText = chatCompletion.choices[0].message.content.trim();
+    // 이전 버전 방식에 맞게 응답문 파싱
+    const responseText = chatCompletion.data.choices[0].message.content.trim();
     console.log('OpenAI response received');
     
     try {
@@ -219,19 +212,26 @@ async function saveQuizToDatabase(quiz, meal, grade) {
       return false;
     }
     
-    console.log('Saving quiz to database with data:', {
+    // 새로운 필드명으로 데이터 매핑
+    console.log(`Saving quiz for school ${meal.school_code}, grade ${grade}`);
+    
+    const insertData = {
+      school_code: meal.school_code,
+      grade: grade,
+      meal_date: meal.meal_date,
+      meal_id: meal.id,
+      question: quiz.question,
+      options: quiz.options,
+      correct_answer: quiz.answer, // 수정: answer -> correct_answer 필드 매핑
+      explanation: quiz.explanation || '', // 설명 필드 추가
+      difficulty: calculateDifficulty(grade)
+    };
+    
+    console.log('Insert data:', JSON.stringify(insertData));
+    
+    const { data, error } = await supabaseAdmin
       .from('meal_quizzes')
-      .insert([{
-        school_code: meal.school_code,
-        grade: grade,
-        meal_date: meal.meal_date,
-        meal_id: meal.id,
-        question: quiz.question,
-        options: quiz.options,
-        correct_answer: quiz.answer, // 수정: answer -> correct_answer 필드 매핑
-        explanation: quiz.explanation || '', // 설명 필드 추가
-        difficulty: calculateDifficulty(grade)
-      }])
+      .insert([insertData])
       .select();
 
     if (error) {
