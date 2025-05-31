@@ -245,7 +245,7 @@ async function saveQuizToDatabase(quiz, meal, grade) {
       question: quiz.question,
       options: quiz.options,
       correct_answer: quiz.answer, // 수정: answer -> correct_answer 필드 매핑
-      explanation: quiz.explanation || '', // 설명 필드 추가
+      explanation: quiz.explanation || '', // 테이블에 explanation 필드 추가
       difficulty: calculateDifficulty(grade)
     };
     
