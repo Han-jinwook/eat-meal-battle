@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 const https = require('https');
 
 // Supabase 클라이언트 초기화 - 환경 변수 문제 해결
@@ -85,7 +85,7 @@ async function fetchWithPromise(url, headers = {}) {
   });
 }
 
-// OpenAI 클라이언트 초기화 - 오류 수정
+// OpenAI 클라이언트 초기화 - 새 SDK 버전 사용
 const openaiApiKey = process.env.OPENAI_API_KEY || '';
 
 // 디버그를 위한 로그 추가
@@ -96,12 +96,16 @@ if (!openaiApiKey) {
   console.error('OpenAI API key missing');
 }
 
-// OpenAI API 클라이언트 초기화 (이전 버전 방식 사용)
-const configuration = new Configuration({
-  apiKey: openaiApiKey,
-});
-const openai = new OpenAIApi(configuration);
-console.log('OpenAI client initialized successfully');
+// OpenAI API 클라이언트 초기화 (새 버전 방식 사용)
+let openai = null;
+try {
+  openai = new OpenAI({
+    apiKey: openaiApiKey
+  });
+  console.log('OpenAI client initialized successfully');
+} catch (error) {
+  console.error('OpenAI client initialization failed:', error);
+}
 
 // 학년에 따른 난이도 계산 함수
 function calculateDifficulty(grade) {
@@ -116,90 +120,104 @@ async function generateQuizWithAI(meal, grade, difficulty) {
     if (!openai) {
       console.error('OpenAI client not initialized, returning default quiz');
       return {
-        question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀘즈`,
+        question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀴즈`,
         options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
         answer: 0,
         explanation: 'OpenAI 클라이언트 초기화 실패'
       };
     }
-
-    // 학년에 따른 난이도 텍스트 설정
-    let difficultyText = '';
-    if (difficulty === 'easy') {
-      difficultyText = '초등학교 저학년 수준의';
+{{ ... }}
     } else if (difficulty === 'medium') {
       difficultyText = '초등학교 중학년 수준의';
     } else {
       difficultyText = '초등학교 고학년 수준의';
     }
-    
-    console.log(`Generating quiz for ${meal.school_code}, grade ${grade}, difficulty ${difficulty}`);
-    console.log(`Menu items: ${meal.menu_items.join(', ') || 'None'}`);    
-    
-    // 프롬프트 작성
-    const prompt = `
-급식 메뉴: ${meal.menu_items.join(', ')}
-영양소 정보: ${meal.ntr_info || '정보 없음'}
-원산지 정보: ${meal.origin_info || '정보 없음'}
 
-위 급식 메뉴와 관련된 ${difficultyText}의 객관식 퀘즈를 생성해주세요.
-`;
-    
-    // 이전 버전 OpenAI API 호출 방식 사용
-    console.log('Calling OpenAI API...');
-    const chatCompletion = await openai.createChatCompletion({
+    // 메뉴 항목 추출 및 필터링 (null 제거)
+    const menuItems = meal.menu_items.filter(item => item && item.trim().length > 0);
+    const menuText = menuItems.join(', ');
+
+    if (menuItems.length === 0) {
+      console.error('No valid menu items found');
+      return {
+        question: '오늘의 급식에 대한 기본 퀴즈',
+        options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
+        answer: 0,
+        explanation: '메뉴 정보 없음'
+      };
+    }
+
+    console.log(`Creating quiz for menu: ${menuText}`);
+
+    // 프롬프트 구성
+    const prompt = `오늘의 급식 메뉴는 ${menuText}입니다. 
+
+${difficultyText} 식품영양, 요리, 음식 관련 퀴즈를 하나 만들어주세요. 다지선다형(4개 선택지)으로 만들고, 모든 선택지는 현실적이고 그럴듯하게 만들어주세요. 정답 번호는 0부터 시작하는 인덱스로 제시해주세요(0, 1, 2, 3 중 하나). 문제, 선택지, 정답, 해설을 포함해 JSON 형식으로 작성해주세요. 반드시 다음 JSON 형식에 맞춰 작성해주세요:
+{
+  "question": "퀴즈 질문",
+  "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
+  "answer": 정답인덱스(0-3),
+  "explanation": "정답 설명"
+}`;    
+
+    console.log('Sending prompt to OpenAI...');
+
+    // OpenAI API 호출 - 새 방식 사용
+    const chatCompletion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "다음 형식으로 응답해주세요: {\"question\": \"...\", \"options\": [\"...\", \"...\", \"...\", \"..\"], \"answer\": 0, \"explanation\": \"...\"}. answer는 0부터 시작하는 인덱스로 정확한 답변의 위치를 지정합니다." },
+        { role: "system", content: "다음 형식으로 응답해주세요: {\"question\": \"퀴즈 질문\", \"options\": [\"선택지1\", \"선택지2\", \"선택지3\", \"선택지4\"], \"answer\": 정답인덱스(0-3), \"explanation\": \"정답 설명\"}" },
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
       max_tokens: 500,
     });
-    
-    // 이전 버전 방식에 맞게 응답문 파싱
-    const responseText = chatCompletion.data.choices[0].message.content.trim();
-    console.log('OpenAI response received');
-    
+
+    const responseText = chatCompletion.choices[0].message.content.trim();
+    console.log('Received response from OpenAI');
+
+    // JSON 응답 파싱
     try {
-      // JSON 형식으로 파싱
-      const quizData = JSON.parse(responseText);
-      console.log('퀘즈 생성 성공:', quizData.question);
-      return quizData;
-    } catch (parseError) {
-      console.error('JSON 파싱 오류:', parseError);
-      console.log('원본 응답:', responseText);
+      // JSON 부분만 추출 시도
+      let jsonText = responseText;
+      const jsonStart = responseText.indexOf('{');
+      const jsonEnd = responseText.lastIndexOf('}');
       
-      // 정확한 JSON이 아닌 경우, 정규표현식으로 추출 시도
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const extractedJson = jsonMatch[0];
-          const parsedData = JSON.parse(extractedJson);
-          console.log('정규표현식으로 파싱 성공:', parsedData.question);
-          return parsedData;
-        }
-      } catch (regexError) {
-        console.error('정규표현식 추출 실패:', regexError);
+      if (jsonStart >= 0 && jsonEnd >= 0) {
+        jsonText = responseText.substring(jsonStart, jsonEnd + 1);
       }
       
-      // 기본 퀘즈 반환
+      const quizData = JSON.parse(jsonText);
+      
+      // 유효성 검사
+      if (!quizData.question || !Array.isArray(quizData.options) || quizData.options.length !== 4 || 
+          typeof quizData.answer !== 'number' || !quizData.explanation) {
+        throw new Error('Invalid quiz data format');
+      }
+      
+      console.log('Successfully parsed quiz data');
+      return quizData;
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response as JSON:', parseError);
+      console.log('Response text:', responseText);
+      
+      // 기본 퀴즈 반환
       return {
-        question: `${meal.menu_items[0]}에 대한 퀘즈`,
+        question: `${menuItems[0] || '급식'}에 관한 퀴즈`,
         options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
         answer: 0,
-        explanation: '기본 설명'
+        explanation: 'AI 응답 파싱 실패'
       };
     }
   } catch (error) {
-    console.error('퀘즈 생성 중 오류:', error);
-    console.error('Error details:', error.message);
-    // 오류 발생 시 기본 퀘즈 반환
+    console.error('OpenAI API 호출 오류:', error);
+    console.error(error.stack);
+    // 오류 시 기본 퀴즈 반환
     return {
-      question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀘즈`,
+      question: `${meal.menu_items[0] || '급식'}에 대한 기본 퀴즈`,
       options: ['선택지 1', '선택지 2', '선택지 3', '선택지 4'],
       answer: 0,
-      explanation: '오류 발생: ' + error.message
+      explanation: `OpenAI API 오류: ${error.message}`
     };
   }
 }
