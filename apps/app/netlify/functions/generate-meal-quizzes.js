@@ -1,41 +1,88 @@
 const { createClient } = require('@supabase/supabase-js');
 const { Configuration, OpenAIApi } = require('openai');
+const https = require('https');
 
 // Supabase 클라이언트 초기화 - 환경 변수 문제 해결
-// 환경 변수를 직접 하드코딩하여 테스트
-const supabaseUrl = process.env.SUPABASE_URL || 'https://jxexfhsqlclckohpvnmg.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// 환경 변수 설정
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://jxexfhsqlclckohpvnmg.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // 디버그를 위한 로그 추가
 console.log(`Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 10) + '...' : 'Not found'}`);
-console.log('Supabase Service Key:', supabaseKey ? 'Found' : 'Not found');
+console.log('Supabase Service Key:', supabaseServiceKey ? 'Found' : 'Not found');
+console.log('Supabase Anon Key:', supabaseAnonKey ? 'Found' : 'Not found');
 
 // 오류 처리
 if (!supabaseUrl) {
   console.error('Supabase URL missing or invalid');
 }
 
-if (!supabaseKey) {
+if (!supabaseServiceKey) {
   console.error('Supabase service role key missing');
 }
 
+// 일반 클라이언트 초기화
 let supabase;
+// Admin 클라이언트 초기화 (RLS 우회용)
+let supabaseAdmin;
+
 try {
-  if (supabaseUrl && supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey, {
+  if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
-    console.log('Supabase client initialized successfully');
   } else {
-    console.error('Cannot initialize Supabase client due to missing credentials');
+    console.error('Cannot initialize standard Supabase client due to missing credentials');
     supabase = null;
   }
+  
+  if (supabaseUrl && supabaseServiceKey) {
+    supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+  } else {
+    console.error('Cannot initialize Supabase Admin client due to missing credentials');
+    supabaseAdmin = null;
+  }
+  
+  console.log('Supabase clients initialized successfully');
 } catch (error) {
-  console.error('Failed to initialize Supabase client:', error);
+  console.error('Failed to initialize Supabase clients:', error);
   supabase = null;
+  supabaseAdmin = null;
+}
+
+// HTTP 요청 함수 (Node.js 환경에서 fetch 대신 사용)
+async function fetchWithPromise(url, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: headers
+    };
+    
+    https.get(url, options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const parsedData = JSON.parse(data);
+          resolve(parsedData);
+        } catch (e) {
+          reject(new Error(`데이터 파싱 오류: ${e.message}`));
+        }
+      });
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
 }
 
 // OpenAI 클라이언트 초기화 - 새로운 방식으로 변경
@@ -173,18 +220,6 @@ async function saveQuizToDatabase(quiz, meal, grade) {
     }
     
     console.log('Saving quiz to database with data:', {
-      school_code: meal.school_code,
-      grade: grade,
-      meal_date: meal.meal_date,
-      meal_id: meal.id,
-      question: quiz.question?.substring(0, 30) + '...' || 'None',
-      options_count: quiz.options?.length || 0,
-      answer: quiz.answer !== undefined ? quiz.answer : (quiz.correct_answer !== undefined ? quiz.correct_answer : null),
-      explanation: quiz.explanation?.substring(0, 30) + '...' || 'None'
-    });
-    
-    // 필드명을 새로운 구조에 맞게 조정 (answer 혹은 correct_answer 중 있는 것 사용)
-    const { data, error } = await supabase
       .from('meal_quizzes')
       .insert([{
         school_code: meal.school_code,
@@ -193,70 +228,105 @@ async function saveQuizToDatabase(quiz, meal, grade) {
         meal_id: meal.id,
         question: quiz.question,
         options: quiz.options,
-        correct_answer: quiz.answer !== undefined ? quiz.answer : (quiz.correct_answer !== undefined ? quiz.correct_answer : 0),
-        explanation: quiz.explanation || '',
+        correct_answer: quiz.answer, // 수정: answer -> correct_answer 필드 매핑
+        explanation: quiz.explanation || '', // 설명 필드 추가
         difficulty: calculateDifficulty(grade)
       }])
       .select();
 
     if (error) {
-      console.error("퀘즈 저장 중 오류 발생:", error);
+      console.error("퀴즈 저장 중 오류 발생:", error);
       return false;
     }
-    console.log('Quiz saved successfully with ID:', data?.[0]?.id || 'Unknown');
+    
+    console.log(`퀴즈 저장 성공: ${meal.school_code} 학교 ${grade}학년`);
     return true;
   } catch (error) {
-    console.error('퀘즈 저장 중 예상치 못한 오류:', error);
+    console.error("퀴즈 저장 중 예외 발생:", error);
     return false;
   }
 }
 
-// 오늘의 급식 메뉴 조회 - 오류 처리 강화
+// 오늘의 급식 메뉴 조회 - 다중 접근 방식으로 개선
 async function fetchTodayMeals() {
-  try {
-    // 테스트를 위해 날짜 출력
-    const now = new Date();
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD 형식
-    
-    console.log('Current time:', now.toISOString());
-    console.log('Fetching meals for date:', today);
-    
-    if (!supabase) {
-      console.error('Cannot fetch meals: Supabase client not initialized');
-      return [];
-    }
-    
-    // 실제 데이터 조회 전 테이블 존재 확인
-    const { data: tablesData, error: tablesError } = await supabase
-      .from('meal_menus')
-      .select('id')
-      .limit(1);
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+  console.log("Fetching meals for date:", today);
+  
+  // 각 시도마다 다른 접근 방법 사용
+  const methods = [
+    // 1. supabaseAdmin 클라이언트 사용 (RLS 우회)
+    async () => {
+      if (!supabaseAdmin) {
+        console.log("Method 1 skipped: supabaseAdmin not initialized");
+        throw new Error("supabaseAdmin not initialized");
+      }
       
-    if (tablesError) {
-      console.error('Failed to verify meal_menus table:', tablesError);
-      return [];
+      console.log("Method 1: Using supabaseAdmin client");
+      const { data, error } = await supabaseAdmin
+        .from('meal_menus')
+        .select('*')
+        .eq('meal_date', today)
+        .not('menu_items', 'is', null);
+      
+      if (error) throw error;
+      return data;
+    },
+    // 2. 일반 supabase 클라이언트 사용 (fallback)
+    async () => {
+      if (!supabase) {
+        console.log("Method 2 skipped: supabase not initialized");
+        throw new Error("supabase not initialized");
+      }
+      
+      console.log("Method 2: Using standard supabase client");
+      const { data, error } = await supabase
+        .from('meal_menus')
+        .select('*')
+        .eq('meal_date', today)
+        .not('menu_items', 'is', null);
+      
+      if (error) throw error;
+      return data;
+    },
+    // 3. 직접 REST API 호출 시도
+    async () => {
+      console.log("Method 3: Using direct REST API call");
+      const url = `${supabaseUrl}/rest/v1/meal_menus?meal_date=eq.${today}&select=*`;
+      const headers = {
+        'apikey': supabaseServiceKey,
+        'Authorization': `Bearer ${supabaseServiceKey}`
+      };
+      
+      try {
+        console.log("Trying fetch API first...");
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        return await response.json();
+      } catch (fetchError) {
+        console.log("Fetch failed, trying fetchWithPromise:", fetchError.message);
+        return await fetchWithPromise(url, headers);
+      }
     }
-    
-    console.log('meal_menus table verified, proceeding to fetch data');
-    
-    // 오늘의 급식 조회
-    const { data, error } = await supabase
-      .from('meal_menus')
-      .select('*')
-      .eq('meal_date', today)
-      .not('menu_items', 'is', null);
-
-    if (error) {
-      console.error("급식 메뉴 조회 중 오류 발생:", error);
-      return [];
+  ];
+  
+  for (let i = 0; i < methods.length; i++) {
+    try {
+      console.log(`Trying method ${i + 1}...`);
+      const data = await methods[i]();
+      console.log(`Method ${i + 1} succeeded! Found ${data?.length || 0} meals for today.`);
+      return data || [];
+    } catch (error) {
+      console.error(`Method ${i + 1} failed:`, error.message);
+      // 마지막 방법이 아니면 다음 방법 시도
+      if (i < methods.length - 1) {
+        console.log("Trying next method...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
-    
-    console.log(`Found ${data?.length || 0} meals for today`);
-    return data || [];
-  } catch (error) {
-    console.error('급식 조회 중 예상치 못한 오류 발생:', error);
-    return [];
   }
+  
+  console.error("All methods failed to fetch meals");
+  return [];
 }
 
 // 메인 함수
@@ -325,9 +395,9 @@ exports.handler = async function(event, context) {
           // 3. 난이도 설정 (학년에 따라)
           const difficulty = calculateDifficulty(grade);
           
-          // 4. 이미 퀘즈가 있는지 확인
+          // 4. 이미 퀘즈가 있는지 확인 (supabaseAdmin 사용)
           console.log(`Checking for existing quiz for school ${meal.school_code}, grade ${grade}`);
-          const { data: existingQuiz, error: quizError } = await supabase
+          const { data: existingQuiz, error: quizError } = await supabaseAdmin
             .from('meal_quizzes')
             .select('id')
             .eq('school_code', meal.school_code)
