@@ -126,7 +126,11 @@ async function generateQuizWithAI(meal, grade, difficulty) {
         explanation: 'OpenAI 클라이언트 초기화 실패'
       };
     }
-{{ ... }}
+
+    // 학년에 따른 난이도 텍스트 설정
+    let difficultyText = '';
+    if (difficulty === 'easy') {
+      difficultyText = '초등학교 저학년 수준의';
     } else if (difficulty === 'medium') {
       difficultyText = '초등학교 중학년 수준의';
     } else {
