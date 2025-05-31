@@ -1,16 +1,45 @@
 const { createClient } = require('@supabase/supabase-js');
 const { Configuration, OpenAIApi } = require('openai');
+const https = require('https');
 
-// Supabase 클라이언트 초기화
-const supabaseUrl = process.env.SUPABASE_URL;
+// 환경 변수에서 값 가져오기
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // 초기화 정보 로깅
 console.log("Supabase URL:", supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : 'Not found');
 console.log("Supabase Service Key:", supabaseServiceKey ? 'Found' : 'Not found');
+console.log("Supabase Anon Key:", supabaseAnonKey ? 'Found' : 'Not found');
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-console.log("Supabase client initialized successfully");
+// 일반 클라이언트 초기화
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Admin 클라이언트 초기화 (RLS 우회용)
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+console.log("Supabase clients initialized successfully");
+
+// HTTP 요청 함수 (페치 실패 대비)
+async function fetchWithPromise(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const parsedData = JSON.parse(data);
+          resolve(parsedData);
+        } catch (e) {
+          reject(new Error(`데이터 파싱 오류: ${e.message}`));
+        }
+      });
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
+}
 
 // OpenAI 클라이언트 초기화
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -96,7 +125,8 @@ async function generateQuizWithAI(meal, grade, difficulty) {
 
 // DB에 퀴즈 저장
 async function saveQuizToDatabase(quiz, meal, grade) {
-  const { data, error } = await supabase
+  // supabaseAdmin을 사용하여 RLS 우회
+  const { data, error } = await supabaseAdmin
     .from('meal_quizzes')
     .insert([{
       school_code: meal.school_code,
@@ -114,6 +144,7 @@ async function saveQuizToDatabase(quiz, meal, grade) {
     console.error("퀴즈 저장 중 오류 발생:", error);
     return false;
   }
+  console.log(`퀴즈 저장 성공: ${meal.school_code} 학교 ${grade}학년`);
   return true;
 }
 
@@ -122,48 +153,70 @@ async function fetchTodayMeals() {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
   console.log("Fetching meals for date:", today);
   
-  // 최대 재시도 횟수
-  const maxRetries = 3;
-  let retries = 0;
-  let lastError = null;
-  
-  while (retries < maxRetries) {
-    try {
-      // 테이블 접근 가능 여부 먼저 확인
-      const { count, error: countError } = await supabase
+  // 각 시도마다 다른 접근 방법 사용
+  const methods = [
+    // 1. supabaseAdmin 클라이언트 사용 (기본 방식)
+    async () => {
+      console.log("Method 1: Using supabaseAdmin client");
+      const { data, error } = await supabaseAdmin
         .from('meal_menus')
-        .select('id', { count: 'exact', head: true });
-        
-      if (countError) {
-        console.error("Failed to verify meal_menus table:", countError);
-        throw countError;
-      }
+        .select('*')
+        .eq('meal_date', today)
+        .not('menu_items', 'is', null);
       
-      console.log(`Successfully connected to meal_menus table. Total records: ${count}`);
-      
-      // 실제 데이터 조회
+      if (error) throw error;
+      return data;
+    },
+    // 2. 일반 supabase 클라이언트 사용 (fallback)
+    async () => {
+      console.log("Method 2: Using standard supabase client");
       const { data, error } = await supabase
         .from('meal_menus')
         .select('*')
         .eq('meal_date', today)
         .not('menu_items', 'is', null);
-
-      if (error) {
-        console.error("Error fetching meals:", error);
-        throw error;
-      }
       
+      if (error) throw error;
+      return data;
+    },
+    // 3. 직접 REST API 호출 시도
+    async () => {
+      console.log("Method 3: Using direct REST API call");
+      const url = `${supabaseUrl}/rest/v1/meal_menus?meal_date=eq.${today}&select=*`;
+      
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'apikey': supabaseServiceKey,
+            'Authorization': `Bearer ${supabaseServiceKey}`
+          }
+        });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        return await response.json();
+      } catch (fetchError) {
+        console.log("Fetch failed, trying fetchWithPromise");
+        return await fetchWithPromise(`${supabaseUrl}/rest/v1/meal_menus?meal_date=eq.${today}&select=*`);
+      }
+    }
+  ];
+  
+  for (let i = 0; i < methods.length; i++) {
+    try {
+      console.log(`Trying method ${i + 1}...`);
+      const data = await methods[i]();
+      console.log(`Method ${i + 1} succeeded! Found ${data.length} meals for today.`);
       return data || [];
     } catch (error) {
-      lastError = error;
-      retries++;
-      console.log(`Attempt ${retries}/${maxRetries} failed. Retrying in 1 second...`);
-      // 1초 대기 후 재시도
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.error(`Method ${i + 1} failed:`, error);
+      // 마지막 방법이 아니면 다음 방법 시도
+      if (i < methods.length - 1) {
+        console.log("Trying next method...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
   }
   
-  console.error(`Failed to fetch meals after ${maxRetries} attempts. Last error:`, lastError);
+  console.error("All methods failed to fetch meals");
   return [];
 }
 
