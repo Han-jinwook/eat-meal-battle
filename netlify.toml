@@ -37,7 +37,7 @@
   timeout = 60
   schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
 
-# 퀴즈 생성 함수 (23:30 실행 테스트)
+# 퀴즈 생성 함수 (23:30 실행)
 [functions.generate-meal-quizzes]
   timeout = 60
   schedule = "30 14 * * *" # 매일 UTC 14:30 (한국시간 23:30)
