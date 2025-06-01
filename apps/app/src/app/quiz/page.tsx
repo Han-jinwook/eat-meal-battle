@@ -10,7 +10,8 @@ type Quiz = {
   id: string;
   question: string;
   options: string[];
-  difficulty: number;
+  correct_answer?: number;  // 정답 (7시 이후에만 표시)
+  explanation?: string;    // 정답 해설 (7시 이후에만 표시)
   meal_date: string;
   menu_items: string[];
 };
@@ -107,17 +108,11 @@ export default function QuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // 난이도에 따른 색상 매핑
-  const difficultyColors = {
-    1: 'bg-green-100 border-green-400 text-green-700',  // 쉬움
-    2: 'bg-yellow-100 border-yellow-400 text-yellow-700', // 보통
-    3: 'bg-red-100 border-red-400 text-red-700'  // 어려움
-  };
-
-  const difficultyText = {
-    1: '쉬움',
-    2: '보통',
-    3: '어려움'
+  // 퀴즈 결과에 따른 색상 매핑
+  const resultColors = {
+    correct: 'bg-green-100 border-green-400 text-green-700',
+    incorrect: 'bg-red-100 border-red-400 text-red-700',
+    neutral: 'bg-blue-100 border-blue-400 text-blue-700'
   };
 
   // 퀴즈 데이터 가져오기
@@ -158,12 +153,21 @@ export default function QuizPage() {
       if (data.quiz) {
         setQuiz(data.quiz);
         setAlreadyAnswered(data.alreadyAnswered || false);
-        setResult(data.isCorrect !== undefined ? { isCorrect: data.isCorrect, correctAnswer: -1, message: data.isCorrect ? '정답입니다!' : '틀렸습니다.' } : null);
-        if (!data.alreadyAnswered) {
+        setIsSubmitting(false);
+        
+        // 정답을 이미 제출했으면 결과 데이터도 설정
+        if (data.alreadyAnswered && data.isCorrect !== undefined) {
+          setResult({
+            isCorrect: data.isCorrect,
+            correctAnswer: data.quiz.correct_answer !== undefined ? data.quiz.correct_answer : 0,
+            message: data.isCorrect ? '정답입니다!' : '틀렸습니다.'
+          });
+        } else {
+          // 타이머 시작 (퀴즈를 아직 풀지 않은 경우)
           setStartTime(Date.now());
         }
       }
-
+      
       setLoading(false);
     } catch (error) {
       console.error('퀴즈 로딩 중 오류:', error);
@@ -236,43 +240,41 @@ export default function QuizPage() {
   const fetchChampions = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        router.push('/login');
+        return;
+      }
 
-      // 유저 학교 정보 가져오기
-      const { data: userSchool } = await supabase
-        .from('school_infos')
-        .select('school_code, grade')
-        .single();
-
-      if (!userSchool) return;
-
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
-
-      const response = await fetch(
-        `/api/quiz/champions?school_code=${userSchool.school_code}&grade=${userSchool.grade}&month=${currentMonth}&year=${currentYear}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
+      const response = await fetch('/api/quiz/champions', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
         }
-      );
+      });
+
+      if (!response.ok) {
+        console.error('장원 목록 가져오기 실패:', response.status);
+        return;
+      }
 
       const data: ChampionsResponse = await response.json();
+      
+      if (data.error) {
+        console.error('장원 목록 에러:', data.error);
+        return;
+      }
 
       if (data.champions) {
         setChampions(data.champions);
-
-        // 현재 사용자의 순위 찾기
+        
+        // 자신의 순위 찾기
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const userRankIndex = data.champions.findIndex(c => c.user_id === user.id);
-          setUserRank(userRankIndex !== -1 ? userRankIndex + 1 : null);
+          const rank = data.champions.findIndex(champ => champ.user_id === user.id);
+          setUserRank(rank !== -1 ? rank + 1 : null);
         }
       }
     } catch (error) {
-      console.error('장원 목록 가져오기 오류:', error);
+      console.error('장원 목록 가져오기 중 오류:', error);
     }
   };
 
@@ -284,8 +286,7 @@ export default function QuizPage() {
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+    return new Date(dateString).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   // 로딩 화면
@@ -298,12 +299,12 @@ export default function QuizPage() {
     );
   }
 
-  // 오류 화면
+  // 에러 화면
   if (error) {
     return (
       <main className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-center">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md">
-          <h2 className="font-bold text-xl mb-2">퀴즈를 불러올 수 없습니다</h2>
+          <p className="font-bold">오류 발생</p>
           <p>{error}</p>
         </div>
         <button 
@@ -321,8 +322,8 @@ export default function QuizPage() {
     return (
       <main className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-center">
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded max-w-md">
-          <h2 className="font-bold text-xl mb-2">오늘의 퀴즈가 없습니다</h2>
-          <p>아직 오늘의 퀴즈가 준비되지 않았어요. 나중에 다시 확인해주세요!</p>
+          <p className="font-bold">퀴즈가 없습니다</p>
+          <p>오늘의 퀴즈가 아직 준비되지 않았습니다. 나중에 다시 시도해주세요.</p>
         </div>
         <Link href="/" className="mt-4 text-blue-500 hover:text-blue-700 font-bold">
           홈으로 돌아가기
@@ -333,6 +334,10 @@ export default function QuizPage() {
 
   return (
     <main className="flex min-h-[80vh] flex-col items-center p-4 md:p-8 max-w-4xl mx-auto">
+      {/* 스타일 삽입 */}
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+      
+      {/* 축하 애니메이션 */}
       {showConfetti && (
         <div className="confetti-container">
           {[...Array(50)].map((_, i) => (
@@ -354,9 +359,11 @@ export default function QuizPage() {
         <div className="mb-6 text-center">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">오늘의 급식 퀴즈</h1>
           <p className="text-gray-600">{formatDate(quiz.meal_date)}</p>
-          <div className={`inline-block px-3 py-1 mt-2 rounded-full text-sm font-semibold ${difficultyColors[quiz.difficulty as 1 | 2 | 3]}`}>
-            난이도: {difficultyText[quiz.difficulty as 1 | 2 | 3]}
-          </div>
+          {quiz.explanation && alreadyAnswered && (
+            <div className="mt-4 px-3 py-1 rounded-lg text-sm border border-blue-400 bg-blue-50 text-blue-700">
+              해설: {quiz.explanation}
+            </div>
+          )}
         </div>
 
         {/* 메뉴 목록 */}
@@ -385,10 +392,10 @@ export default function QuizPage() {
                     ? (result?.isCorrect 
                         ? 'bg-green-100 border-green-500' 
                         : 'bg-red-100 border-red-500')
-                    : result && result.correctAnswer === index 
+                    : (quiz.correct_answer !== undefined && quiz.correct_answer === index) 
                       ? 'bg-green-100 border-green-500' 
                       : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
-                  ${alreadyAnswered && selectedOption !== index && result?.correctAnswer !== index ? 'option-dimmed' : ''}`}
+                  ${alreadyAnswered && selectedOption !== index && index !== (quiz.correct_answer !== undefined ? quiz.correct_answer : result?.correctAnswer) ? 'option-dimmed' : ''}`}
               >
                 <div className="flex items-center">
                   <span className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 text-white mr-3">
@@ -401,11 +408,16 @@ export default function QuizPage() {
           </div>
 
           {/* 결과 메시지 */}
-          {result && (
-            <div className={`mt-6 p-4 rounded-lg ${result.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              <p className="font-bold text-lg">{result.message}</p>
+          {(result || (alreadyAnswered && quiz.correct_answer !== undefined)) && (
+            <div className={`mt-6 p-4 rounded-lg ${result?.isCorrect || (selectedOption === quiz.correct_answer) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <p className="font-bold text-lg">
+                {result?.message || (selectedOption === quiz.correct_answer ? "정답입니다!" : "틀렸습니다.")}
+              </p>
               {answerTime !== null && (
                 <p className="text-sm mt-1">응답 시간: {answerTime}초</p>
+              )}
+              {quiz.correct_answer !== undefined && selectedOption !== quiz.correct_answer && (
+                <p className="mt-2">정답: {quiz.options[quiz.correct_answer]}</p>
               )}
             </div>
           )}
