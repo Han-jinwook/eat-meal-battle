@@ -24,61 +24,112 @@ async function getUserQuiz(userId, schoolCode, grade, date) {
   }
 
   // 날짜 처리
-  const quizDate = date || new Date().toISOString().split('T')[0]; // 기본값은 오늘 날짜
-
-  // 해당 날짜, 학교, 학년에 맞는 퀴즈 가져오기
-  const { data: quiz, error: quizError } = await supabaseClient
+  const now = new Date();
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9 한국 시간
+  const currentHour = koreaTime.getUTCHours();
+  const currentMinutes = koreaTime.getUTCMinutes();
+  const currentTimeMinutes = currentHour * 60 + currentMinutes;
+  
+  // 시간 기준 (한국 시간)
+  const showQuizTime = 12 * 60 + 30; // 12:30
+  const showAnswerTime = 19 * 60;     // 19:00
+  
+  const quizDate = date || koreaTime.toISOString().split('T')[0]; // 기본값은 오늘 날짜
+  const isToday = !date || date === koreaTime.toISOString().split('T')[0];
+  
+  // 오늘 날짜이고 12:30 이후인지 확인
+  const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
+  const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
+  
+  // 퀴즈 가져오기 (시간 제한에 따라 다릅게 처리)
+  let quizQuery = supabaseClient
     .from('meal_quizzes')
     .select(`
       id,
       question,
       options,
-      difficulty,
+      correct_answer,
+      explanation,
+      meal_date,
+      meal_id,
+      meal_menus(menu_items)
+    `)
+    .eq('school_code', schoolCode)
+    .eq('grade', grade);
+  
+  if (canShowTodayQuiz) {
+    // 12:30 이후면 해당 날짜 퀴즈 가져오기 시도
+    const { data: todayQuiz, error: todayQuizError } = await quizQuery
+      .eq('meal_date', quizDate)
+      .limit(1)
+      .maybeSingle(); // 없을 수도 있으므로 maybeSingle 사용
+
+    if (!todayQuizError && todayQuiz) {
+      // 오늘 퀴즈 찾았음
+      return await processQuiz(userId, todayQuiz, canShowAnswer);
+    }
+  }
+  
+  // 오늘 퀴즈가 없거나 12:30 이전이면 가장 최근 퀴즈 가져오기
+  const { data: latestQuiz, error: latestQuizError } = await supabaseClient
+    .from('meal_quizzes')
+    .select(`
+      id,
+      question,
+      options,
+      correct_answer,
+      explanation,
       meal_date,
       meal_id,
       meal_menus(menu_items)
     `)
     .eq('school_code', schoolCode)
     .eq('grade', grade)
-    .eq('meal_date', quizDate)
+    .order('meal_date', { ascending: false })
     .limit(1)
     .single();
 
-  if (quizError) {
-    return { error: "해당 날짜의 퀴즈가 존재하지 않습니다." };
+  if (latestQuizError) {
+    return { error: "퀴즈가 존재하지 않습니다." };
   }
+  
+  return await processQuiz(userId, latestQuiz, true); // 이전 퀴즈는 항상 정답 볼 수 있음
+}
 
+// 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)
+async function processQuiz(userId, quiz, canShowAnswer) {
   // 이미 풀었는지 확인
   const { data: existing, error: existingError } = await supabaseClient
     .from('quiz_results')
-    .select('id, is_correct')
+    .select('id, is_correct, selected_option')
     .eq('user_id', userId)
     .eq('quiz_id', quiz.id)
     .limit(1);
 
-  // 이미 풀었으면 결과와 함께 반환
-  if (existing && existing.length > 0) {
+  // 이미 풀었거나 정답 확인 시간 이후인 경우
+  if ((existing && existing.length > 0) || canShowAnswer) {
     return {
       quiz: {
         id: quiz.id,
         question: quiz.question,
         options: quiz.options,
-        difficulty: quiz.difficulty,
+        correct_answer: canShowAnswer ? quiz.correct_answer : undefined, // 7시 이후에만 정답 제공
+        explanation: canShowAnswer ? quiz.explanation : undefined,       // 7시 이후에만 해설 제공
         meal_date: quiz.meal_date,
         menu_items: quiz.meal_menus?.menu_items || []
       },
-      alreadyAnswered: true,
-      isCorrect: existing[0].is_correct
+      alreadyAnswered: existing && existing.length > 0,
+      isCorrect: existing && existing.length > 0 ? existing[0].is_correct : undefined,
+      selectedOption: existing && existing.length > 0 ? existing[0].selected_option : undefined
     };
   }
 
-  // 정답은 반환하지 않음
+  // 정답은 반환하지 않음 (정답 확인 시간 이전)
   return {
     quiz: {
       id: quiz.id,
       question: quiz.question,
       options: quiz.options,
-      difficulty: quiz.difficulty,
       meal_date: quiz.meal_date,
       menu_items: quiz.meal_menus?.menu_items || []
     },
@@ -91,7 +142,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
   // 퀴즈 정보 가져오기
   const { data: quiz, error: quizError } = await supabaseClient
     .from('meal_quizzes')
-    .select('correct_answer, school_code, grade')
+    .select('correct_answer, school_code, grade, explanation')
     .eq('id', quizId)
     .single();
 
