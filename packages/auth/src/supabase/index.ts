@@ -1,18 +1,27 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@meal-battle/types';
 
+// 싱글톤 인스턴스를 저장할 변수
+let supabaseInstance: any = null;
+
 /**
- * Supabase 클라이언트를 생성하는 함수
+ * Supabase 클라이언트를 생성하는 함수 (싱글톤 패턴)
  * - 오류 처리 및 오류 로깅 제한 기능 포함
  * - @supabase/ssr 패키지 사용
+ * - 다중 GoTrueClient 인스턴스 생성 방지
  */
 export const createClient = () => {
+  // 이미 인스턴스가 있으면 재사용
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
   // 키가 없는 경우 조용히 처리 (개발 환경에서 콘솔 에러 방지)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   
   try {
-    return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         // 네트워크 오류 발생 시 재시도 횟수 감소 (개발 환경 최적화)
         autoRefreshToken: true,
@@ -33,10 +42,12 @@ export const createClient = () => {
         }
       }
     });
+    return supabaseInstance;
   } catch (e) {
     // 초기화 오류는 조용히 처리하고 기본 클라이언트 반환
     console.debug('Supabase 클라이언트 초기화 중 오류 발생 (무시됨)');
-    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    return supabaseInstance;
   }
 }
 
