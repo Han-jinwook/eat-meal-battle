@@ -68,59 +68,34 @@ const StarRating: React.FC<StarRatingProps> = ({
   }, []);
 
   // 별점 클릭 이벤트 처리 - 웨일 브라우저 호환성 강화
-  const handleStarClick = useCallback((index: number, e?: React.MouseEvent) => {
-    // 이벤트 버블링 방지
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+  const handleClick = useCallback((index: number) => {
+    // 처리 중이거나 인터랙티브가 아니면 무시
+    if (isProcessing || !interactive) return;
     
-    // 처리 중 상태이거나 인터랙티브가 아니면 스킵
-    if (processingRef.current || !interactive) return;
-    
-    // 처리 중 플래그 설정
-    processingRef.current = true;
-
-    // 마운트 상태 확인
-    if (!isMounted.current) {
-      processingRef.current = false;
-      return;
-    }
-
-    // 조금 더 명확한 시각적 피드백 제공
-    setCursor('pointer');
-    setOpacity(0.6); // 클릭 시 약간 투명하게
-
-    // 안전한 상태 업데이트
-    const newValue = index + 1; // 1부터 5까지의 점수
-    
-    // setTimeout 대신 requestAnimationFrame 사용하여 렌더링 성능 최적화
-    requestAnimationFrame(() => {
-      // DOM 업데이트 전에 다시 한 번 마운트 상태 확인
-      if (!isMounted.current) {
-        processingRef.current = false;
-        return;
+    try {
+      // 처리 중 상태로 설정
+      setIsProcessing(true);
+      
+      // 마운트 상태 확인
+      if (!isMounted.current) return;
+      
+      // 별점 값 계산 (1-5)
+      const newRating = index + 1;
+      
+      // 안전하게 부모 컴포넌트에 변경 알림
+      if (onChange) onChange(newRating);
+      
+      // 처리 완료 후 상태 초기화 (짧은 지연으로 시각적 피드백 제공)
+      if (processingTimeoutRef.current !== null) {
+        clearTimeout(processingTimeoutRef.current);
       }
       
-      // 부모 컴포넌트에 변경 통지 (안전하게 호출)
-      try {
-        if (onChange && isMounted.current) onChange(newValue);
-      } catch (err) {
-        console.error('별점 변경 호출 오류:', err);
-      }
-
-      // 시각적 피드백 상태 초기화
-      setTimeout(() => {
+      processingTimeoutRef.current = window.setTimeout(() => {
+        // 컴포넌트가 여전히 마운트되어 있는지 확인
         if (isMounted.current) {
-          setCursor('default');
-          setOpacity(1);
-          processingRef.current = false;
+          setIsProcessing(false);
         }
-      }, 150); // 짧은 시각 피드백
-    });
-  }, [interactive, onChange]);
-
-      });
+      }, 300);
     } catch (error) {
       console.error('별점 클릭 처리 중 오류:', error);
       if (isMounted.current) {

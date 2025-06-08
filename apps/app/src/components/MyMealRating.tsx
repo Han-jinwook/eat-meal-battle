@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import StarRating from './StarRating';
 
-// Supabase ?대씪?댁뼵??珥덇린??const supabase = createClient();
+// Supabase 클라이언트 초기화
+const supabase = createClient();
 
 interface MyMealRatingProps {
   mealId: string;
@@ -14,12 +15,14 @@ interface MenuItemRating {
 }
 
 /**
- * 湲됱떇 ?꾩껜??????됯퇏 ?됱젏???쒖떆?섍퀬 ?ъ슜?먭? ?됱젏??留ㅺ만 ???덈뒗 而댄룷?뚰듃
- * ?됯퇏 ?됱젏? "(4.2)" ?뺤떇?쇰줈 ?쒖떆?? * 湲됱떇 ?됱젏? ?대떦 湲됱떇??硫붾돱 ?꾩씠???됱젏?ㅼ쓽 ?됯퇏?쇰줈 怨꾩궛?? * 
- * ?⑥씪 釉뚮씪?곗? ?명솚?깆쓣 ?꾪븳 ?덉쟾?μ튂 異붽?:
- * - 而댄룷?뚰듃 留덉슫???곹깭 異붿쟻?쇰줈 ?몃쭏?댄듃 ???곹깭 ?낅뜲?댄듃 諛⑹?
- * - ??대㉧ ?뺣━ 湲곕뒫?쇰줈 硫붾え由??꾩닔 諛⑹?
- * - 鍮꾨룞湲??묒뾽 痍⑥냼 湲곕뒫?쇰줈 遺덊븘?뷀븳 ?ㅽ듃?뚰겕 ?붿껌 諛⑹?
+ * 급식 전체에 대한 평균 평점을 표시하고 사용자가 평점을 매길 수 있는 컴포넌트
+ * 평균 평점은 "(4.2)" 형식으로 표시됨
+ * 급식 평점은 해당 급식의 메뉴 아이템 평점들의 평균으로 계산됨
+ * 
+ * 웨일 브라우저 호환성을 위한 안전장치 추가:
+ * - 컴포넌트 마운트 상태 추적으로 언마운트 후 상태 업데이트 방지
+ * - 타이머 정리 기능으로 메모리 누수 방지
+ * - 비동기 작업 취소 기능으로 불필요한 네트워크 요청 방지
  */
 const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const [user, setUser] = useState<any>(null);
@@ -28,11 +31,13 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [menuItemRatings, setMenuItemRatings] = useState<MenuItemRating[]>([]);
   
-  // 而댄룷?뚰듃 留덉슫???곹깭 異붿쟻
+  // 컴포넌트 마운트 상태 추적
   const isMounted = useRef<boolean>(true);
-  // ??대㉧ 李몄“ ???  const timerRef = useRef<number | null>(null);
+  // 타이머 참조 저장
+  const timerRef = useRef<number | null>(null);
 
-  // ?ъ슜???뺣낫 媛?몄삤湲?  useEffect(() => {
+  // 사용자 정보 가져오기
+  useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data?.user);
@@ -40,56 +45,57 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     getUser();
   }, []);
 
-  // 湲됱떇??硫붾돱 ?꾩씠??ID 紐⑸줉 議고쉶
+  // 급식의 메뉴 아이템 ID 목록 조회
   const fetchMenuItems = async () => {
     if (!mealId) return [];
 
     try {
-      console.log('湲됱떇 硫붾돱 ?꾩씠??議고쉶 ?쒖옉:', mealId);
+      console.log('급식 메뉴 아이템 조회 시작:', mealId);
       
-      // ?대떦 湲됱떇??硫붾돱 ?꾩씠??ID 紐⑸줉 議고쉶
-      // 'menu_item_id' ???'id' 而대읆 ?ъ슜 - ?뚯씠釉?援ъ“??留욊쾶 ?섏젙
+      // 해당 급식의 메뉴 아이템 ID 목록 조회
+      // 'menu_item_id' 대신 'id' 컬럼 사용 - 테이블 구조에 맞게 수정
       const { data, error } = await supabase
         .from('meal_menu_items')
         .select('id')
         .eq('meal_id', mealId);
         
       if (error) {
-        console.error('硫붾돱 ?꾩씠??議고쉶 ?ㅻ쪟:', error.message);
+        console.error('메뉴 아이템 조회 오류:', error.message);
         return [];
       }
       
       if (!data || data.length === 0) {
-        console.log('硫붾돱 ?꾩씠?쒖씠 ?놁쓬');
+        console.log('메뉴 아이템이 없음');
         return [];
       }
       
-      console.log('硫붾돱 ?꾩씠??議고쉶 寃곌낵:', data.length, '媛???ぉ');
-      // item.menu_item_id ???item.id ?ъ슜
+      console.log('메뉴 아이템 조회 결과:', data.length, '개 항목');
+      // item.menu_item_id 대신 item.id 사용
       return data.map(item => item.id);
     } catch (error) {
-      console.error('硫붾돱 ?꾩씠??議고쉶 以??ㅻ쪟 諛쒖깮:', error);
+      console.error('메뉴 아이템 조회 중 오류 발생:', error);
       return [];
     }
   };
 
-  // 硫붾돱 ?꾩씠??蹂꾩젏???됯퇏??怨꾩궛?섏뿬 湲됱떇 ?됱젏 ???  const calculateAndSaveMealRating = async () => {
+  // 메뉴 아이템 별점의 평균을 계산하여 급식 평점 저장
+  const calculateAndSaveMealRating = async () => {
     if (!mealId || !user) return;
 
     try {
-      // 硫붾돱 ?꾩씠??ID 紐⑸줉 議고쉶
+      // 메뉴 아이템 ID 목록 조회
       const menuItemIds = await fetchMenuItems();
       if (menuItemIds.length === 0) {
-        // 硫붾돱 ?꾩씠???먯껜媛 ?놁쑝硫?湲됱떇 ?됱젏????젣
+        // 메뉴 아이템 자체가 없으면 급식 평점도 삭제
         await saveRating(null);
         setMenuItemRatings([]);
         setMyRating(null);
         return;
       }
       
-      console.log('??硫붾돱 ?꾩씠???됱젏 議고쉶 ?쒖옉:', menuItemIds.length, '媛???ぉ');
+      console.log('내 메뉴 아이템 평점 조회 시작:', menuItemIds.length, '개 항목');
       
-      // ?ъ슜?먯쓽 硫붾돱 ?꾩씠???됱젏 議고쉶
+      // 사용자의 메뉴 아이템 평점 조회
       const { data, error } = await supabase
         .from('menu_item_ratings')
         .select('menu_item_id, rating')
@@ -97,243 +103,292 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         .in('menu_item_id', menuItemIds);
         
       if (error) {
-        console.error('硫붾돱 ?꾩씠???됱젏 議고쉶 ?ㅻ쪟:', error.message);
+        console.error('메뉴 아이템 평점 조회 오류:', error.message);
         return;
       }
       
       if (!data || data.length === 0) {
-        // 硫붾돱 ?꾩씠??蹂꾩젏??紐⑤몢 ??젣??寃쎌슦 湲됱떇 ?됱젏????젣
-        console.log('硫붾돱 ?꾩씠???됱젏???놁쓬, 湲됱떇 ?됱젏 row ??젣');
+        // 메뉴 아이템 별점이 모두 삭제된 경우 급식 평점도 삭제
+        console.log('메뉴 아이템 평점이 없음, 급식 평점 row 삭제');
         setMenuItemRatings([]);
         setMyRating(null);
         await saveRating(null);
         return;
       }
       
-      console.log('硫붾돱 ?꾩씠???됱젏 議고쉶 寃곌낵:', data.length, '媛???ぉ');
-      setMenuItemRatings(data);
+      console.log('메뉴 아이템 평점 조회 결과:', data.length, '개 항목');
       
-      // 硫붾돱 ?꾩씠??蹂꾩젏???됯퇏 怨꾩궛
-      const avgItemRating = calculateAverageRating(data);
+      // 메뉴 아이템 평점들의 평균 계산
+      const menuItemRatingsArray: MenuItemRating[] = data;
+      setMenuItemRatings(menuItemRatingsArray);
       
-      // 怨꾩궛???됯퇏??meal_ratings ?뚯씠釉붿뿉 ???      await saveRating(avgItemRating); // avgItemRating??null?대㈃ ??젣
-      setMyRating(avgItemRating);
+      // 마운트 상태 확인 - 언마운트 후 상태 업데이트 방지
+      if (!isMounted.current) return;
+      
+      // 급식 평점 계산 및 저장
+      const avgRating = calculateAverageRating(menuItemRatingsArray);
+      if (avgRating !== null) {
+        await saveRating(avgRating);
+        
+        // 마운트 상태 확인 - 언마운트 후 상태 업데이트 방지
+        if (!isMounted.current) return;
+        
+        setMyRating(avgRating);
+      }
     } catch (error) {
-      console.error('硫붾돱 ?꾩씠???됱젏 議고쉶 以??ㅻ쪟 諛쒖깮:', error);
+      console.error('급식 평점 계산 및 저장 중 오류 발생:', error);
     }
   };
 
-  // ??湲됱떇 ?됱젏 議고쉶 ?⑥닔
+  // 내 급식 평점 조회 함수
   const fetchMyRating = async () => {
     if (!mealId || !user) return;
-
+    
     try {
-      console.log(' ??湲됱떇 ?됱젏 議고쉶 ?쒕룄 - 湲됱떇 ID:', mealId, '?ъ슜??ID:', user.id);
+      // 로딩 상태 설정
+      setIsLoading(true);
       
-      // meal_ratings ?뚯씠釉붿뿉?????됱젏 議고쉶 - maybeSingle ???limit(1) ?ъ슜
+      console.log('내 급식 평점 조회 시작:', mealId, user.id);
+      
+      // 웨일 브라우저 호환성 강화를 위해 AbortController 사용
+      const controller = new AbortController();
+      const signal = controller.signal;
+      
+      // 타임아웃 설정 (10초)
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      // meal_ratings 테이블에서 사용자의 급식 평점 조회
       const { data, error } = await supabase
         .from('meal_ratings')
         .select('rating')
         .eq('meal_id', mealId)
         .eq('user_id', user.id)
-        .limit(1);
-
-      if (error) {
-        console.error(' ???됱젏 議고쉶 ?ㅻ쪟:', error.message);
+        .maybeSingle(); // no rows 처리를 위해 maybeSingle 사용
+      
+      // 타임아웃 정리
+      clearTimeout(timeoutId);
+      
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
+      if (!isMounted.current) return;
+      
+      if (error && error.code !== 'PGRST116') { // 결과 없음 에러는 무시 (PGRST116)
+        console.error('내 급식 평점 조회 오류:', error.message);
         return;
       }
-
-      // ?곗씠??諛곗뿴?먯꽌 泥?踰덉㎏ ??ぉ ?ъ슜 (?놁쑝硫?null 泥섎━)
-      if (data && data.length > 0) {
-        console.log(' ???됱젏 議고쉶 ?깃났:', data[0].rating);
-        setMyRating(data[0].rating);
+      
+      if (data) {
+        console.log('내 급식 평점 조회 결과:', data.rating);
+        setMyRating(data.rating);
       } else {
-        console.log(' ??湲됱떇 ?됱젏 ?놁쓬, 硫붾돱 ?꾩씠???됱젏 湲곕컲?쇰줈 怨꾩궛 ?쒕룄');
+        console.log('내 급식 평점이 없음');
         setMyRating(null);
-        // 硫붾돱 ?꾩씠??蹂꾩젏???됯퇏??怨꾩궛?섏뿬 湲됱떇 ?됱젏 ???        await calculateAndSaveMealRating();
       }
     } catch (error) {
-      console.error(' ???됱젏 議고쉶 以??ㅻ쪟 諛쒖깮:', error);
+      if ((error as any)?.name === 'AbortError') {
+        console.log('급식 평점 조회 요청 타임아웃');
+      } else {
+        console.error('내 급식 평점 조회 중 오류 발생:', error);
+      }
+    } finally {
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  // 湲됱떇 ?됱젏 ?듦퀎 議고쉶 ?⑥닔
+  // 급식 평점 통계 조회 함수
   const fetchMealRatingStats = async () => {
     if (!mealId) return;
-
+    
     try {
-      console.log('湲됱떇 ?됱젏 ?듦퀎 議고쉶 ?쒖옉 - 湲됱떇 ID:', mealId);
+      // 로딩 상태 설정
+      setIsLoading(true);
       
-      // meal_rating_stats ?뚯씠釉붿뿉???됯퇏 ?됱젏 議고쉶 - maybeSingle ???get ?ъ슜
+      console.log('급식 평점 통계 조회 시작:', mealId);
+      
+      // 웨일 브라우저 호환성 강화를 위해 AbortController 사용
+      const controller = new AbortController();
+      const signal = controller.signal;
+      
+      // 타임아웃 설정 (10초)
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      // meal_ratings 테이블에서 해당 급식의 평균 평점 계산
       const { data, error } = await supabase
-        .from('meal_rating_stats')
-        .select('avg_rating')
-        .eq('meal_id', mealId)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-
+        .from('meal_ratings')
+        .select('rating')
+        .eq('meal_id', mealId);
+      
+      // 타임아웃 정리
+      clearTimeout(timeoutId);
+      
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
+      if (!isMounted.current) return;
+      
       if (error) {
-        console.error('湲됱떇 ?됱젏 ?듦퀎 議고쉶 ?ㅻ쪟:', error.message);
+        console.error('급식 평점 통계 조회 오류:', error.message);
         return;
       }
-
-      // ?곗씠??諛곗뿴?먯꽌 泥?踰덉㎏ ??ぉ ?ъ슜 (?놁쑝硫?null 泥섎━)
-      if (data && data.length > 0 && data[0].avg_rating) {
-        console.log('湲됱떇 ?됱젏 ?듦퀎 議고쉶 ?깃났:', data[0].avg_rating);
-        setAvgRating(data[0].avg_rating);
+      
+      if (data && data.length > 0) {
+        // 평균 평점 계산
+        const total = data.reduce((sum, item) => sum + item.rating, 0);
+        const avg = total / data.length;
+        console.log('급식 평점 통계 조회 결과:', avg);
+        setAvgRating(avg);
       } else {
-        console.log('湲됱떇 ?됱젏 ?듦퀎 ?놁쓬');
+        console.log('급식 평점 통계가 없음');
         setAvgRating(null);
       }
     } catch (error) {
-      console.error('湲됱떇 ?됱젏 ?듦퀎 議고쉶 以??ㅻ쪟 諛쒖깮:', error);
+      if ((error as any)?.name === 'AbortError') {
+        console.log('급식 평점 통계 조회 요청 타임아웃');
+      } else {
+        console.error('급식 평점 통계 조회 중 오류 발생:', error);
+      }
+    } finally {
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  // ?됱젏 ?됯퇏 怨꾩궛 ?⑥닔
+  // 평점 평균 계산 함수
   const calculateAverageRating = (ratings: MenuItemRating[]): number | null => {
     if (!ratings || ratings.length === 0) return null;
     
-    const sum = ratings.reduce((total, item) => total + item.rating, 0);
-    const avg = sum / ratings.length;
-    
-    console.log('?됱젏 ?됯퇏 怨꾩궛:', sum, '/', ratings.length, '=', avg);
-    return Math.round(avg * 10) / 10; // ?뚯닔???섏㎏ ?먮━?먯꽌 諛섏삱由쇳븯??泥⑥㎏ ?먮━源뚯?留??쒖떆 (4.53 -> 4.5 / 3.75 -> 3.8)
+    const sum = ratings.reduce((sum, item) => sum + item.rating, 0);
+    return sum / ratings.length;
   };
 
-  // 蹂꾩젏 ?④린湲?API ?몄텧 ?⑥닔 (?⑥씪 釉뚮씪?곗? ?명솚??媛뺥솕)
+  // 별점 남기기 API 호출 함수 (웨일 브라우저 호환성 강화)
   const submitRating = async (rating: number) => {
-    if (!mealId || !user) return;
-    if (!isMounted.current) return; // 而댄룷?뚰듃 留덉슫???곹깭 ?뺤씤
+    if (!mealId || !user) {
+      console.log('급식 ID 또는 사용자 정보가 없음');
+      return false;
+    }
     
-    setIsLoading(true);
-    timerRef.current = null; // ??대㉧ 由ъ뀑
-
     try {
-      console.log('湲됱떇 ?됱젏 ?쒖텧 ?쒖옉:', mealId, rating);
+      setIsLoading(true);
       
-      // ?⑥씪 釉뚮씪?곗? ?명솚?? API ?붿껌????꾩븘??異붽?
+      console.log('급식 평점 저장 시작:', mealId, user.id, rating);
+      
+      // 웨일 브라우저 호환성 강화를 위해 AbortController 사용
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10珥???꾩븘??      
-      // 湲곗〈 ??ぉ ?덈뒗吏 ?뺤씤 (signal 異붽?)
-      const { data: existingRating, error: fetchError } = await supabase
+      const signal = controller.signal;
+      
+      // 타임아웃 설정 (10초)
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      // meal_ratings 테이블에 평점 저장 (upsert)
+      const { error } = await supabase
         .from('meal_ratings')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('meal_id', mealId)
-        .abortSignal(controller.signal)
-        .maybeSingle();
-
+        .upsert({
+          user_id: user.id,
+          meal_id: mealId,
+          rating: rating,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,meal_id'
+        });
+      
+      // 타임아웃 정리
       clearTimeout(timeoutId);
       
-      // 留덉슫???곹깭 ?ㅼ떆 ?뺤씤
-      if (!isMounted.current) {
-        console.log('而댄룷?뚰듃 ?몃쭏?댄듃 ?곹깭, API ?묒뾽 以묐떒');
-        return;
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
+      if (!isMounted.current) return false;
+      
+      if (error) {
+        console.error('급식 평점 저장 오류:', error.message);
+        return false;
       }
       
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('湲곗〈 ?됱젏 議고쉶 ?ㅻ쪟:', fetchError);
-        throw fetchError;
-      }
-
-      if (existingRating) {
-        // 湲곗〈 ?됱젏 ?낅뜲?댄듃
-        const { error } = await supabase
-          .from('meal_ratings')
-          .update({ rating: rating })
-          .eq('id', existingRating.id);
-
-        if (error) throw error;
-        console.log('湲곗〈 湲됱떇 ?됱젏 ?낅뜲?댄듃 ?깃났');
-      } else {
-        // ???됱젏 異붽?
-        const { error } = await supabase
-          .from('meal_ratings')
-          .insert([
-            { user_id: user.id, meal_id: mealId, rating: rating }
-          ]);
-
-        if (error) throw error;
-        console.log('??湲됱떇 ?됱젏 異붽? ?깃났');
-      }
-
-      // 留덉슫???곹깭 ?ㅼ떆 ?뺤씤
-      if (!isMounted.current) return;
+      console.log('급식 평점 저장 성공!');
       
-      // ?깃났 ?????됱젏 諛??듦퀎 媛깆떊
-      setMyRating(rating);
-      await fetchMealRatingStats();
-
-      // ?⑥씪 釉뚮씪?곗? ?명솚?? try-catch濡??대깽??諛쒖깮 ?섑븨
+      // 로컬 UI 업데이트를 위해 이벤트 발생 - 웨일 브라우저 호환성 강화
       try {
-        // ?대깽??諛쒖깮?쒖폒 ?꾩껜 UI 媛깆떊
         const event = new CustomEvent('meal-rating-change', { 
-          detail: { mealId, rating } 
+          detail: { 
+            mealId: mealId,
+            userId: user.id,
+            rating: rating 
+          } 
         });
         window.dispatchEvent(event);
-      } catch (eventError) {
-        console.error('?대깽??諛쒖깮 以??ㅻ쪟:', eventError);
+      } catch (e) {
+        console.error('이벤트 발생 중 오류:', e);
       }
-
+      
+      return true;
     } catch (error) {
-      console.error('湲됱떇 ?됱젏 ?쒖텧 ?ㅻ쪟:', error);
-      if (isMounted.current) {
-        // ?ㅻ쪟 ?곹깭 ?낅뜲?댄듃 (留덉슫?몃맂 寃쎌슦留?
-        setIsLoading(false);
+      if ((error as any)?.name === 'AbortError') {
+        console.log('급식 평점 저장 요청 타임아웃');
+      } else {
+        console.error('급식 평점 저장 중 오류 발생:', error);
       }
+      return false;
     } finally {
+      // 컴포넌트가 언마운트된 경우 상태 업데이트 중단
       if (isMounted.current) {
         setIsLoading(false);
       }
     }
   };
 
-  // ?됱젏 ????⑥닔 (1~5留?upsert, 洹??몃뒗 臾댁“嫄???젣)
+  // 평점 저장 함수 (1~5만 upsert, 그 외는 무조건 삭제)
   const saveRating = async (rating: number | null) => {
     if (!mealId || !user) return false;
-
+    
+    // 이미 로딩 중이면 중복 호출 방지
+    if (isLoading) return false;
+    
     try {
-      setIsLoading(true);
-      // rating??1~5媛 ?꾨땲硫?臾댁“嫄???젣
-      if (rating === null || rating < 1 || rating > 5) {
-        // CHECK ?쒖빟議곌굔: rating? 1~5留??덉슜
-        console.log('湲됱떇 ?됱젏 row ??젣 ?쒕룄:', mealId, user.id);
+      // 0점 이하 또는 5점 초과이면 무조건 삭제
+      if (rating !== null && (rating < 1 || rating > 5)) {
+        console.log('유효하지 않은 평점. 평점 삭제:', rating);
+        
+        // 평점 삭제 
         const { error } = await supabase
           .from('meal_ratings')
           .delete()
           .eq('user_id', user.id)
           .eq('meal_id', mealId);
+          
         if (error) {
-          console.error('?됱젏 row ??젣 ?ㅻ쪟:', error.message);
+          console.error('평점 삭제 오류:', error.message);
           return false;
         }
-        console.log('?됱젏 row ??젣 ?깃났!');
-        await fetchMealRatingStats();
-        return true;
-      } else {
-        // rating??1~5??寃쎌슦?먮쭔 upsert
-        console.log('湲됱떇 ?됱젏 ????쒖옉:', mealId, user.id, rating);
-        await submitRating(rating);
+        
+        // 상태 업데이트
+        if (isMounted.current) {
+          setMyRating(null);
+        }
+        
         return true;
       }
+
+      // 유효한 평점이면 저장 함수 호출
+      return submitRating(rating!);
     } catch (error) {
-      console.error('?됱젏 ?????젣 以??ㅻ쪟 諛쒖깮:', error);
+      console.error('평점 저장 또는 삭제 중 오류 발생:', error);
       return false;
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-
-  // 硫붾돱 ?꾩씠???됱젏 ????⑥닔
+  // 메뉴 아이템 평점 저장 함수
   const saveMenuItemRating = async (menuItemId: string, rating: number) => {
     if (!user) return false;
 
     try {
-      console.log('硫붾돱 ?꾩씠???됱젏 ????쒖옉:', menuItemId, user.id, rating);
+      console.log('메뉴 아이템 평점 저장 시작:', menuItemId, user.id, rating);
       
-      // menu_item_ratings ?뚯씠釉붿뿉 ?됱젏 ???(upsert)
+      // menu_item_ratings 테이블에 평점 저장 (upsert)
       const { error } = await supabase
         .from('menu_item_ratings')
         .upsert({
@@ -346,233 +401,194 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         });
 
       if (error) {
-        console.error('硫붾돱 ?꾩씠???됱젏 ????ㅻ쪟:', error.message);
+        console.error('메뉴 아이템 평점 저장 오류:', error.message);
         return false;
       }
 
-      console.log('硫붾돱 ?꾩씠???됱젏 ????깃났!');
+      console.log('메뉴 아이템 평점 저장 성공!');
       return true;
     } catch (error) {
-      console.error('硫붾돱 ?꾩씠???됱젏 ???以??ㅻ쪟 諛쒖깮:', error);
+      console.error('메뉴 아이템 평점 저장 중 오류 발생:', error);
       return false;
     }
   };
-
-
-  // ?대깽??由ъ뒪???깅줉 諛??쒓굅
+  
+  // 이벤트 리스너 등록 및 제거
   useEffect(() => {
-    // ?대깽??由ъ뒪???깅줉
+    // 이벤트 리스너 등록
     window.addEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
     window.addEventListener('focus', handleFocus);
 
-    // 而댄룷?뚰듃 ?몃쭏?댄듃 ???대깽??由ъ뒪???쒓굅 諛???대㉧ ?뺣━
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 타이머 정리
     return () => {
-      // 留덉슫???곹깭 ?낅뜲?댄듃
+      // 마운트 상태 업데이트
       isMounted.current = false;
       
-      // ?대깽??由ъ뒪???쒓굅
+      // 이벤트 리스너 제거
       window.removeEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
       window.removeEventListener('focus', handleFocus);
       
-      // ??대㉧ ?뺣━
+      // 타이머 정리
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     };
   }, [mealId, user]);
-      
-      // ?댁쟾 ??대㉧ ?뺣━
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      
-      // 2. 諛깃렇?쇱슫?쒖뿉???ㅼ젣 ?곗씠??怨꾩궛 諛????泥섎━
-      // ?쎄컙??吏?????좎? ?쒓컖??諛⑺빐 ?놁씠 怨꾩궛
-      timerRef.current = window.setTimeout(async () => {
-        try {
-          // 而댄룷?뚰듃媛 ?ъ쟾??留덉슫?몃맂 ?곹깭?몄? ?뺤씤
-          if (!isMounted.current) {
-            console.log('??대㉧ 肄쒕갚: 而댄룷?뚰듃媛 ?몃쭏?댄듃?? ?묒뾽 痍⑥냼');
-            return;
-          }
-          
-          await calculateAndSaveMealRating(); // ?ㅼ젣 怨꾩궛 諛?DB ???          
-          // 而댄룷?뚰듃媛 ?ъ쟾??留덉슫?몃맂 ?곹깭?몄? ?ㅼ떆 ?뺤씤
-          if (!isMounted.current) return;
-          
-          // 3. UI ?낅뜲?댄듃瑜??꾪빐 ?뺥솗???곗씠???ъ“??          await fetchMyRating(); // ??蹂꾩젏 議고쉶
-          await fetchMealRatingStats(); // ?꾩껜 ?됱젏 ?듦퀎 議고쉶
-        } catch (error) {
-          console.error('蹂꾩젏 ?낅뜲?댄듃 以??ㅻ쪟:', error);
-          // ?ㅻ쪟媛 諛쒖깮?대룄 ??대㉧ 李몄“ ?뺣━
-          timerRef.current = null;
-        }
-      }, 300) as any;
-    }
-
-  // 硫붾돱 ?꾩씠???됱젏 蹂寃??대깽??泥섎━ ?⑥닔
+  
+  // 메뉴 아이템 평점 변경 이벤트 처리 함수
   const handleMenuItemRatingChange = (event: Event) => {
-    // ????덉쟾???꾪븳 而ㅼ뒪? ?대깽?????媛??    if (!('detail' in event) || !event.detail) return;
+    // 이벤트 전달용 커스텀 이벤트의 값 확인
+    if (!('detail' in event) || !event.detail) return;
     
     const detail = event.detail as { menuItemId?: string; newRating?: number; deleted?: boolean };
     if (!detail.menuItemId) return;
     
-    // 留덉슫???곹깭 ?뺤씤 - ?몃쭏?댄듃 ??泥섎━ 諛⑹?
+    // 마운트 상태 확인 - 언마운트 후 처리 방지
     if (!isMounted.current) {
-      console.log('?몃쭏?댄듃??而댄룷?뚰듃???대깽??泥섎━ 臾댁떆');
+      console.log('언마운트된 컴포넌트의 이벤트 처리 무시');
       return;
     }
     
-    console.log('硫붾돱 ?꾩씠???됱젏 蹂寃?媛먯?:', detail);
+    console.log('메뉴 아이템 평점 변경 감지:', detail);
     
-    // 1. UI 利됱떆 諛섏쓳???꾪븳 ?꾩떆 泥섎━
+    // 1. UI 즉시 반응을 위한 임시 처리
     if (detail.deleted && myRating) {
-      // ??젣 泥섎━??寃쎌슦 - ?꾩옱 紐⑤뱺 蹂꾩젏????젣?섎㈃ myRating??null 泥섎━
+      // 삭제 처리된 경우 - 현재 모든 별점이 삭제되면 myRating도 null 처리
       if (menuItemRatings.length <= 1) {
         setMyRating(null);
       }
     } else if (detail.newRating && !myRating) {
-      // 泥섏쓬 蹂꾩젏??二쇰뒗 寃쎌슦 - ?꾩떆濡?媛??쒖떆
+      // 처음 별점을 주는 경우 - 임시로 값 표시
       setMyRating(detail.newRating);
     } else if (detail.newRating && myRating) {
-      // 湲곗〈 蹂꾩젏 蹂寃?- ?꾩떆 怨꾩궛
-      const tempRating = detail.newRating;
-      setMyRating(tempRating);
+      // 기존 별점 변경 - 임시 계산 처리
+      const updatedRatings = [...menuItemRatings];
+      const index = updatedRatings.findIndex(r => r.menu_item_id === detail.menuItemId);
+      
+      if (index >= 0) {
+        // 기존 평점 업데이트
+        updatedRatings[index] = { 
+          ...updatedRatings[index], 
+          rating: detail.newRating! 
+        };
+      } else {
+        // 새 평점 추가
+        updatedRatings.push({ 
+          menu_item_id: detail.menuItemId!, 
+          rating: detail.newRating! 
+        });
+      }
+      
+      // 새 평균 계산
+      const newAvg = calculateAverageRating(updatedRatings);
+      setMyRating(newAvg);
     }
     
-    // ?댁쟾 ??대㉧ ?뺣━
+    // 이전 타이머 정리
     if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
+      clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     
-    // 2. 諛깃렇?쇱슫?쒖뿉???ㅼ젣 ?곗씠??怨꾩궛 諛????泥섎━
-    // ?쎄컙??吏?????좎? ?쒓컖??諛⑺빐 ?놁씠 怨꾩궛
+    // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
+    // 연속 클릭시 디바운스 처리
     timerRef.current = window.setTimeout(async () => {
-      try {
-        // 而댄룷?뚰듃媛 ?ъ쟾??留덉슫?몃맂 ?곹깭?몄? ?뺤씤
-        if (!isMounted.current) {
-          console.log('??대㉧ 肄쒕갚: 而댄룷?뚰듃媛 ?몃쭏?댄듃?? ?묒뾽 痍⑥냼');
-          return;
-        }
-        
-        await calculateAndSaveMealRating(); // ?ㅼ젣 怨꾩궛 諛?DB ???        
-        // 而댄룷?뚰듃媛 ?ъ쟾??留덉슫?몃맂 ?곹깭?몄? ?ㅼ떆 ?뺤씤
-        if (!isMounted.current) return;
-        
-        // 3. UI ?낅뜲?댄듃瑜??꾪빐 ?뺥솗???곗씠???ъ“??        await fetchMyRating(); // ??蹂꾩젏 議고쉶
-        await fetchMealRatingStats(); // ?꾩껜 ?됱젏 ?듦퀎 議고쉶
-      } catch (error) {
-        console.error('蹂꾩젏 ?낅뜲?댄듃 以??ㅻ쪟:', error);
-        // ?ㅻ쪟媛 諛쒖깮?대룄 ??대㉧ 李몄“ ?뺣━
-        timerRef.current = null;
-      }
-    }, 300) as any;
-  };
-
-  // ?ъ빱?ㅻ? 媛吏??뚮쭏???ъ“?뚰븯??理쒖떊 ?곗씠??蹂댁옣
-  const handleFocus = () => {
-    // 而댄룷?뚰듃媛 留덉슫?몃맂 ?곹깭???뚮쭔 泥섎━
-    if (!isMounted.current) return;
-    
-    if (user && mealId) {
-      fetchMyRating();
+      // 마운트 상태 확인
+      if (!isMounted.current) return;
+      
+      // 실제 계산 및 저장
+      await calculateAndSaveMealRating();
+      
+      // 마운트 상태 확인
+      if (!isMounted.current) return;
+      
+      // 통계 데이터 갱신
       fetchMealRatingStats();
-    }
-  };
-
-  // ?섏〈??諛곗뿴???대? useEffect 諛붾줈 ?꾩뿉 ?뺤쓽?섏뼱 ?덉쑝誘濡???젣
-
-  // 珥덇린 ?곗씠??濡쒕뵫 ?⑥닔
-  const fetchInitialData = async () => {
-    try {
-      await fetchMealRatingStats();
-      if (user) {
-        await fetchMyRating();
-      }
-    } catch (error) {
-      if ((error as any)?.name === 'AbortError') {
-        console.log('?붿껌??痍⑥냼??);
-      } else {
-        console.error('珥덇린 ?곗씠??濡쒕뵫 以??ㅻ쪟:', error);
-      }
-    }
+    }, 500);
   };
   
-  // 而댄룷?뚰듃 留덉슫???쒖? mealId, user 蹂寃????됱젏 議고쉶
-  useEffect(() => {
-    // 珥덇린???쒖뿉 留덉슫???곹깭瑜?true濡??ㅼ젙
-    isMounted.current = true;
+  // 윈도우 포커스 이벤트 처리 함수 - 앱 복귀 시 데이터 갱신
+  const handleFocus = () => {
+    // 마운트 상태 확인
+    if (!isMounted.current) return;
     
-    // AbortController ?앹꽦
-    const abortController = new AbortController();
+    console.log('윈도우 포커스 감지 - 평점 정보 갱신');
     
-    // 珥덇린 ?곗씠??濡쒕뵫
-    fetchInitialData();
+    // 다른 탭에서 평점을 수정했을 수 있으므로 데이터 새로고침
+    fetchMyRating();
+    fetchMealRatingStats();
+  };
+  
+  // 별점 변경 핸들러 - StarRating 컴포넌트의 onRatingChange prop으로 전달
+  const handleRatingChange = (newRating: number) => {
+    // 마운트 상태 확인
+    if (!isMounted.current) return;
     
-    // ?뺣━ ?⑥닔
-    return () => {
-      abortController.abort();
-      isMounted.current = false;
-    };
-  }, [mealId, user]);
-
-  // 별점 변경 핸들러 - 별점 클릭 시 호출됨
-  const handleRatingChange = (value: number) => {
+    console.log('별점 변경:', newRating);
+    
     if (!user) {
-      alert('로그인이 필요합니다.');
+      console.log('로그인 필요');
       return;
     }
-
-    if (!isMounted.current) return;
-
-    setMyRating(value);
-    saveRating(value);
+    
+    // 이전과 같은 평점을 선택하면 평점 삭제
+    if (myRating === newRating) {
+      console.log('이전과 동일한 평점 선택 - 평점 삭제');
+      saveRating(null);
+      return;
+    }
+    
+    // 평점 저장 (1~5)
+    saveRating(newRating);
+    
+    // UI 즉시 반응을 위해 상태 업데이트
+    setMyRating(newRating);
   };
-
-  // 濡쒕뵫 以묒뿉??硫붿떆吏????긽 ?쒖떆
-  if (isLoading) {
-    return (
-      <div className="my-4">
-        <div className="text-lg font-medium">
-          ?ㅻ뒛 ?섏쓽 ?됯???
-        </div>
-        <div className="mt-1 flex items-center">
-          <div className="opacity-50">
-            <StarRating value={0} onChange={() => {}} interactive={false} showValue={false} size="large" />
-          </div>
-          <span className="ml-2 text-sm text-gray-400">濡쒕뵫 以?..</span>
-        </div>
-      </div>
-    );
-  }
-
+  
+  // 데이터 로드 및 갱신 처리
+  useEffect(() => {
+    // 사용자나 mealId가 없으면 로드하지 않음
+    if (!user || !mealId) return;
+    
+    console.log('데이터 로드 시작:', mealId);
+    
+    // 내 평점 로드
+    fetchMyRating();
+    
+    // 메뉴 아이템 별점의 평균으로 급식 평점 계산 및 저장
+    calculateAndSaveMealRating();
+    
+    // 전체 평균 평점 로드
+    fetchMealRatingStats();
+  }, [user, mealId]);
+  
   return (
-    <div className="my-4">
-      <div className="text-lg font-medium">
-        ?ㅻ뒛 ?섏쓽 ?됯???
-        {/* 濡쒓렇??+ 蹂꾩젏 ?낅젰???좎?留??됱젏 ?쒖떆, 0?먮룄 ?쒖떆 */}
-        {user && myRating !== null && (
-          <span className="ml-1">({myRating.toFixed(1)})</span>
-        )}
-      </div>
-      <div className="mt-2">
-        {/* 蹂꾩젏 ?낅젰 而댄룷?뚰듃 */}
-        <StarRating 
-          value={myRating || 0}
-          onChange={handleRatingChange}
-          interactive={!!user}
-          showValue={false}
-          size="large"
+    <div className="flex items-center">
+      {/* 로딩 상태 표시 */}
+      {isLoading && (
+        <div className="mr-2 text-sm text-gray-500">
+          <span className="loading loading-spinner loading-xs"></span>
+        </div>
+      )}
+      
+      {/* 별점 UI - 로그인한 경우만 평점 입력 가능 */}
+      {user ? (
+        <StarRating
+          initialRating={myRating || 0}
+          onRatingChange={handleRatingChange}
+          size="md"
         />
-        {!user && <span className="ml-2 text-sm text-gray-500">蹂꾩젏???④린?ㅻ㈃ 濡쒓렇?명븯?몄슂</span>}
-      </div>
-      {/* ?됯퇏 ?쒖떆 - ?ㅻ쪟 諛⑹?瑜??꾪빐 avgRating??議댁옱?섎뒗 寃쎌슦?먮쭔 ?쒖떆 */}
-      {avgRating !== null && (
-        <div className="mt-2 text-sm text-gray-600">
-          ?됯퇏 ?됱젏: {avgRating.toFixed(1)}
+      ) : (
+        <div className="text-sm text-gray-500">
+          {avgRating ? `(${avgRating.toFixed(1)})` : ''}
+        </div>
+      )}
+      
+      {/* 평균 평점 표시 */}
+      {avgRating && (
+        <div className="ml-2 text-sm text-gray-500">
+          ({avgRating.toFixed(1)})
         </div>
       )}
     </div>
