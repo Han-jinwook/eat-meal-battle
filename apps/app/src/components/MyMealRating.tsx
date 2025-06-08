@@ -18,6 +18,11 @@ interface MenuItemRating {
  * 급식 전체에 대한 평균 평점을 표시하고 사용자가 평점을 매길 수 있는 컴포넌트
  * 평균 평점은 "(4.2)" 형식으로 표시됨
  * 급식 평점은 해당 급식의 메뉴 아이템 평점들의 평균으로 계산됨
+ * 
+ * 웨일 브라우저 호환성을 위한 안전장치 추가:
+ * - 컴포넌트 마운트 상태 추적으로 언마운트 후 상태 업데이트 방지
+ * - 타이머 정리 기능으로 메모리 누수 방지
+ * - 비동기 작업 취소 기능으로 불필요한 네트워크 요청 방지
  */
 const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const [user, setUser] = useState<any>(null);
@@ -289,84 +294,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   };
 
 
-
-  // 화면에서 별점 변경이 있을 때 급식 평점 재계산 - 실시간 UI 업데이트 개선
+  // 이벤트 리스너 등록 및 제거
   useEffect(() => {
-    // 메뉴 아이템 별점 변경 이벤트 감지
-    const handleMenuItemRatingChange = async (event: CustomEvent) => {
-      console.log('🔔 메뉴 아이템 별점 변경 감지 - 급식 평점 재계산', event.detail);
-      
-      // 컴포넌트가 마운트된 상태일 때만 처리
-      if (!isMounted.current) {
-        console.log('컴포넌트가 언마운트됨, 별점 변경 무시');
-        return;
-      }
-      
-      if (user && mealId) {
-        // 1. 낙관적 UI 업데이트: 데이터 가져오기 전에 상태 임시 변경
-        // 삭제인 경우와 새 별점 등록 경우 구분
-        const detail = event.detail as any;
-        
-        // UI에 즉시 변화가 보이도록 임시 표시
-        if (detail.deleted && myRating) {
-          // 삭제 처리인 경우 - 현재 모든 별점이 삭제되면 myRating도 null 처리
-          // 실제 값은 아래에서 calculateAndSaveMealRating()에서 검증
-          if (menuItemRatings.length <= 1) {
-            setMyRating(null);
-          }
-        } else if (detail.newRating && !myRating) {
-          // 처음 별점을 주는 경우 - 임시로 값 표시
-          setMyRating(detail.newRating);
-        } else if (detail.newRating && myRating) {
-          // 기존 별점 변경 - 임시 계산
-          // 실제 값은 아래에서 calculateAndSaveMealRating()에서 검증
-          const tempRating = detail.newRating;
-          setMyRating(tempRating);
-        }
-        
-        // 이전 타이머 정리
-        if (timerRef.current !== null) {
-          clearTimeout(timerRef.current);
-        }
-        
-        // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
-        // 약간의 지연 후 유저 시각적 방해 없이 계산
-        timerRef.current = window.setTimeout(async () => {
-          // 컴포넌트가 여전히 마운트된 상태인지 확인
-          if (!isMounted.current) {
-            console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
-            return;
-          }
-          
-          try {
-            await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
-            
-            // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
-            if (!isMounted.current) return;
-            
-            // 3. UI 업데이트를 위해 정확한 데이터 재조회
-            await fetchMyRating(); // 내 별점 조회
-            await fetchMealRatingStats(); // 전체 평점 통계 조회
-          } catch (error) {
-            console.error('별점 업데이트 중 오류:', error);
-          }
-        }, 300) as any;
-      }
-    };
-
-    // 이벤트 리스너 등록 (커스텀 이벤트이뮼로 타입 선언)
+    // 이벤트 리스너 등록
     window.addEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
-
-    // 포커스를 가질 때마다 재조회하여 최신 데이터 보장
-    const handleFocus = () => {
-      // 컴포넌트가 마운트된 상태일 때만 처리
-      if (!isMounted.current) return;
-      
-      if (user && mealId) {
-        fetchMyRating();
-        fetchMealRatingStats();
-      }
-    };
     window.addEventListener('focus', handleFocus);
 
     // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 타이머 정리
@@ -384,7 +315,116 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         timerRef.current = null;
       }
     };
-  }, [mealId, user, menuItemRatings, myRating]); // menuItemRatings와 myRating 의존성 추가
+  }, [mealId, user]);
+      
+      // 이전 타이머 정리
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
+      // 약간의 지연 후 유저 시각적 방해 없이 계산
+      timerRef.current = window.setTimeout(async () => {
+        try {
+          // 컴포넌트가 여전히 마운트된 상태인지 확인
+          if (!isMounted.current) {
+            console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
+            return;
+          }
+          
+          await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+          
+          // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
+          if (!isMounted.current) return;
+          
+          // 3. UI 업데이트를 위해 정확한 데이터 재조회
+          await fetchMyRating(); // 내 별점 조회
+          await fetchMealRatingStats(); // 전체 평점 통계 조회
+        } catch (error) {
+          console.error('별점 업데이트 중 오류:', error);
+          // 오류가 발생해도 타이머 참조 정리
+          timerRef.current = null;
+        }
+      }, 300) as any;
+    }
+  };
+
+  // 메뉴 아이템 평점 변경 이벤트 처리 함수
+  const handleMenuItemRatingChange = (event: Event) => {
+    // 타입 안전을 위한 커스텀 이벤트 타입 가드
+    if (!('detail' in event) || !event.detail) return;
+    
+    const detail = event.detail as { menuItemId?: string; newRating?: number; deleted?: boolean };
+    if (!detail.menuItemId) return;
+    
+    // 마운트 상태 확인 - 언마운트 후 처리 방지
+    if (!isMounted.current) {
+      console.log('언마운트된 컴포넌트의 이벤트 처리 무시');
+      return;
+    }
+    
+    console.log('메뉴 아이템 평점 변경 감지:', detail);
+    
+    // 1. UI 즉시 반응을 위한 임시 처리
+    if (detail.deleted && myRating) {
+      // 삭제 처리인 경우 - 현재 모든 별점이 삭제되면 myRating도 null 처리
+      if (menuItemRatings.length <= 1) {
+        setMyRating(null);
+      }
+    } else if (detail.newRating && !myRating) {
+      // 처음 별점을 주는 경우 - 임시로 값 표시
+      setMyRating(detail.newRating);
+    } else if (detail.newRating && myRating) {
+      // 기존 별점 변경 - 임시 계산
+      const tempRating = detail.newRating;
+      setMyRating(tempRating);
+    }
+    
+    // 이전 타이머 정리
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
+    // 약간의 지연 후 유저 시각적 방해 없이 계산
+    timerRef.current = window.setTimeout(async () => {
+      try {
+        // 컴포넌트가 여전히 마운트된 상태인지 확인
+        if (!isMounted.current) {
+          console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
+          return;
+        }
+        
+        await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+        
+        // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
+        if (!isMounted.current) return;
+        
+        // 3. UI 업데이트를 위해 정확한 데이터 재조회
+        await fetchMyRating(); // 내 별점 조회
+        await fetchMealRatingStats(); // 전체 평점 통계 조회
+      } catch (error) {
+        console.error('별점 업데이트 중 오류:', error);
+        // 오류가 발생해도 타이머 참조 정리
+        timerRef.current = null;
+      }
+    }, 300) as any;
+  };
+
+  // 포커스를 가질 때마다 재조회하여 최신 데이터 보장
+  const handleFocus = () => {
+    // 컴포넌트가 마운트된 상태일 때만 처리
+    if (!isMounted.current) return;
+    
+    if (user && mealId) {
+      fetchMyRating();
+      fetchMealRatingStats();
+    }
+  };
+
+  // 의존성 배열이 이미 useEffect 바로 위에 정의되어 있으므로 삭제
 
   // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
   useEffect(() => {
@@ -418,12 +458,65 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     };
   }, [mealId, user]);
 
+  // 초기 데이터 로딩 함수
+  const fetchInitialData = async () => {
+    try {
+      await fetchMealRatingStats();
+      if (user) {
+        await fetchMyRating();
+      }
+    } catch (error) {
+      if ((error as any)?.name === 'AbortError') {
+        console.log('요청이 취소됨');
+      } else {
+        console.error('초기 데이터 로딩 중 오류:', error);
+      }
+    }
+  };
+
+  // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
+  useEffect(() => {
+    // 초기화 시에 마운트 상태를 true로 설정
+    isMounted.current = true;
+    
+    // AbortController 생성
+    const abortController = new AbortController();
+    
+    // 초기 데이터 로딩
+    fetchInitialData();
+    
+    // 정리 함수
+    return () => {
+      abortController.abort();
+      isMounted.current = false;
+    };
+  }, [mealId, user]);
+
+  // 별점 변경 핸들러 - 별점 클릭 시 호출됨
+  const handleRatingChange = (value: number) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!isMounted.current) return;
+
+    setMyRating(value);
+    saveRating(value);
+  };
+
   // 로딩 중에도 메시지는 항상 표시
   if (isLoading) {
     return (
       <div className="my-4">
         <div className="text-lg font-medium">
           오늘 나의 평가는?
+        </div>
+        <div className="mt-1 flex items-center">
+          <div className="opacity-50">
+            <StarRating value={0} onChange={() => {}} interactive={false} showValue={false} size="large" />
+          </div>
+          <span className="ml-2 text-sm text-gray-400">로딩 중...</span>
         </div>
       </div>
     );
@@ -438,6 +531,23 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
+      <div className="mt-2">
+        {/* 별점 입력 컴포넌트 */}
+        <StarRating 
+          value={myRating || 0}
+          onChange={handleRatingChange}
+          interactive={!!user}
+          showValue={false}
+          size="large"
+        />
+        {!user && <span className="ml-2 text-sm text-gray-500">별점을 남기려면 로그인하세요</span>}
+      </div>
+      {/* 평균 표시 - 오류 방지를 위해 avgRating이 존재하는 경우에만 표시 */}
+      {avgRating !== null && (
+        <div className="mt-2 text-sm text-gray-600">
+          평균 평점: {avgRating.toFixed(1)}
+        </div>
+      )}
     </div>
   );
 };

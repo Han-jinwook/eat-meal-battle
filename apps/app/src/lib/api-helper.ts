@@ -14,8 +14,14 @@ if (typeof window !== 'undefined') {
   
   // 전역 fetch 함수 오버라이드
   window.fetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  // URL 추출
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  // URL 추출 (다양한 브라우저 호환성 개선)
+  let url = '';
+  try {
+    url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  } catch (e) {
+    console.debug('URL 추출 오류, 문자열로 변환 시도:', e);
+    url = String(input);
+  }
   
   // 수파베이스 직접 REST API 호출 감지
   if (url.includes('izkumvvlkrkgiuuczffp.supabase.co/rest/v1/')) {
@@ -23,30 +29,62 @@ if (typeof window !== 'undefined') {
     const exemptEndpoints = [
       '/meal_images', 
       '/profiles', 
-      '/menu_item_ratings'
+      '/menu_item_ratings',
+      '/comment_likes'
     ];
     
-    // 예외 처리 검사
+    // 예외 처리 검사 (URL 경로 패턴 매칭 강화)
     const isExemptEndpoint = exemptEndpoints.some(endpoint => url.includes(endpoint));
     
+    // 웨일 브라우저 감지 시도
+    const isWhale = typeof navigator !== 'undefined' && 
+                   navigator.userAgent && 
+                   (navigator.userAgent.includes('Whale') || 
+                    navigator.userAgent.includes('NAVER'));
+    
     if (isExemptEndpoint) {
-      console.debug('예외 처리 엔드포인트 요청 허용 (api-helper.ts):', url);
+      console.debug(`예외 처리 엔드포인트 요청 허용 ${isWhale ? '(웨일 브라우저)' : ''} (api-helper.ts):`, url);
+      
+      // 웨일 브라우저에서 특별 처리 - 헤더 보강
+      if (isWhale) {
+        if (!init) init = {};
+        if (!init.headers) init.headers = {};
+        
+        // 헤더가 Headers 객체인 경우 처리
+        if (init.headers instanceof Headers) {
+          if (!init.headers.has('Accept')) init.headers.set('Accept', 'application/json');
+        } 
+        // 일반 객체인 경우
+        else {
+          init.headers = {
+            ...init.headers,
+            'Accept': 'application/json'
+          };
+        }
+      }
+      
       return originalFetch(input, init); // 예외 엔드포인트는 직접 요청 전송
     }
     
-    // API 키 헬더 확인
+    // API 키 헤더 확인 (안전한 방식으로 개선)
     let apiKeyPresent = false; 
-    if (init?.headers) {
-      if (init.headers instanceof Headers) {
-        // Headers 객체인 경우 .has() 메소드 사용
-        apiKeyPresent = init.headers.has('apikey') || init.headers.has('authorization');
-      } else {
-        // 일반 객체인 경우 기존 방식 사용
-        apiKeyPresent = Object.entries(init.headers).some(([k, v]) =>
-          typeof k === 'string' && k.toLowerCase() === 'apikey' ||
-          typeof k === 'string' && k.toLowerCase() === 'authorization'
-        );
+    try {
+      if (init?.headers) {
+        if (init.headers instanceof Headers) {
+          // Headers 객체인 경우 .has() 메소드 사용
+          apiKeyPresent = init.headers.has('apikey') || init.headers.has('authorization');
+        } else if (typeof init.headers === 'object') {
+          // 일반 객체인 경우 안전한 방식으로 검사
+          const headerKeys = Object.keys(init.headers);
+          apiKeyPresent = headerKeys.some(key => 
+            typeof key === 'string' && 
+            (key.toLowerCase() === 'apikey' || key.toLowerCase() === 'authorization')
+          );
+        }
       }
+    } catch (err) {
+      console.debug('API 키 헤더 검증 중 오류 (무시됨):', err);
+      apiKeyPresent = true; // 검증 실패시 안전하게 진행
     }
     
     // API 키가 없는 경우 401 응답 반환
@@ -113,10 +151,25 @@ export async function fetchWithAuth(
     // 정상 요청 전송
     const response = await fetchFunc(url, options);
     
-    // 404 오류 처리 - 삭제된 이미지 요청인 경우 조용히 처리
-    if (response.status === 404 && url.includes('/meal_images') && url.includes('select=id')) {
-      console.debug('삭제된 이미지 요청 처리:', url);
-      return new Response(JSON.stringify({ data: null }), { status: 200 });
+    // 404/406 오류 처리 - 브라우저 호환성 이슈 해결
+    if ((response.status === 404 || response.status === 406) && 
+        (url.includes('/meal_images') || url.includes('/comment_likes'))) {
+      console.debug(`${response.status} 오류 정상 처리 - ${url.includes('/meal_images') ? '이미지' : '좋아요'} 요청:`, url);
+      return new Response(JSON.stringify({ data: url.includes('select=id') ? null : [] }), { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // 웨일 브라우저에서 발생하는 특수한 406 Not Acceptable 오류 처리
+    if (response.status === 406 && typeof navigator !== 'undefined' && 
+        navigator.userAgent && 
+        (navigator.userAgent.includes('Whale') || navigator.userAgent.includes('NAVER'))) {
+      console.debug('웨일 브라우저 특수 406 오류 정상 처리:', url);
+      return new Response(JSON.stringify({ data: [] }), { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
     
     return response;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
 import styles from './StarRating.module.css';
 
@@ -19,6 +19,12 @@ const StarRating: React.FC<StarRatingProps> = ({
   showValue = false,
   ratingCount
 }) => {
+  // 컴포넌트 마운트 상태 추적 (웨일 브라우저 호환성용)
+  const isMounted = useRef<boolean>(true);
+  
+  // 클릭 디바운싱 및 연속 클릭 방지
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const processingTimeoutRef = useRef<number | null>(null);
   // 소수점 1자리까지 반올림
   const roundedValue = Math.round(value * 10) / 10;
   
@@ -50,25 +56,84 @@ const StarRating: React.FC<StarRatingProps> = ({
     return <FaRegStar className={`${styles.star} ${styles.empty}`} />;
   };
   
-  // 별점 클릭 핸들러
-  const handleClick = (index: number) => {
-    if (interactive && onChange) {
-      onChange(index + 1);
+  // 마운트 해제 시 정리
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (processingTimeoutRef.current !== null) {
+        window.clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // 별점 클릭 핸들러 - 웨일 브라우저 호환성 개선 (useCallback으로 최적화)
+  const handleClick = useCallback((index: number) => {
+    // 중복 클릭 방지 및 언마운트 체크
+    if (!interactive || !onChange || isProcessing || !isMounted.current) return;
+    
+    // 처리 중 상태로 설정 (DOM 업데이트 전에 이벤트 처리 안전하게)
+    setIsProcessing(true);
+    
+    try {
+      // requestAnimationFrame으로 DOM 업데이트 시점 동기화
+      window.requestAnimationFrame(() => {
+        // 마운트 상태 한번 더 확인
+        if (!isMounted.current) return;
+        
+        // 부모 컴포넌트에 변경 알림
+        onChange(index + 1);
+        
+        // 처리 완료 후 일정 시간 동안 추가 클릭 막기 (디바운싱)
+        if (isMounted.current) {
+          if (processingTimeoutRef.current !== null) {
+            window.clearTimeout(processingTimeoutRef.current);
+          }
+          
+          processingTimeoutRef.current = window.setTimeout(() => {
+            // 타임아웃 콜백 실행 전 마운트 상태 다시 확인
+            if (isMounted.current) {
+              setIsProcessing(false);
+            }
+          }, 300) as any;
+        }
+      });
+    } catch (error) {
+      console.error('별점 클릭 처리 중 오류:', error);
+      if (isMounted.current) {
+        setIsProcessing(false);
+      }
     }
-  };
+  }, [interactive, onChange, isProcessing]);
+  
+  // 안전한 렌더링을 위한 별 아이템 배열 메모이제이션
+  const starItems = React.useMemo(() => {
+    return [0, 1, 2, 3, 4].map((index) => (
+      <span 
+        key={index} 
+        onClick={(e) => {
+          // 이벤트 전파 방지로 DOM 이벤트 충돌 방지
+          e.stopPropagation();
+          // 안전하게 클릭 핸들러 호출
+          handleClick(index);
+        }}
+        style={{
+          cursor: interactive && !isProcessing ? 'pointer' : 'default',
+          opacity: isProcessing ? 0.7 : 1,
+          transition: 'opacity 0.2s ease-in-out' // 부드러운 상태 전환
+        }}
+        role="button"
+        aria-label={`${index + 1}점 평가하기`}
+      >
+        {renderStar(index)}
+      </span>
+    ));
+  }, [interactive, isProcessing, renderStar, handleClick]);
   
   return (
     <div className={styles.container}>
       <div className={`${styles.starRating} ${sizeClass}`}>
-        {[0, 1, 2, 3, 4].map((index) => (
-          <span 
-            key={index} 
-            onClick={() => handleClick(index)}
-            style={{ cursor: interactive ? 'pointer' : 'default' }}
-          >
-            {renderStar(index)}
-          </span>
-        ))}
+        {starItems}
       </div>
       
       {showValue && roundedValue > 0 && (
