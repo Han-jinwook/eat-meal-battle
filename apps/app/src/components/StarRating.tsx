@@ -61,42 +61,62 @@ const StarRating: React.FC<StarRatingProps> = ({
     return () => {
       isMounted.current = false;
       if (processingTimeoutRef.current !== null) {
-        window.clearTimeout(processingTimeoutRef.current);
-        processingTimeoutRef.current = null;
-      }
     };
   }, []);
 
-  // 별점 클릭 핸들러 - 웨일 브라우저 호환성 개선 (useCallback으로 최적화)
-  const handleClick = useCallback((index: number) => {
-    // 중복 클릭 방지 및 언마운트 체크
-    if (!interactive || !onChange || isProcessing || !isMounted.current) return;
+  // 별점 클릭 이벤트 처리 - 웨일 브라우저 호환성 강화
+  const handleStarClick = useCallback((index: number, e?: React.MouseEvent) => {
+    // 이벤트 버블링 방지
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    // 처리 중 상태로 설정 (DOM 업데이트 전에 이벤트 처리 안전하게)
-    setIsProcessing(true);
+    // 처리 중 상태이거나 인터랙티브가 아니면 스킵
+    if (processingRef.current || !interactive) return;
     
-    try {
-      // requestAnimationFrame으로 DOM 업데이트 시점 동기화
-      window.requestAnimationFrame(() => {
-        // 마운트 상태 한번 더 확인
-        if (!isMounted.current) return;
-        
-        // 부모 컴포넌트에 변경 알림
-        onChange(index + 1);
-        
-        // 처리 완료 후 일정 시간 동안 추가 클릭 막기 (디바운싱)
+    // 처리 중 플래그 설정
+    processingRef.current = true;
+
+    // 마운트 상태 확인
+    if (!isMounted.current) {
+      processingRef.current = false;
+      return;
+    }
+
+    // 조금 더 명확한 시각적 피드백 제공
+    setCursor('pointer');
+    setOpacity(0.6); // 클릭 시 약간 투명하게
+
+    // 안전한 상태 업데이트
+    const newValue = index + 1; // 1부터 5까지의 점수
+    
+    // setTimeout 대신 requestAnimationFrame 사용하여 렌더링 성능 최적화
+    requestAnimationFrame(() => {
+      // DOM 업데이트 전에 다시 한 번 마운트 상태 확인
+      if (!isMounted.current) {
+        processingRef.current = false;
+        return;
+      }
+      
+      // 부모 컴포넌트에 변경 통지 (안전하게 호출)
+      try {
+        if (onChange && isMounted.current) onChange(newValue);
+      } catch (err) {
+        console.error('별점 변경 호출 오류:', err);
+      }
+
+      // 시각적 피드백 상태 초기화
+      setTimeout(() => {
         if (isMounted.current) {
-          if (processingTimeoutRef.current !== null) {
-            window.clearTimeout(processingTimeoutRef.current);
-          }
-          
-          processingTimeoutRef.current = window.setTimeout(() => {
-            // 타임아웃 콜백 실행 전 마운트 상태 다시 확인
-            if (isMounted.current) {
-              setIsProcessing(false);
-            }
-          }, 300) as any;
+          setCursor('default');
+          setOpacity(1);
+          processingRef.current = false;
         }
+      }, 150); // 짧은 시각 피드백
+    });
+  }, [interactive, onChange]);
+
       });
     } catch (error) {
       console.error('별점 클릭 처리 중 오류:', error);

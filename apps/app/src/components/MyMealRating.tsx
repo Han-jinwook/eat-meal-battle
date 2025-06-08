@@ -209,6 +209,95 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     return Math.round(avg * 10) / 10; // 소수점 둘째 자리에서 반올림하여 첨째 자리까지만 표시 (4.53 -> 4.5 / 3.75 -> 3.8)
   };
 
+  // 별점 남기기 API 호출 함수 (웨일 브라우저 호환성 강화)
+  const submitRating = async (rating: number) => {
+    if (!mealId || !user) return;
+    if (!isMounted.current) return; // 컴포넌트 마운트 상태 확인
+    
+    setIsLoading(true);
+    timerRef.current = null; // 타이머 리셋
+
+    try {
+      console.log('급식 평점 제출 시작:', mealId, rating);
+      
+      // 웨일 브라우저 호환성: API 요청에 타임아웃 추가
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+      
+      // 기존 항목 있는지 확인 (signal 추가)
+      const { data: existingRating, error: fetchError } = await supabase
+        .from('meal_ratings')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('meal_id', mealId)
+        .abortSignal(controller.signal)
+        .maybeSingle();
+
+      clearTimeout(timeoutId);
+      
+      // 마운트 상태 다시 확인
+      if (!isMounted.current) {
+        console.log('컴포넌트 언마운트 상태, API 작업 중단');
+        return;
+      }
+      
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('기존 평점 조회 오류:', fetchError);
+        throw fetchError;
+      }
+
+      if (existingRating) {
+        // 기존 평점 업데이트
+        const { error } = await supabase
+          .from('meal_ratings')
+          .update({ rating: rating })
+          .eq('id', existingRating.id);
+
+        if (error) throw error;
+        console.log('기존 급식 평점 업데이트 성공');
+      } else {
+        // 새 평점 추가
+        const { error } = await supabase
+          .from('meal_ratings')
+          .insert([
+            { user_id: user.id, meal_id: mealId, rating: rating }
+          ]);
+
+        if (error) throw error;
+        console.log('새 급식 평점 추가 성공');
+      }
+
+      // 마운트 상태 다시 확인
+      if (!isMounted.current) return;
+      
+      // 성공 후 내 평점 및 통계 갱신
+      setMyRating(rating);
+      await fetchMealRatingStats();
+
+      // 웨일 브라우저 호환성: try-catch로 이벤트 발생 래핑
+      try {
+        // 이벤트 발생시켜 전체 UI 갱신
+        const event = new CustomEvent('meal-rating-change', { 
+          detail: { mealId, rating } 
+        });
+        window.dispatchEvent(event);
+      } catch (eventError) {
+        console.error('이벤트 발생 중 오류:', eventError);
+      }
+
+    } catch (error) {
+      console.error('급식 평점 제출 오류:', error);
+      if (isMounted.current) {
+        // 오류 상태 업데이트 (마운트된 경우만)
+        setIsLoading(false);
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
   // 평점 저장 함수 (1~5만 upsert, 그 외는 무조건 삭제)
   const saveRating = async (rating: number | null) => {
     if (!mealId || !user) return false;
@@ -234,22 +323,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       } else {
         // rating이 1~5인 경우에만 upsert
         console.log('급식 평점 저장 시작:', mealId, user.id, rating);
-        const { error } = await supabase
-          .from('meal_ratings')
-          .upsert({
-            user_id: user.id,
-            meal_id: mealId,
-            rating: rating, // 소수점 값 그대로 저장 (meal_ratings 테이블의 rating 컬럼은 float4 타입)
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,meal_id'
-          });
-        if (error) {
-          console.error('평점 저장 오류:', error.message);
-          return false;
-        }
-        console.log('평점 저장 성공!');
-        await fetchMealRatingStats();
+        await submitRating(rating);
         return true;
       }
     } catch (error) {
@@ -316,6 +390,38 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       }
     };
   }, [mealId, user]);
+      
+      // 이전 타이머 정리
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
+      // 약간의 지연 후 유저 시각적 방해 없이 계산
+      timerRef.current = window.setTimeout(async () => {
+        try {
+          // 컴포넌트가 여전히 마운트된 상태인지 확인
+          if (!isMounted.current) {
+            console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
+            return;
+          }
+          
+          await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+          
+          // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
+          if (!isMounted.current) return;
+          
+          // 3. UI 업데이트를 위해 정확한 데이터 재조회
+          await fetchMyRating(); // 내 별점 조회
+          await fetchMealRatingStats(); // 전체 평점 통계 조회
+        } catch (error) {
+          console.error('별점 업데이트 중 오류:', error);
+          // 오류가 발생해도 타이머 참조 정리
+          timerRef.current = null;
+        }
+      }, 300) as any;
+    }
 
   // 메뉴 아이템 평점 변경 이벤트 처리 함수
   const handleMenuItemRatingChange = (event: Event) => {
@@ -426,6 +532,19 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       isMounted.current = false;
     };
   }, [mealId, user]);
+
+  // 별점 변경 핸들러 - 별점 클릭 시 호출됨
+  const handleRatingChange = (value: number) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!isMounted.current) return;
+
+    setMyRating(value);
+    saveRating(value);
+  };
 
   // 별점 변경 핸들러 - 별점 클릭 시 호출됨
   const handleRatingChange = (value: number) => {
