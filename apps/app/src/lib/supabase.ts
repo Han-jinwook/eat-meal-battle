@@ -27,7 +27,8 @@ export const createClient = () => {
             '/profiles', 
             '/menu_item_ratings',
             '/school_infos',
-            '/quiz'
+            '/quiz',
+            '/comment_likes'
           ];
           
           // 예외 처리 검사 - URL 파라미터를 포함한 전체 URL 기반 검사

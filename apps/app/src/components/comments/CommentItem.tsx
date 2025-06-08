@@ -681,7 +681,7 @@ useEffect(() => {
             <div className="absolute left-0 top-0 h-full" style={{ width: '16px' }}>
               <svg width="16" height="100%" className="overflow-visible">
                 <path 
-                  d="M1,0 L1,calc(100% - 8) Q1,calc(100% - 0) 9,calc(100% - 0)" 
+                  d="M1,0 L1,100% Q1,100% 9,100%" 
                   stroke="#e5e7eb" 
                   strokeWidth="1.5" 
                   fill="none" 

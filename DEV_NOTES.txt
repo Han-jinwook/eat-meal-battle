@@ -283,3 +283,8 @@ c:\Users\WD\Downloads\supabase-schema-izkumvvlkrkgiuuczffp (5).png
 - 스케줄러 실행 로그 모니터링으로 정상 작동 확인
 - 생성된 퀴즈의 품질 검토 및 개선
 - 필요시 AI 프롬프트 조정으로 퀴즈 품질 향상
+
+
+6/8  새벽 1시
+
+Supabase 클라이언트 코드를 싱글톤 패턴으로 수정했는데도  카카오 로그인 에러
