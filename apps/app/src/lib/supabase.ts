@@ -64,13 +64,31 @@ export const createClient = () => {
             }), { status: 401 }));
           }
           
-          return fetch(...args).catch(err => {
-            // 404 에러는 조용히 처리
-            if (err.status === 404) {
-              return new Response(JSON.stringify({ error: 'Not found', quiet: true }), { status: 404 });
-            }
-            throw err;
-          });
+          // comment_likes 특별 처리: 406 오류 처리
+          if (urlStr.includes('/comment_likes')) {
+            return fetch(...args).then(response => {
+              if (response.status === 406) {
+                // 406 Not Acceptable을 200으로 변환하고 빈 배열 반환
+                return new Response(JSON.stringify({ data: [] }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              }
+              return response;
+            }).catch(err => {
+              // comment_likes 요청 오류 처리
+              console.debug('좋아요 요청 처리 오류:', err);
+              return new Response(JSON.stringify({ data: [] }), { status: 200 }); 
+            });
+          } else {
+            return fetch(...args).catch(err => {
+              // 404 에러는 조용히 처리
+              if (err.status === 404) {
+                return new Response(JSON.stringify({ error: 'Not found', quiet: true }), { status: 404 });
+              }
+              throw err;
+            });
+          }
         }
       }
     });
