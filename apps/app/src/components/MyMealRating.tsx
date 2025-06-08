@@ -316,38 +316,6 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       }
     };
   }, [mealId, user]);
-      
-      // 이전 타이머 정리
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      
-      // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
-      // 약간의 지연 후 유저 시각적 방해 없이 계산
-      timerRef.current = window.setTimeout(async () => {
-        try {
-          // 컴포넌트가 여전히 마운트된 상태인지 확인
-          if (!isMounted.current) {
-            console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
-            return;
-          }
-          
-          await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
-          
-          // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
-          if (!isMounted.current) return;
-          
-          // 3. UI 업데이트를 위해 정확한 데이터 재조회
-          await fetchMyRating(); // 내 별점 조회
-          await fetchMealRatingStats(); // 전체 평점 통계 조회
-        } catch (error) {
-          console.error('별점 업데이트 중 오류:', error);
-          // 오류가 발생해도 타이머 참조 정리
-          timerRef.current = null;
-        }
-      }, 300) as any;
-    }
 
   // 메뉴 아이템 평점 변경 이벤트 처리 함수
   const handleMenuItemRatingChange = (event: Event) => {
