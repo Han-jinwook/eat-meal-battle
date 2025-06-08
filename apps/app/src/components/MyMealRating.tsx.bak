@@ -472,6 +472,19 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     saveRating(value);
   };
 
+  // 별점 변경 핸들러 - 별점 클릭 시 호출됨
+  const handleRatingChange = (value: number) => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!isMounted.current) return;
+
+    setMyRating(value);
+    saveRating(value);
+  };
+
   // 로딩 중에도 메시지는 항상 표시
   if (isLoading) {
     return (
