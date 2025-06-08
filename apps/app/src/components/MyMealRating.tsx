@@ -563,34 +563,33 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     fetchMealRatingStats();
   }, [user, mealId]);
   
+  // 로딩 상태일 때 간단한 로딩 UI 표시
+  if (isLoading) {
+    return (
+      <div className="my-4">
+        <div className="text-lg font-medium">
+          오늘 나의 평가는?
+        </div>
+        <div className="mt-1 flex items-center">
+          <span className="ml-2 text-sm text-gray-400">로딩 중...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center">
-      {/* 로딩 상태 표시 */}
-      {isLoading && (
-        <div className="mr-2 text-sm text-gray-500">
-          <span className="loading loading-spinner loading-xs"></span>
-        </div>
-      )}
-      
-      {/* 별점 UI - 로그인한 경우만 평점 입력 가능 */}
-      {user ? (
-        <StarRating
-          initialRating={myRating || 0}
-          onRatingChange={handleRatingChange}
-          size="md"
-        />
-      ) : (
-        <div className="text-sm text-gray-500">
-          {avgRating ? `(${avgRating.toFixed(1)})` : ''}
-        </div>
-      )}
-      
-      {/* 평균 평점 표시 */}
-      {avgRating && (
-        <div className="ml-2 text-sm text-gray-500">
-          ({avgRating.toFixed(1)})
-        </div>
-      )}
+    <div className="my-4">
+      <div className="text-lg font-medium">
+        오늘 나의 평가는?
+        {/* 사용자 평점 표시 - 별점 UI 없이 점수만 표시 */}
+        {user && myRating !== null && (
+          <span className="ml-1">({myRating.toFixed(1)})</span>
+        )}
+        {/* 사용자 평점이 없고 평균 평점만 있는 경우 */}
+        {(!user || myRating === null) && avgRating !== null && (
+          <span className="ml-1">({avgRating.toFixed(1)})</span>
+        )}
+      </div>
     </div>
   );
 };
