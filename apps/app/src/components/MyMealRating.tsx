@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import StarRating from './StarRating';
 
@@ -25,6 +25,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [menuItemRatings, setMenuItemRatings] = useState<MenuItemRating[]>([]);
+  
+  // 컴포넌트 마운트 상태 추적
+  const isMounted = useRef<boolean>(true);
+  // 타이머 참조 저장
+  const timerRef = useRef<number | null>(null);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -291,6 +296,12 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     const handleMenuItemRatingChange = async (event: CustomEvent) => {
       console.log('🔔 메뉴 아이템 별점 변경 감지 - 급식 평점 재계산', event.detail);
       
+      // 컴포넌트가 마운트된 상태일 때만 처리
+      if (!isMounted.current) {
+        console.log('컴포넌트가 언마운트됨, 별점 변경 무시');
+        return;
+      }
+      
       if (user && mealId) {
         // 1. 낙관적 UI 업데이트: 데이터 가져오기 전에 상태 임시 변경
         // 삭제인 경우와 새 별점 등록 경우 구분
@@ -313,15 +324,33 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           setMyRating(tempRating);
         }
         
+        // 이전 타이머 정리
+        if (timerRef.current !== null) {
+          clearTimeout(timerRef.current);
+        }
+        
         // 2. 백그라운드에서 실제 데이터 계산 및 저장 처리
         // 약간의 지연 후 유저 시각적 방해 없이 계산
-        setTimeout(async () => {
-          await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+        timerRef.current = window.setTimeout(async () => {
+          // 컴포넌트가 여전히 마운트된 상태인지 확인
+          if (!isMounted.current) {
+            console.log('타이머 콜백: 컴포넌트가 언마운트됨, 작업 취소');
+            return;
+          }
           
-          // 3. UI 업데이트를 위해 정확한 데이터 재조회
-          await fetchMyRating(); // 내 별점 조회
-          await fetchMealRatingStats(); // 전체 평점 통계 조회
-        }, 300);
+          try {
+            await calculateAndSaveMealRating(); // 실제 계산 및 DB 저장
+            
+            // 컴포넌트가 여전히 마운트된 상태인지 다시 확인
+            if (!isMounted.current) return;
+            
+            // 3. UI 업데이트를 위해 정확한 데이터 재조회
+            await fetchMyRating(); // 내 별점 조회
+            await fetchMealRatingStats(); // 전체 평점 통계 조회
+          } catch (error) {
+            console.error('별점 업데이트 중 오류:', error);
+          }
+        }, 300) as any;
       }
     };
 
@@ -330,6 +359,9 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
     // 포커스를 가질 때마다 재조회하여 최신 데이터 보장
     const handleFocus = () => {
+      // 컴포넌트가 마운트된 상태일 때만 처리
+      if (!isMounted.current) return;
+      
       if (user && mealId) {
         fetchMyRating();
         fetchMealRatingStats();
@@ -337,19 +369,53 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     };
     window.addEventListener('focus', handleFocus);
 
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거 및 타이머 정리
     return () => {
+      // 마운트 상태 업데이트
+      isMounted.current = false;
+      
+      // 이벤트 리스너 제거
       window.removeEventListener('menu-item-rating-change', handleMenuItemRatingChange as EventListener);
       window.removeEventListener('focus', handleFocus);
+      
+      // 타이머 정리
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [mealId, user, menuItemRatings, myRating]); // menuItemRatings와 myRating 의존성 추가
 
   // 컴포넌트 마운트 시와 mealId, user 변경 시 평점 조회
   useEffect(() => {
-    fetchMealRatingStats();
-    if (user) {
-      fetchMyRating();
-    }
+    // 초기화 시에 마운트 상태를 true로 설정
+    isMounted.current = true;
+    
+    // AbortController 생성
+    const abortController = new AbortController();
+    
+    const fetchInitialData = async () => {
+      try {
+        await fetchMealRatingStats();
+        if (user) {
+          await fetchMyRating();
+        }
+      } catch (error) {
+        if ((error as any)?.name === 'AbortError') {
+          console.log('요청이 취소됨');
+        } else {
+          console.error('초기 데이터 로딩 중 오류:', error);
+        }
+      }
+    };
+    
+    fetchInitialData();
+    
+    // 정리 함수
+    return () => {
+      abortController.abort();
+      isMounted.current = false;
+    };
   }, [mealId, user]);
 
   // 로딩 중에도 메시지는 항상 표시
