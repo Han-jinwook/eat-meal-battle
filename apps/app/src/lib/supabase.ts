@@ -3,11 +3,37 @@ import { createBrowserClient } from '@supabase/ssr'
 // 싱글톤 패턴을 위한 변수
 let supabaseClientInstance: ReturnType<typeof createBrowserClient> | null = null;
 
+// 브라우저 환경인지 확인하는 함수
+const isBrowser = () => typeof window !== 'undefined';
+
 // 에러 로깅 조용히 처리를 위한 래퍼, 싱글톤 패턴으로 구현
 export const createClient = () => {
   // 이미 인스턴스가 있으면 반환
   if (supabaseClientInstance) {
     return supabaseClientInstance;
+  }
+  
+  // 서버 환경에서는 최소한의 동작만 수행하는 대용 클라이언트 반환
+  if (!isBrowser()) {
+    // 서버에서는 대부분 동작하지 않는 대용 객체 반환
+    console.debug('서버 환경에서 Supabase 클라이언트 호출 - 제한된 기능');
+    return {
+      auth: {
+        getSession: () => ({ data: { session: null } }),
+        getUser: () => ({ data: { user: null } }),
+        signOut: () => Promise.resolve({ error: null }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+            data: [],
+            error: null
+          }),
+        }),
+      }),
+      // 필요한 최소한의 기능만 추가 구현
+    };
   }
   // 키가 없는 경우 조용히 처리 (개발 환경에서 콘솔 에러 방지)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
