@@ -46,7 +46,7 @@ export const createClient = () => {
             urlStr.includes('/quiz')
           );
           
-          // 모든 REST API 요청에 API 키 자동 추가
+          // 모든 REST API 요청에 API 키 자동 추가 및 헤더 표준화
           if (urlStr.includes('/rest/v1/')) {
             const headers = args[1]?.headers || {};
             args[1] = {
@@ -54,7 +54,8 @@ export const createClient = () => {
               headers: {
                 ...headers,
                 apikey: supabaseAnonKey,
-                Authorization: `Bearer ${supabaseAnonKey}`
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json' // 브라우저별 차이 해결을 위한 헤더 통일
               }
             };
           }
