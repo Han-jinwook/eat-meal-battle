@@ -61,6 +61,9 @@ const StarRating: React.FC<StarRatingProps> = ({
     return () => {
       isMounted.current = false;
       if (processingTimeoutRef.current !== null) {
+        window.clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
     };
   }, []);
 
