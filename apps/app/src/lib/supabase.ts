@@ -1,13 +1,21 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// 에러 로깅 조용히 처리를 위한 래퍼
+// 싱글톤 패턴을 위한 변수
+let supabaseClientInstance: ReturnType<typeof createBrowserClient> | null = null;
+
+// 에러 로깅 조용히 처리를 위한 래퍼, 싱글톤 패턴으로 구현
 export const createClient = () => {
+  // 이미 인스턴스가 있으면 반환
+  if (supabaseClientInstance) {
+    return supabaseClientInstance;
+  }
   // 키가 없는 경우 조용히 처리 (개발 환경에서 콘솔 에러 방지)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   
   try {
-    return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    // 새 인스턴스 생성 및 저장
+    supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         // 네트워크 오류 발생 시 재시도 횟수 감소 (개발 환경 최적화)
         autoRefreshToken: true,
@@ -92,9 +100,12 @@ export const createClient = () => {
         }
       }
     });
+    
+    return supabaseClientInstance;
   } catch (e) {
     // 초기화 오류는 조용히 처리하고 기본 클라이언트 반환
     console.debug('Supabase 클라이언트 초기화 중 오류 발생 (무시됨)');
-    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+    supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    return supabaseClientInstance;
   }
 }
