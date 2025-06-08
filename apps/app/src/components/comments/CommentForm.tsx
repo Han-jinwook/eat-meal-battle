@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<boolean>;
@@ -20,7 +20,7 @@ export default function CommentForm({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userInitial, setUserInitial] = useState<string>('?');
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   // 사용자 정보 가져오기
   useEffect(() => {

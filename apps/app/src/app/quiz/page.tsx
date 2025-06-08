@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 
 // 타입 정의
 type Quiz = {
@@ -92,7 +92,7 @@ export default function QuizPage() {
     }
   `;
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import CommentForm from './CommentForm';
 import { User } from '@supabase/supabase-js';
 import { Comment } from './types';
@@ -28,7 +28,7 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   
   // 현재 사용자가 해당 학교 학생인지 확인
   const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   const PAGE_SIZE = 10;
 

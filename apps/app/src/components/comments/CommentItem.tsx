@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import { Comment, CommentReply } from './types';
 import useUserSchool from '@/hooks/useUserSchool';
 import { formatDistanceToNow } from 'date-fns';
@@ -31,7 +31,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   const [repliesLoading, setRepliesLoading] = useState<boolean>(false);
 
   const { user, userSchool } = useUserSchool();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   // 현재 사용자가 해당 학교 학생인지 확인
   const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;

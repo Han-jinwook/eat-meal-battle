@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CommentReply } from './types';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import useUserSchool from '@/hooks/useUserSchool';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -92,7 +92,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   }, []);
   
   const { user, userSchool } = useUserSchool();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   // 현재 사용자가 해당 학교 학생인지 확인
   const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;

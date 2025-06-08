@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import StarRating from './StarRating';
 
 // Supabase 클라이언트 초기화
-const supabase = createClientComponentClient();
+const supabase = createClient();
 
 interface MyMealRatingProps {
   mealId: string;

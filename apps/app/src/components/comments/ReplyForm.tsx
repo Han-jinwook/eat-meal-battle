@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import useUserSchool from '@/hooks/useUserSchool';
 
 interface ReplyFormProps {
@@ -23,7 +23,7 @@ export default function ReplyForm({
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useUserSchool();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   // 사용자 프로필 정보
   const [userProfile, setUserProfile] = useState<{

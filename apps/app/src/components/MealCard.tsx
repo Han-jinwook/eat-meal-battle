@@ -5,13 +5,13 @@ import { MealInfo, MealMenuItem, MealImage } from '@/types'; // 이미지 타입
 import StarRating from '@/components/StarRating';
 import { useState, useEffect, useCallback } from 'react';
 import ImageWithFallback from '@/components/ImageWithFallback';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
 
 // Supabase 클라이언트 초기화
-const supabase = createClientComponentClient();
+const supabase = createClient();
 
 // 디버깅용 콘솔 로그
 console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화');
