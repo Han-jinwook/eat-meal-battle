@@ -163,7 +163,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
           .select('id')
           .eq('reply_id', reply.id)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
           
         if (!likeError && data) {
           setIsLiked(true);

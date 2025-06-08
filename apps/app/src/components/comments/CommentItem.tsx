@@ -64,16 +64,20 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     if (!user || !user.id) return;
     
     try {
+      // single() 대신 maybeSingle() 사용 - 결과가 없을 때도 오류 없이 null 반환
       const { data, error } = await supabase
         .from('comment_likes')
         .select('id')
         .eq('comment_id', comment.id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
         
+      // 오류가 없고 데이터가 존재하면 좋아요 상태
       setIsLiked(!error && !!data);
     } catch (err) {
-      console.error('좋아요 여부 확인 오류:', err);
+      // 에러는 무시하고 좋아요를 해제 상태로 설정
+      console.debug('좋아요 여부 확인 중 오류 무시:', err);
+      setIsLiked(false);
     }
   };
   
