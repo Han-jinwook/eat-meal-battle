@@ -348,7 +348,6 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         }
       }, 300) as any;
     }
-  };
 
   // 메뉴 아이템 평점 변경 이벤트 처리 함수
   const handleMenuItemRatingChange = (event: Event) => {
