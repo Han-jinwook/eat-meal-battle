@@ -43,11 +43,13 @@ export const createClient = () => {
     // 새 인스턴스 생성 및 저장
     supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // 네트워크 오류 발생 시 재시도 횟수 감소 (개발 환경 최적화)
+        // 인증 세션 관리 개선
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        // 안전한 로컬 스토리지 참조
+        localStorage: isBrowser() ? window.localStorage : undefined,
       },
       global: {
         // API 키 없는 요청 및 404 오류 처리 개선
