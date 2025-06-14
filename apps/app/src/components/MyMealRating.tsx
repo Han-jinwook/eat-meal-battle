@@ -551,7 +551,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     // 사용자나 mealId가 없으면 로드하지 않음
     if (!user || !mealId) return;
     
-    console.log('데이터 로드 시작:', mealId);
+    console.log('데이터 로드 시작:', mealId, '유저 ID:', user?.id);
     
     // 내 평점 로드
     fetchMyRating();
@@ -561,7 +561,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     // 전체 평균 평점 로드
     fetchMealRatingStats();
-  }, [user, mealId]);
+    
+    // DEBUG: 사용자와 평점 상태 확인 (확장된 디버깅)
+    console.log('DEBUG: 현재 사용자 상태:', user ? '로그인됨' : '미로그인', '유저 객체:', user);
+    console.log('DEBUG: 현재 myRating 값:', myRating);
+  }, [user, mealId]); // myRating 의존성 제거 - 무한 루프 방지
   
   // 로딩 상태일 때도 평점 표시
 
