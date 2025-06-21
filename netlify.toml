@@ -1,8 +1,8 @@
 [build]
   base = "."
-  command = "npm install --legacy-peer-deps && npm run build"
-  publish = "apps/app/.next"
-  functions = "apps/app/netlify/functions"
+  command = "npm ci && npm run build"
+  publish = ".next"
+  functions = "netlify/functions"
 
 [functions]
   node_bundler = "esbuild"
