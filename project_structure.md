@@ -1,0 +1,208 @@
+﻿📁 apps
+📁 docs
+📁 migrations
+📁 netlify
+📁 packages
+📁 src
+📁 types
+📄 .env.local
+📄 .env.local.backup
+📄 DEV_NOTES.txt
+📄 eslint.config.mjs
+📄 FeatureIndex.txt
+📄 file_tree.md
+📄 migration.sql
+📄 netlify.toml
+📄 package-lock.json
+📄 package.json
+📄 ProjectStructure.md
+📄 project_structure.md
+📄 README.md
+📄 tsconfig.json
+📄 turbo.json
+  📁 app
+  📁 whateat
+  📄 README.md
+    📁 .next
+    📁 netlify
+    📁 public
+    📁 src
+    📄 .env.local
+    📄 file.svg
+    📄 firebase-messaging-sw.js
+    📄 globe.svg
+    📄 netlify-trigger.ts
+    📄 next-env.d.ts
+    📄 next.config.js
+    📄 next.config.ts
+    📄 next.svg
+    📄 package.json
+    📄 postcss.config.mjs
+    📄 tsconfig.json
+    📄 vercel.svg
+    📄 window.svg
+      📁 cache
+      📁 server
+      📁 static
+      📁 types
+      📄 app-build-manifest.json
+      📄 build-manifest.json
+      📄 package.json
+      📄 react-loadable-manifest.json
+      📄 trace
+        📁 webpack
+        📄 .rscinfo
+        📁 app
+        📁 vendor-chunks
+        📄 app-paths-manifest.json
+        📄 interception-route-rewrite-manifest.js
+        📄 middleware-build-manifest.js
+        📄 middleware-manifest.json
+        📄 middleware-react-loadable-manifest.js
+        📄 next-font-manifest.js
+        📄 next-font-manifest.json
+        📄 pages-manifest.json
+        📄 server-reference-manifest.js
+        📄 server-reference-manifest.json
+        📄 webpack-runtime.js
+        📁 chunks
+        📁 css
+        📁 development
+        📁 media
+        📁 webpack
+        📁 app
+        📄 cache-life.d.ts
+        📄 package.json
+      📁 functions
+        📄 auto-generate-meal-images.js
+        📄 check-missing-meal-images.js
+        📄 generate-meal-image.js
+        📄 meals.js
+        📄 menu-ratings.js
+        📄 notifications-read.js
+        📄 schools.js
+        📄 update-meals.js
+        📄 upload-meal-image.js
+        📄 verify-meal-image.js
+      📁 icons
+      📁 images
+      📄 manifest.json
+        📄 icon-192x192.png
+        📄 icon-512x512.png
+        📄 icon.svg
+        📄 placeholder.jpg
+      📁 app
+      📁 components
+      📁 hooks
+      📁 lib
+      📁 types
+      📁 utils
+      📄 middleware.ts
+      📄 types.ts
+        📁 api
+        📁 auth
+        📁 battle
+        📁 login
+        📁 profile
+        📁 quiz
+        📁 ranking
+        📁 school-search
+        📄 favicon.ico
+        📄 globals.css
+        📄 layout.tsx
+        📄 page.tsx
+        📁 comments
+        📁 firebase
+        📄 AppHeader.tsx
+        📄 ImageWithFallback.tsx
+        📄 MainHeader.tsx
+        📄 MealCard.tsx
+        📄 MealImageUploader.tsx
+        📄 MyMealRating.tsx
+        📄 MyMealRating.tsx.bak
+        📄 NotificationBell.tsx
+        📄 SchoolRating.tsx
+        📄 StarRating.module.css
+        📄 StarRating.tsx
+        📄 useMeals.ts
+        📄 useModal.ts
+        📄 useUserSchool.ts
+        📁 firebase
+        📁 supabase
+        📄 api-helper.ts
+        📄 mealUpdater.ts
+        📄 supabase-server.ts
+        📄 supabase.ts
+        📄 supabaseAdmin.ts
+        📄 supabase.ts
+        📄 DateUtils.ts
+        📄 imageUtils.ts
+        📄 mealUtils.ts
+    📁 public
+    📁 src
+    📄 next.config.js
+    📄 package.json
+    📄 tailwind.config.js
+    📄 tsconfig.json
+      📄 favicon.ico
+      📁 app
+      📁 components
+      📁 lib
+        📁 auth
+        📁 login
+        📁 profile
+        📄 globals.css
+        📄 layout.tsx
+        📄 page.tsx
+        📄 Auth.tsx
+        📄 LoginForm.tsx
+        📄 NavBar.tsx
+        📄 Profile.tsx
+  📄 api.md
+  📄 vision.md
+  📄 add_meal_menus_insert_policy.sql
+  📄 create_meal_menus_table.sql
+  📄 create_notifications_table.sql
+  📁 functions
+    📄 cron-meals.js
+    📄 generate-meal-quizzes.js
+    📄 quiz.js
+  📁 auth
+  📁 types
+  📁 ui
+  📁 utils
+  📄 README.md
+    📁 src
+    📄 package.json
+    📄 tsconfig.json
+      📁 supabase
+      📄 index.ts
+        📄 index.ts
+    📁 src
+    📄 package.json
+    📄 tsconfig.json
+      📁 auth
+      📁 meal
+      📄 index.ts
+        📄 index.ts
+        📄 index.ts
+    📁 src
+    📄 package.json
+    📄 tsconfig.json
+      📁 components
+      📄 index.ts
+        📄 Button.tsx
+        📄 ImageWithFallback.tsx
+        📄 index.ts
+    📁 src
+    📄 package.json
+    📄 tsconfig.json
+      📁 date
+      📁 image
+      📄 index.ts
+        📄 index.ts
+        📄 index.ts
+  📁 pages
+    📁 api
+      📁 cron
+        📄 meals.ts
