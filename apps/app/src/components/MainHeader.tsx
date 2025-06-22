@@ -20,6 +20,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: '랭킹', href: '/ranking' },
 ];
 
+import useUserSchool from '@/hooks/useUserSchool';
+
 export default function MainHeader() {
   const supabase = createClient();
   const pathname = usePathname();
@@ -87,10 +89,20 @@ export default function MainHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
-        {/* 로고 */}
-        <Link href="/" className="flex items-center text-lg font-bold text-indigo-600">
-          <span className="mr-2 hidden sm:inline">🍱</span> 급식배틀
-        </Link>
+        {/* 학교명 + 학년/반 표시 */}
+        <div className="flex flex-col items-start sm:items-center">
+          <span className="text-base sm:text-lg font-bold text-gray-900">
+            {(() => {
+              const { userSchool } = useUserSchool();
+              if (!userSchool) return '';
+              const schoolName = userSchool.school_name || '';
+              const grade = userSchool.grade ? `${userSchool.grade}학년` : '';
+              const classNum = userSchool.class ? `${userSchool.class}반` : '';
+              const gradeClass = grade || classNum ? ` ${grade}${grade && classNum ? ' ' : ''}${classNum}` : '';
+              return `${schoolName}${gradeClass}`.trim();
+            })()}
+          </span>
+        </div>
 
         {/* 메인 메뉴 - 모바일에서도 표시 */}
         <nav className="flex overflow-x-auto gap-3 sm:gap-6 px-1 py-1 -mx-1 scrollbar-hide">
