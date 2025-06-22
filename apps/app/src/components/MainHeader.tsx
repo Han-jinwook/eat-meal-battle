@@ -89,20 +89,9 @@ export default function MainHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
-        {/* 학교명 + 학년/반 표시 */}
-        <div className="flex flex-col items-start sm:items-center">
-          <span className="text-base sm:text-lg font-bold text-gray-900">
-            {(() => {
-              const { userSchool } = useUserSchool();
-              if (!userSchool) return '';
-              const schoolName = userSchool.school_name || '';
-              const grade = userSchool.grade ? `${userSchool.grade}학년` : '';
-              const classNum = userSchool.class ? `${userSchool.class}반` : '';
-              const gradeClass = grade || classNum ? ` ${grade}${grade && classNum ? ' ' : ''}${classNum}` : '';
-              return `${schoolName}${gradeClass}`.trim();
-            })()}
-          </span>
-        </div>
+        <Link href="/" className="text-lg sm:text-xl font-bold text-gray-900">
+          뭐먹지?
+        </Link>
 
         {/* 메인 메뉴 - 모바일에서도 표시 */}
         <nav className="flex overflow-x-auto gap-3 sm:gap-6 px-1 py-1 -mx-1 scrollbar-hide">
