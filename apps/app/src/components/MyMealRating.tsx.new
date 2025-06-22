@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -78,6 +79,36 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     if (!user || !mealId) return;
     
     fetchMyRating();
+    
+    // 실시간 업데이트를 위한 채널 생성
+    const channel = supabase
+      .channel(`meal_ratings:${user.id}:${mealId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'meal_ratings',
+          filter: `user_id=eq.${user.id} AND meal_id=eq.${mealId}` 
+        }, 
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          // 새 데이터로 상태 업데이트
+          console.log('평점 실시간 업데이트:', payload);
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            setMyRating(payload.new.rating);
+          } else if (payload.eventType === 'DELETE') {
+            setMyRating(null);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('구독 상태:', status);
+      });
+    
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      console.log('실시간 구독 해제');
+      supabase.removeChannel(channel);
+    };
   }, [user, mealId]);
 
   // 로딩 상태일 때
