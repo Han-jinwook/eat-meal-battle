@@ -371,8 +371,7 @@ export default function Home() {
     {(userSchool.grade || userSchool.class) && (
       <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
         {userSchool.grade ? `${userSchool.grade}학년` : ''}
-        {userSchool.grade && userSchool.class ? ' ' : ''}
-        {userSchool.class ? `${userSchool.class}반` : ''}
+        {userSchool.class ? ` ${userSchool.class}반` : ''}
       </span>
     )}
   </div>
