@@ -61,7 +61,14 @@ export default function useUserSchool(): UseUserSchoolReturn {
             throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
           }
 
-          setUserSchool(schoolInfo ?? null);
+          if (schoolInfo) {
+            setUserSchool({
+              ...schoolInfo,
+              class: schoolInfo.class_number
+            });
+          } else {
+            setUserSchool(null);
+          }
         } else {
           setUserSchool(null);
         }
