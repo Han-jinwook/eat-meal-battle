@@ -567,17 +567,27 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     console.log('DEBUG: 현재 myRating 값:', myRating);
   }, [user, mealId]); // myRating 의존성 제거 - 무한 루프 방지
   
-  // 로딩 상태일 때도 평점 표시
+  // 로딩 상태일 때
+  if (isLoading) {
+    return (
+      <div className="my-4">
+        <div className="text-lg font-medium">
+          오늘 나의 평가는?
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-4">
       <div className="text-lg font-medium">
         오늘 나의 평가는?
-        {/* 사용자 평점 표시 - 별점 UI 없이 점수만 표시 (로그인 상태에서 평점이 있는 경우만) */}
+        {/* 로그인 + 평점 있는 유저만 평점 표시 */}
         {user && myRating !== null && (
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
+      {/* 별점 UI 및 평가 기능 제거함 */}
     </div>
   );
 };

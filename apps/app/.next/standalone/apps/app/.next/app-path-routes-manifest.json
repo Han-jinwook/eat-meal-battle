@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/image-proxy/route": "/api/image-proxy",
+  "/api/meal-images/upload/route": "/api/meal-images/upload",
+  "/api/meal-images/create/route": "/api/meal-images/create",
+  "/api/meals/route": "/api/meals",
+  "/api/notifications/create/route": "/api/notifications/create",
+  "/api/notifications/read/route": "/api/notifications/read",
+  "/api/meal-images/verify/route": "/api/meal-images/verify",
+  "/api/schools/route": "/api/schools",
+  "/api/notifications/send/route": "/api/notifications/send",
+  "/favicon.ico/route": "/favicon.ico",
+  "/api/delete-account/route": "/api/delete-account",
+  "/auth/callback/route": "/auth/callback",
+  "/battle/page": "/battle",
+  "/login/page": "/login",
+  "/ranking/page": "/ranking",
+  "/profile/page": "/profile",
+  "/page": "/",
+  "/quiz/page": "/quiz",
+  "/school-search/page": "/school-search"
+}
