@@ -364,20 +364,6 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         {/* 헤더 삭제 */}
 
-        {/* 학교 정보 표시 */}
-        {userSchool ? (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-              {userSchool.school_name}
-            </span>
-            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-              {userSchool.region}
-            </span>
-          </div>
-        ) : (
-          <div className="mb-6"></div>
-        )}
-
         {/* 날짜 선택 - 공간 최적화 원칙에 맞게 수정 */}
         <div className="mb-2 mt-1">
           <input
