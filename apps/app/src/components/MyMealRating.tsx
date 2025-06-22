@@ -76,9 +76,30 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   // 데이터 로드
   useEffect(() => {
     if (!user || !mealId) return;
-    
     fetchMyRating();
   }, [user, mealId]);
+
+  // meal_rating_stats 실시간 구독 추가 (급식별 평점 변경 시 자동 갱신)
+  useEffect(() => {
+    if (!mealId) return;
+    // Supabase 실시간 구독 채널 생성
+    const channel = supabase
+      .channel(`meal_rating_stats:${mealId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'meal_rating_stats',
+        filter: `meal_id=eq.${mealId}`
+      }, (payload) => {
+        // 평점 변경 시 fetchMyRating 호출
+        fetchMyRating();
+      })
+      .subscribe();
+    // 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [mealId]);
 
   // 로딩 상태일 때
   if (isLoading) {
