@@ -587,7 +587,6 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
-      {/* 별점 UI 및 평가 기능 제거함 */}
     </div>
   );
 };
