@@ -25,7 +25,7 @@ interface MealCardProps {
 }
 
 // 별점 지정/표시 컴포넌트
-function MenuItemWithRating({ item }: { item: MealMenuItem }) {
+function MenuItemWithRating({ item, interactive = true }: { item: MealMenuItem; interactive?: boolean }) {
   // 상태로 사용자 관리
   const [user, setUser] = useState(null);
   
@@ -393,7 +393,7 @@ function MenuItemWithRating({ item }: { item: MealMenuItem }) {
           <StarRating 
             value={rating || 0}
             onChange={handleRating}
-            interactive={true}
+            interactive={interactive}
             showValue={false}
             size="medium"
           />
@@ -501,7 +501,12 @@ export default function MealCard({
             {meal.menuItems && meal.menuItems.length > 0 ? (
               // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
               meal.menuItems.map((item) => (
-                <MenuItemWithRating key={item.id} item={item} />
+                <MenuItemWithRating
+                  key={item.id}
+                  item={item}
+                  // 급식정보가 없는 경우 별점 비활성화
+                  interactive={Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다' ? false : true}
+                />
               ))
             ) : (
               // 기존 menu_items 배열 사용 (하위 호환성 유지)
