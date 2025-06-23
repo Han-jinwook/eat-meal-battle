@@ -333,7 +333,7 @@ export default function Profile() {
         {deletingAccount && (
           <div className="mt-2 text-yellow-700 text-sm">회원 탈퇴 처리 중... 잠시만 기다려주세요.</div>
         )}
-      </section>
+      </div>
     </div>
   )
 }
