@@ -315,33 +315,25 @@ export default function Profile() {
           )}
         </div>
 
-        {/* 관리 버튼 */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h2 className="text-xl font-bold mb-4">계정 관리</h2>
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-            
-            <button
-              onClick={handleSignOut}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-            >
-              로그아웃
-            </button>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deletingAccount}
-              className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
-            </button>
-          </div>
-          
-          {deletingAccount && (
-            <div className="mt-4 p-3 bg-yellow-50 rounded-md">
-              <p className="text-yellow-700 text-sm">회원 탈퇴 처리 중... 잠시만 기다려주세요.</p>
-            </div>
-          )}
+        <div className="flex gap-4">
+          <button
+            onClick={handleSignOut}
+            className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+          >
+            로그아웃
+          </button>
+          <button
+            onClick={handleDeleteAccount}
+            disabled={deletingAccount}
+            className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
+          </button>
         </div>
-      </div>
+        {deletingAccount && (
+          <div className="mt-2 text-yellow-700 text-sm">회원 탈퇴 처리 중... 잠시만 기다려주세요.</div>
+        )}
+      </section>
     </div>
   )
 }
