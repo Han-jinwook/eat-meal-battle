@@ -1,3 +1,4 @@
+// [MEMO] 테스트용 메모: 2025-06-23, Cascade 수정
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 
