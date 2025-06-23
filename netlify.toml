@@ -25,11 +25,9 @@
 # AI 이미지 생성 필요 여부 확인 함수 (12:30에 실행)
 [functions.check-missing-meal-images]
   # 실제 운영 스케줄
-  schedule = "30 3 * * *" # 매일 UTC 3:30 (한국시간 12:30)
 
 [functions.auto-generate-meal-images]
   timeout = 60
-  schedule = "0 5 * * *" # 매일 UTC 5:00 (한국시간 14:00)
 
 # 퀴즈 생성 함수 (오전 9시 실행)
 [functions.generate-meal-quizzes]
