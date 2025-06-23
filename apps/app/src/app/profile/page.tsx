@@ -183,31 +183,32 @@ export default function Profile() {
         </div>
 
         {/* 사용자 기본 정보 - 간결하게 표시 */}
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden border-2 border-orange-600">
               {userProfile?.profile_image ? (
                 <img src={userProfile.profile_image} alt="프로필" className="w-full h-full object-cover" />
               ) : (
-                <div className="text-white text-xl font-bold">{user?.email?.charAt(0).toUpperCase()}</div>
+                <div className="text-white text-2xl font-bold">{user?.email?.charAt(0).toUpperCase()}</div>
               )}
             </div>
           </div>
-          <div className="text-center mb-2">
+          <div className="text-center">
+            <div className="text-xl font-bold mb-1">센드림</div>
             <div className="font-medium">{user?.email || '이메일 없음'}</div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 mt-1">
               {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
             </div>
           </div>
         </div>
 
         {/* 학교 정보 - 간결하게 표시 */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-base font-medium">학교정보</h2>
+        <div className="mb-8 border-t border-b py-4">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-bold">학교정보</h2>
             <Link
               href="/school-search"
-              className="text-xs text-blue-600"
+              className="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700"
             >
               학교정보수정
             </Link>
@@ -215,18 +216,21 @@ export default function Profile() {
           
           {schoolInfo ? (
             <div>
-              <div className="mb-1">
-                {schoolInfo.school_name} / {schoolInfo.region} {schoolInfo.address && schoolInfo.address.substring(0, 15)}...
+              <div className="text-base font-medium mb-1">
+                {schoolInfo.school_name} / {schoolInfo.region}
               </div>
-              <div className="text-sm">
+              <div className="text-sm text-gray-700">
+                {schoolInfo.address && schoolInfo.address.substring(0, 20)}{schoolInfo.address && schoolInfo.address.length > 20 ? '...' : ''}
+              </div>
+              <div className="mt-2 font-medium">
                 {schoolInfo.grade}학년 {schoolInfo.class_number}반
               </div>
             </div>
           ) : (
-            <div>
+            <div className="text-center py-3">
               <Link 
                 href="/school-search"
-                className="text-sm text-blue-600"
+                className="px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 inline-block"
               >
                 학교 정보 설정하기
               </Link>
@@ -234,23 +238,23 @@ export default function Profile() {
           )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="grid grid-cols-2 gap-4 mt-6">
           <button
             onClick={handleSignOut}
-            className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+            className="w-full rounded-md bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
           >
             로그아웃
           </button>
           <button
             onClick={handleDeleteAccount}
             disabled={deletingAccount}
-            className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+            className="w-full rounded-md bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
           >
             {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
           </button>
         </div>
         {deletingAccount && (
-          <div className="mt-2 text-yellow-700 text-sm">회원 탈퇴 처리 중... 잠시만 기다려주세요.</div>
+          <div className="mt-3 text-yellow-700 text-sm text-center">회원 탈퇴 처리 중... 잠시만 기다려주세요.</div>
         )}
       </div>
     </div>
