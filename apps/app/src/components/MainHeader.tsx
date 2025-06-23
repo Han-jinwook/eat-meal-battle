@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase';
 import NotificationBell from '@/components/NotificationBell';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { useState, useEffect, useRef } from 'react';
+import ProfileModal from '@/components/ProfileModal';
 
 // 네비게이션 항목 정의
 type NavItem = {
@@ -181,30 +182,11 @@ export default function MainHeader() {
                 로그인
               </Link>
             )}
-            {user && isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-md border bg-white shadow-lg">
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  프로필
-                </Link>
-                <Link
-                  href="/school-search"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  학교설정
-                </Link>
-                <button
-                  onClick={logout}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  로그아웃
-                </button>
-              </div>
-            )}
+            {user && (
+  <>
+    <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+  </>
+)}
           </div>
         </div>
       </div>
