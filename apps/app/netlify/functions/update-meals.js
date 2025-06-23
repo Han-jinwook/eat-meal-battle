@@ -496,7 +496,7 @@ async function fetchMealData(schoolCode, officeCode) {
 }
 
 // Netlify 스케줄 함수 핸들러
-exports.handler = async function(event, context) {
+// // exports.handler = async function(event, context) {
   console.log('급식 정보 업데이트 함수 실행 시작 - ', new Date().toISOString());
   
   // API 키 검증 (수동으로 호출하는 경우)
