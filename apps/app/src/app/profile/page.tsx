@@ -5,8 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-/*
-export default function Profile() {
+
   const [user, setUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -344,6 +343,4 @@ export default function Profile() {
         </div>
       </div>
     </div>
-  )
-}
-*/
+
