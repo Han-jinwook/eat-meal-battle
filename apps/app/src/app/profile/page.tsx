@@ -171,143 +171,62 @@ export default function Profile() {
 
   return (
     <div className="flex min-h-screen flex-col p-4">
-      <div className="mx-auto w-full max-w-3xl space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">내 프로필</h1>
+      <div className="mx-auto w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-xl font-bold">내 프로필</h1>
           <Link
             href="/"
-            className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
+            className="text-sm text-gray-500"
           >
-            홈으로
+            닫기
           </Link>
         </div>
 
-        {/* 인증 사용자 정보 */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h2 className="text-xl font-bold mb-4">사용자 정보</h2>
-          <div className="space-y-4">
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">이메일</span>
-              <span className="font-medium">{user?.email || '이메일 없음'}</span>
+        {/* 사용자 기본 정보 - 간결하게 표시 */}
+        <div className="mb-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden">
+              {userProfile?.profile_image ? (
+                <img src={userProfile.profile_image} alt="프로필" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-white text-xl font-bold">{user?.email?.charAt(0).toUpperCase()}</div>
+              )}
             </div>
-
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">계정 제공자</span>
-              <span className="font-medium capitalize">
-                {user?.app_metadata?.provider || '알 수 없음'}
-              </span>
-            </div>
-
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">계정 생성일</span>
-              <span className="font-medium">
-                {user?.created_at ? new Date(user.created_at).toLocaleString('ko-KR') : '알 수 없음'}
-              </span>
-            </div>
-
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">계정 ID</span>
-              <span className="font-mono text-xs text-gray-600">{user?.id}</span>
+          </div>
+          <div className="text-center mb-2">
+            <div className="font-medium">{user?.email || '이메일 없음'}</div>
+            <div className="text-sm text-gray-500">
+              {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
             </div>
           </div>
         </div>
 
-        {/* DB 사용자 데이터 */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h2 className="text-xl font-bold mb-4">DB 사용자 데이터</h2>
-          
-          {dbStatus === 'loading' && (
-            <div className="p-4 text-center">
-              <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
-              <p className="mt-2 text-sm text-gray-600">데이터베이스 정보 가져오는 중...</p>
-            </div>
-          )}
-
-          {dbStatus === 'error' && (
-            <div className="p-4 bg-red-50 rounded-md text-red-700 text-sm">
-              <p>데이터베이스에서 사용자 정보를 가져오는 중 오류가 발생했습니다.</p>
-              <p>문제가 지속되면 관리자에게 문의하세요.</p>
-            </div>
-          )}
-
-          {dbStatus === 'success' && userProfile && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(userProfile).map(([key, value]) => (
-                  <div key={key} className="flex flex-col space-y-1">
-                    <span className="text-sm text-gray-500">{key}</span>
-                    <span className="font-mono text-xs break-all">
-                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 p-3 bg-green-50 rounded-md text-green-700 text-sm">
-                <p className="font-semibold">✔ 사용자 데이터가 Supabase DB에 성공적으로 저장되어 있습니다!</p>
-              </div>
-            </div>
-          )}
-
-          {dbStatus === 'success' && !userProfile && (
-            <div className="p-4 bg-yellow-50 rounded-md text-yellow-700 text-sm">
-              <p>데이터베이스에 사용자 정보가 없습니다. 트리거가 정상적으로 동작하지 않았을 수 있습니다.</p>
-            </div>
-          )}
-        </div>
-        
-        {/* 학교 정보 */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">학교 정보</h2>
+        {/* 학교 정보 - 간결하게 표시 */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-base font-medium">학교정보</h2>
             <Link
               href="/school-search"
-              className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+              className="text-xs text-blue-600"
             >
-              {schoolInfo ? '학교 정보 수정' : '학교 정보 설정'}
+              학교정보수정
             </Link>
           </div>
           
           {schoolInfo ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">학교명</span>
-                  <span className="font-medium">{schoolInfo.school_name}</span>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">학교 유형</span>
-                  <span className="font-medium">{schoolInfo.school_type}</span>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">지역</span>
-                  <span className="font-medium">{schoolInfo.region}</span>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">주소</span>
-                  <span className="font-medium text-sm">{schoolInfo.address}</span>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">학년</span>
-                  <span className="font-medium">{schoolInfo.grade}학년</span>
-                </div>
-                
-                <div className="flex flex-col space-y-1">
-                  <span className="text-sm text-gray-500">반</span>
-                  <span className="font-medium">{schoolInfo.class_number}반</span>
-                </div>
+            <div>
+              <div className="mb-1">
+                {schoolInfo.school_name} / {schoolInfo.region} {schoolInfo.address && schoolInfo.address.substring(0, 15)}...
+              </div>
+              <div className="text-sm">
+                {schoolInfo.grade}학년 {schoolInfo.class_number}반
               </div>
             </div>
           ) : (
-            <div className="p-4 bg-yellow-50 rounded-md">
-              <p className="text-yellow-700 text-sm">아직 학교 정보가 업로드 되지 않았습니다.</p>
+            <div>
               <Link 
                 href="/school-search"
-                className="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                className="text-sm text-blue-600"
               >
                 학교 정보 설정하기
               </Link>
