@@ -208,22 +208,20 @@ export default function Profile() {
             <h2 className="text-lg font-bold">학교정보</h2>
             <Link
               href="/school-search"
-              className="px-3 py-1 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-md text-base font-medium hover:bg-green-700 shadow-sm"
             >
-              학교정보수정
+              학교설정
             </Link>
           </div>
           
           {schoolInfo ? (
             <div>
-              <div className="text-base font-medium mb-1">
-                {schoolInfo.school_name} / {schoolInfo.region}
+              <div className="text-base font-medium mb-1 flex justify-between">
+                <span>{schoolInfo.school_name}</span>
+                <span>{schoolInfo.grade}학년 {schoolInfo.class_number}반</span>
               </div>
               <div className="text-sm text-gray-700">
-                {schoolInfo.address && schoolInfo.address.substring(0, 20)}{schoolInfo.address && schoolInfo.address.length > 20 ? '...' : ''}
-              </div>
-              <div className="mt-2 font-medium">
-                {schoolInfo.grade}학년 {schoolInfo.class_number}반
+                {schoolInfo.region} {schoolInfo.address && schoolInfo.address.substring(0, 20)}{schoolInfo.address && schoolInfo.address.length > 20 ? '...' : ''}
               </div>
             </div>
           ) : (
@@ -238,17 +236,17 @@ export default function Profile() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-6">
+        <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={handleSignOut}
-            className="w-full rounded-md bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
+            className="rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
           >
             로그아웃
           </button>
           <button
             onClick={handleDeleteAccount}
             disabled={deletingAccount}
-            className="w-full rounded-md bg-red-600 px-4 py-3 text-white font-medium hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+            className="rounded-md bg-red-600 px-4 py-2 text-white text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
             {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
           </button>
