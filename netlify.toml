@@ -21,12 +21,6 @@
   package = "@netlify/plugin-nextjs"
 
 # Netlify 스케줄된 함수 설정
-[functions.update-meals]
-  # 실제 운영 스케줄 (매일 오전 10시에 실행) - 주석 처리
-  # schedule = "0 1 * * *" # 매일 한국 시간 오전 10시 (UTC 기준 오전 1시)
-  
-  # 매일 오전 5시(한국 시간)에 실행
-  schedule = "0 20 * * *" # UTC 기준 20:00, 한국 시간으로는 5:00
 
 # AI 이미지 생성 필요 여부 확인 함수 (12:30에 실행)
 [functions.check-missing-meal-images]
