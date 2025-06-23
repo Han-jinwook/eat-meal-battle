@@ -110,7 +110,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="relative w-full max-w-md mx-auto rounded-lg bg-white p-6 shadow-lg animate-fade-in">
+      <div className="relative w-full max-w-md mx-auto rounded-lg bg-white p-6 shadow-lg animate-fade-in max-h-[90vh] overflow-y-auto">
         <button
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
           onClick={onClose}
