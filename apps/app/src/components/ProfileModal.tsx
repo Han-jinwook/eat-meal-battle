@@ -109,8 +109,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="relative w-full max-w-md mx-auto rounded-lg bg-white p-6 shadow-lg animate-fade-in max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-40">
+      <div className="relative w-[90vw] max-w-md md:max-w-lg lg:max-w-xl mx-auto rounded-2xl bg-white p-6 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto isolation-isolate">
         <button
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
           onClick={onClose}
