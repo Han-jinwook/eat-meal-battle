@@ -12,8 +12,7 @@ try {
 }
 
 /*
-/*
-exports.handler = async (event) => {
+
   console.log('[auto-generate-meal-images] 함수 시작');
   
   try {
@@ -277,7 +276,3 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         error: error.message || '서버 오류가 발생했습니다'
       })
-    };
-  }
-};
-*/
