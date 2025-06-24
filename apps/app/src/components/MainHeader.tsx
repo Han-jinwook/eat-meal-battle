@@ -27,7 +27,6 @@ export default function MainHeader() {
   const supabase = createClient();
   const pathname = usePathname();
   const router = useRouter();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   
@@ -63,25 +62,10 @@ export default function MainHeader() {
     };
   }, [supabase]);
   
-  // 프로필 메뉴 외부 클릭 감지
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
-    
-    // 프로필 메뉴가 열려있을 때만 이벤트 리스너 추가
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isProfileOpen]);
+  // 프로필 관련 이벤트 리스너 제거 (모달 제거로 인해 불필요)
 
-  const toggleProfile = () => setIsProfileOpen((p) => !p);
+  // 프로필 이미지 클릭 시 바로 프로필 페이지로 이동
+  const navigateToProfile = () => router.push('/profile');
   const logout = async () => {
     await supabase.auth.signOut();
     router.refresh();
@@ -121,8 +105,8 @@ export default function MainHeader() {
             {user ? (
               // 로그인 상태: 사용자 프로필 이미지 표시
               <button
-                onClick={toggleProfile}
-                className="h-8 w-8 overflow-hidden rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                onClick={navigateToProfile}
+                className="relative h-8 w-8 overflow-hidden rounded-full border border-gray-300 bg-white hover:border-indigo-500 transition-colors"
               >
                 {(() => {
                   // 메모에서 언급한 대로 user.user_metadata.avatar_url 사용
@@ -182,11 +166,15 @@ export default function MainHeader() {
                 로그인
               </Link>
             )}
+<<<<<<< HEAD
             {user && (
   <>
     <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
   </>
 )}
+=======
+            {/* 모달 메뉴 제거: 프로필 이미지 클릭 시 바로 프로필 페이지로 이동 */}
+>>>>>>> 290b9cbc0e5fa01f51b0a30eb99af40cbc9b2bbb
           </div>
         </div>
       </div>
