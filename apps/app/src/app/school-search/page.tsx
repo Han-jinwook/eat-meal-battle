@@ -151,6 +151,8 @@ export default function SchoolSearchPage() {
     setError('');
 
     try {
+      console.log('저장 시작 - 사용자 ID:', user.id);
+      
       // 사용자 학교 정보 존재 여부 확인
       const { data: schoolInfo, error: schoolInfoError } = await supabase
         .from('school_infos')
@@ -158,7 +160,10 @@ export default function SchoolSearchPage() {
         .eq('user_id', user.id)
         .single();
 
+      console.log('학교 정보 조회 결과:', { schoolInfo, schoolInfoError });
+      
       if (schoolInfoError && schoolInfoError.code !== 'PGRST116') {
+        console.error('학교 정보 조회 오류:', schoolInfoError);
         throw schoolInfoError;
       }
 
@@ -177,20 +182,30 @@ export default function SchoolSearchPage() {
       };
 
       if (schoolInfo) {
+        console.log('기존 학교 정보 업데이트 시도:', schoolData);
         // 기존 레코드가 있으면 업데이트
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('school_infos')
           .update(schoolData)
           .eq('user_id', user.id);
 
-        if (updateError) throw updateError;
+        console.log('업데이트 결과:', { updateData, updateError });
+        if (updateError) {
+          console.error('업데이트 오류:', updateError);
+          throw updateError;
+        }
       } else {
+        console.log('새 학교 정보 추가 시도:', schoolData);
         // 없으면 새로 추가
-        const { error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('school_infos')
           .insert([schoolData]);
 
-        if (insertError) throw insertError;
+        console.log('추가 결과:', { insertData, insertError });
+        if (insertError) {
+          console.error('추가 오류:', insertError);
+          throw insertError;
+        }
       }
 
       // 성공 처리
