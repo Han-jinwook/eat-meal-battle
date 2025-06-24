@@ -166,15 +166,7 @@ export default function MainHeader() {
                 로그인
               </Link>
             )}
-<<<<<<< HEAD
-            {user && (
-  <>
-    <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-  </>
-)}
-=======
             {/* 모달 메뉴 제거: 프로필 이미지 클릭 시 바로 프로필 페이지로 이동 */}
->>>>>>> 290b9cbc0e5fa01f51b0a30eb99af40cbc9b2bbb
           </div>
         </div>
       </div>
