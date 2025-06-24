@@ -64,8 +64,8 @@ export default function QuizClient() {
   
   // URL에서 날짜 파라미터 처리
   useEffect(() => {
-    const dateParam = searchParams.get('date');
-    if (dateParam) {
+    const dateParam = searchParams?.get('date');
+    if (dateParam && typeof dateParam === 'string') {
       setSelectedDate(dateParam);
     }
   }, [searchParams]);
@@ -95,11 +95,20 @@ export default function QuizClient() {
       }
       
       // API 엔드포인트 구성
-      const params = new URLSearchParams({
-        school_code: userSchool.school_code,
-        grade: String(userSchool.grade),
-        date: selectedDate
-      });
+      const params = new URLSearchParams();
+      
+      // 안전하게 파라미터 추가
+      if (userSchool.school_code) {
+        params.set('school_code', String(userSchool.school_code));
+      }
+      
+      if (userSchool.grade !== undefined && userSchool.grade !== null) {
+        params.set('grade', String(userSchool.grade));
+      }
+      
+      if (selectedDate) {
+        params.set('date', selectedDate);
+      }
       
       // 퀴즈 API 호출
       const response = await fetch(`/.netlify/functions/quiz?${params.toString()}`, {
@@ -122,12 +131,22 @@ export default function QuizClient() {
         setQuiz(data.quiz);
         
         // 이미 답변한 경우 선택 옵션 설정
-        if (data.quiz.user_answer && data.quiz.user_answer.selected_option !== undefined) {
-          setSelectedOption(data.quiz.user_answer.selected_option);
-          setSubmitted(true);
+        if (data.quiz && typeof data.quiz === 'object') {
+          // 데이터 타입 검사 추가
+          const quizData = data.quiz as Quiz;
+          
+          if (quizData.user_answer && 
+              typeof quizData.user_answer === 'object' && 
+              quizData.user_answer.selected_option !== undefined) {
+            setSelectedOption(Number(quizData.user_answer.selected_option));
+            setSubmitted(true);
+          } else {
+            setSelectedOption(null);
+            setSubmitted(false);
+          }
         } else {
-          setSelectedOption(null);
-          setSubmitted(false);
+          setQuiz(null);
+          setError('퀴즈 데이터 형식이 올바르지 않습니다.');
         }
       }
     } catch (err) {
@@ -194,9 +213,14 @@ export default function QuizClient() {
     setSelectedDate(date);
     
     // URL 업데이트
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('date', date);
-    router.push(`/quiz?${params.toString()}`);
+    try {
+      const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+      params.set('date', date);
+      router.push(`/quiz?${params.toString()}`);
+    } catch (err) {
+      console.error('URL 파라미터 처리 오류:', err);
+      router.push(`/quiz?date=${date}`);
+    }
   };
 
   // 날짜 포맷팅
