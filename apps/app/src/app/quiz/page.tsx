@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
+import useUserSchool from '@/hooks/useUserSchool';
+import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 
 // 타입 정의
 type Quiz = {
@@ -94,6 +96,64 @@ export default function QuizPage() {
   
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // 사용자/학교 정보 훅
+  const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+  
+  // URL에서 날짜 매개변수 가져오기
+  const [dateParam, setDateParam] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  
+  // URL 매개변수를 사용하여 날짜 갱신하는 함수
+  const updateDateWithUrl = (date: string) => {
+    // 상태 업데이트
+    setSelectedDate(date);
+    
+    // 클라이언트에서만 실행 (window 객체 존재 확인)
+    if (typeof window !== 'undefined') {
+      try {
+        // 현재 URL 매개변수 복사
+        const params = new URLSearchParams(window.location.search);
+        // 날짜 매개변수 업데이트
+        params.set('date', date);
+        
+        // 히스토리 상태 업데이트 (페이지 새로고침 없이)
+        const url = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, '', url);
+      } catch (error) {
+        console.error('주소 갱신 오류:', error);
+      }
+    }
+  };
+  
+  // 날짜 변경 핸들러
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    console.log('날짜 변경:', newDate);
+    
+    // 날짜 상태 및 URL 업데이트
+    updateDateWithUrl(newDate);
+    
+    // 새 날짜로 퀴즈 다시 불러오기
+    fetchQuiz(newDate);
+  };
+  
+  // 클라이언트 사이드에서 URL 매개변수 초기화
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const dateFromUrl = params.get('date');
+      
+      // URL에서 날짜 파라미터가 있으면 그 값을 사용, 없으면 오늘 날짜 사용
+      const dateToUse = dateFromUrl || getCurrentDate();
+      console.log('URL에서 날짜 초기화:', { dateFromUrl, dateToUse });
+      
+      // 상태 업데이트
+      setDateParam(dateFromUrl);
+      setSelectedDate(dateToUse);
+    }
+  }, []);
   
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -116,7 +176,7 @@ export default function QuizPage() {
   };
 
   // 퀴즈 데이터 가져오기
-  const fetchQuiz = async () => {
+  const fetchQuiz = async (date?: string) => {
     try {
       setLoading(true);
       setError('');
@@ -127,7 +187,9 @@ export default function QuizPage() {
         return;
       }
 
-      const response = await fetch('/api/quiz', {
+      // 날짜 파라미터 추가
+      const quizDate = date || selectedDate || getCurrentDate();
+      const response = await fetch(`/api/quiz?date=${quizDate}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -320,61 +382,97 @@ export default function QuizPage() {
   // 퀴즈가 없는 경우
   if (!quiz) {
     return (
-      <main className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-center">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded max-w-md">
-          <p className="font-bold">퀴즈가 없습니다</p>
-          <p>오늘의 퀴즈가 아직 준비되지 않았습니다. 나중에 다시 시도해주세요.</p>
-        </div>
-        <Link href="/" className="mt-4 text-blue-500 hover:text-blue-700 font-bold">
-          홈으로 돌아가기
-        </Link>
-      </main>
-    );
-  }
-
-  return (
-    <main className="flex min-h-[80vh] flex-col items-center p-4 md:p-8 max-w-4xl mx-auto">
-      {/* 스타일 삽입 */}
-      <style dangerouslySetInnerHTML={{ __html: styles }} />
+    <main className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <style jsx>{styles}</style>
       
-      {/* 축하 애니메이션 */}
+      {/* 축하 효과 */}
       {showConfetti && (
         <div className="confetti-container">
-          {[...Array(50)].map((_, i) => (
-            <div 
-              key={i} 
-              className="confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                backgroundColor: `hsl(${Math.random() * 360}, 80%, 60%)`
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="w-full max-w-2xl">
-        {/* 퀴즈 헤더 */}
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">오늘의 급식 퀴즈</h1>
-          <p className="text-gray-600">{formatDate(quiz.meal_date)}</p>
-          {quiz.explanation && alreadyAnswered && (
-            <div className="mt-4 px-3 py-1 rounded-lg text-sm border border-blue-400 bg-blue-50 text-blue-700">
-              해설: {quiz.explanation}
+          {Array.from({ length: 100 }).map((_, i) => {
+            const color = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'][Math.floor(Math.random() * 16)];
+            const left = `${Math.random() * 100}%`;
+            const width = `${Math.random() * 10 + 5}px`;
+            const height = width;
+            const duration = `${Math.random() * 3 + 2}s`;
+            const delay = `${Math.random() * 2}s`;
+                        
+                        return (
+                          <>
+                            <div className="flex flex-col items-center mr-1">
+                              <span className="text-xs text-gray-500">
+                                {month}월 {day}일
+                              </span>
+                              <span className="text-xs font-semibold text-blue-600">
+                                {weekday}
+                              </span>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        );
+                      }
+                      return selectedDate;
+                    })()}
+                  </button>
+                </div>
+              </div>
+            ) : userError ? (
+              <div className="text-red-600 text-center py-2">
+                <p>학교 정보를 불러올 수 없습니다</p>
+                <Link href="/school-search" className="text-sm text-blue-600 hover:underline">
+                  학교 설정하기
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-2">
+                <p className="mb-2">학교 정보가 없습니다</p>
+                <Link href="/school-search" className="text-sm text-blue-600 hover:underline">
+                  학교 설정하기
+                </Link>
+              </div>
+            )}
+          </div>
+          
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">오늘의 급식 퀴즈</h1>
+            <p className="mt-2 text-gray-600">급식 메뉴에 대한 퀴즈를 풀고 점수를 올려보세요!</p>
+          </div>
+          
+          <div className="bg-white shadow-md rounded-lg p-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-yellow-100 rounded-full p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* 메뉴 목록 */}
-        <div className="mb-6 p-4 bg-amber-50 rounded-lg shadow-sm">
-          <h2 className="text-lg font-semibold mb-2">오늘의 메뉴</h2>
-          <ul className="list-disc list-inside">
-            {quiz.menu_items.map((item, index) => (
-              <li key={index} className="text-gray-700">{item}</li>
-            ))}
-          </ul>
+            <h3 className="text-lg font-medium text-center mb-2">
+              {userSchool?.school_name || '학교'} {formatDisplayDate(selectedDate)} 퀴즈 정보
+            </h3>
+
+            <div className="bg-gray-50 p-4 rounded-md text-center">
+              <p className="text-gray-700 font-medium">
+                {(error || userError) || '해당 날짜의 퀴즈가 아직 준비되지 않았습니다.'}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                다른 날짜를 선택해보세요.
+              </p>
+            </div>
+            
+            <div className="mt-4 flex justify-center">
+              <button 
+                onClick={() => fetchQuiz()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                새로고침
+              </button>
+            </div>
+          </div>
         </div>
+      </main>
+    );
 
         {/* 퀴즈 질문 */}
         <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
