@@ -1,8 +1,5 @@
 import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
-
-// 동적 클라이언트 컴포넌트 임포트
-const QuizClient = dynamic(() => import('./QuizClient'), { ssr: false });
+import QuizWrapper from './client-wrapper';
 
 export default function QuizPage() {
 
@@ -14,7 +11,7 @@ export default function QuizPage() {
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         }>
-          <QuizClient />
+          <QuizWrapper />
         </Suspense>
       </div>
     </main>
