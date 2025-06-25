@@ -230,14 +230,31 @@ export const clearSession = async (): Promise<void> => {
 export const signInWithRetry = async (provider: string, maxRetries: number = 3): Promise<any> => {
   const supabase = createClient();
   
+  // 디버깅: 환경 정보 로그
+  console.log('🔍 로그인 시도 환경 정보:', {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    provider,
+    userAgent: navigator.userAgent,
+    cookiesEnabled: navigator.cookieEnabled,
+    localStorage: typeof localStorage !== 'undefined',
+    currentUrl: window.location.href
+  });
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      console.log(`🚀 로그인 시도 ${attempt}/${maxRetries} 시작`);
+      
       // 이전 세션이 있다면 정리
       if (attempt > 1) {
+        console.log('🧹 이전 세션 정리 중...');
         await clearSession();
         // 잠시 대기 (세션 정리 완료 대기)
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+      
+      // 현재 세션 상태 확인
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('📊 현재 세션 상태:', sessionData.session ? '있음' : '없음');
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
@@ -250,20 +267,29 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
         }
       });
       
+      console.log('✅ OAuth 요청 결과:', { data, error });
+      
       if (error) {
         throw error;
       }
       
       return { data, error: null };
     } catch (error) {
-      console.debug(`로그인 시도 ${attempt}/${maxRetries} 실패:`, error);
+      console.error(`❌ 로그인 시도 ${attempt}/${maxRetries} 실패:`, {
+        error,
+        errorMessage: error?.message,
+        errorCode: error?.status,
+        timestamp: new Date().toISOString()
+      });
       
       if (attempt === maxRetries) {
         return { data: null, error };
       }
       
       // 재시도 전 대기 (지수 백오프)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`⏳ ${waitTime}ms 대기 후 재시도...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
 };
