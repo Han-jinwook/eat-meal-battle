@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { createClient, signInWithRetry, clearSession } from '@meal-battle/auth'
+import { createClient, signInWithRetry, clearSession } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -142,7 +142,7 @@ function LoginContent() {
           </button>
           
           <div className="text-xs text-gray-500 mt-4 p-2 bg-gray-100 rounded">
-            <p>💡 <strong>알림:</strong> 로그인 시 항상 2차 인증과 필수 정보 동의 화면을 보시려면:</p>
+            <p> <strong>알림:</strong> 로그인 시 항상 2차 인증과 필수 정보 동의 화면을 보시려면:</p>
             <ul className="list-disc pl-5 mt-1">
               <li>브라우저의 개인정보 보호 모드(시크릿 창)에서 로그인을 시도해 보세요.</li>
               <li>또는 브라우저 설정에서 쿠키와 사이트 데이터를 삭제한 후 시도해 보세요.</li>
