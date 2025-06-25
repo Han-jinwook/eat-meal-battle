@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { createClient } from '@/lib/supabase'
+import { createClient, signInWithRetry, clearSession } from '@meal-battle/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -40,39 +40,9 @@ function LoginContent() {
       setError(null)
       
       console.log('구글 로그인 시도 중...')
-      // 정확한 포트(3001)를 사용하는 리디렉션 URL 설정
-      // 개발환경에서는 http, 프로덕션에서는 https 사용
-      const baseUrl = window.location.origin;
-      const redirectUrl = baseUrl.includes('localhost') 
-        ? 'http://localhost:3001/auth/callback'
-        : `${baseUrl}/auth/callback`
-      console.log('리디렉션 URL:', redirectUrl)
       
-      // 철저한 세션 초기화 - 모든 스토리지 비우기
-      await supabase.auth.signOut()
-      
-      // localStorage에서 관련 상태 모두 삭제
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('supabase') || key.includes('google') || key.includes('oauth')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      // 랜덤한 상태값 생성
-      const randomState = Math.random().toString(36).substring(2, 15)
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${redirectUrl}?state=${randomState}&t=${Date.now()}`,
-          skipBrowserRedirect: false,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account consent',
-            include_granted_scopes: 'false', // 이전 동의를 무시
-          },
-        },
-      })
+      // 새로운 재시도 로직 사용 (세션 안정성 개선)
+      const { data, error } = await signInWithRetry('google');
       
       if (error) {
         console.error('구글 로그인 오류:', error)
@@ -94,34 +64,22 @@ function LoginContent() {
       setError(null)
       
       console.log('카카오 로그인 시도 중...')
+      
+      // 카카오는 기존 방식 유지 (signInWithRetry는 Google 전용)
       // 정확한 포트(3001)를 사용하는 리디렉션 URL 설정
       // 개발환경에서는 http, 프로덕션에서는 https 사용
       const baseUrl = window.location.origin;
       const redirectUrl = baseUrl.includes('localhost') 
         ? 'http://localhost:3001/auth/callback'
         : `${baseUrl}/auth/callback`
-      console.log('리디렉션 URL:', redirectUrl)
       
-      // 철저한 세션 초기화 - 모든 스토리지 비우기
-      await supabase.auth.signOut()
-      
-      // localStorage에서 관련 상태 모두 삭제
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('supabase') || key.includes('kakao') || key.includes('oauth')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      // 랜덤한 상태값 생성
-      const randomState = Math.random().toString(36).substring(2, 15)
+      console.log('카카오 리디렉션 URL:', redirectUrl)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${redirectUrl}?state=${randomState}&t=${Date.now()}`,
-          skipBrowserRedirect: false,
+          redirectTo: redirectUrl,
           queryParams: {
-            prompt: 'login consent',
             scope: 'profile_nickname,profile_image,account_email',
           },
         },

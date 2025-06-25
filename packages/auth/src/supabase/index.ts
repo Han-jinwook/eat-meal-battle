@@ -9,6 +9,7 @@ let supabaseInstance: any = null;
  * - 오류 처리 및 오류 로깅 제한 기능 포함
  * - @supabase/ssr 패키지 사용
  * - 다중 GoTrueClient 인스턴스 생성 방지
+ * - 세션 안정성 개선 (로그인/로그아웃 반복 시 불안정 해결)
  */
 export const createClient = () => {
   // 이미 인스턴스가 있으면 재사용
@@ -98,6 +99,89 @@ export const createClient = () => {
     return supabaseInstance;
   }
 }
+
+/**
+ * 세션 완전 정리 함수 (로그아웃 시 사용)
+ * - localStorage, sessionStorage, 쿠키 모두 정리
+ * - 인스턴스 초기화로 깨끗한 상태 보장
+ */
+export const clearSession = async (): Promise<void> => {
+  try {
+    const supabase = createClient();
+    
+    // 1. Supabase 로그아웃
+    await supabase.auth.signOut();
+    
+    // 2. 로컬 스토리지 정리
+    if (typeof window !== 'undefined') {
+      // Supabase 관련 키들 정리
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // 세션 스토리지도 정리
+      sessionStorage.clear();
+    }
+    
+    // 3. 인스턴스 초기화 (다음 로그인 시 깨끗한 상태)
+    supabaseInstance = null;
+    
+    console.debug('세션 완전 정리 완료');
+  } catch (error) {
+    console.debug('세션 정리 중 오류 (무시됨):', error);
+  }
+};
+
+/**
+ * 재시도 로직이 포함된 로그인 함수
+ * - 네트워크 오류 시 자동 재시도
+ * - 세션 충돌 방지
+ */
+export const signInWithRetry = async (provider: string, maxRetries: number = 3): Promise<any> => {
+  const supabase = createClient();
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 이전 세션이 있다면 정리
+      if (attempt > 1) {
+        await clearSession();
+        // 잠시 대기 (세션 정리 완료 대기)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider as any,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return { data, error: null };
+    } catch (error) {
+      console.debug(`로그인 시도 ${attempt}/${maxRetries} 실패:`, error);
+      
+      if (attempt === maxRetries) {
+        return { data: null, error };
+      }
+      
+      // 재시도 전 대기 (지수 백오프)
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+};
 
 /**
  * 현재 로그인한 사용자 정보를 가져오는 함수
