@@ -6,6 +6,7 @@ import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUt
 import useUserSchool from '@/hooks/useUserSchool';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
+import QuizHeaderDatePickerOnly from './QuizHeaderDatePickerOnly';
 
 // Quiz 타입 정의
 type Quiz = {
@@ -447,55 +448,7 @@ export default function QuizClient() {
       <style jsx>{styles}</style>
 
       {/* 날짜 선택기 */}
-      <div className="mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-lg font-semibold mb-3">날짜 선택</h2>
-          <div className="date-grid">
-            {getDateRange().map(date => {
-              // 문자열 날짜를 Date 객체로 변환 (안전하게)
-              let dateObj: Date | null = null;
-              try {
-                if (date.length === 8) {
-                  const year = parseInt(date.substring(0, 4), 10);
-                  const month = parseInt(date.substring(4, 6), 10) - 1;
-                  const day = parseInt(date.substring(6, 8), 10);
-                  dateObj = new Date(year, month, day);
-                  
-                  // 유효성 검사
-                  if (isNaN(dateObj.getTime())) {
-                    console.warn('유효하지 않은 날짜 변환:', date);
-                    dateObj = null;
-                  }
-                } else {
-                  console.warn('지원되지 않는 날짜 형식:', date);
-                }
-              } catch (err) {
-                console.error('날짜 변환 오류:', err);
-                dateObj = null;
-              }
-              
-              const { month, day, weekday } = formatDateForDisplay(dateObj);
-              
-              return (
-                <button
-                  key={date}
-                  className={`date-button ${selectedDate === date ? 'selected' : ''}`}
-                  onClick={() => handleDateChange(date)}
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500">
-                      {month}월 {day}일
-                    </span>
-                    <span className={`text-xs font-medium ${selectedDate === date ? 'text-blue-600' : 'text-gray-700'}`}>
-                      {weekday}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <QuizHeaderDatePickerOnly />
 
       {/* 퀴즈 콘텐츠 */}
       <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
