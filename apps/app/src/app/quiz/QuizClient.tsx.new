@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useUserSchool from '@/hooks/useUserSchool';
-import { createClient } from '@/lib/supabase';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { toast } from 'react-hot-toast';
 
 // Quiz 타입 정의
@@ -60,7 +60,7 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
-  const supabase = createClient();
+  const supabase = useSupabaseClient();
   
   // URL에서 날짜 파라미터 처리
   useEffect(() => {
