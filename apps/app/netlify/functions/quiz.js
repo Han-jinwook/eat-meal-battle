@@ -1,8 +1,20 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase 클라이언트 초기화
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// 환경변수 검증
+if (!supabaseUrl) {
+  console.error('SUPABASE_URL 환경변수가 설정되지 않았습니다.');
+  throw new Error('SUPABASE_URL 환경변수가 필요합니다.');
+}
+
+if (!supabaseServiceKey) {
+  console.error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않았습니다.');
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.');
+}
+
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기

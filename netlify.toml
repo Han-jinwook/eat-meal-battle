@@ -22,17 +22,8 @@
 
 # Netlify 스케줄된 함수 설정
 
-# AI 이미지 생성 필요 여부 확인 함수 (12:30에 실행)
-[functions.check-missing-meal-images]
-  # 실제 운영 스케줄
-
 [functions.auto-generate-meal-images]
   timeout = 60
-
-# 퀴즈 생성 함수 (오전 9시 실행)
-[functions.generate-meal-quizzes]
-  timeout = 60
-  schedule = "0 0 * * *" # 매일 UTC 0시 (한국시간 오전 9시)
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
