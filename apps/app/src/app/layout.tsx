@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import SupabaseProvider from '@/lib/supabase/supabase-provider';
 import FirebaseMessagingWrapper from '@/components/firebase/FirebaseMessagingWrapper';
 import MainHeader from '@/components/MainHeader';
+import Footer from '@/components/Footer';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
           {children}
           <FirebaseMessagingWrapper />
           <Toaster />
+          <Footer />
         </SupabaseProvider>
       </body>
     </html>
