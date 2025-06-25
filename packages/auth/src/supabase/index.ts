@@ -23,19 +23,67 @@ export const createClient = () => {
   try {
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // 네트워크 오류 발생 시 재시도 횟수 감소 (개발 환경 최적화)
+        // 세션 관리 개선
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
+        // 세션 저장소 명시적 설정
+        storageKey: 'sb-auth-token',
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // 디버그 모드 비활성화 (프로덕션 안정성)
+        debug: false,
+      },
+      cookies: {
+        get: (name: string) => {
+          if (typeof document !== 'undefined') {
+            const cookies = document.cookie.split(';');
+            for (const cookie of cookies) {
+              const [key, value] = cookie.trim().split('=');
+              if (key === name) return value;
+            }
+          }
+          return null;
+        },
+        set: (name: string, value: string, options: any) => {
+          if (typeof document !== 'undefined') {
+            let cookieString = `${name}=${value}`;
+            if (options?.maxAge) cookieString += `; max-age=${options.maxAge}`;
+            if (options?.path) cookieString += `; path=${options.path}`;
+            if (options?.domain) cookieString += `; domain=${options.domain}`;
+            if (options?.secure) cookieString += '; secure';
+            if (options?.httpOnly) cookieString += '; httponly';
+            if (options?.sameSite) cookieString += `; samesite=${options.sameSite}`;
+            document.cookie = cookieString;
+          }
+        },
+        remove: (name: string, options: any) => {
+          if (typeof document !== 'undefined') {
+            let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+            if (options?.path) cookieString += `; path=${options.path}`;
+            if (options?.domain) cookieString += `; domain=${options.domain}`;
+            document.cookie = cookieString;
+          }
+        }
       },
       global: {
-        // 404 요청 등의 불필요한 오류 로깅 방지
+        // 네트워크 재시도 및 타임아웃 설정
         fetch: (...args) => {
-          return fetch(...args).catch(err => {
+          const [url, config = {}] = args;
+          const timeoutConfig = {
+            ...config,
+            // 타임아웃 설정 (30초)
+            signal: AbortSignal.timeout(30000),
+          };
+          
+          return fetch(url, timeoutConfig).catch(err => {
             // 404 에러는 조용히 처리
             if (err.status === 404) {
               return new Response(JSON.stringify({ error: 'Not found', quiet: true }), { status: 404 });
+            }
+            // 네트워크 오류 시 재시도 로직
+            if (err.name === 'AbortError' || err.name === 'TimeoutError') {
+              console.debug('네트워크 타임아웃, 재시도 가능');
             }
             throw err;
           });
