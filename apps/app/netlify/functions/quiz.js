@@ -1,39 +1,58 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// 환경변수 디버깅
+console.log('🔍 환경변수 확인:');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '설정됨' : '없음');
+console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '없음');
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '설정됨' : '없음');
+
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // 환경변수 검증
 if (!supabaseUrl) {
-  console.error('SUPABASE_URL 환경변수가 설정되지 않았습니다.');
-  throw new Error('SUPABASE_URL 환경변수가 필요합니다.');
+  const errorMsg = 'SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_URL 환경변수가 설정되지 않았습니다.';
+  console.error('❌', errorMsg);
+  console.error('사용 가능한 환경변수들:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
+  throw new Error(errorMsg);
 }
 
 if (!supabaseServiceKey) {
-  console.error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않았습니다.');
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.');
+  const errorMsg = 'SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않았습니다.';
+  console.error('❌', errorMsg);
+  console.error('사용 가능한 환경변수들:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
+  throw new Error(errorMsg);
 }
 
+console.log('✅ Supabase 환경변수 확인 완료');
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, date) {
+  console.log('🔍 getUserQuiz 호출됨:', { userId, schoolCode, grade, date });
+  
   // 유저 학교 정보 확인
   if (!schoolCode || !grade) {
+    console.log('📚 학교 정보 조회 중...');
     const { data: userSchool, error: userSchoolError } = await supabaseClient
       .from('school_infos')
       .select('school_code, grade')
       .eq('user_id', userId)
       .single();
 
+    console.log('📚 학교 정보 조회 결과:', { userSchool, userSchoolError });
+
     if (userSchoolError) {
+      console.error('❌ 학교 정보 조회 실패:', userSchoolError);
       return { error: "사용자의 학교 정보를 찾을 수 없습니다." };
     }
     
     schoolCode = userSchool.school_code;
     grade = userSchool.grade;
   }
+
+  console.log('🏫 최종 학교 정보:', { schoolCode, grade });
 
   // 날짜 처리
   const now = new Date();
@@ -53,6 +72,14 @@ async function getUserQuiz(userId, schoolCode, grade, date) {
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
   
+  console.log('⏰ 시간 정보:', { 
+    quizDate, 
+    isToday, 
+    currentTimeMinutes, 
+    canShowTodayQuiz, 
+    canShowAnswer 
+  });
+
   // 퀴즈 가져오기 (시간 제한에 따라 다릅게 처리)
   let quizQuery = supabaseClient
     .from('meal_quizzes')
@@ -70,18 +97,23 @@ async function getUserQuiz(userId, schoolCode, grade, date) {
     .eq('grade', grade);
   
   if (canShowTodayQuiz) {
+    console.log('📅 오늘 퀴즈 조회 시도:', quizDate);
     // 12:30 이후면 해당 날짜 퀴즈 가져오기 시도
     const { data: todayQuiz, error: todayQuizError } = await quizQuery
       .eq('meal_date', quizDate)
       .limit(1)
       .maybeSingle(); // 없을 수도 있으므로 maybeSingle 사용
 
+    console.log('📅 오늘 퀴즈 조회 결과:', { todayQuiz, todayQuizError });
+
     if (!todayQuizError && todayQuiz) {
+      console.log('✅ 오늘 퀴즈 찾음!');
       // 오늘 퀴즈 찾았음
       return await processQuiz(userId, todayQuiz, canShowAnswer);
     }
   }
   
+  console.log('📊 최근 퀴즈 조회 시도...');
   // 오늘 퀴즈가 없거나 12:30 이전이면 가장 최근 퀴즈 가져오기
   const { data: latestQuiz, error: latestQuizError } = await supabaseClient
     .from('meal_quizzes')
@@ -101,10 +133,27 @@ async function getUserQuiz(userId, schoolCode, grade, date) {
     .limit(1)
     .single();
 
+  console.log('📊 최근 퀴즈 조회 결과:', { latestQuiz, latestQuizError });
+
   if (latestQuizError) {
+    console.error('❌ 퀴즈 조회 실패:', latestQuizError);
+    
+    // DB에 퀴즈가 전혀 없는지 확인
+    const { data: allQuizzes, error: countError } = await supabaseClient
+      .from('meal_quizzes')
+      .select('id')
+      .eq('school_code', schoolCode);
+    
+    console.log('🔢 전체 퀴즈 개수 확인:', { 
+      count: allQuizzes?.length || 0, 
+      countError,
+      schoolCode 
+    });
+    
     return { error: "퀴즈가 존재하지 않습니다." };
   }
   
+  console.log('✅ 최근 퀴즈 찾음!');
   return await processQuiz(userId, latestQuiz, true); // 이전 퀴즈는 항상 정답 볼 수 있음
 }
 
