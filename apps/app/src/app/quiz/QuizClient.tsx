@@ -6,7 +6,6 @@ import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUt
 import useUserSchool from '@/hooks/useUserSchool';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'react-hot-toast';
-import QuizHeaderDatePickerOnly from './QuizHeaderDatePickerOnly';
 
 // Quiz 타입 정의
 type Quiz = {
@@ -447,8 +446,76 @@ export default function QuizClient() {
       {/* @ts-ignore - Next.js styled-jsx 타입 오류 무시 */}
       <style jsx>{styles}</style>
 
-      {/* 날짜 선택기 */}
-      <QuizHeaderDatePickerOnly />
+      <div className="max-w-4xl mx-auto">
+        {/* 학교 정보 표시 - 급식페이지와 동일한 UI */}
+        {userSchool ? (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+              {userSchool.school_name}
+            </span>
+            {(userSchool.grade || userSchool.class) && (
+              <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                {userSchool.class ? ` ${userSchool.class}반` : ''}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="mb-6"></div>
+        )}
+
+        {/* 날짜 선택 - 급식페이지와 동일한 UI */}
+        <div className="mb-2 mt-1">
+          <input
+            type="date"
+            id="quiz-date"
+            value={selectedDate}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="sr-only" // 화면에서 숨김
+          />
+          <button 
+            onClick={() => {
+              // showPicker 메서드에 대한 타입 안전성 보장
+              const dateInput = document.getElementById('quiz-date') as HTMLInputElement;
+              dateInput?.showPicker?.();
+            }} 
+            className="w-full flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded border border-blue-100 shadow-sm"
+          >
+            {selectedDate && (() => {
+              const date = new Date(selectedDate);
+              if (!isNaN(date.getTime())) {
+                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const weekday = weekdays[date.getDay()];
+                
+                return (
+                  <>
+                    <div className="flex items-center">
+                      <span className="text-blue-600 mr-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {`${year}-${month}-${day}`}
+                      </span>
+                      <span className="ml-1 text-xs font-medium px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                        {weekday}
+                      </span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                );
+              }
+              return selectedDate;
+            })()}
+          </button>
+        </div>
+      </div>
 
       {/* 퀴즈 콘텐츠 */}
       <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
