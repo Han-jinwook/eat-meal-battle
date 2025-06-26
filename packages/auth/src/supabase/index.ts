@@ -24,65 +24,16 @@ export const createClient = () => {
   try {
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // 세션 관리 강화
+        // 세션 관리 개선
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        // 여러 저장소에 세션 데이터 중복 저장으로 안정성 강화
+        // 세션 저장소 명시적 설정
         storageKey: 'sb-auth-token',
-        storage: {
-          getItem: (key) => {
-            try {
-              // localStorage, sessionStorage, cookie 모두 시도
-              const localData = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
-              if (localData) return localData;
-              
-              const sessionData = typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null;
-              if (sessionData) return sessionData;
-              
-              // 마지막으로 쿠키 확인
-              if (typeof document !== 'undefined') {
-                const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
-                if (match) return match[2];
-              }
-              return null;
-            } catch(e) {
-              console.debug('세션 데이터 접근 실패:', e);
-              return null;
-            }
-          },
-          setItem: (key, value) => {
-            try {
-              // 여러 저장소에 중복 저장
-              if (typeof window !== 'undefined') {
-                window.localStorage.setItem(key, value);
-                window.sessionStorage.setItem(key, value);
-                
-                // 쿠키에도 저장 (7일 유효)
-                const expires = new Date();
-                expires.setDate(expires.getDate() + 7);
-                document.cookie = `${key}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
-              }
-            } catch(e) {
-              console.debug('세션 데이터 저장 실패:', e);
-            }
-          },
-          removeItem: (key) => {
-            try {
-              // 모든 저장소에서 제거
-              if (typeof window !== 'undefined') {
-                window.localStorage.removeItem(key);
-                window.sessionStorage.removeItem(key);
-                document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-              }
-            } catch(e) {
-              console.debug('세션 데이터 제거 실패:', e);
-            }
-          }
-        },
-        // 디버그 모드 활성화 (문제 진단 위해)
-        debug: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // 디버그 모드 비활성화 (프로덕션 안정성)
+        debug: false,
       },
       cookies: {
         get: (name: string) => {
@@ -167,7 +118,7 @@ export const clearSession = async (): Promise<void> => {
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('sb-') || key.includes('supabase') || key === 'auth-provider')) {
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
           keysToRemove.push(key);
         }
       }
@@ -175,14 +126,6 @@ export const clearSession = async (): Promise<void> => {
       
       // 세션 스토리지도 정리
       sessionStorage.clear();
-      
-      // 'auth-provider' 쿠키도 명시적으로 제거
-      document.cookie = 'auth-provider=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-      
-      // 모든 쿠키 더 철저히 삭제
-      document.cookie.split(';').forEach(function(c) {
-        document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-      });
     }
     
     // 3. 인스턴스 초기화 (다음 로그인 시 깨끗한 상태)
@@ -198,43 +141,26 @@ export const clearSession = async (): Promise<void> => {
  * 재시도 로직이 포함된 로그인 함수
  * - 네트워크 오류 시 자동 재시도
  * - 세션 충돌 방지
- * - 다중 인증 제공자 처리 개선
  */
 export const signInWithRetry = async (provider: string, maxRetries: number = 3): Promise<any> => {
   const supabase = createClient();
-  
-  // 로그인 시도 전에 사용할 인증 제공자를 저장
-  if (typeof window !== 'undefined') {
-    // 로컬 스토리지에 현재 인증 제공자 저장
-    window.localStorage.setItem('auth-provider', provider);
-    // 쿠키에도 저장
-    document.cookie = `auth-provider=${provider};path=/;max-age=3600;SameSite=Lax`;
-  }
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       // 이전 세션이 있다면 정리
       if (attempt > 1) {
         await clearSession();
-        // 잠시 대기 (세션 정리 완료 대기) - 2초로 증가
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // 세션 정리 후 다시 인증 제공자 저장 (이전 값이 삭제되었을 수 있음)
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('auth-provider', provider);
-          document.cookie = `auth-provider=${provider};path=/;max-age=3600;SameSite=Lax`;
-        }
+        // 잠시 대기 (세션 정리 완료 대기)
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `https://izkumvvlkrkgiuuczffp.supabase.co/auth/v1/callback`,
+          redirectTo: `https://izktumvvlkrkgiuuczffp.supabase.co/auth/v1/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-            // 인증 과정에서 제공자 정보 명시적 전달
-            provider_id: provider
           }
         }
       });
@@ -259,7 +185,6 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
 
 /**
  * 현재 로그인한 사용자 정보를 가져오는 함수
- * - 인증 제공자 컨텍스트 정보도 확인
  * @returns 로그인한 사용자 또는 null
  */
 export const getUser = async (): Promise<User | null> => {
@@ -270,31 +195,6 @@ export const getUser = async (): Promise<User | null> => {
       console.error('사용자 정보를 가져오는 중 오류 발생:', error);
       return null;
     }
-    
-    // 로그인 정보는 있지만 세션이 없는 경우를 확인
-    if (data.user) {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        console.debug('사용자 정보는 있지만 세션이 없음. 재인증 필요');
-        
-        // 저장된 인증 제공자 확인
-        let savedProvider = null;
-        if (typeof window !== 'undefined') {
-          savedProvider = window.localStorage.getItem('auth-provider');
-          if (!savedProvider) {
-            // 쿠키에서도 확인
-            const match = document.cookie.match(new RegExp('(^| )auth-provider=([^;]+)'));
-            if (match) savedProvider = match[2];
-          }
-        }
-        
-        if (savedProvider) {
-          console.debug(`마지막으로 사용한 인증 제공자로 재시도: ${savedProvider}`);
-          // 여기서 자동 로그인을 시도하지는 않고 정보만 제공
-        }
-      }
-    }
-    
     return data.user as User;
   } catch (e) {
     console.error('사용자 정보 요청 중 예기치 않은 오류:', e);
