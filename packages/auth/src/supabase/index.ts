@@ -157,7 +157,7 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `https://izktumvvlkrkgiuuczffp.supabase.co/auth/v1/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
