@@ -58,6 +58,7 @@ export default function QuizClient() {
   const [error, setError] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
   const supabase = createClient();
@@ -139,17 +140,81 @@ export default function QuizClient() {
   
   // 퀴즈 데이터 로드 함수
   const fetchQuiz = async () => {
-    if (!userSchool) return;
-    
     setLoading(true);
     setError(null);
+    setSubmitted(false);
+    setSelectedOption(null);
+    
+    // 날짜가 UI에서 설정한 값으로 사용되는지 확인
+    console.log('퀴즈 로드 시도 - 선택된 날짜:', selectedDate);
     
     try {
       // JWT 토큰 가져오기
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        setError('인증 세션이 없습니다. 로그인이 필요합니다.');
+      if (!quiz) {
+        console.log(`${selectedDate} 날짜에 퀴즈가 없습니다. 생성을 시도합니다.`);
+        
+        try {
+          // 해당 날짜의 급식 메뉴 정보를 가져오기
+          const { data: mealData, error: mealError } = await supabase
+            .from('meal_menus')
+            .select('id, menu_items, ntr_info, origin_info')
+            .eq('meal_date', selectedDate)
+            .eq('school_code', userSchool.school_code)
+            .single();
+          
+          if (mealError || !mealData) {
+            console.error('급식 메뉴를 찾을 수 없습니다:', mealError);
+            setError(`${formatDisplayDate(selectedDate)} 날짜의 급식 정보가 없어 퀴즈를 생성할 수 없습니다.`);
+            setLoading(false);
+            return;
+          }
+          
+          console.log(`급식 메뉴 정보 찾음: ${mealData.id}, ${selectedDate}`);
+          
+          // OpenAI API를 통해 퀴즈 자동 생성 요청 - Netlify Function 호출
+          const quizGenResponse = await fetch('/.netlify/functions/manual-generate-meal-quiz', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+            },
+            body: JSON.stringify({
+              school_code: userSchool.school_code,
+              grade: userSchool.grade,
+              meal_date: selectedDate,
+              meal_id: mealData.id
+            })
+          });
+          
+          const quizGenResult = await quizGenResponse.json();
+          
+          if (quizGenResult.error) {
+            console.error('퀴즈 생성 중 오류:', quizGenResult.error);
+            setError(`퀴즈 생성 중 오류가 발생했습니다: ${quizGenResult.error}`);
+            setLoading(false);
+            return;
+          }
+          
+          if (quizGenResult.success) {
+            toast.success('새 퀴즈가 생성되었습니다!');
+            console.log('퀴즈 생성 성공:', quizGenResult);
+            
+            // 새로 생성된 퀴즈 정보를 다시 로드
+            return fetchQuiz();
+          } else if (quizGenResult.exists) {
+            console.log('퀴즈가 이미 존재합니다. 다시 로드합니다.');
+            return fetchQuiz();
+          }
+        } catch (genError) {
+          console.error('퀴즈 생성 중 오류:', genError);
+          setError(`퀴즈 생성 중 오류가 발생했습니다: ${genError instanceof Error ? genError.message : '알 수 없는 오류'}`);
+          setLoading(false);
+          return;
+        }
+        
+        setError(`${formatDisplayDate(selectedDate)} 날짜에 해당하는 퀴즈가 없습니다.`);
         setLoading(false);
         return;
       }
@@ -307,6 +372,72 @@ export default function QuizClient() {
     }
   };
 
+  // 퀴즈 수동 생성 함수
+  const handleManualQuizGenerate = async () => {
+    if (!userSchool || !selectedDate) return;
+    
+    setGeneratingQuiz(true);
+    setError(null);
+    
+    try {
+      // 해당 날짜의 급식 메뉴 정보를 가져오기
+      const { data: mealData, error: mealError } = await supabase
+        .from('meal_menus')
+        .select('id, menu_items, ntr_info, origin_info')
+        .eq('meal_date', selectedDate)
+        .eq('school_code', userSchool.school_code)
+        .single();
+      
+      if (mealError || !mealData) {
+        console.error('급식 메뉴를 찾을 수 없습니다:', mealError);
+        setError(`${formatDisplayDate(selectedDate)} 날짜의 급식 정보가 없어 퀴즈를 생성할 수 없습니다.`);
+        setGeneratingQuiz(false);
+        return;
+      }
+      
+      console.log(`급식 메뉴 정보 찾음: ${mealData.id}, ${selectedDate}`);
+      
+      // OpenAI API를 통해 퀴즈 수동 생성 요청 - Netlify Function 호출
+      const quizGenResponse = await fetch('/.netlify/functions/manual-generate-meal-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          school_code: userSchool.school_code,
+          grade: userSchool.grade,
+          meal_date: selectedDate,
+          meal_id: mealData.id
+        })
+      });
+      
+      const quizGenResult = await quizGenResponse.json();
+      
+      if (quizGenResult.error) {
+        console.error('퀴즈 생성 중 오류:', quizGenResult.error);
+        setError(`퀴즈 생성 중 오류가 발생했습니다: ${quizGenResult.error}`);
+        setGeneratingQuiz(false);
+        return;
+      }
+      
+      if (quizGenResult.success) {
+        toast.success('새 퀴즈가 생성되었습니다!');
+        console.log('퀴즈 생성 성공:', quizGenResult);
+        await fetchQuiz();
+      } else if (quizGenResult.exists) {
+        toast.success('해당 날짜에 이미 퀴즈가 존재합니다!');
+        console.log('퀴즈가 이미 존재합니다. 다시 로드합니다.');
+        await fetchQuiz();
+      }
+    } catch (genError) {
+      console.error('퀴즈 생성 중 오류:', genError);
+      setError(`퀴즈 생성 중 오류가 발생했습니다: ${genError instanceof Error ? genError.message : '알 수 없는 오류'}`); 
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
+  
   // 날짜 변경 핸들러
   const handleDateChange = (date: string | null | undefined) => {
     // 날짜 유효성 검사 강화
@@ -524,23 +655,33 @@ export default function QuizClient() {
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
             <p className="mt-4 text-gray-600">퀴즈를 불러오는 중...</p>
           </div>
-        ) : error ? (
-          <div className="text-center py-10">
-            <p className="text-lg font-medium text-red-500">오류가 발생했습니다</p>
-            <p className="mt-2 text-gray-600">{error}</p>
-          </div>
-        ) : !quiz ? (
-          <div className="text-center py-10">
-            <p className="text-lg font-medium text-gray-900">퀴즈가 없습니다</p>
-            <p className="mt-2 text-gray-600">선택한 날짜에 해당하는 퀴즈가 없습니다.</p>
-          </div>
-        ) : (
-          <div className="quiz-container">
-            {/* 퀴즈 문제 */}
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold mb-2">오늘의 퀴즈</h3>
-              <p className="text-gray-700">{quiz.question}</p>
             </div>
+          )}
+          <p className="text-sm text-gray-500 mt-4">
+            또는 다른 날짜를 선택해보세요.
+          </p>
+        </div>
+      ) : (
+        <div className="quiz-container">
+          {/* 퀴즈 문제 */}
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold mb-2">오늘의 퀴즈</h3>
+            <p className="text-gray-700">{quiz.question}</p>
+          </div>
+          
+          {/* 퀴즈 보기 */}
+          <div className="space-y-3 mb-6">
+            {quiz.options.map((option, index) => {
+              // 제출 후 정답 여부 표시를 위한 클래스
+              let optionClass = "border rounded-lg p-4 transition-colors cursor-pointer ";
+              
+              if (submitted && quiz.correct_answer !== undefined) {
+                if (index + 1 === quiz.correct_answer) {
+                  // 정답
+                  optionClass += "bg-green-50 border-green-300";
+                } else if (index + 1 === selectedOption) {
+                  // 내가 고른 오답
+                  optionClass += "bg-red-50 border-red-300";
             
             {/* 퀴즈 보기 */}
             <div className="space-y-3 mb-6">
