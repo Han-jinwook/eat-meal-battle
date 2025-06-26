@@ -126,6 +126,11 @@ export const clearSession = async (): Promise<void> => {
       
       // 세션 스토리지도 정리
       sessionStorage.clear();
+      
+      // 모든 쿠키 더 철저히 삭제
+      document.cookie.split(';').forEach(function(c) {
+        document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+      });
     }
     
     // 3. 인스턴스 초기화 (다음 로그인 시 깨끗한 상태)
@@ -150,8 +155,8 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
       // 이전 세션이 있다면 정리
       if (attempt > 1) {
         await clearSession();
-        // 잠시 대기 (세션 정리 완료 대기)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // 잠시 대기 (세션 정리 완료 대기) - 2초로 증가
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
