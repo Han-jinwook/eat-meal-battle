@@ -24,16 +24,65 @@ export const createClient = () => {
   try {
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // 세션 관리 개선
+        // 세션 관리 강화
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
-        // 세션 저장소 명시적 설정
+        // 여러 저장소에 세션 데이터 중복 저장으로 안정성 강화
         storageKey: 'sb-auth-token',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        // 디버그 모드 비활성화 (프로덕션 안정성)
-        debug: false,
+        storage: {
+          getItem: (key) => {
+            try {
+              // localStorage, sessionStorage, cookie 모두 시도
+              const localData = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+              if (localData) return localData;
+              
+              const sessionData = typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null;
+              if (sessionData) return sessionData;
+              
+              // 마지막으로 쿠키 확인
+              if (typeof document !== 'undefined') {
+                const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
+                if (match) return match[2];
+              }
+              return null;
+            } catch(e) {
+              console.debug('세션 데이터 접근 실패:', e);
+              return null;
+            }
+          },
+          setItem: (key, value) => {
+            try {
+              // 여러 저장소에 중복 저장
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, value);
+                window.sessionStorage.setItem(key, value);
+                
+                // 쿠키에도 저장 (7일 유효)
+                const expires = new Date();
+                expires.setDate(expires.getDate() + 7);
+                document.cookie = `${key}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+              }
+            } catch(e) {
+              console.debug('세션 데이터 저장 실패:', e);
+            }
+          },
+          removeItem: (key) => {
+            try {
+              // 모든 저장소에서 제거
+              if (typeof window !== 'undefined') {
+                window.localStorage.removeItem(key);
+                window.sessionStorage.removeItem(key);
+                document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+              }
+            } catch(e) {
+              console.debug('세션 데이터 제거 실패:', e);
+            }
+          }
+        },
+        // 디버그 모드 활성화 (문제 진단 위해)
+        debug: true,
       },
       cookies: {
         get: (name: string) => {
