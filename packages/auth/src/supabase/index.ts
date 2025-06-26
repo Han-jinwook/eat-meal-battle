@@ -167,7 +167,7 @@ export const clearSession = async (): Promise<void> => {
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+        if (key && (key.startsWith('sb-') || key.includes('supabase') || key === 'auth-provider')) {
           keysToRemove.push(key);
         }
       }
@@ -175,6 +175,9 @@ export const clearSession = async (): Promise<void> => {
       
       // 세션 스토리지도 정리
       sessionStorage.clear();
+      
+      // 'auth-provider' 쿠키도 명시적으로 제거
+      document.cookie = 'auth-provider=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
       
       // 모든 쿠키 더 철저히 삭제
       document.cookie.split(';').forEach(function(c) {
@@ -195,9 +198,18 @@ export const clearSession = async (): Promise<void> => {
  * 재시도 로직이 포함된 로그인 함수
  * - 네트워크 오류 시 자동 재시도
  * - 세션 충돌 방지
+ * - 다중 인증 제공자 처리 개선
  */
 export const signInWithRetry = async (provider: string, maxRetries: number = 3): Promise<any> => {
   const supabase = createClient();
+  
+  // 로그인 시도 전에 사용할 인증 제공자를 저장
+  if (typeof window !== 'undefined') {
+    // 로컬 스토리지에 현재 인증 제공자 저장
+    window.localStorage.setItem('auth-provider', provider);
+    // 쿠키에도 저장
+    document.cookie = `auth-provider=${provider};path=/;max-age=3600;SameSite=Lax`;
+  }
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -206,6 +218,12 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
         await clearSession();
         // 잠시 대기 (세션 정리 완료 대기) - 2초로 증가
         await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 세션 정리 후 다시 인증 제공자 저장 (이전 값이 삭제되었을 수 있음)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('auth-provider', provider);
+          document.cookie = `auth-provider=${provider};path=/;max-age=3600;SameSite=Lax`;
+        }
       }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -215,6 +233,8 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            // 인증 과정에서 제공자 정보 명시적 전달
+            provider_id: provider
           }
         }
       });
@@ -239,6 +259,7 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
 
 /**
  * 현재 로그인한 사용자 정보를 가져오는 함수
+ * - 인증 제공자 컨텍스트 정보도 확인
  * @returns 로그인한 사용자 또는 null
  */
 export const getUser = async (): Promise<User | null> => {
@@ -249,6 +270,31 @@ export const getUser = async (): Promise<User | null> => {
       console.error('사용자 정보를 가져오는 중 오류 발생:', error);
       return null;
     }
+    
+    // 로그인 정보는 있지만 세션이 없는 경우를 확인
+    if (data.user) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        console.debug('사용자 정보는 있지만 세션이 없음. 재인증 필요');
+        
+        // 저장된 인증 제공자 확인
+        let savedProvider = null;
+        if (typeof window !== 'undefined') {
+          savedProvider = window.localStorage.getItem('auth-provider');
+          if (!savedProvider) {
+            // 쿠키에서도 확인
+            const match = document.cookie.match(new RegExp('(^| )auth-provider=([^;]+)'));
+            if (match) savedProvider = match[2];
+          }
+        }
+        
+        if (savedProvider) {
+          console.debug(`마지막으로 사용한 인증 제공자로 재시도: ${savedProvider}`);
+          // 여기서 자동 로그인을 시도하지는 않고 정보만 제공
+        }
+      }
+    }
+    
     return data.user as User;
   } catch (e) {
     console.error('사용자 정보 요청 중 예기치 않은 오류:', e);
