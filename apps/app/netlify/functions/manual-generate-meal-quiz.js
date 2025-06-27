@@ -1,5 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 // 환경 변수에서 값 가져오기
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -9,10 +9,9 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // OpenAI 클라이언트 초기화
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 /**
  * 학년에 따른 난이도 및 교육과정 정보 계산 함수
@@ -107,7 +106,7 @@ async function generateQuizWithAI(meal, grade) {
   
   try {
     // OpenAI API 호출
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { 
@@ -123,7 +122,7 @@ async function generateQuizWithAI(meal, grade) {
     });
 
     // 응답 파싱
-    const content = response.data.choices[0].message.content;
+    const content = response.choices[0].message.content;
     
     // JSON 형식 추출 ('{...}' 형태의 문자열 찾기)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -236,16 +235,19 @@ exports.handler = async function(event, context) {
   // 요청 처리
   try {
     // 요청 데이터 파싱
-    const { school_code, grade, meal_date, meal_id } = JSON.parse(event.body || '{}');
+    const { school_code, grade, date, meal_date, meal_id, user_id } = JSON.parse(event.body || '{}');
+    
+    // date 또는 meal_date 중 하나를 사용
+    const targetDate = meal_date || date;
     
     // 필수 파라미터 검증
-    if (!school_code || !grade || !meal_date || !meal_id) {
+    if (!school_code || !grade || !targetDate) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
           error: '필수 매개변수가 누락되었습니다.', 
-          required: ['school_code', 'grade', 'meal_date', 'meal_id'] 
+          required: ['school_code', 'grade', 'date (또는 meal_date)'] 
         })
       };
     }
@@ -265,7 +267,7 @@ exports.handler = async function(event, context) {
       .select('id')
       .eq('school_code', school_code)
       .eq('grade', grade)
-      .eq('meal_date', meal_date)
+      .eq('meal_date', targetDate)
       .limit(1);
       
     if (existingQuiz && existingQuiz.length > 0) {
@@ -281,25 +283,51 @@ exports.handler = async function(event, context) {
       };
     }
     
-    // 급식 메뉴 정보 조회
-    const { data: meal, error: mealError } = await supabaseAdmin
-      .from('meal_menus')
-      .select('*')
-      .eq('id', meal_id)
-      .eq('school_code', school_code)
-      .eq('meal_date', meal_date)
-      .single();
-      
-    if (mealError || !meal) {
-      return {
-        statusCode: 404,
-        headers,
-        body: JSON.stringify({ 
-          error: '해당 급식 정보를 찾을 수 없습니다.',
-          details: mealError?.message
-        })
-      };
+    // 급식 메뉴 정보 조회 (meal_id가 있으면 직접 조회, 없으면 날짜로 조회)
+    let meal;
+    if (meal_id) {
+      const { data: mealData, error: mealError } = await supabaseAdmin
+        .from('meal_menus')
+        .select('*')
+        .eq('id', meal_id)
+        .eq('school_code', school_code)
+        .eq('meal_date', targetDate)
+        .single();
+        
+      if (mealError || !mealData) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: '해당 급식 정보를 찾을 수 없습니다.',
+            details: mealError?.message
+          })
+        };
+      }
+      meal = mealData;
+    } else {
+      // meal_id가 없으면 날짜와 학교코드로 급식 메뉴 찾기
+      const { data: mealData, error: mealError } = await supabaseAdmin
+        .from('meal_menus')
+        .select('*')
+        .eq('school_code', school_code)
+        .eq('meal_date', targetDate)
+        .limit(1);
+        
+      if (mealError || !mealData || mealData.length === 0) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ 
+            error: '해당 날짜의 급식 정보를 찾을 수 없습니다.',
+            details: mealError?.message
+          })
+        };
+      }
+      meal = mealData[0];
     }
+    
+    console.log(`[manual-generate-meal-quiz] 급식 메뉴 조회 성공: ${meal.id}`);
     
     // 퀴즈 생성
     const quiz = await generateQuizWithAI(meal, grade);
@@ -324,7 +352,7 @@ exports.handler = async function(event, context) {
         message: '퀴즈가 성공적으로 생성되었습니다.',
         quiz: {
           question: quiz.question,
-          meal_date: meal_date,
+          meal_date: targetDate,
           grade: grade
         }
       })

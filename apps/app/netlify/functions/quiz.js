@@ -27,6 +27,7 @@ if (!supabaseServiceKey) {
 
 console.log('✅ Supabase 환경변수 확인 완료');
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, date) {
@@ -409,34 +410,86 @@ exports.handler = async function(event, context) {
       }
       
       try {
-        // manual-generate-meal-quiz.js 함수 호출
-        const generateQuizFunction = require('./manual-generate-meal-quiz.js');
-        console.log('🔗 manual-generate-meal-quiz.js 함수 호출 시도');
+        // 퀴즈 생성 로직을 직접 구현
+        console.log('🔗 퀴즈 생성 로직 시작');
         
-        const generateResult = await generateQuizFunction.handler({
-          httpMethod: 'POST',
-          body: JSON.stringify({
-            school_code,
-            grade,
-            date,
-            user_id: userId
-          }),
-          headers: event.headers
-        }, context);
-        
-        console.log('🎲 퀴즈 생성 결과:', { statusCode: generateResult.statusCode });
-        
-        if (generateResult.statusCode !== 200) {
-          const errorBody = JSON.parse(generateResult.body);
-          console.error('❌ 퀴즈 생성 실패:', errorBody);
+        // 이미 해당 날짜에 퀴즈가 존재하는지 확인
+        const { data: existingQuiz } = await supabaseAdmin
+          .from('meal_quizzes')
+          .select('id')
+          .eq('school_code', school_code)
+          .eq('grade', grade)
+          .eq('meal_date', date)
+          .limit(1);
+          
+        if (existingQuiz && existingQuiz.length > 0) {
+          console.log('ℹ️ 이미 퀴즈가 존재함:', existingQuiz[0].id);
+          // 기존 퀴즈 조회해서 반환
+          const result = await getUserQuiz(userId, school_code, grade, date);
           return {
-            statusCode: generateResult.statusCode,
+            statusCode: 200,
             headers,
-            body: JSON.stringify({ error: errorBody.error || '퀴즈 생성에 실패했습니다.' })
+            body: JSON.stringify(result)
           };
         }
         
-        console.log('✅ 퀴즈 생성 성공, 생성된 퀴즈 조회 시도');
+        // 급식 메뉴 정보 조회
+        const { data: mealData, error: mealError } = await supabaseAdmin
+          .from('meal_menus')
+          .select('*')
+          .eq('school_code', school_code)
+          .eq('meal_date', date)
+          .limit(1);
+          
+        if (mealError || !mealData || mealData.length === 0) {
+          console.error('❌ 급식 메뉴 조회 실패:', mealError);
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ 
+              error: '해당 날짜의 급식 정보를 찾을 수 없습니다.',
+              details: mealError?.message
+            })
+          };
+        }
+        
+        const meal = mealData[0];
+        console.log('✅ 급식 메뉴 조회 성공:', meal.id);
+        
+        // 간단한 기본 퀴즈 생성 (OpenAI 없이)
+        const defaultQuiz = {
+          question: `오늘 급식 메뉴 중 하나인 "${meal.menu_items[0]}"에 대한 질문입니다. 이 음식의 주요 영양소는 무엇일까요?`,
+          options: ["탄수화물", "단백질", "지방", "비타민"],
+          correct_answer: 1, // 탄수화물
+          explanation: "대부분의 한식 메뉴는 탄수화물이 주요 영양소입니다."
+        };
+        
+        // DB에 퀴즈 저장
+        const { data: savedQuiz, error: saveError } = await supabaseAdmin
+          .from('meal_quizzes')
+          .insert({
+            school_code: school_code,
+            grade: grade,
+            meal_date: date,
+            meal_id: meal.id,
+            question: defaultQuiz.question,
+            options: defaultQuiz.options,
+            correct_answer: defaultQuiz.correct_answer,
+            explanation: defaultQuiz.explanation
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error('❌ 퀴즈 저장 실패:', saveError);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: '퀴즈를 저장하는 중 오류가 발생했습니다.' })
+          };
+        }
+        
+        console.log('✅ 퀴즈 저장 성공:', savedQuiz.id);
         
         // 생성 후 퀴즈 조회
         const result = await getUserQuiz(userId, school_code, grade, date);
