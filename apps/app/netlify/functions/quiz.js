@@ -1,11 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// 환경변수 디버깅
-console.log('🔍 환경변수 확인:');
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '설정됨' : '없음');
-console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '없음');
-console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '설정됨' : '없음');
-
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,47 +7,34 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // 환경변수 검증
 if (!supabaseUrl) {
   const errorMsg = 'SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_URL 환경변수가 설정되지 않았습니다.';
-  console.error('❌', errorMsg);
-  console.error('사용 가능한 환경변수들:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
   throw new Error(errorMsg);
 }
 
 if (!supabaseServiceKey) {
   const errorMsg = 'SUPABASE_SERVICE_ROLE_KEY 환경변수가 설정되지 않았습니다.';
-  console.error('❌', errorMsg);
-  console.error('사용 가능한 환경변수들:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
   throw new Error(errorMsg);
 }
 
-console.log('✅ Supabase 환경변수 확인 완료');
 const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
-  console.log('🔍 getUserQuiz 호출됨:', { userId, schoolCode, grade, requestedDate });
-  
   // 유저 학교 정보 확인
   if (!schoolCode || !grade) {
-    console.log('📚 학교 정보 조회 중...');
     const { data: userSchool, error: userSchoolError } = await supabaseClient
       .from('school_infos')
       .select('school_code, grade')
       .eq('user_id', userId)
       .single();
 
-    console.log('📚 학교 정보 조회 결과:', { userSchool, userSchoolError });
-
     if (userSchoolError) {
-      console.error('❌ 학교 정보 조회 실패:', userSchoolError);
       return { error: "사용자의 학교 정보를 찾을 수 없습니다." };
     }
     
     schoolCode = userSchool.school_code;
     grade = userSchool.grade;
   }
-
-  console.log('🏫 최종 학교 정보:', { schoolCode, grade });
 
   // 날짜 처리
   const now = new Date();
@@ -73,14 +54,6 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
   
-  console.log('⏰ 시간 정보:', { 
-    quizDate, 
-    isToday, 
-    currentTimeMinutes, 
-    canShowTodayQuiz, 
-    canShowAnswer 
-  });
-
   // 퀴즈 가져오기 (시간 제한에 따라 다릅게 처리)
   let quizQuery = supabaseClient
     .from('meal_quizzes')
@@ -98,23 +71,18 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     .eq('grade', grade);
   
   if (canShowTodayQuiz) {
-    console.log('📅 오늘 퀴즈 조회 시도:', quizDate);
     // 12:30 이후면 해당 날짜 퀴즈 가져오기 시도
     const { data: todayQuiz, error: todayQuizError } = await quizQuery
       .eq('meal_date', quizDate)
       .limit(1)
       .maybeSingle(); // 없을 수도 있으므로 maybeSingle 사용
 
-    console.log('📅 오늘 퀴즈 조회 결과:', { todayQuiz, todayQuizError });
-
     if (!todayQuizError && todayQuiz) {
-      console.log('✅ 오늘 퀴즈 찾음!');
       // 오늘 퀴즈 찾았음
       return await processQuiz(userId, todayQuiz, canShowAnswer);
     }
   }
   
-  console.log('📊 최근 퀴즈 조회 시도...');
   // 오늘 퀴즈가 없거나 12:30 이전이면 가장 최근 퀴즈 가져오기
   const { data: latestQuiz, error: latestQuizError } = await supabaseClient
     .from('meal_quizzes')
@@ -134,27 +102,16 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     .limit(1)
     .single();
 
-  console.log('📊 최근 퀴즈 조회 결과:', { latestQuiz, latestQuizError });
-
   if (latestQuizError) {
-    console.error('❌ 퀴즈 조회 실패:', latestQuizError);
-    
     // DB에 퀴즈가 전혀 없는지 확인
     const { data: allQuizzes, error: countError } = await supabaseClient
       .from('meal_quizzes')
       .select('id')
       .eq('school_code', schoolCode);
     
-    console.log('🔢 전체 퀴즈 개수 확인:', { 
-      count: allQuizzes?.length || 0, 
-      countError,
-      schoolCode 
-    });
-    
     return { error: "퀴즈가 존재하지 않습니다." };
   }
   
-  console.log('✅ 최근 퀴즈 찾음!');
   return await processQuiz(userId, latestQuiz, true); // 이전 퀴즈는 항상 정답 볼 수 있음
 }
 
@@ -202,8 +159,6 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 // 퀴즈 답변 제출 함수
 async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
   try {
-    console.log('📝 퀴즈 답변 제출 시작:', { userId, quizId, selectedOption, answerTime });
-    
     // 퀴즈 정보 조회
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('meal_quizzes')
@@ -212,7 +167,6 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       .single();
       
     if (quizError || !quiz) {
-      console.error('❌ 퀴즈 조회 실패:', quizError);
       return { error: '퀴즈를 찾을 수 없습니다.' };
     }
     
@@ -246,11 +200,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       .single();
       
     if (saveError) {
-      console.error('❌ 답변 저장 실패:', saveError);
       return { error: '답변 저장에 실패했습니다.' };
     }
-    
-    console.log('✅ 답변 저장 성공:', result.id);
     
     return {
       success: true,
@@ -261,7 +212,6 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
     };
     
   } catch (error) {
-    console.error('💥 답변 제출 중 오류:', error);
     return { error: '답변 제출 중 오류가 발생했습니다.' };
   }
 }
@@ -368,13 +318,9 @@ exports.handler = async function(event, context) {
     
     // POST /quiz - 퀴즈 생성
     if (method === 'POST' && (!pathSegments.length || pathSegments[0] === '')) {
-      console.log('🎯 POST /quiz 퀴즈 생성 요청 받음');
       const { school_code, grade, date } = body;
       
-      console.log('📝 퀴즈 생성 파라미터:', { school_code, grade, date, userId });
-      
       if (!school_code || !grade || !date) {
-        console.error('❌ 필수 파라미터 누락:', { school_code, grade, date });
         return {
           statusCode: 400,
           headers,
@@ -384,8 +330,6 @@ exports.handler = async function(event, context) {
       
       try {
         // 퀴즈 생성 로직을 직접 구현
-        console.log('🔗 퀴즈 생성 로직 시작');
-        
         // 이미 해당 날짜에 퀴즈가 존재하는지 확인
         const { data: existingQuiz } = await supabaseAdmin
           .from('meal_quizzes')
@@ -396,7 +340,6 @@ exports.handler = async function(event, context) {
           .limit(1);
           
         if (existingQuiz && existingQuiz.length > 0) {
-          console.log('ℹ️ 이미 퀴즈가 존재함:', existingQuiz[0].id);
           // 기존 퀴즈 조회해서 반환
           const result = await getUserQuiz(userId, school_code, grade, date);
           return {
@@ -415,7 +358,6 @@ exports.handler = async function(event, context) {
           .limit(1);
           
         if (mealError || !mealData || mealData.length === 0) {
-          console.error('❌ 급식 메뉴 조회 실패:', mealError);
           return {
             statusCode: 404,
             headers,
@@ -427,7 +369,6 @@ exports.handler = async function(event, context) {
         }
         
         const meal = mealData[0];
-        console.log('✅ 급식 메뉴 조회 성공:', meal.id);
         
         // 간단한 기본 퀴즈 생성 (OpenAI 없이)
         const defaultQuiz = {
@@ -454,7 +395,6 @@ exports.handler = async function(event, context) {
           .single();
 
         if (saveError) {
-          console.error('❌ 퀴즈 저장 실패:', saveError);
           return {
             statusCode: 500,
             headers,
@@ -462,12 +402,8 @@ exports.handler = async function(event, context) {
           };
         }
         
-        console.log('✅ 퀴즈 저장 성공:', savedQuiz.id);
-        
         // 생성 후 퀴즈 조회
         const result = await getUserQuiz(userId, school_code, grade, date);
-        
-        console.log('📋 생성된 퀴즈 조회 결과:', { hasError: !!result.error, hasQuiz: !!result.quiz });
         
         return {
           statusCode: result.error ? 404 : 200,
@@ -475,7 +411,6 @@ exports.handler = async function(event, context) {
           body: JSON.stringify(result)
         };
       } catch (error) {
-        console.error('💥 퀴즈 생성 중 예외 발생:', error);
         return {
           statusCode: 500,
           headers,
@@ -531,7 +466,6 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({ error: '요청한 엔드포인트를 찾을 수 없습니다.' })
     };
   } catch (error) {
-    console.error('API 오류:', error);
     return {
       statusCode: 500,
       headers,
