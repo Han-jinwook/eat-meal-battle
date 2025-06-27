@@ -231,11 +231,20 @@ export default function QuizClient() {
     setError(null);
     
     try {
+      // 인증 토큰 가져오기
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        setError('로그인이 필요합니다.');
+        setGeneratingQuiz(false);
+        return;
+      }
+
       // 기존 quiz Netlify Function을 POST 방식으로 호출
       const response = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.data.session.access_token}`
         },
         body: JSON.stringify({
           school_code: userSchool.school_code,
