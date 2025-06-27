@@ -3,6 +3,12 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { SupabaseClient, User } from '@supabase/supabase-js';
+
+// User 타입을 확장하여 필요한 필드 추가
+type ExtendedUser = User & {
+  profile_image?: string;
+};
 import NotificationBell from '@/components/NotificationBell';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { useState, useEffect, useRef } from 'react';
@@ -24,27 +30,46 @@ const NAV_ITEMS: NavItem[] = [
 import useUserSchool from '@/hooks/useUserSchool';
 
 export default function MainHeader() {
-  const supabase = createClient();
+  // 명시적인 타입 정의로 SupabaseClient 타입 적용
+  const supabase = createClient() as SupabaseClient;
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  // any 대신 확장된 User 타입 사용
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   
   // 사용자 정보 가져오기
+  const [nickname, setNickname] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // 사용자 객체 구조 확인을 위한 로그
       if (session?.user) {
+        // 사용자 객체 구조 확인을 위한 로그
         console.log('User object structure:', session.user);
         
-        // 프로필 이미지 관련 필드 확인
+        // 프로필 이미지 관련 필드 확인 - 타입 안전하게 수정
         console.log('Profile image fields:', {
-          'user.profile_image': session.user.profile_image,
           'user.user_metadata?.profile_image': session.user.user_metadata?.profile_image,
           'user.user_metadata?.avatar_url': session.user.user_metadata?.avatar_url
         });
+        
+        // users 테이블에서 nickname 가져오기
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('nickname')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!error && userData) {
+          setNickname(userData.nickname);
+          console.log('사용자 닉네임(DB):', userData.nickname);
+        } else {
+          console.error('닉네임 가져오기 오류:', error);
+          // 실패하면 메타데이터 이름을 폴백으로 사용
+          setNickname(session.user.user_metadata?.name || null);
+        }
       }
       
       setUser(session?.user || null);
@@ -53,8 +78,25 @@ export default function MainHeader() {
     fetchUser();
     
     // 인증 상태 변경 리스너
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user || null);
+      
+      // 세션 변경시 닉네임 업데이트
+      if (session?.user) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('nickname')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!error && userData) {
+          setNickname(userData.nickname);
+        } else {
+          setNickname(session.user.user_metadata?.name || null);
+        }
+      } else {
+        setNickname(null);
+      }
     });
     
     return () => {
@@ -118,7 +160,8 @@ export default function MainHeader() {
                     console.log('Profile image URL changed to HTTPS:', avatarUrl);
                   }
                   
-                  const nicknameToDisplay = user.user_metadata?.name as string | undefined;
+                  // users 테이블의 nickname 사용
+                  const nicknameToDisplay = nickname;
 
                   if (avatarUrl) {
                     return (
