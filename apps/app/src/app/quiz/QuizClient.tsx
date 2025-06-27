@@ -231,35 +231,17 @@ export default function QuizClient() {
     setError(null);
     
     try {
-      // 해당 날짜의 급식 메뉴 정보를 가져오기
-      const mealQuery = supabase
-        .from('meal_menus')
-        .select('id, menu_items, ntr_info, origin_info')
-        .eq('school_code', userSchool.school_code)
-        .eq('meal_date', selectedDate)
-        .single();
-      
-      const { data: mealData, error: mealError } = await mealQuery;
-      
-      if (mealError || !mealData) {
-        console.error('급식 메뉴를 찾을 수 없습니다:', mealError);
-        setError('해당 날짜에 급식 정보가 없어 퀴즈를 생성할 수 없습니다.');
-        setGeneratingQuiz(false);
-        return;
-      }
-      
-      // Netlify Function 직접 호출
-      const response = await fetch('/.netlify/functions/manual-generate-meal-quiz', {
+      // 기존 quiz Netlify Function을 POST 방식으로 호출
+      const response = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         },
         body: JSON.stringify({
           school_code: userSchool.school_code,
           grade: userSchool.grade,
-          meal_date: selectedDate,
-          meal_id: mealData.id
+          date: selectedDate,
+          action: 'generate'
         })
       });
       
