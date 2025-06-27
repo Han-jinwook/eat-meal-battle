@@ -44,67 +44,42 @@ export default function MainHeader() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // 사용자 객체 구조 확인을 위한 로그
-        console.log('User object structure:', session.user);
-        
-        // 프로필 이미지 관련 필드 확인 - 타입 안전하게 수정
-        console.log('Profile image fields:', {
-          'user.user_metadata?.profile_image': session.user.user_metadata?.profile_image,
-          'user.user_metadata?.avatar_url': session.user.user_metadata?.avatar_url
-        });
-        
-        // users 테이블에서 nickname 가져오기
-        const { data: userData, error } = await supabase
-          .from('users')
-          .select('nickname')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (!error && userData) {
-          setNickname(userData.nickname);
-          console.log('사용자 닉네임(DB):', userData.nickname);
-        } else {
-          console.error('닉네임 가져오기 오류:', error);
-          // 실패하면 메타데이터 이름을 폴백으로 사용
-          setNickname(session.user.user_metadata?.name || null);
-        }
-      }
-      
       setUser(session?.user || null);
     };
     
     fetchUser();
     
     // 인증 상태 변경 리스너
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      
-      // 세션 변경시 닉네임 업데이트
-      if (session?.user) {
-        const { data: userData, error } = await supabase
-          .from('users')
-          .select('nickname')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (!error && userData) {
-          setNickname(userData.nickname);
-        } else {
-          setNickname(session.user.user_metadata?.name || null);
-        }
-      } else {
-        setNickname(null);
-      }
     });
     
     return () => {
       authListener?.subscription.unsubscribe();
     };
   }, [supabase]);
-  
-  // 프로필 관련 이벤트 리스너 제거 (모달 제거로 인해 불필요)
+
+  useEffect(() => {
+    const fetchNickname = async () => {
+      if (user?.id) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('nickname')
+          .eq('id', user.id)
+          .single();
+          
+        if (!error && userData) {
+          setNickname(userData.nickname);
+        } else {
+          setNickname(user.user_metadata?.name || null);
+        }
+      } else {
+        setNickname(null);
+      }
+    };
+    
+    fetchNickname();
+  }, [user?.id, supabase]);
 
   // 프로필 이미지 클릭 시 바로 프로필 페이지로 이동
   const navigateToProfile = () => router.push('/profile');
