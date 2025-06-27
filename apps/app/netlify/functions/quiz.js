@@ -1,5 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
+console.log('🔍 환경변수 체크:', {
+  SUPABASE_URL: !!process.env.SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -253,6 +259,8 @@ async function getChampions(schoolCode, grade, month, year) {
 
 // API 핸들러
 exports.handler = async function(event, context) {
+  console.log('🚀 Quiz API 시작:', event.httpMethod, event.path);
+  
   // CORS 헤더
   const headers = {
     'Access-Control-Allow-Origin': '*',
