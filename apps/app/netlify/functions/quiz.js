@@ -30,8 +30,8 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
-async function getUserQuiz(userId, schoolCode, grade, date) {
-  console.log('🔍 getUserQuiz 호출됨:', { userId, schoolCode, grade, date });
+async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
+  console.log('🔍 getUserQuiz 호출됨:', { userId, schoolCode, grade, requestedDate });
   
   // 유저 학교 정보 확인
   if (!schoolCode || !grade) {
@@ -66,8 +66,8 @@ async function getUserQuiz(userId, schoolCode, grade, date) {
   const showQuizTime = 12 * 60 + 30; // 12:30
   const showAnswerTime = 19 * 60;     // 19:00
   
-  const quizDate = date || koreaTime.toISOString().split('T')[0]; // 기본값은 오늘 날짜
-  const isToday = !date || date === koreaTime.toISOString().split('T')[0];
+  const quizDate = requestedDate || koreaTime.toISOString().split('T')[0]; // 기본값은 오늘 날짜
+  const isToday = !requestedDate || requestedDate === koreaTime.toISOString().split('T')[0];
   
   // 오늘 날짜이고 12:30 이후인지 확인
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
@@ -199,98 +199,71 @@ async function processQuiz(userId, quiz, canShowAnswer) {
   };
 }
 
-// 퀴즈 답안 제출
+// 퀴즈 답변 제출 함수
 async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
-  // 퀴즈 정보 가져오기
-  const { data: quiz, error: quizError } = await supabaseClient
-    .from('meal_quizzes')
-    .select('correct_answer, school_code, grade, explanation')
-    .eq('id', quizId)
-    .single();
-
-  if (quizError) {
-    return { error: "퀴즈를 찾을 수 없습니다." };
-  }
-
-  // 정답 여부 확인
-  const isCorrect = selectedOption === quiz.correct_answer;
-
-  // 결과 저장
-  const { data: result, error: resultError } = await supabaseClient
-    .from('quiz_results')
-    .insert([{
-      user_id: userId,
-      quiz_id: quizId,
-      is_correct: isCorrect,
-      selected_option: selectedOption,
-      answer_time: answerTime
-    }])
-    .select();
-
-  if (resultError) {
-    // 이미 제출한 경우 처리
-    if (resultError.code === '23505') { // 중복 키 제약 조건 위반
-      return { error: "이미 답변을 제출했습니다." };
+  try {
+    console.log('📝 퀴즈 답변 제출 시작:', { userId, quizId, selectedOption, answerTime });
+    
+    // 퀴즈 정보 조회
+    const { data: quiz, error: quizError } = await supabaseAdmin
+      .from('meal_quizzes')
+      .select('*')
+      .eq('id', quizId)
+      .single();
+      
+    if (quizError || !quiz) {
+      console.error('❌ 퀴즈 조회 실패:', quizError);
+      return { error: '퀴즈를 찾을 수 없습니다.' };
     }
-    return { error: "결과 저장 중 오류가 발생했습니다." };
-  }
-
-  // 현재 월과 연도
-  const now = new Date();
-  const month = now.getMonth() + 1; // JavaScript의 월은 0부터 시작하므로 +1
-  const year = now.getFullYear();
-
-  // 장원 테이블 업데이트 (없으면 생성)
-  const { data: champion, error: championError } = await supabaseClient
-    .from('quiz_champions')
-    .select('id, correct_count, total_count, avg_answer_time')
-    .eq('school_code', quiz.school_code)
-    .eq('grade', quiz.grade)
-    .eq('user_id', userId)
-    .eq('month', month)
-    .eq('year', year)
-    .limit(1);
-
-  if (champion && champion.length > 0) {
-    // 기존 기록 업데이트
-    const { error: updateError } = await supabaseClient
-      .from('quiz_champions')
-      .update({
-        correct_count: champion[0].correct_count + (isCorrect ? 1 : 0),
-        total_count: champion[0].total_count + 1,
-        avg_answer_time: (champion[0].avg_answer_time * champion[0].total_count + answerTime) / (champion[0].total_count + 1)
-      })
-      .eq('id', champion[0].id);
-
-    if (updateError) {
-      console.error("장원 기록 업데이트 중 오류:", updateError);
+    
+    // 이미 답변했는지 확인
+    const { data: existing } = await supabaseAdmin
+      .from('quiz_results')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('quiz_id', quizId)
+      .limit(1);
+      
+    if (existing && existing.length > 0) {
+      return { error: '이미 답변한 퀴즈입니다.' };
     }
-  } else {
-    // 새 기록 생성
-    const { error: insertError } = await supabaseClient
-      .from('quiz_champions')
-      .insert([{
-        school_code: quiz.school_code,
-        grade: quiz.grade,
+    
+    // 정답 확인 (0-based index)
+    const isCorrect = selectedOption === quiz.correct_answer;
+    
+    // 답변 저장
+    const { data: result, error: saveError } = await supabaseAdmin
+      .from('quiz_results')
+      .insert({
         user_id: userId,
-        month: month,
-        year: year,
-        correct_count: isCorrect ? 1 : 0,
-        total_count: 1,
-        avg_answer_time: answerTime
-      }]);
-
-    if (insertError) {
-      console.error("장원 기록 생성 중 오류:", insertError);
+        quiz_id: quizId,
+        selected_option: selectedOption,
+        is_correct: isCorrect,
+        answer_time: answerTime,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+      
+    if (saveError) {
+      console.error('❌ 답변 저장 실패:', saveError);
+      return { error: '답변 저장에 실패했습니다.' };
     }
+    
+    console.log('✅ 답변 저장 성공:', result.id);
+    
+    return {
+      success: true,
+      isCorrect: isCorrect,
+      correctAnswer: quiz.correct_answer,
+      explanation: quiz.explanation,
+      selectedOption: selectedOption
+    };
+    
+  } catch (error) {
+    console.error('💥 답변 제출 중 오류:', error);
+    return { error: '답변 제출 중 오류가 발생했습니다.' };
   }
-
-  // 결과 반환
-  return {
-    isCorrect,
-    correctAnswer: quiz.correct_answer,
-    message: isCorrect ? "정답입니다!" : "틀렸습니다."
-  };
 }
 
 // 장원 목록 가져오기
