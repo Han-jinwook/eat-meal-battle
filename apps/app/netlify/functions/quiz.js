@@ -392,6 +392,72 @@ exports.handler = async function(event, context) {
       };
     }
     
+    // POST /quiz - 퀴즈 생성
+    if (method === 'POST' && (!pathSegments.length || pathSegments[0] === '')) {
+      console.log('🎯 POST /quiz 퀴즈 생성 요청 받음');
+      const { school_code, grade, date } = body;
+      
+      console.log('📝 퀴즈 생성 파라미터:', { school_code, grade, date, userId });
+      
+      if (!school_code || !grade || !date) {
+        console.error('❌ 필수 파라미터 누락:', { school_code, grade, date });
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: '학교 코드, 학년, 날짜가 필요합니다.' })
+        };
+      }
+      
+      try {
+        // manual-generate-meal-quiz.js 함수 호출
+        const generateQuizFunction = require('./manual-generate-meal-quiz.js');
+        console.log('🔗 manual-generate-meal-quiz.js 함수 호출 시도');
+        
+        const generateResult = await generateQuizFunction.handler({
+          httpMethod: 'POST',
+          body: JSON.stringify({
+            school_code,
+            grade,
+            date,
+            user_id: userId
+          }),
+          headers: event.headers
+        }, context);
+        
+        console.log('🎲 퀴즈 생성 결과:', { statusCode: generateResult.statusCode });
+        
+        if (generateResult.statusCode !== 200) {
+          const errorBody = JSON.parse(generateResult.body);
+          console.error('❌ 퀴즈 생성 실패:', errorBody);
+          return {
+            statusCode: generateResult.statusCode,
+            headers,
+            body: JSON.stringify({ error: errorBody.error || '퀴즈 생성에 실패했습니다.' })
+          };
+        }
+        
+        console.log('✅ 퀴즈 생성 성공, 생성된 퀴즈 조회 시도');
+        
+        // 생성 후 퀴즈 조회
+        const result = await getUserQuiz(userId, school_code, grade, date);
+        
+        console.log('📋 생성된 퀴즈 조회 결과:', { hasError: !!result.error, hasQuiz: !!result.quiz });
+        
+        return {
+          statusCode: result.error ? 404 : 200,
+          headers,
+          body: JSON.stringify(result)
+        };
+      } catch (error) {
+        console.error('💥 퀴즈 생성 중 예외 발생:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: '퀴즈 생성 중 오류가 발생했습니다: ' + error.message })
+        };
+      }
+    }
+    
     // POST /quiz/answer - 퀴즈 답변 제출
     if (method === 'POST' && pathSegments[0] === 'answer') {
       const { quiz_id, selected_option, answer_time } = body;
