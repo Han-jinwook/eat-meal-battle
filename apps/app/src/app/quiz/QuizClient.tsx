@@ -111,32 +111,27 @@ export default function QuizClient() {
     }
   }, [searchParams]);
 
-  // Fetch quiz data
+  // Fetch quiz for selected date
   const fetchQuiz = async () => {
+    if (!userSchool || !selectedDate) return;
+    
     setLoading(true);
     setError(null);
-    setSubmitted(false);
-    setSelectedOption(null);
-    
-    console.log('퀴즈 로드 시도 - 선택된 날짜:', selectedDate);
-    
-    if (!userSchool || !selectedDate) {
-      setLoading(false);
-      return;
-    }
     
     try {
-      // API 엔드포인트 구성
-      const params = new URLSearchParams();
-      
-      if (userSchool && userSchool.school_code) {
-        params.set('school_code', String(userSchool.school_code));
-      } else {
-        throw new Error('학교 코드가 없습니다');
+      // 인증 토큰 가져오기
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        setError('로그인이 필요합니다.');
+        setLoading(false);
+        return;
       }
+
+      const params = new URLSearchParams();
+      params.set('school_code', userSchool.school_code);
       
-      if (userSchool && userSchool.grade !== undefined && userSchool.grade !== null) {
-        params.set('grade', String(userSchool.grade));
+      if (userSchool.grade) {
+        params.set('grade', userSchool.grade.toString());
       } else {
         params.set('grade', '1');
       }
@@ -147,7 +142,11 @@ export default function QuizClient() {
         throw new Error('날짜가 선택되지 않았습니다');
       }
       
-      const response = await fetch(`/api/quiz?${params.toString()}`);
+      const response = await fetch(`/.netlify/functions/quiz?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${session.data.session.access_token}`
+        }
+      });
       const data = await response.json();
       
       if (!response.ok) {
@@ -191,14 +190,23 @@ export default function QuizClient() {
     if (!quiz || selectedOption === null) return;
     
     try {
-      const response = await fetch('/api/quiz', {
+      // 인증 토큰 가져오기
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        toast.error('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.data.session.access_token}`
         },
         body: JSON.stringify({
           quizId: quiz.id,
           selectedOption: selectedOption,
+          action: 'submit'
         }),
       });
       
