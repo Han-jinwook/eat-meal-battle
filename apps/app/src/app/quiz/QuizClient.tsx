@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useUserSchool from '@/hooks/useUserSchool';
-import { createClient } from '@/lib/supabase';
+import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 
 // Quiz type definition
@@ -45,7 +45,10 @@ export default function QuizClient() {
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
-  const supabase = createClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   
   // Handle date parameter from URL
   useEffect(() => {
@@ -149,38 +152,9 @@ export default function QuizClient() {
       
       if (!response.ok) {
         if (data.error === 'Quiz not found') {
-          console.log(`${selectedDate} 날짜에 퀴즈가 없습니다. 생성을 시도합니다.`);
-          
-          // 퀴즈 생성 API 호출
-          const quizGenResponse = await fetch('/api/quiz/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              schoolCode: userSchool.school_code,
-              grade: userSchool.grade,
-              date: selectedDate
-            })
-          });
-          
-          if (!quizGenResponse.ok) {
-            const errorData = await quizGenResponse.json();
-            console.error('퀴즈 생성 실패:', errorData);
-            setError('퀴즈 생성에 실패했습니다.');
-            setLoading(false);
-            return;
-          }
-          
-          // 생성된 퀴즈 다시 가져오기
-          const retryResponse = await fetch(`/api/quiz?${params.toString()}`);
-          const retryData = await retryResponse.json();
-          
-          if (retryResponse.ok && retryData.quiz) {
-            setQuiz(retryData.quiz);
-          } else {
-            setError('퀴즈 생성 후 로드에 실패했습니다.');
-          }
+          console.log(`${selectedDate} 날짜에 퀴즈가 없습니다.`);
+          setQuiz(null);
+          setError(null); // 퀴즈가 없는 것은 에러가 아님
         } else {
           setError(data.error || '퀴즈를 불러오는데 실패했습니다.');
         }
@@ -257,27 +231,47 @@ export default function QuizClient() {
     setError(null);
     
     try {
-      const response = await fetch('/api/quiz/generate', {
+      // 해당 날짜의 급식 메뉴 정보를 가져오기
+      const mealQuery = supabase
+        .from('meal_menus')
+        .select('id, menu_items, ntr_info, origin_info')
+        .eq('school_code', userSchool.school_code)
+        .eq('meal_date', selectedDate)
+        .single();
+      
+      const { data: mealData, error: mealError } = await mealQuery;
+      
+      if (mealError || !mealData) {
+        console.error('급식 메뉴를 찾을 수 없습니다:', mealError);
+        setError('해당 날짜에 급식 정보가 없어 퀴즈를 생성할 수 없습니다.');
+        setGeneratingQuiz(false);
+        return;
+      }
+      
+      // Netlify Function 직접 호출
+      const response = await fetch('/.netlify/functions/manual-generate-meal-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         },
         body: JSON.stringify({
-          schoolCode: userSchool.school_code,
+          school_code: userSchool.school_code,
           grade: userSchool.grade,
-          date: selectedDate
+          meal_date: selectedDate,
+          meal_id: mealData.id
         })
       });
-      
-      const data = await response.json();
       
       if (response.ok) {
         toast.success('퀴즈가 생성되었습니다!');
         // 퀴즈 다시 로드
         await fetchQuiz();
       } else {
-        setError(data.error || '퀴즈 생성에 실패했습니다.');
-        toast.error(data.error || '퀴즈 생성에 실패했습니다.');
+        const errorData = await response.json();
+        console.error('퀴즈 생성 실패:', errorData);
+        setError(errorData.error || '퀴즈 생성에 실패했습니다.');
+        toast.error(errorData.error || '퀴즈 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error('퀴즈 생성 오류:', err);
