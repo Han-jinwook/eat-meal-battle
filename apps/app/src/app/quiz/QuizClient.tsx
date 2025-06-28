@@ -582,9 +582,22 @@ export default function QuizClient() {
                   <p className="text-amber-600">{noMenuMessage}</p>
                 </div>
               ) : generatingQuiz ? (
-                <div>
-                  <p className="text-gray-600 mb-2">퀴즈 생성중...</p>
-                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div className="py-8 text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className="relative">
+                      {/* 급식판 애니메이션 */}
+                      <div className="w-24 h-24 bg-orange-100 rounded-full border-4 border-orange-300 animate-pulse flex items-center justify-center relative overflow-hidden">
+                        <div className="w-16 h-16 bg-white rounded-full shadow-inner flex items-center justify-center">
+                          <div className="w-10 h-10 border-4 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      </div>
+                      <div className="absolute -right-2 -top-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white animate-bounce">
+                        <span className="text-xs">AI</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 font-medium mb-2">급식 퀴즈 생성중...</p>
+                  <p className="text-sm text-gray-500">AI가 오늘 먹은 급식메뉴로 <br />재미있는 퀴즈를 만들고 있어요!</p>
                 </div>
               ) : (
                 <>
