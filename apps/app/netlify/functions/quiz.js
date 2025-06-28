@@ -68,8 +68,9 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     .eq('meal_date', quizDate)
     .limit(1);
     
-  // 급식 정보가 없는 경우
-  if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items || mealData[0].menu_items.length === 0) {
+  // 급식 정보가 없는 경우 (기본 에러 체크 및 "급식 정보가 없습니다" 텍스트 포함 여부 확인)
+  if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items ||
+      (Array.isArray(mealData[0].menu_items) && mealData[0].menu_items.includes('급식 정보가 없습니다'))) {
     return {
       noMenu: true,
       message: '급식 정보가 없는 날이어서 급식퀴즈도 쉬어가요'
@@ -348,7 +349,8 @@ exports.handler = async function(event, context) {
           .eq('meal_date', date)
           .limit(1);
           
-        if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items || mealData[0].menu_items.length === 0) {
+        if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items ||
+            (Array.isArray(mealData[0].menu_items) && mealData[0].menu_items.includes('급식 정보가 없습니다'))) {
           // 급식 정보가 없는 경우
           const message = '급식 정보가 없는 날이어서 급식퀴즈도 쉬어가요';
           
