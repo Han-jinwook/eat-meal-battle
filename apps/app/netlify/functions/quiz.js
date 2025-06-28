@@ -60,6 +60,22 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
   
+  // 급식 정보 확인
+  const { data: mealData, error: mealError } = await supabaseClient
+    .from('meal_menus')
+    .select('id, menu_items')
+    .eq('school_code', schoolCode)
+    .eq('meal_date', quizDate)
+    .limit(1);
+    
+  // 급식 정보가 없는 경우
+  if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items || mealData[0].menu_items.length === 0) {
+    return {
+      noMenu: true,
+      message: '급식 정보가 없는 날이어서 급식퀴즈도 쉬어가요'
+    };
+  }
+  
   // 해당 날짜의 퀴즈 조회
   const { data: dateQuiz, error: dateQuizError } = await supabaseClient
     .from('meal_quizzes')
@@ -332,26 +348,17 @@ exports.handler = async function(event, context) {
           .eq('meal_date', date)
           .limit(1);
           
-        if (mealError || !mealData || mealData.length === 0) {
-          // 날짜 정보를 확인해서 주말인지 체크
-          const today = new Date(date);
-          const dayOfWeek = today.getDay(); // 0: 일요일, 6: 토요일
-          
-          let message = '해당 날짜의 급식 정보가 없습니다.';
-          
-          // 주말인 경우 특별 메시지 제공
-          if (dayOfWeek === 0 || dayOfWeek === 6) {
-            message = '주말에는 급식이 제공되지 않아 퀴즈를 생성할 수 없습니다.';
-          }
+        if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items || mealData[0].menu_items.length === 0) {
+          // 급식 정보가 없는 경우
+          const message = '급식 정보가 없는 날이어서 급식퀴즈도 쉬어가요';
           
           return {
-            statusCode: 200, // 404 대신 200 상태 코드 사용
+            statusCode: 200,
             headers,
             body: JSON.stringify({ 
               noMenu: true,
               message: message,
-              date: date,
-              isWeekend: (dayOfWeek === 0 || dayOfWeek === 6)
+              date: date
             })
           };
         }
