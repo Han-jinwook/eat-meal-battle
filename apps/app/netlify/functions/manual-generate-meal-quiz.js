@@ -107,26 +107,43 @@ const generateQuizWithAI = async function(meal, grade) {
 
     // 응답 파싱
     const content = response.choices[0].message.content;
+    console.log(`[manual-generate-meal-quiz] GPT 응답 수신: ${content.length}자`);
     
     // JSON 형식 추출 ('{...}' 형태의 문자열 찾기)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const quizData = JSON.parse(jsonMatch[0]);
-      console.log(`[manual-generate-meal-quiz] 퀴즈 생성 성공: ${quizData.question.substring(0, 30)}...`);
-      return quizData;
+    if (!jsonMatch) {
+      console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, content);
+      throw new Error("JSON 형식을 찾을 수 없습니다");
     }
     
-    throw new Error("유효한 JSON 응답을 받지 못했습니다");
+    try {
+      // JSON 문자열 정리: 백틱 제거 및 이스케이프되지 않은 백슬래시 처리
+      let jsonString = jsonMatch[0];
+      jsonString = jsonString.replace(/`/g, ''); // 백틱 제거
+      jsonString = jsonString.replace(/\\(?=["])/, '\\\\'); // 이스케이프되지 않은 백슬래시 처리
+      
+      // JSON 파싱
+      const quizData = JSON.parse(jsonString);
+      
+      // 필수 필드 검증
+      const requiredFields = ['question', 'options', 'correct_answer', 'explanation'];
+      for (const field of requiredFields) {
+        if (quizData[field] === undefined) {
+          console.error(`[manual-generate-meal-quiz] 필수 필드 누락: ${field}`);
+          throw new Error(`퀴즈 데이터에 필수 필드(${field})가 없습니다`);
+        }
+      }
+      
+      console.log(`[manual-generate-meal-quiz] 퀴즈 생성 성공: ${quizData.question.substring(0, 30)}...`);
+      return quizData;
+    } catch (parseError) {
+      console.error(`[manual-generate-meal-quiz] JSON 파싱 오류:`, parseError);
+      console.error(`[manual-generate-meal-quiz] 원본 JSON 문자열:`, jsonMatch[0]);
+      throw new Error(`JSON 파싱 실패: ${parseError.message}`);
+    }
   } catch (error) {
     console.error(`[manual-generate-meal-quiz] 퀴즈 생성 중 오류 발생:`, error);
-    
-    // 오류 발생 시 기본 퀴즈 제공 (실패 시 대비)
-    return {
-      question: "급식에 자주 등장하는 영양소 중 단백질이 풍부한 식품은 무엇일까요?",
-      options: ["사과", "밥", "두부", "오렌지 주스"],
-      correct_answer: 3, // 1부터 시작하므로 3번이 두부
-      explanation: "두부는 콩으로 만들어지며, 식물성 단백질이 풍부한 대표적인 식품입니다."
-    };
+    throw error; // 오류를 상위로 전달하여 재시도 로직에서 처리할 수 있게 함
   }
 }
 

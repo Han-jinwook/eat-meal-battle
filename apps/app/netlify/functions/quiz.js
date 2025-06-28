@@ -345,22 +345,42 @@ exports.handler = async function(event, context) {
         
         const meal = mealData[0];
         
-        // OpenAI 기반 퀴즈 생성
+        // OpenAI 기반 퀴즈 생성 (최대 3회 재시도)
         const { generateQuizWithAI } = require('./manual-generate-meal-quiz');
-        const generatedQuiz = await generateQuizWithAI(meal, grade);
         
-        if (generatedQuiz.error) {
+        let generatedQuiz = null;
+        let lastError = null;
+        const MAX_RETRIES = 3;
+        
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            console.log(`[quiz] 퀴즈 생성 시도 ${attempt}/${MAX_RETRIES}`);
+            generatedQuiz = await generateQuizWithAI(meal, grade);
+            console.log(`[quiz] 퀴즈 생성 성공 (${attempt}번째 시도)`);
+            break; // 성공하면 루프 종료
+          } catch (error) {
+            console.error(`[quiz] 퀴즈 생성 시도 ${attempt} 실패:`, error.message);
+            lastError = error;
+            
+            if (attempt < MAX_RETRIES) {
+              console.log(`[quiz] ${1000}ms 후 재시도...`);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기 후 재시도
+            }
+          }
+        }
+        
+        // 모든 재시도 후에도 실패한 경우
+        if (!generatedQuiz) {
+          console.error(`[quiz] 모든 시도(${MAX_RETRIES}회) 후 퀴즈 생성 실패`);
           return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-              error: '퀴즈 생성 중 오류가 발생했습니다.',
-              details: generatedQuiz.error
+              error: '퀴즈 생성을 실패했습니다. 다시 시도해주세요.',
+              details: lastError?.message || '최대 시도 횟수 초과'
             })
           };
         }
-        
-        const defaultQuiz = generatedQuiz;
         
         // DB에 퀴즈 저장
         const { data: savedQuiz, error: saveError } = await supabaseAdmin
@@ -370,10 +390,10 @@ exports.handler = async function(event, context) {
             grade: grade,
             meal_date: date,
             meal_id: meal.id,
-            question: defaultQuiz.question,
-            options: defaultQuiz.options,
-            correct_answer: defaultQuiz.correct_answer,
-            explanation: defaultQuiz.explanation
+            question: generatedQuiz.question,
+            options: generatedQuiz.options,
+            correct_answer: generatedQuiz.correct_answer,
+            explanation: generatedQuiz.explanation
           })
           .select()
           .single();
