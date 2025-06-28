@@ -576,8 +576,10 @@ export default function QuizClient() {
           ) : (
             <div className="text-center py-10">
               {noMenu ? (
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-gray-600">{noMenuMessage}</p>
+                <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
+                  <div className="text-5xl mb-2">🏫</div>
+                  <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
+                  <p className="text-amber-600">{noMenuMessage}</p>
                 </div>
               ) : generatingQuiz ? (
                 <div>
