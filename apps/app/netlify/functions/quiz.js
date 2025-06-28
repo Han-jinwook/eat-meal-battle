@@ -333,12 +333,25 @@ exports.handler = async function(event, context) {
           .limit(1);
           
         if (mealError || !mealData || mealData.length === 0) {
+          // 날짜 정보를 확인해서 주말인지 체크
+          const today = new Date(date);
+          const dayOfWeek = today.getDay(); // 0: 일요일, 6: 토요일
+          
+          let message = '해당 날짜의 급식 정보가 없습니다.';
+          
+          // 주말인 경우 특별 메시지 제공
+          if (dayOfWeek === 0 || dayOfWeek === 6) {
+            message = '주말에는 급식이 제공되지 않아 퀴즈를 생성할 수 없습니다.';
+          }
+          
           return {
-            statusCode: 404,
+            statusCode: 200, // 404 대신 200 상태 코드 사용
             headers,
             body: JSON.stringify({ 
-              error: '해당 날짜의 급식 정보를 찾을 수 없습니다.',
-              details: mealError?.message
+              noMenu: true,
+              message: message,
+              date: date,
+              isWeekend: (dayOfWeek === 0 || dayOfWeek === 6)
             })
           };
         }

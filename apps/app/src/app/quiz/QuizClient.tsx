@@ -43,6 +43,8 @@ export default function QuizClient() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
+  const [noMenu, setNoMenu] = useState<boolean>(false);
+  const [noMenuMessage, setNoMenuMessage] = useState<string>('');
   
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
   const supabase = createBrowserClient(
@@ -157,6 +159,13 @@ export default function QuizClient() {
         } else {
           setError(data.error || '퀴즈를 불러오는데 실패했습니다.');
         }
+      } else if (data.noMenu) {
+        // 급식이 없는 날 처리
+        console.log(`${selectedDate} 날짜에 급식이 없습니다:`, data.message);
+        setQuiz(null);
+        setNoMenu(true);
+        setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
+        setError(null);
       } else {
         setQuiz(data.quiz);
         
@@ -262,15 +271,25 @@ export default function QuizClient() {
         })
       });
       
+      const data = await response.json();
+      
       if (response.ok) {
-        toast.success('퀴즈가 생성되었습니다!');
-        // 퀴즈 다시 로드
-        await fetchQuiz();
+        if (data.noMenu) {
+          // 급식 정보가 없는 경우
+          console.log('급식 정보 없음:', data.message);
+          setNoMenu(true);
+          setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
+          setQuiz(null);
+          toast.info(data.message || '해당 날짜에 급식 정보가 없습니다.');
+        } else {
+          toast.success('퀴즈가 생성되었습니다!');
+          // 퀴즈 다시 로드
+          await fetchQuiz();
+        }
       } else {
-        const errorData = await response.json();
-        console.error('퀴즈 생성 실패:', errorData);
-        setError(errorData.error || '퀴즈 생성에 실패했습니다.');
-        toast.error(errorData.error || '퀴즈 생성에 실패했습니다.');
+        console.error('퀴즈 생성 실패:', data);
+        setError(data.error || '퀴즈 생성에 실패했습니다.');
+        toast.error(data.error || '퀴즈 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error('퀴즈 생성 오류:', err);
@@ -350,12 +369,15 @@ export default function QuizClient() {
     return dates;
   };
 
-  // Load quiz when dependencies change
+  // Fetch quiz when date or user school changes
   useEffect(() => {
-    if (userSchool && selectedDate && !userLoading) {
+    if (selectedDate && userSchool && !userLoading) {
+      // 날짜가 변경되면 상태 초기화
+      setNoMenu(false);
+      setNoMenuMessage('');
       fetchQuiz();
     }
-  }, [userSchool, selectedDate, userLoading]);
+  }, [selectedDate, userSchool, userLoading]);
 
   return (
     <>
@@ -553,18 +575,26 @@ export default function QuizClient() {
             </div>
           ) : (
             <div className="text-center py-10">
-              <p className="text-gray-600 mb-4">퀴즈가 없습니다.</p>
-              <button
-                onClick={handleManualQuizGenerate}
-                disabled={generatingQuiz}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  generatingQuiz
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {generatingQuiz ? '퀴즈 생성 중...' : '퀴즈 생성하기'}
-              </button>
+              {noMenu ? (
+                <div className="bg-gray-100 p-4 rounded-lg">
+                  <p className="text-gray-600">{noMenuMessage}</p>
+                </div>
+              ) : generatingQuiz ? (
+                <div>
+                  <p className="text-gray-600 mb-2">퀴즈 생성중...</p>
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">퀴즈가 없습니다.</p>
+                  <button
+                    onClick={handleManualQuizGenerate}
+                    className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    퀴즈 생성하기
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
