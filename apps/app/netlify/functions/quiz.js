@@ -345,13 +345,22 @@ exports.handler = async function(event, context) {
         
         const meal = mealData[0];
         
-        // 간단한 기본 퀴즈 생성 (OpenAI 없이)
-        const defaultQuiz = {
-          question: `오늘 급식 메뉴 중 하나인 "${meal.menu_items[0]}"에 대한 질문입니다. 이 음식의 주요 영양소는 무엇일까요?`,
-          options: ["탄수화물", "단백질", "지방", "비타민"],
-          correct_answer: 1, // 탄수화물
-          explanation: "대부분의 한식 메뉴는 탄수화물이 주요 영양소입니다."
-        };
+        // OpenAI 기반 퀴즈 생성
+        const { generateQuizWithAI } = require('./manual-generate-meal-quiz');
+        const generatedQuiz = await generateQuizWithAI(meal, grade);
+        
+        if (generatedQuiz.error) {
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+              error: '퀴즈 생성 중 오류가 발생했습니다.',
+              details: generatedQuiz.error
+            })
+          };
+        }
+        
+        const defaultQuiz = generatedQuiz;
         
         // DB에 퀴즈 저장
         const { data: savedQuiz, error: saveError } = await supabaseAdmin
