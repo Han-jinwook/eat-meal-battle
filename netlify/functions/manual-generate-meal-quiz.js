@@ -14,81 +14,67 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-/**
- * 학년에 따른 난이도 및 교육과정 정보 계산 함수
- * @param {number} grade 학년 (1-12)
- * @returns {Object} 난이도 및 교육과정 정보
- */
-function calculateEducationalLevel(grade) {
-  // 초등학교 (1-6학년)
-  if (grade >= 1 && grade <= 6) {
-    if (grade <= 2) {
-      return {
-        difficulty: 1,
-        levelText: "초등학교 저학년(1-2학년)",
-        educationalContent: "기초 식품군 분류, 간단한 영양 상식, 음식의 색과 모양, 건강한 식습관"
-      };
-    } else if (grade <= 4) {
-      return {
-        difficulty: 2,
-        levelText: "초등학교 중학년(3-4학년)",
-        educationalContent: "기본 영양소(탄수화물, 단백질, 지방), 식품의 종류와 특징, 식사 예절, 건강과 영양"
-      };
-    } else {
-      return {
-        difficulty: 3,
-        levelText: "초등학교 고학년(5-6학년)",
-        educationalContent: "영양소와 건강의 관계, 식품의 원산지, 조리 방법의 특징, 환경과 식생활"
-      };
-    }
-  }
-  // 중학교 (7-9학년)
-  else if (grade >= 7 && grade <= 9) {
-    return {
-      difficulty: 4,
-      levelText: "중학교 (1-3학년)",
-      educationalContent: "영양소의 기능과 대사, 식품 첨가물, 식중독 예방, 전통 식문화, 생애 주기별 영양 관리, 지속가능한 식생활"
-    };
-  }
-  // 고등학교 (10-12학년)
-  else {
-    return {
-      difficulty: 5,
-      levelText: "고등학교 (1-3학년)",
-      educationalContent: "영양소 대사와 질병 예방, 식품 안전, 영양 정책, 영양학의 기초 원리, 식문화의 세계화, 식량 자원과 환경"
-    };
-  }
-}
+
 
 /**
  * 급식 메뉴 기반 퀴즈 프롬프트 생성
  * @param {Object} meal 급식 메뉴 정보
  * @param {number} grade 학년 (1-12)
+ * @param {string} mealDate 급식 날짜 (YYYY-MM-DD)
  * @returns {string} OpenAI에 전달할 프롬프트
  */
-function generateQuizPrompt(meal, grade) {
-  const { levelText, educationalContent } = calculateEducationalLevel(grade);
-  
+function generateQuizPrompt(meal, grade, mealDate) {
   return `
 급식 메뉴: ${meal.menu_items.join(', ')}
 영양소 정보: ${meal.ntr_info || '정보 없음'}
 원산지 정보: ${meal.origin_info || '정보 없음'}
+메뉴 제공 날짜: ${mealDate}
+대상 학년: ${grade}학년
 
-위 급식 메뉴와 관련된 ${levelText} 학생 수준의 객관식 퀴즈를 생성해주세요.
-학년별 교육과정 반영 내용: ${educationalContent}
+위 정보로 재미있고 트렌디한 객관식 퀴즈 생성:
 
-퀴즈는 급식 메뉴의 식재료, 요리 방법, 영양소, 역사, 문화적 배경 등과 관련된 내용이어야 합니다.
-한국 교육과정에 맞는 정확하고 교육적인 내용을 담아야 합니다.
+퀴즈 스타일:
+• 재미있고 위트 있는 문체 사용
+• 아이들이 좋아하는 트렌드/번어체/유행어 활용
+• 이모지나 의성어 사용 가능 (하지만 과하지 않게)
+• 일상에서 쓸 수 있는 실용적 내용
+• 호기심을 자극하는 스토리텔링
 
-문제와 4개의 선택지, 그리고 정답 번호(1-4)를 JSON 형식으로 제공해주세요.
-정답에 대한 교육적인 설명도 함께 제공해주세요.
+한국 교육과정 기반 학년별 차등화:
+• 초등 1-2학년: 기초 식품군, 색깔별 영양, 간단한 식습관 (통합교과 연계)
+• 초등 3-4학년: 기본 영양소, 식품 분류, 건강한 식사 (과학, 사회 연계)
+• 초등 5-6학년: 영양소 기능, 식품 안전, 전통 음식 (과학, 사회, 실과 연계)
+• 중학교 1-3학년: 영양소 대사, 식품 첨가물, 식문화 비교 (과학, 사회, 기술가정 연계)
+• 고등학교 1-3학년: 영양 생화학, 식품 정책, 글로벌 식문화 (생명과학, 사회문화 연계)
 
-결과 형식:
+질문 유형 (다양하게 선택):
+• 식재료/영양소 기능과 건강 효과
+• 조리법 비교와 영양학적 차이점
+• 식문화/전통음식의 역사적 배경
+• 지역 특산물과 원산지 특성
+• 친환경/지속가능한 식생활
+• 계절별 식단과 영양 관리
+• 교과서 연계 실험/탐구 활동
+
+필수 조건:
+- 암기보다 사고력/응용력 중심
+- 오답도 그럴듯하게 구성하여 변별력 확보
+- 정답 해설에 추가 학습 내용 포함
+- 실생활 적용 가능한 실용적 지식
+- 재미있고 기억에 남는 스타일
+
+예시 문체:
+- "오늘 급식 메뉴를 보니 완전 대박이네요! 혹시..."
+- "이 음식의 숨겨진 비밀은 무엇일까요?"
+- "요즘 대세인 건강 만들기의 핵심은?"
+- "이 음식이 인기 많은 이유는 바로..."
+
+JSON:
 {
-  "question": "퀴즈 질문",
-  "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
+  "question": "문제",
+  "options": ["1", "2", "3", "4"],
   "correct_answer": 1,
-  "explanation": "정답과 관련된 교육적 설명"
+  "explanation": "해설"
 }
 `;
 }
@@ -103,7 +89,7 @@ async function generateQuizWithAI(meal, grade) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
   
   // OpenAI 프롬프트 생성
-  const prompt = generateQuizPrompt(meal, grade);
+  const prompt = generateQuizPrompt(meal, grade, meal.meal_date);
   
   try {
     // OpenAI API 호출
