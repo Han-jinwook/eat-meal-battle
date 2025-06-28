@@ -85,7 +85,7 @@ JSON:
  * @param {number} grade 학년 (1-12)
  * @returns {Promise<Object>} 생성된 퀴즈 데이터
  */
-async function generateQuizWithAI(meal, grade) {
+const generateQuizWithAI = async function(meal, grade) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
   
   // OpenAI 프롬프트 생성
@@ -176,7 +176,8 @@ async function saveQuizToDatabase(quiz, meal, grade) {
 }
 
 // API 핸들러
-exports.handler = async function(event, context) {
+// 핸들러 함수 명시적으로 export
+const handler = async function(event, context) {
   // CORS 헤더
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -327,6 +328,12 @@ exports.handler = async function(event, context) {
       })
     };
   }
+};
+
+// 외부에서 사용할 함수 export
+module.exports = {
+  generateQuizWithAI,
+  handler
 };
 
 // 외부에서 사용할 함수 export
