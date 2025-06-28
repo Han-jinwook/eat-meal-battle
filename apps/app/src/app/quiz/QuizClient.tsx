@@ -153,9 +153,14 @@ export default function QuizClient() {
       
       if (!response.ok) {
         if (data.error === 'Quiz not found') {
-          console.log(`${selectedDate} 날짜에 퀴즈가 없습니다.`);
+          console.log(`${selectedDate} 날짜에 퀴즈가 없습니다. 자동으로 생성을 시작합니다.`);
           setQuiz(null);
           setError(null); // 퀴즈가 없는 것은 에러가 아님
+          
+          // 자동으로 퀴즈 생성 시작 - 로딩 화면 표시
+          setGeneratingQuiz(true);
+          handleManualQuizGenerate();
+          return; // 퀴즈 생성 중이므로 여기서 종료
         } else {
           setError(data.error || '퀴즈를 불러오는데 실패했습니다.');
         }
@@ -190,7 +195,10 @@ export default function QuizClient() {
       console.error('퀴즈 로드 오류:', err);
       setError('퀴즈를 불러오는데 실패했습니다.');
     } finally {
-      setLoading(false);
+      // generatingQuiz가 true일 때는 로딩 상태를 유지
+      if (!generatingQuiz) {
+        setLoading(false);
+      }
     }
   };
 
