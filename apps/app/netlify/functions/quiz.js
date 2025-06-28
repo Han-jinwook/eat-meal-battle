@@ -26,6 +26,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
+  console.log(`getUserQuiz 호출: userId=${userId}, schoolCode=${schoolCode}, grade=${grade}, requestedDate=${requestedDate}`);
   // 유저 학교 정보 확인
   if (!schoolCode || !grade) {
     const { data: userSchool, error: userSchoolError } = await supabaseClient
@@ -56,6 +57,8 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   const quizDate = requestedDate || koreaTime.toISOString().split('T')[0]; // 기본값은 오늘 날짜
   const isToday = !requestedDate || requestedDate === koreaTime.toISOString().split('T')[0];
   
+  console.log(`날짜 처리: requestedDate=${requestedDate}, quizDate=${quizDate}, isToday=${isToday}`);
+  
   // 오늘 날짜이고 12:30 이후인지 확인
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
@@ -78,6 +81,7 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   }
   
   // 해당 날짜의 퀴즈 조회
+  console.log(`meal_quizzes 테이블에서 퀴즈 조회: schoolCode=${schoolCode}, grade=${grade}, meal_date=${quizDate}`);
   const { data: dateQuiz, error: dateQuizError } = await supabaseClient
     .from('meal_quizzes')
     .select(`
@@ -95,6 +99,8 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     .eq('meal_date', quizDate)
     .limit(1)
     .maybeSingle();
+    
+  console.log(`퀴즈 조회 결과: 오류=${dateQuizError ? '있음' : '없음'}, 퀴즈 발견=${dateQuiz ? '성공' : '실패'}, 퀴즈ID=${dateQuiz?.id}, 퀴즈날짜=${dateQuiz?.meal_date}`);
 
   if (!dateQuizError && dateQuiz) {
     // 해당 날짜 퀴즈 찾았음
@@ -312,6 +318,8 @@ exports.handler = async function(event, context) {
     if (method === 'POST' && (!pathSegments.length || pathSegments[0] === '')) {
       const { school_code, grade, date } = body;
       
+      console.log(`POST 요청 받음 - 퀴즈 생성 요청: school_code=${school_code}, grade=${grade}, date=${date}`);
+      
       if (!school_code || !grade || !date) {
         return {
           statusCode: 400,
@@ -323,17 +331,22 @@ exports.handler = async function(event, context) {
       try {
         // 퀴즈 생성 로직을 직접 구현
         // 이미 해당 날짜에 퀴즈가 존재하는지 확인
+        console.log(`기존 퀴즈 존재 확인: school_code=${school_code}, grade=${grade}, meal_date=${date}`);
         const { data: existingQuiz } = await supabaseAdmin
           .from('meal_quizzes')
-          .select('id')
+          .select('id, meal_date')
           .eq('school_code', school_code)
           .eq('grade', grade)
           .eq('meal_date', date)
           .limit(1);
           
+        console.log(`기존 퀴즈 조회 결과: ${existingQuiz ? '퀴즈 있음' : '퀴즈 없음'}, 퀴즈 개수=${existingQuiz?.length}, 처음 퀴즈 ID=${existingQuiz?.[0]?.id}, 퀴즈 날짜=${existingQuiz?.[0]?.meal_date}`);
+          
         if (existingQuiz && existingQuiz.length > 0) {
           // 기존 퀴즈 조회해서 반환
+          console.log(`기존 퀴즈 발견, getUserQuiz 호출: userId=${userId}, school_code=${school_code}, grade=${grade}, date=${date}`);
           const result = await getUserQuiz(userId, school_code, grade, date);
+          console.log(`기존 퀴즈 반환 결과:`, result);
           return {
             statusCode: 200,
             headers,
