@@ -60,37 +60,8 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
   
-  // 퀴즈 가져오기 (시간 제한에 따라 다릅게 처리)
-  let quizQuery = supabaseClient
-    .from('meal_quizzes')
-    .select(`
-      id,
-      question,
-      options,
-      correct_answer,
-      explanation,
-      meal_date,
-      meal_id,
-      meal_menus(menu_items)
-    `)
-    .eq('school_code', schoolCode)
-    .eq('grade', grade);
-  
-  if (canShowTodayQuiz) {
-    // 12:30 이후면 해당 날짜 퀴즈 가져오기 시도
-    const { data: todayQuiz, error: todayQuizError } = await quizQuery
-      .eq('meal_date', quizDate)
-      .limit(1)
-      .maybeSingle(); // 없을 수도 있으므로 maybeSingle 사용
-
-    if (!todayQuizError && todayQuiz) {
-      // 오늘 퀴즈 찾았음
-      return await processQuiz(userId, todayQuiz, canShowAnswer);
-    }
-  }
-  
-  // 오늘 퀴즈가 없거나 12:30 이전이면 가장 최근 퀴즈 가져오기
-  const { data: latestQuiz, error: latestQuizError } = await supabaseClient
+  // 해당 날짜의 퀴즈 조회
+  const { data: dateQuiz, error: dateQuizError } = await supabaseClient
     .from('meal_quizzes')
     .select(`
       id,
@@ -104,21 +75,17 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     `)
     .eq('school_code', schoolCode)
     .eq('grade', grade)
-    .order('meal_date', { ascending: false })
+    .eq('meal_date', quizDate)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (latestQuizError) {
-    // DB에 퀴즈가 전혀 없는지 확인
-    const { data: allQuizzes, error: countError } = await supabaseClient
-      .from('meal_quizzes')
-      .select('id')
-      .eq('school_code', schoolCode);
-    
-    return { error: "퀴즈가 존재하지 않습니다." };
+  if (!dateQuizError && dateQuiz) {
+    // 해당 날짜 퀴즈 찾았음
+    return await processQuiz(userId, dateQuiz, canShowAnswer);
   }
   
-  return await processQuiz(userId, latestQuiz, true); // 이전 퀴즈는 항상 정답 볼 수 있음
+  // 해당 날짜에 퀴즈가 없음
+  return { error: "해당 날짜에 퀴즈가 없습니다." };
 }
 
 // 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)
