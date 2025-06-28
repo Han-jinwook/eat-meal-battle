@@ -13,10 +13,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-
-
-
-
 /**
  * 급식 메뉴 기반 퀴즈 프롬프트 생성
  * @param {Object} meal 급식 메뉴 정보
@@ -357,4 +353,10 @@ exports.handler = async function(event, context) {
       })
     };
   }
+};
+
+// 외부에서 사용할 함수 export
+module.exports = {
+  generateQuizWithAI,
+  handler
 };

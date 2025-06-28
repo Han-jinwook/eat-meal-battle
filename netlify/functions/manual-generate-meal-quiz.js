@@ -328,3 +328,9 @@ exports.handler = async function(event, context) {
     };
   }
 };
+
+// 외부에서 사용할 함수 export
+module.exports = {
+  generateQuizWithAI,
+  handler
+};
