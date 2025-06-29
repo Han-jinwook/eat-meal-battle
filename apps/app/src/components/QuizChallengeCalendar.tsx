@@ -358,27 +358,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           <span>오답</span>
         </div>
         <div className="flex items-center space-x-2">
-    </div>
-
-    <div className="flex items-center justify-center space-x-6 mt-4 text-sm text-gray-600">
-      <div className="flex items-center space-x-2">
-        <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-          O
+          <span className="text-lg">🏆</span>
+          <span>주장원 (4일 이상 전체 정답) / 월장원 (11회 이상 전체 정답)</span>
         </div>
-        <span>정답</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-          X
-        </div>
-        <span>오답</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-lg">🏆</span>
-        <span>주장원 (4일 이상 전체 정답) / 월장원 (11회 이상 전체 정답)</span>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default QuizChallengeCalendar;
