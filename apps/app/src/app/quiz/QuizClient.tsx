@@ -214,16 +214,19 @@ export default function QuizClient() {
         return;
       }
 
-      const response = await fetch('/.netlify/functions/quiz', {
+      // 응답 시간 계산 (초 단위)
+      const answerTime = Math.floor(Date.now() / 1000);
+
+      const response = await fetch('/.netlify/functions/quiz/answer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.data.session.access_token}`
         },
         body: JSON.stringify({
-          quizId: quiz.id,
-          selectedOption: selectedOption,
-          action: 'submit'
+          quiz_id: quiz.id,
+          selected_option: selectedOption,
+          answer_time: answerTime
         }),
       });
       
