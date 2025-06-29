@@ -602,21 +602,35 @@ export default function MealImageUploader({
         console.log('검증 결과:', verificationResult);
         
         // 업로드된 이미지 정보 가져오기 (사용자 정보 포함)
+        // 이미지 정보 조회
         const { data: imageData } = await supabase
           .from('meal_images')
-          .select(`
-            *,
-            users:uploaded_by(id, nickname, profile_image)
-          `)
+          .select('*')
           .eq('id', uploadedImageId)
           .single();
           
         if (imageData) {
+          // 사용자 정보 별도 조회
+          let uploaderNickname = null;
+          if (imageData.uploaded_by) {
+            try {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('nickname')
+                .eq('id', imageData.uploaded_by)
+                .single();
+              uploaderNickname = userData?.nickname || null;
+            } catch (userError) {
+              console.error('사용자 정보 조회 오류:', userError);
+            }
+          }
+          
           // 사용자 별명 추가 및 검증 결과 반영
           const updatedImageData = {
             ...imageData,
-            uploader_nickname: imageData.users?.nickname || null,
+            uploader_nickname: uploaderNickname,
             status: verificationResult.isMatch ? 'approved' : 'rejected',
+            match_score: verificationResult.matchScore || 0,
             explanation: verificationResult.explanation || null
           };
           setUploadedImage(updatedImageData);
@@ -637,18 +651,30 @@ export default function MealImageUploader({
         try {
           const { data: imageData } = await supabase
             .from('meal_images')
-            .select(`
-              *,
-              users:uploaded_by(id, nickname, profile_image)
-            `)
+            .select('*')
             .eq('id', uploadedImageId)
             .single();
             
           if (imageData) {
+            // 사용자 정보 별도 조회
+            let uploaderNickname = null;
+            if (imageData.uploaded_by) {
+              try {
+                const { data: userData } = await supabase
+                  .from('users')
+                  .select('nickname')
+                  .eq('id', imageData.uploaded_by)
+                  .single();
+                uploaderNickname = userData?.nickname || null;
+              } catch (userError) {
+                console.error('사용자 정보 조회 오류:', userError);
+              }
+            }
+            
             // 사용자 별명 추가 및 검증 실패 상태 반영
             const updatedImageData = {
               ...imageData,
-              uploader_nickname: imageData.users?.nickname || null,
+              uploader_nickname: uploaderNickname,
               status: 'rejected',
               explanation: '이미지 검증 중 오류가 발생했습니다.'
             };
