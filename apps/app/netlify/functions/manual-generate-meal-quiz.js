@@ -18,22 +18,36 @@ const openai = new OpenAI({
  * @param {Object} meal 급식 메뉴 정보
  * @param {number} grade 학년 (1-12)
  * @param {string} mealDate 급식 날짜 (YYYY-MM-DD)
+ * @param {string} schoolCode 학교 코드
  * @returns {string} OpenAI에 전달할 프롬프트
  */
-function generateQuizPrompt(meal, grade, mealDate) {
+function generateQuizPrompt(meal, grade, mealDate, schoolCode) {
   // 학년별 스타일 차등화를 위한 설정
-  let difficultyLevel, optionComplexity;
+  let difficultyLevel, optionComplexity, schoolType;
   
-  // 학년에 따른 기본 설정 분리
-  if (grade >= 1 && grade <= 2) { // 초등 저학년
-    difficultyLevel = '매우 쉬움';
+  // 학교 코드에서 학교 유형 확인 (초등/중학/고등)
+  // 학교 코드 처음 1자리가 학교 유형을 나타냄 (B: 초등학교, M: 중학교, H: 고등학교)
+  if (schoolCode && schoolCode.length > 0) {
+    const firstChar = schoolCode.charAt(0).toUpperCase();
+    if (firstChar === 'B') schoolType = '초등학교';
+    else if (firstChar === 'M') schoolType = '중학교';
+    else if (firstChar === 'H') schoolType = '고등학교';
+    else schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
+  } else {
+    // 학교 코드가 없는 경우 학년으로 추측
+    schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
+  }
+  
+  // 학년과 학교 유형에 따른 기본 설정 분리
+  if (schoolType === '초등학교' && grade <= 2) { // 초등 저학년
+    difficultyLevel = '매우 쉽음';
     optionComplexity = '단어나 짧은 구문의 간단한 보기 (2~3단어)';
   } 
-  else if (grade >= 3 && grade <= 6) { // 초등 중고학년
-    difficultyLevel = grade <= 4 ? '쉬움' : '보통';
+  else if (schoolType === '초등학교') { // 초등 중고학년
+    difficultyLevel = grade <= 4 ? '쉽음' : '보통';
     optionComplexity = '구체적인 설명이 있는 보기 (한 문장 수준)';
   } 
-  else if (grade >= 7 && grade <= 9) { // 중학생
+  else if (schoolType === '중학교') { // 중학생
     difficultyLevel = '다소 어려움';
     optionComplexity = '복합적인 설명과 개념이 포함된 보기 (여러 요소 비교)';
   } 
@@ -47,6 +61,7 @@ function generateQuizPrompt(meal, grade, mealDate) {
 영양소 정보: ${meal.ntr_info || '정보 없음'}
 원산지 정보: ${meal.origin_info || '정보 없음'}
 메뉴 제공 날짜: ${mealDate}
+학교 유형: ${schoolType}
 대상 학년: ${grade}학년
 
 위 급식 정보를 창의적인 출발점으로 활용하여 ${grade}학년 수준에 맞는 교육적이고 흥미로운 객관식 퀴즈를 생성해주세요.
@@ -168,7 +183,7 @@ const generateQuizWithAI = async function(meal, grade) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
   
   // OpenAI 프롬프트 생성
-  const prompt = generateQuizPrompt(meal, grade, meal.meal_date);
+  const prompt = generateQuizPrompt(meal, grade, meal.meal_date, meal.school_code);
   
   try {
     // OpenAI API 호출
