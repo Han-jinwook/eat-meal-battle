@@ -172,10 +172,15 @@ export default function QuizClient() {
         setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
         setError(null);
       } else {
+        console.log('퀴즈 데이터 수신:', data);
         setQuiz(data.quiz);
         
         // 서버에서 반환하는 답변 상태 정보 처리
         if (data.alreadyAnswered && data.selectedOption !== undefined) {
+          console.log('이미 답변한 퀴즈 상태 복원:', {
+            selectedOption: data.selectedOption,
+            isCorrect: data.isCorrect
+          });
           setSelectedOption(Number(data.selectedOption));
           setSubmitted(true);
           
@@ -190,6 +195,7 @@ export default function QuizClient() {
             });
           }
         } else {
+          console.log('새로운 퀴즈 상태 설정');
           setSelectedOption(null);
           setSubmitted(false);
         }
@@ -246,7 +252,10 @@ export default function QuizClient() {
         } : null);
         // 토스트 메시지 제거 - 본문에 결과가 표시되므로 중복 제거
       } else {
-        toast.error(data.error || '답안 제출에 실패했습니다.');
+        // 이미 답변한 퀴즈인 경우 토스트 메시지 제거
+        if (data.error !== '이미 답변한 퀴즈입니다.') {
+          toast.error(data.error || '답안 제출에 실패했습니다.');
+        }
       }
     } catch (err) {
       console.error('답안 제출 오류:', err);
