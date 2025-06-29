@@ -6,6 +6,7 @@ import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUt
 import useUserSchool from '@/hooks/useUserSchool';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
+import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
 
 // Quiz type definition
 type Quiz = {
@@ -625,6 +626,15 @@ export default function QuizClient() {
             </div>
           )}
         </div>
+        
+        {/* 퀴즈 챌린지 현황 달력 */}
+        <QuizChallengeCalendar 
+          currentQuizDate={selectedDate}
+          onDateSelect={(date) => {
+            setSelectedDate(date);
+            router.push(`/quiz?date=${date}`);
+          }}
+        />
       </div>
     </>
   );
