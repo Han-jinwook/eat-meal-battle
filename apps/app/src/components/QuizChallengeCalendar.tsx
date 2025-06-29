@@ -151,40 +151,60 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
+    
+    // 달력 시작 날짜 계산 (월요일 시작 기준)
     const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    const dayOfWeek = firstDay.getDay(); // 0=일요일, 1=월요일, ...
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 월요일 시작으로 조정
+    startDate.setDate(firstDay.getDate() - daysToSubtract);
 
     const weeks = [];
-    let currentDate = new Date(startDate);
     
     for (let week = 0; week < 6; week++) {
       const days = [];
       
       for (let day = 0; day < 7; day++) {
-        const isCurrentMonth = currentDate.getMonth() === month;
-        const dateStr = currentDate.toISOString().split('T')[0];
+        // 각 날짜를 독립적으로 계산
+        const cellDate = new Date(startDate);
+        cellDate.setDate(startDate.getDate() + (week * 7) + day);
+        
+        const isCurrentMonth = cellDate.getMonth() === month;
+        const dateStr = cellDate.toISOString().split('T')[0];
+        
         const result = quizResults.find(r => r.date === dateStr);
+        
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         const isToday = dateStr === todayStr && isCurrentMonth;
+        
         const isSelected = dateStr === currentQuizDate;
         
+        // 디버깅 로그
+        if (currentQuizDate && (dateStr.includes('2025-06-18') || dateStr.includes('2025-06-19') || dateStr.includes('2025-06-20'))) {
+          console.log('달력 날짜 매칭:', { 
+            displayDate: cellDate.getDate(), 
+            dateStr, 
+            currentQuizDate, 
+            isSelected,
+            cellDateFull: cellDate.toString()
+          });
+        }
+        
         days.push({
-          date: new Date(currentDate),
+          date: new Date(cellDate), // 완전히 새로운 Date 객체
           dateStr,
           isCurrentMonth,
           result,
           isToday,
           isSelected
         });
-        
-        currentDate.setDate(currentDate.getDate() + 1);
       }
       
       const weeklyTrophy = weeklyTrophies[week];
       weeks.push({ days, weeklyTrophy });
       
-      if (currentDate > lastDay && week >= 4) break;
+      // 현재 월을 벗어나면 중단
+      if (week >= 4 && days.some(d => d.date > lastDay)) break;
     }
     
     return weeks;
@@ -300,7 +320,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               <div
                 key={dayIndex}
                 className={`
-                  p-2 h-16 border-r last:border-r-0 relative cursor-pointer flex flex-col items-center justify-center
+                  p-1 h-16 border-r last:border-r-0 relative cursor-pointer
                   ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
                   ${day.isToday ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300' : ''}
                   ${day.isSelected ? 'ring-2 ring-blue-500' : ''}
@@ -309,7 +329,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 `}
                 onClick={() => handleDateClick(day.dateStr, day.result?.has_quiz || false)}
               >
-                <div className={`text-sm font-medium ${
+                {/* 날짜 - 좌상단 */}
+                <div className={`absolute top-1 left-1 text-sm font-medium ${
                   day.isToday 
                     ? 'text-blue-700 font-bold' 
                     : day.isCurrentMonth 
@@ -319,14 +340,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                   {day.date.getDate()}
                 </div>
                 
+                {/* O/X - 가운데 */}
                 {day.result?.has_quiz && (
-                  <div className="mt-1">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     {day.result.is_correct ? (
-                      <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
                         ✓
                       </div>
                     ) : (
-                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
                         ✕
                       </div>
                     )}
