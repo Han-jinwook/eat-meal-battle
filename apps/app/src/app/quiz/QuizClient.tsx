@@ -153,7 +153,6 @@ export default function QuizClient() {
       
       if (!response.ok) {
         if (data.error === 'Quiz not found') {
-          console.log(`${selectedDate} 날짜에 퀴즈가 없습니다. 자동으로 생성을 시작합니다.`);
           setQuiz(null);
           setError(null); // 퀴즈가 없는 것은 에러가 아님
           
@@ -166,21 +165,15 @@ export default function QuizClient() {
         }
       } else if (data.noMenu) {
         // 급식이 없는 날 처리
-        console.log(`${selectedDate} 날짜에 급식이 없습니다:`, data.message);
         setQuiz(null);
         setNoMenu(true);
         setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
         setError(null);
       } else {
-        console.log('퀴즈 데이터 수신:', data);
         setQuiz(data.quiz);
         
         // 서버에서 반환하는 답변 상태 정보 처리
         if (data.alreadyAnswered && data.selectedOption !== undefined) {
-          console.log('이미 답변한 퀴즈 상태 복원:', {
-            selectedOption: data.selectedOption,
-            isCorrect: data.isCorrect
-          });
           setSelectedOption(Number(data.selectedOption));
           setSubmitted(true);
           
@@ -195,7 +188,6 @@ export default function QuizClient() {
             });
           }
         } else {
-          console.log('새로운 퀴즈 상태 설정');
           setSelectedOption(null);
           setSubmitted(false);
         }
@@ -299,7 +291,6 @@ export default function QuizClient() {
       if (response.ok) {
         if (data.noMenu) {
           // 급식 정보가 없는 경우
-          console.log('급식 정보 없음:', data.message);
           setNoMenu(true);
           setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
           setQuiz(null);

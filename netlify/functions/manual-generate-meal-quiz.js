@@ -86,8 +86,6 @@ JSON:
  * @returns {Promise<Object>} 생성된 퀴즈 데이터
  */
 const generateQuizWithAI = async function(meal, grade) {
-  console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
-  
   // OpenAI 프롬프트 생성
   const prompt = generateQuizPrompt(meal, grade, meal.meal_date);
   
@@ -115,7 +113,6 @@ const generateQuizWithAI = async function(meal, grade) {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const quizData = JSON.parse(jsonMatch[0]);
-      console.log(`[manual-generate-meal-quiz] 퀴즈 생성 성공: ${quizData.question.substring(0, 30)}...`);
       return quizData;
     }
     
@@ -144,8 +141,6 @@ async function saveQuizToDatabase(quiz, meal, grade) {
   const { difficulty } = calculateEducationalLevel(grade);
   
   try {
-    console.log(`[manual-generate-meal-quiz] ${meal.school_code} 학교 ${grade}학년 퀴즈 저장 중...`);
-    
     const { data, error } = await supabaseAdmin
       .from('meal_quizzes')
       .insert({
@@ -167,7 +162,6 @@ async function saveQuizToDatabase(quiz, meal, grade) {
       return false;
     }
 
-    console.log(`[manual-generate-meal-quiz] 퀴즈 저장 성공: ID=${data.id}`);
     return true;
   } catch (error) {
     console.error(`[manual-generate-meal-quiz] 퀴즈 저장 중 예외 발생:`, error);
