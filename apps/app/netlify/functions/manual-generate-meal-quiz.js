@@ -19,22 +19,15 @@ const openai = new OpenAI({
  * @param {number} grade 학년 (1-12)
  * @param {string} mealDate 급식 날짜 (YYYY-MM-DD)
  * @param {string} schoolCode 학교 코드
+ * @param {string} schoolType 학교 유형 (초등학교, 중학교, 고등학교)
  * @returns {string} OpenAI에 전달할 프롬프트
  */
-function generateQuizPrompt(meal, grade, mealDate, schoolCode) {
+function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
   // 학년별 스타일 차등화를 위한 설정
-  let difficultyLevel, optionComplexity, schoolType;
+  let difficultyLevel, optionComplexity;
   
-  // 학교 코드에서 학교 유형 확인 (초등/중학/고등)
-  // 학교 코드 처음 1자리가 학교 유형을 나타냄 (B: 초등학교, M: 중학교, H: 고등학교)
-  if (schoolCode && schoolCode.length > 0) {
-    const firstChar = schoolCode.charAt(0).toUpperCase();
-    if (firstChar === 'B') schoolType = '초등학교';
-    else if (firstChar === 'M') schoolType = '중학교';
-    else if (firstChar === 'H') schoolType = '고등학교';
-    else schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
-  } else {
-    // 학교 코드가 없는 경우 학년으로 추측
+  // 학교 유형이 없는 경우 학년으로 추측
+  if (!schoolType) {
     schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
   }
   
@@ -182,8 +175,32 @@ JSON:
 const generateQuizWithAI = async function(meal, grade) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
   
+  // 학교 유형 정보 가져오기
+  let schoolType;
+  try {
+    // 학교 정보에서 school_type 가져오기 시도
+    const { data: schoolInfo } = await supabaseAdmin
+      .from('school_infos')
+      .select('school_type')
+      .eq('school_code', meal.school_code)
+      .single();
+    
+    if (schoolInfo && schoolInfo.school_type) {
+      schoolType = schoolInfo.school_type;
+      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 찾음: ${schoolType}`);
+    } else {
+      // 학교 유형 정보가 없는 경우 학년으로 추측
+      schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
+      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 없음, 학년으로 추측: ${schoolType}`);
+    }
+  } catch (error) {
+    // 오류 발생 시 학년으로 추측
+    schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
+    console.log(`[manual-generate-meal-quiz] 학교 정보 조회 오류, 학년으로 추측: ${schoolType}`, error);
+  }
+  
   // OpenAI 프롬프트 생성
-  const prompt = generateQuizPrompt(meal, grade, meal.meal_date, meal.school_code);
+  const prompt = generateQuizPrompt(meal, grade, meal.meal_date, meal.school_code, schoolType);
   
   try {
     // OpenAI API 호출
