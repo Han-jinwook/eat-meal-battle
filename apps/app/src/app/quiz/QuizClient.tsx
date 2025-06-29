@@ -155,11 +155,6 @@ export default function QuizClient() {
         if (data.error === 'Quiz not found') {
           setQuiz(null);
           setError(null); // 퀴즈가 없는 것은 에러가 아님
-          
-          // 자동으로 퀴즈 생성 시작 - 로딩 화면 표시
-          setGeneratingQuiz(true);
-          handleManualQuizGenerate();
-          return; // 퀴즈 생성 중이므로 여기서 종료
         } else {
           setError(data.error || '퀴즈를 불러오는데 실패했습니다.');
         }
@@ -294,21 +289,20 @@ export default function QuizClient() {
           setNoMenu(true);
           setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
           setQuiz(null);
-          toast.info(data.message || '해당 날짜에 급식 정보가 없습니다.');
+          // toast.info(data.message || '해당 날짜에 급식 정보가 없습니다.');
         } else {
-          toast.success('퀴즈가 생성되었습니다!');
           // 퀴즈 다시 로드
           await fetchQuiz();
         }
       } else {
         console.error('퀴즈 생성 실패:', data);
         setError(data.error || '퀴즈 생성에 실패했습니다.');
-        toast.error(data.error || '퀴즈 생성에 실패했습니다.');
+        // toast.error(data.error || '퀴즈 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error('퀴즈 생성 오류:', err);
       setError('퀴즈 생성에 실패했습니다.');
-      toast.error('퀴즈 생성에 실패했습니다.');
+      // toast.error('퀴즈 생성에 실패했습니다.');
     } finally {
       setGeneratingQuiz(false);
     }
