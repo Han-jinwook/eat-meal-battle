@@ -395,9 +395,13 @@ export default function QuizClient() {
   // Fetch quiz when date or user school changes
   useEffect(() => {
     if (selectedDate && userSchool && !userLoading) {
-      // 날짜가 변경되면 상태 초기화
+      // 날짜가 변경되면 모든 상태 초기화
       setNoMenu(false);
       setNoMenuMessage('');
+      setGeneratingQuiz(false); // 퀴즈 생성 상태 초기화
+      setQuiz(null); // 이전 퀴즈 데이터 초기화
+      setSelectedOption(null); // 선택된 옵션 초기화
+      setSubmitted(false); // 제출 상태 초기화
       fetchQuiz();
     }
   }, [selectedDate, userSchool, userLoading]);
