@@ -60,8 +60,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           meal_quizzes!inner(meal_date)
         `)
         .eq('user_id', session.data.session.user.id)
-        .gte('meal_quizzes.meal_date', startDate.toISOString().split('T')[0])
-        .lte('meal_quizzes.meal_date', endDate.toISOString().split('T')[0]);
+        .gte('meal_quizzes.meal_date', startDate.getFullYear() + '-' + 
+          String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(startDate.getDate()).padStart(2, '0'))
+        .lte('meal_quizzes.meal_date', endDate.getFullYear() + '-' + 
+          String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(endDate.getDate()).padStart(2, '0'));
 
       if (error) {
         console.error('퀴즈 결과 조회 오류:', error);
@@ -72,7 +76,9 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const currentDate = new Date(startDate);
       
       while (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split('T')[0];
+        const dateStr = currentDate.getFullYear() + '-' + 
+          String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(currentDate.getDate()).padStart(2, '0');
         const result = results?.find((r: any) => r.meal_quizzes.meal_date === dateStr);
         
         processedResults.push({
@@ -169,12 +175,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         cellDate.setDate(startDate.getDate() + (week * 7) + day);
         
         const isCurrentMonth = cellDate.getMonth() === month;
-        const dateStr = cellDate.toISOString().split('T')[0];
+        // 시간대 문제 해결: 로컬 날짜 형식 사용
+        const dateStr = cellDate.getFullYear() + '-' + 
+          String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(cellDate.getDate()).padStart(2, '0');
         
         const result = quizResults.find(r => r.date === dateStr);
         
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = today.getFullYear() + '-' + 
+          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(today.getDate()).padStart(2, '0');
         const isToday = dateStr === todayStr && isCurrentMonth;
         
         const isSelected = dateStr === currentQuizDate;
