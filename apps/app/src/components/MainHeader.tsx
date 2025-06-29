@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { SupabaseClient, User } from '@supabase/supabase-js';
 
@@ -34,6 +34,7 @@ export default function MainHeader() {
   const supabase = createClient() as SupabaseClient;
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   // any 대신 확장된 User 타입 사용
   const [user, setUser] = useState<ExtendedUser | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -97,20 +98,26 @@ export default function MainHeader() {
 
         {/* 메인 메뉴 - 모바일에서도 표시 */}
         <nav className="flex overflow-x-auto gap-3 sm:gap-6 px-1 py-1 -mx-1 scrollbar-hide">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-xs sm:text-sm font-medium whitespace-nowrap px-2 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
-                // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
-                item.href === '/' 
-                  ? (pathname === '/' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
-                  : (pathname.startsWith(item.href) ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            // 현재 URL의 date 파라미터를 다른 페이지로 전달
+            const currentDate = searchParams?.get('date');
+            const linkHref = currentDate ? `${item.href}?date=${currentDate}` : item.href;
+            
+            return (
+              <Link
+                key={item.href}
+                href={linkHref}
+                className={`text-xs sm:text-sm font-medium whitespace-nowrap px-2 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
+                  // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
+                  item.href === '/' 
+                    ? (pathname === '/' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
+                    : (pathname.startsWith(item.href) ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-4">
