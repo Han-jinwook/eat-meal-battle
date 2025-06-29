@@ -164,7 +164,9 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         const isCurrentMonth = currentDate.getMonth() === month;
         const dateStr = currentDate.toISOString().split('T')[0];
         const result = quizResults.find(r => r.date === dateStr);
-        const isToday = dateStr === new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const isToday = dateStr === todayStr && isCurrentMonth;
         const isSelected = dateStr === currentQuizDate;
         
         days.push({
@@ -298,34 +300,37 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               <div
                 key={dayIndex}
                 className={`
-                  p-3 h-16 border-r last:border-r-0 relative cursor-pointer
+                  p-2 h-16 border-r last:border-r-0 relative cursor-pointer flex flex-col items-center justify-center
                   ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                  ${day.isToday ? 'bg-blue-50' : ''}
+                  ${day.isToday ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300' : ''}
                   ${day.isSelected ? 'ring-2 ring-blue-500' : ''}
                   ${day.result?.has_quiz ? 'hover:bg-gray-50' : ''}
+                  transition-all duration-200
                 `}
                 onClick={() => handleDateClick(day.dateStr, day.result?.has_quiz || false)}
               >
-                <div className={`text-sm ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                <div className={`text-sm font-medium ${
+                  day.isToday 
+                    ? 'text-blue-700 font-bold' 
+                    : day.isCurrentMonth 
+                    ? 'text-gray-900' 
+                    : 'text-gray-400'
+                }`}>
                   {day.date.getDate()}
                 </div>
                 
                 {day.result?.has_quiz && (
-                  <div className="absolute bottom-1 right-1">
+                  <div className="mt-1">
                     {day.result.is_correct ? (
-                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        O
+                      <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                        ✓
                       </div>
                     ) : (
-                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        X
+                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                        ✕
                       </div>
                     )}
                   </div>
-                )}
-                
-                {day.isToday && (
-                  <div className="absolute top-1 left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
                 )}
               </div>
             ))}
@@ -346,14 +351,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
       <div className="flex items-center justify-center space-x-6 mt-4 text-sm text-gray-600">
         <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            O
+          <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            ✓
           </div>
           <span>정답</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            X
+          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            ✕
           </div>
           <span>오답</span>
         </div>
