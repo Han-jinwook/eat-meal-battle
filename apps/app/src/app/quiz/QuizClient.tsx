@@ -174,21 +174,24 @@ export default function QuizClient() {
       } else {
         setQuiz(data.quiz);
         
-        if (data.quiz && typeof data.quiz === 'object') {
-          const quizData = data.quiz as Quiz;
+        // 서버에서 반환하는 답변 상태 정보 처리
+        if (data.alreadyAnswered && data.selectedOption !== undefined) {
+          setSelectedOption(Number(data.selectedOption));
+          setSubmitted(true);
           
-          if (quizData.user_answer && 
-              typeof quizData.user_answer === 'object' && 
-              quizData.user_answer.selected_option !== undefined) {
-            setSelectedOption(Number(quizData.user_answer.selected_option));
-            setSubmitted(true);
-          } else {
-            setSelectedOption(null);
-            setSubmitted(false);
+          // 퀴즈 객체에 사용자 답변 정보 추가
+          if (data.quiz) {
+            setQuiz({
+              ...data.quiz,
+              user_answer: {
+                selected_option: data.selectedOption,
+                is_correct: data.isCorrect
+              }
+            });
           }
         } else {
-          setQuiz(null);
-          setError('퀴즈 데이터 형식이 올바르지 않습니다.');
+          setSelectedOption(null);
+          setSubmitted(false);
         }
       }
     } catch (err) {
@@ -241,7 +244,7 @@ export default function QuizClient() {
             is_correct: data.isCorrect
           }
         } : null);
-        toast.success(data.isCorrect ? '정답입니다!' : '틀렸습니다. 다음에 다시 도전해보세요!');
+        // 토스트 메시지 제거 - 본문에 결과가 표시되므로 중복 제거
       } else {
         toast.error(data.error || '답안 제출에 실패했습니다.');
       }
