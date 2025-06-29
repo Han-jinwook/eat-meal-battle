@@ -72,7 +72,7 @@ JSON 형식으로 반환:
 {
   "question": "문제 내용",
   "options": ["보기1", "보기2", "보기3", "보기4"],
-  "correct_answer": 정답번호(0-3),
+  "correct_answer": 정답번호(1-4),
   "explanation": "해설"
 }
 `;
