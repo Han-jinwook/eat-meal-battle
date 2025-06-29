@@ -57,11 +57,11 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           selected_option,
           is_correct,
           answer_time,
-          quizzes!inner(meal_date)
+          meal_quizzes!inner(meal_date)
         `)
         .eq('user_id', session.data.session.user.id)
-        .gte('quizzes.meal_date', startDate.toISOString().split('T')[0])
-        .lte('quizzes.meal_date', endDate.toISOString().split('T')[0]);
+        .gte('meal_quizzes.meal_date', startDate.toISOString().split('T')[0])
+        .lte('meal_quizzes.meal_date', endDate.toISOString().split('T')[0]);
 
       if (error) {
         console.error('퀴즈 결과 조회 오류:', error);
@@ -73,7 +73,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        const result = results?.find((r: any) => r.quizzes.meal_date === dateStr);
+        const result = results?.find((r: any) => r.meal_quizzes.meal_date === dateStr);
         
         processedResults.push({
           date: dateStr,
