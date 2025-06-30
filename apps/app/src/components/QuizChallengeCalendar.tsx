@@ -393,17 +393,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                   </div>
                 )}
                 
-                {/* 퀴즈 결과 표시 - 가운데 큰 아이콘 */}
+                {/* 퀴즈 결과 표시 - 가운데 단순한 O, X */}
                 {day.hasQuiz && day.isCurrentMonth && (
                   <div className="flex items-center justify-center">
                     {day.isCorrect ? (
-                      <div className="w-8 h-8 rounded-full border-3 border-blue-600 flex items-center justify-center">
-                        <span className="text-blue-600 text-xl font-black">○</span>
-                      </div>
+                      <span className="text-green-600 text-2xl font-black">○</span>
                     ) : (
-                      <div className="w-8 h-8 rounded-full border-3 border-red-600 flex items-center justify-center">
-                        <span className="text-red-600 text-xl font-black">✕</span>
-                      </div>
+                      <span className="text-red-600 text-2xl font-black">✕</span>
                     )}
                   </div>
                 )}
