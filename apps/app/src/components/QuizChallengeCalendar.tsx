@@ -333,14 +333,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         </div>
         
         {/* 캘린더 그리드 */}
-        <div className="grid grid-cols-8 gap-1">
+        <div className="grid gap-1" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
           {Array.from({ length: Math.ceil(calendarDays.length / 7) * 8 }, (_, index) => {
             const dayIndex = Math.floor(index / 8) * 7 + (index % 8);
             const isWeeklyTrophyCell = index % 8 === 7; // 8번째 열 (주장원 열)
             const weekIndex = Math.floor(index / 8);
             
             if (isWeeklyTrophyCell) {
-              // 주장원 트로피 열
+              // 주장원 트로피 열 (빈칸)
               const weeklyTrophy = weeklyTrophies[weekIndex];
               return (
                 <div
@@ -348,9 +348,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                   className="relative h-16 p-2 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 flex items-center justify-center"
                 >
                   {weeklyTrophy && (
-                    <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center">
                       <span className="text-2xl">🏆</span>
-                      <span className="text-xs text-yellow-700 font-bold mt-1">주장원</span>
                     </div>
                   )}
                 </div>
@@ -366,17 +365,10 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             const isWeekend = dayOfWeek >= 5;
             
             let cellClasses = [
-              `relative p-2 rounded-lg transition-all duration-200`,
+              'relative h-16 p-2 rounded-lg transition-all duration-200',
               'flex flex-col items-center justify-center',
               'border border-transparent'
             ];
-            
-            // 주말 크기 조정
-            if (isWeekend) {
-              cellClasses.push('h-8'); // 주말은 절반 크기
-            } else {
-              cellClasses.push('h-16'); // 평일은 정상 크기
-            }
             
             // 현재 월이 아닌 날짜
             if (!day.isCurrentMonth) {
@@ -452,36 +444,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         </div>
       </div>
 
-      {/* 주장원 현황 */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-3">주장원 현황</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {weeklyTrophies.map((trophy, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg border text-center ${
-                trophy.earned 
-                  ? 'bg-yellow-50 border-yellow-200' 
-                  : 'bg-gray-50 border-gray-200'
-              }`}
-            >
-              <div className="text-sm font-medium text-gray-600">
-                {index + 1}주차
-              </div>
-              <div className="mt-1">
-                {trophy.earned ? (
-                  <span className="text-2xl">🏆</span>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {trophy.total_correct}/{trophy.total_available}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* 범례 */}
       <div className="bg-gray-50 rounded-xl p-4 mt-6">

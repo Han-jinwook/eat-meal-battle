@@ -4,7 +4,7 @@ const Footer: React.FC = () => {
   return (
     <footer style={{ fontSize: '0.85rem', color: '#888', padding: '16px 0', textAlign: 'center', background: '#fafbfc', lineHeight: 1.7 }}>
       <div>
-        <strong>법인명(상호)</strong> : 썬트립 주식회사 &nbsp;|
+        <strong>법인명(상호)</strong> : 썬드림 주식회사 &nbsp;|
         <strong> 대표자(성명)</strong> : 백은숙 &nbsp;|
         <strong> 사업자 등록번호 안내</strong> : 333-87-00482 &nbsp;|
         <strong> 통신판매업 신고</strong> : 제 2023-인천부평-0929호
