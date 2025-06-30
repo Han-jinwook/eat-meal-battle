@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
 import { createBrowserClient } from '@supabase/ssr';
 import useUserSchool from '@/hooks/useUserSchool';
-// import Holidays from 'date-holidays';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -199,93 +197,79 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     fetchCalendarData(currentMonth.getFullYear(), currentMonth.getMonth());
   }, [currentMonth, userSchool]);
 
+  // 캘린더 그리드 생성
+  const generateCalendarGrid = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // 월요일 시작으로 조정
+    const startDate = new Date(firstDay);
+    const dayOfWeek = startDate.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startDate.setDate(startDate.getDate() - daysToMonday);
+    
+    const days = [];
+    const currentDate = new Date(startDate);
+    
+    // 6주 × 7일 = 42일
+    for (let i = 0; i < 42; i++) {
+      const dateStr = formatLocalDate(currentDate);
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const result = quizResults.find(r => r.date === dateStr);
+      const isHoliday = holidays[dateStr];
+      
+      const today = new Date();
+      const todayStr = formatLocalDate(today);
+      const isToday = dateStr === todayStr;
+      const isSelected = dateStr === currentQuizDate;
+      
+      days.push({
+        date: new Date(currentDate),
+        dateStr,
+        day: currentDate.getDate(),
+        isCurrentMonth,
+        isToday,
+        isSelected,
+        isHoliday,
+        holidayName: isHoliday ? holidays[dateStr] : null,
+        hasQuiz: result?.has_quiz || false,
+        isCorrect: result?.is_correct || false
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return days;
+  };
+  
+  // 로컬 날짜 포맷 함수
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // 날짜 클릭 핸들러
-  const handleDateClick = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
-    const result = quizResults.find(r => r.date === dateStr);
-    if (result?.has_quiz && onDateSelect) {
-      onDateSelect(dateStr);
+  const handleDateClick = (day: any) => {
+    if (day.hasQuiz && onDateSelect) {
+      onDateSelect(day.dateStr);
     }
   };
-
-  // 타일 내용 (퀴즈 결과 표시)
-  const tileContent = ({ date }: { date: Date }) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
-    const result = quizResults.find(r => r.date === dateStr);
-    const isHoliday = holidays[dateStr];
-    
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        {/* 공휴일 표시 */}
-        {isHoliday && (
-          <div className="text-xs text-red-500 font-bold mb-1">
-            공휴일
-          </div>
-        )}
-        
-        {/* 퀴즈 결과 표시 */}
-        {result?.has_quiz && (
-          <div className="mt-1">
-            {result.is_correct ? (
-              <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                ✓
-              </div>
-            ) : (
-              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                ✕
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
+  
+  // 월 변경 핸들러
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
-
-  // 타일 클래스명 (선택된 날짜, 오늘 날짜 등)
-  const tileClassName = ({ date }: { date: Date }) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    const result = quizResults.find(r => r.date === dateStr);
-    const isHoliday = holidays[dateStr];
-    
-    let classes = [];
-    
-    // 오늘 날짜
-    if (dateStr === todayStr) {
-      classes.push('bg-blue-100 border-2 border-blue-500');
-    }
-    
-    // 선택된 날짜
-    if (dateStr === currentQuizDate) {
-      classes.push('ring-2 ring-blue-600');
-    }
-    
-    // 퀴즈가 있는 날짜
-    if (result?.has_quiz) {
-      classes.push('cursor-pointer hover:bg-gray-100');
-    }
-    
-    // 공휴일
-    if (isHoliday) {
-      classes.push('text-red-500');
-    }
-    
-    return classes.join(' ');
+  
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
+  
+  const calendarDays = generateCalendarGrid();
 
   if (loading) {
     return (
@@ -296,41 +280,137 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-gray-900">
           퀴즈 챌린지 현황
         </h2>
         
         {/* 월장원 표시 */}
         {monthlyTrophy && (
-          <div className="flex items-center space-x-2 bg-yellow-50 px-3 py-1 rounded-full">
+          <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-50 to-orange-50 px-4 py-2 rounded-full border border-yellow-200">
             <span className="text-2xl">👑</span>
-            <span className="text-sm font-medium text-yellow-700">월장원</span>
+            <span className="text-sm font-bold text-yellow-700">월장원</span>
           </div>
         )}
       </div>
 
-      {/* React Calendar */}
-      <div className="calendar-container">
-        <Calendar
-          value={currentQuizDate ? new Date(currentQuizDate) : new Date()}
-          onClickDay={handleDateClick}
-          tileContent={tileContent}
-          tileClassName={tileClassName}
-          locale="ko-KR"
-          calendarType="gregory"
-          showNeighboringMonth={false}
-          formatDay={(locale, date) => date.getDate().toString()}
-          formatMonthYear={(locale, date) => 
-            `${date.getFullYear()}년 ${date.getMonth() + 1}월`
-          }
-          onActiveStartDateChange={({ activeStartDate }) => {
-            if (activeStartDate) {
-              setCurrentMonth(activeStartDate);
+      {/* 커스텀 캘린더 */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+        {/* 캘린더 헤더 */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={handlePrevMonth}
+            className="p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200 group"
+          >
+            <ChevronLeftIcon className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+          </button>
+          
+          <h3 className="text-xl font-bold text-gray-800">
+            {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
+          </h3>
+          
+          <button
+            onClick={handleNextMonth}
+            className="p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200 group"
+          >
+            <ChevronRightIcon className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+          </button>
+        </div>
+        
+        {/* 요일 헤더 */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {['월', '화', '수', '목', '금', '토', '일'].map((day, index) => (
+            <div key={day} className="text-center py-3 font-semibold text-gray-700">
+              <span className={`${index >= 5 ? 'text-red-500' : 'text-gray-700'}`}>
+                {day}
+              </span>
+            </div>
+          ))}
+        </div>
+        
+        {/* 캘린더 그리드 */}
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((day, index) => {
+            let cellClasses = [
+              'relative h-16 p-2 rounded-lg transition-all duration-200',
+              'flex flex-col items-center justify-center',
+              'border border-transparent'
+            ];
+            
+            // 현재 월이 아닌 날짜
+            if (!day.isCurrentMonth) {
+              cellClasses.push('text-gray-300 bg-gray-50/50');
+            } else {
+              cellClasses.push('bg-white hover:bg-blue-50');
             }
-          }}
-        />
+            
+            // 오늘 날짜
+            if (day.isToday && day.isCurrentMonth) {
+              cellClasses.push('ring-2 ring-blue-500 bg-blue-100 font-bold');
+            }
+            
+            // 선택된 날짜
+            if (day.isSelected) {
+              cellClasses.push('ring-2 ring-purple-500 bg-purple-100');
+            }
+            
+            // 퀴즈가 있는 날짜
+            if (day.hasQuiz) {
+              cellClasses.push('cursor-pointer hover:shadow-md hover:scale-105');
+            }
+            
+            // 공휴일
+            if (day.isHoliday && day.isCurrentMonth) {
+              cellClasses.push('bg-red-50 border-red-200');
+            }
+            
+            // 주말
+            const dayOfWeek = index % 7;
+            if (dayOfWeek >= 5 && day.isCurrentMonth) {
+              cellClasses.push('text-red-600');
+            }
+            
+            return (
+              <div
+                key={`${day.dateStr}-${index}`}
+                className={cellClasses.join(' ')}
+                onClick={() => handleDateClick(day)}
+              >
+                {/* 날짜 숫자 */}
+                <span className={`text-sm font-medium ${
+                  day.isToday ? 'text-blue-700' : 
+                  day.isSelected ? 'text-purple-700' :
+                  !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {day.day}
+                </span>
+                
+                {/* 공휴일 표시 */}
+                {day.isHoliday && day.isCurrentMonth && (
+                  <div className="text-xs text-red-500 font-bold mt-0.5 leading-none">
+                    공휴일
+                  </div>
+                )}
+                
+                {/* 퀴즈 결과 표시 */}
+                {day.hasQuiz && day.isCurrentMonth && (
+                  <div className="absolute -top-1 -right-1">
+                    {day.isCorrect ? (
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
+                        ✓
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
+                        ✕
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* 주장원 현황 */}
@@ -365,72 +445,34 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       </div>
 
       {/* 범례 */}
-      <div className="flex items-center justify-center space-x-6 mt-6 text-sm text-gray-600">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-            ✓
+      <div className="bg-gray-50 rounded-xl p-4 mt-6">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">범례</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="flex items-center space-x-2 justify-center">
+            <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+              ✓
+            </div>
+            <span className="text-gray-700">정답</span>
           </div>
-          <span>정답</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
-            ✕
+          <div className="flex items-center space-x-2 justify-center">
+            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+              ✕
+            </div>
+            <span className="text-gray-700">오답</span>
           </div>
-          <span>오답</span>
+          <div className="flex items-center space-x-2 justify-center">
+            <span className="text-lg">🏆</span>
+            <span className="text-gray-700">주장원</span>
+          </div>
+          <div className="flex items-center space-x-2 justify-center">
+            <span className="text-lg">👑</span>
+            <span className="text-gray-700">월장원</span>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-lg">🏆</span>
-          <span>주장원 (4일 이상 전체 정답)</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-lg">👑</span>
-          <span>월장원 (11회 이상 전체 정답)</span>
+        <div className="text-xs text-gray-500 text-center mt-2">
+          주장원: 4일 이상 전체 정답 | 월장원: 11회 이상 전체 정답
         </div>
       </div>
-
-      {/* 커스텀 CSS */}
-      <style jsx>{`
-        .calendar-container :global(.react-calendar) {
-          width: 100%;
-          border: none;
-          font-family: inherit;
-        }
-        
-        .calendar-container :global(.react-calendar__tile) {
-          height: 80px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          padding: 8px 4px;
-          position: relative;
-        }
-        
-        .calendar-container :global(.react-calendar__tile--now) {
-          background: #dbeafe !important;
-          border: 2px solid #3b82f6 !important;
-        }
-        
-        .calendar-container :global(.react-calendar__tile--active) {
-          background: #1e40af !important;
-          color: white !important;
-        }
-        
-        .calendar-container :global(.react-calendar__month-view__weekdays) {
-          text-align: center;
-          font-weight: 600;
-          color: #374151;
-        }
-        
-        .calendar-container :global(.react-calendar__navigation) {
-          margin-bottom: 1rem;
-        }
-        
-        .calendar-container :global(.react-calendar__navigation button) {
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-      `}</style>
     </div>
   );
 };
