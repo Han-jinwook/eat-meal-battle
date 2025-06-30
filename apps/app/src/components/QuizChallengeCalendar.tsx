@@ -123,76 +123,71 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
       
       setQuizResults(processedResults);
-      calculateTrophies(processedResults, year, month);
+      
+      // 트로피 계산
+      const trophies = calculateTrophies(processedResults, year, month);
+      setWeeklyTrophies(trophies);
       
     } catch (error) {
-      console.error('달력 데이터 조회 오류:', error);
+      console.error('데이터 조회 오류:', error);
     } finally {
       setLoading(false);
     }
   };
 
   // 트로피 계산
-  const calculateTrophies = (results: QuizResult[], year: number, month: number) => {
-    const weeks: WeeklyTrophy[] = [];
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+  const calculateTrophies = (results: QuizResult[], year: number, month: number): WeeklyTrophy[] => {
+    const trophies: WeeklyTrophy[] = [];
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
     
-    // 월요일 시작으로 주 계산
-    let weekStart = new Date(firstDay);
-    const dayOfWeek = weekStart.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    let currentWeek = 1;
+    let weekStart = new Date(startDate);
+    
+    // 첫 주의 시작을 월요일로 맞춤
+    const firstDayOfWeek = weekStart.getDay();
+    const daysToMonday = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
     weekStart.setDate(weekStart.getDate() - daysToMonday);
     
-    let weekNumber = 0;
-    
-    while (weekStart <= lastDay) {
+    while (weekStart <= endDate) {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
       
-      let totalCorrect = 0;
-      let totalAvailable = 0;
+      let weekCorrect = 0;
+      let weekTotal = 0;
       
+      // 해당 주의 퀴즈 결과 계산 (월-금만)
       for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
-        if (d.getMonth() === month) {
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`;
-          
+        const dayOfWeek = d.getDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && d.getMonth() === month) { // 월-금, 해당 월만
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           const result = results.find(r => r.date === dateStr);
           
-          if (result?.has_quiz) {
-            totalAvailable++;
+          if (result && result.has_quiz) {
+            weekTotal++;
             if (result.is_correct) {
-              totalCorrect++;
+              weekCorrect++;
             }
           }
         }
       }
       
-      const earned = totalAvailable >= 4 && totalCorrect === totalAvailable && totalAvailable > 0;
-      
-      weeks.push({
-        week: weekNumber,
-        earned,
-        total_correct: totalCorrect,
-        total_available: totalAvailable
+      trophies.push({
+        week: currentWeek,
+        earned: weekTotal >= 4 && weekCorrect === weekTotal, // 4일 이상 전체 정답
+        total_correct: weekCorrect,
+        total_available: weekTotal
       });
       
+      currentWeek++;
       weekStart.setDate(weekStart.getDate() + 7);
-      weekNumber++;
+      
+      if (currentWeek > 6) break; // 최대 6주
     }
     
-    setWeeklyTrophies(weeks);
-    
-    // 월장원 계산 (11회 이상 전체 정답)
-    const monthlyCorrect = results.filter(r => r.has_quiz && r.is_correct).length;
-    const monthlyTotal = results.filter(r => r.has_quiz).length;
-    setMonthlyTrophy(monthlyTotal >= 11 && monthlyCorrect === monthlyTotal && monthlyTotal > 0);
+    return trophies;
   };
 
-  // 데이터 로드
   useEffect(() => {
     fetchCalendarData(currentMonth.getFullYear(), currentMonth.getMonth());
   }, [currentMonth, userSchool]);
@@ -201,42 +196,33 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   const generateCalendarGrid = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
+    const today = new Date();
     
     // 월요일 시작으로 조정
     const startDate = new Date(firstDay);
-    const dayOfWeek = startDate.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    startDate.setDate(startDate.getDate() - daysToMonday);
+    const dayOfWeek = firstDay.getDay();
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startDate.setDate(firstDay.getDate() - daysToSubtract);
     
     const days = [];
     const currentDate = new Date(startDate);
     
-    // 6주 × 7일 = 42일
+    // 6주 * 7일 = 42일
     for (let i = 0; i < 42; i++) {
-      const dateStr = formatLocalDate(currentDate);
-      const isCurrentMonth = currentDate.getMonth() === month;
-      const result = quizResults.find(r => r.date === dateStr);
-      const isHoliday = holidays[dateStr];
-      
-      const today = new Date();
-      const todayStr = formatLocalDate(today);
-      const isToday = dateStr === todayStr;
-      const isSelected = dateStr === currentQuizDate;
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      const quizResult = quizResults.find(r => r.date === dateStr);
       
       days.push({
-        date: new Date(currentDate),
-        dateStr,
         day: currentDate.getDate(),
-        isCurrentMonth,
-        isToday,
-        isSelected,
-        isHoliday,
-        holidayName: isHoliday ? holidays[dateStr] : null,
-        hasQuiz: result?.has_quiz || false,
-        isCorrect: result?.is_correct || false
+        dateStr,
+        isCurrentMonth: currentDate.getMonth() === month,
+        isToday: currentDate.toDateString() === today.toDateString(),
+        isSelected: dateStr === currentQuizDate,
+        hasQuiz: quizResult?.has_quiz || false,
+        isCorrect: quizResult?.is_correct || false,
+        isHoliday: !!holidays[dateStr]
       });
       
       currentDate.setDate(currentDate.getDate() + 1);
@@ -244,7 +230,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     
     return days;
   };
-  
+
   // 로컬 날짜 포맷 함수
   const formatLocalDate = (date: Date) => {
     const year = date.getFullYear();
@@ -255,16 +241,16 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   // 날짜 클릭 핸들러
   const handleDateClick = (day: any) => {
-    if (day.hasQuiz && onDateSelect) {
+    if (day.hasQuiz && day.isCurrentMonth && onDateSelect) {
       onDateSelect(day.dateStr);
     }
   };
-  
+
   // 월 변경 핸들러
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
-  
+
   const handleNextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
@@ -330,120 +316,113 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         ))}
       </div>
         
-        {/* 캘린더 그리드 */}
-        <div className="grid gap-1" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
-          {Array.from({ length: Math.ceil(calendarDays.length / 7) * 8 }, (_, index) => {
-            const dayIndex = Math.floor(index / 8) * 7 + (index % 8);
-            const isWeeklyTrophyCell = index % 8 === 7; // 8번째 열 (주장원 열)
-            const weekIndex = Math.floor(index / 8);
-            
-            if (isWeeklyTrophyCell) {
-              // 주장원 트로피 열 (빈칸 - 나중에 조건식 추가 예정)
-              const weeklyTrophy = weeklyTrophies[weekIndex];
-              return (
-                <div
-                  key={`trophy-${weekIndex}`}
-                  className="relative h-16 p-2 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 flex items-center justify-center"
-                >
-                  {/* 트로피 표시 임시 비활성화 - 나중에 조건식으로 활성화 예정 */}
-                  {false && weeklyTrophy && (
-                    <div className="flex items-center justify-center">
-                      <span className="text-2xl">🏆</span>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            
-            if (dayIndex >= calendarDays.length) {
-              return <div key={`empty-${index}`} className="h-16"></div>;
-            }
-            
-            const day = calendarDays[dayIndex];
-            const dayOfWeek = dayIndex % 7;
-            const isWeekend = dayOfWeek >= 5;
-            
-            let cellClasses = [
-              'relative h-16 p-2 rounded-lg transition-all duration-200',
-              'flex flex-col items-center justify-center',
-              'border border-transparent'
-            ];
-            
-            // 현재 월이 아닌 날짜
-            if (!day.isCurrentMonth) {
-              cellClasses.push('text-gray-300 bg-gray-50/50');
-            } else {
-              cellClasses.push('bg-white hover:bg-blue-50');
-            }
-            
-            // 오늘 날짜
-            if (day.isToday && day.isCurrentMonth) {
-              cellClasses.push('ring-2 ring-blue-500 bg-blue-100 font-bold');
-            }
-            
-            // 선택된 날짜
-            if (day.isSelected) {
-              cellClasses.push('ring-2 ring-purple-500 bg-purple-100');
-            }
-            
-            // 퀴즈가 있는 날짜
-            if (day.hasQuiz) {
-              cellClasses.push('cursor-pointer hover:shadow-md hover:scale-105');
-            }
-            
-            // 공휴일
-            if (day.isHoliday && day.isCurrentMonth) {
-              cellClasses.push('bg-red-50 border-red-200');
-            }
-            
-            // 주말 색상
-            if (isWeekend && day.isCurrentMonth) {
-              cellClasses.push('text-red-600');
-            }
-            
+      {/* 캘린더 그리드 */}
+      <div className="grid gap-1" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
+        {Array.from({ length: Math.ceil(calendarDays.length / 7) * 8 }, (_, index) => {
+          const dayIndex = Math.floor(index / 8) * 7 + (index % 8);
+          const isWeeklyTrophyCell = index % 8 === 7; // 8번째 열 (주장원 열)
+          const weekIndex = Math.floor(index / 8);
+          
+          if (isWeeklyTrophyCell) {
+            // 주장원 트로피 열 (빈칸 - 나중에 조건식 추가 예정)
+            const weeklyTrophy = weeklyTrophies[weekIndex];
             return (
               <div
-                key={`${day.dateStr}-${dayIndex}`}
-                className={cellClasses.join(' ')}
-                onClick={() => handleDateClick(day)}
+                key={`trophy-${weekIndex}`}
+                className="h-16 border border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg flex items-center justify-center"
               >
-                {/* 날짜 숫자 - 좌상단 */}
-                <span className={`absolute top-1 left-1 font-medium ${
-                  isWeekend ? 'text-xs' : 'text-xs'
-                } ${
-                  day.isToday ? 'text-blue-700' : 
-                  day.isSelected ? 'text-purple-700' :
-                  !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {day.day}
-                </span>
-                
-                {/* 공휴일 표시 - 가운데 */}
-                {day.isHoliday && day.isCurrentMonth && (
-                  <div className="flex items-center justify-center">
-                    <div className="text-xs text-red-500 font-bold">
-                      공휴일
-                    </div>
-                  </div>
-                )}
-                
-                {/* 퀴즈 결과 표시 - 선생님 채점 느낌 (주말 제외) */}
-                {day.hasQuiz && day.isCurrentMonth && !isWeekend && (
-                  <div className="flex items-center justify-center">
-                    {day.isCorrect ? (
-                      <span className="text-blue-600 font-black text-3xl transform rotate-12 drop-shadow-sm">✓</span>
-                    ) : (
-                      <span className="text-red-600 font-black text-3xl transform -rotate-12 drop-shadow-sm">✕</span>
-                    )}
-                  </div>
+                {/* 트로피 표시 - 나중에 조건식 추가 예정 */}
+                {false && weeklyTrophy?.earned && (
+                  <span className="text-2xl">🏆</span>
                 )}
               </div>
             );
-          })}
-        </div>
+          }
+          
+          if (dayIndex >= calendarDays.length) {
+            return <div key={`empty-${index}`} className="h-16"></div>;
+          }
+          
+          const day = calendarDays[dayIndex];
+          const isWeekend = (dayIndex % 7) >= 5; // 토요일(5), 일요일(6)
+          
+          const cellClasses = [
+            'h-16 border border-gray-200 rounded-lg flex flex-col relative transition-all duration-200'
+          ];
+          
+          // 현재 월이 아닌 날짜
+          if (!day.isCurrentMonth) {
+            cellClasses.push('bg-gray-50 text-gray-300');
+          }
+          
+          // 오늘 날짜
+          if (day.isToday && day.isCurrentMonth) {
+            cellClasses.push('ring-2 ring-blue-500 bg-blue-100 font-bold');
+          }
+          
+          // 선택된 날짜
+          if (day.isSelected) {
+            cellClasses.push('ring-2 ring-purple-500 bg-purple-100');
+          }
+          
+          // 퀴즈가 있는 날짜
+          if (day.hasQuiz) {
+            cellClasses.push('cursor-pointer hover:shadow-md hover:scale-105');
+          }
+          
+          // 공휴일
+          if (day.isHoliday && day.isCurrentMonth) {
+            cellClasses.push('bg-red-50 border-red-200');
+          }
+          
+          // 주말 색상
+          if (isWeekend && day.isCurrentMonth) {
+            cellClasses.push('text-red-600');
+          }
+          
+          return (
+            <div
+              key={`${day.dateStr}-${dayIndex}`}
+              className={cellClasses.join(' ')}
+              onClick={() => handleDateClick(day)}
+            >
+              {/* 날짜 숫자 - 좌상단 */}
+              <span className={`absolute top-1 left-1 font-medium ${
+                isWeekend ? 'text-xs' : 'text-xs'
+              } ${
+                day.isToday ? 'text-blue-700' : 
+                day.isSelected ? 'text-purple-700' :
+                !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                {day.day}
+              </span>
+              
+              {/* 공휴일 표시 - 가운데 */}
+              {day.isHoliday && day.isCurrentMonth && (
+                <div className="flex items-center justify-center">
+                  <div className="text-xs text-red-500 font-bold">
+                    공휴일
+                  </div>
+                </div>
+              )}
+              
+              {/* 퀴즈 결과 표시 - 선생님 채점 느낌 (주말 제외) */}
+              {day.hasQuiz && day.isCurrentMonth && !isWeekend && (
+                <div className="flex items-center justify-center">
+                  {day.isCorrect ? (
+                    <span className="text-blue-600 font-black text-3xl transform rotate-12 drop-shadow-sm">✓</span>
+                  ) : (
+                    <span className="text-red-600 font-black text-3xl transform -rotate-12 drop-shadow-sm">✕</span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
         
-        {/* 범례 */}
-        <div className="bg-gray-50 rounded-xl p-4 mt-6">
+      {/* 범례 */}
+      <div className="bg-gray-50 rounded-xl p-4 mt-6">
         <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">범례</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div className="flex items-center space-x-2 justify-center">
@@ -467,9 +446,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             <span className="text-gray-700">월장원</span>
           </div>
         </div>
-          <div className="text-xs text-gray-500 text-center mt-2">
-            주장원: 4일 이상 전체 정답 | 월장원: 11회 이상 전체 정답
-          </div>
+        <div className="text-xs text-gray-500 text-center mt-2">
+          주장원: 4일 이상 전체 정답 | 월장원: 11회 이상 전체 정답
         </div>
       </div>
     </div>
