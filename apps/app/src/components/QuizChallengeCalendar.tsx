@@ -5,7 +5,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { createBrowserClient } from '@supabase/ssr';
 import useUserSchool from '@/hooks/useUserSchool';
-import Holidays from 'date-holidays';
+// import Holidays from 'date-holidays';
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,17 +43,29 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   
   const { userSchool } = useUserSchool();
 
-  // 한국 공휴일 초기화
+  // 한국 공휴일 초기화 (임시로 주요 공휴일만)
   useEffect(() => {
-    const hd = new Holidays('KR');
     const currentYear = currentMonth.getFullYear();
-    const yearHolidays = hd.getHolidays(currentYear);
-    
     const holidayMap: {[key: string]: string} = {};
-    yearHolidays.forEach(holiday => {
-      const dateStr = holiday.date.toISOString().split('T')[0];
-      holidayMap[dateStr] = holiday.name;
-    });
+    
+    // 2025년 주요 공휴일
+    if (currentYear === 2025) {
+      holidayMap['2025-01-01'] = '신정';
+      holidayMap['2025-01-28'] = '설날연휴';
+      holidayMap['2025-01-29'] = '설날';
+      holidayMap['2025-01-30'] = '설날연휴';
+      holidayMap['2025-03-01'] = '삼일절';
+      holidayMap['2025-05-05'] = '어린이날';
+      holidayMap['2025-05-06'] = '대체공휴일';
+      holidayMap['2025-06-06'] = '현충일';
+      holidayMap['2025-08-15'] = '광복절';
+      holidayMap['2025-09-16'] = '추석연휴';
+      holidayMap['2025-09-17'] = '추석';
+      holidayMap['2025-09-18'] = '추석연휴';
+      holidayMap['2025-10-03'] = '개천절';
+      holidayMap['2025-10-09'] = '한글날';
+      holidayMap['2025-12-25'] = '크리스마스';
+    }
     
     setHolidays(holidayMap);
   }, [currentMonth]);
