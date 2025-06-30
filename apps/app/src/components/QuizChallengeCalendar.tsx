@@ -377,8 +377,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 className={cellClasses.join(' ')}
                 onClick={() => handleDateClick(day)}
               >
-                {/* 날짜 숫자 */}
-                <span className={`text-sm font-medium ${
+                {/* 날짜 숫자 - 좌상단 */}
+                <span className={`absolute top-1 left-1 text-xs font-medium ${
                   day.isToday ? 'text-blue-700' : 
                   day.isSelected ? 'text-purple-700' :
                   !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
@@ -386,23 +386,23 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                   {day.day}
                 </span>
                 
-                {/* 공휴일 표시 */}
+                {/* 공휴일 표시 - 우상단 */}
                 {day.isHoliday && day.isCurrentMonth && (
-                  <div className="text-xs text-red-500 font-bold mt-0.5 leading-none">
-                    공휴일
+                  <div className="absolute top-1 right-1 text-xs text-red-500 font-bold leading-none">
+                    휴
                   </div>
                 )}
                 
-                {/* 퀴즈 결과 표시 */}
+                {/* 퀴즈 결과 표시 - 가운데 큰 아이콘 */}
                 {day.hasQuiz && day.isCurrentMonth && (
-                  <div className="absolute -top-1 -right-1">
+                  <div className="flex items-center justify-center">
                     {day.isCorrect ? (
-                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
-                        ✓
+                      <div className="w-8 h-8 rounded-full border-3 border-blue-600 flex items-center justify-center">
+                        <span className="text-blue-600 text-xl font-black">○</span>
                       </div>
                     ) : (
-                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white">
-                        ✕
+                      <div className="w-8 h-8 rounded-full border-3 border-red-600 flex items-center justify-center">
+                        <span className="text-red-600 text-xl font-black">✕</span>
                       </div>
                     )}
                   </div>
