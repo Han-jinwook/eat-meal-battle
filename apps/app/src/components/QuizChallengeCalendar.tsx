@@ -281,56 +281,54 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+      {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          퀴즈 챌린지 현황
-        </h2>
-        
-        {/* 월장원 표시 */}
-        {monthlyTrophy && (
-          <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-50 to-orange-50 px-4 py-2 rounded-full border border-yellow-200">
-            <span className="text-2xl">👑</span>
-            <span className="text-sm font-bold text-yellow-700">월장원</span>
-          </div>
-        )}
-      </div>
-
-      {/* 커스텀 캘린더 */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-        {/* 캘린더 헤더 */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <h2 className="text-2xl font-bold text-gray-900">
+            급식퀴즈 챌린지
+          </h2>
+          <span className="text-sm text-gray-600">
+            ({currentMonth.getMonth()}월 결과 : 0/0개 맞춤)
+          </span>
+          {/* 월장원 표시 - 나중에 조건식 추가 예정 */}
+          {false && monthlyTrophy && (
+            <span className="text-sm text-yellow-600 font-bold">
+              {currentMonth.getMonth()}월 장원급제 🏆
+            </span>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200 group"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <ChevronLeftIcon className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+            <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
           </button>
-          
-          <h3 className="text-xl font-bold text-gray-800">
+          <span className="text-lg font-semibold text-gray-700 min-w-[120px] text-center">
             {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
-          </h3>
-          
+          </span>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-white hover:shadow-md rounded-lg transition-all duration-200 group"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <ChevronRightIcon className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+            <ChevronRightIcon className="w-5 h-5 text-gray-600" />
           </button>
         </div>
-        
-        {/* 요일 헤더 */}
-        <div className="grid grid-cols-8 gap-1 mb-2">
-          {['월', '화', '수', '목', '금', '토', '일', '주장원'].map((day, index) => (
-            <div key={day} className={`text-center py-3 font-semibold ${
-              index === 7 ? 'text-yellow-600' : 
-              index >= 5 && index < 7 ? 'text-red-500' : 'text-gray-700'
-            }`}>
-              <span className={index >= 5 && index < 7 ? 'text-xs' : ''}>
-                {day}
-              </span>
-            </div>
-          ))}
-        </div>
+      </div>
+      
+      {/* 요일 헤더 */}
+      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
+        {['월', '화', '수', '목', '금', '토', '일', '주장원'].map((day, index) => (
+          <div key={day} className={`text-center py-3 font-semibold ${
+            index === 7 ? 'text-yellow-600' : 
+            index >= 5 && index < 7 ? 'text-red-500' : 'text-gray-700'
+          }`}>
+            <span className={index >= 5 && index < 7 ? 'text-xs' : ''}>
+              {day}
+            </span>
+          </div>
+        ))}
+      </div>
         
         {/* 캘린더 그리드 */}
         <div className="grid gap-1" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
@@ -340,14 +338,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             const weekIndex = Math.floor(index / 8);
             
             if (isWeeklyTrophyCell) {
-              // 주장원 트로피 열 (빈칸)
+              // 주장원 트로피 열 (빈칸 - 나중에 조건식 추가 예정)
               const weeklyTrophy = weeklyTrophies[weekIndex];
               return (
                 <div
                   key={`trophy-${weekIndex}`}
                   className="relative h-16 p-2 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 flex items-center justify-center"
                 >
-                  {weeklyTrophy && (
+                  {/* 트로피 표시 임시 비활성화 - 나중에 조건식으로 활성화 예정 */}
+                  {false && weeklyTrophy && (
                     <div className="flex items-center justify-center">
                       <span className="text-2xl">🏆</span>
                     </div>
