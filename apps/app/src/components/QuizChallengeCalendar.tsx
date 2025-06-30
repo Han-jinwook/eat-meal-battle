@@ -319,10 +319,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         </div>
         
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {['월', '화', '수', '목', '금', '토', '일'].map((day, index) => (
-            <div key={day} className="text-center py-3 font-semibold text-gray-700">
-              <span className={`${index >= 5 ? 'text-red-500' : 'text-gray-700'}`}>
+        <div className="grid grid-cols-8 gap-1 mb-2">
+          {['월', '화', '수', '목', '금', '토', '일', '주장원'].map((day, index) => (
+            <div key={day} className={`text-center py-3 font-semibold ${
+              index === 7 ? 'text-yellow-600' : 
+              index >= 5 && index < 7 ? 'text-red-500' : 'text-gray-700'
+            }`}>
+              <span className={index >= 5 && index < 7 ? 'text-xs' : ''}>
                 {day}
               </span>
             </div>
@@ -330,13 +333,50 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         </div>
         
         {/* 캘린더 그리드 */}
-        <div className="grid grid-cols-7 gap-1">
-          {calendarDays.map((day, index) => {
+        <div className="grid grid-cols-8 gap-1">
+          {Array.from({ length: Math.ceil(calendarDays.length / 7) * 8 }, (_, index) => {
+            const dayIndex = Math.floor(index / 8) * 7 + (index % 8);
+            const isWeeklyTrophyCell = index % 8 === 7; // 8번째 열 (주장원 열)
+            const weekIndex = Math.floor(index / 8);
+            
+            if (isWeeklyTrophyCell) {
+              // 주장원 트로피 열
+              const weeklyTrophy = weeklyTrophies[weekIndex];
+              return (
+                <div
+                  key={`trophy-${weekIndex}`}
+                  className="relative h-16 p-2 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 flex items-center justify-center"
+                >
+                  {weeklyTrophy && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-2xl">🏆</span>
+                      <span className="text-xs text-yellow-700 font-bold mt-1">주장원</span>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
+            if (dayIndex >= calendarDays.length) {
+              return <div key={`empty-${index}`} className="h-16"></div>;
+            }
+            
+            const day = calendarDays[dayIndex];
+            const dayOfWeek = dayIndex % 7;
+            const isWeekend = dayOfWeek >= 5;
+            
             let cellClasses = [
-              'relative h-16 p-2 rounded-lg transition-all duration-200',
+              `relative p-2 rounded-lg transition-all duration-200`,
               'flex flex-col items-center justify-center',
               'border border-transparent'
             ];
+            
+            // 주말 크기 조정
+            if (isWeekend) {
+              cellClasses.push('h-8'); // 주말은 절반 크기
+            } else {
+              cellClasses.push('h-16'); // 평일은 정상 크기
+            }
             
             // 현재 월이 아닌 날짜
             if (!day.isCurrentMonth) {
@@ -365,20 +405,21 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               cellClasses.push('bg-red-50 border-red-200');
             }
             
-            // 주말
-            const dayOfWeek = index % 7;
-            if (dayOfWeek >= 5 && day.isCurrentMonth) {
+            // 주말 색상
+            if (isWeekend && day.isCurrentMonth) {
               cellClasses.push('text-red-600');
             }
             
             return (
               <div
-                key={`${day.dateStr}-${index}`}
+                key={`${day.dateStr}-${dayIndex}`}
                 className={cellClasses.join(' ')}
                 onClick={() => handleDateClick(day)}
               >
                 {/* 날짜 숫자 - 좌상단 */}
-                <span className={`absolute top-1 left-1 text-xs font-medium ${
+                <span className={`absolute top-1 left-1 font-medium ${
+                  isWeekend ? 'text-xs' : 'text-xs'
+                } ${
                   day.isToday ? 'text-blue-700' : 
                   day.isSelected ? 'text-purple-700' :
                   !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
@@ -386,20 +427,22 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                   {day.day}
                 </span>
                 
-                {/* 공휴일 표시 - 우상단 */}
+                {/* 공휴일 표시 - 가운데 */}
                 {day.isHoliday && day.isCurrentMonth && (
-                  <div className="absolute top-1 right-1 text-xs text-red-500 font-bold leading-none">
-                    휴
+                  <div className="flex items-center justify-center">
+                    <div className="text-xs text-red-500 font-bold">
+                      공휴일
+                    </div>
                   </div>
                 )}
                 
-                {/* 퀴즈 결과 표시 - 가운데 단순한 O, X */}
-                {day.hasQuiz && day.isCurrentMonth && (
+                {/* 퀴즈 결과 표시 - 선생님 채점 느낌 (주말 제외) */}
+                {day.hasQuiz && day.isCurrentMonth && !isWeekend && (
                   <div className="flex items-center justify-center">
                     {day.isCorrect ? (
-                      <span className="text-green-600 text-2xl font-black">○</span>
+                      <span className="text-blue-600 font-black text-3xl transform rotate-12 drop-shadow-sm">✓</span>
                     ) : (
-                      <span className="text-red-600 text-2xl font-black">✕</span>
+                      <span className="text-red-600 font-black text-3xl transform -rotate-12 drop-shadow-sm">✕</span>
                     )}
                   </div>
                 )}
