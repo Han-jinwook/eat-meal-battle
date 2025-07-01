@@ -269,12 +269,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col">
           <h2 className="text-2xl font-bold text-gray-900">
             급식퀴즈 챌린지
           </h2>
-          <span className="text-sm text-gray-600">
-            ({currentMonth.getMonth()}월 결과 : 0/0개 맞춤)
+          <span className="text-lg font-bold text-green-600 mt-1">
+            ({currentMonth.getMonth()}월 결과 : 0/0개 맞음)
           </span>
           {/* 월장원 표시 - 나중에 조건식 추가 예정 */}
           {false && monthlyTrophy && (
