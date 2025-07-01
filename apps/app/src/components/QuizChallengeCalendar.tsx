@@ -38,6 +38,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   const [monthlyTrophy, setMonthlyTrophy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [holidays, setHolidays] = useState<{[key: string]: string}>({});
+  const [monthlyStats, setMonthlyStats] = useState({ correct: 0, total: 0 });
   
   const { userSchool } = useUserSchool();
 
@@ -188,8 +189,54 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     return trophies;
   };
 
+  // 월별 퀴즈 결과 조회 함수
+  const fetchMonthlyStats = async (year: number, month: number) => {
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session || !userSchool) return;
+      
+      // 현재 날짜 확인
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      
+      // 이전 월 데이터는 is_finalized=true인 경우만 조회
+      let query = supabase
+        .from('quiz_champions')
+        .select('correct_count, total_count, is_finalized')
+        .eq('user_id', session.data.session.user.id)
+        .eq('year', year)
+        .eq('month', month)
+        .eq('school_code', userSchool.school_code);
+      
+      // 현재 월이 아닌 경우, 최종 집계된 데이터만 조회
+      if (year < currentYear || (year === currentYear && month < currentMonth)) {
+        query = query.eq('is_finalized', true);
+      }
+      
+      const { data, error } = await query.single();
+      
+      if (error || !data) {
+        console.log('월별 통계 데이터 없음:', year, month);
+        setMonthlyStats({ correct: 0, total: 0 });
+        return;
+      }
+      
+      setMonthlyStats({
+        correct: data.correct_count,
+        total: data.total_count
+      });
+    } catch (error) {
+      console.error('월별 통계 조회 오류:', error);
+      setMonthlyStats({ correct: 0, total: 0 });
+    }
+  };
+
   useEffect(() => {
-    fetchCalendarData(currentMonth.getFullYear(), currentMonth.getMonth());
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1; // JavaScript는 0부터 시작하므로 +1
+    fetchCalendarData(year, month);
+    fetchMonthlyStats(year, month);
   }, [currentMonth, userSchool]);
 
   // 캘린더 그리드 생성
@@ -273,12 +320,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             급식퀴즈 챌린지
           </h2>
           <span className="text-lg font-bold text-green-600 mt-1">
-            ({currentMonth.getMonth()}월 결과 : 0/0개 맞음)
+            ({currentMonth.getMonth() + 1}월 결과 : {monthlyStats.correct}/{monthlyStats.total}개 맞음)
           </span>
-          {/* 월장원 표시 - 나중에 조건식 추가 예정 */}
-          {false && monthlyTrophy && (
+          {/* 월장원 표시 - 조건 추가 */}
+          {monthlyStats.correct >= 11 && monthlyStats.total > 0 && (
             <span className="text-sm text-yellow-600 font-bold">
-              {currentMonth.getMonth()}월 장원급제 🏆
+              {currentMonth.getMonth() + 1}월 장원급제 🏆
             </span>
           )}
         </div>
