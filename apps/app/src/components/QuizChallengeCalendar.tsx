@@ -303,7 +303,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       </div>
       
       {/* 요일 헤더 */}
-      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
+      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
         {['일', '월', '화', '수', '목', '금', '토', '주장원'].map((day, index) => (
           <div key={day} className={`text-center py-3 font-semibold ${
             index === 7 ? 'text-yellow-600' : 
@@ -317,7 +317,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       </div>
         
       {/* 캘린더 그리드 */}
-      <div className="grid gap-1" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
+      <div className="grid gap-1" style={{ gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
         {Array.from({ length: Math.ceil(calendarDays.length / 7) * 8 }, (_, index) => {
           const dayIndex = Math.floor(index / 8) * 7 + (index % 8);
           const isWeeklyTrophyCell = index % 8 === 7; // 8번째 열 (주장원 열)
@@ -344,7 +344,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           }
           
           const day = calendarDays[dayIndex];
-          const isWeekend = (dayIndex % 7) >= 5; // 토요일(5), 일요일(6)
+          const isWeekend = (dayIndex % 7) === 0 || (dayIndex % 7) === 6; // 일요일(0), 토요일(6)
           
           const cellClasses = [
             'h-16 border border-gray-200 rounded-lg flex flex-col relative transition-all duration-200'
