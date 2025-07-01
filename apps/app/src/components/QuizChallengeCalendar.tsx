@@ -303,13 +303,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       </div>
       
       {/* 요일 헤더 */}
-      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr 1fr' }}>
-        {['월', '화', '수', '목', '금', '토', '일', '주장원'].map((day, index) => (
+      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
+        {['일', '월', '화', '수', '목', '금', '토', '주장원'].map((day, index) => (
           <div key={day} className={`text-center py-3 font-semibold ${
             index === 7 ? 'text-yellow-600' : 
-            index >= 5 && index < 7 ? 'text-red-500' : 'text-gray-700'
+            index === 0 || index === 6 ? 'text-red-500' : 'text-gray-700'
           }`}>
-            <span className={index >= 5 && index < 7 ? 'text-xs' : ''}>
+            <span className={index === 0 || index === 6 ? 'text-xs' : ''}>
               {day}
             </span>
           </div>
