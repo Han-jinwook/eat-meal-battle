@@ -181,9 +181,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
   // 장원 테이블 업데이트 (없으면 생성)
   const { data: champion, error: championError } = await supabaseClient
     .from('quiz_champions')
-    .select('id, correct_count, total_count, avg_answer_time')
-    .eq('school_code', quiz.school_code)
-    .eq('grade', quiz.grade)
+    .select('id, correct_count, total_count')
     .eq('user_id', userId)
     .eq('month', month)
     .eq('year', year)
@@ -195,8 +193,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       .from('quiz_champions')
       .update({
         correct_count: champion[0].correct_count + (isCorrect ? 1 : 0),
-        total_count: champion[0].total_count + 1,
-        avg_answer_time: (champion[0].avg_answer_time * champion[0].total_count + answerTime) / (champion[0].total_count + 1)
+        total_count: champion[0].total_count + 1
       })
       .eq('id', champion[0].id);
 
@@ -208,14 +205,12 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
     const { error: insertError } = await supabaseClient
       .from('quiz_champions')
       .insert([{
-        school_code: quiz.school_code,
-        grade: quiz.grade,
         user_id: userId,
         month: month,
         year: year,
         correct_count: isCorrect ? 1 : 0,
         total_count: 1,
-        avg_answer_time: answerTime
+        is_finalized: false
       }]);
 
     if (insertError) {
