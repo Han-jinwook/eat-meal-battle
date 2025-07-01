@@ -200,11 +200,10 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     const lastDay = new Date(year, month + 1, 0);
     const today = new Date();
     
-    // 월요일 시작으로 조정
+    // 일요일 시작으로 조정
     const startDate = new Date(firstDay);
     const dayOfWeek = firstDay.getDay();
-    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    startDate.setDate(firstDay.getDate() - daysToSubtract);
+    startDate.setDate(firstDay.getDate() - dayOfWeek);
     
     const days = [];
     const currentDate = new Date(startDate);
@@ -303,15 +302,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       </div>
       
       {/* 요일 헤더 */}
-      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
+      <div className="grid grid-cols-9" style={{ gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 0.5fr 1fr' }}>
         {['일', '월', '화', '수', '목', '금', '토', '주장원'].map((day, index) => (
-          <div key={day} className={`text-center py-3 font-semibold ${
-            index === 7 ? 'text-yellow-600' : 
-            index === 0 || index === 6 ? 'text-red-500' : 'text-gray-700'
-          }`}>
-            <span className={index === 0 || index === 6 ? 'text-xs' : ''}>
-              {day}
-            </span>
+          <div 
+            key={day} 
+            className={`text-center py-2 text-sm font-semibold ${
+              index === 0 || index === 6 ? 'text-red-500 text-xs' : 'text-gray-700'
+            }`}
+          >
+            {day}
           </div>
         ))}
       </div>
@@ -347,12 +346,19 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           const isWeekend = (dayIndex % 7) === 0 || (dayIndex % 7) === 6; // 일요일(0), 토요일(6)
           
           const cellClasses = [
-            'h-16 border-2 border-gray-300 rounded-lg flex flex-col relative transition-all duration-200'
+            'h-16 rounded-lg flex flex-col relative transition-all duration-200'
           ];
+          
+          // 기본 테두리 - 평일은 진하게, 주말은 연하게
+          if (isWeekend && day.isCurrentMonth) {
+            cellClasses.push('border border-red-300 text-red-600');
+          } else {
+            cellClasses.push('border-2 border-gray-500');
+          }
           
           // 현재 월이 아닌 날짜
           if (!day.isCurrentMonth) {
-            cellClasses.push('bg-gray-50 text-gray-300 border-gray-200');
+            cellClasses.push('bg-gray-50 text-gray-300 border border-gray-200');
           }
           
           // 오늘 날짜
@@ -373,11 +379,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           // 공휴일
           if (day.isHoliday && day.isCurrentMonth) {
             cellClasses.push('bg-pink-50 border-0');
-          }
-          
-          // 주말 색상
-          if (isWeekend && day.isCurrentMonth) {
-            cellClasses.push('text-red-600 border-red-300');
           }
           
           return (
