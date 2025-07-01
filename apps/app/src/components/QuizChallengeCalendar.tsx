@@ -201,24 +201,26 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
       
+      // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
+      const displayMonth = month + 1;
+      
       // 이전 월 데이터는 is_finalized=true인 경우만 조회
       let query = supabase
         .from('quiz_champions')
         .select('correct_count, total_count, is_finalized')
         .eq('user_id', session.data.session.user.id)
         .eq('year', year)
-        .eq('month', month)
-        .eq('school_code', userSchool.school_code);
+        .eq('month', displayMonth);
       
       // 현재 월이 아닌 경우, 최종 집계된 데이터만 조회
-      if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      if (year < currentYear || (year === currentYear && displayMonth < currentMonth)) {
         query = query.eq('is_finalized', true);
       }
       
       const { data, error } = await query.single();
       
       if (error || !data) {
-        console.log('월별 통계 데이터 없음:', year, month);
+        console.log('월별 통계 데이터 없음:', year, displayMonth);
         setMonthlyStats({ correct: 0, total: 0 });
         return;
       }
@@ -247,7 +249,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         .eq('user_id', session.data.session.user.id)
         .eq('year', year)
         .eq('month', displayMonth)
-        .eq('school_code', userSchool.school_code)
         .eq('is_finalized', true)
         .single();
       
@@ -281,6 +282,11 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const prevMonth = month === 0 ? 11 : month - 1;
       const prevYear = month === 0 ? year - 1 : year;
       fetchPreviousMonthStats(prevYear, prevMonth);
+      
+      console.log('데이터 조회:', {
+        현재년월: `${year}-${month+1}`,
+        이전년월: `${prevYear}-${prevMonth+1}`
+      });
     }
   }, [currentMonth, userSchool]);
 
