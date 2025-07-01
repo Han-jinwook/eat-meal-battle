@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import useUserSchool from '@/hooks/useUserSchool';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+// import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -394,7 +394,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             onClick={handlePrevMonth}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+            <span className="text-gray-600 text-lg font-bold">‹</span>
           </button>
           <span className="text-lg font-semibold text-gray-700 min-w-[120px] text-center">
             {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
@@ -403,7 +403,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             onClick={handleNextMonth}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+            <span className="text-gray-600 text-lg font-bold">›</span>
           </button>
         </div>
       </div>
