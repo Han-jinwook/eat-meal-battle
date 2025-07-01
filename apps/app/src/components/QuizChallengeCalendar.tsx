@@ -90,13 +90,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         return `${year}-${month}-${day}`;
       };
       
+      console.log('퀴즈 결과 조회 범위:', {
+        시작일: formatLocalDate(startDate),
+        종료일: formatLocalDate(endDate)
+      });
+      
       const { data: results, error } = await supabase
         .from('quiz_results')
         .select(`
           quiz_id,
           selected_option,
           is_correct,
-          answer_time,
           meal_quizzes!inner(meal_date)
         `)
         .eq('user_id', session.data.session.user.id)
@@ -108,6 +112,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         return;
       }
 
+      console.log('조회된 퀴즈 결과:', results);
+      
       const processedResults: QuizResult[] = [];
       const currentDate = new Date(startDate);
       
@@ -124,6 +130,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
+      console.log('처리된 퀴즈 결과:', processedResults);
       setQuizResults(processedResults);
       
       // 트로피 계산
@@ -273,6 +280,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     if (userSchool) {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
+      
+      console.log('데이터 조회 시작:', {
+        현재년월: `${year}-${month+1}`,
+        이전년월: `${month === 0 ? year-1 : year}-${month === 0 ? 12 : month}`
+      });
+      
+      // 퀴즈 결과 데이터 먼저 조회
       fetchCalendarData(year, month);
       
       // 현재 월의 데이터 조회
@@ -282,11 +296,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const prevMonth = month === 0 ? 11 : month - 1;
       const prevYear = month === 0 ? year - 1 : year;
       fetchPreviousMonthStats(prevYear, prevMonth);
-      
-      console.log('데이터 조회:', {
-        현재년월: `${year}-${month+1}`,
-        이전년월: `${prevYear}-${prevMonth+1}`
-      });
     }
   }, [currentMonth, userSchool]);
 
