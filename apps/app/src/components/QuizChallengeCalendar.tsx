@@ -347,12 +347,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           const isWeekend = (dayIndex % 7) === 0 || (dayIndex % 7) === 6; // 일요일(0), 토요일(6)
           
           const cellClasses = [
-            'h-16 border border-gray-200 rounded-lg flex flex-col relative transition-all duration-200'
+            'h-16 border-2 border-gray-300 rounded-lg flex flex-col relative transition-all duration-200'
           ];
           
           // 현재 월이 아닌 날짜
           if (!day.isCurrentMonth) {
-            cellClasses.push('bg-gray-50 text-gray-300');
+            cellClasses.push('bg-gray-50 text-gray-300 border-gray-200');
           }
           
           // 오늘 날짜
@@ -372,12 +372,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           // 공휴일
           if (day.isHoliday && day.isCurrentMonth) {
-            cellClasses.push('bg-red-50 border-red-200');
+            cellClasses.push('bg-pink-50 border-0');
           }
           
           // 주말 색상
           if (isWeekend && day.isCurrentMonth) {
-            cellClasses.push('text-red-600');
+            cellClasses.push('text-red-600 border-red-300');
           }
           
           return (
@@ -399,15 +399,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               
               {/* 공휴일 표시 - 가운데 */}
               {day.isHoliday && day.isCurrentMonth && (
-                <div className="flex items-center justify-center">
+                <div className="flex items-center justify-center h-full w-full">
                   <div className="text-xs text-red-500 font-bold">
                     공휴일
                   </div>
                 </div>
               )}
               
-              {/* 퀴즈 결과 표시 - 선생님 채점 느낌 (주말 제외) */}
-              {day.hasQuiz && day.isCurrentMonth && !isWeekend && (
+              {/* 퀴즈 결과 표시 - 선생님 채점 느낌 */}
+              {day.hasQuiz && day.isCurrentMonth && (
                 <div className="flex items-center justify-center">
                   {day.isCorrect ? (
                     <span className="text-blue-600 font-black text-3xl transform rotate-12 drop-shadow-sm">✓</span>
