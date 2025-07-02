@@ -211,9 +211,6 @@ export default function QuizClient() {
         return;
       }
 
-      // 응답 시간 계산 (초 단위)
-      const answerTime = Math.floor(Date.now() / 1000);
-
       const response = await fetch('/.netlify/functions/quiz/answer', {
         method: 'POST',
         headers: {
@@ -222,8 +219,7 @@ export default function QuizClient() {
         },
         body: JSON.stringify({
           quiz_id: quiz.id,
-          selected_option: selectedOption,
-          answer_time: answerTime
+          selected_option: selectedOption
         }),
       });
       

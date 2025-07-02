@@ -138,7 +138,9 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 }
 
 // 퀴즈 답안 제출
-async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
+async function submitQuizAnswer(userId, quizId, selectedOption) {
+  console.log('submitQuizAnswer 함수 호출:', { userId, quizId, selectedOption });
+  
   // 퀴즈 정보 가져오기
   const { data: quiz, error: quizError } = await supabaseClient
     .from('meal_quizzes')
@@ -160,8 +162,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       user_id: userId,
       quiz_id: quizId,
       is_correct: isCorrect,
-      selected_option: selectedOption,
-      answer_time: answerTime
+      selected_option: selectedOption
     }])
     .select();
 
@@ -328,9 +329,18 @@ exports.handler = async function(event, context) {
     
     // POST /quiz/answer - 퀴즈 답변 제출
     if (method === 'POST' && pathSegments[0] === 'answer') {
-      const { quiz_id, selected_option, answer_time } = body;
+      const { quiz_id, selected_option } = body;
       
-      if (!quiz_id || selected_option === undefined || !answer_time) {
+      // 디버깅용 로그
+      console.log('quiz/answer 요청 데이터:', {
+        quiz_id,
+        selected_option,
+        quiz_id_type: typeof quiz_id,
+        selected_option_type: typeof selected_option
+      });
+      
+      if (!quiz_id || selected_option === undefined) {
+        console.log('필수 파라미터 누락:', { quiz_id: !!quiz_id, selected_option: selected_option !== undefined });
         return {
           statusCode: 400,
           headers,
@@ -338,7 +348,7 @@ exports.handler = async function(event, context) {
         };
       }
       
-      const result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
+      const result = await submitQuizAnswer(userId, quiz_id, selected_option);
       
       return {
         statusCode: result.error ? 400 : 200,
