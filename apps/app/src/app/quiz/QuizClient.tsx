@@ -243,23 +243,40 @@ export default function QuizClient() {
       
       const data = await response.json();
       
-      if (response.ok) {
-        setSubmitted(true);
-        setQuiz(prev => prev ? {
-          ...prev,
-          user_answer: {
-            selected_option: selectedOption,
-            is_correct: data.isCorrect
-          }
-        } : null);
-        // 토스트 메시지 제거 - 본문에 결과가 표시되므로 중복 제거
-      } else {
-        // 이미 답변한 퀴즈인 경우 토스트 메시지 제거
-        if (data.error !== '이미 답변한 퀴즈입니다.') {
-          toast.error(data.error || '답안 제출에 실패했습니다.');
+      console.log('📥 서버 응답:', data);
+    
+    if (response.ok && data.success) {
+      setSubmitted(true);
+      setQuiz(prev => prev ? {
+        ...prev,
+        correct_answer: data.correctAnswer,
+        explanation: data.explanation,
+        user_answer: {
+          selected_option: selectedOption,
+          is_correct: data.isCorrect
         }
+      } : null);
+      
+      console.log('✅ 퀴즈 상태 업데이트 완료:', {
+        isCorrect: data.isCorrect,
+        correctAnswer: data.correctAnswer,
+        selectedOption: selectedOption
+      });
+      
+      // 성공 토스트 메시지
+      if (data.isCorrect) {
+        toast.success('정답입니다! 🎉');
+      } else {
+        toast.error('틀렸습니다. 다음에 다시 도전해보세요!');
       }
-    } catch (err) {
+    } else {
+      console.error('❌ 서버 응답 오류:', data);
+      // 이미 답변한 퀴즈인 경우 토스트 메시지 제거
+      if (data.error !== '이미 답변한 퀴즈입니다.') {
+        toast.error(data.error || '답안 제출에 실패했습니다.');
+      }
+    }
+  } catch (err) {
       console.error('답안 제출 오류:', err);
       toast.error('답안 제출에 실패했습니다.');
     }
