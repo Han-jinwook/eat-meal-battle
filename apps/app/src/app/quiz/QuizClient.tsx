@@ -204,6 +204,14 @@ export default function QuizClient() {
     if (!quiz || selectedOption === null) return;
     
     try {
+      // 디버깅: quiz 상태 확인
+      console.log('🔍 Quiz 상태 확인:', {
+        quiz: quiz,
+        quiz_id: quiz?.id,
+        selectedOption: selectedOption,
+        quiz_exists: !!quiz
+      });
+      
       // 인증 토큰 가져오기
       const session = await supabase.auth.getSession();
       if (!session.data.session) {
@@ -211,16 +219,26 @@ export default function QuizClient() {
         return;
       }
 
+      // 응답 시간 계산 (초 단위)
+      const answerTime = Math.floor(Date.now() / 1000);
+      
+      const requestData = {
+        quiz_id: quiz.id,
+        selected_option: selectedOption,
+        answer_time: answerTime
+      };
+      
+      // 디버깅: 전송할 데이터 확인
+      console.log('📤 전송할 데이터:', requestData);
+      console.log('📤 JSON 문자열:', JSON.stringify(requestData));
+
       const response = await fetch('/.netlify/functions/quiz/answer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.data.session.access_token}`
         },
-        body: JSON.stringify({
-          quiz_id: quiz.id,
-          selected_option: selectedOption
-        }),
+        body: JSON.stringify(requestData),
       });
       
       const data = await response.json();

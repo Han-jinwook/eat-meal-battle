@@ -20,10 +20,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@ui/*": ["../../packages/ui/src/*"],
-      "@core/*": ["../../packages/core/src/*"],
-      "@config/*": ["../../packages/config/*"],
-      "@supabase-client/*": ["../../packages/supabase-client/src/*"]
+      "@meal-battle/ui": ["../../packages/ui/src"],
+      "@meal-battle/ui/*": ["../../packages/ui/src/*"],
+      "@meal-battle/auth": ["../../packages/auth/src"],
+      "@meal-battle/auth/*": ["../../packages/auth/src/*"],
+      "@meal-battle/utils": ["../../packages/utils/src"],
+      "@meal-battle/utils/*": ["../../packages/utils/src/*"],
+      "@meal-battle/types": ["../../packages/types/src"],
+      "@meal-battle/types/*": ["../../packages/types/src/*"]
     },
     "plugins": [
       {

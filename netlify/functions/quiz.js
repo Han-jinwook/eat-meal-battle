@@ -138,9 +138,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 }
 
 // 퀴즈 답안 제출
-async function submitQuizAnswer(userId, quizId, selectedOption) {
-  console.log('submitQuizAnswer 함수 호출:', { userId, quizId, selectedOption });
-  
+async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
   // 퀴즈 정보 가져오기
   const { data: quiz, error: quizError } = await supabaseClient
     .from('meal_quizzes')
@@ -162,7 +160,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       user_id: userId,
       quiz_id: quizId,
       is_correct: isCorrect,
-      selected_option: selectedOption
+      selected_option: selectedOption,
+      answer_time: answerTime
     }])
     .select();
 
@@ -329,18 +328,33 @@ exports.handler = async function(event, context) {
     
     // POST /quiz/answer - 퀴즈 답변 제출
     if (method === 'POST' && pathSegments[0] === 'answer') {
-      const { quiz_id, selected_option } = body;
-      
-      // 디버깅용 로그
-      console.log('quiz/answer 요청 데이터:', {
-        quiz_id,
-        selected_option,
-        quiz_id_type: typeof quiz_id,
-        selected_option_type: typeof selected_option
+      // 디버깅: 받은 데이터 확인
+      console.log('🔍 서버 - 받은 요청 정보:', {
+        method: method,
+        pathSegments: pathSegments,
+        body: body,
+        bodyType: typeof body,
+        bodyString: event.body
       });
       
-      if (!quiz_id || selected_option === undefined) {
-        console.log('필수 파라미터 누락:', { quiz_id: !!quiz_id, selected_option: selected_option !== undefined });
+      const { quiz_id, selected_option, answer_time } = body;
+      
+      // 디버깅: 파싱된 파라미터 확인
+      console.log('📥 서버 - 파싱된 파라미터:', {
+        quiz_id: quiz_id,
+        selected_option: selected_option,
+        answer_time: answer_time,
+        quiz_id_type: typeof quiz_id,
+        selected_option_type: typeof selected_option,
+        answer_time_type: typeof answer_time
+      });
+      
+      if (!quiz_id || selected_option === undefined || !answer_time) {
+        console.log('❌ 서버 - 파라미터 검증 실패:', {
+          quiz_id_check: !quiz_id,
+          selected_option_check: selected_option === undefined,
+          answer_time_check: !answer_time
+        });
         return {
           statusCode: 400,
           headers,
@@ -348,7 +362,7 @@ exports.handler = async function(event, context) {
         };
       }
       
-      const result = await submitQuizAnswer(userId, quiz_id, selected_option);
+      const result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
       
       return {
         statusCode: result.error ? 400 : 200,
