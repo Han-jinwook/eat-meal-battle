@@ -263,12 +263,7 @@ export default function QuizClient() {
         selectedOption: selectedOption
       });
       
-      // 성공 토스트 메시지
-      if (data.isCorrect) {
-        toast.success('정답입니다! 🎉');
-      } else {
-        toast.error('틀렸습니다. 다음에 다시 도전해보세요!');
-      }
+      // 토스트 메시지 제거 - 페이지 내 메시지만 사용
     } else {
       console.error('❌ 서버 응답 오류:', data);
       // 이미 답변한 퀴즈인 경우 토스트 메시지 제거
