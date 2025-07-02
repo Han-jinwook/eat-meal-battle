@@ -441,9 +441,36 @@ exports.handler = async function(event, context) {
     
     // POST /quiz/answer - 퀴즈 답변 제출
     if (method === 'POST' && pathSegments[0] === 'answer') {
+      // 디버깅 로그 - 서버가 받은 요청 정보 출력
+      console.log('[quiz] POST /quiz/answer 요청 받음');
+      console.log('[quiz] 받은 요청 정보:', {
+        method,
+        path: event.path,
+        pathSegments,
+        headers: event.headers,
+        body: event.body,
+        userId
+      });
+      
       const { quiz_id, selected_option, answer_time } = body;
       
+      // 디버깅 로그 - 파싱된 파라미터 확인
+      console.log('[quiz] 파싱된 파라미터:', {
+        quiz_id,
+        selected_option,
+        answer_time,
+        quiz_id_type: typeof quiz_id,
+        selected_option_type: typeof selected_option,
+        answer_time_type: typeof answer_time
+      });
+      
       if (!quiz_id || selected_option === undefined || !answer_time) {
+        // 디버깅 로그 - 파라미터 검증 실패 원인 로그
+        console.log('[quiz] 필수 파라미터 누락:', {
+          quiz_id_missing: !quiz_id,
+          selected_option_missing: selected_option === undefined,
+          answer_time_missing: !answer_time
+        });
         return {
           statusCode: 400,
           headers,
@@ -451,7 +478,9 @@ exports.handler = async function(event, context) {
         };
       }
       
+      console.log('[quiz] submitQuizAnswer 호출 중...');
       const result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
+      console.log('[quiz] submitQuizAnswer 결과:', result);
       
       return {
         statusCode: result.error ? 400 : 200,
