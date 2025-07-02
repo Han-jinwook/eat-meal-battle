@@ -146,8 +146,8 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 }
 
 // 퀴즈 답변 제출 함수
-async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
-  console.log('[quiz] submitQuizAnswer 시작:', { userId, quizId, selectedOption, answerTime });
+async function submitQuizAnswer(userId, quizId, selectedOption) {
+  console.log('[quiz] submitQuizAnswer 시작:', { userId, quizId, selectedOption });
   
   try {
     // 퀴즈 정보 조회
@@ -189,7 +189,6 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       quiz_id: quizId,
       selected_option: selectedOption,
       is_correct: isCorrect,
-      answer_time: answerTime,
       created_at: new Date().toISOString()
     };
     console.log('[quiz] 저장할 데이터:', insertData);
@@ -475,24 +474,21 @@ exports.handler = async function(event, context) {
         userId
       });
       
-      const { quiz_id, selected_option, answer_time } = body;
+      const { quiz_id, selected_option } = body;
       
       // 디버깅 로그 - 파싱된 파라미터 확인
       console.log('[quiz] 파싱된 파라미터:', {
         quiz_id,
         selected_option,
-        answer_time,
         quiz_id_type: typeof quiz_id,
-        selected_option_type: typeof selected_option,
-        answer_time_type: typeof answer_time
+        selected_option_type: typeof selected_option
       });
       
-      if (!quiz_id || selected_option === undefined || !answer_time) {
+      if (!quiz_id || selected_option === undefined) {
         // 디버깅 로그 - 파라미터 검증 실패 원인 로그
         console.log('[quiz] 필수 파라미터 누락:', {
           quiz_id_missing: !quiz_id,
-          selected_option_missing: selected_option === undefined,
-          answer_time_missing: !answer_time
+          selected_option_missing: selected_option === undefined
         });
         return {
           statusCode: 400,
@@ -501,9 +497,23 @@ exports.handler = async function(event, context) {
         };
       }
       
-      console.log('[quiz] submitQuizAnswer 호출 중...');
-      const result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
-      console.log('[quiz] submitQuizAnswer 결과:', result);
+      console.log('[quiz] submitQuizAnswer 호출 전 - 파라미터 검증 완료');
+      console.log('[quiz] 함수 호출 파라미터:', { userId, quiz_id, selected_option });
+      
+      let result;
+      try {
+        console.log('[quiz] submitQuizAnswer 함수 호출 시작...');
+        result = await submitQuizAnswer(userId, quiz_id, selected_option);
+        console.log('[quiz] submitQuizAnswer 함수 호출 완료, 결과:', result);
+      } catch (error) {
+        console.error('[quiz] submitQuizAnswer 함수 호출 중 예외 발생:', error);
+        console.error('[quiz] 예외 스택:', error.stack);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: '퀴즈 답안 제출 중 오류가 발생했습니다.', details: error.message })
+        };
+      }
       
       return {
         statusCode: result.error ? 400 : 200,
