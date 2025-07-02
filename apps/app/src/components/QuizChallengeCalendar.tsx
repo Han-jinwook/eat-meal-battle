@@ -211,18 +211,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
       const displayMonth = month + 1;
       
-      // 이전 월 데이터는 is_finalized=true인 경우만 조회
-      let query = supabase
+      const query = supabase
         .from('quiz_champions')
-        .select('correct_count, total_count, is_finalized')
+        .select('correct_count, total_count')
         .eq('user_id', session.data.session.user.id)
         .eq('year', year)
         .eq('month', displayMonth);
-      
-      // 현재 월이 아닌 경우, 최종 집계된 데이터만 조회
-      if (year < currentYear || (year === currentYear && displayMonth < currentMonth)) {
-        query = query.eq('is_finalized', true);
-      }
       
       const { data, error } = await query.single();
       
@@ -256,7 +250,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         .eq('user_id', session.data.session.user.id)
         .eq('year', year)
         .eq('month', displayMonth)
-        .eq('is_finalized', true)
         .single();
       
       if (error || !data) {

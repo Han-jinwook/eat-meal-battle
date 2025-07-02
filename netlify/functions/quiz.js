@@ -208,8 +208,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         month: month,
         year: year,
         correct_count: isCorrect ? 1 : 0,
-        total_count: 1,
-        is_finalized: false
+        total_count: 1
       }]);
 
     if (insertError) {
