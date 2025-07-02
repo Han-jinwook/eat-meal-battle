@@ -589,8 +589,9 @@ export default function QuizClient() {
                   </button>
                 ) : (
                   <div>
-                    {quiz.correct_answer !== undefined && quiz.user_answer && (
-                      <div className="text-center">
+                    <div className="text-center">
+                      {/* 결과 메시지 */}
+                      {quiz.user_answer && quiz.user_answer.is_correct !== undefined && (
                         <p className="text-lg font-semibold mb-2">
                           {quiz.user_answer.is_correct ? (
                             <span className="text-green-600">정답입니다! 🎉</span>
@@ -598,16 +599,16 @@ export default function QuizClient() {
                             <span className="text-red-600">틀렸습니다. 다음에 다시 도전해보세요!</span>
                           )}
                         </p>
-                        
-                        {/* 설명 */}
-                        {quiz.explanation && (
-                          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
-                            <p className="text-gray-600">{quiz.explanation}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                      
+                      {/* 설명 */}
+                      {quiz.explanation && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                          <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
+                          <p className="text-gray-600">{quiz.explanation}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
