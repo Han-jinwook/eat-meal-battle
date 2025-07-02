@@ -147,51 +147,73 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 
 // 퀴즈 답변 제출 함수
 async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
+  console.log('[quiz] submitQuizAnswer 시작:', { userId, quizId, selectedOption, answerTime });
+  
   try {
     // 퀴즈 정보 조회
+    console.log('[quiz] 퀴즈 정보 조회 중...', { quizId });
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('meal_quizzes')
       .select('*')
       .eq('id', quizId)
       .single();
       
+    console.log('[quiz] 퀴즈 조회 결과:', { quiz: quiz ? 'found' : 'not found', quizError });
     if (quizError || !quiz) {
+      console.log('[quiz] 퀴즈 조회 실패:', quizError);
       return { error: '퀴즈를 찾을 수 없습니다.' };
     }
     
     // 이미 답변했는지 확인
-    const { data: existing } = await supabaseAdmin
+    console.log('[quiz] 기존 답변 확인 중...', { userId, quizId });
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from('quiz_results')
       .select('id')
       .eq('user_id', userId)
       .eq('quiz_id', quizId)
       .limit(1);
       
+    console.log('[quiz] 기존 답변 확인 결과:', { existing, existingError });
     if (existing && existing.length > 0) {
+      console.log('[quiz] 이미 답변한 퀴즈');
       return { error: '이미 답변한 퀴즈입니다.' };
     }
     
     // 정답 확인 (0-based index)
     const isCorrect = selectedOption === quiz.correct_answer;
+    console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isCorrect });
+    
+    // 답변 저장 데이터 준비
+    const insertData = {
+      user_id: userId,
+      quiz_id: quizId,
+      selected_option: selectedOption,
+      is_correct: isCorrect,
+      answer_time: answerTime,
+      created_at: new Date().toISOString()
+    };
+    console.log('[quiz] 저장할 데이터:', insertData);
     
     // 답변 저장
+    console.log('[quiz] quiz_results 테이블에 저장 시도...');
     const { data: result, error: saveError } = await supabaseAdmin
       .from('quiz_results')
-      .insert({
-        user_id: userId,
-        quiz_id: quizId,
-        selected_option: selectedOption,
-        is_correct: isCorrect,
-        answer_time: answerTime,
-        created_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
       
+    console.log('[quiz] 저장 결과:', { result, saveError });
     if (saveError) {
+      console.log('[quiz] 저장 실패 상세:', {
+        code: saveError.code,
+        message: saveError.message,
+        details: saveError.details,
+        hint: saveError.hint
+      });
       return { error: '답변 저장에 실패했습니다.' };
     }
     
+    console.log('[quiz] submitQuizAnswer 성공!');
     return {
       success: true,
       isCorrect: isCorrect,
@@ -201,6 +223,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
     };
     
   } catch (error) {
+    console.log('[quiz] submitQuizAnswer 예외 발생:', error);
     return { error: '답변 제출 중 오류가 발생했습니다.' };
   }
 }
