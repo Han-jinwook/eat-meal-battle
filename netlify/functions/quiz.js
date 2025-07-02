@@ -138,7 +138,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 }
 
 // 퀴즈 답안 제출
-async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
+async function submitQuizAnswer(userId, quizId, selectedOption) {
   // 퀴즈 정보 가져오기
   const { data: quiz, error: quizError } = await supabaseClient
     .from('meal_quizzes')
@@ -160,8 +160,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       user_id: userId,
       quiz_id: quizId,
       is_correct: isCorrect,
-      selected_option: selectedOption,
-      answer_time: answerTime
+      selected_option: selectedOption
     }])
     .select();
 
@@ -339,24 +338,21 @@ exports.handler = async function(event, context) {
         userId
       });
       
-      const { quiz_id, selected_option, answer_time } = body;
+      const { quiz_id, selected_option } = body;
       
       // 디버깅 로그 - 파싱된 파라미터 확인
       console.log('[quiz] 파싱된 파라미터:', {
         quiz_id,
         selected_option,
-        answer_time,
         quiz_id_type: typeof quiz_id,
-        selected_option_type: typeof selected_option,
-        answer_time_type: typeof answer_time
+        selected_option_type: typeof selected_option
       });
       
-      if (!quiz_id || selected_option === undefined || !answer_time) {
+      if (!quiz_id || selected_option === undefined) {
         // 디버깅 로그 - 파라미터 검증 실패 원인 로그
         console.log('[quiz] 필수 파라미터 누락:', {
           quiz_id_missing: !quiz_id,
-          selected_option_missing: selected_option === undefined,
-          answer_time_missing: !answer_time
+          selected_option_missing: selected_option === undefined
         });
         return {
           statusCode: 400,
@@ -366,7 +362,7 @@ exports.handler = async function(event, context) {
       }
       
       console.log('[quiz] submitQuizAnswer 호출 중...');
-      const result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
+      const result = await submitQuizAnswer(userId, quiz_id, selected_option);
       console.log('[quiz] submitQuizAnswer 결과:', result);
       
       return {
