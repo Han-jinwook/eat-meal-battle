@@ -294,6 +294,26 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     }
   }, [currentMonth, userSchool]);
 
+  // 선택된 날짜 변경 시 달력 월 자동 업데이트
+  useEffect(() => {
+    if (currentQuizDate) {
+      const selectedDate = new Date(currentQuizDate);
+      if (!isNaN(selectedDate.getTime())) {
+        const selectedMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        
+        // 현재 달력 월과 선택된 날짜의 월이 다르면 달력 월 변경
+        if (selectedMonth.getTime() !== currentMonth.getTime()) {
+          console.log('🔄 위쪽 날짜 선택에 따른 현황판 월 자동 변경:', {
+            이전월: `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`,
+            새월: `${selectedMonth.getFullYear()}-${selectedMonth.getMonth() + 1}`,
+            선택날짜: currentQuizDate
+          });
+          setCurrentMonth(selectedMonth);
+        }
+      }
+    }
+  }, [currentQuizDate]);
+
   // 캘린더 데이터 새로고침 함수
   const handleRefresh = () => {
     const year = currentMonth.getFullYear();
