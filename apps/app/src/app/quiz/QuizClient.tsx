@@ -263,6 +263,12 @@ export default function QuizClient() {
         selectedOption: selectedOption
       });
       
+      // 캘린더 데이터 새로고침 (리얼타임 현황판 업데이트)
+      if (typeof (window as any).refreshQuizCalendar === 'function') {
+        console.log('🔄 캘린더 새로고침 호출');
+        (window as any).refreshQuizCalendar();
+      }
+      
       // 토스트 메시지 제거 - 페이지 내 메시지만 사용
     } else {
       console.error('❌ 서버 응답 오류:', data);
@@ -661,6 +667,7 @@ export default function QuizClient() {
             setSelectedDate(date);
             router.push(`/quiz?date=${date}`);
           }}
+          onRefreshNeeded={() => {}}
         />
       </div>
     </>

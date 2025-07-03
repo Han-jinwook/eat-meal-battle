@@ -26,11 +26,13 @@ interface WeeklyTrophy {
 interface QuizChallengeCalendarProps {
   currentQuizDate?: string;
   onDateSelect?: (date: string) => void;
+  onRefreshNeeded?: () => void;
 }
 
 const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({ 
   currentQuizDate, 
-  onDateSelect 
+  onDateSelect,
+  onRefreshNeeded 
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 5, 1)); // 6월
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
@@ -291,6 +293,40 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       fetchPreviousMonthStats(prevYear, prevMonth);
     }
   }, [currentMonth, userSchool]);
+
+  // 캘린더 데이터 새로고침 함수
+  const handleRefresh = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    console.log('🔄 캘린더 데이터 새로고침:', { year, month: month + 1 });
+    
+    // 퀴즈 결과 데이터 새로고침
+    fetchCalendarData(year, month);
+    
+    // 현재 월의 통계 새로고침
+    fetchMonthlyStats(year, month);
+    
+    // 이전 월의 통계 새로고침
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    fetchPreviousMonthStats(prevYear, prevMonth);
+  };
+
+  // 외부에서 새로고침 호출 가능하도록 설정
+  useEffect(() => {
+    if (onRefreshNeeded) {
+      // 전역 참조로 새로고침 함수 노출
+      (window as any).refreshQuizCalendar = handleRefresh;
+    }
+    
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      if ((window as any).refreshQuizCalendar) {
+        delete (window as any).refreshQuizCalendar;
+      }
+    };
+  }, [onRefreshNeeded, currentMonth]);
 
   // 캘린더 그리드 생성
   const generateCalendarGrid = () => {
