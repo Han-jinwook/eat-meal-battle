@@ -212,6 +212,52 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return { error: '답변 저장에 실패했습니다.' };
     }
     
+    // 퀴즈 날짜 기반으로 월과 연도 계산
+    const quizDate = new Date(quiz.meal_date);
+    const month = quizDate.getMonth() + 1; // JavaScript의 월은 0부터 시작하므로 +1
+    const year = quizDate.getFullYear();
+    
+    console.log('[quiz] 집계 처리:', { month, year, quiz_date: quiz.meal_date });
+    
+    // 장원 테이블 업데이트 (없으면 생성)
+    const { data: champion, error: championError } = await supabaseAdmin
+      .from('quiz_champions')
+      .select('id, correct_count, total_count')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .limit(1);
+    
+    if (champion && champion.length > 0) {
+      // 기존 기록 업데이트
+      const { error: updateError } = await supabaseAdmin
+        .from('quiz_champions')
+        .update({
+          correct_count: champion[0].correct_count + (isCorrect ? 1 : 0),
+          total_count: champion[0].total_count + 1
+        })
+        .eq('id', champion[0].id);
+    
+      if (updateError) {
+        console.error('[quiz] 장원 기록 업데이트 중 오류:', updateError);
+      }
+    } else {
+      // 새 기록 생성
+      const { error: insertError } = await supabaseAdmin
+        .from('quiz_champions')
+        .insert([{
+          user_id: userId,
+          month: month,
+          year: year,
+          correct_count: isCorrect ? 1 : 0,
+          total_count: 1
+        }]);
+    
+      if (insertError) {
+        console.error('[quiz] 장원 기록 생성 중 오류:', insertError);
+      }
+    }
+    
     console.log('[quiz] submitQuizAnswer 성공!');
     return {
       success: true,
