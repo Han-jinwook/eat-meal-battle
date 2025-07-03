@@ -185,7 +185,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       trophies.push({
         week: currentWeek,
-        earned: weekTotal >= 4 && weekCorrect === weekTotal, // 4일 이상 전체 정답
+        earned: weekTotal > 0 && weekCorrect === weekTotal, // 해당 주 급식정보 있는 날수 전부 맞추면 수여
         total_correct: weekCorrect,
         total_available: weekTotal
       });
@@ -452,10 +452,10 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           <span className="text-lg font-bold text-green-600 mt-1">
             ({previousMonthStats.month}월 결과 : {previousMonthStats.correct}/{previousMonthStats.total}개 맞음)
           </span>
-          {/* 월장원 표시 - 조건 추가 */}
-          {previousMonthStats.correct >= 11 && previousMonthStats.total > 0 && (
+          {/* 월장원 표시 - 해당월 급식정보 있는 날수 전부 맞추면 수여 */}
+          {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
             <span className="text-sm text-yellow-600 font-bold">
-              {previousMonthStats.month}월 장원급제 🏆
+              {previousMonthStats.month}월 장원급제 👑
             </span>
           )}
         </div>
@@ -507,8 +507,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 key={`trophy-${weekIndex}`}
                 className="h-16 border border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg flex items-center justify-center"
               >
-                {/* 트로피 표시 - 나중에 조건식 추가 예정 */}
-                {false && weeklyTrophy?.earned && (
+                {/* 트로피 표시 - 해당 주 급식정보 있는 날수 전부 맞추면 수여 */}
+                {weeklyTrophy?.earned && (
                   <span className="text-2xl">🏆</span>
                 )}
               </div>
