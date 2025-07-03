@@ -4,9 +4,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // This client is for use in Server Components, Route Handlers, and Server Actions
-export function createClient() {
+export const createClient = () => {
   const cookieStore = cookies();
-  
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -15,20 +15,26 @@ export function createClient() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name: string, value: string, options: any) {
           try {
-            cookieStore.set(name, value, options);
+            cookieStore.set({ name, value, ...options });
           } catch (error) {
-            console.error(`Failed to set cookie ${name}`, error);
+            console.error('쿠키 설정 오류:', error);
           }
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name: string, options: any) {
           try {
-            cookieStore.delete(name, options);
+            cookieStore.set({ name, value: '', ...options });
           } catch (error) {
-            console.error(`Failed to remove cookie ${name}`, error);
+            console.error('쿠키 삭제 오류:', error);
           }
         }
+      },
+      // 세션 누락 오류 무시 옵션 추가
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true
       }
     }
   );
