@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     if (code) {
       console.log('Auth code received, exchanging for session')
 
-      // (수정) Supabase 클라이언트를 await로 받아야 함
-      const supabase = await createClient()
+      // createClient는 동기 함수로 복원됨
+      const supabase = createClient()
 
       // 인증 코드로 세션 교환
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
 
       if (data.session) {
         console.log('Session successfully created')
-        redirectUrl = '/profile'
+        // 세션이 성공적으로 생성되었으면 홈페이지로 리디렉션
+        redirectUrl = '/'
       }
     } else {
       console.error('No auth code received')

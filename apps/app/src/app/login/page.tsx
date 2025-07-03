@@ -24,10 +24,15 @@ function LoginContent() {
     
     // 사용자가 이미 로그인되어 있는지 확인
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        // 이미 로그인되어 있으면 홈으로 리다이렉트
-        router.push('/')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('현재 세션 상태:', session ? '로그인됨' : '로그인되지 않음')
+        if (session) {
+          // 이미 로그인되어 있으면 홈으로 리다이렉트
+          router.push('/')
+        }
+      } catch (error) {
+        console.error('세션 확인 중 오류:', error)
       }
     }
     
@@ -66,12 +71,11 @@ function LoginContent() {
       console.log('카카오 로그인 시도 중...')
       
       // 카카오는 기존 방식 유지 (signInWithRetry는 Google 전용)
-      // 정확한 포트(3001)를 사용하는 리디렉션 URL 설정
-      // 개발환경에서는 http, 프로덕션에서는 https 사용
+      // 리디렉션 URL 설정 - 항상 현재 도메인의 /auth/callback 사용
       const baseUrl = window.location.origin;
-      const redirectUrl = baseUrl.includes('localhost') 
-        ? 'http://localhost:3001/auth/callback'
-        : `${baseUrl}/auth/callback`
+      const redirectUrl = `${baseUrl}/auth/callback`
+      
+      console.log('현재 도메인:', baseUrl)
       
       console.log('카카오 리디렉션 URL:', redirectUrl)
       
