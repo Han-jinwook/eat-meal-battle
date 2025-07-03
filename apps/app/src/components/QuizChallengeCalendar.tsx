@@ -374,9 +374,30 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     return `${year}-${month}-${day}`;
   };
 
-  // 날짜 클릭 핸들러
+  // 날짜 클릭 핸들러 (월 자동 변경 포함)
   const handleDateClick = (day: any) => {
-    if (day.hasQuiz && day.isCurrentMonth && onDateSelect) {
+    console.log('📅 날짜 클릭:', {
+      날짜: day.dateStr,
+      현재월여부: day.isCurrentMonth,
+      퀴즈여부: day.hasQuiz
+    });
+    
+    // 다른 달 날짜 클릭 시 월 변경
+    if (!day.isCurrentMonth) {
+      const clickedDate = new Date(day.dateStr);
+      const newMonth = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), 1);
+      
+      console.log('🔄 월 변경:', {
+        이전월: `${currentMonth.getFullYear()}-${currentMonth.getMonth() + 1}`,
+        새월: `${newMonth.getFullYear()}-${newMonth.getMonth() + 1}`
+      });
+      
+      setCurrentMonth(newMonth);
+    }
+    
+    // 날짜 선택 (퀴즈 유무 관계없이 모든 날짜 선택 가능)
+    if (onDateSelect) {
+      console.log('📍 날짜 선택:', day.dateStr);
       onDateSelect(day.dateStr);
     }
   };
@@ -507,9 +528,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             cellClasses.push('ring-2 ring-purple-500 bg-purple-100');
           }
           
-          // 퀴즈가 있는 날짜
+          // 모든 날짜 클릭 가능 (기본 스타일)
+          cellClasses.push('cursor-pointer hover:shadow-sm hover:scale-[1.02] transition-transform');
+          
+          // 퀴즈가 있는 날짜는 더 강조
           if (day.hasQuiz) {
-            cellClasses.push('cursor-pointer hover:shadow-md hover:scale-105');
+            cellClasses.push('hover:shadow-md hover:scale-105');
           }
           
           // 공휴일
