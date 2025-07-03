@@ -533,9 +533,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             cellClasses.push('border-2 border-gray-500');
           }
           
-          // 현재 월이 아닌 날짜
+          // 현재 월이 아닌 날짜 (가짜 날짜) - 우아하게 처리
           if (!day.isCurrentMonth) {
-            cellClasses.push('bg-gray-50 text-gray-300 border border-gray-200');
+            cellClasses.push(
+              'bg-gradient-to-br from-gray-50/80 to-gray-100/60', // 은은한 그라데이션
+              'text-gray-400/70',                                   // 연한 텍스트
+              'border border-dashed border-gray-300/50',            // 점선 테두리
+              'backdrop-blur-[0.5px]'                               // 미니멀 블러
+            );
           }
           
           // 오늘 날짜
@@ -548,12 +553,29 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             cellClasses.push('ring-2 ring-purple-500 bg-purple-100');
           }
           
-          // 모든 날짜 클릭 가능 (기본 스타일)
-          cellClasses.push('cursor-pointer hover:shadow-sm hover:scale-[1.02] transition-transform');
+          // 모든 날짜 클릭 가능 - 월에 따른 차별화된 호버 효과
+          if (day.isCurrentMonth) {
+            // 현재 월: 선명한 호버 효과
+            cellClasses.push(
+              'cursor-pointer',
+              'hover:shadow-md hover:scale-[1.05]',
+              'hover:bg-white/90',
+              'transition-all duration-300 ease-out'
+            );
+          } else {
+            // 다른 월 (가짜 날짜): 은은한 호버 효과
+            cellClasses.push(
+              'cursor-pointer',
+              'hover:shadow-sm hover:scale-[1.02]',
+              'hover:bg-gray-200/40 hover:backdrop-blur-sm',
+              'hover:border-solid hover:border-gray-400/60',
+              'transition-all duration-200 ease-in-out'
+            );
+          }
           
-          // 퀴즈가 있는 날짜는 더 강조
-          if (day.hasQuiz) {
-            cellClasses.push('hover:shadow-md hover:scale-105');
+          // 퀴즈가 있는 날짜는 더 강조 (현재 월에만 적용)
+          if (day.hasQuiz && day.isCurrentMonth) {
+            cellClasses.push('hover:shadow-lg hover:scale-110');
           }
           
           // 공휴일
@@ -571,9 +593,9 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               <span className={`absolute top-1 left-1 font-medium ${
                 isWeekend ? 'text-xs' : 'text-xs'
               } ${
-                day.isToday ? 'text-blue-700' : 
-                day.isSelected ? 'text-purple-700' :
-                !day.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'
+                day.isToday ? 'text-blue-700 font-bold' : 
+                day.isSelected ? 'text-purple-700 font-semibold' :
+                !day.isCurrentMonth ? 'text-gray-400/60 font-light opacity-70' : 'text-gray-700 font-medium'
               }`}>
                 {day.day}
               </span>
