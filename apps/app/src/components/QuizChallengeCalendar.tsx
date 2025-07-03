@@ -526,15 +526,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             'h-16 rounded-lg flex flex-col relative transition-all duration-200'
           ];
           
-          // 기본 테두리 - 평일은 진하게, 주말은 연하게
-          if (isWeekend && day.isCurrentMonth) {
-            cellClasses.push('border border-red-300 text-red-600');
+          // 현재 월 날짜만 테두리 적용
+          if (day.isCurrentMonth) {
+            if (isWeekend) {
+              cellClasses.push('border border-red-300 text-red-600');
+            } else {
+              cellClasses.push('border-2 border-gray-500');
+            }
           } else {
-            cellClasses.push('border-2 border-gray-500');
-          }
-          
-          // 현재 월이 아닌 날짜 (가짜 날짜) - 미니멀하게 처리
-          if (!day.isCurrentMonth) {
+            // 가짜 날짜 - 테두리 없이 음영만
             cellClasses.push(
               'bg-gradient-to-br from-gray-50/80 to-gray-100/60', // 은은한 그라데이션
               'backdrop-blur-[0.5px]'                               // 미니멀 블러
