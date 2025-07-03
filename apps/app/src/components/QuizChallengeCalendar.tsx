@@ -443,39 +443,45 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex flex-col">
-          <h2 className="text-2xl font-bold text-gray-900">
+      {/* 헤더 - 깔끔한 중앙 정렬 디자인 */}
+      <div className="text-center mb-8">
+        {/* 메인 제목 */}
+        <div className="border-4 border-black rounded-lg py-4 px-8 mb-6 inline-block">
+          <h2 className="text-2xl font-bold text-gray-900 tracking-wide">
             급식퀴즈 챌린지
           </h2>
-          <span className="text-lg font-bold text-green-600 mt-1">
-            ({previousMonthStats.month}월 결과 : {previousMonthStats.correct}/{previousMonthStats.total}개 맞음)
-          </span>
-          {/* 월장원 표시 - 해당월 급식정보 있는 날수 전부 맞추면 수여 */}
-          {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
-            <span className="text-sm text-yellow-600 font-bold">
-              {previousMonthStats.month}월 장원급제 👑
-            </span>
-          )}
         </div>
-        <div className="flex items-center space-x-2">
+        
+        {/* 월 네비게이션 */}
+        <div className="flex items-center justify-center space-x-4 mb-4">
           <button
             onClick={handlePrevMonth}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600"
           >
-            <span className="text-gray-600 text-lg font-bold">‹</span>
+            ‹
           </button>
-          <span className="text-lg font-semibold text-gray-700 min-w-[120px] text-center">
+          <span className="text-3xl font-bold text-blue-700">
             {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
           </span>
           <button
             onClick={handleNextMonth}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600"
           >
-            <span className="text-gray-600 text-lg font-bold">›</span>
+            ›
           </button>
         </div>
+        
+        {/* 성과 표시 */}
+        <div className="text-lg font-bold text-green-600">
+          ( {previousMonthStats.correct}/{previousMonthStats.total}개 맞음 )
+        </div>
+        
+        {/* 월장원 표시 */}
+        {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
+          <div className="text-sm text-yellow-600 font-bold mt-2">
+            {previousMonthStats.month}월 장원급제 👑
+          </div>
+        )}
       </div>
       
       {/* 요일 헤더 */}
