@@ -18,6 +18,14 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>회원 가입 및 관리</li>
             <li>서비스 제공 및 콘텐츠 이용</li>
+            <li><strong>학생 나이대 확인 및 학생 전용 서비스 제공</strong>
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>생일 및 출생년도를 통한 학생 연령대 확인</li>
+                <li>학교, 학년, 반 정보 설정 권한 부여</li>
+                <li>학생들만이 이용할 수 있는 전용 콘텐츠 및 서비스 제공</li>
+                <li>학생 대상 맞춤형 교육 서비스 제공</li>
+              </ul>
+            </li>
             <li>서비스 개선 및 개발</li>
             <li>마케팅 및 광고에의 활용</li>
             <li>법령 및 정책에 따른 공공기관의 요청 시 제공</li>
@@ -59,9 +67,20 @@ export default function PrivacyPolicyPage() {
           <p className="mb-2">회사는 다음의 개인정보 항목을 처리하고 있습니다.</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>필수항목: 이메일 주소, 닉네임, 프로필 이미지</li>
-            <li>선택항목: 학교 정보</li>
+            <li><strong>학생 서비스 이용을 위한 선택항목:</strong>
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li><strong>생일 (생년월일)</strong>: 학생 연령대 확인 및 학생 전용 서비스 제공 목적</li>
+                <li><strong>출생년도</strong>: 학생 연령대 확인 및 학생 전용 서비스 제공 목적</li>
+                <li><strong>학교 정보 (학교명, 학년, 반)</strong>: 학생 대상 맞춤형 교육 서비스 제공 목적</li>
+              </ul>
+            </li>
             <li>자동 수집 항목: 서비스 이용 기록, IP 주소, 쿠키, 접속 로그</li>
           </ul>
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>주의:</strong> 생일 및 출생년도 정보는 학생 연령대 확인을 통해 학생들만이 이용할 수 있는 전용 콘텐츠와 서비스(학교/학년/반 설정 기능 등)를 제공하기 위한 목적으로만 사용됩니다.
+            </p>
+          </div>
         </section>
 
         <section>
