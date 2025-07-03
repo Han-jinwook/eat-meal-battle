@@ -16,6 +16,11 @@ const Footer: React.FC = () => {
         <strong>전화</strong> : 010-2597-7502 &nbsp;|
         <strong>개인정보관리책임자</strong> : 백은숙(beakes@naver.com)
       </div>
+      <div style={{ marginTop: '8px' }}>
+        <a href="/privacy-policy" style={{ color: '#666', textDecoration: 'underline' }}>
+          개인정보처리방침
+        </a>
+      </div>
     </footer>
   );
 };
