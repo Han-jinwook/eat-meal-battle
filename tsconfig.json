@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -15,22 +19,48 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./apps/app/src/*"],
-      "@meal-battle/ui": ["./packages/ui/src"],
-      "@meal-battle/ui/*": ["./packages/ui/src/*"],
-      "@meal-battle/auth": ["./packages/auth/src"],
-      "@meal-battle/auth/*": ["./packages/auth/src/*"],
-      "@meal-battle/utils": ["./packages/utils/src"],
-      "@meal-battle/utils/*": ["./packages/utils/src/*"],
-      "@meal-battle/types": ["./packages/types/src"],
-      "@meal-battle/types/*": ["./packages/types/src/*"]
-    }
+      "@/*": [
+        "./apps/app/src/*"
+      ],
+      "@meal-battle/ui": [
+        "./packages/ui/src"
+      ],
+      "@meal-battle/ui/*": [
+        "./packages/ui/src/*"
+      ],
+      "@meal-battle/auth": [
+        "./packages/auth/src"
+      ],
+      "@meal-battle/auth/*": [
+        "./packages/auth/src/*"
+      ],
+      "@meal-battle/utils": [
+        "./packages/utils/src"
+      ],
+      "@meal-battle/utils/*": [
+        "./packages/utils/src/*"
+      ],
+      "@meal-battle/types": [
+        "./packages/types/src"
+      ],
+      "@meal-battle/types/*": [
+        "./packages/types/src/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "apps/**/*.ts",
     "apps/**/*.tsx",
     "packages/**/*.ts",
-    "packages/**/*.tsx"
+    "packages/**/*.tsx",
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
