@@ -463,7 +463,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           {/* 성과 표시 */}
           <div className="text-lg font-bold text-green-600">
-            ( {previousMonthStats.correct}/{previousMonthStats.total}개 맞음 )
+            ( {monthlyStats.correct}/{monthlyStats.total}개 맞음 )
           </div>
           
           {/* 월 표시 */}
@@ -473,7 +473,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           {/* 월장원 트로피 공간 */}
           <div className="w-8 h-8 flex items-center justify-center">
-            {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
+            {monthlyStats.total > 0 && monthlyStats.correct === monthlyStats.total && (
               <span className="text-2xl">🏆</span>
             )}
           </div>
