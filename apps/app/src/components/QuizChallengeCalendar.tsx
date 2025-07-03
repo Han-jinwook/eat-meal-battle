@@ -443,26 +443,41 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-      {/* 헤더 - 깔끔한 중앙 정렬 디자인 */}
-      <div className="text-center mb-8">
+      {/* 헤더 - 컴팩한 가로 배치 디자인 */}
+      <div className="text-center mb-6">
         {/* 메인 제목 */}
-        <div className="border-4 border-black rounded-lg py-4 px-8 mb-6 inline-block">
-          <h2 className="text-2xl font-bold text-gray-900 tracking-wide">
+        <div className="border-4 border-black rounded-lg py-3 px-6 mb-4 inline-block">
+          <h2 className="text-xl font-bold text-gray-900 tracking-wide">
             급식퀴즈 챌린지
           </h2>
         </div>
         
-        {/* 월 네비게이션 */}
-        <div className="flex items-center justify-center space-x-4 mb-4">
+        {/* 월 네비게이션 및 성과 표시 - 가로 배치 */}
+        <div className="flex items-center justify-center space-x-8">
           <button
             onClick={handlePrevMonth}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600"
           >
             ‹
           </button>
-          <span className="text-3xl font-bold text-blue-700">
-            {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
-          </span>
+          
+          {/* 성과 표시 */}
+          <div className="text-lg font-bold text-green-600">
+            ( {previousMonthStats.correct}/{previousMonthStats.total}개 맞음 )
+          </div>
+          
+          {/* 월 표시 */}
+          <div className="text-xl font-bold text-blue-700">
+            {currentMonth.getMonth() + 1}월
+          </div>
+          
+          {/* 월장원 트로피 공간 */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
+              <span className="text-2xl">🏆</span>
+            )}
+          </div>
+          
           <button
             onClick={handleNextMonth}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600"
@@ -470,18 +485,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             ›
           </button>
         </div>
-        
-        {/* 성과 표시 */}
-        <div className="text-lg font-bold text-green-600">
-          ( {previousMonthStats.correct}/{previousMonthStats.total}개 맞음 )
-        </div>
-        
-        {/* 월장원 표시 */}
-        {previousMonthStats.total > 0 && previousMonthStats.correct === previousMonthStats.total && (
-          <div className="text-sm text-yellow-600 font-bold mt-2">
-            {previousMonthStats.month}월 장원급제 👑
-          </div>
-        )}
       </div>
       
       {/* 요일 헤더 */}
