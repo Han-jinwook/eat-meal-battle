@@ -86,15 +86,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     try {
       setDeletingAccount(true);
       setError(null);
+      
+      // 현재 사용자 정보 가져오기
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('로그인이 필요합니다.');
+      }
+      
       const response = await fetch('/api/delete-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ user_id: user.id })
       });
       const responseData = await response.json();
       if (!response.ok) {
-        throw new Error(responseData.message || '회원 탈퇴 중 오류 발생');
+        throw new Error(responseData.error || '회원 탈퇴 중 오류 발생');
       }
       await supabase.auth.signOut();
       onClose();

@@ -103,13 +103,20 @@ export default function Profile() {
       
       console.log('회원 탈퇴 시작...')
       
+      // 현재 사용자 정보 가져오기
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('로그인이 필요합니다.');
+      }
+      
       // Step 1: API 호출로 DB 데이터 삭제 (코드 중복 제거)
       console.log('회원 탈퇴 API 호출')
       const response = await fetch('/api/delete-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ user_id: user.id })
       })
       
       // API 응답 처리

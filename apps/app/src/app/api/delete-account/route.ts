@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -7,38 +6,58 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     console.log('회원 탈퇴 API 호출 수신')
-    // SupabaseClient 인스턴스를 받아옵니다
-    const supabase = createClient()
     
-    // 현재 로그인된 사용자 정보 가져오기
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    // 요청 본문에서 사용자 ID 가져오기
+    const body = await request.json()
+    const { user_id } = body
     
-    if (userError || !user) {
-      console.error('인증된 사용자를 찾을 수 없음:', userError)
+    if (!user_id) {
+      console.error('사용자 ID가 없습니다.')
       return NextResponse.json(
-        { error: '인증된 사용자를 찾을 수 없습니다.' },
-        { status: 401 }
+        { error: '사용자 ID가 필요합니다.' },
+        { status: 400 }
       )
     }
     
-    console.log('회원 탈퇴 - 사용자 ID:', user.id)
+    console.log('회원 탈퇴 - 사용자 ID:', user_id)
+    
+    // Supabase 클라이언트 생성 (Admin 키 사용)
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
     
     // DB에서 사용자 데이터 삭제 시도
-    const { error: deleteUserDataError } = await supabase
+    const { error: deleteUserDataError } = await supabaseAdmin
       .from('users')
       .delete()
-      .eq('id', user.id)
+      .eq('id', user_id)
     
     if (deleteUserDataError) {
       console.error('사용자 데이터 삭제 오류:', deleteUserDataError)
-      // 에러가 있더라도 계속 진행
-    } else {
-      console.log('DB에서 사용자 데이터 삭제 성공')
-    }
+      return NextResponse.json(
+        { error: '사용자 데이터 삭제 중 오류가 발생했습니다.' },
+        { status: 500 }
+      )
+    } 
     
-    // 세션 삭제로 로그아웃 처리
-    await supabase.auth.signOut()
-    console.log('세션 로그아웃 처리 완료')
+    console.log('DB에서 사용자 데이터 삭제 성공')
+    
+    // Auth에서도 사용자 삭제
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+    
+    if (deleteAuthError) {
+      console.error('Auth 사용자 삭제 오류:', deleteAuthError)
+      // Auth 삭제 실패해도 DB는 삭제됨
+    } else {
+      console.log('Auth에서 사용자 계정 삭제 성공')
+    }
     
     return NextResponse.json({
       success: true,
