@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createAdminClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase-server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +66,16 @@ export async function POST(request: NextRequest) {
     }
     
     // 2단계: Supabase Auth에서 사용자 계정 완전 삭제 (Admin 권한 필요)
-    const adminClient = createAdminClient()
+    const adminClient = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
     const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(user.id)
     
     if (deleteAuthError) {
