@@ -533,12 +533,10 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             cellClasses.push('border-2 border-gray-500');
           }
           
-          // 현재 월이 아닌 날짜 (가짜 날짜) - 우아하게 처리
+          // 현재 월이 아닌 날짜 (가짜 날짜) - 미니멀하게 처리
           if (!day.isCurrentMonth) {
             cellClasses.push(
               'bg-gradient-to-br from-gray-50/80 to-gray-100/60', // 은은한 그라데이션
-              'text-gray-400/70',                                   // 연한 텍스트
-              'border border-dashed border-gray-300/50',            // 점선 테두리
               'backdrop-blur-[0.5px]'                               // 미니멀 블러
             );
           }
@@ -568,7 +566,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               'cursor-pointer',
               'hover:shadow-sm hover:scale-[1.02]',
               'hover:bg-gray-200/40 hover:backdrop-blur-sm',
-              'hover:border-solid hover:border-gray-400/60',
               'transition-all duration-200 ease-in-out'
             );
           }
@@ -595,7 +592,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               } ${
                 day.isToday ? 'text-blue-700 font-bold' : 
                 day.isSelected ? 'text-purple-700 font-semibold' :
-                !day.isCurrentMonth ? 'text-gray-400/60 font-light opacity-70' : 'text-gray-700 font-medium'
+                !day.isCurrentMonth ? 'text-gray-500/80 font-normal' : 'text-gray-700 font-medium'
               }`}>
                 {day.day}
               </span>
