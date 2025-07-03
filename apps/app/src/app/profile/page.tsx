@@ -33,38 +33,29 @@ export default function Profile() {
           console.log('인증된 사용자 정보:', user)
           setUser(user)
           
-          // 사용자 테이블에서 메타데이터 가져오기
+          // 사용자 테이블과 학교 정보를 병렬로 가져오기 (성능 개선)
           setDbStatus('loading')
-          const { data, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single()
+          const [profileResult, schoolResult] = await Promise.allSettled([
+            supabase.from('users').select('*').eq('id', user.id).single(),
+            supabase.from('school_infos').select('*').eq('user_id', user.id).single()
+          ])
           
-          if (profileError) {
-            console.error('사용자 프로필 조회 에러:', profileError)
-            setDbStatus('error')
-            if (profileError.code !== 'PGRST116') { // No records found 에러가 아닐 경우에만 에러 표시
-              setError(`DB 조회 에러: ${profileError.message}`)
-            }
-          } else if (data) {
-            console.log('사용자 DB 프로필:', data)
-            setUserProfile(data)
+          // 사용자 프로필 처리
+          if (profileResult.status === 'fulfilled' && !profileResult.value.error) {
+            console.log('사용자 DB 프로필:', profileResult.value.data)
+            setUserProfile(profileResult.value.data)
             setDbStatus('success')
-            
-            // 학교 정보 가져오기 - user_id로 직접 조회
-            const { data: schoolData, error: schoolError } = await supabase
-              .from('school_infos')
-              .select('*')
-              .eq('user_id', user.id)
-              .single()
-              
-            if (!schoolError && schoolData) {
-              setSchoolInfo(schoolData)
-            }
           } else {
+            console.error('사용자 프로필 조회 에러:', profileResult.value?.error)
             setDbStatus('error')
-            setError('사용자 데이터를 찾을 수 없습니다. DB에 저장되지 않았을 수 있습니다.')
+            if (profileResult.value?.error?.code !== 'PGRST116') {
+              setError(`DB 조회 에러: ${profileResult.value?.error?.message}`)
+            }
+          }
+          
+          // 학교 정보 처리
+          if (schoolResult.status === 'fulfilled' && !schoolResult.value.error) {
+            setSchoolInfo(schoolResult.value.data)
           }
         } else {
           router.push('/login')
@@ -153,8 +144,9 @@ export default function Profile() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto"></div>
-          <p className="text-gray-600">로딩 중...</p>
+          {/* 로딩 스피너 */}
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-lg text-gray-600">프로필 로딩 중...</div>
         </div>
       </div>
     )
