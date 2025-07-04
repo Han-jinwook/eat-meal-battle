@@ -44,37 +44,12 @@ export const createClient = () => {
     // 새 인스턴스 생성 및 저장
     supabaseClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        // 인증 세션 관리 개선 - 테스터 계정 호환성 개선
+        // 인증 세션 관리 개선 - 기본 설정 복구
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        // PKCE 플로우 비활성화 - 호환성 문제 해결
-        // flowType: 'pkce',
-        storageKey: 'sb-auth-token',
-        storage: {
-          getItem: (key) => {
-            try {
-              return localStorage.getItem(key);
-            } catch (error) {
-              console.debug('스토리지 읽기 오류 (무시됨):', error);
-              return null;
-            }
-          },
-          setItem: (key, value) => {
-            try {
-              localStorage.setItem(key, value);
-            } catch (error) {
-              console.debug('스토리지 저장 오류 (무시됨):', error);
-            }
-          },
-          removeItem: (key) => {
-            try {
-              localStorage.removeItem(key);
-            } catch (error) {
-              console.debug('스토리지 삭제 오류 (무시됨):', error);
-            }
-          }
-        },
+        // PKCE 플로우 활성화 (기본 설정 복구)
+        flowType: 'pkce',
       },
       cookies: {
         get(name: string) {

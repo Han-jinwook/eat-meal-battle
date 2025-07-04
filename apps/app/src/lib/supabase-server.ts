@@ -30,19 +30,11 @@ export const createClient = () => {
           }
         }
       },
-      // 세션 관리 개선 및 테스터 계정 호환성 강화
+      // 기본 인증 설정 복구
       auth: {
         detectSessionInUrl: true,
         persistSession: true,
         autoRefreshToken: true
-      },
-      // 쿠키 설정 개선 - 서버와 클라이언트 일관성 유지
-      cookieOptions: {
-        name: 'sb-auth-token-server',
-        lifetime: 60 * 60 * 24 * 7, // 7일
-        domain: '',
-        path: '/',
-        sameSite: 'lax'
       }
     }
   );
