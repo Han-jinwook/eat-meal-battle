@@ -31,12 +31,18 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
 }) => {
   const [championStats, setChampionStats] = useState<ChampionStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isApiCalling, setIsApiCalling] = useState(false);
   const { userSchool } = useUserSchool();
 
   // 장원 통계 데이터 가져오기
   const fetchChampionStats = async (year: number, month: number) => {
-    if (!userSchool) return;
+    if (!userSchool?.school_code || isApiCalling) {
+      console.log('📍 API 호출 차단:', { userSchool: !!userSchool, isApiCalling });
+      return;
+    }
     
+    console.log('🔄 장원 통계 API 호출 시작:', { year, month, school: userSchool.school_code });
+    setIsApiCalling(true);
     setLoading(true);
     try {
       const session = await supabase.auth.getSession();
@@ -127,19 +133,28 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       
     } catch (error) {
       console.error('장원 통계 조회 오류:', error);
+      setChampionStats([]); // 오류 시 빈 배열로 초기화
     } finally {
       setLoading(false);
+      setIsApiCalling(false);
+      console.log('✅ 장원 통계 API 호출 완료');
     }
   };
 
-  // 데이터 로드
+  // 데이터 로드 - 안전한 의존성 배열로 무한 루프 방지
   useEffect(() => {
-    if (userSchool) {
+    if (userSchool?.school_code) {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth() + 1;
-      fetchChampionStats(year, month);
+      
+      // 중복 호출 방지
+      const timeoutId = setTimeout(() => {
+        fetchChampionStats(year, month);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [currentMonth, userSchool]);
+  }, [currentMonth.getFullYear(), currentMonth.getMonth(), userSchool?.school_code]);
 
   if (loading) {
     return (

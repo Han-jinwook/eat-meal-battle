@@ -671,8 +671,8 @@ export default function QuizClient() {
           onRefreshNeeded={() => {}}
         />
         
-        {/* 장원 히스토리 - 완전히 독립된 컴포넌트 */}
-        <ChampionHistory />
+        {/* 장원 히스토리 - 무한 루프 수정 완료 */}
+        <ChampionHistory currentMonth={new Date()} />
       </div>
     </>
   );
