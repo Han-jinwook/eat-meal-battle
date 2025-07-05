@@ -1,41 +1,19 @@
 /**
- * 주/월장원 통계 계산 시스템
+ * 개선된 주/월장원 통계 계산 시스템
  * 
- * 핵심 원칙:
- * - 급식일수 = 정답수 (완전 일치)
- * - ISO 기준 주차 계산 (월요일 기준)
- * - 매주 금요일, 매월 마지막날 결정
+ * 변경사항:
+ * - ChampionCriteriaService 통합
+ * - 신규 테이블 구조 지원 (champion_criteria, user_champion_records, school_champions)
+ * - 기존 로직 호환성 유지
  */
 
 import { createClient } from '@/lib/supabase'
+import { ChampionCriteriaService } from './championCriteriaService'
+import { ChampionStatistics, WeekInfo } from './championCalculator'
 
-export interface ChampionStatistics {
-  user_id: string
-  school_code: string
-  grade: number
-  year: number
-  month: number
-  week_number?: number
-  period_type: 'weekly' | 'monthly'
-  total_meal_days: number    // 실제 급식 제공 일수
-  total_count: number        // 퀴즈 출제 일수
-  correct_count: number      // 유저 정답수
-  accuracy_rate: number
-  avg_answer_time: number
-  is_champion: boolean       // 장원 여부
-  determined_at?: Date
-}
-
-export interface WeekInfo {
-  year: number
-  month: number
-  week_number: number
-  start_date: Date
-  end_date: Date
-}
-
-export class ChampionCalculator {
+export class EnhancedChampionCalculator {
   private supabase = createClient()
+  private criteriaService = new ChampionCriteriaService()
 
   /**
    * ISO 기준 주차 계산 (월요일이 속한 달 기준)
@@ -74,8 +52,6 @@ export class ChampionCalculator {
 
   /**
    * 특정 기간의 급식 제공 일수 계산
-   * 
-   * 로직: meals 테이블에서 해당 기간 + 학교 + 학년의 급식 데이터 카운트
    */
   async calculateMealDays(
     schoolCode: string,
@@ -144,16 +120,11 @@ export class ChampionCalculator {
       const correct_count = results.filter(r => r.is_correct).length
       const total_quiz_days = results.length
       const accuracy_rate = total_quiz_days > 0 ? (correct_count / total_quiz_days) * 100 : 0
-      const avg_answer_time = results.length > 0 
-        ? results.reduce((sum, r) => sum + (r.answer_time || 0), 0) / results.length 
-        : 0
+      
+      const totalAnswerTime = results.reduce((total, r) => total + (r.answer_time || 0), 0)
+      const avg_answer_time = total_quiz_days > 0 ? totalAnswerTime / total_quiz_days : 0
 
-      return {
-        total_quiz_days,
-        correct_count,
-        accuracy_rate,
-        avg_answer_time
-      }
+      return { total_quiz_days, correct_count, accuracy_rate, avg_answer_time }
     } catch (error) {
       console.error('퀴즈 결과 조회 예외:', error)
       return { total_quiz_days: 0, correct_count: 0, accuracy_rate: 0, avg_answer_time: 0 }
@@ -162,6 +133,8 @@ export class ChampionCalculator {
 
   /**
    * 주장원 통계 계산 (특정 주차)
+   * - 기존 호환성 유지
+   * - 새 테이블 구조에도 저장
    */
   async calculateWeeklyStatistics(
     userId: string,
@@ -172,24 +145,71 @@ export class ChampionCalculator {
     weekNumber: number
   ): Promise<ChampionStatistics | null> {
     try {
-      // 해당 주차의 날짜 범위 계산
+      // 주차 정보 계산
       const weekInfo = this.getWeekInfoByWeekNumber(year, month - 1, weekNumber)
-      if (!weekInfo) return null
+      if (!weekInfo) {
+        console.error(`유효하지 않은 주차 정보: ${year}년 ${month}월 ${weekNumber}주차`)
+        return null
+      }
 
-      // 급식일수 계산 (월-금만)
-      const weekdayStart = new Date(weekInfo.start_date)
-      const weekdayEnd = new Date(weekInfo.end_date)
+      // 1. 기존 방식으로 통계 계산 (호환성 유지)
+      const total_meal_days = await this.calculateMealDays(
+        schoolCode, 
+        grade, 
+        weekInfo.start_date, 
+        weekInfo.end_date
+      )
       
-      // 월-금만 계산하도록 조정
-      if (weekdayStart.getDay() === 0) weekdayStart.setDate(weekdayStart.getDate() + 1) // 일요일이면 월요일로
-      if (weekdayEnd.getDay() === 6) weekdayEnd.setDate(weekdayEnd.getDate() - 1) // 토요일이면 금요일로
+      const quizResults = await this.getQuizResults(
+        userId, 
+        schoolCode, 
+        grade, 
+        weekInfo.start_date, 
+        weekInfo.end_date
+      )
+
+      // 2. 신규 방식: 장원 조건 테이블에서 요구 정답수 조회
+      const requiredCount = await this.criteriaService.getWeeklyCriteria(
+        schoolCode,
+        grade,
+        year,
+        month,
+        weekNumber
+      )
+
+      // 장원 판별 (기존 로직 유지: 급식일수 = 정답수)
+      let is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
       
-      const total_meal_days = await this.calculateMealDays(schoolCode, grade, weekdayStart, weekdayEnd)
-      const quizResults = await this.getQuizResults(userId, schoolCode, grade, weekdayStart, weekdayEnd)
+      // 신규 로직: 만약 장원 조건 테이블에 데이터가 있으면 그것을 우선 사용
+      if (requiredCount > 0) {
+        is_champion = quizResults.correct_count === requiredCount
+      }
 
-      // 장원 조건: 급식일수 = 정답수
-      const is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
+      // 3. 신규 테이블 업데이트
+      // 3-1. 유저의 주간 정답수 업데이트
+      await this.criteriaService.updateUserWeeklyCorrect(
+        userId,
+        schoolCode,
+        grade,
+        year,
+        month,
+        weekNumber,
+        quizResults.correct_count
+      )
+      
+      // 3-2. 장원 상태 업데이트
+      if (is_champion) {
+        await this.criteriaService.checkAndUpdateChampionStatus(
+          userId,
+          schoolCode,
+          grade,
+          year,
+          month,
+          weekNumber
+        )
+      }
 
+      // 4. 기존 형식으로 반환 (호환성 유지)
       return {
         user_id: userId,
         school_code: schoolCode,
@@ -198,7 +218,7 @@ export class ChampionCalculator {
         month,
         week_number: weekNumber,
         period_type: 'weekly',
-        total_meal_days,
+        total_meal_days: requiredCount > 0 ? requiredCount : total_meal_days,
         total_count: quizResults.total_quiz_days,
         correct_count: quizResults.correct_count,
         accuracy_rate: quizResults.accuracy_rate,
@@ -214,6 +234,8 @@ export class ChampionCalculator {
 
   /**
    * 월장원 통계 계산
+   * - 기존 호환성 유지
+   * - 새 테이블 구조에도 저장
    */
   async calculateMonthlyStatistics(
     userId: string,
@@ -223,16 +245,54 @@ export class ChampionCalculator {
     month: number
   ): Promise<ChampionStatistics | null> {
     try {
-      // 해당 월의 시작일/종료일
+      // 1. 기존 방식으로 통계 계산 (호환성 유지)
       const startDate = new Date(year, month - 1, 1)
       const endDate = new Date(year, month, 0)
 
-      const total_meal_days = await this.calculateMealDays(schoolCode, grade, startDate, endDate)
-      const quizResults = await this.getQuizResults(userId, schoolCode, grade, startDate, endDate)
+      const total_meal_days = await this.calculateMealDays(
+        schoolCode, 
+        grade, 
+        startDate, 
+        endDate
+      )
+      
+      const quizResults = await this.getQuizResults(
+        userId, 
+        schoolCode, 
+        grade, 
+        startDate, 
+        endDate
+      )
 
-      // 장원 조건: 급식일수 = 정답수
-      const is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
+      // 2. 신규 방식: 장원 조건 테이블에서 요구 정답수 조회
+      const requiredCount = await this.criteriaService.getMonthlyCriteria(
+        schoolCode,
+        grade,
+        year,
+        month
+      )
 
+      // 장원 판별 (기존 로직 유지: 급식일수 = 정답수)
+      let is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
+      
+      // 신규 로직: 만약 장원 조건 테이블에 데이터가 있으면 그것을 우선 사용
+      if (requiredCount > 0) {
+        is_champion = quizResults.correct_count === requiredCount
+      }
+
+      // 3. 신규 테이블 업데이트
+      // 3-1. 장원 상태 업데이트 (월간은 week_number 없음)
+      if (is_champion) {
+        await this.criteriaService.checkAndUpdateChampionStatus(
+          userId,
+          schoolCode,
+          grade,
+          year,
+          month
+        )
+      }
+
+      // 4. 기존 형식으로 반환 (호환성 유지)
       return {
         user_id: userId,
         school_code: schoolCode,
@@ -240,7 +300,7 @@ export class ChampionCalculator {
         year,
         month,
         period_type: 'monthly',
-        total_meal_days,
+        total_meal_days: requiredCount > 0 ? requiredCount : total_meal_days,
         total_count: quizResults.total_quiz_days,
         correct_count: quizResults.correct_count,
         accuracy_rate: quizResults.accuracy_rate,
@@ -307,7 +367,7 @@ export class ChampionCalculator {
   }
 
   /**
-   * 통계 저장
+   * 통계 저장 (기존 quiz_champion_history 테이블 호환용)
    */
   async saveStatistics(stats: ChampionStatistics): Promise<boolean> {
     try {
@@ -344,7 +404,20 @@ export class ChampionCalculator {
       return false
     }
   }
+  
+  /**
+   * 사용자의 주간/월간 장원 기록을 조회합니다
+   * @param userId - 사용자 ID
+   * @param schoolCode - 학교 코드
+   * @param grade - 학년
+   * @param year - 년도
+   * @param month - 월 (1-12)
+   * @returns 사용자의 장원 기록
+   */
+  async getUserChampionRecords(userId: string, schoolCode: string, grade: number, year: number, month: number) {
+    return this.criteriaService.getUserChampionRecords(userId, schoolCode, grade, year, month);
+  }
 }
 
 // 싱글톤 인스턴스
-export const championCalculator = new ChampionCalculator()
+export const enhancedChampionCalculator = new EnhancedChampionCalculator()

@@ -3,6 +3,65 @@
 netli / functions   - cron-meals.js
 netli / functions   - manual-generate-meal-quiz.js
 
+=== 장원 시스템 자동화 (2025년 7월 5일) ===
+
+## 1. 자동화 구조 개요
+
+### 1.1 핵심 기능
+- **NEIS 급식 데이터 기반 장원 조건 자동 계산**
+- **실시간 장원 상태 업데이트 (퀴즈 제출 시)**
+- **미제출 자동 실패 처리 (마감 시간 이후)**
+- **신규 학교 자동 등록 지원**
+
+### 1.2 시스템 구성요소
+- **신규 테이블**: `champion_criteria`, `user_champion_records`
+- **Netlify Functions**: 
+  - `initialize-champion-criteria.js`: 초기 데이터 설정 (6-8월)
+  - `monthly-champion-criteria.js`: 매월 1일 다음 달 급식일 데이터 수집
+  - `update-champion-status-on-quiz-submit.js`: 퀴즈 제출 시 실시간 상태 업데이트
+  - `mark-missing-submissions-failed.js`: 금요일 마감후 미제출자 실패 처리
+  - `school-registration-hook.js`: 학교 등록 시 자동 데이터 설정
+
+### 1.3 환경 변수
+- `CHAMPION_TEST_MODE`: 테스트 모드 활성화 ('true'/'false')
+- `USE_NEW_CHAMPION_SYSTEM`: 새 시스템 활성화 ('true'/'false')
+
+## 2. 새 장원 시스템 작동 방식
+
+### 2.1 장원 조건 설정 프로세스
+1. **초기 설정**: `initialize-champion-criteria` 함수로 테스트용 6-8월 데이터 일괄 설정
+2. **월간 업데이트**: 매월 1일 자동으로 다음 달의 장원 조건 계산 및 저장
+3. **학교별 처리**: 각 학교와 학년별로 주차별/월별 급식 일수 계산
+
+### 2.2 장원 상태 결정 프로세스
+1. **실시간 업데이트**: 
+   - 퀴즈 제출 시마다 즉시 장원 상태 계산 (정답→진행중, 오답→실패)
+   - 필요 정답 수 충족 시 즉시 장원으로 표시
+2. **자동 실패 처리**: 
+   - 금요일 오후 1시 10분 실행
+   - 퀴즈 미제출 사용자를 자동으로 실패로 표시
+3. **기존 시스템과 병행**: 
+   - 두 시스템 동시 운영으로 안정성 확보
+   - 기존 `quiz_champion_history` 테이블도 함께 업데이트
+
+### 2.3 테스트 모드 지원
+- `CHAMPION_TEST_MODE=true` 설정 시:
+  - 과거 기간에 대한 퀴즈 제출 허용
+  - 자동 실패 처리 비활성화
+  - 테스트 데이터와 실제 데이터 구분 가능
+
+## 3. 주요 스케줄러 설정
+- 매월 1일 01:00 - 다음 달 장원 조건 설정
+- 매주 금요일 13:10 - 미제출자 자동 실패 처리
+- 기존 스케줄러 유지 (주간/월간 집계)
+
+## 4. 안전 전환 가이드
+1. `CHAMPION_TEST_MODE=true`, `USE_NEW_CHAMPION_SYSTEM=false`로 시작
+2. 초기 데이터 설정: `initialize-champion-criteria` 실행
+3. 테스트 기간 동안 두 시스템 병행 운영
+4. 검증 완료 후 `USE_NEW_CHAMPION_SYSTEM=true` 설정
+5. 최종 안정화 후 `CHAMPION_TEST_MODE=false` 설정
+
 ===## 주장원/월장원 시스템 구현 🔄 REDESIGNING (2025년 7월 5일 재설계)
 
 ### 📋 **정확한 장원 조건 정의**
@@ -80,3 +139,62 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 4. 로그아웃 되어 메인페이지로 이동
 5. 로그인 시도시 사용자 없음 오류 확인
 6. Supabase Dashboard에서 Authentication 및 Database 완전 삭제 확인
+
+
+장원(Champion) 시스템 프로세스 설명
+핵심 테이블 및 필드
+1. quiz_champion_history 테이블
+주요 필드:
+id, user_id, school_code, grade, year, month, week_number
+period_type ('weekly' 또는 'monthly')
+total_meal_days (급식 제공 일수)
+total_count (퀴즈 출제 일수)
+correct_count (정답 수)
+accuracy_rate (정확도)
+avg_answer_time (평균 응답 시간)
+is_champion (장원 여부)
+is_current (현재 상태 여부)
+2. meals 테이블
+주요 필드: date, school_code, grade (급식 정보)
+3. quiz_results 테이블
+주요 필드: user_id, date, school_code, grade, is_correct, answer_time
+프로세스 흐름
+1. 클라이언트 요청 (ChampionHistory.tsx)
+사용자가 ChampionHistory 컴포넌트를 로드하면:
+주간/월간 통계 요청을 GET /api/champion/calculate로 전송
+URLSearchParams로 user_id, school_code, grade, year, month, week_number, period_type 파라미터 전달
+2. API 처리 (route.ts)
+GET 요청 처리:
+URL 쿼리 파라미터 파싱
+DB에서 기존 통계 조회
+통계가 없으면 자동 계산 및 저장
+POST 요청 처리:
+본문에서 파라미터 추출
+통계 계산 및 저장
+3. 통계 계산 (championCalculator.ts)
+주간 통계 계산:
+getWeekInfoByWeekNumber
+: 주어진 year, month, week_number로 주 시작일/종료일 계산
+calculateMealDays
+: 해당 주의 급식 일수 계산 (meals 테이블 사용)
+getQuizResults
+: 해당 주의 퀴즈 결과 조회 (quiz_results 테이블 사용)
+장원 결정: 급식일수 = 정답수 조건 확인
+월간 통계 계산:
+해당 월의 시작일/종료일 계산
+월별 급식 일수 및 퀴즈 결과 조회
+장원 결정
+통계 저장:
+saveStatistics
+: 계산된 통계를 quiz_champion_history 테이블에 저장
+중복 키 충돌 시 upsert로 갱신
+4. 클라이언트 응답 처리
+API 응답 데이터를 상태에 저장
+필드명 매핑 처리 (correct_count → correct_answers)
+주간/월간 장원 정보 표시
+이슈 해결
+DB는 correct_count 필드를 사용하지만 클라이언트는 correct_answers 필드 참조
+API 응답에서 필드 매핑을 추가하여 호환성 유지
+getWeekInfoByWeekNumber
+ 함수에 유효성 검사 추가로 존재하지 않는 주차 요청 시 안전 처리
+이 시스템은 사용자의 퀴즈 결과와 급식 데이터를 기반으로 주간/월간 장원을 계산하고 그 결과를 히스토리로 저장/표시합니다.

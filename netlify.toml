@@ -17,12 +17,27 @@
 [functions.verify-meal-image]
   timeout = 60
 
+[functions.initialize-champion-criteria]
+  timeout = 120
+
+[functions.monthly-champion-criteria]
+  timeout = 120
+
+[functions.update-champion-status-on-quiz-submit]
+  timeout = 30
+
+[functions.mark-missing-submissions-failed]
+  timeout = 120
+
 [build.environment]
   NODE_VERSION = "18"
   # 빌드 속도 최적화 환경변수 (기능 변경 없음)
   NEXT_TELEMETRY_DISABLED = "1"
   NPM_FLAGS = "--prefer-offline --no-audit --no-fund"
   NODE_OPTIONS = "--max-old-space-size=4096"
+  # 장원 시스템 환경 변수
+  CHAMPION_TEST_MODE = "true"
+  USE_NEW_CHAMPION_SYSTEM = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -31,6 +46,46 @@
 
 [functions.auto-generate-meal-images]
   timeout = 60
+
+# 주간 장원 조건 계산 스케줄러 (매주 금요일 오전 9시)
+[[plugins]]
+  package = "@netlify/plugin-scheduled-functions"
+
+  [plugins.inputs]
+    name = "weekly-champion-criteria"
+    schedule = "0 9 * * 5"
+    path = "/.netlify/functions/scheduled-champion-criteria"
+    function = "weeklyChampionCriteria"
+
+# 월간 장원 조건 계산 스케줄러 (매월 말일 오전 9시)
+[[plugins]]
+  package = "@netlify/plugin-scheduled-functions"
+
+  [plugins.inputs]
+    name = "monthly-champion-criteria"
+    schedule = "0 9 L * *"
+    path = "/.netlify/functions/scheduled-champion-criteria"
+    function = "monthlyChampionCriteria"
+
+# 월간 장원 조건 자동 설정 스케줄러 (매월 1일 오전 1시)
+[[plugins]]
+  package = "@netlify/plugin-scheduled-functions"
+
+  [plugins.inputs]
+    name = "monthly-champion-criteria-scheduler"
+    schedule = "0 1 1 * *"
+    path = "/.netlify/functions/monthly-champion-criteria"
+    function = "handler"
+
+# 미제출 사용자 실패 처리 스케줄러 (매주 금요일 오후 1시 10분)
+[[plugins]]
+  package = "@netlify/plugin-scheduled-functions"
+
+  [plugins.inputs]
+    name = "mark-missing-submissions-failed"
+    schedule = "10 13 * * 5"
+    path = "/.netlify/functions/mark-missing-submissions-failed"
+    function = "handler"
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
