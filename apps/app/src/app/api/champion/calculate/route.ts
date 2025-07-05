@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
         data: {
           ...result,
           is_champion: result.is_champion,
-          total_meal_days: result.total_meal_days || 0
+          total_meal_days: result.total_meal_days || 0,
+          correct_answers: result.correct_count // 필드 이름 매핑 추가
         }
       })
     }
@@ -199,7 +200,8 @@ export async function GET(request: NextRequest) {
           data: {
             ...statistics,
             is_champion: statistics.is_champion,
-            total_meal_days: statistics.total_meal_days || 0
+            total_meal_days: statistics.total_meal_days || 0,
+            correct_answers: statistics.correct_count // 필드 이름 매핑 추가
           }
         })
       } else {
@@ -218,6 +220,7 @@ export async function GET(request: NextRequest) {
             total_meal_days: 0,
             total_count: 0,
             correct_count: 0,
+            correct_answers: 0, // 추가된 필드
             accuracy_rate: 0,
             avg_answer_time: 0,
             is_champion: false
@@ -240,6 +243,7 @@ export async function GET(request: NextRequest) {
           total_meal_days: 0,
           total_count: 0,
           correct_count: 0,
+          correct_answers: 0, // 추가된 필드
           accuracy_rate: 0,
           avg_answer_time: 0,
           is_champion: false
