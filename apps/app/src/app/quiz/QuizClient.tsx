@@ -7,6 +7,7 @@ import useUserSchool from '@/hooks/useUserSchool';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
+import ChampionHistory from '@/components/ChampionHistory';
 
 // Quiz type definition
 type Quiz = {
@@ -669,6 +670,9 @@ export default function QuizClient() {
           }}
           onRefreshNeeded={() => {}}
         />
+        
+        {/* 장원 히스토리 - 완전히 독립된 컴포넌트 */}
+        <ChampionHistory />
       </div>
     </>
   );
