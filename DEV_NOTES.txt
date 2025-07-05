@@ -3,56 +3,46 @@
 netli / functions   - cron-meals.js
 netli / functions   - manual-generate-meal-quiz.js
 
-===## 주장원/월장원 시스템 구현 ✅ COMPLETED
+===## 주장원/월장원 시스템 구현 🔄 REDESIGNING (2025년 7월 5일 재설계)
 
-### 적용된 조건 (2025년 7월 3일 최종 구현)
-- 주장원: 해당 주의 급식정보 있는 날수를 전부 맞추면 수여 (횟수 상관없이)
-- 월장원: 해당월의 급식정보 있는 날수를 전부 맞추면 수여 (횟수 상관없이)
-  * 휴일/방학으로 퀴즈 1개만 있어도 맞추면 수여
-  * 유연하고 공정한 기준 적용
+### 📋 **정확한 장원 조건 정의**
 
-### UI 표시 위치
-- 주장원: 캘린더 오른쪽 8번째 열(주장원 열)에 작은 트로피 🏆
-- 월장원: 월별 결과 텍스트 옆에 큰 트로피 👑
+#### 🏆 **주장원 조건** (ISO 기준)
+- **주차 기준**: "각 주차는 '해당 주의 월요일이 속한 달'을 기준으로 묶어 ○월 n주 장원으로 명명"
+- **급식일수 조건**: 해당 주 학교별 실제 급식 제공일수와 유저 정답수가 **완전 일치**
+- **결정 시점**: 매주 금요일 (급식 실제 발생 확인 + 마지막 퀴즈 완료 후)
+- **예시**: 7월 2주차에 급식 3일 제공 → 3일 모두 정답 → 주장원
 
-### 구현 완료 사항
-- ✅ 주장원 로직: weekTotal > 0 && weekCorrect === weekTotal
-- ✅ 월장원 로직: total > 0 && correct === total
-- ✅ 주장원 UI: 트로피 활성화 완료
-- ✅ 월장원 UI: 👑 아이콘으로 변경 완료
-- ✅ 기존 기능 보존: 퀴즈 로직 건드리지 않음
+#### 👑 **월장원 조건**
+- **급식일수 조건**: 해당월 학교별 실제 급식 제공 총일수와 유저 정답수가 **완전 일치**
+- **결정 시점**: 매월 마지막날 최종 집계
+- **예시**: 7월 총 급식 15일 제공 → 15일 모두 정답 → 월장원
 
-### 🔍 검증 필요 사항 (차후 테스트)
-
-#### 코드 위치 정보
-- 파일: QuizChallengeCalendar.tsx
-- 주장원 로직: 라인 188 (calculateTrophies 함수 내)
-- 주장원 UI: 라인 505-513 (주장원 트로피 셀)
-- 월장원 로직: 라인 455-459 (월별 결과 표시 부분)
-
-#### 테스트 시나리오
-1. **주장원 테스트**
-   - 한 주에 퀴즈 1개만 있고 맞춘 경우 → 🏆 표시되어야 함
-   - 한 주에 퀴즈 3개 있고 2개만 맞춘 경우 → 🏆 표시 안됨
-   - 한 주에 퀴즈 5개 있고 5개 다 맞춘 경우 → 🏆 표시되어야 함
-   - 한 주에 퀴즈가 없는 경우 → 🏆 표시 안됨
-
-2. **월장원 테스트**
-   - 한 달에 퀴즈 1개만 있고 맞춘 경우 → 👑 표시되어야 함
-   - 한 달에 퀴즈 15개 있고 14개만 맞춘 경우 → 👑 표시 안됨
-   - 한 달에 퀴즈 20개 있고 20개 다 맞춘 경우 → 👑 표시되어야 함
-   - 한 달에 퀴즈가 없는 경우 → 👑 표시 안됨
-
-#### 확인해야 할 UI 요소
-- 캘린더 오른쪽 8번째 열(주장원 열)에 🏆 아이콘
-- 월별 결과 텍스트 아래 "X월 장원급제 👑" 텍스트
-- 기존 퀴즈 UI/기능에 영향 없는지 확인
-
-#### 예상 동작
-- 휴일/방학으로 퀴즈가 적어도 100% 정답 시 트로피 수여
-- 주별/월별 통계와 트로피 조건 일치 여부 확인
-- 트로피 표시 타이밍: 해당 주/월 완료 시점
-
+### 🗃️ **새로운 DB 스키마** (기존 테이블과 완전 독립)
+```sql
+CREATE TABLE quiz_champion_statistics (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  school_id BIGINT REFERENCES schools(id),
+  
+  -- 기간 정보 (ISO 기준)
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL, 
+  week_number INTEGER, -- 주장원용 (1-6주)
+  period_type TEXT NOT NULL CHECK (period_type IN ('weekly', 'monthly')),
+  
+  -- 급식/퀴즈 통계
+  total_meal_days INTEGER NOT NULL,    -- 해당 기간 실제 급식 제공일수
+  total_quiz_days INTEGER NOT NULL,    -- 해당 기간 퀴즈 출제일수
+  correct_answers INTEGER NOT NULL,    -- 유저 정답수
+  
+  -- 장원 결과
+  is_champion BOOLEAN DEFAULT FALSE,   -- 장원 여부
+  determined_at TIMESTAMP,             -- 결정 시점
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, school_id, year, month, week_number, period_type)
+);
 ===
 
 ### 탈퇴 문제 해결 (2025년 7월 3일)

@@ -185,7 +185,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       trophies.push({
         week: currentWeek,
-        earned: weekTotal > 0 && weekCorrect === weekTotal, // 해당 주 급식정보 있는 날수 전부 맞추면 수여
+        earned: weekTotal >= 3 && weekCorrect === weekTotal, // 최소 3문제 이상 있고 모두 정답이어야 트로피 수여
         total_correct: weekCorrect,
         total_available: weekTotal
       });
