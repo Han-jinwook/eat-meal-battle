@@ -51,35 +51,44 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       const stats: ChampionStats[] = [];
       const userId = session.data.session.user.id;
       
-      // 주별 통계 (1-4주) - GET 방식으로 변경
-      const weeklyPromises = [1, 2, 3, 4].map(async (week) => {
+      // 주별 통계 (1-4주)      // 주별 통계 API 호출
+      const weeks = [1, 2, 3, 4];
+      const weeklyPromises = weeks.map(async (week) => {
         try {
           const params = new URLSearchParams({
-            user_id: userId,
+            user_id: userSchool.user_id,
             school_code: userSchool.school_code,
-            grade: String(userSchool.grade || 1),
-            year: String(currentMonth.getFullYear()),
-            month: String(currentMonth.getMonth() + 1),
-            week_number: String(week),
+            grade: userSchool.grade.toString(),
+            year: currentMonth.getFullYear().toString(),
+            month: (currentMonth.getMonth() + 1).toString(),
+            week_number: week.toString(),
             period_type: 'weekly'
           })
 
-          const response = await fetch(`/api/champion/calculate?${params.toString()}`)
+          const url = `/api/champion/calculate?${params.toString()}`
+          console.log(`🔍 주 ${week} API 요청:`, url)
 
+          const response = await fetch(url)
           if (!response.ok) {
-            console.warn(`주 ${week} 통계 조회 실패:`, response.status, await response.text())
-            return { week, is_champion: false, error: true }
+            console.warn(`주 ${week} API 응답 실패:`, response.status)
+            return {
+              week,
+              is_champion: false,
+              total_meal_days: 0,
+              correct_count: 0
+            }
           }
-
+          
           const result = await response.json()
           console.log(`🔍 주 ${week} API 응답:`, result)
           
-          const data = result.data || {}
+          // 안전한 데이터 접근
+          const data = result?.data || {}
           return {
             week,
-            is_champion: data.is_champion || false,
-            total_meal_days: data.total_meal_days || 0,
-            correct_count: data.correct_count || 0
+            is_champion: Boolean(data?.is_champion) || false,
+            total_meal_days: Number(data?.total_meal_days) || 0,
+            correct_count: Number(data?.correct_answers) || 0 // correct_answers 필드 사용
           }
         } catch (error) {
           console.warn(`주 ${week} 통계 조회 예외:`, error)
@@ -89,31 +98,36 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
 
       // 월별 통계 - GET 방식으로 변경
       const monthlyPromise = (async () => {
+        // 월별 통계 API 호출
+        const monthlyParams = new URLSearchParams({
+          user_id: userSchool.user_id,
+          school_code: userSchool.school_code,
+          grade: userSchool.grade.toString(),
+          year: currentMonth.getFullYear().toString(),
+          month: (currentMonth.getMonth() + 1).toString(),
+          period_type: 'monthly'
+        })
+
+        const monthlyUrl = `/api/champion/calculate?${monthlyParams.toString()}`
+        console.log('🔍 월별 API 요청:', monthlyUrl)
+
+        let monthlyData = { is_champion: false, total_meal_days: 0, correct_count: 0 }
         try {
-          const params = new URLSearchParams({
-            user_id: userId,
-            school_code: userSchool.school_code,
-            grade: String(userSchool.grade || 1),
-            year: String(currentMonth.getFullYear()),
-            month: String(currentMonth.getMonth() + 1),
-            period_type: 'monthly'
-          })
-
-          const response = await fetch(`/api/champion/calculate?${params.toString()}`)
-
+          const response = await fetch(monthlyUrl)
           if (!response.ok) {
-            console.warn('월별 통계 조회 실패:', response.status, await response.text())
-            return { is_champion: false, error: true }
+            console.warn('월별 API 응답 실패:', response.status)
+            return monthlyData
           }
-
+          
           const result = await response.json()
           console.log('🔍 월별 API 응답:', result)
           
-          const data = result.data || {}
+          // 안전한 데이터 접근
+          const monthlyResult = result?.data || {}
           return {
-            is_champion: data.is_champion || false,
-            total_meal_days: data.total_meal_days || 0,
-            correct_count: data.correct_count || 0
+            is_champion: Boolean(monthlyResult?.is_champion) || false,
+            total_meal_days: Number(monthlyResult?.total_meal_days) || 0,
+            correct_count: Number(monthlyResult?.correct_answers) || 0 // correct_answers 필드 사용
           }
         } catch (error) {
           console.warn('월별 통계 조회 예외:', error)
