@@ -72,7 +72,10 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           
           if (response.ok) {
             const result = await response.json();
-            if (result.success && result.data && result.data.total_meal_days > 0) {
+            console.log(`📊 ${week}주차 API 응답:`, result);
+            
+            // 데이터가 있으면 표시 (장원 여부와 관계없이)
+            if (result.success && result.data) {
               stats.push({
                 period_type: 'weekly',
                 period_label: `${year}년 ${month}월 ${week}주`,
@@ -81,9 +84,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                 class_count: 0, // TODO: API에서 반별 통계 추가 필요
                 grade_count: 0, // TODO: API에서 학년별 통계 추가 필요
                 school_count: 0, // TODO: API에서 학교별 통계 추가 필요
-                total_meal_days: result.data.total_meal_days,
+                total_meal_days: result.data.total_meal_days || 0,
                 total_students: 0 // TODO: 추가 필요
               });
+            } else {
+              console.log(`❌ ${week}주차 데이터 없음:`, result);
             }
           }
         } catch (error) {
@@ -110,6 +115,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         
         if (response.ok) {
           const result = await response.json();
+          console.log('📊 월장원 API 응답:', result);
+          
           if (result.success && result.data) {
             stats.push({
               period_type: 'monthly',
@@ -119,9 +126,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
               class_count: 0, // TODO: API에서 반별 통계 추가 필요
               grade_count: 0, // TODO: API에서 학년별 통계 추가 필요
               school_count: 0, // TODO: API에서 학교별 통계 추가 필요
-              total_meal_days: result.data.total_meal_days,
+              total_meal_days: result.data.total_meal_days || 0,
               total_students: 0 // TODO: 추가 필요
             });
+          } else {
+            console.log('❌ 월장원 데이터 없음:', result);
           }
         }
       } catch (error) {
@@ -172,12 +181,15 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
     return (
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mt-6">
         <h3 className="text-lg font-bold text-center mb-4 border-2 border-black rounded-lg py-2">
-          급식퀴즈 장원
+          급식장원 History
         </h3>
         <div className="text-center py-8 text-gray-500">
-          <div className="text-4xl mb-2">📊</div>
-          <p>아직 이번 달 급식이 시작되지 않았습니다.</p>
-          <p className="text-sm">퀴즈를 풀어보세요!</p>
+          <div className="text-4xl mb-2">🔍</div>
+          <p>장원 데이터를 불러오는 중 문제가 발생했습니다.</p>
+          <p className="text-sm">API 응답: {championStats.length}개 항목</p>
+          <p className="text-xs text-gray-400 mt-2">
+            {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월 데이터 조회 중...
+          </p>
         </div>
       </div>
     );
@@ -186,7 +198,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mt-6">
       <h3 className="text-lg font-bold text-center mb-4 border-2 border-black rounded-lg py-2">
-        급식퀴즈 장원
+        급식장원 History
       </h3>
       
       <div className="overflow-x-auto">
