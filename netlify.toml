@@ -47,41 +47,33 @@
 [functions.auto-generate-meal-images]
   timeout = 60
 
-# 주간 장원 조건 계산 스케줄러 (매주 금요일 오전 9시)
+# 모든 스케줄된 함수를 하나의 플러그인으로 통합
 [[plugins]]
   package = "@netlify/plugin-scheduled-functions"
 
-  [plugins.inputs]
+  # 주간 장원 조건 계산 스케줄러 (매주 금요일 오전 9시)
+  [[plugins.inputs.jobs]]
     name = "weekly-champion-criteria"
     schedule = "0 9 * * 5"
     path = "/.netlify/functions/scheduled-champion-criteria"
     function = "weeklyChampionCriteria"
 
-# 월간 장원 조건 계산 스케줄러 (매월 말일 오전 9시)
-[[plugins]]
-  package = "@netlify/plugin-scheduled-functions"
-
-  [plugins.inputs]
+  # 월간 장원 조건 계산 스케줄러 (매월 말일 오전 9시)
+  [[plugins.inputs.jobs]]
     name = "monthly-champion-criteria"
     schedule = "0 9 L * *"
     path = "/.netlify/functions/scheduled-champion-criteria"
     function = "monthlyChampionCriteria"
 
-# 월간 장원 조건 자동 설정 스케줄러 (매월 1일 오전 1시)
-[[plugins]]
-  package = "@netlify/plugin-scheduled-functions"
-
-  [plugins.inputs]
+  # 월간 장원 조건 자동 설정 스케줄러 (매월 1일 오전 1시)
+  [[plugins.inputs.jobs]]
     name = "monthly-champion-criteria-scheduler"
     schedule = "0 1 1 * *"
     path = "/.netlify/functions/monthly-champion-criteria"
     function = "handler"
 
-# 미제출 사용자 실패 처리 스케줄러 (매주 금요일 오후 1시 10분)
-[[plugins]]
-  package = "@netlify/plugin-scheduled-functions"
-
-  [plugins.inputs]
+  # 미제출 사용자 실패 처리 스케줄러 (매주 금요일 오후 1시 10분)
+  [[plugins.inputs.jobs]]
     name = "mark-missing-submissions-failed"
     schedule = "10 13 * * 5"
     path = "/.netlify/functions/mark-missing-submissions-failed"
