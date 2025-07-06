@@ -36,27 +36,36 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
 
   // 장원 통계 데이터 가져오기
   const fetchChampionStats = useCallback(async () => {
-    if (!userSchool?.school_code || isApiCalling) {
-      console.log('❌ API 호출 차단:', { userSchool: !!userSchool, isApiCalling });
+    if (!userSchool?.school_code) {
+      console.log('❌ API 호출 차단: userSchool 정보 없음');
+      return;
+    }
+    
+    if (isApiCalling) {
+      console.log('❌ API 호출 차단: 이미 호출 중');
       return;
     }
     
     console.log('🔄 장원 통계 API 호출 시작:', { school: userSchool.school_code });
     setIsApiCalling(true);
     setLoading(true);
+    
     try {
       const session = await supabase.auth.getSession();
-      if (!session.data.session) return;
+      if (!session.data.session) {
+        console.log('❌ 세션 정보 없음');
+        return;
+      }
 
       const stats: ChampionStats[] = [];
-      const userId = session.data.session.user.id;
+      const userId = session.data.session.user.id; // 올바른 user_id 사용
       
-      // 주별 통계 (1-4주)      // 주별 통계 API 호출
+      // 주별 통계 (1-4주) API 호출
       const weeks = [1, 2, 3, 4];
       const weeklyPromises = weeks.map(async (week) => {
         try {
           const params = new URLSearchParams({
-            user_id: userSchool.user_id,
+            user_id: userId, // 수정: session에서 가져온 userId 사용
             school_code: userSchool.school_code,
             grade: userSchool.grade.toString(),
             year: currentMonth.getFullYear().toString(),
@@ -88,7 +97,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             week,
             is_champion: Boolean(data?.is_champion) || false,
             total_meal_days: Number(data?.total_meal_days) || 0,
-            correct_count: Number(data?.correct_answers) || 0 // correct_answers 필드 사용
+            correct_count: Number(data?.correct_count) || 0
           }
         } catch (error) {
           console.warn(`주 ${week} 통계 조회 예외:`, error)
@@ -96,11 +105,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         }
       })
 
-      // 월별 통계 - GET 방식으로 변경
+      // 월별 통계 API 호출
       const monthlyPromise = (async () => {
         // 월별 통계 API 호출
         const monthlyParams = new URLSearchParams({
-          user_id: userSchool.user_id,
+          user_id: userId, // 수정: session에서 가져온 userId 사용
           school_code: userSchool.school_code,
           grade: userSchool.grade.toString(),
           year: currentMonth.getFullYear().toString(),
@@ -127,7 +136,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           return {
             is_champion: Boolean(monthlyResult?.is_champion) || false,
             total_meal_days: Number(monthlyResult?.total_meal_days) || 0,
-            correct_count: Number(monthlyResult?.correct_answers) || 0 // correct_answers 필드 사용
+            correct_count: Number(monthlyResult?.correct_count) || 0
           }
         } catch (error) {
           console.warn('월별 통계 조회 예외:', error)
@@ -147,7 +156,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       // 주별 통계 데이터 가공
       const weeklyStats = weeklyResults.map((result) => {
         return {
-          period_type: 'weekly',
+          period_type: 'weekly' as const,
           period_label: `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월 ${result.week}주`,
           my_record: result.is_champion ? '주장원' : 'pass',
           me_count: result.is_champion ? 1 : 0,
@@ -160,9 +169,9 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       })
 
       // 월별 통계 데이터 가공
-      const monthlyStats = {
+      const monthlyStats: ChampionStats = {
         period_type: 'monthly',
-        period_label: `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월 전체`,
+        period_label: `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`,
         my_record: monthlyResult.is_champion ? '월장원' : 'pass',
         me_count: monthlyResult.is_champion ? 1 : 0,
         class_count: 0, // TODO: API에서 반별 통계 추가 필요
@@ -178,18 +187,18 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       console.error('장원 통계 조회 오류:', error);
       setChampionStats([]); // 오류 시 빈 배열로 초기화
     } finally {
-      setLoading(false);
       setIsApiCalling(false);
+      setLoading(false);
       console.log('✅ 장원 통계 API 호출 완료');
     }
   }, [currentMonth.getFullYear(), currentMonth.getMonth(), userSchool?.school_code]);
 
-  // 데이터 로드 - 안전한 의존성 배열로 무한 루프 방지
+  // 데이터 로드 - 무한 루프 방지를 위한 최적화된 의존성 배열
   useEffect(() => {
-    if (userSchool?.school_code && !isApiCalling) {
+    if (userSchool?.school_code) {
       fetchChampionStats();
     }
-  }, [fetchChampionStats, userSchool?.school_code, isApiCalling]);
+  }, [fetchChampionStats]); // isApiCalling 제거로 무한 루프 방지
 
   if (loading) {
     return (
