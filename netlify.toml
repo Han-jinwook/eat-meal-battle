@@ -22,6 +22,7 @@
 
 [functions.monthly-champion-criteria]
   timeout = 120
+  schedule = "0 1 1 * *"
 
 [functions.update-champion-status-on-quiz-submit]
   timeout = 30
@@ -53,9 +54,6 @@
 
 [[functions.scheduled-champion-criteria]]
   schedule = "0 9 L * *"
-
-[[functions.monthly-champion-criteria]]
-  schedule = "0 1 1 * *"
 
 [[functions.mark-missing-submissions-failed]]
   schedule = "10 13 * * 5"
