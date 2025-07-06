@@ -24,13 +24,13 @@ exports.handler = async (event) => {
     // Supabase 클라이언트 초기화
     const supabase = createClient(
       process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
     // 학교 목록 가져오기
     const { data: schools, error: schoolError } = await supabase
-      .from('schools')
-      .select('school_code, name, address')
+      .from('school_infos')
+      .select('school_code')
 
     if (schoolError) {
       throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
     // 각 학교별로 급식 데이터 수집
     for (const school of schools) {
-      console.log(`${school.name}(${school.school_code}) 처리 중...`)
+      console.log(`${school.school_code} 학교 처리 중...`)
       
       for (const month of months) {
         // NEIS API를 통해 급식 데이터 조회 (현재는 시뮬레이션)
@@ -59,33 +59,19 @@ exports.handler = async (event) => {
         const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month)
         
         // 학교별 급식 조건 저장 (학년 구분 없음)
-        // 주간 조건 저장
-        for (const [weekNumber, dayCount] of Object.entries(weeklyMealDays)) {
-          await saveChampionCriteria(
-            supabase,
-            school.school_code,
-            year,
-            month,
-            parseInt(weekNumber),
-            dayCount,
-            'weekly'
-          )
-        }
-        
-        // 월간 조건 저장 (주간 합계)
         const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
+        
         await saveChampionCriteria(
-          supabase, 
-          school.school_code, 
-          year, 
-          month, 
-          null, 
-          monthlyTotal, 
-          'monthly'
+          supabase,
+          school.school_code,
+          year,
+          month,
+          weeklyMealDays,
+          monthlyTotal
         )
         
         results.push({
-          school: school.name,
+          school: school.school_code,
           month,
           weekly: weeklyMealDays,
           monthly: Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
@@ -171,32 +157,34 @@ async function saveChampionCriteria(
   schoolCode, 
   year, 
   month, 
-  weekNumber, 
-  mealCount, 
-  periodType
+  weeklyMealDays,
+  monthlyTotal
 ) {
   try {
     const { error } = await supabase.from('champion_criteria').upsert({
       school_code: schoolCode,
+      grade: null, // 학년 구분 없음
       year,
       month,
-      week_number: weekNumber,
-      period_type: periodType,
-      required_count: mealCount,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      week_1_days: (weeklyMealDays[0] || 0) + (weeklyMealDays[1] || 0),
+      week_2_days: weeklyMealDays[2] || 0,
+      week_3_days: weeklyMealDays[3] || 0,
+      week_4_days: weeklyMealDays[4] || 0,
+      week_5_days: weeklyMealDays[5] || 0,
+      month_total: monthlyTotal,
+      created_at: new Date().toISOString()
     }, {
-      onConflict: 'school_code,year,month,week_number,period_type'
+      onConflict: 'school_code,grade,year,month'
     })
     
     if (error) {
-      console.error('장원 조건 저장 오류:', error)
-      return false
+      throw new Error(`장원 조건 저장 실패: ${error.message}`)
     }
     
+    console.log(`${schoolCode} ${year}년 ${month}월 데이터 저장 완료`)
     return true
   } catch (err) {
     console.error('장원 조건 저장 예외:', err)
-    return false
+    throw err
   }
 }
