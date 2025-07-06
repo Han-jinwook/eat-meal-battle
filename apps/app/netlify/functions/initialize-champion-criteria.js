@@ -29,8 +29,8 @@ exports.handler = async (event) => {
 
     // 학교 목록 가져오기
     const { data: schools, error: schoolError } = await supabase
-      .from('schools')
-      .select('school_code, name, address')
+      .from('school_infos')
+      .select('school_code, school_name, address')
 
     if (schoolError) {
       throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
