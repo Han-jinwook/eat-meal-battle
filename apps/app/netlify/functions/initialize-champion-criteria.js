@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     // 학교 목록 가져오기
     const { data: schools, error: schoolError } = await supabase
       .from('school_infos')
-      .select('school_code')
+      .select('school_code, office_code')
 
     if (schoolError) {
       throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
@@ -52,8 +52,8 @@ exports.handler = async (event) => {
       console.log(`${school.school_code} 학교 처리 중...`)
       
       for (const month of months) {
-        // NEIS API를 통해 급식 데이터 조회 (현재는 시뮬레이션)
-        const mealDays = await fetchMealDaysFromNEIS(school.school_code, year, month)
+        // NEIS API를 통해 급식 데이터 조회
+        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, year, month)
         
         // 주차별 급식 일수 계산
         const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month)
@@ -98,26 +98,44 @@ exports.handler = async (event) => {
   }
 }
 
-// NEIS API에서 급식 일수 조회 (학교별, 월별) - 현재는 시뮬레이션
-async function fetchMealDaysFromNEIS(schoolCode, year, month) {
+// NEIS API에서 급식 일수 조회 (학교별, 월별)
+async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
   console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식 일수 조회 중...`)
   
-  // 해당 월의 총 일수
-  const daysInMonth = new Date(year, month, 0).getDate()
-  const mealDays = []
-  
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month - 1, day)
-    const dayOfWeek = date.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  try {
+    const url = `https://open.neis.go.kr/hub/mealServiceDietInfo`
+    const params = new URLSearchParams({
+      KEY: process.env.NEIS_API_KEY,
+      Type: 'json',
+      pIndex: '1',
+      pSize: '1000',
+      ATPT_OFCDC_SC_CODE: officeCode, // school_infos 테이블의 office_code (지역코드)
+      SD_SCHUL_CODE: schoolCode,
+      MLSV_YMD: `${year}${month.toString().padStart(2, '0')}`
+    })
     
-    // 평일(월~금)에는 급식 있음으로 가정
-    if (dayOfWeek > 0 && dayOfWeek < 6) {
-      mealDays.push(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`)
+    const response = await fetch(`${url}?${params}`)
+    const data = await response.json()
+    
+    const mealDays = []
+    
+    if (data.mealServiceDietInfo && data.mealServiceDietInfo[1] && data.mealServiceDietInfo[1].row) {
+      const meals = data.mealServiceDietInfo[1].row
+      
+      for (const meal of meals) {
+        const dateStr = meal.MLSV_YMD
+        const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+        mealDays.push(formattedDate)
+      }
     }
+    
+    console.log(`${schoolCode} 학교의 ${year}년 ${month}월 실제 급식일수: ${mealDays.length}일`)
+    return mealDays
+    
+  } catch (error) {
+    console.error(`NEIS API 호출 오류 (${schoolCode}, ${year}-${month}):`, error)
+    return []
   }
-  
-  console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식일수: ${mealDays.length}일`)
-  return mealDays
 }
 
 // 주차별 급식 일수 계산
