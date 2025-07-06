@@ -55,12 +55,32 @@ netli / functions   - manual-generate-meal-quiz.js
 - 매주 금요일 13:10 - 미제출자 자동 실패 처리
 - 기존 스케줄러 유지 (주간/월간 집계)
 
-## 4. 안전 전환 가이드
-1. `CHAMPION_TEST_MODE=true`, `USE_NEW_CHAMPION_SYSTEM=false`로 시작
-2. 초기 데이터 설정: `initialize-champion-criteria` 실행
-3. 테스트 기간 동안 두 시스템 병행 운영
-4. 검증 완료 후 `USE_NEW_CHAMPION_SYSTEM=true` 설정
-5. 최종 안정화 후 `CHAMPION_TEST_MODE=false` 설정
+## 4. 초기화 범위 및 설정
+
+### 4.1 초기화 함수 범위
+- **initialize-champion-criteria**: 모든 학교의 6-8월 데이터 일괄 초기화
+
+### 4.2 학교 등록 훅 초기화 범위
+- **현재 달**: 현재 진행 중인 월의 모든 주차 (1-5주)
+- **다음 달**: 다음 달의 모든 주차 (1-5주)
+- **이전 달**: 테스트 모드에서만 지난 달 데이터 추가 초기화 (TEST_MODE=true인 경우)
+
+### 4.3 코드 내 테스트 설정
+```javascript
+// 각 함수 상단에 상수로 설정
+const TEST_MODE = true;      // 테스트용, 출시 전 false로 변경
+const USE_NEW_SYSTEM = false; // 테스트 완료 후 true로 변경
+```
+
+## 5. 배포 및 테스트 가이드
+1. **코드 상태**: TEST_MODE=true, USE_NEW_SYSTEM=false로 유지한 채 배포
+2. **초기화 방법**: 
+   - 처음 한 번: initialize-champion-criteria.js 함수를 URL로 접속해 실행
+   - 이후 등록되는 학교: school-registration-hook.js에서 자동으로 처리
+3. **테스트**: 실제 UI로 퀴즈를 풀면서 새 장원 시스템 동작 확인
+4. **전환 방법**: 
+   - 코드 내 USE_NEW_SYSTEM=true로 변경 후 재배포
+   - 최종 출시 전 TEST_MODE=false로 변경 후 배포
 
 ===## 주장원/월장원 시스템 구현 🔄 REDESIGNING (2025년 7월 5일 재설계)
 
