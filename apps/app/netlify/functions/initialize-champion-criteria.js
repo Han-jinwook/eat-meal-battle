@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     // 학교 목록 가져오기
     const { data: schools, error: schoolError } = await supabase
       .from('school_infos')
-      .select('school_code, school_name, address')
+      .select('school_code')
 
     if (schoolError) {
       throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
     // 각 학교별로 급식 데이터 수집
     for (const school of schools) {
-      console.log(`${school.name}(${school.school_code}) 처리 중...`)
+      console.log(`${school.school_code} 학교 처리 중...`)
       
       for (const month of months) {
         // NEIS API를 통해 급식 데이터 조회 (현재는 시뮬레이션)
@@ -71,7 +71,7 @@ exports.handler = async (event) => {
         )
         
         results.push({
-          school: school.name,
+          school: school.school_code,
           month,
           weekly: weeklyMealDays,
           monthly: Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
