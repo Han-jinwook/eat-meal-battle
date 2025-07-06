@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { championCalculator } from '@/utils/championCalculator'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,7 +113,9 @@ export async function GET(request: NextRequest) {
     const period_type = searchParams.get('period_type') || (week_number ? 'weekly' : 'monthly')
     
     console.log('🔍 장원 통계 조회 API 호출:', {
-      user_id, school_code, grade, year, month, week_number, period_type
+      user_id, school_code, grade, year, month, week_number, period_type,
+      url: request.url,
+      timestamp: new Date().toISOString()
     })
 
     if (!user_id || !school_code || !grade || !year || !month) {
@@ -166,12 +168,21 @@ export async function GET(request: NextRequest) {
     }
 
     // 기존 데이터가 없으면 자동 계산
-    console.log('📊 기존 데이터 없음, 자동 계산 시작...')
+    console.log('📊 기존 데이터 없음, 자동 계산 시작...', {
+      period_type,
+      week_number,
+      user_id,
+      school_code,
+      grade: parseInt(grade),
+      year: parseInt(year),
+      month: parseInt(month)
+    })
     
     let statistics = null
     
     try {
       if (period_type === 'weekly' && week_number) {
+        console.log('📈 주장원 통계 계산 시작...')
         statistics = await championCalculator.calculateWeeklyStatistics(
           user_id,
           school_code,
@@ -180,7 +191,9 @@ export async function GET(request: NextRequest) {
           parseInt(month),
           parseInt(week_number)
         )
+        console.log('📈 주장원 통계 계산 결과:', statistics)
       } else if (period_type === 'monthly') {
+        console.log('📊 월장원 통계 계산 시작...')
         statistics = await championCalculator.calculateMonthlyStatistics(
           user_id,
           school_code,
@@ -188,6 +201,7 @@ export async function GET(request: NextRequest) {
           parseInt(year),
           parseInt(month)
         )
+        console.log('📊 월장원 통계 계산 결과:', statistics)
       }
 
       if (statistics) {
@@ -228,7 +242,20 @@ export async function GET(request: NextRequest) {
         })
       }
     } catch (calcError) {
-      console.error('자동 계산 중 오류:', calcError)
+      console.error('❌ 자동 계산 중 오류:', {
+        error: calcError,
+        message: calcError?.message,
+        stack: calcError?.stack,
+        parameters: {
+          user_id,
+          school_code,
+          grade: parseInt(grade),
+          year: parseInt(year),
+          month: parseInt(month),
+          week_number: week_number ? parseInt(week_number) : null,
+          period_type
+        }
+      })
       // 계산 오류시에도 기본값 반환
       return NextResponse.json({
         success: true,
