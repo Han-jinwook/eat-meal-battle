@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
     const { 
       user_id, 
       school_code, 
-      grade, 
       year, 
       month, 
       week_number, // optional, 없으면 월장원 계산
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // 필수 파라미터 검증
-    if (!user_id || !school_code || !grade || !year || !month || !period_type) {
+    if (!user_id || !school_code || !year || !month || !period_type) {
       return NextResponse.json(
         { error: '필수 파라미터가 누락되었습니다.' },
         { status: 400 }
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       statistics = await championCalculator.calculateWeeklyStatistics(
         user_id,
         school_code,
-        grade,
         year,
         month,
         week_number
@@ -60,7 +58,6 @@ export async function POST(request: NextRequest) {
       statistics = await championCalculator.calculateMonthlyStatistics(
         user_id,
         school_code,
-        grade,
         year,
         month
       )
@@ -106,19 +103,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
     const school_code = searchParams.get('school_code')
-    const grade = searchParams.get('grade')
     const year = searchParams.get('year')
     const month = searchParams.get('month')
     const week_number = searchParams.get('week_number') // 선택사항
     const period_type = searchParams.get('period_type') || (week_number ? 'weekly' : 'monthly')
     
     console.log('🔍 장원 통계 조회 API 호출:', {
-      user_id, school_code, grade, year, month, week_number, period_type,
+      user_id, school_code, year, month, week_number, period_type,
       url: request.url,
       timestamp: new Date().toISOString()
     })
 
-    if (!user_id || !school_code || !grade || !year || !month) {
+    if (!user_id || !school_code || !year || !month) {
       return NextResponse.json(
         { error: '필수 파라미터가 누락되었습니다.' },
         { status: 400 }
@@ -133,7 +129,6 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('user_id', user_id)
       .eq('school_code', school_code)
-      .eq('grade', parseInt(grade))
       .eq('year', parseInt(year))
       .eq('month', parseInt(month))
       .eq('period_type', period_type)

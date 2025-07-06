@@ -58,35 +58,31 @@ exports.handler = async (event) => {
         // 주차별 급식 일수 계산
         const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month)
         
-        // 학년별로 동일한 조건 적용 (학교별로 1~6학년)
-        for (let grade = 1; grade <= 6; grade++) {
-          // 주간 조건 저장
-          for (const [weekNumber, dayCount] of Object.entries(weeklyMealDays)) {
-            await saveChampionCriteria(
-              supabase,
-              school.school_code,
-              grade,
-              year,
-              month,
-              parseInt(weekNumber),
-              dayCount,
-              'weekly'
-            )
-          }
-          
-          // 월간 조건 저장 (주간 합계)
-          const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
+        // 학교별 급식 조건 저장 (학년 구분 없음)
+        // 주간 조건 저장
+        for (const [weekNumber, dayCount] of Object.entries(weeklyMealDays)) {
           await saveChampionCriteria(
-            supabase, 
-            school.school_code, 
-            grade, 
-            year, 
-            month, 
-            null, 
-            monthlyTotal, 
-            'monthly'
+            supabase,
+            school.school_code,
+            year,
+            month,
+            parseInt(weekNumber),
+            dayCount,
+            'weekly'
           )
         }
+        
+        // 월간 조건 저장 (주간 합계)
+        const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
+        await saveChampionCriteria(
+          supabase, 
+          school.school_code, 
+          year, 
+          month, 
+          null, 
+          monthlyTotal, 
+          'monthly'
+        )
         
         results.push({
           school: school.name,
@@ -173,7 +169,6 @@ function calculateWeeklyMealDays(mealDays, year, month) {
 async function saveChampionCriteria(
   supabase, 
   schoolCode, 
-  grade, 
   year, 
   month, 
   weekNumber, 
@@ -183,7 +178,6 @@ async function saveChampionCriteria(
   try {
     const { error } = await supabase.from('champion_criteria').upsert({
       school_code: schoolCode,
-      grade,
       year,
       month,
       week_number: weekNumber,
@@ -192,7 +186,7 @@ async function saveChampionCriteria(
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }, {
-      onConflict: 'school_code,grade,year,month,week_number,period_type'
+      onConflict: 'school_code,year,month,week_number,period_type'
     })
     
     if (error) {

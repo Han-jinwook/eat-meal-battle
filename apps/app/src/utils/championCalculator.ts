@@ -13,7 +13,6 @@ import { createClient as createServerClient } from '@/lib/supabase-server'
 export interface ChampionStatistics {
   user_id: string
   school_code: string
-  grade: number
   year: number
   month: number
   week_number?: number
@@ -95,7 +94,6 @@ export class ChampionCalculator {
    */
   async calculateMealDays(
     schoolCode: string,
-    grade: number,
     startDate: Date,
     endDate: Date
   ): Promise<number> {
@@ -105,7 +103,6 @@ export class ChampionCalculator {
 
       console.log('급식일수 계산 시도:', {
         schoolCode,
-        grade,
         startDateStr,
         endDateStr
       })
@@ -153,7 +150,6 @@ export class ChampionCalculator {
   async getQuizResults(
     userId: string,
     schoolCode: string,
-    grade: number,
     startDate: Date,
     endDate: Date
   ): Promise<{
@@ -169,7 +165,6 @@ export class ChampionCalculator {
       console.log('퀴즈 결과 조회 시도 (quiz_results 테이블):', {
         userId,
         schoolCode,
-        grade,
         startDateStr,
         endDateStr,
         note: 'school_code, grade 필드 없음 - user_id로만 필터링'
@@ -223,7 +218,6 @@ export class ChampionCalculator {
   async calculateWeeklyStatistics(
     userId: string,
     schoolCode: string,
-    grade: number,
     year: number,
     month: number,
     weekNumber: number
@@ -241,8 +235,8 @@ export class ChampionCalculator {
       if (weekdayStart.getDay() === 0) weekdayStart.setDate(weekdayStart.getDate() + 1) // 일요일이면 월요일로
       if (weekdayEnd.getDay() === 6) weekdayEnd.setDate(weekdayEnd.getDate() - 1) // 토요일이면 금요일로
       
-      const total_meal_days = await this.calculateMealDays(schoolCode, grade, weekdayStart, weekdayEnd)
-      const quizResults = await this.getQuizResults(userId, schoolCode, grade, weekdayStart, weekdayEnd)
+      const total_meal_days = await this.calculateMealDays(schoolCode, weekdayStart, weekdayEnd)
+      const quizResults = await this.getQuizResults(userId, schoolCode, weekdayStart, weekdayEnd)
 
       // 장원 조건: 급식일수 = 정답수
       const is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
@@ -250,7 +244,6 @@ export class ChampionCalculator {
       return {
         user_id: userId,
         school_code: schoolCode,
-        grade,
         year,
         month,
         week_number: weekNumber,
@@ -275,7 +268,6 @@ export class ChampionCalculator {
   async calculateMonthlyStatistics(
     userId: string,
     schoolCode: string,
-    grade: number,
     year: number,
     month: number
   ): Promise<ChampionStatistics | null> {
@@ -284,8 +276,8 @@ export class ChampionCalculator {
       const startDate = new Date(year, month - 1, 1)
       const endDate = new Date(year, month, 0)
 
-      const total_meal_days = await this.calculateMealDays(schoolCode, grade, startDate, endDate)
-      const quizResults = await this.getQuizResults(userId, schoolCode, grade, startDate, endDate)
+      const total_meal_days = await this.calculateMealDays(schoolCode, startDate, endDate)
+      const quizResults = await this.getQuizResults(userId, schoolCode, startDate, endDate)
 
       // 장원 조건: 급식일수 = 정답수
       const is_champion = total_meal_days > 0 && quizResults.correct_count === total_meal_days
@@ -293,7 +285,6 @@ export class ChampionCalculator {
       return {
         user_id: userId,
         school_code: schoolCode,
-        grade,
         year,
         month,
         period_type: 'monthly',
@@ -373,7 +364,6 @@ export class ChampionCalculator {
         .upsert([{
           user_id: stats.user_id,
           school_code: stats.school_code,
-          grade: stats.grade,
           year: stats.year,
           month: stats.month,
           week_number: stats.week_number,
@@ -387,7 +377,7 @@ export class ChampionCalculator {
           determined_at: stats.determined_at?.toISOString(),
           is_current: true
         }], {
-          onConflict: 'user_id,school_code,grade,year,month,week_number,period_type'
+          onConflict: 'user_id,school_code,year,month,week_number,period_type'
         })
 
       if (error) {

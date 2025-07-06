@@ -67,7 +67,6 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           const params = new URLSearchParams({
             user_id: userId, // 수정: session에서 가져온 userId 사용
             school_code: userSchool.school_code,
-            grade: userSchool.grade.toString(),
             year: currentMonth.getFullYear().toString(),
             month: (currentMonth.getMonth() + 1).toString(),
             week_number: week.toString(),
@@ -111,7 +110,6 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const monthlyParams = new URLSearchParams({
           user_id: userId, // 수정: session에서 가져온 userId 사용
           school_code: userSchool.school_code,
-          grade: userSchool.grade.toString(),
           year: currentMonth.getFullYear().toString(),
           month: (currentMonth.getMonth() + 1).toString(),
           period_type: 'monthly'
