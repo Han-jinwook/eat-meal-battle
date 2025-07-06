@@ -29,6 +29,7 @@
 
 [functions.mark-missing-submissions-failed]
   timeout = 120
+  schedule = "10 13 * * 5"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -54,9 +55,6 @@
 
 [[functions.scheduled-champion-criteria]]
   schedule = "0 9 L * *"
-
-[[functions.mark-missing-submissions-failed]]
-  schedule = "10 13 * * 5"
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
