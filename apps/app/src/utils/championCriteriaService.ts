@@ -29,13 +29,13 @@ export class ChampionCriteriaService {
    * @param grade - 학년
    * @param year - 년도
    * @param month - 월 (1-12)
-   * @param weekNumber - 주차 (1-5)
+   * @param weekNumber - 주차 (1-6)
    * @returns 해당 주차의 급식일수 (0: 데이터 없음)
    */
   async getWeeklyCriteria(schoolCode: string, grade: number, year: number, month: number, weekNumber: number): Promise<number> {
     try {
       // 주차 유효성 검사
-      if (weekNumber < 1 || weekNumber > 5) {
+      if (weekNumber < 1 || weekNumber > 6) {
         console.error('유효하지 않은 주차:', weekNumber);
         return 0;
       }
@@ -101,14 +101,14 @@ export class ChampionCriteriaService {
    * @param grade - 학년
    * @param year - 년도
    * @param month - 월 (1-12)
-   * @param weekNumber - 주차 (1-5)
+   * @param weekNumber - 주차 (1-6)
    * @param correctCount - 정답수
    * @returns 성공 여부
    */
   async updateUserWeeklyCorrect(userId: string, schoolCode: string, grade: number, year: number, month: number, weekNumber: number, correctCount: number): Promise<boolean> {
     try {
       // 주차 유효성 검사
-      if (weekNumber < 1 || weekNumber > 5) {
+      if (weekNumber < 1 || weekNumber > 6) {
         console.error('유효하지 않은 주차:', weekNumber);
         return false;
       }
@@ -176,7 +176,7 @@ export class ChampionCriteriaService {
    * @param grade - 학년
    * @param year - 년도
    * @param month - 월 (1-12)
-   * @param weekNumber - 주차 (1-5, 없으면 월간 체크)
+   * @param weekNumber - 주차 (1-6, 없으면 월간 체크)
    * @returns 장원 여부
    */
   async checkAndUpdateChampionStatus(userId: string, schoolCode: string, grade: number, year: number, month: number, weekNumber?: number): Promise<boolean> {
