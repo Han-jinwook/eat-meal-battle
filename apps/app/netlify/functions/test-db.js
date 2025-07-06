@@ -61,29 +61,28 @@ export const handler = async (event, context) => {
 
     console.log(`총 ${allSchools.length}개 학교 발견`)
 
-    // 간단한 테스트 데이터 저장
+    // 간단한 테스트 데이터 저장 (grade 제거)
     const testData = {
       school_code: allSchools[0].school_code,
-      grade: null,
       year: 2025,
       month: 6,
       week_1_days: 5,
       week_2_days: 5,
       week_3_days: 5,
-      week_4_days: 5,
-      week_5_days: 1,
-      month_total: 21,
-      created_at: new Date().toISOString()
+      week_4_days: 4,
+      week_5_days: 0,
+      month_total: 19
     }
 
-    const { error: insertError } = await supabase
+    const { data: testResult, error: testError } = await supabase
       .from('champion_criteria')
       .upsert(testData, {
-        onConflict: 'school_code,grade,year,month'
+        onConflict: 'school_code,year,month'
       })
+      .select()
 
-    if (insertError) {
-      throw new Error(`데이터 저장 실패: ${insertError.message}`)
+    if (testError) {
+      throw new Error(`데이터 저장 실패: ${testError.message}`)
     }
 
     return {
