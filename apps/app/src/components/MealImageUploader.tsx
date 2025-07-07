@@ -7,7 +7,6 @@ import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 
 interface MealImageUploaderProps {
-  mealId: string;
   schoolCode: string;
   mealDate: string;
   mealType: string;
@@ -16,7 +15,6 @@ interface MealImageUploaderProps {
 }
 
 export default function MealImageUploader({
-  mealId,
   schoolCode,
   mealDate,
   mealType,
@@ -87,14 +85,20 @@ export default function MealImageUploader({
       });
       
       try {
-        // 1. 급식 정보 조회 - 날짜 포함하여 조회
+        // 1. 오늘 날짜 + 학교 코드로 급식 정보 조회
         const { data: mealData, error: mealFetchError } = await supabase
           .from('meal_menus')
-          .select('id, meal_date')
-          .eq('id', mealId)
-          .maybeSingle(); // single() 대신 maybeSingle() 사용하여 404 방지
+          .select('id, meal_date, menu_items')
+          .eq('meal_date', today)
+          .eq('school_code', schoolCode)
+          .maybeSingle(); // 0개 또는 1개만 허용
   
-        console.log('급식 정보 조회 결과:', { mealData, error: mealFetchError });
+        console.log('급식 정보 조회 결과:', { 
+          today, 
+          schoolCode, 
+          mealData, 
+          error: mealFetchError 
+        });
   
         if (mealFetchError) {
           console.error('급식 정보 조회 오류:', mealFetchError);
@@ -103,20 +107,31 @@ export default function MealImageUploader({
         }
   
         if (!mealData) {
-          console.log('급식 정보가 없음 - AI 버튼 비활성화');
+          console.log('오늘 날짜의 해당 학교 급식 정보가 없음 - AI 버튼 비활성화');
           setShowAiGenButton(false);
           return;
         }
         
-        // 2. 급식 날짜가 오늘인지 확인
-        console.log('급식 날짜 비교:', {
-          today,
-          mealDate: mealData.meal_date,
-          isEqual: mealData.meal_date === today
+        // 2. 급식 데이터에서 mealId 획득
+        const currentMealId = mealData.id;
+        console.log('획득한 mealId:', currentMealId);
+        
+        // 급식 정보 유효성 찴크
+        const hasValidMeal = Array.isArray(mealData.menu_items) && 
+                            mealData.menu_items.length > 0 &&
+                            // "급식 정보가 없습니다" 메시지가 없는 경우
+                            !mealData.menu_items.some(item => 
+                              typeof item === 'string' && item.includes('급식 정보가 없습니다')
+                            );
+        
+        console.log('급식 정보 상세:', {
+          menu_items: mealData.menu_items,
+          menu_items_count: Array.isArray(mealData.menu_items) ? mealData.menu_items.length : 0,
+          hasValidMeal
         });
         
-        if (mealData.meal_date !== today) {
-          console.log('AI 이미지 생성 버튼 비활성화: 당일 날짜가 아님');
+        if (!hasValidMeal) {
+          console.log('AI 이미지 생성 버튼 비활성화: 급식 정보가 없거나 메뉴가 비어있음');
           setShowAiGenButton(false);
           return;
         }
@@ -144,7 +159,7 @@ export default function MealImageUploader({
       // 4. 이미지 존재 여부 확인
       try {
         console.log('이미지 조회 시도 - 파라미터:', { 
-          mealId, 
+          currentMealId, 
           테이블: 'meal_images',
           조회필드: 'id, status',
           조건필드: 'meal_id'
@@ -154,14 +169,14 @@ export default function MealImageUploader({
         const { data: approvedImages, error: approvedImagesError } = await supabase
           .from('meal_images')
           .select('id, status')
-          .eq('meal_id', mealId)
+          .eq('meal_id', currentMealId)
           .eq('status', 'approved');
           
         // 전체 이미지도 조회 (디버깅용)
         const { data: allImages, error: allImagesError } = await supabase
           .from('meal_images')
           .select('id, status')
-          .eq('meal_id', mealId);
+          .eq('meal_id', currentMealId);
         
         console.log('이미지 조회 결과:', { 
           approvedImages, 
@@ -212,13 +227,40 @@ export default function MealImageUploader({
   
   // 승인된 이미지 가져오는 함수 (재사용을 위해 함수로 분리)
   const fetchApprovedImage = useCallback(async () => {
-    if (!mealId) return;
+    // 오늘 날짜 계산
+    const now = new Date();
+    const koreaTimeString = now.toLocaleString('en-CA', { 
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour12: false
+    });
+    const today = koreaTimeString.split(', ')[0];
     
-    console.log('승인된 이미지 조회:', mealId);
+    console.log('승인된 이미지 조회 시작:', { today, schoolCode });
+    
+    // 1. 먼저 오늘 날짜 + 학교 코드로 급식 찾기
+    const { data: mealData, error: mealError } = await supabase
+      .from('meal_menus')
+      .select('id')
+      .eq('meal_date', today)
+      .eq('school_code', schoolCode)
+      .maybeSingle();
+      
+    if (mealError || !mealData) {
+      console.log('오늘 날짜의 급식 정보가 없음:', mealError);
+      return;
+    }
+    
+    const currentMealId = mealData.id;
+    console.log('승인된 이미지 조회 - mealId:', currentMealId);
+    
+    // 2. 그 mealId로 승인된 이미지 조회
     const { data, error } = await supabase
       .from('meal_images')
       .select('*')
-      .eq('meal_id', mealId)
+      .eq('meal_id', currentMealId)
       .eq('status', 'approved')
       .maybeSingle(); // 0개 또는 1개만 허용, 2개 이상이면 오류 발생
       
@@ -251,7 +293,7 @@ export default function MealImageUploader({
       // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
       setShowAiGenButton(false);
     }
-  }, [mealId, supabase]);
+  }, [schoolCode, supabase]);
 
   // 컴포넌트 마운트 시 승인된 이미지 자동 로드
   useEffect(() => {
@@ -260,19 +302,18 @@ export default function MealImageUploader({
   
   // 실시간 이미지 업데이트를 위한 Supabase 구독 설정
   useEffect(() => {
-    if (!mealId) return;
+    if (!schoolCode) return;
     
-    console.log('실시간 이미지 구독 설정:', mealId);
+    console.log('실시간 이미지 구독 설정:', schoolCode);
     
-    // 현재 meal_id에 대한 meal_images 테이블의 변경사항 감지
+    // meal_images 테이블의 변경사항 감지
     const channel = supabase
-      .channel(`meal-images-${mealId}`)
+      .channel(`meal-images-${schoolCode}`)
       .on('postgres_changes', 
           { 
             event: '*', 
             schema: 'public', 
-            table: 'meal_images', 
-            filter: `meal_id=eq.${mealId}` 
+            table: 'meal_images'
           }, 
           (payload) => {
             console.log('이미지 실시간 업데이트 수신:', payload);
@@ -289,10 +330,10 @@ export default function MealImageUploader({
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
-      console.log('이미지 실시간 구독 해제:', mealId);
+      console.log('이미지 실시간 구독 해제:', schoolCode);
       supabase.removeChannel(channel);
     };
-  }, [mealId, supabase, fetchApprovedImage]);
+  }, [schoolCode, supabase, fetchApprovedImage]);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
