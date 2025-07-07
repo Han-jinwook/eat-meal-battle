@@ -49,13 +49,13 @@ export default function MealImageUploader({
   // AI 이미지 생성 버튼 표시 여부 확인
   useEffect(() => {
     const checkIfAiImageNeeded = async () => {
-      if (!mealId) {
-        console.log('mealId가 없음, AI 버튼 비활성화');
+      if (!schoolCode) {
+        console.log('schoolCode가 없음, AI 버튼 비활성화');
         setShowAiGenButton(false);
         return;
       }
       
-      console.log('급식 ID 확인:', mealId);
+      console.log('학교 코드 확인:', schoolCode);
 
       // 당일 날짜인지 확인 (한국 시간 기준)
       const now = new Date();
