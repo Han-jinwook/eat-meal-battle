@@ -209,7 +209,7 @@ export default function MealImageUploader({
       .select('*')
       .eq('meal_id', mealId)
       .eq('status', 'approved')
-      .maybeSingle(); // single() 대신 maybeSingle() 사용하여 406 오류 방지
+      .maybeSingle(); // 0개 또는 1개만 허용, 2개 이상이면 오류 발생
       
     if (error) {
       if (error.code !== 'PGRST116') { // PGRST116 = 결과 없음 오류는 정상적인 상태
