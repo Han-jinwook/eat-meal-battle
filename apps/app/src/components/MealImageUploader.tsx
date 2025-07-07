@@ -139,27 +139,42 @@ export default function MealImageUploader({
           조건필드: 'meal_id'
         });
         
-        const { data: images, error: imagesError } = await supabase
+        // 승인된 이미지만 조회하여 406 오류 방지
+        const { data: approvedImages, error: approvedImagesError } = await supabase
+          .from('meal_images')
+          .select('id, status')
+          .eq('meal_id', mealId)
+          .eq('status', 'approved');
+          
+        // 전체 이미지도 조회 (디버깅용)
+        const { data: allImages, error: allImagesError } = await supabase
           .from('meal_images')
           .select('id, status')
           .eq('meal_id', mealId);
         
-        console.log('이미지 조회 결과:', { images, error: imagesError });
+        console.log('이미지 조회 결과:', { 
+          approvedImages, 
+          approvedImagesError,
+          allImages,
+          allImagesError 
+        });
         
-        if (imagesError) {
-          console.error('이미지 조회 오류:', imagesError);
+        if (approvedImagesError || allImagesError) {
+          console.error('이미지 조회 오류:', { approvedImagesError, allImagesError });
           // 오류 발생 시 안전하게 버튼 비활성화
           setShowAiGenButton(false);
           return;
         }
         
         // 승인된 이미지가 있으면 버튼 비활성화
-        const hasApprovedImage = images && images.some(img => img.status === 'approved');
+        const hasApprovedImage = approvedImages && approvedImages.length > 0;
         const shouldShow = !hasApprovedImage;
         
         console.log('AI 이미지 생성 버튼 표시 여부:', {
-          hasImages: images && images.length > 0,
-          imageStatuses: images ? images.map(img => img.status) : [],
+          hasAllImages: allImages && allImages.length > 0,
+          allImageStatuses: allImages ? allImages.map(img => img.status) : [],
+          hasApprovedImages: approvedImages && approvedImages.length > 0,
+          approvedImageCount: approvedImages ? approvedImages.length : 0,
           hasApprovedImage,
           shouldShow
         });
@@ -194,7 +209,7 @@ export default function MealImageUploader({
       .select('*')
       .eq('meal_id', mealId)
       .eq('status', 'approved')
-      .single();
+      .maybeSingle(); // single() 대신 maybeSingle() 사용하여 406 오류 방지
       
     if (error) {
       if (error.code !== 'PGRST116') { // PGRST116 = 결과 없음 오류는 정상적인 상태
