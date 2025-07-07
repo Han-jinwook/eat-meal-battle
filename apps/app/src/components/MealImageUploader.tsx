@@ -53,8 +53,19 @@ export default function MealImageUploader({
     const checkIfAiImageNeeded = async () => {
       if (!mealId) return;
 
-      // 당일 날짜인지 확인 (오늘 날짜와 급식 날짜 비교)
-      const today = new Date().toISOString().split('T')[0];
+      // 당일 날짜인지 확인 (한국 시간 기준)
+      const now = new Date();
+      // 한국 시간(KST)으로 변환 (UTC+9)
+      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+      const today = koreaTime.toISOString().split('T')[0];
+      
+      console.log('현재 시간 정보:', {
+        utcNow: now.toISOString(),
+        koreaTime: koreaTime.toISOString(),
+        today: today,
+        hour: koreaTime.getHours(),
+        minute: koreaTime.getMinutes()
+      });
       
       // 1. 메뉴 존재 여부를 HEAD 로 먼저 확인해 404 네트워크 오류 방지
       const {
@@ -105,25 +116,29 @@ export default function MealImageUploader({
       if (!mealData || mealData.meal_date !== today) {
         console.log('AI 이미지 생성 버튼 비활성화: 당일 날짜가 아님', {
           today,
-          mealDate: mealData.meal_date
+          mealDate: mealData.meal_date,
+          isEqual: mealData.meal_date === today
         });
         setShowAiGenButton(false);
         return;
       }
       
-      // 4. 시간 조건 확인 (12:30 이후)
-      const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
+      // 4. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
+      const hour = koreaTime.getHours();
+      const minute = koreaTime.getMinutes();
       const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
       
       if (!isPastCutoffTime) {
-        console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
+        console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전', {
+          hour,
+          minute,
+          isPastCutoffTime
+        });
         setShowAiGenButton(false);
         return;
       }
       
-      // 3. 이미지 존재 여부 확인
+      // 5. 이미지 존재 여부 확인
       const { data: images, error: imagesError } = await supabase
         .from('meal_images')
         .select('id, status')
@@ -141,7 +156,13 @@ export default function MealImageUploader({
       const shouldShow = !hasApprovedImage;
       
       console.log('AI 이미지 생성 버튼 표시 여부:', {
+        today,
+        mealDate: mealData.meal_date,
+        isPastCutoffTime,
+        hour,
+        minute,
         hasImages: images && images.length > 0,
+        imageStatuses: images ? images.map(img => img.status) : [],
         hasApprovedImage,
         shouldShow
       });
@@ -193,7 +214,8 @@ export default function MealImageUploader({
           .single();
           
         if (!userError && userData) {
-          // 사용자 닉네임 정보 추가
+          console.log('AI 이미지 생성 - 사용자 정보 조회 성공:', userData);
+          // 사용자 별명 정보 추가
           data.uploader_nickname = userData.nickname;
         }
       }
@@ -357,8 +379,7 @@ export default function MealImageUploader({
               nickname: userData.nickname, 
               profile_image: userData.profile_image 
             };
-          } else {
-            console.error('AI 이미지 생성 - 사용자 정보 조회 오류:', userError);
+          }
           }
         } catch (e) {
           console.error('AI 이미지 생성 - 사용자 정보 조회 예외:', e);
