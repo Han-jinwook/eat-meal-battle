@@ -51,7 +51,13 @@ export default function MealImageUploader({
   // AI 이미지 생성 버튼 표시 여부 확인
   useEffect(() => {
     const checkIfAiImageNeeded = async () => {
-      if (!mealId) return;
+      if (!mealId) {
+        console.log('mealId가 없음, AI 버튼 비활성화');
+        setShowAiGenButton(false);
+        return;
+      }
+      
+      console.log('급식 ID 확인:', mealId);
 
       // 당일 날짜인지 확인 (한국 시간 기준)
       const now = new Date();
@@ -67,107 +73,102 @@ export default function MealImageUploader({
         minute: koreaTime.getMinutes()
       });
       
-      // 1. 메뉴 존재 여부를 HEAD 로 먼저 확인해 404 네트워크 오류 방지
-      const {
-        count: mealCount,
-        error: mealHeadError
-      } = await supabase
-        .from('meals')
-        .select('id', { head: true, count: 'exact' })
-        .eq('id', mealId);
-
-      if (mealHeadError) {
-        if (mealHeadError.code === '42P01') {
-          console.debug('meals 테이블이 없습니다. AI 버튼 비활성화');
-        } else {
-          console.debug(`급식 ID(${mealId}) 존재 여부 확인 중 예상된 오류 (아마도 삭제된 급식):`, mealHeadError.message);
+      try {
+        // 1. 급식 정보 조회 - 날짜 포함하여 조회
+        const { data: mealData, error: mealFetchError } = await supabase
+          .from('meal_menus')
+          .select('id, meal_date')
+          .eq('id', mealId)
+          .maybeSingle(); // single() 대신 maybeSingle() 사용하여 404 방지
+  
+        console.log('급식 정보 조회 결과:', { mealData, error: mealFetchError });
+  
+        if (mealFetchError) {
+          console.error('급식 정보 조회 오류:', mealFetchError);
+          setShowAiGenButton(false);
+          return;
         }
-        setShowAiGenButton(false);
-        return;
-      }
-
-      if (!mealCount) {
-        // 해당 급식이 없음 - 버튼 비활성화
-        console.log('AI 이미지 생성 버튼 비활성화: 급식 정보 없음');
-        setShowAiGenButton(false);
-        return;
-      }
-
-      // 2. 실제 급식 날짜 조회 (존재할 때만)
-      const { data: mealData, error: mealFetchError } = await supabase
-        .from('meals')
-        .select('meal_date')
-        .eq('id', mealId)
-        .single();
-
-      if (mealFetchError) {
-        // PGRST116 = no rows found, 42P01 = relation does not exist (테이블 없음)
-        if (mealFetchError.code === 'PGRST116' || mealFetchError.code === '42P01') {
-          console.debug('급식 날짜 조회 결과 없음/테이블 없음:', mealFetchError.code);
-        } else {
-          console.error('급식 날짜 조회 오류:', mealFetchError);
+  
+        if (!mealData) {
+          console.log('급식 정보가 없음 - AI 버튼 비활성화');
+          setShowAiGenButton(false);
+          return;
         }
-        // 데이터 없거나 스키마 없음이면 AI 버튼 비활성화하고 종료
-        setShowAiGenButton(false);
-        return;
-      }
-      
-      // 3. 급식 날짜가 오늘이 아니면 버튼 비활성화
-      if (!mealData || mealData.meal_date !== today) {
-        console.log('AI 이미지 생성 버튼 비활성화: 당일 날짜가 아님', {
+        
+        // 2. 급식 날짜가 오늘인지 확인
+        console.log('급식 날짜 비교:', {
           today,
           mealDate: mealData.meal_date,
           isEqual: mealData.meal_date === today
         });
-        setShowAiGenButton(false);
-        return;
-      }
-      
-      // 4. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
-      const hour = koreaTime.getHours();
-      const minute = koreaTime.getMinutes();
-      const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
-      
-      if (!isPastCutoffTime) {
-        console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전', {
+        
+        if (mealData.meal_date !== today) {
+          console.log('AI 이미지 생성 버튼 비활성화: 당일 날짜가 아님');
+          setShowAiGenButton(false);
+          return;
+        }
+        
+        // 3. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
+        const hour = koreaTime.getHours();
+        const minute = koreaTime.getMinutes();
+        const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
+        
+        console.log('시간 조건 확인:', {
           hour,
           minute,
           isPastCutoffTime
         });
+        
+        if (!isPastCutoffTime) {
+          console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
+          setShowAiGenButton(false);
+          return;
+        }
+      } catch (e) {
+        console.error('급식 정보 조회 중 예외 발생:', e);
         setShowAiGenButton(false);
         return;
       }
       
-      // 5. 이미지 존재 여부 확인
-      const { data: images, error: imagesError } = await supabase
-        .from('meal_images')
-        .select('id, status')
-        .eq('meal_id', mealId);
-      
-      if (imagesError) {
-        console.error('이미지 조회 오류:', imagesError);
-        // 오류 발생 시 안전하게 버튼 비활성화
+      // 4. 이미지 존재 여부 확인
+      try {
+        console.log('이미지 조회 시도 - 파라미터:', { 
+          mealId, 
+          테이블: 'meal_images',
+          조회필드: 'id, status',
+          조건필드: 'meal_id'
+        });
+        
+        const { data: images, error: imagesError } = await supabase
+          .from('meal_images')
+          .select('id, status')
+          .eq('meal_id', mealId);
+        
+        console.log('이미지 조회 결과:', { images, error: imagesError });
+        
+        if (imagesError) {
+          console.error('이미지 조회 오류:', imagesError);
+          // 오류 발생 시 안전하게 버튼 비활성화
+          setShowAiGenButton(false);
+          return;
+        }
+        
+        // 승인된 이미지가 있으면 버튼 비활성화
+        const hasApprovedImage = images && images.some(img => img.status === 'approved');
+        const shouldShow = !hasApprovedImage;
+        
+        console.log('AI 이미지 생성 버튼 표시 여부:', {
+          hasImages: images && images.length > 0,
+          imageStatuses: images ? images.map(img => img.status) : [],
+          hasApprovedImage,
+          shouldShow
+        });
+        
+        setShowAiGenButton(shouldShow);
+      } catch (e) {
+        console.error('이미지 조회 중 예외 발생:', e);
         setShowAiGenButton(false);
-        return;
       }
-      
-      // 승인된 이미지가 있으면 버튼 비활성화
-      const hasApprovedImage = images && images.some(img => img.status === 'approved');
-      const shouldShow = !hasApprovedImage;
-      
-      console.log('AI 이미지 생성 버튼 표시 여부:', {
-        today,
-        mealDate: mealData.meal_date,
-        isPastCutoffTime,
-        hour,
-        minute,
-        hasImages: images && images.length > 0,
-        imageStatuses: images ? images.map(img => img.status) : [],
-        hasApprovedImage,
-        shouldShow
-      });
-      
-      setShowAiGenButton(shouldShow);
     };
     
     if (mealId) {
