@@ -61,16 +61,29 @@ export default function MealImageUploader({
 
       // 당일 날짜인지 확인 (한국 시간 기준)
       const now = new Date();
-      // 한국 시간(KST)으로 변환 (UTC+9)
-      const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      const today = koreaTime.toISOString().split('T')[0];
+      // 한국 시간대로 변환
+      const koreaTimeString = now.toLocaleString('en-CA', { 
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      
+      const [dateStr, timeStr] = koreaTimeString.split(', ');
+      const today = dateStr; // YYYY-MM-DD 형식
+      const [hourStr, minuteStr] = timeStr.split(':');
+      const hour = parseInt(hourStr);
+      const minute = parseInt(minuteStr);
       
       console.log('현재 시간 정보:', {
         utcNow: now.toISOString(),
-        koreaTime: koreaTime.toISOString(),
-        today: today,
-        hour: koreaTime.getHours(),
-        minute: koreaTime.getMinutes()
+        koreaTimeString,
+        today,
+        hour,
+        minute
       });
       
       try {
@@ -109,8 +122,6 @@ export default function MealImageUploader({
         }
         
         // 3. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
-        const hour = koreaTime.getHours();
-        const minute = koreaTime.getMinutes();
         const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
         
         console.log('시간 조건 확인:', {
