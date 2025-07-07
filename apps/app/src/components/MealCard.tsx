@@ -455,7 +455,6 @@ export default function MealCard({
         {/* 이미지 업로더 */}
         <MealImageUploader
           key={`uploader-${meal.id}-${meal.meal_date}`} /* 날짜 변경 시 컴포넌트 재마운트 */
-          mealId={meal.id}
           schoolCode={meal.school_code}
           mealDate={meal.meal_date}
           mealType={meal.meal_type}
