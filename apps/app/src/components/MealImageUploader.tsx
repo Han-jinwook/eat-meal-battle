@@ -380,7 +380,6 @@ export default function MealImageUploader({
               profile_image: userData.profile_image 
             };
           }
-          }
         } catch (e) {
           console.error('AI 이미지 생성 - 사용자 정보 조회 예외:', e);
         }
