@@ -299,3 +299,26 @@ getWeekInfoByWeekNumber
 
 중요: Netlify에서 "배포 성공" 메시지는 함수가 정상 작동한다는 보장이 아님! 
 항상 배포 로그의 오류 메시지를 꼼꼼히 확인할 것.
+
+[2025-07-07] Netlify 함수 404 오류 해결 내용
+- 문제: Netlify 서버리스 함수들이 404 오류를 반환하는 문제 발생
+- 원인: 
+  1. 일부 함수 파일에 `exports.handler` 래퍼 누락
+  2. 루트 레벨과 앱 레벨에 중복된 함수 파일 존재
+  3. 중복된 netlify.toml 설정 파일 충돌
+  4. 함수 URL 접근 시 사용자 지정 도메인(lunbat.com) 사용 필요
+
+- 해결 방법:
+  1. 누락된 `exports.handler` 래퍼 추가 (update-meals.js, auto-generate-meal-images.js, check-missing-meal-images.js)
+  2. 루트 레벨 함수 파일들을 백업 이름으로 변경 (.backup.js)
+  3. apps/app/netlify.toml 파일을 .backup으로 변경하여 루트 설정만 사용
+  4. 함수 URL 접근 시 올바른 도메인 사용: https://lunbat.com/.netlify/functions/[function-name]
+
+- 테스트:
+  - schools 함수: https://lunbat.com/.netlify/functions/schools?keyword=서울 (200 OK)
+  - update-meals 함수: https://lunbat.com/.netlify/functions/update-meals (401 Unauthorized, 인증 필요하므로 정상)
+
+- 주의사항:
+  1. 함수 URL은 항상 사용자 지정 도메인(lunbat.com)으로 접근해야 함
+  2. 대부분의 함수는 쿼리 파라미터나 인증이 필요함
+  3. 함수 코드 수정 시 항상 exports.handler 구조 유지할 것

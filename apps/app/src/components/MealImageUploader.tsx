@@ -33,7 +33,7 @@ export default function MealImageUploader({
   const [userId, setUserId] = useState<string | null>(null);
   const [isButtonReady, setIsButtonReady] = useState(false);
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
-  const [showAiGenButton, setShowAiGenButton] = useState(true); // 테스트를 위해 항상 true로 설정
+  const [showAiGenButton, setShowAiGenButton] = useState(false); // 기본값은 비활성화
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 사용자 정보 가져오기
@@ -48,8 +48,8 @@ export default function MealImageUploader({
     fetchUserInfo();
   }, [supabase]);
 
-  // AI 이미지 생성 버튼 표시 여부 확인 - 테스트를 위해 주석 처리
-  /*useEffect(() => {
+  // AI 이미지 생성 버튼 표시 여부 확인
+  useEffect(() => {
     const checkIfAiImageNeeded = async () => {
       if (!mealId) return;
 
@@ -67,7 +67,7 @@ export default function MealImageUploader({
 
       if (mealHeadError) {
         if (mealHeadError.code === '42P01') {
-          console.debug('meals 테이블이 없습니다. AI 버튼 숨김');
+          console.debug('meals 테이블이 없습니다. AI 버튼 비활성화');
         } else {
           console.debug(`급식 ID(${mealId}) 존재 여부 확인 중 예상된 오류 (아마도 삭제된 급식):`, mealHeadError.message);
         }
@@ -76,7 +76,8 @@ export default function MealImageUploader({
       }
 
       if (!mealCount) {
-        // 해당 급식이 없음
+        // 해당 급식이 없음 - 버튼 비활성화
+        console.log('AI 이미지 생성 버튼 비활성화: 급식 정보 없음');
         setShowAiGenButton(false);
         return;
       }
@@ -95,14 +96,14 @@ export default function MealImageUploader({
         } else {
           console.error('급식 날짜 조회 오류:', mealFetchError);
         }
-        // 데이터 없거나 스키마 없음이면 AI 버튼 숨기고 종료
+        // 데이터 없거나 스키마 없음이면 AI 버튼 비활성화하고 종료
         setShowAiGenButton(false);
         return;
       }
       
-      // 3. 급식 날짜가 오늘이 아니면 버튼 숨김
+      // 3. 급식 날짜가 오늘이 아니면 버튼 비활성화
       if (!mealData || mealData.meal_date !== today) {
-        console.log('AI 이미지 생성 버튼 숨김: 당일 날짜가 아님', {
+        console.log('AI 이미지 생성 버튼 비활성화: 당일 날짜가 아님', {
           today,
           mealDate: mealData.meal_date
         });
@@ -110,34 +111,38 @@ export default function MealImageUploader({
         return;
       }
       
-      // 2. 시간 조건 확인 (12:30 이후)
+      // 4. 시간 조건 확인 (12:30 이후)
       const now = new Date();
-      const isAfterLunchTime = now.getHours() > 12 || (now.getHours() === 12 && now.getMinutes() >= 30);
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
       
-      if (!isAfterLunchTime) {
-        console.log('AI 이미지 생성 버튼 숨김: 12:30 이전');
+      if (!isPastCutoffTime) {
+        console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
         setShowAiGenButton(false);
         return;
       }
       
-      // 3. 현재 급식의 이미지 여부 확인
-      const { data: images } = await supabase
+      // 3. 이미지 존재 여부 확인
+      const { data: images, error: imagesError } = await supabase
         .from('meal_images')
-        .select('id, status, match_score')
+        .select('id, status')
         .eq('meal_id', mealId);
-        
-      // 4. 버튼 표시 조건:
-      // - 이미지가 없거나
-      // - 이미지는 있지만 모두 승인되지 않은 경우
-      const shouldShow = !images || images.length === 0 || !images.some(img => img.status === 'approved');
+      
+      if (imagesError) {
+        console.error('이미지 조회 오류:', imagesError);
+        // 오류 발생 시 안전하게 버튼 비활성화
+        setShowAiGenButton(false);
+        return;
+      }
+      
+      // 승인된 이미지가 있으면 버튼 비활성화
+      const hasApprovedImage = images && images.some(img => img.status === 'approved');
+      const shouldShow = !hasApprovedImage;
       
       console.log('AI 이미지 생성 버튼 표시 여부:', {
-        mealId,
-        today,
-        mealDate: mealData.meal_date,
-        isAfterLunchTime,
-        imagesCount: images?.length || 0,
-        hasApprovedImages: images?.some(img => img.status === 'approved'),
+        hasImages: images && images.length > 0,
+        hasApprovedImage,
         shouldShow
       });
       
@@ -147,13 +152,15 @@ export default function MealImageUploader({
     if (mealId) {
       checkIfAiImageNeeded();
     }
-  }, [mealId, supabase]);*/
+  }, [mealId, supabase]);
   
-  // 테스트를 위해 항상 AI 이미지 생성 버튼 표시
+  // 이미지 업로드 후 AI 이미지 생성 버튼 비활성화
   useEffect(() => {
-    console.log('테스트 모드: AI 이미지 생성 버튼 항상 표시');
-    setShowAiGenButton(true);
-  }, []);
+    if (uploadedImage) {
+      console.log('이미지 업로드 완료: AI 이미지 생성 버튼 비활성화');
+      setShowAiGenButton(false);
+    }
+  }, [uploadedImage]);
   
   // 승인된 이미지 가져오는 함수 (재사용을 위해 함수로 분리)
   const fetchApprovedImage = useCallback(async () => {
@@ -994,11 +1001,10 @@ export default function MealImageUploader({
               )}
             </button>
             
-            {showAiGenButton && (
-              <button
+            <button
                 onClick={handleAiImageGeneration}
-                disabled={imageStatus === 'generating'}
-                className={`px-4 py-2 rounded-md text-white ${imageStatus === 'generating' ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} flex items-center`}
+                disabled={!showAiGenButton || imageStatus === 'generating'}
+                className={`px-4 py-2 rounded-md text-white ${!showAiGenButton || imageStatus === 'generating' ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} flex items-center`}
               >
                 {imageStatus === 'generating' ? (
                   <>
@@ -1017,7 +1023,6 @@ export default function MealImageUploader({
                   </>
                 )}
               </button>
-            )}
           </div>
         </>
       )}

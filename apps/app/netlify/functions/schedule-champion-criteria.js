@@ -1,135 +1,96 @@
 /**
- * 장원 조건 초기화 함수
+ * 장원 조건 스케줄러 함수
  * 
- * 이 함수는 테스트 기간 중 6-8월 데이터를 일괄적으로 설정합니다.
- * NEIS 데이터를 시뮬레이션하여 각 학교별/학년별 장원 조건을 설정합니다.
- * 기존 시스템에는 영향을 주지 않습니다.
+ * 이 함수는 매월 말에 실행되어 다음 달의 장원 조건을 설정합니다.
+ * 외부 스케줄러(예: GitHub Actions, CRON 작업)에 의해 호출됩니다.
  */
 
 const { createClient } = require('@supabase/supabase-js')
 
 exports.handler = async (event) => {
-  // API 키 검증 (임시 비활성화)
-  // const authToken = event.headers['x-api-key']
-  // if (authToken !== process.env.ADMIN_API_KEY) {
-  //   return {
-  //     statusCode: 401,
-  //     body: JSON.stringify({ error: 'Unauthorized' })
-  //   }
-  // }
+  // API 키 검증
+  const authToken = event.headers?.['x-api-key']
+  const queryApiKey = event.queryStringParameters?.api_key
+  
+  if (!process.env.ADMIN_API_KEY || (authToken !== process.env.ADMIN_API_KEY && queryApiKey !== process.env.ADMIN_API_KEY)) {
+    console.log('API 키 인증 실패');
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Unauthorized', message: '유효한 API 키가 필요합니다' })
+    }
+  }
 
   try {
-    console.log('장원 조건 초기화 시작...')
+    console.log('다음 달 장원 조건 설정 시작...')
+    
+    // Supabase 환경 변수 확인
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Supabase 환경 변수가 설정되지 않았습니다');
+    }
     
     // Supabase 클라이언트 초기화
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
-    
-    // 요청 파라미터 확인
-    let targetSchoolCode = null;
-    let targetOfficeCode = null;
-    let useCurrentMonth = false;
-    
-    // 쿼리 파라미터 또는 요청 본문에서 학교 코드 확인
-    if (event.queryStringParameters && event.queryStringParameters.school_code) {
-      targetSchoolCode = event.queryStringParameters.school_code;
-      targetOfficeCode = event.queryStringParameters.office_code;
-      useCurrentMonth = true;
-      console.log(`특정 학교(${targetSchoolCode}) 장원 조건 초기화 요청 받음`);
-    } else if (event.body) {
-      try {
-        const body = JSON.parse(event.body);
-        if (body.school_code) {
-          targetSchoolCode = body.school_code;
-          targetOfficeCode = body.office_code;
-          useCurrentMonth = true;
-          console.log(`특정 학교(${targetSchoolCode}) 장원 조건 초기화 요청 받음 (JSON 본문)`);
-        }
-      } catch (e) {
-        console.log('요청 본문 파싱 실패, 모든 학교 처리 진행');
-      }
-    }
+    console.log('Supabase 클라이언트 초기화 완료');
 
     // 학교 목록 가져오기
-    let schools = [];
-    
-    if (targetSchoolCode) {
-      // 특정 학교만 처리
-      if (targetOfficeCode) {
-        schools = [{ school_code: targetSchoolCode, office_code: targetOfficeCode }];
-      } else {
-        // office_code가 없는 경우 DB에서 조회
-        const { data, error } = await supabase
-          .from('school_infos')
-          .select('school_code, office_code')
-          .eq('school_code', targetSchoolCode)
-          .limit(1);
-          
-        if (error) {
-          throw new Error(`학교 정보 조회 실패: ${error.message}`);
-        }
-        
-        if (data && data.length > 0) {
-          schools = data;
-        } else {
-          throw new Error(`학교 코드 ${targetSchoolCode}에 해당하는 학교를 찾을 수 없습니다.`);
-        }
-      }
-    } else {
-      // 모든 학교 처리
-      const { data, error } = await supabase
-        .from('school_infos')
-        .select('school_code, office_code');
-        
-      if (error) {
-        throw new Error(`학교 목록 조회 실패: ${error.message}`);
-      }
-      
-      schools = data;
+    const { data: schools, error: schoolError } = await supabase
+      .from('school_infos')
+      .select('school_code, office_code')
+
+    if (schoolError) {
+      throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
     }
 
-    console.log(`총 ${schools.length}개 학교 발견`);
-
-    // 수집할 월 목록 설정
-    let months = [];
-    let year = 2025; // 기본값
-    
-    if (useCurrentMonth) {
-      // 현재 월과 다음 월 설정
-      const now = new Date();
-      year = now.getFullYear();
-      const currentMonth = now.getMonth() + 1; // JavaScript의 월은 0부터 시작
-      
-      months = [currentMonth];
-      
-      // 다음 월 추가 (12월이면 다음 해 1월로)
-      const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-      if (nextMonth !== 1) {
-        months.push(nextMonth);
-      }
-      
-      console.log(`${year}년 ${months.join(', ')}월 급식 데이터 수집 시작 (현재 월 기준)`);
-    } else {
-      // 테스트용 고정 월 (6, 7, 8월)
-      months = [6, 7, 8];
-      console.log(`${year}년 ${months.join(', ')}월 급식 데이터 수집 시작 (테스트 데이터)`);
+    if (!schools || schools.length === 0) {
+      throw new Error('등록된 학교 정보가 없습니다');
     }
+
+    console.log(`총 ${schools.length}개 학교 발견`)
+
+    // 다음 달 계산
+    const now = new Date()
+    let nextMonth = now.getMonth() + 2 // 현재 월 + 1 (JavaScript의 월은 0부터 시작)
+    let nextYear = now.getFullYear()
     
-    let processedCount = 0;
-    const results = []
+    if (nextMonth > 12) {
+      nextMonth = nextMonth - 12
+      nextYear = nextYear + 1
+    }
+
+    console.log(`${nextYear}년 ${nextMonth}월 급식 데이터 수집 시작`)
+    
+    // 결과 저장용 변수
+    const results = {
+      success: 0,
+      error: 0,
+      details: []
+    }
 
     // 각 학교별로 급식 데이터 수집
     for (const school of schools) {
-      console.log(`${school.school_code} 학교 처리 중...`)
-      
-      for (const month of months) {
+      try {
+        console.log(`[${school.school_code}] 학교 처리 중...`)
+        
+        // 교육청 코드 유효성 확인
+        if (!school.office_code) {
+          console.log(`[${school.school_code}] 학교의 교육청 코드가 없습니다`);
+          results.error++;
+          results.details.push({
+            school_code: school.school_code,
+            status: 'error',
+            message: '교육청 코드 없음'
+          });
+          continue; // 다음 학교로 이동
+        }
+        
         // NEIS API를 통해 급식 데이터 조회
-        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, year, month)
+        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, nextYear, nextMonth)
         
         // 주차별 급식 일수 계산
-        const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month)
+        const weeklyMealDays = calculateWeeklyMealDays(mealDays, nextYear, nextMonth)
         
         // 학교별 급식 조건 저장 (학년 구분 없음)
         const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
@@ -137,33 +98,46 @@ exports.handler = async (event) => {
         await saveChampionCriteria(
           supabase,
           school.school_code,
-          year,
-          month,
+          nextYear,
+          nextMonth,
           weeklyMealDays,
           monthlyTotal
         )
         
-        results.push({
-          school: school.school_code,
-          month,
+        results.success++;
+        results.details.push({
+          school_code: school.school_code,
+          status: 'success',
+          month: nextMonth,
+          year: nextYear,
           weekly: weeklyMealDays,
-          monthly: Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
-        })
+          monthly: monthlyTotal
+        });
+        
+        console.log(`[${school.school_code}] ${nextYear}년 ${nextMonth}월 장원 조건 설정 완료`);
+      } catch (schoolError) {
+        console.error(`[${school.school_code}] 학교 처리 중 오류:`, schoolError);
+        results.error++;
+        results.details.push({
+          school_code: school.school_code,
+          status: 'error',
+          message: schoolError.message
+        });
       }
       
-      processedCount++
-      console.log(`진행 상황: ${processedCount}/${schools.length} 학교 처리 완료`)
+      // API 호출 제한을 위한 지연
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: `${schools.length}개 학교의 ${year}년 ${months.join(', ')}월 급식 데이터 처리 완료`,
-        summary: results
+        message: `${results.success}개 학교의 ${nextYear}년 ${nextMonth}월 장원 조건 설정 완료 (오류: ${results.error}개)`,
+        results
       })
     }
   } catch (error) {
-    console.error('급식 데이터 초기화 오류:', error)
+    console.error('장원 조건 설정 오류:', error)
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message })
