@@ -11,8 +11,7 @@ try {
   console.log('dotenv 모듈을 로드할 수 없습니다. Netlify 환경에서는 정상입니다.');
 }
 
-/*
-
+exports.handler = async function(event, context) {
   console.log('[auto-generate-meal-images] 함수 시작');
   
   try {
@@ -276,3 +275,6 @@ try {
       body: JSON.stringify({
         error: error.message || '서버 오류가 발생했습니다'
       })
+    };
+  }
+}
