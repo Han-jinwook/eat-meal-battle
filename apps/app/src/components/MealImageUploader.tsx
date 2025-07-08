@@ -85,6 +85,7 @@ export default function MealImageUploader({
       });
       
       try {
+<<<<<<< HEAD
         // 1. 오늘 날짜 + 학교 코드로 급식 정보 조회
         const { data: mealData, error: mealFetchError } = await supabase
           .from('meal_menus')
@@ -92,6 +93,14 @@ export default function MealImageUploader({
           .eq('meal_date', today)
           .eq('school_code', schoolCode)
           .maybeSingle(); // 0개 또는 1개만 허용
+=======
+        // 1. 급식 정보 조회 - 날짜와 메뉴 항목 포함하여 조회
+        const { data: mealData, error: mealFetchError } = await supabase
+          .from('meal_menus')
+          .select('id, meal_date, menu_items')
+          .eq('id', mealId)
+          .maybeSingle(); // single() 대신 maybeSingle() 사용하여 404 방지
+>>>>>>> d2d6c88adebb7da887def0dcfbb65c5725bfc44f
   
         console.log('급식 정보 조회 결과:', { 
           today, 
@@ -132,6 +141,24 @@ export default function MealImageUploader({
         
         if (!hasValidMeal) {
           console.log('AI 이미지 생성 버튼 비활성화: 급식 정보가 없거나 메뉴가 비어있음');
+          setShowAiGenButton(false);
+          return;
+        }
+        
+        // 2-1. 급식 정보가 유효한지 확인 ("급식 정보가 없습니다" 문자열 체크)
+        const hasValidMeal = Array.isArray(mealData.menu_items) && 
+                           mealData.menu_items.length > 0 &&
+                           !mealData.menu_items.some(item => 
+                             typeof item === 'string' && item.includes('급식 정보가 없습니다')
+                           );
+        
+        console.log('급식 정보 유효성 확인:', {
+          menuItems: mealData.menu_items,
+          hasValidMeal
+        });
+        
+        if (!hasValidMeal) {
+          console.log('AI 이미지 생성 버튼 비활성화: 유효한 급식 정보가 없음');
           setShowAiGenButton(false);
           return;
         }

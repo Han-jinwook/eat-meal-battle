@@ -11,6 +11,7 @@ import useMeals from '@/hooks/useMeals';
 import useModal from '@/hooks/useModal';
 import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
 import { CommentSection } from '@/components/comments';
+import DateNavigator from '@/components/DateNavigator';
 // 디버그 패널 제거
 
 export default function Home() {
@@ -379,57 +380,20 @@ export default function Home() {
   <div className="mb-6"></div>
 )}
 
-        {/* 날짜 선택 - 공간 최적화 원칙에 맞게 수정 */}
-        <div className="mb-2 mt-1">
-          <input
-            type="date"
-            id="date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            className="sr-only" // 화면에서 숨김
-          />
-          <button 
-            onClick={() => {
-              // showPicker 메서드에 대한 타입 안전성 보장
-              const dateInput = document.getElementById('date') as HTMLInputElement;
-              dateInput?.showPicker?.();
-            }} 
-            className="w-full flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded border border-blue-100 shadow-sm"
-          >
-            {selectedDate && (() => {
-              const date = new Date(selectedDate);
-              if (!isNaN(date.getTime())) {
-                const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const weekday = weekdays[date.getDay()];
-                
-                return (
-                  <>
-                    <div className="flex items-center">
-                      <span className="text-blue-600 mr-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {`${year}-${month}-${day}`}
-                      </span>
-                      <span className="ml-1 text-xs font-medium px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
-                        {weekday}
-                      </span>
-                    </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </>
-                );
-              }
-              return selectedDate;
-            })()}
-          </button>
-        </div>
+        {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
+        <DateNavigator 
+          selectedDate={selectedDate}
+          onDateChange={(date) => {
+            // 기존 handleDateChange 로직과 동일하게 처리
+            setSelectedDate(date);
+            updateDateWithUrl(date);
+            
+            // 급식 정보 자동 조회
+            if (userSchool?.school_code && !userLoading) {
+              fetchMealInfo(userSchool.school_code, date, resolveOfficeCode());
+            }
+          }}
+        />
         
         {/* 에러 메시지 */}
         {(error || pageError || userError) && !meals.length && (
