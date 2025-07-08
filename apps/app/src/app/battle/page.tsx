@@ -60,12 +60,12 @@ export default function BattlePage() {
         </div>
       </div>
 
-      {/* 네비게이션 컨트롤들 - 한 줄 배치 */}
+      {/* 네비게이션 컨트롤들 - 한 줄 배치 (모바일에서도) */}
       <div className="mb-6">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        <div className="flex gap-4 md:gap-6">
           {/* 일별 집계 섹션 */}
           <div className={`flex-1 transition-all duration-300 ${
-            viewMode === 'daily' ? 'opacity-100' : 'opacity-50 pointer-events-none'
+            viewMode === 'daily' ? 'opacity-100' : 'opacity-60'
           }`}>
             <button
               onClick={() => setViewMode('daily')}
@@ -82,14 +82,14 @@ export default function BattlePage() {
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
                 theme="red"
-                size="md"
+                size="sm"
               />
             </div>
           </div>
 
           {/* 월별 집계 섹션 */}
           <div className={`flex-1 transition-all duration-300 ${
-            viewMode === 'monthly' ? 'opacity-100' : 'opacity-50 pointer-events-none'
+            viewMode === 'monthly' ? 'opacity-100' : 'opacity-60'
           }`}>
             <button
               onClick={() => setViewMode('monthly')}
@@ -99,7 +99,7 @@ export default function BattlePage() {
             >
               📊 월별 집계
             </button>
-            <div className={`flex items-center gap-2 w-fit transition-all duration-300 ${
+            <div className={`flex items-center gap-1 w-fit transition-all duration-300 ${
               viewMode === 'monthly' ? 'transform-none' : 'transform scale-95'
             }`}>
               <button
@@ -108,18 +108,18 @@ export default function BattlePage() {
                   current.setMonth(current.getMonth() - 1);
                   setSelectedMonth(current.toISOString().slice(0, 7));
                 }}
-                className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
                   viewMode === 'monthly'
                     ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
                     : 'bg-gray-50 border-gray-200 text-gray-400'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               
-              <div className={`rounded-lg px-4 py-2 min-w-32 text-center border transition-all duration-200 ${
+              <div className={`rounded-lg px-2 py-1.5 min-w-20 text-center border transition-all duration-200 text-xs ${
                 viewMode === 'monthly'
                   ? 'bg-red-50 border-red-200'
                   : 'bg-gray-50 border-gray-200'
@@ -128,8 +128,8 @@ export default function BattlePage() {
                   viewMode === 'monthly' ? 'text-red-700' : 'text-gray-500'
                 }`}>
                   {new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { 
-                    year: 'numeric', 
-                    month: 'long' 
+                    year: '2-digit', 
+                    month: 'short' 
                   })}
                 </span>
               </div>
@@ -140,13 +140,13 @@ export default function BattlePage() {
                   current.setMonth(current.getMonth() + 1);
                   setSelectedMonth(current.toISOString().slice(0, 7));
                 }}
-                className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
                   viewMode === 'monthly'
                     ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
                     : 'bg-gray-50 border-gray-200 text-gray-400'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
