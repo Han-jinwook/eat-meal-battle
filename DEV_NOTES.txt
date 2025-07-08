@@ -322,3 +322,13 @@ getWeekInfoByWeekNumber
   1. 함수 URL은 항상 사용자 지정 도메인(lunbat.com)으로 접근해야 함
   2. 대부분의 함수는 쿼리 파라미터나 인증이 필요함
   3. 함수 코드 수정 시 항상 exports.handler 구조 유지할 것
+
+  [AI이미지생성] 버튼 활성/비활성화  조건
+  meal_menus 테이블 조회
+조건: school_code = schoolCode AND meal_date = 오늘날짜(한국시간)
+결과: id (= mealId) 획득
+저장: currentMealId 상태 변수에 저장
+meal_images 테이블 조회
+조건: meal_id = currentMealId AND status = 'approved'
+결과 확인: 승인된 이미지 존재 여부 확인
+버튼 활성화 조건: 승인된 이미지가 없을 때 + 12:30 이후(한국시간) + 유효한 메뉴 존재
