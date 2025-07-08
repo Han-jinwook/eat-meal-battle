@@ -100,21 +100,21 @@ export default function DateNavigator({
       sm: {
         button: 'w-6 h-6',
         icon: 'h-3 w-3',
-        padding: 'px-1.5 py-1',
+        padding: 'px-1 py-1',
         text: 'text-xs',
         badge: 'text-xs px-1 py-0.5'
       },
       md: {
         button: 'w-8 h-8',
         icon: 'h-4 w-4',
-        padding: 'px-2 py-1.5',
+        padding: 'px-1.5 py-1',
         text: 'text-sm',
         badge: 'text-xs px-1.5 py-0.5'
       },
       lg: {
         button: 'w-10 h-10',
         icon: 'h-5 w-5',
-        padding: 'px-3 py-2',
+        padding: 'px-2 py-1.5',
         text: 'text-base',
         badge: 'text-sm px-2 py-1'
       }
@@ -137,7 +137,7 @@ export default function DateNavigator({
       />
       
       {/* 날짜 네비게이션 UI */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 w-fit">
         {/* 이전 날짜 버튼 */}
         <button
           onClick={() => navigateDate('prev')}
@@ -152,7 +152,7 @@ export default function DateNavigator({
         {/* 날짜 표시 버튼 */}
         <button 
           onClick={openDatePicker}
-          className={`flex-1 flex items-center justify-between ${sizeStyles.padding} ${themeColors.bg} rounded border ${themeColors.border} shadow-sm transition-colors`}
+          className={`flex items-center justify-between ${sizeStyles.padding} ${themeColors.bg} rounded border ${themeColors.border} shadow-sm transition-colors min-w-0`}
         >
           {selectedDate && (() => {
             const date = new Date(selectedDate);
