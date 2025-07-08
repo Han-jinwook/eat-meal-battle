@@ -38,7 +38,7 @@ export default function DateNavigator({
       const year = newDate.getFullYear();
       const month = String(newDate.getMonth() + 1).padStart(2, '0');
       const day = String(newDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
+      const formattedDate = year + '-' + month + '-' + day;
       
       onDateChange(formattedDate);
     } catch (error) {
@@ -172,7 +172,7 @@ export default function DateNavigator({
                       </svg>
                     </span>
                     <span className={`${sizeStyles.text} font-medium text-gray-700`}>
-                      {`${year}-${month}-${day}`}
+                      {year + '-' + month + '-' + day}
                     </span>
                     {showWeekday && (
                       <span className={`ml-1 font-medium ${sizeStyles.badge} ${themeColors.badge} rounded`}>
