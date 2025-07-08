@@ -84,6 +84,8 @@ export default function MealImageUploader({
         minute
       });
       
+      let currentMealId = null;
+      
       try {
         // 1. 오늘 날짜 + 학교 코드로 급식 정보 조회
         const { data: mealData, error: mealFetchError } = await supabase
@@ -113,7 +115,7 @@ export default function MealImageUploader({
         }
         
         // 2. 급식 데이터에서 mealId 획득
-        const currentMealId = mealData.id;
+        currentMealId = mealData.id;
         console.log('획득한 mealId:', currentMealId);
         
         // 급식 정보 유효성 찴크
@@ -136,13 +138,7 @@ export default function MealImageUploader({
           return;
         }
         
-        // 이미 위에서 hasValidMeal 체크가 완료되었으므로 중복 제거
-        
-        if (!hasValidMeal) {
-          console.log('AI 이미지 생성 버튼 비활성화: 유효한 급식 정보가 없음');
-          setShowAiGenButton(false);
-          return;
-        }
+        // hasValidMeal 체크는 위에서 이미 완료됨
         
         // 3. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
         const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
@@ -220,10 +216,10 @@ export default function MealImageUploader({
       }
     };
     
-    if (mealId) {
+    if (schoolCode) {
       checkIfAiImageNeeded();
     }
-  }, [mealId, supabase]);
+  }, [schoolCode, supabase]);
   
   // 이미지 업로드 후 AI 이미지 생성 버튼 비활성화
   useEffect(() => {
