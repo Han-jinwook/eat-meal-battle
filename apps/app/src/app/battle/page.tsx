@@ -13,6 +13,7 @@ export default function BattlePage() {
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
   const [activeTab, setActiveTab] = useState<'menu' | 'meal'>('menu');
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -59,57 +60,97 @@ export default function BattlePage() {
         </div>
       </div>
 
-      {/* 네비게이션 컨트롤들 */}
-      <div className="mb-6 space-y-4">
-        {/* 날짜 선택 - DateNavigator (붉은 계통) */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">일별 집계</h3>
-          <DateNavigator 
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            theme="red"
-            size="md"
-          />
-        </div>
-
-        {/* 월 이동 네비게이터 */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">월별 집계</h3>
-          <div className="flex items-center gap-2 w-fit">
+      {/* 네비게이션 컨트롤들 - 한 줄 배치 */}
+      <div className="mb-6">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* 일별 집계 섹션 */}
+          <div className={`flex-1 transition-all duration-300 ${
+            viewMode === 'daily' ? 'opacity-100' : 'opacity-50 pointer-events-none'
+          }`}>
             <button
-              onClick={() => {
-                const current = new Date(selectedMonth + '-01');
-                current.setMonth(current.getMonth() - 1);
-                setSelectedMonth(current.toISOString().slice(0, 7));
-              }}
-              className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 border border-red-200 flex items-center justify-center text-red-600 transition-colors"
+              onClick={() => setViewMode('daily')}
+              className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
+                viewMode === 'daily' ? 'text-red-600' : 'text-gray-500 hover:text-red-500'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              📅 일별 집계
             </button>
-            
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 min-w-32 text-center">
-              <span className="text-red-700 font-medium">
-                {new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { 
-                  year: 'numeric', 
-                  month: 'long' 
-                })}
-              </span>
+            <div className={`transition-all duration-300 ${
+              viewMode === 'daily' ? 'transform-none' : 'transform scale-95'
+            }`}>
+              <DateNavigator 
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                theme="red"
+                size="md"
+              />
             </div>
-            
+          </div>
+
+          {/* 월별 집계 섹션 */}
+          <div className={`flex-1 transition-all duration-300 ${
+            viewMode === 'monthly' ? 'opacity-100' : 'opacity-50 pointer-events-none'
+          }`}>
             <button
-              onClick={() => {
-                const current = new Date(selectedMonth + '-01');
-                current.setMonth(current.getMonth() + 1);
-                setSelectedMonth(current.toISOString().slice(0, 7));
-              }}
-              className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 border border-red-200 flex items-center justify-center text-red-600 transition-colors"
+              onClick={() => setViewMode('monthly')}
+              className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
+                viewMode === 'monthly' ? 'text-red-600' : 'text-gray-500 hover:text-red-500'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              📊 월별 집계
             </button>
+            <div className={`flex items-center gap-2 w-fit transition-all duration-300 ${
+              viewMode === 'monthly' ? 'transform-none' : 'transform scale-95'
+            }`}>
+              <button
+                onClick={() => {
+                  const current = new Date(selectedMonth + '-01');
+                  current.setMonth(current.getMonth() - 1);
+                  setSelectedMonth(current.toISOString().slice(0, 7));
+                }}
+                className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                  viewMode === 'monthly'
+                    ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                    : 'bg-gray-50 border-gray-200 text-gray-400'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <div className={`rounded-lg px-4 py-2 min-w-32 text-center border transition-all duration-200 ${
+                viewMode === 'monthly'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
+                <span className={`font-medium transition-colors duration-200 ${
+                  viewMode === 'monthly' ? 'text-red-700' : 'text-gray-500'
+                }`}>
+                  {new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                  })}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => {
+                  const current = new Date(selectedMonth + '-01');
+                  current.setMonth(current.getMonth() + 1);
+                  setSelectedMonth(current.toISOString().slice(0, 7));
+                }}
+                className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                  viewMode === 'monthly'
+                    ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                    : 'bg-gray-50 border-gray-200 text-gray-400'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -123,17 +164,23 @@ export default function BattlePage() {
         {activeTab === 'menu' ? (
           <div className="text-center py-12">
             <h2 className="text-xl font-bold text-red-600 mb-2">메뉴 배틀</h2>
-            <p className="text-red-500">선택한 날짜의 메뉴별 배틀 결과를 보여줍니다.</p>
+            <p className="text-red-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 메뉴별 배틀 결과를 보여줍니다.</p>
             <p className="text-sm text-red-400 mt-2">
-              선택 날짜: {new Date(selectedDate).toLocaleDateString('ko-KR')}
+              {viewMode === 'daily' 
+                ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
+                : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
+              }
             </p>
           </div>
         ) : (
           <div className="text-center py-12">
             <h2 className="text-xl font-bold text-blue-600 mb-2">급식 배틀</h2>
-            <p className="text-blue-500">선택한 날짜의 급식별 배틀 결과를 보여줍니다.</p>
+            <p className="text-blue-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 급식별 배틀 결과를 보여줍니다.</p>
             <p className="text-sm text-blue-400 mt-2">
-              선택 날짜: {new Date(selectedDate).toLocaleDateString('ko-KR')}
+              {viewMode === 'daily' 
+                ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
+                : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
+              }
             </p>
           </div>
         )}
