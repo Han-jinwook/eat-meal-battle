@@ -85,22 +85,12 @@ export default function MealImageUploader({
       });
       
       try {
-<<<<<<< HEAD
-        // 1. 오늘 날짜 + 학교 코드로 급식 정보 조회
-        const { data: mealData, error: mealFetchError } = await supabase
-          .from('meal_menus')
-          .select('id, meal_date, menu_items')
-          .eq('meal_date', today)
-          .eq('school_code', schoolCode)
-          .maybeSingle(); // 0개 또는 1개만 허용
-=======
         // 1. 급식 정보 조회 - 날짜와 메뉴 항목 포함하여 조회
         const { data: mealData, error: mealFetchError } = await supabase
           .from('meal_menus')
           .select('id, meal_date, menu_items')
           .eq('id', mealId)
           .maybeSingle(); // single() 대신 maybeSingle() 사용하여 404 방지
->>>>>>> d2d6c88adebb7da887def0dcfbb65c5725bfc44f
   
         console.log('급식 정보 조회 결과:', { 
           today, 
