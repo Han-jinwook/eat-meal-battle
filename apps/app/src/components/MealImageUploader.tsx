@@ -50,51 +50,60 @@ export default function MealImageUploader({
   // AI 이미지 생성 버튼 표시 여부 확인
   useEffect(() => {
     const checkIfAiImageNeeded = async () => {
-      if (!schoolCode) {
-        console.log('schoolCode가 없음, AI 버튼 비활성화');
-        setShowAiGenButton(false);
-        return;
-      }
-      
-      console.log('학교 코드 확인:', schoolCode);
+    if (!schoolCode || !mealDate) {
+      console.log('schoolCode 또는 mealDate가 없음, AI 버튼 비활성화');
+      setShowAiGenButton(false);
+      return;
+    }
+    
+    console.log('AI 버튼 조건 확인:', { schoolCode, mealDate });
 
-      // 당일 날짜인지 확인 (한국 시간 기준)
-      const now = new Date();
-      // 한국 시간대로 변환
-      const koreaTimeString = now.toLocaleString('en-CA', { 
-        timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
-      
-      const [dateStr, timeStr] = koreaTimeString.split(', ');
-      const today = dateStr; // YYYY-MM-DD 형식
-      const [hourStr, minuteStr] = timeStr.split(':');
-      const hour = parseInt(hourStr);
-      const minute = parseInt(minuteStr);
-      
-      console.log('현재 시간 정보:', {
-        utcNow: now.toISOString(),
-        koreaTimeString,
-        today,
-        hour,
-        minute
-      });
-      
-      let currentMealId = null;
-      
-      try {
-        // 1. 오늘 날짜 + 학교 코드로 급식 정보 조회
-        const { data: mealData, error: mealFetchError } = await supabase
-          .from('meal_menus')
-          .select('id, meal_date, menu_items')
-          .eq('meal_date', today)
-          .eq('school_code', schoolCode)
-          .maybeSingle(); // 0개 또는 1개만 허용
+    // 현재 날짜와 mealDate 비교 (한국 시간 기준)
+    const now = new Date();
+    // 한국 시간대로 변환
+    const koreaTimeString = now.toLocaleString('en-CA', { 
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const [dateStr, timeStr] = koreaTimeString.split(', ');
+    const today = dateStr; // YYYY-MM-DD 형식
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr);
+    
+    console.log('날짜 비교:', {
+      utcNow: now.toISOString(),
+      koreaTimeString,
+      today,
+      mealDate,
+      isToday: today === mealDate,
+      hour,
+      minute
+    });
+    
+    // mealDate가 오늘이 아니면 AI 버튼 비활성화
+    if (mealDate !== today) {
+      console.log('AI 이미지 생성 버튼 비활성화: 오늘 날짜가 아님');
+      setShowAiGenButton(false);
+      return;
+    }
+    
+    let currentMealId = null;
+    
+    try {
+      // 1. mealDate + 학교 코드로 급식 정보 조회
+      const { data: mealData, error: mealFetchError } = await supabase
+        .from('meal_menus')
+        .select('id, meal_date, menu_items')
+        .eq('meal_date', mealDate)
+        .eq('school_code', schoolCode)
+        .maybeSingle(); // 0개 또는 1개만 허용
   
         console.log('급식 정보 조회 결과:', { 
           today, 
@@ -218,10 +227,25 @@ export default function MealImageUploader({
       }
     };
     
-    if (schoolCode) {
+    if (schoolCode && mealDate) {
       checkIfAiImageNeeded();
     }
-  }, [schoolCode, supabase]);
+  }, [schoolCode, mealDate, supabase]);
+  
+  // mealDate 변경 시 상태 초기화
+  useEffect(() => {
+    console.log('mealDate 변경됨, 상태 초기화:', mealDate);
+    // 이전 날짜의 미리보기나 AI 생성 이미지 제거
+    setPreview(null);
+    setImageStatus('idle');
+    setIsButtonReady(false);
+    setError(null);
+    setVerificationResult(null);
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [mealDate]);
   
   // 이미지 업로드 후 AI 이미지 생성 버튼 비활성화
   useEffect(() => {
@@ -233,24 +257,18 @@ export default function MealImageUploader({
   
   // 승인된 이미지 가져오는 함수 (재사용을 위해 함수로 분리)
   const fetchApprovedImage = useCallback(async () => {
-    // 오늘 날짜 계산
-    const now = new Date();
-    const koreaTimeString = now.toLocaleString('en-CA', { 
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour12: false
-    });
-    const today = koreaTimeString.split(', ')[0];
+    if (!mealDate || !schoolCode) {
+      console.log('mealDate 또는 schoolCode가 없음, 승인된 이미지 조회 건너뜀');
+      return;
+    }
     
-    console.log('승인된 이미지 조회 시작:', { today, schoolCode });
+    console.log('승인된 이미지 조회 시작:', { mealDate, schoolCode });
     
-    // 1. 먼저 오늘 날짜 + 학교 코드로 급식 찾기
+    // 1. mealDate + 학교 코드로 급식 찾기
     const { data: mealData, error: mealError } = await supabase
       .from('meal_menus')
       .select('id')
-      .eq('meal_date', today)
+      .eq('meal_date', mealDate)
       .eq('school_code', schoolCode)
       .maybeSingle();
       
@@ -299,7 +317,7 @@ export default function MealImageUploader({
       // 이미 이미지가 있으면 업로드/AI 생성 버튼은 숨깁니다
       setShowAiGenButton(false);
     }
-  }, [schoolCode, supabase]);
+  }, [mealDate, schoolCode, supabase]);
 
   // 컴포넌트 마운트 시 승인된 이미지 자동 로드
   useEffect(() => {
