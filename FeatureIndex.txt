@@ -63,6 +63,10 @@ function handleAiImageGeneration(mealId: string): Promise<void>
 // @param mealId - 이미지를 생성할 급식 ID
 // @returns - 이미지 생성 결과 Promise
 
+function checkIfAiImageNeeded(): Promise<void>
+// @description - AI 이미지 생성 버튼 활성화 여부를 결정하는 함수
+// @conditions - 1) mealId가 존재하고 2) 급식 날짜가 오늘과 일치하고 3) 급식 정보가 유효하고("급식 정보가 없습니다" 문자열 없음) 4) 12:30 이후(한국시간 기준) 5) 승인된 이미지가 없을 때만 버튼 활성화
+
 function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): void
 // @param event - 파일 선택 이벤트 객체
 // @returns - 없음

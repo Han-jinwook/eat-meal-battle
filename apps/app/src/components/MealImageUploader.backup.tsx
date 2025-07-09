@@ -115,9 +115,9 @@ export default function MealImageUploader({
           return;
         }
         
-        // 2. 급식 데이터에서 mealId 획득 및 상태 설정
+        // 2. 급식 데이터에서 mealId 획득
         currentMealId = mealData.id;
-        setMealId(currentMealId); // mealId 상태 설정
+        setMealId(currentMealId); // mealId 상태 업데이트
         console.log('획득한 mealId:', currentMealId);
         
         // 급식 정보 유효성 찴크
@@ -222,7 +222,7 @@ export default function MealImageUploader({
       checkIfAiImageNeeded();
     }
   }, [schoolCode, supabase]);
-  
+
   // 이미지 업로드 후 AI 이미지 생성 버튼 비활성화
   useEffect(() => {
     if (uploadedImage) {
@@ -396,139 +396,44 @@ export default function MealImageUploader({
       
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          menu_items: mealMenuData.menu_items,
-          meal_id: mealId || mealMenuData.id, // mealId 상태 또는 조회된 데이터 ID 사용
-          school_code: mealMenuData.school_code || schoolCode,
-          meal_date: mealMenuData.meal_date || mealDate,
-          meal_type: mealMenuData.meal_type || mealType,
-          user_id: userId // 현재 로그인된 사용자 ID 추가
-        }),
-      });
-      
-      // 응답 상태 코드 확인
-      console.log('AI 이미지 생성 API 응답 상태 코드:', response.status, response.statusText);
-      
-      // 응답 텍스트를 먼저 가져와서 안전하게 처리
-      const responseText = await response.text();
-      console.log('AI 이미지 생성 API 응답 텍스트(처음 200자):', responseText.substring(0, 200));
-      
-      let result;
-      
-      try {
-        // JSON으로 파싱 시도
-        result = JSON.parse(responseText);
-        console.log('AI 이미지 생성 API 응답 파싱 결과:', result);
-      } catch (e) {
-        console.error('AI 이미지 생성 API 응답 파싱 오류:', e);
-        console.error('파싱 오류 발생한 응답의 처음 부분:', responseText.substring(0, 50));
-        throw new Error(`응답 처리 중 오류가 발생했습니다. 상태 코드: ${response.status}`);
-      }
-      
-      if (!result.success) {
-        throw new Error(result.error || 'AI 이미지 생성에 실패했습니다.');
-      }
-      
-      // 3. 생성된 이미지 정보로 상태 업데이트
-      console.log('AI 이미지 생성 성공:', result.image);
-      
-      // 이미지 정보에 사용자 별명 정보 추가
-      if (result.image && result.image.uploaded_by) {
-        try {
-          // 사용자 정보 조회
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('nickname, profile_image')
-            .eq('id', result.image.uploaded_by)
-            .single();
-            
-          if (!userError && userData) {
-            console.log('AI 이미지 생성 - 사용자 정보 조회 성공:', userData);
-            // 사용자 별명 정보 추가
-            result.image.uploader_nickname = userData.nickname;
-            result.image.users = { 
-              nickname: userData.nickname, 
-              profile_image: userData.profile_image 
-            };
-          }
-        } catch (e) {
-          console.error('AI 이미지 생성 - 사용자 정보 조회 예외:', e);
-        }
-      }
-      
-      // 이미지 정보 업데이트 - 검증 과정 생략
-      setUploadedImage(result.image);
-      
-      // 검증 결과를 직접 설정하여 검증 과정 생략
-      setVerificationResult({
-        isMatch: true,
-        matchScore: 1.0, // 100% 일치
-        explanation: 'AI가 생성한 이미지입니다. 메뉴에 맞게 자동 생성되었습니다.'
-      });
-      
-      // 이미지 상태 완료로 설정
-      setImageStatus('complete');
-      
-      // 성공 콜백 호출 - 지연 시간 추가
-      console.log('⏱️ 이미지 업로드 후 콜백 호출 대기 중...');
-      setTimeout(() => {
-        console.log('⏱️ 콜백 호출 타이머 완료, onUploadSuccess 호출');
-        if (onUploadSuccess) {
-          onUploadSuccess();
-        }
-      }, 4000); // 4초 지연
 
-      const errorMessage = error ? (typeof error === 'object' && error.message ? error.message : 'AI 이미지 생성 중 오류가 발생했습니다.') : 'AI 이미지 생성 중 오류가 발생했습니다.';
-      setError(errorMessage);
-      setImageStatus('error');
-      
-      // 오류 콜백
-      if (onUploadError) {
-        onUploadError(errorMessage);
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
+  // FormData 생성 - 서버 사이드에서 모든 처리를 하도록 변경
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('meal_id', mealId || ''); // mealId가 null이면 빈 문자열 전달
+  console.log('업로드 시 사용하는 mealId:', mealId); // mealId 상태 변수 사용
+  formData.append('school_code', schoolCode);
+  formData.append('meal_date', mealDate);
+  formData.append('meal_type', mealType);
+  formData.append('user_id', user.id);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // ...
+};
 
-    console.log('파일 선택됨:', { 
-      fileName: file.name, 
-      fileSize: file.size, 
-      mealId: mealId || 'undefined',
-      fileType: file.type
-    });
+// AI 이미지 생성 시 mealId 사용
+const handleAiImageGeneration = async () => {
+  // ...
 
-    // 파일 유효성 검사
-    if (!file.type.startsWith('image/')) {
-      setError('이미지 파일만 업로드할 수 있습니다.');
-      return;
-    }
+  // 2. OpenAI API 호출하여 이미지 생성
+  // 테스트를 위해 항상 Netlify 함수 사용
+  const apiUrl = '/.netlify/functions/generate-meal-image';
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
+  console.log('AI 이미지 생성 API 요청 URL:', apiUrl);
 
-    // 6초 타이머로 버튼 활성화 (원본 로직)
-    setIsButtonReady(false);
-    setImageStatus('processing');
-    
-    setTimeout(() => {
-      setIsButtonReady(true);
-      setImageStatus('ready');
-    }, 6000);
-    
-    // 미리보기 생성
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      menu_items: mealMenuData.menu_items,
+      meal_id: mealId || mealMenuData.id, // mealId가 없으면 mealMenuData.id 사용
+      school_code: mealMenuData.school_code || schoolCode,
+      meal_date: mealMenuData.meal_date || mealDate,
+      meal_type: mealMenuData.meal_type || mealType,
+      user_id: userId
+    }),
+  });
     };
     reader.readAsDataURL(file);
     
@@ -630,7 +535,8 @@ export default function MealImageUploader({
       // 2. FormData 생성 - 서버 사이드에서 모든 처리를 하도록 변경
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('meal_id', mealId);
+      formData.append('meal_id', mealId || ''); // mealId가 null이면 빈 문자열 전달
+      console.log('업로드 시 사용하는 mealId:', mealId); // mealId 상태 변수 사용
       formData.append('school_code', schoolCode);
       formData.append('meal_date', mealDate);
       formData.append('meal_type', mealType);
