@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { extractBattleRegion } from '@/utils/addressParser';
 
 // 학교 검색 결과 타입 정의
 interface School {
@@ -168,7 +169,7 @@ export default function SchoolSearchPage() {
         school_code: selectedSchool.SD_SCHUL_CODE,
         school_name: selectedSchool.SCHUL_NM,
         school_type: selectedSchool.SCHUL_KND_SC_NM,
-        region: selectedSchool.LCTN_SC_NM,
+        region: extractBattleRegion(selectedSchool.ORG_RDNMA || selectedSchool.LCTN_SC_NM),
         address: selectedSchool.ORG_RDNMA,
         office_code: selectedSchool.ATPT_OFCDC_SC_CODE,
         grade: classInfo.grade,
