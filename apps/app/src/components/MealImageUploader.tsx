@@ -645,17 +645,43 @@ export default function MealImageUploader({
         throw new Error('로그인이 필요합니다.');
       }
 
-      // 2. FormData 생성 - 서버 사이드에서 모든 처리를 하도록 변경
+      // 2. mealId가 null인 경우 직접 조회
+      let finalMealId = mealId;
+      if (!finalMealId) {
+        console.log('mealId가 null이므로 직접 조회 시작');
+        const { data: mealData, error: mealError } = await supabase
+          .from('meal_menus')
+          .select('id')
+          .eq('meal_date', mealDate)
+          .eq('school_code', schoolCode)
+          .eq('meal_type', mealType)
+          .maybeSingle();
+          
+        if (mealError) {
+          console.error('급식 정보 조회 오류:', mealError);
+          throw new Error('급식 정보를 찾을 수 없습니다.');
+        }
+        
+        if (!mealData) {
+          throw new Error('해당 날짜와 학교의 급식 정보가 없습니다.');
+        }
+        
+        finalMealId = mealData.id;
+        setMealId(finalMealId); // 상태도 업데이트
+        console.log('조회된 mealId:', finalMealId);
+      }
+
+      // 3. FormData 생성 - 서버 사이드에서 모든 처리를 하도록 변경
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('meal_id', mealId);
+      formData.append('meal_id', finalMealId);
       formData.append('school_code', schoolCode);
       formData.append('meal_date', mealDate);
       formData.append('meal_type', mealType);
       formData.append('user_id', user.id);
       
       console.log('서버 사이드 업로드 시도...', {
-        meal_id: mealId,
+        meal_id: finalMealId,
         school_code: schoolCode,
         meal_date: mealDate,
         meal_type: mealType,
@@ -663,7 +689,7 @@ export default function MealImageUploader({
         file_size: file.size
       });
       
-      // 3. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
+      // 4. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
       // 환경에 따라 다른 API 엔드포인트 사용
       const isLocalhost = /^(localhost|127\.|\/api)/.test(window.location.hostname);
       const apiUrl = isLocalhost 
@@ -677,7 +703,7 @@ export default function MealImageUploader({
         body: formData
       });
       
-      // 4. 응답 처리
+      // 5. 응답 처리
       if (!response.ok) {
         // 응답 텍스트를 먼저 확인하여 안전하게 처리
         const responseText = await response.text();
