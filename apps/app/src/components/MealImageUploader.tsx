@@ -32,6 +32,7 @@ export default function MealImageUploader({
   const [isButtonReady, setIsButtonReady] = useState(false);
   const [imageStatus, setImageStatus] = useState('none'); // 이미지 상태 추적용
   const [showAiGenButton, setShowAiGenButton] = useState(false); // 기본값은 비활성화
+  const [canUploadImage, setCanUploadImage] = useState(false); // 파일선택 버튼 활성화 조건
   const [mealId, setMealId] = useState<string | null>(null); // 급식 ID 상태 추가
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -51,8 +52,9 @@ export default function MealImageUploader({
   useEffect(() => {
     const checkIfAiImageNeeded = async () => {
     if (!schoolCode || !mealDate) {
-      console.log('schoolCode 또는 mealDate가 없음, AI 버튼 비활성화');
+      console.log('schoolCode 또는 mealDate가 없음, 버튼들 비활성화');
       setShowAiGenButton(false);
+      setCanUploadImage(false);
       return;
     }
     
@@ -89,8 +91,9 @@ export default function MealImageUploader({
     
     // mealDate가 오늘이 아니면 AI 버튼 비활성화
     if (mealDate !== today) {
-      console.log('AI 이미지 생성 버튼 비활성화: 오늘 날짜가 아님');
+      console.log('버튼들 비활성화: 오늘 날짜가 아님');
       setShowAiGenButton(false);
+      setCanUploadImage(false);
       return;
     }
     
@@ -115,12 +118,14 @@ export default function MealImageUploader({
         if (mealFetchError) {
           console.error('급식 정보 조회 오류:', mealFetchError);
           setShowAiGenButton(false);
+          setCanUploadImage(false);
           return;
         }
   
         if (!mealData) {
-          console.log('오늘 날짜의 해당 학교 급식 정보가 없음 - AI 버튼 비활성화');
+          console.log('오늘 날짜의 해당 학교 급식 정보가 없음 - 버튼들 비활성화');
           setShowAiGenButton(false);
+          setCanUploadImage(false);
           return;
         }
         
@@ -144,15 +149,16 @@ export default function MealImageUploader({
         });
         
         if (!hasValidMeal) {
-          console.log('AI 이미지 생성 버튼 비활성화: 급식 정보가 없거나 메뉴가 비어있음');
+          console.log('버튼들 비활성화: 급식 정보가 없거나 메뉴가 비어있음');
           setShowAiGenButton(false);
+          setCanUploadImage(false);
           return;
         }
         
         // hasValidMeal 체크는 위에서 이미 완료됨
         
-        // 3. 시간 조건 확인 (12:30 이후, 한국 시간 기준)
-        const isPastCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
+        // 3. 시간 조건 확인 (12:00 이후, 한국 시간 기준)
+        const isPastCutoffTime = hour >= 12;
         
         console.log('시간 조건 확인:', {
           hour,
@@ -160,7 +166,12 @@ export default function MealImageUploader({
           isPastCutoffTime
         });
         
-        if (!isPastCutoffTime) {
+        // 파일선택 버튼은 12:00 이후부터 활성화
+        setCanUploadImage(isPastCutoffTime);
+        
+        // AI 이미지 생성 버튼은 12:30 이후부터 활성화
+        const isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
+        if (!isPastAiCutoffTime) {
           console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
           setShowAiGenButton(false);
           return;
@@ -168,63 +179,17 @@ export default function MealImageUploader({
       } catch (e) {
         console.error('급식 정보 조회 중 예외 발생:', e);
         setShowAiGenButton(false);
+        setCanUploadImage(false);
         return;
       }
       
-      // 4. 이미지 존재 여부 확인
-      try {
-        console.log('이미지 조회 시도 - 파라미터:', { 
-          currentMealId, 
-          테이블: 'meal_images',
-          조회필드: 'id, status',
-          조건필드: 'meal_id'
-        });
-        
-        // 승인된 이미지만 조회하여 406 오류 방지
-        const { data: approvedImages, error: approvedImagesError } = await supabase
-          .from('meal_images')
-          .select('id, status')
-          .eq('meal_id', currentMealId)
-          .eq('status', 'approved');
-          
-        // 전체 이미지도 조회 (디버깅용)
-        const { data: allImages, error: allImagesError } = await supabase
-          .from('meal_images')
-          .select('id, status')
-          .eq('meal_id', currentMealId);
-        
-        console.log('이미지 조회 결과:', { 
-          approvedImages, 
-          approvedImagesError,
-          allImages,
-          allImagesError 
-        });
-        
-        if (approvedImagesError || allImagesError) {
-          console.error('이미지 조회 오류:', { approvedImagesError, allImagesError });
-          // 오류 발생 시 안전하게 버튼 비활성화
-          setShowAiGenButton(false);
-          return;
-        }
-        
-        // 승인된 이미지가 있으면 버튼 비활성화
-        const hasApprovedImage = approvedImages && approvedImages.length > 0;
-        const shouldShow = !hasApprovedImage;
-        
-        console.log('AI 이미지 생성 버튼 표시 여부:', {
-          hasAllImages: allImages && allImages.length > 0,
-          allImageStatuses: allImages ? allImages.map(img => img.status) : [],
-          hasApprovedImages: approvedImages && approvedImages.length > 0,
-          approvedImageCount: approvedImages ? approvedImages.length : 0,
-          hasApprovedImage,
-          shouldShow
-        });
-        
-        setShowAiGenButton(shouldShow);
-      } catch (e) {
-        console.error('이미지 조회 중 예외 발생:', e);
-        setShowAiGenButton(false);
-      }
+      // AI 이미지 생성 버튼 활성화 (승인된 이미지 조건 제거)
+      console.log('AI 이미지 생성 버튼 활성화:', {
+        isPastAiCutoffTime,
+        조건: '당일 + 급식정보 + 12:30 이후'
+      });
+      
+      setShowAiGenButton(isPastAiCutoffTime);
     };
     
     if (schoolCode && mealDate) {
@@ -1056,13 +1021,21 @@ export default function MealImageUploader({
               accept="image/*"
               onChange={handleFileChange}
               ref={fileInputRef}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
+              className="hidden"
+              disabled={!canUploadImage}
             />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!canUploadImage}
+              className={`w-full px-4 py-2 rounded-lg transition-colors ${
+                canUploadImage 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={!canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
+            >
+              파일 선택
+            </button>
           </div>
 
           {preview && (
