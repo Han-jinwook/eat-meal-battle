@@ -1,5 +1,6 @@
 "use client";
 
+import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
@@ -102,10 +103,31 @@ export default function MainHeader() {
             const currentDate = searchParams?.get('date');
             const linkHref = currentDate ? `${item.href}?date=${currentDate}` : item.href;
             
+            // 네비게이션 차단 핸들러
+            const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>) => {
+              // AI 검증 실패 이미지가 있는지 확인
+              if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
+                e.preventDefault();
+                const confirmed = window.confirm(
+                  'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
+                );
+                
+                if (confirmed) {
+                  // 전역 플래그 해제
+                  (window as any).hasRejectedImage = false;
+                  (window as any).rejectedImageId = null;
+                  // 네비게이션 진행
+                  router.push(linkHref);
+                }
+                // confirmed가 false면 네비게이션 취소
+              }
+            };
+            
             return (
               <Link
                 key={item.href}
                 href={linkHref}
+                onClick={handleNavigation}
                 className={`text-xs sm:text-sm font-medium whitespace-nowrap px-2 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
                   // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
                   item.href === '/' 

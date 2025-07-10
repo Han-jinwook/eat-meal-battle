@@ -23,6 +23,21 @@ export default function DateNavigator({
   const navigateDate = (direction: 'prev' | 'next') => {
     if (!selectedDate) return;
     
+    // AI 검증 실패 이미지가 있는지 확인
+    if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
+      const confirmed = window.confirm(
+        'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
+      );
+      
+      if (confirmed) {
+        // 전역 플래그 해제
+        (window as any).hasRejectedImage = false;
+        (window as any).rejectedImageId = null;
+      } else {
+        return; // 네비게이션 취소
+      }
+    }
+    
     try {
       const currentDate = new Date(selectedDate);
       if (isNaN(currentDate.getTime())) return;
@@ -48,6 +63,21 @@ export default function DateNavigator({
 
   // 날짜 입력 핸들러
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // AI 검증 실패 이미지가 있는지 확인
+    if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
+      const confirmed = window.confirm(
+        'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
+      );
+      
+      if (confirmed) {
+        // 전역 플래그 해제
+        (window as any).hasRejectedImage = false;
+        (window as any).rejectedImageId = null;
+      } else {
+        return; // 날짜 변경 취소
+      }
+    }
+    
     onDateChange(e.target.value);
   };
 

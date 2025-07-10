@@ -788,6 +788,12 @@ export default function MealImageUploader({
               explanation: '이미지 검증 중 오류가 발생했습니다.'
             };
             setUploadedImage(updatedImageData);
+            
+            // 전역 플래그 설정 - 날짜 이동 차단
+            if (typeof window !== 'undefined') {
+              (window as any).hasRejectedImage = true;
+              (window as any).rejectedImageId = uploadedImageId;
+            }
           }
         } catch (err) {
           console.error('이미지 정보 조회 오류:', err);
@@ -916,6 +922,12 @@ export default function MealImageUploader({
       setPreview(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+      }
+      
+      // 전역 플래그 해제 - 날짜 이동 차단 해제
+      if (typeof window !== 'undefined') {
+        (window as any).hasRejectedImage = false;
+        (window as any).rejectedImageId = null;
       }
       
       // 성공 콜백 호출
