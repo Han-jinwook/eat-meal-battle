@@ -96,12 +96,11 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
 
   if (!dateQuiz) {
     // 해당 날짜에 퀴즈가 없음
-    return { error: "해당 날짜에 퀴즈가 없습니다." };
+    return { quiz: null };
   }
   
   // 해당 날짜 퀴즈 찾았음
   return await processQuiz(userId, dateQuiz, canShowAnswer);
-  return { error: "해당 날짜에 퀴즈가 없습니다." };
 }
 
 // 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)

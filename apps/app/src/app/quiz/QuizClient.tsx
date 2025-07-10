@@ -167,6 +167,10 @@ export default function QuizClient() {
         setNoMenu(true);
         setNoMenuMessage(data.message || '해당 날짜에 급식 정보가 없습니다.');
         setError(null);
+      } else if (data.quiz === null) {
+        // 퀴즈가 없는 경우 - 에러 메시지 없이 처리
+        setQuiz(null);
+        setError(null);
       } else {
         setQuiz(data.quiz);
         
