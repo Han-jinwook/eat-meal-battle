@@ -478,7 +478,7 @@ export default function QuizClient() {
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {generatingQuiz ? '퀴즈 생성 중...' : '퀴즈 생성하기'}
+                {generatingQuiz ? '퀴즈 생성 중...' : '학년별 맞춤 AI퀴즈 생성하기'}
               </button>
               <p className="text-sm text-gray-500 mt-4">
                 또는 다른 날짜를 선택해보세요.
@@ -613,7 +613,7 @@ export default function QuizClient() {
                     onClick={handleManualQuizGenerate}
                     className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"
                   >
-                    퀴즈 생성하기
+                    학년별 맞춤 AI퀴즈 생성하기
                   </button>
                 </>
               )}
