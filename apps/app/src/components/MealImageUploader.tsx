@@ -743,6 +743,15 @@ export default function MealImageUploader({
             explanation: verificationResult.explanation || null
           };
           setUploadedImage(updatedImageData);
+          
+          // 검증 실패 시 전역 플래그 설정 - 날짜 이동 차단
+          if (!verificationResult.isMatch) {
+            if (typeof window !== 'undefined') {
+              (window as any).hasRejectedImage = true;
+              (window as any).rejectedImageId = uploadedImageId;
+              console.log('🚫 검증 실패로 네비게이션 차단 플래그 설정:', uploadedImageId);
+            }
+          }
         }
         
         // 성공 콜백 호출 - 지연 시간 추가

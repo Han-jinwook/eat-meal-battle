@@ -106,7 +106,10 @@ export default function MainHeader() {
             // 네비게이션 차단 핸들러
             const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>) => {
               // AI 검증 실패 이미지가 있는지 확인
-              if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
+              const hasRejectedImage = typeof window !== 'undefined' && (window as any).hasRejectedImage;
+              console.log('📍 MainHeader - 메뉴 네비게이션 시도:', { href: item.href, hasRejectedImage, rejectedImageId: (window as any)?.rejectedImageId });
+              
+              if (hasRejectedImage) {
                 e.preventDefault();
                 const confirmed = window.confirm(
                   'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
