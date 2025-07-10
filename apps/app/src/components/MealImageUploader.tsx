@@ -36,6 +36,52 @@ export default function MealImageUploader({
   const [mealId, setMealId] = useState<string | null>(null); // 급식 ID 상태 추가
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // 이미지 리사이징 함수
+  const resizeImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // 최대 크기 1024px
+        const maxSize = 1024;
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(resizedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', 0.85);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+  
   // 사용자 정보 가져오기
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -603,15 +649,29 @@ export default function MealImageUploader({
     let uploadedImageId = '';
 
     try {
-      const file = fileInputRef.current.files[0];
+      const originalFile = fileInputRef.current.files[0];
       
-      // 1. 사용자 정보 확인
+      // 1. 이미지 리사이징 (OpenAI API 타임아웃 방지)
+      console.log('이미지 리사이징 시작:', {
+        originalSize: originalFile.size,
+        originalName: originalFile.name
+      });
+      
+      const file = await resizeImage(originalFile);
+      
+      console.log('이미지 리사이징 완료:', {
+        originalSize: originalFile.size,
+        resizedSize: file.size,
+        compressionRatio: ((originalFile.size - file.size) / originalFile.size * 100).toFixed(1) + '%'
+      });
+      
+      // 2. 사용자 정보 확인
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('로그인이 필요합니다.');
       }
 
-      // 2. mealId가 null인 경우 직접 조회
+      // 3. mealId가 null인 경우 직접 조회
       let finalMealId = mealId;
       if (!finalMealId) {
         console.log('mealId가 null이므로 직접 조회 시작');
@@ -637,7 +697,7 @@ export default function MealImageUploader({
         console.log('조회된 mealId:', finalMealId);
       }
 
-      // 3. FormData 생성 - 서버 사이드에서 모든 처리를 하도록 변경
+      // 4. FormData 생성 - 리사이징된 파일 사용
       const formData = new FormData();
       formData.append('file', file);
       formData.append('meal_id', finalMealId);
@@ -655,9 +715,9 @@ export default function MealImageUploader({
         file_size: file.size
       });
       
-      // 4. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
+      // 5. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
       // 환경에 따라 다른 API 엔드포인트 사용
-      const isLocalhost = /^(localhost|127\.|\/api)/.test(window.location.hostname);
+      const isLocalhost = /^(localhost|127\.|/api)/.test(window.location.hostname);
       const apiUrl = isLocalhost 
         ? '/api/meal-images/upload'
         : '/.netlify/functions/upload-meal-image';
@@ -669,7 +729,7 @@ export default function MealImageUploader({
         body: formData
       });
       
-      // 5. 응답 처리
+      // 6. 응답 처리
       if (!response.ok) {
         // 응답 텍스트를 먼저 확인하여 안전하게 처리
         const responseText = await response.text();
@@ -705,7 +765,7 @@ export default function MealImageUploader({
       console.log('업로드 성공:', data);
       uploadedImageId = data.id;
       
-      // 5. 이미지 검증 API 호출
+      // 7. 이미지 검증 API 호출
       try {
         const verificationResult = await verifyImage(uploadedImageId);
         console.log('검증 결과:', verificationResult);
