@@ -98,6 +98,7 @@ export default function MealImageUploader({
     }
     
     let currentMealId = null;
+    let isPastAiCutoffTime = false;
     
     try {
       // 1. mealDate + 학교 코드로 급식 정보 조회
@@ -170,7 +171,7 @@ export default function MealImageUploader({
         setCanUploadImage(isPastCutoffTime);
         
         // AI 이미지 생성 버튼은 12:30 이후부터 활성화
-        const isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
+        isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
         if (!isPastAiCutoffTime) {
           console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
           setShowAiGenButton(false);
