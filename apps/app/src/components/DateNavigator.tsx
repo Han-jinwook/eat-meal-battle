@@ -20,8 +20,35 @@ export default function DateNavigator({
   size = 'md',
   showWeekday = true
 }: DateNavigatorProps) {
+  // AI 검증 실패 이미지 삭제 함수
+  const deleteRejectedImage = async () => {
+    try {
+      const supabase = createClient();
+      const rejectedImageId = (window as any)?.rejectedImageId;
+      
+      if (rejectedImageId) {
+        const { error } = await supabase
+          .from('meal_images')
+          .delete()
+          .eq('id', rejectedImageId);
+        
+        if (error) {
+          console.error('이미지 삭제 오류:', error);
+        } else {
+          console.log('✅ AI 검증 실패 이미지 삭제 완료:', rejectedImageId);
+        }
+      }
+      
+      // 전역 플래그 해제
+      (window as any).hasRejectedImage = false;
+      (window as any).rejectedImageId = null;
+    } catch (error) {
+      console.error('이미지 삭제 중 오류:', error);
+    }
+  };
+
   // 날짜를 하루 앞뒤로 이동하는 함수
-  const navigateDate = (direction: 'prev' | 'next') => {
+  const navigateDate = async (direction: 'prev' | 'next') => {
     if (!selectedDate) return;
     
     // AI 검증 실패 이미지가 있는지 확인
@@ -64,7 +91,7 @@ export default function DateNavigator({
   };
 
   // 날짜 입력 핸들러
-  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDateInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // AI 검증 실패 이미지가 있는지 확인
     if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
       const confirmed = window.confirm(
@@ -72,9 +99,7 @@ export default function DateNavigator({
       );
       
       if (confirmed) {
-        // 전역 플래그 해제
-        (window as any).hasRejectedImage = false;
-        (window as any).rejectedImageId = null;
+        await deleteRejectedImage();
       } else {
         return; // 날짜 변경 취소
       }
