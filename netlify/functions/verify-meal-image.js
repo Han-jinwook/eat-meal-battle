@@ -203,28 +203,32 @@ exports.handler = async (event, context) => {
 
       // OpenAI 응답에서 JSON 추출
       let verificationResult;
-      try {
-        // 응답 내용에서 JSON만 추출
-        const content = response.data.choices[0].message.content;
-        console.log('OpenAI 응답:', content);
-        
-        // JSON 부분만 추출 (텍스트에 JSON이 포함된 경우)
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+      const content = response.data.choices[0].message.content;
+      console.log('OpenAI 응답:', content);
+      
+      // JSON 부분만 추출 (텍스트에 JSON이 포함된 경우)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        try {
           verificationResult = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('응답에서 JSON을 찾을 수 없습니다.');
+          console.log('✅ JSON 파싱 성공');
+        } catch (parseError) {
+          console.error('JSON 파싱 오류:', parseError);
+          verificationResult = null;
         }
-      } catch (e) {
-        console.error('JSON 파싱 오류:', e);
-        console.log('JSON 파싱 실패로 기본 거부 처리');
-        
-        // JSON 파싱 실패 시 기본 거부 처리 (비정상 이미지로 간주)
-        const content = response.data.choices[0].message.content || '이미지를 분석할 수 없거나 급식 이미지가 아닙니다.';
+      } else {
+        console.log('⚠️ JSON 형식을 찾을 수 없음');
+        verificationResult = null;
+      }
+      
+      // JSON 파싱에 실패한 경우 기본 거부 처리
+      if (!verificationResult) {
+        console.log('파싱 실패로 기본 거부 처리');
         verificationResult = {
           isMatch: false,
           matchScore: 0.0,
-          explanation: `이미지 분석에 실패했습니다. ${content.substring(0, 100)}...`
+          explanation: `이미지 분석에 실패했습니다. OpenAI 응답: ${content.substring(0, 150)}...`
         };
       }
 
