@@ -162,18 +162,23 @@ exports.handler = async (event, context) => {
               content: [
                 {
                   type: "text",
-                  text: `이 이미지의 급식이 다음 메뉴와 일치하는지 검증해주세요:
+                  text: `이 이미지가 급식 음식인지, 그리고 다음 메뉴와 일치하는지 검증해주세요:
 메뉴: ${menuText}
 
-결과는 다음 형식으로 JSON으로 응답해주세요:
+**중요: 반드시 아래 JSON 형식으로만 응답해주세요. 다른 텍스트는 포함하지 마세요:**
+
 {
   "isMatch": true/false,
-  "matchScore": 0.0부터 1.0까지의 숫자(일치도),
-  "explanation": "일치 또는 불일치 이유 설명"
+  "matchScore": 0.0~1.0,
+  "explanation": "검증 결과 설명"
 }
 
-matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 false로 설정해주세요.
-한국어로 응답해주세요.`
+검증 기준:
+- 이미지가 급식/음식이 아닌 경우: isMatch=false, matchScore=0.0
+- 급식이지만 메뉴가 다른 경우: isMatch=false, matchScore=0.1~0.7
+- 급식이고 메뉴가 일치하는 경우: isMatch=true, matchScore=0.8~1.0
+
+한국어로 설명해주세요.`
                 },
                 {
                   type: "image_url",
@@ -212,10 +217,14 @@ matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 fals
         }
       } catch (e) {
         console.error('JSON 파싱 오류:', e);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: '검증 결과를 파싱할 수 없습니다.' })
+        console.log('JSON 파싱 실패로 기본 거부 처리');
+        
+        // JSON 파싱 실패 시 기본 거부 처리 (비정상 이미지로 간주)
+        const content = response.data.choices[0].message.content || '이미지를 분석할 수 없거나 급식 이미지가 아닙니다.';
+        verificationResult = {
+          isMatch: false,
+          matchScore: 0.0,
+          explanation: `이미지 분석에 실패했습니다. ${content.substring(0, 100)}...`
         };
       }
 
