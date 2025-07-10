@@ -70,7 +70,9 @@ export default function BattlePage() {
               <button
                 onClick={() => setViewMode('daily')}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
-                  viewMode === 'daily' ? 'text-red-600' : 'text-gray-500 hover:text-red-500'
+                  viewMode === 'daily' 
+                    ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
+                    : (activeTab === 'menu' ? 'text-gray-500 hover:text-red-500' : 'text-gray-500 hover:text-blue-500')
                 }`}
               >
                 일별 집계
@@ -94,7 +96,9 @@ export default function BattlePage() {
               <button
                 onClick={() => setViewMode('monthly')}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
-                  viewMode === 'monthly' ? 'text-red-600' : 'text-gray-500 hover:text-red-500'
+                  viewMode === 'monthly' 
+                    ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
+                    : (activeTab === 'menu' ? 'text-gray-500 hover:text-red-500' : 'text-gray-500 hover:text-blue-500')
                 }`}
               >
                 월별 집계
