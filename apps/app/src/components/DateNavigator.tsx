@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createClient } from '@/lib/supabase';
 
 interface DateNavigatorProps {
   selectedDate: string;
@@ -33,9 +34,7 @@ export default function DateNavigator({
       );
       
       if (confirmed) {
-        // 전역 플래그 해제
-        (window as any).hasRejectedImage = false;
-        (window as any).rejectedImageId = null;
+        await deleteRejectedImage();
       } else {
         return; // 네비게이션 취소
       }
