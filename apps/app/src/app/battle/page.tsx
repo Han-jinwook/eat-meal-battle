@@ -40,7 +40,7 @@ export default function BattlePage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('menu')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
               activeTab === 'menu'
                 ? 'bg-red-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -50,7 +50,7 @@ export default function BattlePage() {
           </button>
           <button
             onClick={() => setActiveTab('meal')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
               activeTab === 'meal'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
