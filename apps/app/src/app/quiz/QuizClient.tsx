@@ -608,7 +608,7 @@ export default function QuizClient() {
                 </div>
               ) : (
                 <>
-                  <p className="text-gray-600 mb-4">퀴즈가 없습니다.</p>
+                  <p className="text-gray-600 mb-4">퀴즈가 아직 없네요. AI로 퀴즈 만들고 먼저 풀어보세요!</p>
                   <button
                     onClick={handleManualQuizGenerate}
                     className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"

@@ -436,6 +436,7 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
       ATPT_OFCDC_SC_CODE: officeCode, // 교육청 코드 (필수값)
       SD_SCHUL_CODE: schoolCode,      // 학교 코드
       MLSV_YMD: apiDate,              // 조회할 날짜(YYYYMMDD)
+      MMEAL_SC_CODE: '2',             // 식사 코드 (1:조식, 2:중식, 3:석식)
       pSize: 100                      // 가져올 항목 수
     };
     const queryParams = new URLSearchParams(params);

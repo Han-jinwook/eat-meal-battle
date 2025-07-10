@@ -27,6 +27,7 @@ async function fetchMealInfo(schoolCode: string, officeCode: string, date: strin
     ATPT_OFCDC_SC_CODE: officeCode,
     SD_SCHUL_CODE: schoolCode,
     MLSV_YMD: date,
+    MMEAL_SC_CODE: '2', // 식사 코드 (1:조식, 2:중식, 3:석식)
   });
   const fullUrl = `${apiUrl}?${queryParams.toString()}`;
   const response = await fetch(fullUrl);
