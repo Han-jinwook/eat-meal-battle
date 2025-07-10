@@ -165,14 +165,18 @@ exports.handler = async (event, context) => {
                   text: `이 이미지의 급식이 다음 메뉴와 일치하는지 검증해주세요:
 메뉴: ${menuText}
 
-결과는 다음 형식으로 JSON으로 응답해주세요:
+**중요: 반드시 아래 JSON 형식으로만 응답해주세요:**
 {
   "isMatch": true/false,
   "matchScore": 0.0부터 1.0까지의 숫자(일치도),
   "explanation": "일치 또는 불일치 이유 설명"
 }
 
-matchScore는 0.8(80%) 이상이면 isMatch를 true로, 그렇지 않으면 false로 설정해주세요.
+검증 기준:
+- 급식 메뉴와 일치하는 경우: isMatch=true, matchScore=0.8~1.0
+- 급식이지만 메뉴가 다른 경우: isMatch=false, matchScore=0.1~0.7
+- 급식이 아닌 경우(사물, 인물 등): isMatch=false, matchScore=0.0, 솔직한 사유 설명
+
 한국어로 응답해주세요.`
                 },
                 {
