@@ -717,7 +717,7 @@ export default function MealImageUploader({
       
       // 5. 서버 사이드 API로 이미지 업로드 및 저장 한번에 처리
       // 환경에 따라 다른 API 엔드포인트 사용
-      const isLocalhost = /^(localhost|127\.|/api)/.test(window.location.hostname);
+      const isLocalhost = /^(localhost|127\.)/.test(window.location.hostname);
       const apiUrl = isLocalhost 
         ? '/api/meal-images/upload'
         : '/.netlify/functions/upload-meal-image';
