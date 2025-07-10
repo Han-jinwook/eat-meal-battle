@@ -83,7 +83,7 @@ export default function BattlePage() {
                 <DateNavigator 
                   selectedDate={selectedDate}
                   onDateChange={setSelectedDate}
-                  theme="red"
+                  theme={activeTab === 'menu' ? 'red' : 'blue'}
                   size="sm"
                 />
               </div>
@@ -114,7 +114,9 @@ export default function BattlePage() {
                   }}
                   className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
                     viewMode === 'monthly'
-                      ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                      ? (activeTab === 'menu' 
+                           ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                           : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600')
                       : 'bg-gray-50 border-gray-200 text-gray-400'
                   }`}
                 >
@@ -125,11 +127,13 @@ export default function BattlePage() {
                 
                 <div className={`rounded-lg px-2 py-1.5 min-w-20 text-center border transition-all duration-200 text-xs ${
                   viewMode === 'monthly'
-                    ? 'bg-red-50 border-red-200'
+                    ? (activeTab === 'menu' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
                     : 'bg-gray-50 border-gray-200'
                 }`}>
                   <span className={`font-medium transition-colors duration-200 ${
-                    viewMode === 'monthly' ? 'text-red-700' : 'text-gray-500'
+                    viewMode === 'monthly' 
+                      ? (activeTab === 'menu' ? 'text-red-700' : 'text-blue-700') 
+                      : 'text-gray-500'
                   }`}>
                     {new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { 
                       year: '2-digit', 
@@ -146,7 +150,9 @@ export default function BattlePage() {
                   }}
                   className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
                     viewMode === 'monthly'
-                      ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                      ? (activeTab === 'menu' 
+                           ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                           : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600')
                       : 'bg-gray-50 border-gray-200 text-gray-400'
                   }`}
                 >
