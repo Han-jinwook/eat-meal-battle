@@ -18,6 +18,9 @@ console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화
 
 // 별점 시간 제한 체크 함수 - 파일 업로더와 동일한 로직 사용
 const canRateAtCurrentTime = (mealDate: string): boolean => {
+  // 테스트용: 시간 제약 해제 (주석 해제하면 항상 허용)
+  // return true;
+  
   const now = new Date();
   // 한국 시간대로 변환
   const koreaTimeString = now.toLocaleString('en-CA', { 
@@ -334,7 +337,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       
       // 시간 제한 체크 - 개발자 도구 등으로 UI 조작 우회 방지
       if (mealDate && !canRateAtCurrentTime(mealDate)) {
-        alert('별점은 당일 오후 12시부터 자정까지만 가능합니다.');
+        // 조용히 차단 (메시지 없이)
         return;
       }
       console.log('⭐ 별점 선택:', value);
