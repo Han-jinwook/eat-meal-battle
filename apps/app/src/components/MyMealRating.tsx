@@ -131,6 +131,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
       </div>
+      {/* 시간 제약 안내 문구 - 작은 글씨 */}
+      <div className="text-xs text-gray-500 mt-1">
+        (별점은 당일 오후 12시부터 자정까지만 가능합니다.)
+      </div>
     </div>
   );
 };

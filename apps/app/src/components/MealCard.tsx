@@ -19,7 +19,7 @@ console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화
 // 별점 시간 제한 체크 함수 - 파일 업로더와 동일한 로직 사용
 const canRateAtCurrentTime = (mealDate: string): boolean => {
   // 테스트용: 시간 제약 해제 (주석 해제하면 항상 허용)
-  // return true;
+  return true;
   
   const now = new Date();
   // 한국 시간대로 변환
