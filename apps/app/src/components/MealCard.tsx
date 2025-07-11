@@ -16,6 +16,42 @@ const supabase = createClient();
 // 디버깅용 콘솔 로그
 console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화');
 
+// 별점 시간 제한 체크 함수 - 파일 업로더와 동일한 로직 사용
+const canRateAtCurrentTime = (mealDate: string): boolean => {
+  const now = new Date();
+  // 한국 시간대로 변환
+  const koreaTimeString = now.toLocaleString('en-CA', { 
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  
+  const [dateStr, timeStr] = koreaTimeString.split(', ');
+  const today = dateStr; // YYYY-MM-DD 형식
+  const [hourStr] = timeStr.split(':');
+  const hour = parseInt(hourStr);
+  
+  console.log('별점 시간 체크:', {
+    mealDate,
+    today,
+    hour,
+    isToday: mealDate === today,
+    isPastCutoffTime: hour >= 12
+  });
+  
+  // 당일이 아니면 불가
+  if (mealDate !== today) {
+    return false;
+  }
+  
+  // 당일 12시 이후만 가능
+  return hour >= 12;
+};
+
 interface MealCardProps {
   meal: MealInfo;
   onShowOrigin(info: string): void;
@@ -25,7 +61,7 @@ interface MealCardProps {
 }
 
 // 별점 지정/표시 컴포넌트
-function MenuItemWithRating({ item, interactive = true }: { item: MealMenuItem; interactive?: boolean }) {
+function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
   // 상태로 사용자 관리
   const [user, setUser] = useState(null);
   
@@ -295,6 +331,12 @@ function MenuItemWithRating({ item, interactive = true }: { item: MealMenuItem; 
         console.error('메뉴 아이템 ID가 없습니다');
         return;
       }
+      
+      // 시간 제한 체크 - 개발자 도구 등으로 UI 조작 우회 방지
+      if (mealDate && !canRateAtCurrentTime(mealDate)) {
+        alert('별점은 당일 오후 12시부터 자정까지만 가능합니다.');
+        return;
+      }
       console.log('⭐ 별점 선택:', value);
       setIsLoading(true);
       const previousRating = rating;
@@ -397,6 +439,12 @@ function MenuItemWithRating({ item, interactive = true }: { item: MealMenuItem; 
             showValue={false}
             size="medium"
           />
+          {/* 시간 제한 안내 메시지 */}
+          {!interactive && (
+            <div className="text-xs text-gray-400 mt-1">
+              오후 12시부터 별점 가능
+            </div>
+          )}
         </div>
         <div className="text-gray-700">{item.item_name}</div>
       </div>
@@ -503,8 +551,14 @@ export default function MealCard({
                 <MenuItemWithRating
                   key={item.id}
                   item={item}
-                  // 급식정보가 없는 경우 별점 비활성화
-                  interactive={Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다' ? false : true}
+                  mealDate={meal.meal_date}
+                  // 급식정보 체크 + 시간 제한 체크
+                  interactive={
+                    // 급식정보가 없는 경우 비활성화
+                    (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') 
+                      ? false 
+                      : canRateAtCurrentTime(meal.meal_date) // 시간 제한 체크 추가
+                  }
                 />
               ))
             ) : (
