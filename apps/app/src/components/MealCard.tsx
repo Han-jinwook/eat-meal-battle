@@ -442,12 +442,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
             showValue={false}
             size="medium"
           />
-          {/* 시간 제한 안내 메시지 */}
-          {!interactive && (
-            <div className="text-xs text-gray-400 mt-1">
-              오후 12시부터 별점 가능
-            </div>
-          )}
         </div>
         <div className="text-gray-700">{item.item_name}</div>
       </div>
