@@ -74,7 +74,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   };
 
-  // 데이터 로드
+  // 데이터 로드 및 실시간 구독
   useEffect(() => {
     if (!user || !mealId) return;
     
