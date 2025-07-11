@@ -66,12 +66,17 @@ export default function Home() {
     fetchMealInfo,
   } = useMeals();
 
-  // userError 발생 시 오류 처리
+  // userError 발생 시 오류 처리 및 로그인 페이지 리다이렉트
   useEffect(() => {
     if (userError) {
+      // Auth session missing 에러인 경우 로그인 페이지로 리다이렉트
+      if (userError.includes('Auth session missing') || userError.includes('session missing')) {
+        router.push('/login');
+        return;
+      }
       setPageError(userError);
     }
-  }, [userError]);
+  }, [userError, router]);
 
   // 클라이언트 사이드에서 URL 매개변수 초기화
   useEffect(() => {
