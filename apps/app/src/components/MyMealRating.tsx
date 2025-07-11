@@ -1,6 +1,6 @@
-// [MEMO] 테스트용 메모: 2025-06-23, Cascade 수정
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -39,7 +39,6 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // 내 평점 조회 함수
   const fetchMyRating = async () => {
-
     if (!mealId || !user) return;
     
     try {
@@ -77,82 +76,40 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // 데이터 로드
   useEffect(() => {
-
     if (!user || !mealId) return;
+    
     fetchMyRating();
-  }, [user, mealId]);
-
-  // menu_item_ratings, menu_item_rating_stats, meal_rating_stats 중 하나에 변경이 발생할 때 내 평점을 재계산/저장
-  useEffect(() => {
-    if (!mealId || !user) return;
-    // 여러 테이블에 대해 실시간 구독을 설정
-    const tables = [
-      { table: 'menu_item_ratings', filter: '' },
-      { table: 'menu_item_rating_stats', filter: '' },
-      { table: 'meal_rating_stats', filter: `meal_id=eq.${mealId}` },
-    ];
-    const channels = tables.map(({ table, filter }) =>
-      supabase
-        .channel(`${table}:${mealId}`)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table,
-          ...(filter ? { filter } : {}),
-        }, async () => {
-          // 메뉴별 별점이 바뀌면 내 급식 평점을 재계산해서 meal_ratings에 upsert
-          await recalculateAndSaveMyMealRating();
-          // 그리고 UI에 반영
-          fetchMyRating();
-        })
-        .subscribe()
-    );
-    // 언마운트 시 구독 해제
-    return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch));
-    };
-  }, [mealId, user]);
-
-  // meal_rating_stats 실시간 구독 추가 (급식별 평점 변경 시 자동 갱신)
-  useEffect(() => {
-    if (!mealId) return;
-    // Supabase 실시간 구독 채널 생성
+    
+    // 실시간 업데이트를 위한 채널 생성
     const channel = supabase
-      .channel(`meal_rating_stats:${mealId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'meal_rating_stats',
-        filter: `meal_id=eq.${mealId}`
-      }, (payload) => {
-
-        // 평점 변경 시 fetchMyRating 호출
-        fetchMyRating();
-      })
-      .subscribe();
-    // 언마운트 시 구독 해제
+      .channel(`meal_ratings:${user.id}:${mealId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'meal_ratings',
+          filter: `user_id=eq.${user.id} AND meal_id=eq.${mealId}` 
+        }, 
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          // 새 데이터로 상태 업데이트
+          console.log('평점 실시간 업데이트:', payload);
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            setMyRating(payload.new.rating);
+          } else if (payload.eventType === 'DELETE') {
+            setMyRating(null);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('구독 상태:', status);
+      });
+    
+    // 컴포넌트 언마운트 시 구독 해제
     return () => {
+      console.log('실시간 구독 해제');
       supabase.removeChannel(channel);
     };
-  }, [mealId]);
-
-  // 메뉴별 별점 기반으로 내 급식 평점을 재계산하여 meal_ratings에 저장
-  const recalculateAndSaveMyMealRating = async () => {
-    // menu_item_ratings에서 내 별점만 모아와서 평균 계산
-    const { data: ratings, error } = await supabase
-      .from('menu_item_ratings')
-      .select('rating')
-      .eq('user_id', user.id)
-      .eq('meal_id', mealId);
-    if (error || !ratings || ratings.length === 0) return;
-    const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
-    // meal_ratings에 upsert
-    await supabase.from('meal_ratings').upsert({
-      meal_id: mealId,
-      user_id: user.id,
-      rating: avg,
-    });
-  };
+  }, [user, mealId]);
 
   // 로딩 상태일 때
   if (isLoading) {
@@ -173,10 +130,6 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         {user && myRating !== null && (
           <span className="ml-1">({myRating.toFixed(1)})</span>
         )}
-      </div>
-      {/* 시간 제약 안내 문구 - 작은 글씨 */}
-      <div className="text-xs text-gray-500 mt-1">
-        (별점은 당일 오후 12시부터 자정까지만 가능합니다.)
       </div>
     </div>
   );
