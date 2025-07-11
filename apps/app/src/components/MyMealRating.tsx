@@ -138,9 +138,9 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // 메뉴별 별점 기반으로 내 급식 평점을 재계산하여 meal_ratings에 저장
   const recalculateAndSaveMyMealRating = async () => {
-    // 1단계: 해당 meal_id의 menu_items 조회
+    // 1단계: 해당 meal_id의 meal_menu_items 조회
     const { data: menuItems, error: menuError } = await supabase
-      .from('menu_items')
+      .from('meal_menu_items')
       .select('id')
       .eq('meal_id', mealId);
     
