@@ -138,12 +138,22 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // 메뉴별 별점 기반으로 내 급식 평점을 재계산하여 meal_ratings에 저장
   const recalculateAndSaveMyMealRating = async () => {
-    // menu_item_ratings에서 내 별점만 모아서 평균 계산
+    // 1단계: 해당 meal_id의 menu_items 조회
+    const { data: menuItems, error: menuError } = await supabase
+      .from('menu_items')
+      .select('id')
+      .eq('meal_id', mealId);
+    
+    if (menuError || !menuItems || menuItems.length === 0) return;
+    
+    // 2단계: menu_item_id들로 내 별점 조회
+    const menuItemIds = menuItems.map(item => item.id);
     const { data: ratings, error } = await supabase
       .from('menu_item_ratings')
       .select('rating')
       .eq('user_id', user.id)
-      .eq('meal_id', mealId);
+      .in('menu_item_id', menuItemIds);
+      
     if (error || !ratings || ratings.length === 0) return;
     const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
     // meal_ratings에 upsert
