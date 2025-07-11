@@ -23,8 +23,8 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: '급식', href: '/' },
-  { label: '퀴즈', href: '/quiz' },
   { label: '배틀', href: '/battle' },
+  { label: '퀴즈', href: '/quiz' },
 ];
 
 import useUserSchool from '@/hooks/useUserSchool';
