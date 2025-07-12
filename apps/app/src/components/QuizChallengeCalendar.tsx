@@ -154,7 +154,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31
         `)
         .eq('user_id', session.data.session.user.id)
-        .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', month + 1)
         .single();
@@ -178,6 +177,16 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         // quiz_champions 테이블의 day_N 필드에서 퀴즈 결과 가져오기
         const dayFieldName = `day_${dayOfMonth}` as keyof typeof quizStats;
         const quizResult = quizStats?.[dayFieldName] as string | null;
+        
+        // 디버깅: 1일, 2일 데이터 확인
+        if (dayOfMonth === 1 || dayOfMonth === 2) {
+          console.log(`퀴즈 결과 디버깅 - ${dateStr}:`, {
+            dayOfMonth,
+            dayFieldName,
+            quizResult,
+            quizStats: quizStats ? 'exists' : 'null'
+          });
+        }
         
         // 퀴즈 결과 해석: 'O' = 정답, 'X' = 오답, null/undefined = 퀴즈 없음
         const hasQuiz = quizResult === 'O' || quizResult === 'X';

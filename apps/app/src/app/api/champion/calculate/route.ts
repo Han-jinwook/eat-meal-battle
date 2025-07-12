@@ -181,7 +181,6 @@ export async function GET(request: NextRequest) {
         statistics = await championCalculator.calculateWeeklyStatistics(
           user_id,
           school_code,
-          parseInt(grade),
           parseInt(year),
           parseInt(month),
           parseInt(week_number)
@@ -192,7 +191,6 @@ export async function GET(request: NextRequest) {
         statistics = await championCalculator.calculateMonthlyStatistics(
           user_id,
           school_code,
-          parseInt(grade),
           parseInt(year),
           parseInt(month)
         )
