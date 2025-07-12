@@ -168,7 +168,6 @@ export async function GET(request: NextRequest) {
       week_number,
       user_id,
       school_code,
-      grade: parseInt(grade),
       year: parseInt(year),
       month: parseInt(month)
     })
