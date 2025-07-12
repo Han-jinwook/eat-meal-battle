@@ -348,6 +348,8 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       await loadReplies();
       setRepliesCount(prev => prev + 1);
       onCommentChange(); // 댓글 목록 새로고침 (답글 수 업데이트를 위해)
+      // 답글 작성 폼 닫기
+      setIsReplyFormVisible(false);
       return true;
     } catch (err) {
       console.error('답글 추가 중 오류:', err);
@@ -672,7 +674,7 @@ useEffect(() => {
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
                   <path d="M3,17.25 L3,21 L6.75,21 L17.81,9.94 L14.06,6.19 L3,17.25 Z M21.41,6.34 L17.66,2.59 C17.2706655,2.20798298 16.6593396,2.20857968 16.27,2.59 L13.13,5.73 L16.88,9.48 L20.02,6.34 C20.4,5.96 20.4,5.34 20.02,4.96 L21.41,6.34 Z" />
                 </svg>
-                <span className="text-xs">답글 {isReplyFormVisible ? '접기' : '작성'}</span>
+                <span className="text-xs">답글</span>
               </button>
             )}
           </div>
