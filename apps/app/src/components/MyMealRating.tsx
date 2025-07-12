@@ -76,10 +76,18 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // 디바운싱을 위한 타이머 참조
   const recalculateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 실행 중 플래그 (중복 실행 방지)
+  const isRecalculatingRef = useRef<boolean>(false);
   
   // 메뉴별 별점 기반으로 전체 급식 평점을 재계산하여 meal_ratings에 저장 (디바운싱 적용)
   const recalculateAndSaveMyMealRating = useCallback(async () => {
     if (!user || !mealId) return;
+    
+    // 이미 실행 중이면 무시
+    if (isRecalculatingRef.current) {
+      console.log('⚡ 이미 재계산 중이므로 스킨');
+      return;
+    }
     
     // 이전 타이머 취소
     if (recalculateTimerRef.current) {
@@ -88,6 +96,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     // 500ms 디바운싱 적용
     recalculateTimerRef.current = setTimeout(async () => {
+      // 실행 시작 플래그 설정
+      isRecalculatingRef.current = true;
       try {
         console.log('🔄 급식 평점 재계산 시작');
         
@@ -150,13 +160,16 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         if (upsertError) {
           console.error('meal_ratings upsert 오류:', upsertError);
         } else {
-          console.log('✅ meal_ratings 업데이트 성공');
+          console.log('✅ 급식 평점 재계산 완료:', avg);
         }
       } catch (error) {
-        console.error('recalculateAndSaveMyMealRating 오류:', error);
+        console.error('❌ 급식 평점 재계산 실패:', error);
+      } finally {
+        // 실행 완료 플래그 해제
+        isRecalculatingRef.current = false;
       }
     }, 500);
-  }, [user, mealId]);
+  }, [user, mealId, supabase]);
 
   // 데이터 로드 및 실시간 구독
   useEffect(() => {
@@ -176,7 +189,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   useEffect(() => {
     if (!mealId || !user) return;
     
-    // menu_item 관련 테이블만 구독 (meal_rating_stats는 제외하여 무한 루프 방지)
+    // menu_item_ratings와 menu_item_rating_stats 구독 (실행 중 플래그로 중복 방지)
     const tables = [
       { table: 'menu_item_ratings', filter: '' },
       { table: 'menu_item_rating_stats', filter: '' },
