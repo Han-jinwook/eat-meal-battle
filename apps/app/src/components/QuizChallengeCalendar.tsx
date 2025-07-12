@@ -304,6 +304,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       console.error('월별 통계 조회 오류:', error);
       setMonthlyStats({ correct: 0, total: 0 });
     }
+  };
+
+  // 월별 통계 조회 useEffect
+  useEffect(() => {
+    if (userSchool) {
+      fetchMonthlyStats(currentMonth.getFullYear(), currentMonth.getMonth());
+    }
   }, [currentMonth, userSchool]);
 
   // 선택된 날짜 변경 시 달력 월 자동 업데이트
