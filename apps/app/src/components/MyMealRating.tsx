@@ -189,10 +189,9 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   useEffect(() => {
     if (!mealId || !user) return;
     
-    // menu_item_ratings와 menu_item_rating_stats 구독 (실행 중 플래그로 중복 방지)
+    // menu_item_ratings만 구독 (다른 모든 구독은 개별 메뉴아이템에서 처리)
     const tables = [
       { table: 'menu_item_ratings', filter: '' },
-      { table: 'menu_item_rating_stats', filter: '' },
     ];
     
     const channels = tables.map(({ table, filter }) =>
