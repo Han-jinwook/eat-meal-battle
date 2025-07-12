@@ -191,9 +191,13 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     // 재계산용: menu_item_ratings 구독
     // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
+    // 디버깅을 위해 필터 구문 변경 및 로그 추가
+    console.log('🔍 실시간 구독 설정 - 사용자 ID:', user.id, '급식 ID:', mealId);
+    
     const tables = [
       { table: 'menu_item_ratings', filter: `user_id=eq.${user.id}` },
-      { table: 'meal_ratings', filter: `meal_id=eq.${mealId}&user_id=eq.${user.id}` },
+      // meal_ratings 테이블 필터 구문 수정 - 필터를 분리하여 명확하게 지정
+      { table: 'meal_ratings', filter: `meal_id=eq.${mealId}` },
     ];
     
     const channels = tables.map(({ table, filter }) =>
@@ -213,14 +217,35 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
             recalculateAndSaveMyMealRating();
           } else if (table === 'meal_ratings') {
             // 급식 평점 변경 시 UI 업데이트만
-            console.log('🍽️ 급식 평점 UI 업데이트:', payload.new);
-            if (payload.new && typeof payload.new === 'object' && 'rating' in payload.new) {
+            console.log('🍽️ 급식 평점 UI 업데이트:', payload);
+            
+            // payload 구조 자세히 로깅
+            console.log('payload.new:', payload.new);
+            console.log('payload.old:', payload.old);
+            console.log('payload.eventType:', payload.eventType);
+            
+            // 현재 사용자의 데이터인지 확인
+            if (payload.new && 
+                typeof payload.new === 'object' && 
+                'user_id' in payload.new && 
+                payload.new.user_id === user.id && 
+                'rating' in payload.new) {
+              console.log('✅ 현재 사용자의 평점 업데이트 감지:', payload.new.rating);
               setMyRating(payload.new.rating as number);
+            } else {
+              console.log('❌ 다른 사용자의 평점 업데이트이거나 필요한 데이터 없음');
             }
           }
         })
         .subscribe((status) => {
-          console.log(`${table} 구독 상태:`, status);
+          console.log(`🔌 ${table} 구독 상태:`, status);
+          
+          // 구독 상태 확인 및 문제 진단
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ ${table} 테이블 구독 성공`);
+          } else {
+            console.error(`❌ ${table} 테이블 구독 실패:`, status);
+          }
         })
     );
     
