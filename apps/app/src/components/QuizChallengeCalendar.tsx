@@ -14,6 +14,7 @@ interface QuizResult {
   date: string;
   is_correct: boolean;
   has_quiz: boolean;
+  has_meal: boolean; // 급식 정보 유무 추가
 }
 
 interface WeeklyTrophy {
@@ -97,7 +98,22 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         종료일: formatLocalDate(endDate)
       });
       
-      // 1. 퀴즈 결과 조회
+      // 1. 급식 정보 조회 (meals 테이블)
+      const { data: meals, error: mealsError } = await supabase
+        .from('meals')
+        .select('meal_date')
+        .eq('school_code', userSchool.school_code)
+        .eq('grade', userSchool.grade)
+        .gte('meal_date', formatLocalDate(startDate))
+        .lte('meal_date', formatLocalDate(endDate));
+        
+      if (mealsError) {
+        console.error('급식 정보 조회 오류:', mealsError);
+      }
+      
+      console.log('조회된 급식 정보:', meals);
+      
+      // 2. 퀴즈 결과 조회
       const { data: results, error } = await supabase
         .from('quiz_results')
         .select(`
@@ -148,18 +164,20 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       console.log('조회된 퀴즈 결과:', results);
       console.log('조회된 장원 기록:', championData);
       
-      // 3. 퀴즈 결과 처리
+      // 4. 퀴즈 결과 처리
       const processedResults: QuizResult[] = [];
       const currentDate = new Date(startDate);
       
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate);
         const result = results?.find((r: any) => r.meal_quizzes.meal_date === dateStr);
+        const hasMeal = meals?.some((m: any) => m.meal_date === dateStr) || false;
         
         processedResults.push({
           date: dateStr,
           is_correct: result?.is_correct || false,
-          has_quiz: !!result
+          has_quiz: !!result,
+          has_meal: hasMeal
         });
         
         currentDate.setDate(currentDate.getDate() + 1);
@@ -388,7 +406,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         isSelected: dateStr === currentQuizDate,
         hasQuiz: quizResult?.has_quiz || false,
         isCorrect: quizResult?.is_correct || false,
-        isHoliday: !!holidays[dateStr]
+        isHoliday: !!holidays[dateStr],
+        hasMeal: quizResult?.has_meal || false // 급식 정보 유무 추가
       });
       
       currentDate.setDate(currentDate.getDate() + 1);
@@ -622,6 +641,20 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 <div className="flex items-center justify-center h-full w-full">
                   <div className="text-xs text-red-500 font-bold">
                     공휴일
+                  </div>
+                </div>
+              )}
+              
+              {/* 급식 정보 없음 표시 */}
+              {!day.hasMeal && day.isCurrentMonth && (
+                <div className="flex items-center justify-center h-full w-full">
+                  <div className="text-gray-400 text-xs font-medium">
+                    <span className="flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="ml-1">급식없음</span>
+                    </span>
                   </div>
                 </div>
               )}
