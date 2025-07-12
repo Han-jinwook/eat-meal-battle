@@ -192,7 +192,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     // 재계산용: menu_item_ratings 구독
     // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
     const tables = [
-      { table: 'menu_item_ratings', filter: '' },
+      { table: 'menu_item_ratings', filter: `user_id=eq.${user.id}` },
       { table: 'meal_ratings', filter: `meal_id=eq.${mealId}&user_id=eq.${user.id}` },
     ];
     
