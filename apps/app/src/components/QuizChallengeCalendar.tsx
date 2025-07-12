@@ -254,23 +254,20 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   const fetchMonthlyStats = async (year: number, month: number) => {
     try {
       const session = await supabase.auth.getSession();
-      if (!session.data.session || !userSchool) return;
+      if (!session.data.session) return;
       
       // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
       const displayMonth = month + 1;
       
-      console.log('월별 통계 조회:', year, displayMonth, '사용자:', session.data.session.user.id, '학년:', userSchool.grade);
+      console.log('월별 통계 조회:', year, displayMonth, '사용자:', session.data.session.user.id);
       
-      const query = supabase
+      const { data, error } = await supabase
         .from('quiz_champions')
-        .select('*') // 모든 필드 조회하여 주차별 정답 수 합산
+        .select('month_correct, total_count')
         .eq('user_id', session.data.session.user.id)
-        // school_code 컬럼이 존재하지 않으므로 제거
-        .eq('grade', userSchool.grade)
         .eq('year', year)
-        .eq('month', displayMonth);
-      
-      const { data, error } = await query.single();
+        .eq('month', displayMonth)
+        .single();
       
       if (error || !data) {
         console.log('월별 통계 데이터 없음:', year, displayMonth);
@@ -278,27 +275,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         return;
       }
       
-      // 주차별 정답 수 합산
-      let totalCorrect = 0;
-      let totalQuizzes = 0;
-      
-      // 최대 6주차까지 합산
-      for (let week = 1; week <= 6; week++) {
-        const weekCorrectField = `week_${week}_correct` as keyof typeof data;
-        const weekTotalField = `week_${week}_total` as keyof typeof data;
-        
-        if (typeof data[weekCorrectField] === 'number') {
-          totalCorrect += data[weekCorrectField] as number;
-        }
-        
-        if (typeof data[weekTotalField] === 'number') {
-          totalQuizzes += data[weekTotalField] as number;
-        }
-      }
+      console.log('월별 통계 결과:', {
+        year,
+        month: displayMonth,
+        monthCorrect: data.month_correct || 0,
+        totalCount: data.total_count || 0,
+        data
+      });
       
       setMonthlyStats({
-        correct: totalCorrect,
-        total: totalQuizzes
+        correct: data.month_correct || 0,
+        total: data.total_count || 0
       });
     } catch (error) {
       console.error('월별 통계 조회 오류:', error);
@@ -308,10 +295,9 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   // 월별 통계 조회 useEffect
   useEffect(() => {
-    if (userSchool) {
-      fetchMonthlyStats(currentMonth.getFullYear(), currentMonth.getMonth());
-    }
-  }, [currentMonth, userSchool]);
+    console.log('월별 통계 조회 시작:', currentMonth.getFullYear(), currentMonth.getMonth() + 1);
+    fetchMonthlyStats(currentMonth.getFullYear(), currentMonth.getMonth());
+  }, [currentMonth]);
 
   // 선택된 날짜 변경 시 달력 월 자동 업데이트
   useEffect(() => {
