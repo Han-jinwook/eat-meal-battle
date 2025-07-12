@@ -97,6 +97,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         종료일: formatLocalDate(endDate)
       });
       
+      // 1. 퀴즈 결과 조회
       const { data: results, error } = await supabase
         .from('quiz_results')
         .select(`
@@ -114,8 +115,40 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         return;
       }
 
-      console.log('조회된 퀴즈 결과:', results);
+      // 2. 장원 기록 조회 (user_champion_records 테이블)
+      const { data: championData, error: championError } = await supabase
+        .from('user_champion_records')
+        .select('*')
+        .eq('user_id', session.data.session.user.id)
+        .eq('school_code', userSchool.school_code)
+        .eq('grade', userSchool.grade)
+        .eq('year', year)
+        .eq('month', month + 1) // JavaScript의 month는 0부터 시작하므로 +1
+        .single();
+
+      if (championError && championError.code !== 'PGRST116') { // PGRST116: 결과 없음
+        console.error('장원 기록 조회 오류:', championError);
+      }
       
+      // 3. 퀴즈 통계 조회 (quiz_champions 테이블)
+      const { data: quizStats, error: statsError } = await supabase
+        .from('quiz_champions')
+        .select('*')
+        .eq('user_id', session.data.session.user.id)
+        .eq('school_code', userSchool.school_code)
+        .eq('grade', userSchool.grade)
+        .eq('year', year)
+        .eq('month', month + 1)
+        .single();
+        
+      if (statsError && statsError.code !== 'PGRST116') { // PGRST116: 결과 없음
+        console.error('퀴즈 통계 조회 오류:', statsError);
+      }
+      
+      console.log('조회된 퀴즈 결과:', results);
+      console.log('조회된 장원 기록:', championData);
+      
+      // 3. 퀴즈 결과 처리
       const processedResults: QuizResult[] = [];
       const currentDate = new Date(startDate);
       
@@ -132,12 +165,36 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
-      console.log('처리된 퀴즈 결과:', processedResults);
       setQuizResults(processedResults);
       
-      // 트로피 계산
-      const trophies = calculateTrophies(processedResults, year, month);
+      // 4. 주간 트로피 정보 설정 (DB 기반)
+      const trophies: WeeklyTrophy[] = [];
+      
+      // 최대 6주차까지 처리
+      for (let week = 1; week <= 6; week++) {
+        // 장원 여부 확인
+        const weekChampionField = `week_${week}_champion` as keyof typeof championData;
+        const isChampion = championData ? !!championData[weekChampionField] : false;
+        
+        // DB에서 가져온 주차별 정답 수와 총 퀴즈 수
+        const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
+        const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
+        
+        const correctCount = quizStats && typeof quizStats[weekCorrectField] === 'number' ? quizStats[weekCorrectField] as number : 0;
+        const totalCount = quizStats && typeof quizStats[weekTotalField] === 'number' ? quizStats[weekTotalField] as number : 0;
+        
+        trophies.push({
+          week: week,
+          earned: isChampion, // DB에서 가져온 장원 여부
+          total_correct: correctCount,
+          total_available: totalCount
+        });
+      }
+      
       setWeeklyTrophies(trophies);
+      
+      // 5. 월간 트로피 설정
+      setMonthlyTrophy(championData ? !!championData.month_champion : false);
       
     } catch (error) {
       console.error('데이터 조회 오류:', error);
@@ -145,59 +202,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       setLoading(false);
     }
   };
-
-  // 트로피 계산
-  const calculateTrophies = (results: QuizResult[], year: number, month: number): WeeklyTrophy[] => {
-    const trophies: WeeklyTrophy[] = [];
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0);
-    
-    let currentWeek = 1;
-    let weekStart = new Date(startDate);
-    
-    // 첫 주의 시작을 월요일로 맞춤
-    const firstDayOfWeek = weekStart.getDay();
-    const daysToMonday = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-    weekStart.setDate(weekStart.getDate() - daysToMonday);
-    
-    while (weekStart <= endDate) {
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      let weekCorrect = 0;
-      let weekTotal = 0;
-      
-      // 해당 주의 퀴즈 결과 계산 (월-금만)
-      for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
-        const dayOfWeek = d.getDay();
-        if (dayOfWeek >= 1 && dayOfWeek <= 5 && d.getMonth() === month) { // 월-금, 해당 월만
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          const result = results.find(r => r.date === dateStr);
-          
-          if (result && result.has_quiz) {
-            weekTotal++;
-            if (result.is_correct) {
-              weekCorrect++;
-            }
-          }
-        }
-      }
-      
-      trophies.push({
-        week: currentWeek,
-        earned: weekTotal >= 3 && weekCorrect === weekTotal, // 최소 3문제 이상 있고 모두 정답이어야 트로피 수여
-        total_correct: weekCorrect,
-        total_available: weekTotal
-      });
-      
-      currentWeek++;
-      weekStart.setDate(weekStart.getDate() + 7);
-      
-      if (currentWeek > 6) break; // 최대 6주
-    }
-    
-    return trophies;
+  
+  // 특정 날짜의 퀴즈 결과 조회 (캘린더 UI 표시용)
+  const getQuizResultForDate = (results: QuizResult[], dateStr: string): QuizResult | undefined => {
+    return results.find(r => r.date === dateStr);
   };
+
+  // 트로피 계산 함수는 제거 (DB에서 직접 조회하도록 변경)
 
   // 월별 퀴즈 결과 조회 함수
   const fetchMonthlyStats = async (year: number, month: number) => {

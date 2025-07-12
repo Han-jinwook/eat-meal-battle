@@ -152,8 +152,7 @@ export class ChampionCriteriaService {
             grade: grade,
             year: year,
             month: month,
-            [weekField]: correctCount,
-            correct_count: correctCount // 기존 호환성 유지
+            [weekField]: correctCount
           });
         
         if (insertError) {
@@ -219,10 +218,10 @@ export class ChampionCriteriaService {
         // 1. 장원 조건 조회
         const requiredCount = await this.getMonthlyCriteria(schoolCode, grade, year, month);
         
-        // 2. 사용자 정답수 조회
+        // 2. 사용자 정답수 조회 - 주차별 필드를 합산하여 사용
         const { data: userData, error: userError } = await this.supabase
           .from('quiz_champions')
-          .select('correct_count')
+          .select('week_1_correct, week_2_correct, week_3_correct, week_4_correct, week_5_correct, week_6_correct')
           .eq('user_id', userId)
           .eq('school_code', schoolCode)
           .eq('grade', grade)
@@ -231,7 +230,15 @@ export class ChampionCriteriaService {
           .single();
         
         if (!userError && userData) {
-          const correctCount = userData.correct_count || 0;
+          // 모든 주차의 정답수를 합산
+          const correctCount = [
+            userData.week_1_correct || 0,
+            userData.week_2_correct || 0,
+            userData.week_3_correct || 0,
+            userData.week_4_correct || 0,
+            userData.week_5_correct || 0,
+            userData.week_6_correct || 0
+          ].reduce((sum, count) => sum + count, 0);
           
           // 장원 조건 달성 여부 (정답수 = 급식일수)
           isChampion = (requiredCount > 0 && correctCount === requiredCount);

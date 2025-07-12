@@ -5,7 +5,6 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
-import { enhancedChampionCalculator } from '@/utils/enhancedChampionCalculator'
 import { ChampionCriteriaService } from '@/utils/championCriteriaService'
 
 const criteriaService = new ChampionCriteriaService();
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 사용자의 장원 기록 조회
-    const userChampionRecords = await enhancedChampionCalculator.getUserChampionRecords(
+    const userChampionRecords = await criteriaService.getUserChampionRecords(
       user_id,
       school_code,
       grade,
