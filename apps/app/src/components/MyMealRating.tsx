@@ -74,67 +74,108 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   };
 
+  // 메뉴별 별점 기반으로 전체 급식 평점을 재계산하여 meal_ratings에 저장
+  const recalculateAndSaveMyMealRating = async () => {
+    if (!user || !mealId) return;
+    
+    try {
+      // menu_item_ratings에서 내 별점만 모아와서 평균 계산
+      const { data: ratings, error } = await supabase
+        .from('menu_item_ratings')
+        .select('rating')
+        .eq('user_id', user.id)
+        .eq('meal_id', mealId);
+        
+      if (error) {
+        console.error('메뉴 별점 조회 오류:', error);
+        return;
+      }
+      
+      if (!ratings || ratings.length === 0) {
+        console.log('메뉴 별점이 없어서 meal_ratings 삭제');
+        // 별점이 없으면 meal_ratings에서 삭제
+        await supabase
+          .from('meal_ratings')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('meal_id', mealId);
+        return;
+      }
+      
+      // 평균 계산
+      const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
+      console.log('재계산된 급식 평점:', avg);
+      
+      // meal_ratings에 upsert
+      const { error: upsertError } = await supabase
+        .from('meal_ratings')
+        .upsert({
+          meal_id: mealId,
+          user_id: user.id,
+          rating: avg,
+        });
+        
+      if (upsertError) {
+        console.error('meal_ratings upsert 오류:', upsertError);
+      } else {
+        console.log('meal_ratings 업데이트 성공');
+      }
+    } catch (error) {
+      console.error('recalculateAndSaveMyMealRating 오류:', error);
+    }
+  };
+
   // 데이터 로드 및 실시간 구독
   useEffect(() => {
-    console.log('🍽️ MyMealRating useEffect 실행:', { user: !!user, mealId, userId: user?.id });
+    console.log('🍽️ MyMealRating useEffect 실행:', { user: !!user, mealId });
+    
     if (!user || !mealId) {
       console.log('❌ MyMealRating: user 또는 mealId 없음', { user: !!user, mealId });
       return;
     }
     
+    console.log('실제 사용자 정보:', { userId: user.id, mealId });
+    
     fetchMyRating();
-    
-    // 개인 평점 실시간 업데이트를 위한 채널 생성 (meal_ratings)
-    const personalChannel = supabase
-      .channel(`meal_ratings:${user.id}:${mealId}`)
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'meal_ratings',
-          filter: `user_id=eq.${user.id} AND meal_id=eq.${mealId}` 
-        },
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          // 개인 평점 실시간 업데이트
-          console.log('개인 평점 실시간 업데이트:', payload);
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            setMyRating(payload.new.rating);
-          } else if (payload.eventType === 'DELETE') {
-            setMyRating(null);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('구독 상태:', status);
-      });
+  }, [user, mealId]);
 
-    // 통계 평점 실시간 업데이트를 위한 채널 생성 (meal_rating_stats)
-    const statsChannel = supabase
-      .channel(`meal_rating_stats:${mealId}`)
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'meal_rating_stats',
-          filter: `meal_id=eq.${mealId}` 
-        }, 
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          // 통계 평점 실시간 업데이트 (참고용)
-          console.log('통계 평점 실시간 업데이트:', payload);
-          // 통계는 참고용이므로 개인 평점 상태는 변경하지 않음
-        }
-      )
-      .subscribe((status) => {
-        console.log('통계 구독 상태:', status);
-      });
+  // menu_item_ratings, menu_item_rating_stats, meal_rating_stats 중 하나가 변경이 발생하면 평점을 재계산
+  useEffect(() => {
+    if (!mealId || !user) return;
     
-    // 컴포넌트 언마운트 시 구독 해제
+    // 여러 테이블에 대한 실시간 구독을 설정
+    const tables = [
+      { table: 'menu_item_ratings', filter: '' },
+      { table: 'menu_item_rating_stats', filter: '' },
+      { table: 'meal_rating_stats', filter: `meal_id=eq.${mealId}` },
+    ];
+    
+    const channels = tables.map(({ table, filter }) =>
+      supabase
+        .channel(`${table}:${mealId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table,
+          ...(filter ? { filter } : {}),
+        }, async () => {
+          console.log(`${table} 테이블 실시간 업데이트 수신`);
+          // 메뉴별 별점이 바뀌면 전체 급식 평점을 재계산해서 meal_ratings에 upsert
+          await recalculateAndSaveMyMealRating();
+          // 그리고 UI에 반영
+          fetchMyRating();
+        })
+        .subscribe((status) => {
+          console.log(`${table} 구독 상태:`, status);
+        })
+    );
+    
+    // 언마운트 시 구독 해제
     return () => {
       console.log('실시간 구독 해제');
-      supabase.removeChannel(personalChannel);
-      supabase.removeChannel(statsChannel);
+      channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [user, mealId]);
+  }, [mealId, user]);
 
   // 로딩 상태일 때
   if (isLoading) {
