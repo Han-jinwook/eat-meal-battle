@@ -193,7 +193,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
     const tables = [
       { table: 'menu_item_ratings', filter: '' },
-      { table: 'meal_ratings', filter: `meal_id=eq.${mealId}.and.user_id=eq.${user.id}` },
+      { table: 'meal_ratings', filter: `meal_id=eq.${mealId}&user_id=eq.${user.id}` },
     ];
     
     const channels = tables.map(({ table, filter }) =>
@@ -205,9 +205,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           table,
           ...(filter ? { filter } : {}),
         }, (payload) => {
-          console.log(`${table} 테이블 실시간 업데이트 수신`);
+          console.log(`📡 ${table} 테이블 실시간 업데이트 수신:`, payload);
           
           if (table === 'menu_item_ratings') {
+            console.log('🍽️ MyMealRating: menu_item_ratings 변경 감지, 재계산 시작');
             // 메뉴 아이템 별점 변경 시 재계산
             recalculateAndSaveMyMealRating();
           } else if (table === 'meal_ratings') {
