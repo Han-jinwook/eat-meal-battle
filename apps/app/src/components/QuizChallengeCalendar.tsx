@@ -110,7 +110,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('급식 메뉴 조회 오류:', mealMenusError);
       }
       
-      // 2. 퀴즈 결과 조회
+      // 2. 퀴즈 결과 조회 - 더 이상 사용하지 않음 (quiz_champions.day_N 필드 사용)
+      /*
       const { data: results, error } = await supabase
         .from('quiz_results')
         .select(`
@@ -127,6 +128,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('퀴즈 결과 조회 오류:', error);
         return;
       }
+      */
 
       // 2. 장원 기록 조회 (user_champion_records 테이블)
       const { data: championData, error: championError } = await supabase
@@ -142,12 +144,16 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('장원 기록 조회 오류:', championError);
       }
       
-      // 3. 퀴즈 통계 조회 (quiz_champions 테이블)
+      // 3. 퀴즈 통계 조회 (quiz_champions 테이블) - 일별 결과 포함
       const { data: quizStats, error: statsError } = await supabase
         .from('quiz_champions')
-        .select('*')
+        .select(`
+          *,
+          day_1, day_2, day_3, day_4, day_5, day_6, day_7, day_8, day_9, day_10,
+          day_11, day_12, day_13, day_14, day_15, day_16, day_17, day_18, day_19, day_20,
+          day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31
+        `)
         .eq('user_id', session.data.session.user.id)
-        // school_code 컬럼이 존재하지 않으므로 제거
         .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', month + 1)
@@ -157,17 +163,25 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('퀴즈 통계 조회 오류:', statsError);
       }
       
-      console.log('조회된 퀴즈 결과:', results);
+      console.log('조회된 퀴즈 결과 (quiz_champions):', quizStats);
       console.log('조회된 장원 기록:', championData);
       console.log('조회된 급식 메뉴:', mealMenus);
       
-      // 4. 퀴즈 결과 처리
+      // 4. 퀴즈 결과 처리 - quiz_champions 테이블의 day_N 필드 사용
       const processedResults: QuizResult[] = [];
       const currentDate = new Date(startDate);
       
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate);
-        const result = results?.find((r: any) => r.meal_quizzes.meal_date === dateStr);
+        const dayOfMonth = currentDate.getDate();
+        
+        // quiz_champions 테이블의 day_N 필드에서 퀴즈 결과 가져오기
+        const dayFieldName = `day_${dayOfMonth}` as keyof typeof quizStats;
+        const quizResult = quizStats?.[dayFieldName] as string | null;
+        
+        // 퀴즈 결과 해석: 'O' = 정답, 'X' = 오답, null/undefined = 퀴즈 없음
+        const hasQuiz = quizResult === 'O' || quizResult === 'X';
+        const isCorrect = quizResult === 'O';
         
         // 주말과 공휴일 확인
         const dayOfWeek = currentDate.getDay(); // 0=일요일, 6=토요일
@@ -195,10 +209,11 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           }
           // mealMenu가 없으면 hasMeal = true 유지 (표시 안 함)
         }
+        
         processedResults.push({
           date: dateStr,
-          is_correct: result?.is_correct || false,
-          has_quiz: !!result,
+          is_correct: isCorrect,
+          has_quiz: hasQuiz,
           has_meal: hasMeal
         });
         
