@@ -98,20 +98,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         종료일: formatLocalDate(endDate)
       });
       
-      // 1. 급식 정보 조회 (meals 테이블)
-      const { data: meals, error: mealsError } = await supabase
-        .from('meals')
-        .select('meal_date')
+      // 1. 급식 정보 조회 (meal_menus 테이블)
+      const { data: mealMenus, error: mealMenusError } = await supabase
+        .from('meal_menus')
+        .select('meal_date, menu_items')
         .eq('school_code', userSchool.school_code)
-        .eq('grade', userSchool.grade)
         .gte('meal_date', formatLocalDate(startDate))
         .lte('meal_date', formatLocalDate(endDate));
         
-      if (mealsError) {
-        console.error('급식 정보 조회 오류:', mealsError);
+      if (mealMenusError) {
+        console.error('급식 메뉴 조회 오류:', mealMenusError);
       }
-      
-      console.log('조회된 급식 정보:', meals);
       
       // 2. 퀴즈 결과 조회
       const { data: results, error } = await supabase
@@ -136,7 +133,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         .from('user_champion_records')
         .select('*')
         .eq('user_id', session.data.session.user.id)
-        .eq('school_code', userSchool.school_code)
         .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', month + 1) // JavaScript의 month는 0부터 시작하므로 +1
@@ -151,7 +147,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         .from('quiz_champions')
         .select('*')
         .eq('user_id', session.data.session.user.id)
-        .eq('school_code', userSchool.school_code)
+        // school_code 컬럼이 존재하지 않으므로 제거
         .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', month + 1)
@@ -163,6 +159,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       console.log('조회된 퀴즈 결과:', results);
       console.log('조회된 장원 기록:', championData);
+      console.log('조회된 급식 메뉴:', mealMenus);
       
       // 4. 퀴즈 결과 처리
       const processedResults: QuizResult[] = [];
@@ -171,8 +168,33 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate);
         const result = results?.find((r: any) => r.meal_quizzes.meal_date === dateStr);
-        const hasMeal = meals?.some((m: any) => m.meal_date === dateStr) || false;
         
+        // 주말과 공휴일 확인
+        const dayOfWeek = currentDate.getDay(); // 0=일요일, 6=토요일
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHoliday = !!holidays[dateStr];
+        
+        let hasMeal = true; // 기본값: 표시 안 함
+        
+        // 주말이나 공휴일이 아닌 경우에만 급식 조회
+        if (!isWeekend && !isHoliday) {
+          // meal_menus에서 해당 날짜 찾기
+          const mealMenu = mealMenus?.find((m: any) => m.meal_date === dateStr);
+          
+          // 급식 유무 판단: 
+          // 1. meal_menus에 레코드가 없으면 → 아직 급식정보를 가져오지 않은 상태이므로 표시 안 함 (hasMeal = true 유지)
+          // 2. meal_menus에 레코드가 있고, menu_items에 "급식 정보가 없습니다"가 포함되어 있으면 → "급식 없음" 표시 (hasMeal = false)
+          // 3. meal_menus에 레코드가 있고, menu_items에 "급식 정보가 없습니다"가 없으면 → 표시 안 함 (hasMeal = true)
+          if (mealMenu) {
+            const menuItems = mealMenu.menu_items || '';
+            if (menuItems.includes('급식 정보가 없습니다')) {
+              hasMeal = false; // "급식 없음" 표시
+            } else {
+              hasMeal = true;  // 표시 안 함
+            }
+          }
+          // mealMenu가 없으면 hasMeal = true 유지 (표시 안 함)
+        }
         processedResults.push({
           date: dateStr,
           is_correct: result?.is_correct || false,
@@ -234,18 +256,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const session = await supabase.auth.getSession();
       if (!session.data.session || !userSchool) return;
       
-      // 현재 날짜 확인
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-      
       // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
       const displayMonth = month + 1;
       
+      console.log('월별 통계 조회:', year, displayMonth, '사용자:', session.data.session.user.id, '학년:', userSchool.grade);
+      
       const query = supabase
         .from('quiz_champions')
-        .select('correct_count, total_count')
+        .select('*') // 모든 필드 조회하여 주차별 정답 수 합산
         .eq('user_id', session.data.session.user.id)
+        // school_code 컬럼이 존재하지 않으므로 제거
+        .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', displayMonth);
       
@@ -257,69 +278,31 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         return;
       }
       
+      // 주차별 정답 수 합산
+      let totalCorrect = 0;
+      let totalQuizzes = 0;
+      
+      // 최대 6주차까지 합산
+      for (let week = 1; week <= 6; week++) {
+        const weekCorrectField = `week_${week}_correct` as keyof typeof data;
+        const weekTotalField = `week_${week}_total` as keyof typeof data;
+        
+        if (typeof data[weekCorrectField] === 'number') {
+          totalCorrect += data[weekCorrectField] as number;
+        }
+        
+        if (typeof data[weekTotalField] === 'number') {
+          totalQuizzes += data[weekTotalField] as number;
+        }
+      }
+      
       setMonthlyStats({
-        correct: data.correct_count,
-        total: data.total_count
+        correct: totalCorrect,
+        total: totalQuizzes
       });
     } catch (error) {
       console.error('월별 통계 조회 오류:', error);
       setMonthlyStats({ correct: 0, total: 0 });
-    }
-  };
-
-  const fetchPreviousMonthStats = async (year: number, month: number) => {
-    try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session || !userSchool) return;
-      
-      // month는 0부터 시작하므로 +1 해서 실제 월로 변환
-      const displayMonth = month + 1;
-      
-      const { data, error } = await supabase
-        .from('quiz_champions')
-        .select('correct_count, total_count')
-        .eq('user_id', session.data.session.user.id)
-        .eq('year', year)
-        .eq('month', displayMonth)
-        .single();
-      
-      if (error || !data) {
-        console.log('이전 월별 통계 데이터 없음:', year, displayMonth);
-        setPreviousMonthStats({ correct: 0, total: 0, month: displayMonth });
-        return;
-      }
-      
-      setPreviousMonthStats({
-        correct: data.correct_count,
-        total: data.total_count,
-        month: displayMonth
-      });
-    } catch (error) {
-      console.error('이전 월별 통계 조회 오류:', error);
-      setPreviousMonthStats({ correct: 0, total: 0, month: month + 1 });
-    }
-  };
-
-  useEffect(() => {
-    if (userSchool) {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      
-      console.log('데이터 조회 시작:', {
-        현재년월: `${year}-${month+1}`,
-        이전년월: `${month === 0 ? year-1 : year}-${month === 0 ? 12 : month}`
-      });
-      
-      // 퀴즈 결과 데이터 먼저 조회
-      fetchCalendarData(year, month);
-      
-      // 현재 월의 데이터 조회
-      fetchMonthlyStats(year, month);
-      
-      // 이전 월의 데이터 조회 (표시용)
-      const prevMonth = month === 0 ? 11 : month - 1;
-      const prevYear = month === 0 ? year - 1 : year;
-      fetchPreviousMonthStats(prevYear, prevMonth);
     }
   }, [currentMonth, userSchool]);
 
@@ -361,6 +344,64 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     const prevYear = month === 0 ? year - 1 : year;
     fetchPreviousMonthStats(prevYear, prevMonth);
   };
+  
+  // 이전 월 퀴즈 결과 조회 함수
+  const fetchPreviousMonthStats = async (year: number, month: number) => {
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session || !userSchool) return;
+      
+      // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
+      const displayMonth = month + 1;
+      
+      console.log('이전 월 통계 조회:', year, displayMonth, '사용자:', session.data.session.user.id, '학년:', userSchool.grade);
+      
+      const query = supabase
+        .from('quiz_champions')
+        .select('*') // 모든 필드 조회하여 주차별 정답 수 합산
+        .eq('user_id', session.data.session.user.id)
+        // school_code 컬럼이 존재하지 않으므로 제거
+        .eq('grade', userSchool.grade)
+        .eq('year', year)
+        .eq('month', displayMonth)
+        .single();
+      
+      const { data, error } = await query;
+      
+      if (error || !data) {
+        console.log('이전 월 통계 데이터 없음:', year, displayMonth);
+        setPreviousMonthStats({ correct: 0, total: 0, month: displayMonth });
+        return;
+      }
+      
+      // 주차별 정답 수 합산
+      let totalCorrect = 0;
+      let totalQuizzes = 0;
+      
+      // 최대 6주차까지 합산
+      for (let week = 1; week <= 6; week++) {
+        const weekCorrectField = `week_${week}_correct` as keyof typeof data;
+        const weekTotalField = `week_${week}_total` as keyof typeof data;
+        
+        if (typeof data[weekCorrectField] === 'number') {
+          totalCorrect += data[weekCorrectField] as number;
+        }
+        
+        if (typeof data[weekTotalField] === 'number') {
+          totalQuizzes += data[weekTotalField] as number;
+        }
+      }
+      
+      setPreviousMonthStats({
+        correct: totalCorrect,
+        total: totalQuizzes,
+        month: displayMonth
+      });
+    } catch (error) {
+      console.error('이전 월 통계 조회 오류:', error);
+      setPreviousMonthStats({ correct: 0, total: 0, month: month + 1 });
+    }
+  };
 
   // 외부에서 새로고침 호출 가능하도록 설정
   useEffect(() => {
@@ -376,6 +417,27 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
     };
   }, [onRefreshNeeded, currentMonth]);
+  
+  // 월이 변경될 때 데이터 가져오기
+  useEffect(() => {
+    if (userSchool) {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      console.log('📅 월 변경 감지:', { year, month: month + 1 });
+      
+      // 퀴즈 결과 데이터 가져오기
+      fetchCalendarData(year, month);
+      
+      // 현재 월의 통계 가져오기
+      fetchMonthlyStats(year, month);
+      
+      // 이전 월의 통계 가져오기
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      fetchPreviousMonthStats(prevYear, prevMonth);
+    }
+  }, [currentMonth, userSchool]);
 
   // 캘린더 그리드 생성
   const generateCalendarGrid = () => {
