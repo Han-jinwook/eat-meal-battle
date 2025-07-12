@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
@@ -74,75 +74,89 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     }
   };
 
-  // 메뉴별 별점 기반으로 전체 급식 평점을 재계산하여 meal_ratings에 저장
-  const recalculateAndSaveMyMealRating = async () => {
+  // 디바운싱을 위한 타이머 참조
+  const recalculateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 메뉴별 별점 기반으로 전체 급식 평점을 재계산하여 meal_ratings에 저장 (디바운싱 적용)
+  const recalculateAndSaveMyMealRating = useCallback(async () => {
     if (!user || !mealId) return;
     
-    try {
-      // 1단계: meal_menu_items에서 해당 급식의 메뉴 아이템 ID들 조회
-      const { data: menuItems, error: menuError } = await supabase
-        .from('meal_menu_items')
-        .select('id')
-        .eq('meal_id', mealId);
-        
-      if (menuError) {
-        console.error('메뉴 아이템 조회 오류:', menuError);
-        return;
-      }
-      
-      if (!menuItems || menuItems.length === 0) {
-        console.log('메뉴 아이템이 없음');
-        return;
-      }
-      
-      const menuItemIds = menuItems.map(item => item.id);
-      console.log('조회된 메뉴 아이템 IDs:', menuItemIds);
-      
-      // 2단계: menu_item_ratings에서 내 별점만 모아와서 평균 계산
-      const { data: ratings, error: ratingsError } = await supabase
-        .from('menu_item_ratings')
-        .select('rating')
-        .eq('user_id', user.id)
-        .in('menu_item_id', menuItemIds);
-        
-      if (ratingsError) {
-        console.error('메뉴 별점 조회 오류:', ratingsError);
-        return;
-      }
-      
-      if (!ratings || ratings.length === 0) {
-        console.log('메뉴 별점이 없어서 meal_ratings 삭제');
-        // 별점이 없으면 meal_ratings에서 삭제
-        await supabase
-          .from('meal_ratings')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('meal_id', mealId);
-        return;
-      }
-      
-      // 평균 계산
-      const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
-      console.log('재계산된 급식 평점:', avg, '(', ratings.length, '개 메뉴)');
-      
-      // meal_ratings에 upsert
-      const { error: upsertError } = await supabase
-        .from('meal_ratings')
-        .upsert({
-          meal_id: mealId,
-          user_id: user.id,
-          rating: avg,
-        });
-        
-      if (upsertError) {
-        console.error('meal_ratings upsert 오류:', upsertError);
-      } else {
-        console.log('meal_ratings 업데이트 성공');
-      }
-    } catch (error) {
-      console.error('recalculateAndSaveMyMealRating 오류:', error);
+    // 이전 타이머 취소
+    if (recalculateTimerRef.current) {
+      clearTimeout(recalculateTimerRef.current);
     }
-  };
+    
+    // 500ms 디바운싱 적용
+    recalculateTimerRef.current = setTimeout(async () => {
+      try {
+        console.log('🔄 급식 평점 재계산 시작');
+        
+        // 1단계: meal_menu_items에서 해당 급식의 메뉴 아이템 ID들 조회
+        const { data: menuItems, error: menuError } = await supabase
+          .from('meal_menu_items')
+          .select('id')
+          .eq('meal_id', mealId);
+          
+        if (menuError) {
+          console.error('메뉴 아이템 조회 오류:', menuError);
+          return;
+        }
+        
+        if (!menuItems || menuItems.length === 0) {
+          console.log('메뉴 아이템이 없음');
+          return;
+        }
+        
+        const menuItemIds = menuItems.map(item => item.id);
+        
+        // 2단계: menu_item_ratings에서 내 별점만 모아와서 평균 계산
+        const { data: ratings, error: ratingsError } = await supabase
+          .from('menu_item_ratings')
+          .select('rating')
+          .eq('user_id', user.id)
+          .in('menu_item_id', menuItemIds);
+          
+        if (ratingsError) {
+          console.error('메뉴 별점 조회 오류:', ratingsError);
+          return;
+        }
+        
+        if (!ratings || ratings.length === 0) {
+          console.log('메뉴 별점이 없어서 meal_ratings 삭제');
+          // 별점이 없으면 meal_ratings에서 삭제
+          await supabase
+            .from('meal_ratings')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('meal_id', mealId);
+          return;
+        }
+        
+        // 평균 계산
+        const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
+        console.log('재계산된 급식 평점:', avg, '(', ratings.length, '개 메뉴)');
+        
+        // meal_ratings에 upsert (올바른 문법 사용)
+        const { error: upsertError } = await supabase
+          .from('meal_ratings')
+          .upsert({
+            meal_id: mealId,
+            user_id: user.id,
+            rating: avg,
+          }, {
+            onConflict: 'user_id,meal_id'
+          });
+          
+        if (upsertError) {
+          console.error('meal_ratings upsert 오류:', upsertError);
+        } else {
+          console.log('✅ meal_ratings 업데이트 성공');
+        }
+      } catch (error) {
+        console.error('recalculateAndSaveMyMealRating 오류:', error);
+      }
+    }, 500);
+  }, [user, mealId]);
 
   // 데이터 로드 및 실시간 구독
   useEffect(() => {
