@@ -85,7 +85,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     // 이미 실행 중이면 무시
     if (isRecalculatingRef.current) {
-      console.log('⚡ 이미 재계산 중이므로 스킨');
+      // 이미 재계산 중이므로 스킵
       return;
     }
     
@@ -99,7 +99,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       // 실행 시작 플래그 설정
       isRecalculatingRef.current = true;
       try {
-        console.log('🔄 급식 평점 재계산 시작');
+        // 급식 평점 재계산 시작
         
         // 1단계: meal_menu_items에서 해당 급식의 메뉴 아이템 ID들 조회
         const { data: menuItems, error: menuError } = await supabase
@@ -113,7 +113,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         }
         
         if (!menuItems || menuItems.length === 0) {
-          console.log('메뉴 아이템이 없음');
+          // 메뉴 아이템이 없음
           return;
         }
         
@@ -132,7 +132,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         }
         
         if (!ratings || ratings.length === 0) {
-          console.log('메뉴 별점이 없어서 meal_ratings 삭제');
+          // 메뉴 별점이 없어서 meal_ratings 삭제
           // 별점이 없으면 meal_ratings에서 삭제
           await supabase
             .from('meal_ratings')
@@ -144,7 +144,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         
         // 평균 계산
         const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
-        console.log('재계산된 급식 평점:', avg, '(', ratings.length, '개 메뉴)');
+        // 평균 계산 완료
         
         // meal_ratings에 upsert (올바른 문법 사용)
         const { error: upsertError } = await supabase
@@ -160,7 +160,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         if (upsertError) {
           console.error('meal_ratings upsert 오류:', upsertError);
         } else {
-          console.log('✅ 급식 평점 재계산 완료:', avg);
+          // 급식 평점 재계산 완료
         }
       } catch (error) {
         console.error('❌ 급식 평점 재계산 실패:', error);
@@ -191,12 +191,9 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     // 재계산용: menu_item_ratings 구독
     // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
-    // 디버깅을 위해 필터 구문 변경 및 로그 추가
-    console.log('🔍 실시간 구독 설정 - 사용자 ID:', user.id, '급식 ID:', mealId);
-    
+    // 실시간 구독 설정
     const tables = [
       { table: 'menu_item_ratings', filter: `user_id=eq.${user.id}` },
-      // meal_ratings 테이블 필터 구문 수정 - 필터를 분리하여 명확하게 지정
       { table: 'meal_ratings', filter: `meal_id=eq.${mealId}` },
     ];
     
@@ -209,44 +206,23 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           table,
           ...(filter ? { filter } : {}),
         }, (payload) => {
-          console.log(`📡 ${table} 테이블 실시간 업데이트 수신:`, payload);
+          // 테이블 실시간 업데이트 수신
           
           if (table === 'menu_item_ratings') {
-            console.log('🍽️ MyMealRating: menu_item_ratings 변경 감지, 재계산 시작');
             // 메뉴 아이템 별점 변경 시 재계산
             recalculateAndSaveMyMealRating();
           } else if (table === 'meal_ratings') {
-            // 급식 평점 변경 시 UI 업데이트만
-            console.log('🍽️ 급식 평점 UI 업데이트:', payload);
-            
-            // payload 구조 자세히 로깅
-            console.log('payload.new:', payload.new);
-            console.log('payload.old:', payload.old);
-            console.log('payload.eventType:', payload.eventType);
-            
             // 현재 사용자의 데이터인지 확인
             if (payload.new && 
                 typeof payload.new === 'object' && 
                 'user_id' in payload.new && 
                 payload.new.user_id === user.id && 
                 'rating' in payload.new) {
-              console.log('✅ 현재 사용자의 평점 업데이트 감지:', payload.new.rating);
               setMyRating(payload.new.rating as number);
-            } else {
-              console.log('❌ 다른 사용자의 평점 업데이트이거나 필요한 데이터 없음');
             }
           }
         })
-        .subscribe((status) => {
-          console.log(`🔌 ${table} 구독 상태:`, status);
-          
-          // 구독 상태 확인 및 문제 진단
-          if (status === 'SUBSCRIBED') {
-            console.log(`✅ ${table} 테이블 구독 성공`);
-          } else {
-            console.error(`❌ ${table} 테이블 구독 실패:`, status);
-          }
-        })
+        .subscribe()
     );
     
     // 언마운트 시 구독 해제
