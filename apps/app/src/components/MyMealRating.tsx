@@ -79,15 +79,34 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     if (!user || !mealId) return;
     
     try {
-      // menu_item_ratings에서 내 별점만 모아와서 평균 계산
-      const { data: ratings, error } = await supabase
+      // 1단계: meal_menu_items에서 해당 급식의 메뉴 아이템 ID들 조회
+      const { data: menuItems, error: menuError } = await supabase
+        .from('meal_menu_items')
+        .select('id')
+        .eq('meal_id', mealId);
+        
+      if (menuError) {
+        console.error('메뉴 아이템 조회 오류:', menuError);
+        return;
+      }
+      
+      if (!menuItems || menuItems.length === 0) {
+        console.log('메뉴 아이템이 없음');
+        return;
+      }
+      
+      const menuItemIds = menuItems.map(item => item.id);
+      console.log('조회된 메뉴 아이템 IDs:', menuItemIds);
+      
+      // 2단계: menu_item_ratings에서 내 별점만 모아와서 평균 계산
+      const { data: ratings, error: ratingsError } = await supabase
         .from('menu_item_ratings')
         .select('rating')
         .eq('user_id', user.id)
-        .eq('meal_id', mealId);
+        .in('menu_item_id', menuItemIds);
         
-      if (error) {
-        console.error('메뉴 별점 조회 오류:', error);
+      if (ratingsError) {
+        console.error('메뉴 별점 조회 오류:', ratingsError);
         return;
       }
       
@@ -104,7 +123,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       
       // 평균 계산
       const avg = ratings.reduce((sum, r) => sum + (r.rating || 0), 0) / ratings.length;
-      console.log('재계산된 급식 평점:', avg);
+      console.log('재계산된 급식 평점:', avg, '(', ratings.length, '개 메뉴)');
       
       // meal_ratings에 upsert
       const { error: upsertError } = await supabase
