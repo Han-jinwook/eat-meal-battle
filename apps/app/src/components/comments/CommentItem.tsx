@@ -482,10 +482,37 @@ useEffect(() => {
         const newData = payload.new as Record<string, any>;
         const oldData = payload.old as Record<string, any>;
         const replyId = newData?.reply_id || oldData?.reply_id;
+        const userId = newData?.user_id || oldData?.user_id;
+        const eventType = payload.eventType; // INSERT, UPDATE, DELETE
         
         if (showReplies && replyId && replies.some(r => r.id === replyId)) {
           console.log('답글 좋아요 변경:', payload);
-          loadReplies(); // 표시된 답글에 대한 좋아요 변경이 있을 때 새로고침
+          
+          // 전체 답글을 다시 로드하는 대신 해당 답글의 좋아요 수만 업데이트
+          setReplies(prevReplies => {
+            return prevReplies.map(reply => {
+              if (reply.id === replyId) {
+                // 이벤트 타입에 따라 좋아요 수 조정
+                let likesCount = reply.likes_count || 0;
+                let userHasLiked = reply.user_has_liked || false;
+                
+                if (eventType === 'INSERT') {
+                  likesCount += 1;
+                  if (user?.id === userId) userHasLiked = true;
+                } else if (eventType === 'DELETE') {
+                  likesCount = Math.max(0, likesCount - 1);
+                  if (user?.id === userId) userHasLiked = false;
+                }
+                
+                return {
+                  ...reply,
+                  likes_count: likesCount,
+                  user_has_liked: userHasLiked
+                };
+              }
+              return reply;
+            });
+          });
         }
       }
     )

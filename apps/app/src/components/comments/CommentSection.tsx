@@ -242,7 +242,26 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
         }, 
         (payload) => {
           console.log('댓글 좋아요 추가:', payload);
-          loadComments(true);
+          // 전체 댓글을 다시 로드하는 대신 해당 댓글의 좋아요 수만 업데이트
+          if (payload.new && typeof payload.new === 'object' && 'comment_id' in payload.new) {
+            const commentId = payload.new.comment_id;
+            const userId = payload.new.user_id;
+            
+            // 현재 댓글 목록에서 해당 댓글 찾기
+            setComments(prevComments => {
+              return prevComments.map(comment => {
+                if (comment.id === commentId) {
+                  // 좋아요 수 증가 및 현재 사용자가 좋아요 눌렀음을 표시
+                  return {
+                    ...comment,
+                    likes_count: comment.likes_count + 1,
+                    user_has_liked: user?.id === userId ? true : comment.user_has_liked
+                  };
+                }
+                return comment;
+              });
+            });
+          }
         }
       )
       .subscribe();
@@ -261,11 +280,23 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
           console.log('댓글 좋아요 삭제:', payload);
           const oldData = payload.old as Record<string, any>;
           if (oldData && oldData.comment_id) {
-            // 현재 표시된 댓글의 ID를 가져와서 비교
-            const commentIds = comments.map(c => c.id);
-            if (commentIds.includes(oldData.comment_id)) {
-              loadComments(true);
-            }
+            const commentId = oldData.comment_id;
+            const userId = oldData.user_id;
+            
+            // 현재 댓글 목록에서 해당 댓글 찾기
+            setComments(prevComments => {
+              return prevComments.map(comment => {
+                if (comment.id === commentId) {
+                  // 좋아요 수 감소 및 현재 사용자가 좋아요 취소했음을 표시
+                  return {
+                    ...comment,
+                    likes_count: Math.max(0, comment.likes_count - 1), // 음수가 되지 않도록 방지
+                    user_has_liked: user?.id === userId ? false : comment.user_has_liked
+                  };
+                }
+                return comment;
+              });
+            });
           }
         }
       )
