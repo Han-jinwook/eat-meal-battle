@@ -84,8 +84,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     
     fetchMyRating();
     
-    // 실시간 업데이트를 위한 채널 생성
-    const channel = supabase
+    // 개인 평점 실시간 업데이트를 위한 채널 생성 (meal_ratings)
+    const personalChannel = supabase
       .channel(`meal_ratings:${user.id}:${mealId}`)
       .on('postgres_changes', 
         { 
@@ -93,10 +93,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           schema: 'public', 
           table: 'meal_ratings',
           filter: `user_id=eq.${user.id} AND meal_id=eq.${mealId}` 
-        }, 
+        },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          // 새 데이터로 상태 업데이트
-          console.log('평점 실시간 업데이트:', payload);
+          // 개인 평점 실시간 업데이트
+          console.log('개인 평점 실시간 업데이트:', payload);
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             setMyRating(payload.new.rating);
           } else if (payload.eventType === 'DELETE') {
@@ -107,11 +107,32 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       .subscribe((status) => {
         console.log('구독 상태:', status);
       });
+
+    // 통계 평점 실시간 업데이트를 위한 채널 생성 (meal_rating_stats)
+    const statsChannel = supabase
+      .channel(`meal_rating_stats:${mealId}`)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'meal_rating_stats',
+          filter: `meal_id=eq.${mealId}` 
+        }, 
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          // 통계 평점 실시간 업데이트 (참고용)
+          console.log('통계 평점 실시간 업데이트:', payload);
+          // 통계는 참고용이므로 개인 평점 상태는 변경하지 않음
+        }
+      )
+      .subscribe((status) => {
+        console.log('통계 구독 상태:', status);
+      });
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
       console.log('실시간 구독 해제');
-      supabase.removeChannel(channel);
+      supabase.removeChannel(personalChannel);
+      supabase.removeChannel(statsChannel);
     };
   }, [user, mealId]);
 
