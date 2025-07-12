@@ -176,11 +176,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   useEffect(() => {
     if (!mealId || !user) return;
     
-    // 여러 테이블에 대한 실시간 구독을 설정
+    // menu_item 관련 테이블만 구독 (meal_rating_stats는 제외하여 무한 루프 방지)
     const tables = [
       { table: 'menu_item_ratings', filter: '' },
       { table: 'menu_item_rating_stats', filter: '' },
-      { table: 'meal_rating_stats', filter: `meal_id=eq.${mealId}` },
     ];
     
     const channels = tables.map(({ table, filter }) =>
