@@ -189,9 +189,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   useEffect(() => {
     if (!mealId || !user) return;
     
-    // menu_item_ratings만 구독 (다른 모든 구독은 개별 메뉴아이템에서 처리)
+    // 재계산용: menu_item_ratings 구독
+    // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
     const tables = [
       { table: 'menu_item_ratings', filter: '' },
+      { table: 'meal_ratings', filter: `meal_id=eq.${mealId}.and.user_id=eq.${user.id}` },
     ];
     
     const channels = tables.map(({ table, filter }) =>
@@ -202,12 +204,19 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           schema: 'public',
           table,
           ...(filter ? { filter } : {}),
-        }, async () => {
+        }, (payload) => {
           console.log(`${table} 테이블 실시간 업데이트 수신`);
-          // 메뉴별 별점이 바뀌면 전체 급식 평점을 재계산해서 meal_ratings에 upsert
-          await recalculateAndSaveMyMealRating();
-          // 그리고 UI에 반영
-          fetchMyRating();
+          
+          if (table === 'menu_item_ratings') {
+            // 메뉴 아이템 별점 변경 시 재계산
+            recalculateAndSaveMyMealRating();
+          } else if (table === 'meal_ratings') {
+            // 급식 평점 변경 시 UI 업데이트만
+            console.log('🍽️ 급식 평점 UI 업데이트:', payload.new);
+            if (payload.new && typeof payload.new === 'object' && 'rating' in payload.new) {
+              setMyRating(payload.new.rating as number);
+            }
+          }
         })
         .subscribe((status) => {
           console.log(`${table} 구독 상태:`, status);
