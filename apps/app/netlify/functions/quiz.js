@@ -240,12 +240,12 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         
         const diffTime = date.getTime() - prevFirstMonday.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        return Math.min(Math.floor(diffDays / 7) + 1, 6);
+        return Math.min(Math.floor(diffDays / 7) + 1, 5);
       }
       
       const diffTime = date.getTime() - firstMonday.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      return Math.min(Math.floor(diffDays / 7) + 1, 6);
+      return Math.min(Math.floor(diffDays / 7) + 1, 5);
     }
     
     // 일별 필드 계산 (day_1 ~ day_31) - 실제 날짜 기준

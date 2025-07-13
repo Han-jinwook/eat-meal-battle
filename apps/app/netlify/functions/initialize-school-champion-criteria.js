@@ -170,14 +170,14 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
 }
 
 /**
- * 주차별 급식 일수 계산
+ * 주차별 급식 일수 계산 (ISO 기준)
  * @param {Array} mealDays - 급식이 있는 날짜 목록
  * @param {number} year - 년도
  * @param {number} month - 월
  * @returns {Object} - 주차별 급식 일수
  */
 function calculateWeeklyMealDays(mealDays, year, month) {
-  console.log(`주차별 급식 일수 계산: ${year}년 ${month}월, ${mealDays.length}일`)
+  console.log(`주차별 급식 일수 계산 (ISO 기준): ${year}년 ${month}월, ${mealDays.length}일`)
   
   // 결과 저장용 객체
   const weeklyMealDays = {
@@ -188,33 +188,58 @@ function calculateWeeklyMealDays(mealDays, year, month) {
     week5: 0
   }
   
+  // ISO 기준 주차 계산 함수
+  function getWeekOfMonth(date) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    
+    // 해당 월의 첫 월요일 찾기
+    let firstMonday = new Date(year, month, 1);
+    while (firstMonday.getDay() !== 1) { // 1 = 월요일
+      firstMonday.setDate(firstMonday.getDate() + 1);
+    }
+    
+    // 첫 월요일 이전 날짜들은 이전 달의 마지막 주차에 속함
+    if (date < firstMonday) {
+      // 이전 달의 첫 월요일 찾기
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      let prevFirstMonday = new Date(prevYear, prevMonth, 1);
+      while (prevFirstMonday.getDay() !== 1) {
+        prevFirstMonday.setDate(prevFirstMonday.getDate() + 1);
+      }
+      
+      const diffTime = date.getTime() - prevFirstMonday.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      return Math.min(Math.floor(diffDays / 7) + 1, 5);
+    }
+    
+    const diffTime = date.getTime() - firstMonday.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.min(Math.floor(diffDays / 7) + 1, 5);
+  }
+  
   // 각 날짜별로 주차 계산
   mealDays.forEach(dayStr => {
     // 날짜 문자열을 Date 객체로 변환 (YYYYMMDD 형식)
-    const year = parseInt(dayStr.substring(0, 4))
-    const month = parseInt(dayStr.substring(4, 6)) - 1 // JavaScript의 월은 0부터 시작
-    const day = parseInt(dayStr.substring(6, 8))
+    const dateYear = parseInt(dayStr.substring(0, 4))
+    const dateMonth = parseInt(dayStr.substring(4, 6)) - 1 // JavaScript의 월은 0부터 시작
+    const dateDay = parseInt(dayStr.substring(6, 8))
     
-    const date = new Date(year, month, day)
+    const date = new Date(dateYear, dateMonth, dateDay)
     
-    // 해당 월의 1일
-    const firstDayOfMonth = new Date(year, month, 1)
-    
-    // 1일의 요일 (0: 일요일, 1: 월요일, ..., 6: 토요일)
-    const firstDayWeekday = firstDayOfMonth.getDay()
-    
-    // 날짜의 주차 계산
-    // 1일이 월요일(1)이면 해당 주가 1주차, 화요일(2)이면 해당 주가 1주차, ..., 일요일(0)이면 해당 주가 1주차
-    const weekOfMonth = Math.ceil((day + firstDayWeekday - 1) / 7)
+    // ISO 기준 주차 계산
+    const weekOfMonth = getWeekOfMonth(date)
     
     // 주차별 카운트 증가
     const weekKey = `week${weekOfMonth}`
     if (weeklyMealDays[weekKey] !== undefined) {
       weeklyMealDays[weekKey]++
+      console.log(`${dayStr} (${dateMonth + 1}/${dateDay}) -> 주차 ${weekOfMonth}`)
     }
   })
   
-  console.log('주차별 급식 일수:', weeklyMealDays)
+  console.log('주차별 급식 일수 (ISO 기준):', weeklyMealDays)
   return weeklyMealDays
 }
 
