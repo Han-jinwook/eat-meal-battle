@@ -179,6 +179,48 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
 function calculateWeeklyMealDays(mealDays, year, month) {
   console.log(`주차별 급식 일수 계산 (ISO 기준): ${year}년 ${month}월, ${mealDays.length}일`)
   
+  // 주말(토,일)과 공휴일 제외 함수
+  function isWeekdayAndNotHoliday(dateStr) {
+    // YYYYMMDD 형식을 Date 객체로 변환
+    const year = parseInt(dateStr.substring(0, 4))
+    const month = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript 월은 0부터 시작
+    const day = parseInt(dateStr.substring(6, 8))
+    const date = new Date(year, month, day)
+    
+    // 요일 확인 (0=일요일, 6=토요일)
+    const dayOfWeek = date.getDay()
+    
+    // 주말 제외 (토요일=6, 일요일=0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      console.log(`주말 제외: ${dateStr} (${dayOfWeek === 0 ? '일요일' : '토요일'})`)
+      return false
+    }
+    
+    // 공휴일 체크 (간단한 공휴일만 체크)
+    const monthDay = `${month + 1}-${day}`
+    const holidays = [
+      '1-1',   // 신정
+      '3-1',   // 삼일절
+      '5-5',   // 어린이날
+      '6-6',   // 현충일
+      '8-15',  // 광복절
+      '10-3',  // 개천절
+      '10-9',  // 한글날
+      '12-25'  // 크리스마스
+    ]
+    
+    if (holidays.includes(monthDay)) {
+      console.log(`공휴일 제외: ${dateStr} (${monthDay})`)
+      return false
+    }
+    
+    return true
+  }
+  
+  // 주말과 공휴일 제외한 급식일만 필터링
+  const filteredMealDays = mealDays.filter(isWeekdayAndNotHoliday)
+  console.log(`주말/공휴일 제외 후: ${filteredMealDays.length}일 (원본: ${mealDays.length}일)`)
+  
   // 결과 저장용 객체
   const weeklyMealDays = {
     week1: 0,
@@ -218,27 +260,27 @@ function calculateWeeklyMealDays(mealDays, year, month) {
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return Math.min(Math.floor(diffDays / 7) + 1, 5);
   }
-  
-  // 각 날짜별로 주차 계산
-  mealDays.forEach(dayStr => {
+
+  // 각 급식일에 대해 주차 계산 (필터링된 데이터 사용)
+  filteredMealDays.forEach(dateStr => {
     // 날짜 문자열을 Date 객체로 변환 (YYYYMMDD 형식)
-    const dateYear = parseInt(dayStr.substring(0, 4))
-    const dateMonth = parseInt(dayStr.substring(4, 6)) - 1 // JavaScript의 월은 0부터 시작
-    const dateDay = parseInt(dayStr.substring(6, 8))
-    
+    const dateYear = parseInt(dateStr.substring(0, 4))
+    const dateMonth = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript의 월은 0부터 시작
+    const dateDay = parseInt(dateStr.substring(6, 8))
+
     const date = new Date(dateYear, dateMonth, dateDay)
-    
+
     // ISO 기준 주차 계산
     const weekOfMonth = getWeekOfMonth(date)
-    
+
     // 주차별 카운트 증가
     const weekKey = `week${weekOfMonth}`
     if (weeklyMealDays[weekKey] !== undefined) {
       weeklyMealDays[weekKey]++
-      console.log(`${dayStr} (${dateMonth + 1}/${dateDay}) -> 주차 ${weekOfMonth}`)
+      console.log(`${dateStr} (${dateMonth + 1}/${dateDay}) -> 주차 ${weekOfMonth}`)
     }
   })
-  
+
   console.log('주차별 급식 일수 (ISO 기준):', weeklyMealDays)
   return weeklyMealDays
 }
