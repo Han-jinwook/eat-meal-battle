@@ -230,13 +230,31 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return 1 + Math.ceil((firstThursday - target) / 604800000);
     }
     
-    // 월 내 주차 계산 (1-6)
+    // 월 내 주차 계산 (1-6) - ISO 기준: 해당 월의 첫 월요일부터 1주차
     function getWeekOfMonth(date) {
-      const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-      const firstMonday = new Date(firstDay);
-      const dayOfWeek = firstDay.getDay();
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      firstMonday.setDate(firstDay.getDate() - daysToMonday);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      // 해당 월의 첫 월요일 찾기
+      let firstMonday = new Date(year, month, 1);
+      while (firstMonday.getDay() !== 1) { // 1 = 월요일
+        firstMonday.setDate(firstMonday.getDate() + 1);
+      }
+      
+      // 첫 월요일 이전 날짜들은 이전 달의 마지막 주차에 속함
+      if (date < firstMonday) {
+        // 이전 달의 마지막 월요일 찾기
+        const prevMonth = month === 0 ? 11 : month - 1;
+        const prevYear = month === 0 ? year - 1 : year;
+        let prevMonthLastMonday = new Date(prevYear, prevMonth + 1, 0); // 이전 달 마지막 날
+        while (prevMonthLastMonday.getDay() !== 1) {
+          prevMonthLastMonday.setDate(prevMonthLastMonday.getDate() - 1);
+        }
+        
+        const diffTime = date.getTime() - prevMonthLastMonday.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return Math.min(Math.floor(diffDays / 7) + 1, 6);
+      }
       
       const diffTime = date.getTime() - firstMonday.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -249,12 +267,35 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return `day_${dayOfMonth}`;
     }
     
+    // 실제 속해야 할 월/년 계산 (ISO 주차 기준)
+    function getActualMonthYear(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      
+      // 해당 월의 첫 월요일 찾기
+      let firstMonday = new Date(year, month, 1);
+      while (firstMonday.getDay() !== 1) {
+        firstMonday.setDate(firstMonday.getDate() + 1);
+      }
+      
+      // 첫 월요일 이전이면 이전 달에 속함
+      if (date < firstMonday) {
+        const prevMonth = month === 0 ? 11 : month - 1;
+        const prevYear = month === 0 ? year - 1 : year;
+        return { month: prevMonth + 1, year: prevYear }; // 1-based month
+      }
+      
+      return { month: month + 1, year }; // 1-based month
+    }
+    
+    const actualMonthYear = getActualMonthYear(quizDate);
     const weekOfMonth = getWeekOfMonth(quizDate);
     const dayField = getDayField(quizDate);
     const resultValue = isCorrect ? 'O' : 'X';
     
     console.log('[quiz] 집계 처리:', { 
-      month, year, 
+      originalMonth: month, originalYear: year,
+      actualMonth: actualMonthYear.month, actualYear: actualMonthYear.year,
       quiz_date: quiz.meal_date, 
       weekOfMonth, 
       dayField, 
@@ -264,8 +305,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     // 장원 테이블 업데이트 (없으면 생성)
     console.log('[quiz] quiz_champions 업데이트 시작:', {
       userId,
-      month,
-      year,
+      month: actualMonthYear.month,
+      year: actualMonthYear.year,
       dayField,
       resultValue,
       isCorrect
@@ -275,8 +316,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       .from('quiz_champions')
       .select('id, month_correct, total_count')
       .eq('user_id', userId)
-      .eq('month', month)
-      .eq('year', year)
+      .eq('month', actualMonthYear.month)
+      .eq('year', actualMonthYear.year)
       .limit(1);
     
     console.log('[quiz] quiz_champions 조회 결과:', { champion, championError });
@@ -324,8 +365,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       const weekField = `week_${weekOfMonth}_correct`;
       const insertData = {
         user_id: userId,
-        month: month,
-        year: year,
+        month: actualMonthYear.month,
+        year: actualMonthYear.year,
         month_correct: isCorrect ? 1 : 0,
         total_count: 1,
         [dayField]: resultValue,
