@@ -275,25 +275,29 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return { month: month + 1, year }; // 1-based month
     }
     
+    // 실제 달력 월/년 (기본 레코드용)
+    const calendarMonth = month;
+    const calendarYear = year;
+    
+    // ISO 주차 기준 월/년 (주차 업데이트용)
     const actualMonthYear = getActualMonthYear(quizDate);
     const weekOfMonth = getWeekOfMonth(quizDate);
     const dayField = getDayField(quizDate);
     const resultValue = isCorrect ? 'O' : 'X';
     
     console.log('[quiz] 집계 처리:', { 
-      originalMonth: month, originalYear: year,
-      actualMonth: actualMonthYear.month, actualYear: actualMonthYear.year,
+      calendarMonth, calendarYear,
+      isoWeekMonth: actualMonthYear.month, isoWeekYear: actualMonthYear.year,
       quiz_date: quiz.meal_date, 
       weekOfMonth, 
       dayField, 
       resultValue 
     });
     
-    // 장원 테이블 업데이트 (없으면 생성)
+    // 장원 테이블 업데이트 (없으면 생성) - 달력 월/년 기준
     console.log('[quiz] quiz_champions 업데이트 시작:', {
       userId,
-      month: actualMonthYear.month,
-      year: actualMonthYear.year,
+      calendarMonth, calendarYear,
       dayField,
       resultValue,
       isCorrect
@@ -303,8 +307,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       .from('quiz_champions')
       .select('id, month_correct, total_count')
       .eq('user_id', userId)
-      .eq('month', actualMonthYear.month)
-      .eq('year', actualMonthYear.year)
+      .eq('month', calendarMonth)
+      .eq('year', calendarYear)
       .limit(1);
     
     console.log('[quiz] quiz_champions 조회 결과:', { champion, championError });
@@ -348,12 +352,12 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         console.log('[quiz] 장원 기록 업데이트 성공:', updateResult);
       }
     } else {
-      // 새 기록 생성
+      // 새 기록 생성 - 달력 월/년 기준
       const weekField = `week_${weekOfMonth}_correct`;
       const insertData = {
         user_id: userId,
-        month: actualMonthYear.month,
-        year: actualMonthYear.year,
+        month: calendarMonth,
+        year: calendarYear,
         month_correct: isCorrect ? 1 : 0,
         total_count: 1,
         [dayField]: resultValue,
@@ -379,7 +383,67 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       }
     }
     
-    // 주차별, 월별 정답수 업데이트는 위에서 이미 처리됨 (중복 제거)
+    // ISO 주차 월이 달력 월과 다를 경우 별도 주차 업데이트
+    if (actualMonthYear.month !== calendarMonth || actualMonthYear.year !== calendarYear) {
+      console.log('[quiz] ISO 주차 별도 업데이트 필요:', {
+        calendarMonth, calendarYear,
+        isoWeekMonth: actualMonthYear.month, isoWeekYear: actualMonthYear.year,
+        weekOfMonth
+      });
+      
+      // ISO 주차 월 레코드 조회/생성
+      const { data: isoChampion, error: isoChampionError } = await supabaseAdmin
+        .from('quiz_champions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('month', actualMonthYear.month)
+        .eq('year', actualMonthYear.year)
+        .limit(1);
+      
+      if (isoChampionError) {
+        console.error('[quiz] ISO 주차 레코드 조회 오류:', isoChampionError);
+      } else if (isoChampion && isoChampion.length > 0) {
+        // 기존 ISO 주차 레코드 업데이트
+        const weekField = `week_${weekOfMonth}_correct`;
+        const { data: isoUpdateResult, error: isoUpdateError } = await supabaseAdmin
+          .from('quiz_champions')
+          .update({
+            [weekField]: supabaseAdmin.raw(`${weekField} + ${isCorrect ? 1 : 0}`),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', isoChampion[0].id)
+          .select();
+        
+        if (isoUpdateError) {
+          console.error('[quiz] ISO 주차 레코드 업데이트 실패:', isoUpdateError);
+        } else {
+          console.log('[quiz] ISO 주차 레코드 업데이트 성공:', isoUpdateResult);
+        }
+      } else {
+        // 새 ISO 주차 레코드 생성
+        const weekField = `week_${weekOfMonth}_correct`;
+        const isoInsertData = {
+          user_id: userId,
+          month: actualMonthYear.month,
+          year: actualMonthYear.year,
+          month_correct: 0, // 기본 집계는 달력 월에서 처리
+          total_count: 0,   // 기본 집계는 달력 월에서 처리
+          [weekField]: isCorrect ? 1 : 0, // 주차 정답수만 업데이트
+          created_at: new Date().toISOString()
+        };
+        
+        const { data: isoInsertResult, error: isoInsertError } = await supabaseAdmin
+          .from('quiz_champions')
+          .insert([isoInsertData])
+          .select();
+        
+        if (isoInsertError) {
+          console.error('[quiz] ISO 주차 레코드 생성 실패:', isoInsertError);
+        } else {
+          console.log('[quiz] ISO 주차 레코드 생성 성공:', isoInsertResult);
+        }
+      }
+    }
     
     console.log('[quiz] submitQuizAnswer 성공!');
     return {
