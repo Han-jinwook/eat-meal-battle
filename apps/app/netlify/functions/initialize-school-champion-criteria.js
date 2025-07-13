@@ -248,12 +248,12 @@ async function saveChampionCriteria(supabase, schoolCode, year, month, weeklyMea
       school_code: schoolCode,
       year,
       month,
-      week1_days: weeklyMealDays.week1,
-      week2_days: weeklyMealDays.week2,
-      week3_days: weeklyMealDays.week3,
-      week4_days: weeklyMealDays.week4,
-      week5_days: weeklyMealDays.week5,
-      monthly_days: monthlyTotal
+      week_1_days: weeklyMealDays.week1,
+      week_2_days: weeklyMealDays.week2,
+      week_3_days: weeklyMealDays.week3,
+      week_4_days: weeklyMealDays.week4,
+      week_5_days: weeklyMealDays.week5,
+      month_total: monthlyTotal
     }
     
     let result
