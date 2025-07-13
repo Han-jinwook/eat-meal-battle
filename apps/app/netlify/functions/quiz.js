@@ -164,20 +164,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return { error: '퀴즈를 찾을 수 없습니다.' };
     }
     
-    // 이미 답변했는지 확인
-    console.log('[quiz] 기존 답변 확인 중...', { userId, quizId });
-    const { data: existing, error: existingError } = await supabaseAdmin
-      .from('quiz_results')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('quiz_id', quizId)
-      .limit(1);
-      
-    console.log('[quiz] 기존 답변 확인 결과:', { existing, existingError });
-    if (existing && existing.length > 0) {
-      console.log('[quiz] 이미 답변한 퀴즈');
-      return { error: '이미 답변한 퀴즈입니다.' };
-    }
+    // 중복방지는 프론트엔드에서 처리 (UI 차단)
     
     // 정답 확인 (0-based index)
     const isCorrect = selectedOption === quiz.correct_answer;
@@ -243,15 +230,15 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       
       // 첫 월요일 이전 날짜들은 이전 달의 마지막 주차에 속함
       if (date < firstMonday) {
-        // 이전 달의 마지막 월요일 찾기
+        // 이전 달의 첫 월요일 찾기
         const prevMonth = month === 0 ? 11 : month - 1;
         const prevYear = month === 0 ? year - 1 : year;
-        let prevMonthLastMonday = new Date(prevYear, prevMonth + 1, 0); // 이전 달 마지막 날
-        while (prevMonthLastMonday.getDay() !== 1) {
-          prevMonthLastMonday.setDate(prevMonthLastMonday.getDate() - 1);
+        let prevFirstMonday = new Date(prevYear, prevMonth, 1);
+        while (prevFirstMonday.getDay() !== 1) {
+          prevFirstMonday.setDate(prevFirstMonday.getDate() + 1);
         }
         
-        const diffTime = date.getTime() - prevMonthLastMonday.getTime();
+        const diffTime = date.getTime() - prevFirstMonday.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         return Math.min(Math.floor(diffDays / 7) + 1, 6);
       }
