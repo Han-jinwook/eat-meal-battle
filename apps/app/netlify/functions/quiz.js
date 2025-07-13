@@ -322,15 +322,14 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     }
     
     if (champion && champion.length > 0) {
-      // 기존 기록 업데이트
+      // 기존 기록 업데이트 - 달력 월 기본 데이터만
       const currentRecord = champion[0];
-      const weekField = `week_${weekOfMonth}_correct`;
       
       const updateData = {
         month_correct: currentRecord.month_correct + (isCorrect ? 1 : 0),
         total_count: currentRecord.total_count + 1,
         [dayField]: resultValue,
-        [weekField]: (currentRecord[weekField] || 0) + (isCorrect ? 1 : 0),
+        // 주차 카운트는 ISO 주차 별도 처리에서 수행
         updated_at: new Date().toISOString()
       };
       
@@ -352,8 +351,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         console.log('[quiz] 장원 기록 업데이트 성공:', updateResult);
       }
     } else {
-      // 새 기록 생성 - 달력 월/년 기준
-      const weekField = `week_${weekOfMonth}_correct`;
+      // 새 기록 생성 - 달력 월 기본 데이터만
       const insertData = {
         user_id: userId,
         month: calendarMonth,
@@ -361,7 +359,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         month_correct: isCorrect ? 1 : 0,
         total_count: 1,
         [dayField]: resultValue,
-        [weekField]: isCorrect ? 1 : 0,
+        // 주차 카운트는 ISO 주차 별도 처리에서 수행
         created_at: new Date().toISOString()
       };
       
