@@ -171,6 +171,36 @@ exports.handler = async (event) => {
   }
 }
 
+// 주말과 공휴일 제외 함수
+function isWeekdayAndNotHoliday(dateStr) {
+  const year = parseInt(dateStr.substring(0, 4))
+  const month = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript Date는 0부터 시작
+  const day = parseInt(dateStr.substring(6, 8))
+  const date = new Date(year, month, day)
+  
+  // 주말 체크 (토요일: 6, 일요일: 0)
+  const dayOfWeek = date.getDay()
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return false
+  }
+  
+  // 한국 공휴일 체크 (2025년 기준)
+  const holidays = [
+    '20250101', // 신정
+    '20250127', '20250128', '20250129', '20250130', // 설날 연휴
+    '20250301', // 삼일절
+    '20250505', // 어린이날
+    '20250506', // 대체공휴일
+    '20250815', // 광복절
+    '20250929', '20250930', '20251001', // 추석 연휴
+    '20251003', // 개천절
+    '20251009', // 한글날
+    '20251225'  // 크리스마스
+  ]
+  
+  return !holidays.includes(dateStr)
+}
+
 // NEIS API에서 급식 일수 조회 (학교별, 월별)
 async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
   console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식 일수 조회 중...`)
@@ -194,12 +224,39 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
     
     if (data.mealServiceDietInfo && data.mealServiceDietInfo[1] && data.mealServiceDietInfo[1].row) {
       const meals = data.mealServiceDietInfo[1].row
+      console.log(`${schoolCode} 학교 전체 급식 데이터 수: ${meals.length}개`)
       
-      for (const meal of meals) {
+      // 중식만 필터링 (MMEAL_SC_CODE: '2')
+      const lunchMeals = meals.filter(meal => meal.MMEAL_SC_CODE === '2')
+      console.log(`중식만 필터링 후: ${lunchMeals.length}개`)
+      
+      // 날짜 중복 제거
+      const uniqueDates = new Set()
+      
+      for (const meal of lunchMeals) {
         const dateStr = meal.MLSV_YMD
-        const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
-        mealDays.push(formattedDate)
+        
+        // 주말과 공휴일 제외 검사
+        if (isWeekdayAndNotHoliday(dateStr)) {
+          uniqueDates.add(dateStr)
+        }
       }
+      
+      // Set을 배열로 변환
+      const filteredDates = Array.from(uniqueDates)
+      console.log(`주말/공휴일 제외 후 최종 급식일수: ${filteredDates.length}일`)
+      
+      // 날짜 디버깅
+      filteredDates.forEach(dateStr => {
+        const year = parseInt(dateStr.substring(0, 4))
+        const month = parseInt(dateStr.substring(4, 6)) - 1
+        const day = parseInt(dateStr.substring(6, 8))
+        const date = new Date(year, month, day)
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+        console.log(`${dateStr} = ${year}/${month+1}/${day} (${dayNames[date.getDay()]})`)
+        
+        mealDays.push(dateStr)
+      })
     }
     
     console.log(`${schoolCode} 학교의 ${year}년 ${month}월 실제 급식일수: ${mealDays.length}일`)
@@ -214,9 +271,14 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
 // 주차별 급식 일수 계산
 function calculateWeeklyMealDays(mealDays, year, month) {
   const weeklyCount = {}
+  console.log(`주차별 계산 시작: ${mealDays.length}개 날짜 처리`)
   
   for (const dateStr of mealDays) {
-    const date = new Date(dateStr)
+    // YYYYMMDD 형식을 Date 객체로 변환
+    const dateYear = parseInt(dateStr.substring(0, 4))
+    const dateMonth = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript는 0부터 시작
+    const dateDay = parseInt(dateStr.substring(6, 8))
+    const date = new Date(dateYear, dateMonth, dateDay)
     
     // ISO 주차 계산 (월요일 시작)
     const firstDayOfMonth = new Date(year, month - 1, 1)
@@ -233,12 +295,17 @@ function calculateWeeklyMealDays(mealDays, year, month) {
     // 해당 날짜가 첫 번째 월요일보다 앞서면 0주차로 처리
     if (daysDiff < 0) {
       weeklyCount[0] = (weeklyCount[0] || 0) + 1
-    } else {
-      // 주차별 카운트 증가
+      console.log(`${dateStr} -> 0주차 (첫 월요일 이전)`)
+    } else if (weekNumber <= 5) {
+      // 주차별 카운트 증가 (최대 5주차까지)
       weeklyCount[weekNumber] = (weeklyCount[weekNumber] || 0) + 1
+      console.log(`${dateStr} -> ${weekNumber}주차`)
+    } else {
+      console.log(`${dateStr} -> ${weekNumber}주차 (제외: 5주차 초과)`)
     }
   }
   
+  console.log('주차별 급식일 계산 결과:', weeklyCount)
   return weeklyCount
 }
 
