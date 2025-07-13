@@ -20,8 +20,6 @@ export interface ChampionStatistics {
   total_meal_days: number    // 실제 급식 제공 일수
   total_count: number        // 퀴즈 출제 일수
   correct_count: number      // 유저 정답수
-  accuracy_rate: number
-  avg_answer_time: number
   is_champion: boolean       // 장원 여부
   determined_at?: Date
 }
@@ -155,8 +153,6 @@ export class ChampionCalculator {
   ): Promise<{
     total_quiz_days: number
     correct_count: number
-    accuracy_rate: number
-    avg_answer_time: number
   }> {
     try {
       const startDateStr = startDate.toISOString()
@@ -181,34 +177,26 @@ export class ChampionCalculator {
       if (error) {
         console.error('퀴즈 결과 조회 오류:', error)
         console.log('퀴즈 결과 기본값 반환')
-        return { total_quiz_days: 0, correct_count: 0, accuracy_rate: 0, avg_answer_time: 0 }
+        return { total_quiz_days: 0, correct_count: 0 }
       }
 
       const results = data || []
       const correct_count = results.filter(r => r.is_correct).length
       const total_quiz_days = results.length
-      const accuracy_rate = total_quiz_days > 0 ? (correct_count / total_quiz_days) * 100 : 0
       
       console.log('퀴즈 결과 조회 완료:', {
         total_quiz_days,
-        correct_count,
-        accuracy_rate,
-        note: 'answer_time 필드 없음으로 기본값 0 사용'
+        correct_count
       })
       
-      // answer_time 필드가 없으므로 기본값 0 사용
-      const avg_answer_time = 0
-
       return {
         total_quiz_days,
-        correct_count,
-        accuracy_rate,
-        avg_answer_time
+        correct_count
       }
     } catch (error) {
       console.error('퀴즈 결과 조회 예외:', error)
       console.log('퀴즈 결과 예외시 기본값 반환')
-      return { total_quiz_days: 0, correct_count: 0, accuracy_rate: 0, avg_answer_time: 0 }
+      return { total_quiz_days: 0, correct_count: 0 }
     }
   }
 
@@ -251,8 +239,6 @@ export class ChampionCalculator {
         total_meal_days,
         total_count: quizResults.total_quiz_days,
         correct_count: quizResults.correct_count,
-        accuracy_rate: quizResults.accuracy_rate,
-        avg_answer_time: quizResults.avg_answer_time,
         is_champion,
         determined_at: is_champion ? new Date() : undefined
       }
@@ -291,8 +277,6 @@ export class ChampionCalculator {
         total_meal_days,
         total_count: quizResults.total_quiz_days,
         correct_count: quizResults.correct_count,
-        accuracy_rate: quizResults.accuracy_rate,
-        avg_answer_time: quizResults.avg_answer_time,
         is_champion,
         determined_at: is_champion ? new Date() : undefined
       }
@@ -371,8 +355,6 @@ export class ChampionCalculator {
           total_meal_days: stats.total_meal_days,
           total_count: stats.total_count,
           correct_count: stats.correct_count,
-          accuracy_rate: stats.accuracy_rate,
-          avg_answer_time: stats.avg_answer_time,
           is_champion: stats.is_champion,
           determined_at: stats.determined_at?.toISOString(),
           is_current: true

@@ -118,7 +118,7 @@ export class ChampionCriteriaService {
       // 해당 사용자의 quiz_champions 레코드 확인
       const { data, error } = await this.supabase
         .from('quiz_champions')
-        .select('id')
+        .select('id, month_correct')
         .eq('user_id', userId)
         .eq('school_code', schoolCode)
         .eq('grade', grade)
@@ -132,14 +132,17 @@ export class ChampionCriteriaService {
       }
       
       if (data) {
-        // 기존 레코드 업데이트
+        // 기존 레코드 업데이트 (주차별 + 월별 동시)
         const { error: updateError } = await this.supabase
           .from('quiz_champions')
-          .update({ [weekField]: correctCount })
+          .update({ 
+            [weekField]: correctCount,
+            month_correct: (data.month_correct || 0) + correctCount
+          })
           .eq('id', data.id);
         
         if (updateError) {
-          console.error('사용자 주간 성적 업데이트 실패:', updateError);
+          console.error('사용자 주간/월별 성적 업데이트 실패:', updateError);
           return false;
         }
       } else {
@@ -152,11 +155,12 @@ export class ChampionCriteriaService {
             grade: grade,
             year: year,
             month: month,
-            [weekField]: correctCount
+            [weekField]: correctCount,
+            month_correct: correctCount
           });
         
         if (insertError) {
-          console.error('사용자 주간 성적 삽입 실패:', insertError);
+          console.error('사용자 주간/월별 성적 삽입 실패:', insertError);
           return false;
         }
       }

@@ -227,8 +227,6 @@ export async function GET(request: NextRequest) {
             total_count: 0,
             correct_count: 0,
             correct_answers: 0, // 추가된 필드
-            accuracy_rate: 0,
-            avg_answer_time: 0,
             is_champion: false
           }
         })
@@ -263,8 +261,6 @@ export async function GET(request: NextRequest) {
           total_count: 0,
           correct_count: 0,
           correct_answers: 0, // 추가된 필드
-          accuracy_rate: 0,
-          avg_answer_time: 0,
           is_champion: false
         }
       })

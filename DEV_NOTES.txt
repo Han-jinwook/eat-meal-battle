@@ -427,3 +427,97 @@ meal_images 테이블 조회
 - 사용자가 메뉴 아이템 별점을 변경하면 급식 전체 평점이 실시간으로 UI에 반영됨
 - 페이지 새로고침 없이도 평점 업데이트가 즉시 표시됨
 - 불필요한 재계산이나 무한 루프 없이 안정적으로 작동
+
+=== 퀴즈 챔피언 데이터 동기화 및 API 수정 (2025-07-13) ===
+
+## 문제 상황
+1. **데이터 불일치**: `quiz_results`와 `quiz_champions` 테이블 간 동기화 문제
+   - 캘린더 UI에서 7/8개 정답으로 표시되지만 일부 날짜(7월 11일) 누락
+   - `day_11` 필드가 NULL인데 실제로는 정답이어야 함
+
+2. **챔피언 API 500 에러**: 주별/월별 장원 통계 조회 시 서버 에러 발생
+   - "주 1 API 응답 실패: 500", "월별 API 응답 실패: 500" 에러
+
+## 원인 분석
+1. **데이터 동기화 문제**:
+   - `quiz_results`에는 7월 11일 TRUE(정답) 데이터 존재
+   - `quiz_champions`에서 `day_11` 필드가 NULL로 업데이트되지 않음
+   - 동기화 SQL 쿼리에서 일부 날짜 필드 누락
+
+2. **API 500 에러 원인**:
+   - `/api/champion/calculate/route.ts`에서 `grade` 변수 사용하지만 정의되지 않음
+   - 로그 출력 시 `grade: parseInt(grade)` 참조로 인한 ReferenceError
+   - 이전에 `grade` 필드를 제거했지만 일부 코드에서 여전히 참조
+
+## 해결 방법
+
+### 1. 데이터 동기화 수정
+```sql
+-- 2025년 7월 데이터 완전 재동기화
+DELETE FROM quiz_champions WHERE year = 2025 AND month = 7;
+
+WITH quiz_data AS (
+    SELECT 
+        qr.user_id,
+        EXTRACT(YEAR FROM mq.meal_date) as year,
+        EXTRACT(MONTH FROM mq.meal_date) as month,
+        COUNT(*) as total_count,
+        SUM(CASE WHEN qr.is_correct THEN 1 ELSE 0 END) as month_correct,
+        -- day_1부터 day_13까지 모든 날짜 필드 포함
+        MAX(CASE WHEN EXTRACT(DAY FROM mq.meal_date) = 1 THEN (CASE WHEN qr.is_correct THEN 'O' ELSE 'X' END) END) as day_1,
+        MAX(CASE WHEN EXTRACT(DAY FROM mq.meal_date) = 2 THEN (CASE WHEN qr.is_correct THEN 'O' ELSE 'X' END) END) as day_2,
+        -- ... (중략)
+        MAX(CASE WHEN EXTRACT(DAY FROM mq.meal_date) = 11 THEN (CASE WHEN qr.is_correct THEN 'O' ELSE 'X' END) END) as day_11,
+        MAX(CASE WHEN EXTRACT(DAY FROM mq.meal_date) = 13 THEN (CASE WHEN qr.is_correct THEN 'O' ELSE 'X' END) END) as day_13
+    FROM quiz_results qr
+    JOIN meal_quizzes mq ON qr.quiz_id = mq.id
+    WHERE EXTRACT(YEAR FROM mq.meal_date) = 2025 AND EXTRACT(MONTH FROM mq.meal_date) = 7
+    GROUP BY qr.user_id, EXTRACT(YEAR FROM mq.meal_date), EXTRACT(MONTH FROM mq.meal_date)
+)
+INSERT INTO quiz_champions (...) SELECT ... FROM quiz_data;
+```
+
+### 2. 챔피언 API 수정
+**파일**: `apps/app/src/app/api/champion/calculate/route.ts`
+
+**수정 내용**:
+1. GET 함수에서 `grade` 파라미터 참조 제거
+2. 로그 출력에서 `grade` 정보 제거
+3. 필수 파라미터 검증에서 `grade` 제거
+
+```typescript
+// 수정 전
+const grade = searchParams.get('grade')
+console.log('🔍 장원 통계 조회 API 호출:', {
+  user_id, school_code, grade, year, month, week_number, period_type
+})
+if (!user_id || !school_code || !grade || !year || !month) {
+
+// 수정 후  
+console.log('🔍 장원 통계 조회 API 호출:', {
+  user_id, school_code, year, month, week_number, period_type
+})
+if (!user_id || !school_code || !year || !month) {
+```
+
+## 결과
+1. **데이터 동기화 완료**:
+   - ✅ 캘린더 UI에서 7월 11일 정답 표시 정상화
+   - ✅ `day_11` 필드가 'O'로 올바르게 업데이트됨
+   - ✅ 월별 통계 (7/8개 정답) 정확히 표시
+
+2. **챔피언 API 수정 완료**:
+   - ✅ 500 에러 해결로 주별/월별 장원 통계 정상 조회
+   - ✅ 주장원, 월장원 정보 UI에서 정상 표시
+   - ✅ `grade` 필드 완전 제거로 코드 일관성 확보
+
+## 기술적 배경
+- **quiz_champions 테이블**: 월별 퀴즈 통계를 `day_1`~`day_31` 필드로 일별 결과 저장
+- **동기화 전략**: `quiz_results` 기준으로 완전 재계산 후 `quiz_champions` 업데이트
+- **API 아키텍처**: Next.js App Router 기반 서버리스 함수로 챔피언 통계 제공
+- **에러 처리**: 파라미터 검증 및 예외 처리로 안정성 확보
+
+## 주의사항
+- 데이터 동기화 시 기존 데이터 삭제 후 재생성하므로 백업 권장
+- `grade` 필드 관련 코드가 다른 곳에 남아있는지 주기적 점검 필요
+- 챔피언 통계 계산 로직의 성능 최적화 고려 (대용량 데이터 시)

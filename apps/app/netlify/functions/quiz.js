@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const { ChampionCriteriaService } = require('../../src/utils/championCriteriaService.ts');
 
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -211,12 +212,55 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return { error: '답변 저장에 실패했습니다.' };
     }
     
-    // 퀴즈 날짜 기반으로 월과 연도 계산
+    // 퀴즈 날짜 기반으로 월, 연도, 주차, 일별 계산
     const quizDate = new Date(quiz.meal_date);
     const month = quizDate.getMonth() + 1; // JavaScript의 월은 0부터 시작하므로 +1
     const year = quizDate.getFullYear();
     
-    console.log('[quiz] 집계 처리:', { month, year, quiz_date: quiz.meal_date });
+    // ISO 주차 계산 (월요일 기준)
+    function getISOWeek(date) {
+      const target = new Date(date.valueOf());
+      const dayNr = (date.getDay() + 6) % 7;
+      target.setDate(target.getDate() - dayNr + 3);
+      const firstThursday = target.valueOf();
+      target.setMonth(0, 1);
+      if (target.getDay() !== 4) {
+        target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+      }
+      return 1 + Math.ceil((firstThursday - target) / 604800000);
+    }
+    
+    // 월 내 주차 계산 (1-6)
+    function getWeekOfMonth(date) {
+      const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      const firstMonday = new Date(firstDay);
+      const dayOfWeek = firstDay.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      firstMonday.setDate(firstDay.getDate() - daysToMonday);
+      
+      const diffTime = date.getTime() - firstMonday.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      return Math.min(Math.floor(diffDays / 7) + 1, 6);
+    }
+    
+    // 일별 필드 계산 (day_1 ~ day_6)
+    function getDayField(date) {
+      const dayOfWeek = date.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
+      if (dayOfWeek === 0) return 'day_6'; // 일요일 → day_6
+      return `day_${dayOfWeek}`; // 월요일=day_1, 화요일=day_2, ..., 토요일=day_6
+    }
+    
+    const weekOfMonth = getWeekOfMonth(quizDate);
+    const dayField = getDayField(quizDate);
+    const resultValue = isCorrect ? 'O' : 'X';
+    
+    console.log('[quiz] 집계 처리:', { 
+      month, year, 
+      quiz_date: quiz.meal_date, 
+      weekOfMonth, 
+      dayField, 
+      resultValue 
+    });
     
     // 장원 테이블 업데이트 (없으면 생성)
     const { data: champion, error: championError } = await supabaseAdmin
@@ -228,32 +272,77 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       .limit(1);
     
     if (champion && champion.length > 0) {
-      // 기존 기록 업데이트
+      // 기존 기록 업데이트 (기본 필드 + 일별 기록만)
+      const currentRecord = champion[0];
+      
+      const updateData = {
+        correct_count: currentRecord.correct_count + (isCorrect ? 1 : 0),
+        total_count: currentRecord.total_count + 1,
+        [dayField]: resultValue
+      };
+      
+      console.log('[quiz] 업데이트 데이터:', updateData);
+      
       const { error: updateError } = await supabaseAdmin
         .from('quiz_champions')
-        .update({
-          correct_count: champion[0].correct_count + (isCorrect ? 1 : 0),
-          total_count: champion[0].total_count + 1
-        })
-        .eq('id', champion[0].id);
+        .update(updateData)
+        .eq('id', currentRecord.id);
     
       if (updateError) {
         console.error('[quiz] 장원 기록 업데이트 중 오류:', updateError);
       }
     } else {
-      // 새 기록 생성
+      // 새 기록 생성 (기본 필드 + 일별 기록만)
+      const insertData = {
+        user_id: userId,
+        month: month,
+        year: year,
+        correct_count: isCorrect ? 1 : 0,
+        total_count: 1,
+        [dayField]: resultValue
+      };
+      
+      console.log('[quiz] 삽입 데이터:', insertData);
+      
       const { error: insertError } = await supabaseAdmin
         .from('quiz_champions')
-        .insert([{
-          user_id: userId,
-          month: month,
-          year: year,
-          correct_count: isCorrect ? 1 : 0,
-          total_count: 1
-        }]);
+        .insert([insertData]);
     
       if (insertError) {
         console.error('[quiz] 장원 기록 생성 중 오류:', insertError);
+      }
+    }
+    
+    // 주차별, 월별 정답수 업데이트 (championCriteriaService 활용)
+    if (isCorrect) {
+      try {
+        // 사용자 정보 조회
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from('users')
+          .select('school_code, grade')
+          .eq('id', userId)
+          .single();
+        
+        if (userData && !userError) {
+          const criteriaService = new ChampionCriteriaService(supabaseAdmin);
+          
+          // 주차별 + 월별 정답수 업데이트 (한 번에 처리)
+          await criteriaService.updateUserWeeklyCorrect(
+            userId, 
+            userData.school_code, 
+            userData.grade, 
+            year, 
+            month, 
+            weekOfMonth, 
+            1 // 정답 1개 추가
+          );
+          
+          console.log('[quiz] 주차별/월별 정답수 업데이트 완료');
+        } else {
+          console.error('[quiz] 사용자 정보 조회 실패:', userError);
+        }
+      } catch (serviceError) {
+        console.error('[quiz] championCriteriaService 호출 오류:', serviceError);
       }
     }
     
@@ -289,7 +378,6 @@ async function getChampions(schoolCode, grade, month, year) {
       user_id,
       correct_count,
       total_count,
-      avg_answer_time,
       users:user_id(nickname, avatar_url)
     `)
     .eq('school_code', schoolCode)
@@ -297,7 +385,6 @@ async function getChampions(schoolCode, grade, month, year) {
     .eq('month', month)
     .eq('year', year)
     .order('correct_count', { ascending: false })
-    .order('avg_answer_time', { ascending: true })
     .limit(10);
 
   if (error) {
