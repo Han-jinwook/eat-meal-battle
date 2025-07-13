@@ -8,6 +8,36 @@
 
 const { createClient } = require('@supabase/supabase-js')
 
+// 주말과 공휴일 제외 함수
+function isWeekdayAndNotHoliday(dateStr) {
+  const year = parseInt(dateStr.substring(0, 4))
+  const month = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript Date는 0부터 시작
+  const day = parseInt(dateStr.substring(6, 8))
+  const date = new Date(year, month, day)
+  
+  // 주말 체크 (토요일: 6, 일요일: 0)
+  const dayOfWeek = date.getDay()
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return false
+  }
+  
+  // 한국 공휴일 체크 (2025년 기준)
+  const holidays = [
+    '20250101', // 신정
+    '20250127', '20250128', '20250129', '20250130', // 설날 연휴
+    '20250301', // 삼일절
+    '20250505', // 어린이날
+    '20250506', // 대체공휴일
+    '20250815', // 광복절
+    '20250929', '20250930', '20251001', // 추석 연휴
+    '20251003', // 개천절
+    '20251009', // 한글날
+    '20251225'  // 크리스마스
+  ]
+  
+  return !holidays.includes(dateStr)
+}
+
 exports.handler = async (event) => {
   // API 키 검증 (임시 비활성화)
   // const authToken = event.headers['x-api-key']
@@ -114,44 +144,55 @@ exports.handler = async (event) => {
     } else {
       // 테스트용 고정 월 (6, 7, 8월)
       months = [6, 7, 8];
-      console.log(`${year}년 ${months.join(', ')}월 급식 데이터 수집 시작 (테스트 데이터)`);
+      console.log(`${year}년 ${months.join(', ')}월 급식 데이터 수집 시작 (테스트용)`);
     }
-    
-    let processedCount = 0;
-    const results = []
 
-    // 각 학교별로 급식 데이터 수집
+    const results = [];
+    let processedCount = 0;
+
+    // 각 학교별로 처리
     for (const school of schools) {
-      console.log(`${school.school_code} 학교 처리 중...`)
+      const { school_code: schoolCode, office_code: officeCode } = school;
+      
+      console.log(`\n=== ${schoolCode} 학교 처리 시작 ===`);
       
       for (const month of months) {
-        // NEIS API를 통해 급식 데이터 조회
-        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, year, month)
-        
-        // 주차별 급식 일수 계산
-        const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month)
-        
-        // 학교별 급식 조건 저장 (학년 구분 없음)
-        const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
-        
-        await saveChampionCriteria(
-          supabase,
-          school.school_code,
-          year,
-          month,
-          weeklyMealDays,
-          monthlyTotal
-        )
-        
-        results.push({
-          school: school.school_code,
-          month,
-          weekly: weeklyMealDays,
-          monthly: Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
-        })
+        try {
+          // NEIS API에서 급식 일수 조회
+          const mealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, year, month);
+          
+          if (mealDays.length === 0) {
+            console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식 데이터가 없습니다.`);
+            continue;
+          }
+          
+          // 주차별 급식 일수 계산
+          const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month);
+          const monthlyTotal = mealDays.length;
+          
+          // 장원 조건 저장
+          await saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal);
+          
+          results.push({
+            school_code: schoolCode,
+            year,
+            month,
+            weekly_days: weeklyMealDays,
+            monthly_total: monthlyTotal
+          });
+          
+        } catch (error) {
+          console.error(`${schoolCode} 학교 ${year}년 ${month}월 처리 오류:`, error);
+          results.push({
+            school_code: schoolCode,
+            year,
+            month,
+            error: error.message
+          });
+        }
       }
       
-      processedCount++
+      processedCount++;
       console.log(`진행 상황: ${processedCount}/${schools.length} 학교 처리 완료`)
     }
     
@@ -169,36 +210,6 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: error.message })
     }
   }
-}
-
-// 주말과 공휴일 제외 함수
-function isWeekdayAndNotHoliday(dateStr) {
-  const year = parseInt(dateStr.substring(0, 4))
-  const month = parseInt(dateStr.substring(4, 6)) - 1 // JavaScript Date는 0부터 시작
-  const day = parseInt(dateStr.substring(6, 8))
-  const date = new Date(year, month, day)
-  
-  // 주말 체크 (토요일: 6, 일요일: 0)
-  const dayOfWeek = date.getDay()
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return false
-  }
-  
-  // 한국 공휴일 체크 (2025년 기준)
-  const holidays = [
-    '20250101', // 신정
-    '20250127', '20250128', '20250129', '20250130', // 설날 연휴
-    '20250301', // 삼일절
-    '20250505', // 어린이날
-    '20250506', // 대체공휴일
-    '20250815', // 광복절
-    '20250929', '20250930', '20251001', // 추석 연휴
-    '20251003', // 개천절
-    '20251009', // 한글날
-    '20251225'  // 크리스마스
-  ]
-  
-  return !holidays.includes(dateStr)
 }
 
 // NEIS API에서 급식 일수 조회 (학교별, 월별)
