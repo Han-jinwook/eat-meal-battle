@@ -262,33 +262,60 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     });
     
     // 장원 테이블 업데이트 (없으면 생성)
+    console.log('[quiz] quiz_champions 업데이트 시작:', {
+      userId,
+      month,
+      year,
+      dayField,
+      resultValue,
+      isCorrect
+    });
+    
     const { data: champion, error: championError } = await supabaseAdmin
       .from('quiz_champions')
-      .select('id, correct_count, total_count')
+      .select('id, month_correct, total_count')
       .eq('user_id', userId)
       .eq('month', month)
       .eq('year', year)
       .limit(1);
+    
+    console.log('[quiz] quiz_champions 조회 결과:', { champion, championError });
+    
+    if (championError) {
+      console.error('[quiz] quiz_champions 조회 오류:', championError);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'quiz_champions 조회 실패' })
+      };
+    }
     
     if (champion && champion.length > 0) {
       // 기존 기록 업데이트 (기본 필드 + 일별 기록만)
       const currentRecord = champion[0];
       
       const updateData = {
-        correct_count: currentRecord.correct_count + (isCorrect ? 1 : 0),
+        month_correct: currentRecord.month_correct + (isCorrect ? 1 : 0),
         total_count: currentRecord.total_count + 1,
-        [dayField]: resultValue
+        [dayField]: resultValue,
+        updated_at: new Date().toISOString()
       };
       
-      console.log('[quiz] 업데이트 데이터:', updateData);
+      console.log('[quiz] 기존 레코드 업데이트:', { currentRecord, updateData });
       
-      const { error: updateError } = await supabaseAdmin
+      const { data: updateResult, error: updateError } = await supabaseAdmin
         .from('quiz_champions')
         .update(updateData)
-        .eq('id', currentRecord.id);
+        .eq('id', currentRecord.id)
+        .select();
     
       if (updateError) {
-        console.error('[quiz] 장원 기록 업데이트 중 오류:', updateError);
+        console.error('[quiz] 장원 기록 업데이트 실패:', updateError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: '장원 기록 업데이트 실패' })
+        };
+      } else {
+        console.log('[quiz] 장원 기록 업데이트 성공:', updateResult);
       }
     } else {
       // 새 기록 생성 (기본 필드 + 일별 기록만)
@@ -296,19 +323,27 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         user_id: userId,
         month: month,
         year: year,
-        correct_count: isCorrect ? 1 : 0,
+        month_correct: isCorrect ? 1 : 0,
         total_count: 1,
-        [dayField]: resultValue
+        [dayField]: resultValue,
+        created_at: new Date().toISOString()
       };
       
-      console.log('[quiz] 삽입 데이터:', insertData);
+      console.log('[quiz] 새 레코드 생성:', insertData);
       
-      const { error: insertError } = await supabaseAdmin
+      const { data: insertResult, error: insertError } = await supabaseAdmin
         .from('quiz_champions')
-        .insert([insertData]);
+        .insert([insertData])
+        .select();
     
       if (insertError) {
-        console.error('[quiz] 장원 기록 생성 중 오류:', insertError);
+        console.error('[quiz] 장원 기록 생성 실패:', insertError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: '장원 기록 생성 실패' })
+        };
+      } else {
+        console.log('[quiz] 장원 기록 생성 성공:', insertResult);
       }
     }
     
