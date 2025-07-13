@@ -88,33 +88,37 @@ export class ChampionCalculator {
   /**
    * 특정 기간의 급식 제공 일수 계산
    * 
-   * 로직: meal_menus 테이블에서 해당 기간 + 학교의 급식 데이터 카운트
+   * 로직: champion_criteria 테이블에서 정확한 급식일수 조회
    */
   async calculateMealDays(
     schoolCode: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    weekNumber?: number  // 주간 계산시 주차 번호
   ): Promise<number> {
     try {
-      const startDateStr = startDate.toISOString().split('T')[0]
-      const endDateStr = endDate.toISOString().split('T')[0]
+      const year = startDate.getFullYear()
+      const month = startDate.getMonth() + 1
 
-      console.log('급식일수 계산 시도:', {
+      console.log('급식일수 계산 시도 (champion_criteria):', {
         schoolCode,
-        startDateStr,
-        endDateStr
+        year,
+        month,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
       })
 
-      // meal_menus 테이블에서 해당 기간의 급식 데이터 조회
+      // champion_criteria 테이블에서 정확한 급식일수 조회
       const { data, error } = await this.supabase
-        .from('meal_menus')
-        .select('meal_date')
+        .from('champion_criteria')
+        .select('week_1_days, week_2_days, week_3_days, week_4_days, week_5_days, month_total')
         .eq('school_code', schoolCode)
-        .gte('meal_date', startDateStr)
-        .lte('meal_date', endDateStr)
+        .eq('year', year)
+        .eq('month', month)
+        .single()
 
       if (error) {
-        console.error('급식일수 계산 오류:', error)
+        console.error('급식일수 계산 오류 (champion_criteria):', error)
         // 에러 발생시 기본값으로 주 5일, 월 20일 가정
         const diffTime = endDate.getTime() - startDate.getTime()
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -123,8 +127,20 @@ export class ChampionCalculator {
         return estimatedMealDays
       }
 
-      const mealDays = data?.length || 0
-      console.log('급식일수 계산 완료:', mealDays)
+      // 주간 계산인지 월간 계산인지 판단
+      let mealDays = 0
+      
+      if (weekNumber) {
+        // 주간 계산 - 전달받은 주차 번호 사용
+        const weekField = `week_${weekNumber}_days`
+        mealDays = data?.[weekField] || 0
+        console.log(`주간 급식일수 계산 완료 (${weekNumber}주차):`, mealDays)
+      } else {
+        // 월간 계산
+        mealDays = data?.month_total || 0
+        console.log('월간 급식일수 계산 완료:', mealDays)
+      }
+      
       return mealDays
     } catch (error) {
       console.error('급식일수 계산 예외:', error)
@@ -223,7 +239,7 @@ export class ChampionCalculator {
       if (weekdayStart.getDay() === 0) weekdayStart.setDate(weekdayStart.getDate() + 1) // 일요일이면 월요일로
       if (weekdayEnd.getDay() === 6) weekdayEnd.setDate(weekdayEnd.getDate() - 1) // 토요일이면 금요일로
       
-      const total_meal_days = await this.calculateMealDays(schoolCode, weekdayStart, weekdayEnd)
+      const total_meal_days = await this.calculateMealDays(schoolCode, weekdayStart, weekdayEnd, weekNumber)
       const quizResults = await this.getQuizResults(userId, schoolCode, weekdayStart, weekdayEnd)
 
       // 장원 조건: 급식일수 = 정답수

@@ -40,8 +40,8 @@ export class ChampionCriteriaService {
         return 0;
       }
       
-      // 테이블 필드명에 맞게 수정 (언더스코어 없음)
-      const weekField = `week${weekNumber}_days`;
+      // 테이블 필드명에 맞게 수정 (언더스코어 포함)
+      const weekField = `week_${weekNumber}_days`;
       
       const { data, error } = await this.supabase
         .from('champion_criteria')
@@ -75,7 +75,7 @@ export class ChampionCriteriaService {
     try {
       const { data, error } = await this.supabase
         .from('champion_criteria')
-        .select('monthly_days')
+        .select('month_total')
         .eq('school_code', schoolCode)
         .eq('year', year)
         .eq('month', month)
@@ -86,7 +86,7 @@ export class ChampionCriteriaService {
         return 0;
       }
       
-      return data?.monthly_days || 0;
+      return data?.month_total || 0;
     } catch (error) {
       console.error('월간 장원 조건 조회 중 오류:', error);
       return 0;

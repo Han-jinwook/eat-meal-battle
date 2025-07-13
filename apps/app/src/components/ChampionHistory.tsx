@@ -261,7 +261,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                     <span className="text-purple-600 font-bold">👑 월장원</span>
                   )}
                   {stat.my_record === 'pass' && (
-                    <span className="text-gray-500">pass</span>
+                    <span className="text-indigo-500">💪 도전</span>
                   )}
                 </td>
                 <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500">
