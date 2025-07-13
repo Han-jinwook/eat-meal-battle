@@ -402,21 +402,36 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       if (isoChampionError) {
         console.error('[quiz] ISO 주차 레코드 조회 오류:', isoChampionError);
       } else if (isoChampion && isoChampion.length > 0) {
-        // 기존 ISO 주차 레코드 업데이트
+        // 기존 ISO 주차 레코드 업데이트 - 현재 값 조회 후 증가
         const weekField = `week_${weekOfMonth}_correct`;
-        const { data: isoUpdateResult, error: isoUpdateError } = await supabaseAdmin
-          .from('quiz_champions')
-          .update({
-            [weekField]: supabaseAdmin.raw(`${weekField} + ${isCorrect ? 1 : 0}`),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', isoChampion[0].id)
-          .select();
         
-        if (isoUpdateError) {
-          console.error('[quiz] ISO 주차 레코드 업데이트 실패:', isoUpdateError);
+        // 현재 값 조회
+        const { data: currentRecord, error: currentError } = await supabaseAdmin
+          .from('quiz_champions')
+          .select(weekField)
+          .eq('id', isoChampion[0].id)
+          .single();
+        
+        if (currentError) {
+          console.error('[quiz] ISO 주차 현재 값 조회 실패:', currentError);
         } else {
-          console.log('[quiz] ISO 주차 레코드 업데이트 성공:', isoUpdateResult);
+          const currentValue = currentRecord[weekField] || 0;
+          const newValue = currentValue + (isCorrect ? 1 : 0);
+          
+          const { data: isoUpdateResult, error: isoUpdateError } = await supabaseAdmin
+            .from('quiz_champions')
+            .update({
+              [weekField]: newValue,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', isoChampion[0].id)
+            .select();
+          
+          if (isoUpdateError) {
+            console.error('[quiz] ISO 주차 레코드 업데이트 실패:', isoUpdateError);
+          } else {
+            console.log('[quiz] ISO 주차 레코드 업데이트 성공:', { currentValue, newValue, result: isoUpdateResult });
+          }
         }
       } else {
         // 새 ISO 주차 레코드 생성
