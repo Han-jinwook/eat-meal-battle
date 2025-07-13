@@ -194,6 +194,29 @@ export default function SchoolSearchPage() {
         if (insertError) throw insertError;
       }
 
+      // 장원 조건 설정 (신규 등록 및 학교 변경 시)
+      try {
+        console.log('장원 조건 설정 시작...');
+        const setupResponse = await fetch('/.netlify/functions/initialize-school-champion-criteria', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            school_code: selectedSchool.SD_SCHUL_CODE,
+            office_code: selectedSchool.ATPT_OFCDC_SC_CODE
+          })
+        });
+        
+        if (setupResponse.ok) {
+          console.log('장원 조건 설정 완료');
+        } else {
+          console.warn('장원 조건 설정 실패 (계속 진행):', await setupResponse.text());
+        }
+      } catch (setupError) {
+        console.warn('장원 조건 설정 오류 (계속 진행):', setupError);
+      }
+
       // 성공 처리
       setSaveSuccess(true);
       setSaveLoading(false);

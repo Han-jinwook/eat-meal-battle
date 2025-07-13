@@ -26,7 +26,7 @@ export class ChampionCriteriaService {
   /**
    * 특정 주차의 장원 조건(급식일수)을 조회합니다
    * @param schoolCode - 학교 코드
-   * @param grade - 학년
+   * @param grade - 학년 (현재 테이블에서 사용하지 않음)
    * @param year - 년도
    * @param month - 월 (1-12)
    * @param weekNumber - 주차 (1-6)
@@ -40,13 +40,13 @@ export class ChampionCriteriaService {
         return 0;
       }
       
-      const weekField = `week_${weekNumber}_days`;
+      // 테이블 필드명에 맞게 수정 (언더스코어 없음)
+      const weekField = `week${weekNumber}_days`;
       
       const { data, error } = await this.supabase
         .from('champion_criteria')
         .select(weekField)
         .eq('school_code', schoolCode)
-        .eq('grade', grade)
         .eq('year', year)
         .eq('month', month)
         .single();
@@ -64,20 +64,19 @@ export class ChampionCriteriaService {
   }
   
   /**
-   * 특정 월의 장원 조건(급식일수)을 조회합니다
+   * 월간 장원 조건(급식일수)을 조회합니다
    * @param schoolCode - 학교 코드
-   * @param grade - 학년
+   * @param grade - 학년 (현재 테이블에서 사용하지 않음)
    * @param year - 년도
    * @param month - 월 (1-12)
-   * @returns 해당 월의 총 급식일수 (0: 데이터 없음)
+   * @returns 해당 월의 급식일수 (0: 데이터 없음)
    */
   async getMonthlyCriteria(schoolCode: string, grade: number, year: number, month: number): Promise<number> {
     try {
       const { data, error } = await this.supabase
         .from('champion_criteria')
-        .select('month_total')
+        .select('monthly_days')
         .eq('school_code', schoolCode)
-        .eq('grade', grade)
         .eq('year', year)
         .eq('month', month)
         .single();
@@ -87,7 +86,7 @@ export class ChampionCriteriaService {
         return 0;
       }
       
-      return data?.month_total || 0;
+      return data?.monthly_days || 0;
     } catch (error) {
       console.error('월간 장원 조건 조회 중 오류:', error);
       return 0;
@@ -119,8 +118,6 @@ export class ChampionCriteriaService {
           .from('quiz_champions')
           .select(`week_${weekNumber}_correct`)
           .eq('user_id', userId)
-          .eq('school_code', schoolCode)
-          .eq('grade', grade)
           .eq('year', year)
           .eq('month', month)
           .single();
@@ -149,8 +146,6 @@ export class ChampionCriteriaService {
           .from('quiz_champions')
           .select('week_1_correct, week_2_correct, week_3_correct, week_4_correct, week_5_correct, week_6_correct')
           .eq('user_id', userId)
-          .eq('school_code', schoolCode)
-          .eq('grade', grade)
           .eq('year', year)
           .eq('month', month)
           .single();
