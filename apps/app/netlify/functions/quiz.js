@@ -51,7 +51,8 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   const isToday = !requestedDate || requestedDate === koreaTime.toISOString().split('T')[0];
   
   // 오늘 날짜이고 12:30 이후인지 확인
-  const canShowTodayQuiz = !isToday || currentTimeMinutes >= showQuizTime;
+  // 테스트 모드: 시간 제약 해제 (항상 퀴즈 표시)
+  const canShowTodayQuiz = true; // !isToday || currentTimeMinutes >= showQuizTime;
   const canShowAnswer = !isToday || currentTimeMinutes >= showAnswerTime;
   
   // 급식 정보 확인
