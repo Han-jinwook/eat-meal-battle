@@ -92,7 +92,12 @@ exports.handler = async (event) => {
           year: currentYear,
           month: currentMonth,
           weekly: weeklyMealDays,
-          monthly: monthlyTotal
+          monthly: monthlyTotal,
+          debug: {
+            original_meal_days_count: mealDays.length,
+            filtered_meal_days_count: Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0),
+            meal_days: mealDays
+          }
         }
       })
     }
@@ -158,11 +163,14 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
       return []
     }
     
-    // 급식이 있는 날짜만 추출
-    const mealDays = mealInfo.row.map(item => item.MLSV_YMD)
-    console.log(`${mealDays.length}일의 급식 데이터 발견`)
+    // 중식만 필터링 (MMEAL_SC_CODE: '2')
+    const lunchMeals = mealInfo.row.filter(item => item.MMEAL_SC_CODE === '2')
+    const lunchDays = lunchMeals.map(item => item.MLSV_YMD)
     
-    return mealDays
+    console.log(`전체 급식 데이터: ${mealInfo.row.length}건`)
+    console.log(`중식만 필터링: ${lunchDays.length}일`)
+    
+    return lunchDays
   } catch (error) {
     console.error('NEIS API 호출 오류:', error)
     throw error
@@ -218,7 +226,20 @@ function calculateWeeklyMealDays(mealDays, year, month) {
   }
   
   // 주말과 공휴일 제외한 급식일만 필터링
+  console.log('원본 급식일 목록:', mealDays)
+  
+  // 각 날짜에 대해 요일 확인
+  mealDays.forEach(dateStr => {
+    const year = parseInt(dateStr.substring(0, 4))
+    const month = parseInt(dateStr.substring(4, 6)) - 1
+    const day = parseInt(dateStr.substring(6, 8))
+    const date = new Date(year, month, day)
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+    console.log(`${dateStr} = ${year}/${month+1}/${day} (${dayNames[date.getDay()]})`)
+  })
+  
   const filteredMealDays = mealDays.filter(isWeekdayAndNotHoliday)
+  console.log('필터링된 급식일 목록:', filteredMealDays)
   console.log(`주말/공휴일 제외 후: ${filteredMealDays.length}일 (원본: ${mealDays.length}일)`)
   
   // 결과 저장용 객체
