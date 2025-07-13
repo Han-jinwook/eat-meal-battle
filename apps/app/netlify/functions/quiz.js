@@ -1,5 +1,4 @@
 const { createClient } = require('@supabase/supabase-js');
-const { ChampionCriteriaService } = require('../../src/utils/championCriteriaService.ts');
 
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -313,36 +312,42 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       }
     }
     
-    // 주차별, 월별 정답수 업데이트 (championCriteriaService 활용)
+    // 주차별, 월별 정답수 업데이트 (직접 처리)
     if (isCorrect) {
       try {
-        // 사용자 정보 조회
-        const { data: userData, error: userError } = await supabaseAdmin
-          .from('users')
-          .select('school_code, grade')
-          .eq('id', userId)
+        const weekField = `week_${weekOfMonth}_correct`;
+        
+        // 기존 quiz_champions 레코드에서 현재 값 조회
+        const { data: currentData, error: selectError } = await supabaseAdmin
+          .from('quiz_champions')
+          .select(`${weekField}, month_correct`)
+          .eq('user_id', userId)
+          .eq('month', month)
+          .eq('year', year)
           .single();
         
-        if (userData && !userError) {
-          const criteriaService = new ChampionCriteriaService(supabaseAdmin);
+        if (!selectError && currentData) {
+          // 기존 레코드 업데이트
+          const { error: updateError } = await supabaseAdmin
+            .from('quiz_champions')
+            .update({
+              [weekField]: (currentData[weekField] || 0) + 1,
+              month_correct: (currentData.month_correct || 0) + 1
+            })
+            .eq('user_id', userId)
+            .eq('month', month)
+            .eq('year', year);
           
-          // 주차별 + 월별 정답수 업데이트 (한 번에 처리)
-          await criteriaService.updateUserWeeklyCorrect(
-            userId, 
-            userData.school_code, 
-            userData.grade, 
-            year, 
-            month, 
-            weekOfMonth, 
-            1 // 정답 1개 추가
-          );
-          
-          console.log('[quiz] 주차별/월별 정답수 업데이트 완료');
+          if (updateError) {
+            console.error('[quiz] 주차별/월별 업데이트 오류:', updateError);
+          } else {
+            console.log('[quiz] 주차별/월별 정답수 업데이트 완료');
+          }
         } else {
-          console.error('[quiz] 사용자 정보 조회 실패:', userError);
+          console.log('[quiz] quiz_champions 레코드가 아직 없음, 주차별/월별 업데이트 스킵');
         }
-      } catch (serviceError) {
-        console.error('[quiz] championCriteriaService 호출 오류:', serviceError);
+      } catch (directError) {
+        console.error('[quiz] 주차별/월별 직접 업데이트 오류:', directError);
       }
     }
     
