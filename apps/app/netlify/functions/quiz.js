@@ -243,11 +243,10 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       return Math.min(Math.floor(diffDays / 7) + 1, 6);
     }
     
-    // 일별 필드 계산 (day_1 ~ day_6)
+    // 일별 필드 계산 (day_1 ~ day_31) - 실제 날짜 기준
     function getDayField(date) {
-      const dayOfWeek = date.getDay(); // 0=일요일, 1=월요일, ..., 6=토요일
-      if (dayOfWeek === 0) return 'day_6'; // 일요일 → day_6
-      return `day_${dayOfWeek}`; // 월요일=day_1, 화요일=day_2, ..., 토요일=day_6
+      const dayOfMonth = date.getDate(); // 1~31
+      return `day_${dayOfMonth}`;
     }
     
     const weekOfMonth = getWeekOfMonth(quizDate);
@@ -291,13 +290,15 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     }
     
     if (champion && champion.length > 0) {
-      // 기존 기록 업데이트 (기본 필드 + 일별 기록만)
+      // 기존 기록 업데이트
       const currentRecord = champion[0];
+      const weekField = `week_${weekOfMonth}_correct`;
       
       const updateData = {
         month_correct: currentRecord.month_correct + (isCorrect ? 1 : 0),
         total_count: currentRecord.total_count + 1,
         [dayField]: resultValue,
+        [weekField]: (currentRecord[weekField] || 0) + (isCorrect ? 1 : 0),
         updated_at: new Date().toISOString()
       };
       
@@ -319,7 +320,8 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         console.log('[quiz] 장원 기록 업데이트 성공:', updateResult);
       }
     } else {
-      // 새 기록 생성 (기본 필드 + 일별 기록만)
+      // 새 기록 생성
+      const weekField = `week_${weekOfMonth}_correct`;
       const insertData = {
         user_id: userId,
         month: month,
@@ -327,6 +329,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         month_correct: isCorrect ? 1 : 0,
         total_count: 1,
         [dayField]: resultValue,
+        [weekField]: isCorrect ? 1 : 0,
         created_at: new Date().toISOString()
       };
       
@@ -348,44 +351,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       }
     }
     
-    // 주차별, 월별 정답수 업데이트 (직접 처리)
-    if (isCorrect) {
-      try {
-        const weekField = `week_${weekOfMonth}_correct`;
-        
-        // 기존 quiz_champions 레코드에서 현재 값 조회
-        const { data: currentData, error: selectError } = await supabaseAdmin
-          .from('quiz_champions')
-          .select(`${weekField}, month_correct`)
-          .eq('user_id', userId)
-          .eq('month', month)
-          .eq('year', year)
-          .single();
-        
-        if (!selectError && currentData) {
-          // 기존 레코드 업데이트
-          const { error: updateError } = await supabaseAdmin
-            .from('quiz_champions')
-            .update({
-              [weekField]: (currentData[weekField] || 0) + 1,
-              month_correct: (currentData.month_correct || 0) + 1
-            })
-            .eq('user_id', userId)
-            .eq('month', month)
-            .eq('year', year);
-          
-          if (updateError) {
-            console.error('[quiz] 주차별/월별 업데이트 오류:', updateError);
-          } else {
-            console.log('[quiz] 주차별/월별 정답수 업데이트 완료');
-          }
-        } else {
-          console.log('[quiz] quiz_champions 레코드가 아직 없음, 주차별/월별 업데이트 스킵');
-        }
-      } catch (directError) {
-        console.error('[quiz] 주차별/월별 직접 업데이트 오류:', directError);
-      }
-    }
+    // 주차별, 월별 정답수 업데이트는 위에서 이미 처리됨 (중복 제거)
     
     console.log('[quiz] submitQuizAnswer 성공!');
     return {
