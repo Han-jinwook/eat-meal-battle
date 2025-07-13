@@ -381,8 +381,9 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       }
     }
     
-    // ISO 주차 월이 달력 월과 다를 경우 별도 주차 업데이트
-    if (actualMonthYear.month !== calendarMonth || actualMonthYear.year !== calendarYear) {
+    // ISO 주차 별도 업데이트 (항상 수행)
+    // 달력 월 레코드에는 주차 카운트를 넣지 않고, ISO 주차 레코드에만 주차 카운트 저장
+    {
       console.log('[quiz] ISO 주차 별도 업데이트 필요:', {
         calendarMonth, calendarYear,
         isoWeekMonth: actualMonthYear.month, isoWeekYear: actualMonthYear.year,
