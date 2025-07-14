@@ -15,6 +15,7 @@ export default function BattlePage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -170,15 +171,70 @@ export default function BattlePage() {
           activeTab === 'menu' ? 'bg-red-50' : 'bg-blue-50'
         }`}>
           {activeTab === 'menu' ? (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-bold text-red-600 mb-2">메뉴 배틀</h2>
-              <p className="text-red-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 메뉴별 배틀 결과를 보여줍니다.</p>
-              <p className="text-sm text-red-400 mt-2">
-                {viewMode === 'daily' 
-                  ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
-                  : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
-                }
-              </p>
+            <div>
+              {/* 메뉴 배틀 헤더 */}
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-bold text-red-600 mb-2">메뉴 배틀</h2>
+                <p className="text-red-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 메뉴별 배틀 결과를 보여줍니다.</p>
+                <p className="text-sm text-red-400 mt-2">
+                  {viewMode === 'daily' 
+                    ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
+                    : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
+                  }
+                </p>
+              </div>
+
+              {/* 일간 베스트 메뉴 도표 */}
+              <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
+                {/* 도표 제목 */}
+                <div className="bg-red-500 text-white px-4 py-3">
+                  <div className="flex items-center justify-center gap-3">
+                    <h3 className="font-bold">
+                      {viewMode === 'daily' ? '일간' : '월간'} 베스트 메뉴
+                    </h3>
+                    {/* 순위 정렬 버튼 */}
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="flex flex-col items-center justify-center w-6 h-6 hover:bg-red-400 rounded transition-colors duration-200"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경' : '오름차순으로 변경'}
+                    >
+                      <svg 
+                        className={`w-3 h-3 transition-opacity duration-200 ${
+                          sortOrder === 'asc' ? 'opacity-100' : 'opacity-40'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                      </svg>
+                      <svg 
+                        className={`w-3 h-3 -mt-1 transition-opacity duration-200 ${
+                          sortOrder === 'desc' ? 'opacity-100' : 'opacity-40'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 테이블 헤더 */}
+                <div className="bg-red-50 border-b border-red-200">
+                  <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm font-medium text-red-700">
+                    <div className="text-center">순위</div>
+                    <div className="text-center">메뉴명</div>
+                    <div className="text-center">점수</div>
+                    <div className="text-center">평가수</div>
+                  </div>
+                </div>
+                
+                {/* 테이블 내용 - 데이터 대기 */}
+                <div className="p-8 text-center text-red-400">
+                  <p>데이터를 불러오는 중...</p>
+                </div>
+              </div>
             </div>
           ) : (
             <div>
@@ -221,14 +277,62 @@ export default function BattlePage() {
                 </div>
               </div>
 
-              {/* 배틀 결과 영역 */}
-              <div className="text-center py-8">
-                <p className="text-blue-400 text-sm">
-                  선택된 지역: <span className="font-medium">{userSchool?.region || '로딩 중...'}</span>
-                </p>
-                <p className="text-blue-400 text-sm mt-1">
-                  선택된 유형: <span className="font-medium">{selectedSchoolType || userSchool?.school_type || '선택 안됨'}</span>
-                </p>
+              {/* 우리동네 급식배틀 테이블 */}
+              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                {/* 테이블 제목 */}
+                <div className="bg-blue-500 text-white px-4 py-3">
+                  <div className="flex items-center justify-center gap-3">
+                    <h3 className="font-bold">
+                      우리동네 급식배틀
+                    </h3>
+                    {/* 순위 정렬 버튼 */}
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="flex flex-col items-center justify-center w-6 h-6 hover:bg-blue-400 rounded transition-colors duration-200"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경' : '오름차순으로 변경'}
+                    >
+                      <svg 
+                        className={`w-3 h-3 transition-opacity duration-200 ${
+                          sortOrder === 'asc' ? 'opacity-100' : 'opacity-40'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                      </svg>
+                      <svg 
+                        className={`w-3 h-3 -mt-1 transition-opacity duration-200 ${
+                          sortOrder === 'desc' ? 'opacity-100' : 'opacity-40'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 테이블 헤더 */}
+                <div className="bg-blue-50 border-b border-blue-200">
+                  <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm font-medium text-blue-700">
+                    <div className="text-center">순위</div>
+                    <div className="text-center">학교명</div>
+                    <div className="text-center">점수</div>
+                    <div className="text-center">평가수</div>
+                  </div>
+                </div>
+                
+                {/* 테이블 내용 - 데이터 대기 */}
+                <div className="p-8 text-center text-blue-400">
+                  <p>데이터를 불러오는 중...</p>
+                  <p className="text-sm mt-2">
+                    선택된 지역: <span className="font-medium">{userSchool?.region || '로딩 중...'}</span>
+                  </p>
+                  <p className="text-sm mt-1">
+                    선택된 유형: <span className="font-medium">{selectedSchoolType || userSchool?.school_type || '선택 안됨'}</span>
+                  </p>
+                </div>
               </div>
             </div>
           )}
