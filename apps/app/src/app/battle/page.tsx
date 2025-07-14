@@ -16,6 +16,48 @@ export default function BattlePage() {
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
+  
+  // 배틀 데이터 상태
+  const [battleData, setBattleData] = useState<any[]>([]);
+  const [battleLoading, setBattleLoading] = useState(false);
+  const [battleError, setBattleError] = useState<string | null>(null);
+
+  // 배틀 데이터 로딩 함수
+  const loadBattleData = async () => {
+    if (!userSchool?.school_code) return;
+    
+    setBattleLoading(true);
+    setBattleError(null);
+    
+    try {
+      const params = new URLSearchParams({
+        schoolCode: userSchool.school_code,
+        type: viewMode,
+        ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth })
+      });
+      
+      const response = await fetch(`/api/battle/menu?${params}`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
+      }
+      
+      setBattleData(result.data || []);
+    } catch (error) {
+      console.error('배틀 데이터 로딩 오류:', error);
+      setBattleError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+    } finally {
+      setBattleLoading(false);
+    }
+  };
+
+  // 데이터 로딩 useEffect
+  useEffect(() => {
+    if (activeTab === 'menu' && userSchool?.school_code) {
+      loadBattleData();
+    }
+  }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth]);
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -230,9 +272,47 @@ export default function BattlePage() {
                   </div>
                 </div>
                 
-                {/* 테이블 내용 - 데이터 대기 */}
-                <div className="p-8 text-center text-red-400">
-                  <p>데이터를 불러오는 중...</p>
+                {/* 테이블 내용 - 실제 데이터 */}
+                <div className="divide-y divide-red-100">
+                  {battleLoading ? (
+                    <div className="p-8 text-center text-red-400">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
+                      <p>데이터를 불러오는 중...</p>
+                    </div>
+                  ) : battleError ? (
+                    <div className="p-8 text-center text-red-500">
+                      <p className="mb-2">오류가 발생했습니다</p>
+                      <p className="text-sm text-red-400">{battleError}</p>
+                      <button 
+                        onClick={loadBattleData}
+                        className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        다시 시도
+                      </button>
+                    </div>
+                  ) : battleData.length === 0 ? (
+                    <div className="p-8 text-center text-red-400">
+                      <p>해당 {viewMode === 'daily' ? '날짜' : '월'}에 배틀 데이터가 없습니다.</p>
+                      <p className="text-sm mt-2">메뉴에 별점을 매겨주세요!</p>
+                    </div>
+                  ) : (
+                    (sortOrder === 'asc' ? battleData : [...battleData].reverse()).map((item, index) => (
+                      <div key={item.menu_item_id} className="grid grid-cols-4 gap-4 px-4 py-4 hover:bg-red-25 transition-colors">
+                        <div className="text-center font-medium text-red-600">
+                          {sortOrder === 'asc' ? item.daily_rank || item.monthly_rank : battleData.length - index}
+                        </div>
+                        <div className="text-center font-medium text-gray-800">
+                          {item.item_name}
+                        </div>
+                        <div className="text-center text-red-600 font-bold">
+                          {item.final_avg_rating?.toFixed(1) || '0.0'}
+                        </div>
+                        <div className="text-center text-gray-600">
+                          {item.final_rating_count || 0}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -252,8 +332,8 @@ export default function BattlePage() {
 
               {/* 지역 및 학교 유형 선택 */}
               <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
-                {/* 지역 정보 - 단순 텍스트 */}
-                <div className="text-center mb-4">
+                {/* 지역 정보 - 왼쪽 정렬 */}
+                <div className="text-left mb-4 ml-3">
                   <span className="text-blue-700 font-medium">
                     {userSchool?.region || '로딩 중...'}
                   </span>
