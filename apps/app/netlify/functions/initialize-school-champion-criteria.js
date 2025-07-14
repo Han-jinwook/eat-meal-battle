@@ -158,17 +158,23 @@ exports.handler = async (event) => {
       
       for (const month of months) {
         try {
-          // NEIS API에서 급식 일수 조회
-          const mealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, year, month);
+          // NEIS API에서 급식 일수 조회 (해당 월 + 다음 달)
+          const currentMonthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, year, month);
           
-          if (mealDays.length === 0) {
+          // 다음 달 첫 주 데이터도 조회 (주차 경계 처리용)
+          const nextMonth = month === 12 ? 1 : month + 1;
+          const nextYear = month === 12 ? year + 1 : year;
+          const nextMonthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, nextYear, nextMonth);
+          
+          if (currentMonthMealDays.length === 0) {
             console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식 데이터가 없습니다.`);
             continue;
           }
           
-          // 주차별 급식 일수 계산
-          const weeklyMealDays = calculateWeeklyMealDays(mealDays, year, month);
-          const monthlyTotal = mealDays.length;
+          // 주차별 급식 일수 계산 (다음 달 데이터 포함)
+          const allMealDays = [...currentMonthMealDays, ...nextMonthMealDays];
+          const weeklyMealDays = calculateWeeklyMealDays(allMealDays, year, month);
+          const monthlyTotal = currentMonthMealDays.length; // 해당 월만 카운트
           
           // 장원 조건 저장
           await saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal);
@@ -308,9 +314,22 @@ function calculateWeeklyMealDays(mealDays, year, month) {
       weeklyCount[0] = (weeklyCount[0] || 0) + 1
       console.log(`${dateStr} -> 0주차 (첫 월요일 이전)`)
     } else if (weekNumber <= 5) {
-      // 주차별 카운트 증가 (최대 5주차까지)
-      weeklyCount[weekNumber] = (weeklyCount[weekNumber] || 0) + 1
-      console.log(`${dateStr} -> ${weekNumber}주차`)
+      // 해당 월의 주차에 속하는 날짜만 카운트
+      // 다음 달 날짜라도 해당 월 주차에 속하면 포함
+      const targetMonthStart = new Date(year, month - 1, 1)
+      const targetMonthEnd = new Date(year, month, 0) // 마지막 날
+      
+      // 해당 주차의 월요일 계산
+      const weekStartDate = new Date(firstMonday)
+      weekStartDate.setDate(firstMonday.getDate() + (weekNumber - 1) * 7)
+      
+      // 해당 주차가 해당 월에 속하는지 확인 (주차 시작일이 해당 월 내에 있으면 OK)
+      if (weekStartDate <= targetMonthEnd) {
+        weeklyCount[weekNumber] = (weeklyCount[weekNumber] || 0) + 1
+        console.log(`${dateStr} -> ${weekNumber}주차 (해당 월 주차)`)
+      } else {
+        console.log(`${dateStr} -> ${weekNumber}주차 (다음 월 주차로 제외)`)
+      }
     } else {
       console.log(`${dateStr} -> ${weekNumber}주차 (제외: 5주차 초과)`)
     }
