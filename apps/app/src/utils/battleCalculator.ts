@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 // 🔧 모드 설정 (주석 처리로 전환)
 const BATTLE_MODE = 'TEST'; // 'TEST' | 'PRODUCTION'
