@@ -41,7 +41,7 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
 /**
  * 🧪 테스트 모드: 실시간 집계 계산 후 DB 저장
  */
-async function calculateDailyMenuBattleTest(targetDate?: string, schoolCode?: string) {
+export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCode?: string) {
   const supabase = createClient();
   const date = targetDate || new Date().toISOString().split('T')[0];
   
@@ -254,7 +254,7 @@ export async function calculateMonthlyMenuBattle(targetYear?: number, targetMont
 /**
  * 🧪 월별 테스트 모드: 실시간 집계 계산 후 DB 저장
  */
-async function calculateMonthlyMenuBattleTest(targetYear?: number, targetMonth?: number, schoolCode?: string) {
+export async function calculateMonthlyMenuBattleTest(targetYear?: number, targetMonth?: number, schoolCode?: string) {
   const supabase = createClient();
   const year = targetYear || new Date().getFullYear();
   const month = targetMonth || new Date().getMonth() + 1;
@@ -381,67 +381,84 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
   
   console.log(`📊 배틀 결과 조회: ${type}, 날짜: ${date}`);
   
-  // 🔥 핵심: 테스트/출시 모드 관계없이 항상 DB에서만 조회
-  if (type === 'daily') {
-    const targetDate = date || new Date().toISOString().split('T')[0];
-    
-    let query = supabase
-      .from('menu_battle_daily')
-      .select(`
-        *,
-        meal_menu_items!inner(
-          item_name,
-          meal_menus!inner(
-            school_code,
-            meal_date
+  try {
+    // 🔥 핵심: 테스트/출시 모드 관계없이 항상 DB에서만 조회
+    if (type === 'daily') {
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      
+      // 일별 배틀 결과 조회 (menu_item_id로 JOIN)
+      let query = supabase
+        .from('menu_battle_daily')
+        .select(`
+          menu_item_id,
+          battle_date,
+          final_avg_rating,
+          final_rating_count,
+          daily_rank,
+          meal_menu_items(
+            item_name,
+            meal_menus(
+              school_code,
+              meal_date
+            )
           )
-        )
-      `)
-      .eq('battle_date', targetDate)
-      .order('daily_rank');
-    
-    if (schoolCode) {
-      query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('일별 배틀 결과 조회 실패:', error);
-    }
-    
-    return { success: !error, data: data || [], error };
-  } else {
-    // 월별 조회
-    const targetDate = date ? new Date(date) : new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth() + 1;
-    
-    let query = supabase
-      .from('menu_battle_monthly')
-      .select(`
-        *,
-        meal_menu_items!inner(
-          item_name,
-          meal_menus!inner(
-            school_code
+        `)
+        .eq('battle_date', targetDate)
+        .order('daily_rank');
+      
+      if (schoolCode) {
+        query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('일별 배틀 결과 조회 실패:', error);
+        throw new Error('배틀 데이터를 조회하는데 실패했습니다.');
+      }
+      
+      return { success: true, data: data || [] };
+    } else {
+      // 월별 조회
+      const targetDate = date ? new Date(date) : new Date();
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+      
+      let query = supabase
+        .from('menu_battle_monthly')
+        .select(`
+          menu_item_id,
+          battle_year,
+          battle_month,
+          final_avg_rating,
+          final_rating_count,
+          monthly_rank,
+          meal_menu_items(
+            item_name,
+            meal_menus(
+              school_code
+            )
           )
-        )
-      `)
-      .eq('battle_year', year)
-      .eq('battle_month', month)
-      .order('monthly_rank');
-    
-    if (schoolCode) {
-      query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
+        `)
+        .eq('battle_year', year)
+        .eq('battle_month', month)
+        .order('monthly_rank');
+      
+      if (schoolCode) {
+        query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('월별 배틀 결과 조회 실패:', error);
+        throw new Error('배틀 데이터를 조회하는데 실패했습니다.');
+      }
+      
+      return { success: true, data: data || [] };
     }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('월별 배틀 결과 조회 실패:', error);
-    }
-    
-    return { success: !error, data: data || [], error };
+  } catch (error) {
+    console.error('배틀 결과 조회 중 오류:', error);
+    throw error;
   }
 }

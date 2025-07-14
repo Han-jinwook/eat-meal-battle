@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') as 'daily' | 'monthly';
     const month = searchParams.get('month');
 
+    console.log('배틀 API 호출:', { schoolCode, type, date, month });
+
     if (!schoolCode) {
       return NextResponse.json(
         { error: '학교 코드가 필요합니다.' },
@@ -81,15 +83,24 @@ export async function GET(request: NextRequest) {
         .order('monthly_rank', { ascending: true });
     }
 
+    console.log('DB 쿼리 실행 중...');
     const { data, error } = await query;
 
     if (error) {
       console.error('배틀 데이터 조회 오류:', error);
+      console.error('오류 세부사항:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return NextResponse.json(
-        { error: '배틀 데이터를 조회하는데 실패했습니다.' },
+        { error: `배틀 데이터를 조회하는데 실패했습니다: ${error.message}` },
         { status: 500 }
       );
     }
+
+    console.log('DB 쿼리 결과:', { dataLength: data?.length || 0, data: data?.slice(0, 2) });
 
     // 데이터 변환
     const battleResults = data?.map(item => ({

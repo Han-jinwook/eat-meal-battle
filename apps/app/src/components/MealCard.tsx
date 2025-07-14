@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
+import { calculateDailyMenuBattleTest, calculateMonthlyMenuBattleTest } from '@/utils/battleCalculator';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -161,12 +162,28 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       }
       
       console.log('✅ 별점 저장 성공!');
-      return true;
-    } catch (error) {
-      console.error('❌ 별점 저장 중 오류:', error);
-      return false;
+    
+    // 🧪 테스트 모드: 별점 저장 후 배틀 계산 실행
+    if (mealDate) {
+      console.log('🧪 테스트 모드 배틀 계산 시작...');
+      try {
+        // 일별 배틀 계산
+        await calculateDailyMenuBattleTest(mealDate);
+        // 월별 배틀 계산
+        const date = new Date(mealDate);
+        await calculateMonthlyMenuBattleTest(date.getFullYear(), date.getMonth() + 1);
+        console.log('🧪 테스트 모드 배틀 계산 완료!');
+      } catch (battleError) {
+        console.error('⚠️ 배틀 계산 오류 (별점 저장은 성공):', battleError);
+      }
     }
-  };
+    
+    return true;
+  } catch (error) {
+    console.error('❌ 별점 저장 중 오류:', error);
+    return false;
+  }
+};
 
   // 사용자 별점 삭제 함수
   const deleteRating = async (menuItemId: string) => {
