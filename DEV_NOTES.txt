@@ -1,3 +1,134 @@
+=== 🎯 최종 장원 로직 정리 (2025-07-14) ===
+
+## ✅ 완성된 장원 시스템 구조
+
+### 1️⃣ 핵심 원칙
+- **champion_criteria.week_N_days === quiz_champions.week_N_correct** 일치 시 주장원
+- **champion_criteria.month_total === quiz_champions.month_correct** 일치 시 월장원
+- **결과 저장**: user_champion_records 테이블에 장원 기록
+- **장원 대상**: 챌린지 완성자 모두 (한명만 뽑는 것 아님)
+
+### 2️⃣ 시스템 구성 파일
+
+#### 📁 실시간 장원 체크 시스템
+- **파일**: `apps/app/src/utils/championCalculator.ts`
+- **함수**: `checkChampionStatusOnQuizSubmit(userId, schoolCode, grade, currentWeekNumber)`
+- **용도**: 퀴즈 정답 제출 시 실시간 장원 체크
+- **특징**: 해당 주차만 체크하여 과부하 방지
+
+#### 📁 일괄 장원 처리 시스템
+- **파일**: `apps/app/src/utils/batchChampionChecker.ts`
+- **함수**: `checkAllUsersChampionStatus(schoolCode?, grade?)`
+- **용도**: 현재까지 실적으로 일회성 일괄 장원 처리
+- **특징**: 6, 7월 등 과거 데이터 일괄 처리용
+
+#### 📁 급식일수 관리 시스템
+- **파일**: `apps/app/src/utils/championCriteriaService.ts`
+- **용도**: champion_criteria 테이블 관리
+
+### 3️⃣ 데이터베이스 테이블
+
+#### champion_criteria (급식일수 기준)
+- `week_1_days` ~ `week_5_days`: 주차별 급식일수
+- `month_total`: 월별 총 급식일수
+- 학교/학년/년/월별로 관리
+
+#### quiz_champions (사용자 정답 누적)
+- `week_1_correct` ~ `week_5_correct`: 주차별 정답수
+- `month_correct`: 월별 총 정답수
+- 사용자별 실적 누적
+
+#### user_champion_records (장원 기록)
+- `week_1_champion` ~ `week_5_champion`: 주차별 장원 여부
+- `month_champion`: 월장원 여부
+- 기본값 false (자동 탈락 처리)
+
+### 4️⃣ 작동 방식
+
+#### 실시간 장원 체크
+1. 퀴즈 정답 시 `checkChampionStatusOnQuizSubmit()` 호출
+2. 현재 주차 번호를 파라미터로 받아 해당 주차만 체크
+3. `quiz_champions.week_N_correct`와 `champion_criteria.week_N_days` 비교
+4. 일치 시 `user_champion_records.week_N_champion = true`로 업데이트
+5. 동시에 월장원도 체크하여 업데이트
+
+#### 일괄 장원 처리
+1. `checkAllUsersChampionStatus()` 호출
+2. 모든 사용자의 현재 실적을 기준으로 장원 여부 판단
+3. 과거 데이터 정리나 일회성 처리 시 사용
+
+### 5️⃣ 제거된 불필요한 요소
+
+#### 삭제된 파일들
+- `newChampionCalculator.ts` (중복 파일)
+- `/api/champion/calculate/` (구식 API)
+- `netlify/functions-backup-20250710/` (백업 파일들)
+
+#### 삭제할 테이블
+```sql
+DROP TABLE IF EXISTS quiz_champion_history;
+```
+
+### 6️⃣ 중요 특징
+- **효율성**: 정답이 누적된 주차만 체크 (과부하 방지)
+- **정확성**: champion_criteria와 quiz_champions 직접 비교
+- **실시간성**: 퀴즈 정답 즉시 장원 상태 업데이트
+- **확장성**: 일괄 처리 시스템으로 과거 데이터 처리 가능
+
+### 7️⃣ 사용법
+```typescript
+// 실시간 장원 체크 (퀴즈 정답 시)
+await championCalculator.checkChampionStatusOnQuizSubmit(
+  userId, 
+  schoolCode, 
+  grade, 
+  currentWeekNumber
+);
+
+// 일괄 장원 처리 (관리자용)
+const result = await batchChampionChecker.checkAllUsersChampionStatus(
+  schoolCode?, 
+  grade?
+);
+```
+
+### 8️⃣ 1회성 일괄 처리 (URL 방식)
+**주소창에 URL만 입력하면 자동 실행**
+
+```
+# 전체 사용자 일괄 처리 (권장)
+https://your-domain.com/api/champion/batch-check?action=execute
+
+# 특정 학교/학년만 처리
+https://your-domain.com/api/champion/batch-check?action=execute&school_code=B100000658&grade=1
+
+# 사용법 안내 보기
+https://your-domain.com/api/champion/batch-check
+```
+
+**결과 예시:**
+```json
+{
+  "success": true,
+  "message": "🎉 주소창에서 6, 7월 장원 일괄 체크 완료!",
+  "executed_via": "GET_URL",
+  "summary": {
+    "total_processed": 45,
+    "total_champions": 12,
+    "june_summary": "처리: 23명, 장원: 6명",
+    "july_summary": "처리: 22명, 장원: 6명"
+  }
+}
+```
+
+---
+
+## 📝 분리된 개발 노트
+- **퀴즈 관련 내용**: `DEV_NOTES_퀴즈.txt` 파일로 분리 정리
+- **장원 로직**: 위 섹션에 최신 내용 정리 완료
+
+---
+
 === 🚨 긴급: 2025-07-06 오후 4:55 이후 상황 정리 ===
 
 ## ✅ 현재 상태 (롤백 완료)

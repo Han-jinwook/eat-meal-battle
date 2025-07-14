@@ -1,0 +1,204 @@
+=== 🎯 퀴즈 관련 개발 노트 (2025-07-14 정리) ===
+
+## 📋 퀴즈 시간 제약 관리
+
+### 1️⃣ 별점 시간 제약 해제
+**파일**: `apps/app/src/components/MealCard.tsx`
+**함수**: `canRateAtCurrentTime`
+
+#### 제약 해제 (테스트 모드)
+```typescript
+// 테스트용: 시간 제약 해제 (주석 해제하면 항상 허용)
+return true;  // 이 줄의 주석만 해제!
+```
+
+#### 제약 활성화 (운영 모드)
+```typescript
+// 테스트용: 시간 제약 해제 (주석 해제하면 항상 허용)
+// return true;  // 이 줄을 주석 처리!
+```
+
+### 2️⃣ 파일 업로드 시간 제약
+**파일**: `apps/app/src/components/MealImageUploader.tsx`
+**함수**: `checkIfAiImageNeeded` 내에서 시간 체크
+**제약**: 당일 12시~자정만 업로드 가능
+
+#### 해제 방법
+```typescript
+// 테스트용: 시간 제약 해제
+const isPastUploadCutoffTime = true; // 이 줄로 강제 설정
+// const isPastUploadCutoffTime = hour >= 12; // 기존 로직 주석 처리
+```
+
+### 3️⃣ 퀴즈 생성 시간 제약
+**파일**: `apps/app/src/app/quiz/QuizClient.tsx`
+**상태**: ✅ **시간 제약 없음** - 언제든지 퀴즈 생성 가능
+**확인 완료**: `handleManualQuizGenerate` 함수에 시간 제약 로직 없음
+
+### 4️⃣ 공통 해제 방법
+**모든 시간 제약 함수에서 동일한 패턴 사용:**
+1. 함수 맨 앞에 `return true;` 추가 (주석 처리)
+2. 테스트 시: 주석 해제
+3. 운영 시: 다시 주석 처리
+
+### ⚠️ 주의사항
+- **운영 배포 전 반드시 제약 다시 활성화할 것**
+- **테스트 완료 후 즉시 원복할 것**
+- **커밋 시 제약 해제 상태로 푸시하지 말 것**
+
+---
+
+## 🏆 장원 시스템 (퀴즈 연동)
+
+### 핵심 원칙
+- **champion_criteria.week_N_days === quiz_champions.week_N_correct** 일치 시 주장원
+- **champion_criteria.month_total === quiz_champions.month_correct** 일치 시 월장원
+- **결과 저장**: user_champion_records 테이블에 장원 기록
+- **장원 대상**: 챌린지 완성자 모두 (한명만 뽑는 것 아님)
+
+### 실시간 장원 체크 (퀴즈 정답 시)
+**파일**: `apps/app/src/utils/championCalculator.ts`
+**함수**: `checkChampionStatusOnQuizSubmit(userId, schoolCode, grade, currentWeekNumber)`
+**용도**: 퀴즈 정답 제출 시 실시간 장원 체크
+**특징**: 해당 주차만 체크하여 과부하 방지
+
+### 작동 방식
+1. 퀴즈 정답 시 `checkChampionStatusOnQuizSubmit()` 호출
+2. 현재 주차 번호를 파라미터로 받아 해당 주차만 체크
+3. `quiz_champions.week_N_correct`와 `champion_criteria.week_N_days` 비교
+4. 일치 시 `user_champion_records.week_N_champion = true`로 업데이트
+5. 동시에 월장원도 체크하여 업데이트
+
+### 1회성 일괄 처리 URL 방식
+
+#### 장원 일괄 처리
+```
+# 전체 사용자 장원 일괄 처리 (권장)
+https://your-domain.com/api/champion/batch-check?action=execute
+
+# 특정 학교/학년만 처리
+https://your-domain.com/api/champion/batch-check?action=execute&school_code=B100000658&grade=1
+```
+
+#### 급식일수 기준 강제 재계산
+```
+# 6월 급식일수 기준 강제 재계산 (모든 학교)
+https://lunbat.com/.netlify/functions/force-june-champion-criteria
+
+# 기능: 모든 학교의 6월 크리테리아를 NEIS API 기반으로 강제 재계산
+# 특징: 기존 데이터 삭제 → 실제 급식일수 조회 → 주차별 계산 → 저장
+```
+
+#### 결과 예시
+```json
+{
+  "success": true,
+  "message": "🎉 주소창에서 6, 7월 장원 일괄 체크 완료!",
+  "executed_via": "GET_URL",
+  "summary": {
+    "total_processed": 45,
+    "total_champions": 12,
+    "june_summary": "처리: 23명, 장원: 6명",
+    "july_summary": "처리: 22명, 장원: 6명"
+  }
+}
+```
+
+---
+
+## 📊 퀴즈 관련 데이터베이스 테이블
+
+### quiz_champions (사용자 정답 누적)
+- `week_1_correct` ~ `week_5_correct`: 주차별 정답수
+- `month_correct`: 월별 총 정답수
+- 사용자별 실적 누적
+
+### quiz_results (퀴즈 결과)
+- `user_id`, `date`, `school_code`, `grade`, `is_correct`, `answer_time`
+- 개별 퀴즈 결과 저장
+
+### 삭제된 테이블
+```sql
+-- 더 이상 사용하지 않는 테이블
+DROP TABLE IF EXISTS quiz_champion_history;
+```
+
+---
+
+## 🔧 퀴즈 시스템 프로세스
+
+### 1. 퀴즈 제출 프로세스
+1. 사용자가 퀴즈 정답 제출
+2. `quiz_results` 테이블에 결과 저장
+3. `quiz_champions` 테이블에 정답수 누적
+4. 실시간 장원 체크 함수 호출
+5. 장원 조건 충족 시 `user_champion_records` 업데이트
+
+### 2. 장원 결정 프로세스
+1. **실시간 업데이트**: 
+   - 퀴즈 제출 시마다 즉시 장원 상태 계산 (정답→진행중, 오답→실패)
+   - 필요 정답 수 충족 시 즉시 장원으로 표시
+2. **자동 실패 처리**: 
+   - 금요일 오후 1시 10분 실행
+   - 퀴즈 미제출 사용자를 자동으로 실패로 표시
+
+---
+
+## 🎮 퀴즈 UI/UX 관련
+
+### ChampionHistory 컴포넌트
+- 주간/월간 통계 요청을 GET /api/champion/calculate로 전송
+- URLSearchParams로 user_id, school_code, grade, year, month, week_number, period_type 파라미터 전달
+- 필드명 매핑 처리 (correct_count → correct_answers)
+
+### QuizClient 컴포넌트
+- `handleManualQuizGenerate` 함수로 퀴즈 생성
+- 시간 제약 없이 언제든지 퀴즈 생성 가능
+
+---
+
+## 📝 출시 전 체크리스트
+
+### 퀴즈 관련 조건
+- **당일 퀴즈풀이만 가능하게** 설정 필요
+- 시간 제약 모두 활성화 상태로 배포
+- 테스트 모드 비활성화
+
+### 정리할 파일들
+- 루트에 있는 불필요한 파일들 점검 후 제거
+- `netlify/functions` - `cron-meals.js`
+- `netlify/functions` - `manual-generate-meal-quiz.js`
+
+---
+
+## 🚨 중요 주의사항
+
+### 절대 원칙
+1. **기존 작동 기능 보호** - 퀴즈, 급식 등 기본 기능 절대 건드리지 않기
+2. **시간 제약 관리** - 테스트 시에만 해제, 운영 시 반드시 활성화
+3. **단계별 검증** - 수정 후 즉시 테스트, 기본 기능 영향 없는지 확인
+
+### 테스트 모드 지원
+- `CHAMPION_TEST_MODE=true` 설정 시:
+  - 과거 기간에 대한 퀴즈 제출 허용
+  - 자동 실패 처리 비활성화
+  - 테스트 데이터와 실제 데이터 구분 가능
+
+---
+
+## 🔄 장원 시스템 재설계 히스토리
+
+### 기존 시스템 (삭제됨)
+- `quiz_champion_history` 테이블 사용
+- ISO 주차 계산 로직
+- 복잡한 통계 계산 프로세스
+
+### 새 시스템 (현재)
+- `champion_criteria` + `quiz_champions` + `user_champion_records` 테이블 조합
+- 단순한 일치 비교 로직
+- 실시간 + 일괄 처리 이중 시스템
+
+### 시스템 전환 과정
+1. 기존 시스템과 병행 운영으로 안정성 확보
+2. 새 시스템 테스트 완료 후 기존 시스템 제거
+3. 불필요한 코드 및 테이블 정리 완료

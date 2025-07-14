@@ -86,12 +86,45 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const school_code = searchParams.get('school_code')
     const grade = searchParams.get('grade') ? parseInt(searchParams.get('grade')!) : null
+    const action = searchParams.get('action') // execute 파라미터 추가
 
-    if (!school_code || !grade) {
-      return NextResponse.json(
-        { error: '학교코드와 학년이 필요합니다' },
-        { status: 400 }
+    console.log('=== GET 장원 API 호출 ===', { school_code, grade, action })
+
+    // action=execute면 실제 일괄 처리 실행
+    if (action === 'execute') {
+      console.log('🚀 주소창에서 일괄 장원 처리 실행')
+      
+      const results = await batchChampionChecker.checkAllUsersChampionStatus(
+        school_code || undefined,
+        grade || undefined
       )
+
+      return NextResponse.json({
+        success: true,
+        message: '🎉 주소창에서 6, 7월 장원 일괄 체크 완료!',
+        executed_via: 'GET_URL',
+        results: results,
+        summary: {
+          total_processed: results.june.processed + results.july.processed,
+          total_champions: results.june.champions + results.july.champions,
+          june_summary: `처리: ${results.june.processed}명, 장원: ${results.june.champions}명`,
+          july_summary: `처리: ${results.july.processed}명, 장원: ${results.july.champions}명`
+        },
+        url_used: request.url
+      })
+    }
+
+    // 기본: 현황 조회만
+    if (!school_code || !grade) {
+      return NextResponse.json({
+        info: '장원 일괄 처리 API',
+        usage: {
+          '현황 조회': '?school_code=B100000658&grade=1',
+          '일괄 실행': '?action=execute (전체)',
+          '특정 실행': '?action=execute&school_code=B100000658&grade=1'
+        },
+        note: 'school_code와 grade 없이 action=execute하면 전체 사용자 처리됩니다'
+      })
     }
 
     // 장원 현황 조회
