@@ -196,36 +196,28 @@ export default function BattlePage() {
 
               {/* 지역 및 학교 유형 선택 */}
               <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
-                <div className="flex flex-col space-y-4">
-                  {/* 지역 정보 */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-blue-700 min-w-16">지역:</span>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
-                      <span className="text-blue-700 font-medium text-sm">
-                        {userSchool?.region || '로딩 중...'}
-                      </span>
-                    </div>
-                  </div>
+                {/* 지역 정보 - 단순 텍스트 */}
+                <div className="text-center mb-4">
+                  <span className="text-blue-700 font-medium">
+                    {userSchool?.region || '로딩 중...'}
+                  </span>
+                </div>
 
-                  {/* 학교 유형 선택 */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-blue-700 min-w-16">유형:</span>
-                    <div className="flex gap-2">
-                      {['초등학교', '중학교', '고등학교'].map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => setSelectedSchoolType(type)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
-                              ? 'bg-blue-500 text-white shadow-sm'
-                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {/* 학교 유형 선택 - 한 줄 배치 */}
+                <div className="flex gap-2 justify-center">
+                  {['초등학교', '중학교', '고등학교'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedSchoolType(type)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
                 </div>
               </div>
 
