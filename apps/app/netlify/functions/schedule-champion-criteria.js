@@ -230,13 +230,13 @@ async function saveChampionCriteria(
       school_code: schoolCode,
       year,
       month,
-      week1_days: weeklyMealDays[1] || 0,
-      week2_days: weeklyMealDays[2] || 0,
-      week3_days: weeklyMealDays[3] || 0,
-      week4_days: weeklyMealDays[4] || 0,
-      week5_days: weeklyMealDays[5] || 0,
-      week6_days: weeklyMealDays[6] || 0,
-      monthly_days: monthlyTotal,
+      week_1_days: weeklyMealDays[1] || 0,
+      week_2_days: weeklyMealDays[2] || 0,
+      week_3_days: weeklyMealDays[3] || 0,
+      week_4_days: weeklyMealDays[4] || 0,
+      week_5_days: weeklyMealDays[5] || 0,
+      week_6_days: weeklyMealDays[6] || 0,
+      month_total: monthlyTotal,
       created_at: new Date().toISOString()
     }, {
       onConflict: 'school_code,year,month'
