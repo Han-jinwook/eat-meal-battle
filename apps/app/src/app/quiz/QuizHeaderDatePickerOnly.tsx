@@ -37,43 +37,50 @@ export default function QuizHeaderDatePickerOnly() {
               </p>
             </div>
             <div className="relative">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={handleDateChange}
-                className="sr-only"
-                id="date-picker"
-              />
-              <button
-                onClick={() => document.getElementById('date-picker')?.click()}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                {(() => {
-                  if (selectedDate) {
-                    const date = new Date(selectedDate);
-                    const month = date.getMonth() + 1;
-                    const day = date.getDate();
-                    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-                    const weekday = weekdays[date.getDay()];
+              {/* 모바일 친화적 날짜 선택기 */}
+              <div className="relative inline-block">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  id="date-picker"
+                />
+                <div className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 cursor-pointer min-h-[44px] min-w-[120px]">
+                  {(() => {
+                    if (selectedDate) {
+                      const date = new Date(selectedDate);
+                      const month = date.getMonth() + 1;
+                      const day = date.getDate();
+                      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+                      const weekday = weekdays[date.getDay()];
+                      return (
+                        <>
+                          <div className="flex flex-col items-center mr-2">
+                            <span className="text-xs text-gray-500">
+                              {month}월 {day}일
+                            </span>
+                            <span className="text-xs font-semibold text-blue-600">
+                              {weekday}
+                            </span>
+                          </div>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </>
+                      );
+                    }
                     return (
                       <>
-                        <div className="flex flex-col items-center mr-1">
-                          <span className="text-xs text-gray-500">
-                            {month}월 {day}일
-                          </span>
-                          <span className="text-xs font-semibold text-blue-600">
-                            {weekday}
-                          </span>
-                        </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <span className="mr-2">날짜 선택</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </>
                     );
-                  }
-                  return selectedDate;
-                })()}
-              </button>
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
         ) : userError ? (

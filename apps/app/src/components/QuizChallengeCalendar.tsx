@@ -742,9 +742,17 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               {day.hasQuiz && day.isCurrentMonth && (
                 <div className="flex items-center justify-center">
                   {day.isCorrect ? (
-                    <span className="text-blue-600 font-black text-3xl transform rotate-12 drop-shadow-sm">✓</span>
+                    <img 
+                      src="/images/quiz-correct.svg" 
+                      alt="정답" 
+                      className="w-8 h-8 transform rotate-12 drop-shadow-sm"
+                    />
                   ) : (
-                    <span className="text-red-600 font-black text-3xl transform -rotate-12 drop-shadow-sm">✕</span>
+                    <img 
+                      src="/images/quiz-incorrect.svg" 
+                      alt="오답" 
+                      className="w-8 h-8 transform -rotate-12 drop-shadow-sm"
+                    />
                   )}
                 </div>
               )}

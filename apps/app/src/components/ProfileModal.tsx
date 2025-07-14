@@ -36,6 +36,20 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             .select('*')
             .eq('id', user.id)
             .single();
+          
+          // 디버깅: DB에서 가져온 사용자 데이터 로그
+          console.log('=== ProfileModal 사용자 데이터 디버깅 ===');
+          console.log('사용자 ID:', user.id);
+          console.log('사용자 이메일:', user.email);
+          console.log('DB 쿼리 에러:', profileError);
+          console.log('DB에서 가져온 데이터:', data);
+          if (data) {
+            console.log('닉네임:', data.nickname);
+            console.log('프로필 이미지:', data.profile_image);
+            console.log('생성일:', data.created_at);
+          }
+          console.log('=======================================');
+          
           if (profileError) {
             setDbStatus('error');
             if (profileError.code !== 'PGRST116') {

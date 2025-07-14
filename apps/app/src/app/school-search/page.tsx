@@ -293,7 +293,7 @@ export default function SchoolSearchPage() {
           {/* 학년/반 선택 */}
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="grade" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="grade" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                 학년
               </label>
               <select
@@ -312,7 +312,7 @@ export default function SchoolSearchPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="classNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="classNumber" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                 반
               </label>
               <select
