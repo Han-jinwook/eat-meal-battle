@@ -185,7 +185,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   }
 };
 
-  // 사용자 별점 삭제 함수
+  // 사용자 별점 삭제 함수 (Netlify Functions 사용)
   const deleteRating = async (menuItemId: string) => {
     try {
       if (!user || !user.id) {
@@ -197,14 +197,31 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         console.error('❌ 메뉴 아이템 ID가 없습니다');
         return false;
       }
-      console.log('🗑️ 별점 삭제 시도:', menuItemId);
-      const { error } = await supabase
-        .from('menu_item_ratings')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('menu_item_id', menuItemId);
-      if (error) {
-        console.error('❌ 삭제 오류:', error.message);
+      
+      console.log('🗑️ 별점 삭제 시도 (Netlify Functions):', menuItemId);
+      
+      // 🔥 Netlify Functions를 통한 별점 삭제 (배틀 계산 트리거 포함)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('❌ 인증 토큰이 없습니다');
+        return false;
+      }
+      
+      const response = await fetch('/.netlify/functions/menu-ratings', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          menu_item_id: menuItemId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('❌ 삭제 오류:', result.error);
         return false;
       }
       
@@ -215,7 +232,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         detail: { menuItemId, deleted: true }
       });
       window.dispatchEvent(event);
-      console.log('✅ 별점 삭제 성공!');
+      console.log('✅ 별점 삭제 성공 (배틀 계산 트리거 포함)!');
       return true;
     } catch (error) {
       console.error('❌ 별점 삭제 중 오류:', error);

@@ -1,5 +1,6 @@
 // 메뉴 아이템 별점 API
 const { createClient } = require('@supabase/supabase-js');
+const { calculateDailyMenuBattle, calculateMonthlyMenuBattle } = require('../../src/utils/battleCalculator');
 
 // Supabase 클라이언트 초기화
 const supabase = createClient(
@@ -108,11 +109,137 @@ exports.handler = async function(event, context) {
       // 평균 별점 업데이트
       await updateAverageRating(menu_item_id);
       
+      // 🔥 배틀 계산 트리거 (별점 변경 시 배틀 데이터 재계산)
+      try {
+        console.log('🏆 배틀 계산 트리거 시작...');
+        
+        // 해당 메뉴 아이템의 날짜 정보 조회
+        const { data: menuData, error: menuError } = await supabaseAdmin
+          .from('meal_menu_items')
+          .select(`
+            meal_menus!inner(
+              meal_date,
+              school_code
+            )
+          `)
+          .eq('id', menu_item_id)
+          .single();
+          
+        if (!menuError && menuData) {
+          const mealDate = menuData.meal_menus.meal_date;
+          const schoolCode = menuData.meal_menus.school_code;
+          
+          // 일별 배틀 계산
+          await calculateDailyMenuBattle(mealDate, schoolCode);
+          console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`);
+          
+          // 월별 배틀 계산
+          const date = new Date(mealDate);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+          console.log(`✅ 월별 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+        }
+      } catch (battleError) {
+        console.error('⚠️ 배틀 계산 중 오류 (별점 저장은 성공):', battleError);
+        // 배틀 계산 실패해도 별점 저장은 성공으로 처리
+      }
+      
       return {
         statusCode: 200,
         body: JSON.stringify({ 
           success: true,
           message: '별점이 성공적으로 저장되었습니다'
+        })
+      };
+    }
+    
+    // DELETE 요청 처리 (별점 삭제)
+    else if (event.httpMethod === 'DELETE') {
+      // 사용자 인증 확인
+      const token = event.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({ error: '인증이 필요합니다' })
+        };
+      }
+      
+      // 토큰으로 사용자 정보 확인
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({ error: '유효하지 않은 인증 정보입니다' })
+        };
+      }
+      
+      // 요청 데이터 파싱
+      const { menu_item_id } = JSON.parse(event.body);
+      
+      // 필수 파라미터 확인
+      if (!menu_item_id) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: '메뉴 아이템 ID가 필요합니다' })
+        };
+      }
+      
+      // 배틀 계산을 위해 먼저 메뉴 정보 조회
+      const { data: menuData, error: menuError } = await supabaseAdmin
+        .from('meal_menu_items')
+        .select(`
+          meal_menus!inner(
+            meal_date,
+            school_code
+          )
+        `)
+        .eq('id', menu_item_id)
+        .single();
+      
+      // 별점 삭제
+      const { error } = await supabaseAdmin
+        .from('menu_item_ratings')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('menu_item_id', menu_item_id);
+        
+      if (error) {
+        console.error('별점 삭제 오류:', error);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: '별점 삭제 중 오류가 발생했습니다' })
+        };
+      }
+      
+      // 평균 별점 업데이트
+      await updateAverageRating(menu_item_id);
+      
+      // 🔥 배틀 계산 트리거 (별점 삭제 시 배틀 데이터 재계산)
+      try {
+        console.log('🏆 배틀 계산 트리거 시작 (삭제)...');
+        
+        if (!menuError && menuData) {
+          const mealDate = menuData.meal_menus.meal_date;
+          const schoolCode = menuData.meal_menus.school_code;
+          
+          // 일별 배틀 계산
+          await calculateDailyMenuBattle(mealDate, schoolCode);
+          console.log(`✅ 일별 배틀 계산 완료 (삭제): ${mealDate}`);
+          
+          // 월별 배틀 계산
+          const date = new Date(mealDate);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+          console.log(`✅ 월별 배틀 계산 완료 (삭제): ${date.getFullYear()}-${date.getMonth() + 1}`);
+        }
+      } catch (battleError) {
+        console.error('⚠️ 배틀 계산 중 오류 (별점 삭제는 성공):', battleError);
+        // 배틀 계산 실패해도 별점 삭제는 성공으로 처리
+      }
+      
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          success: true,
+          message: '별점이 성공적으로 삭제되었습니다'
         })
       };
     }
