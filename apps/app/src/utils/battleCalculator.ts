@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // 🔧 모드 설정 (주석 처리로 전환)
 const BATTLE_MODE = 'TEST'; // 'TEST' | 'PRODUCTION'
@@ -28,21 +29,21 @@ interface MonthlyBattleResult {
 /**
  * 🏆 메뉴 배틀 일별 순위 계산 및 저장
  */
-export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?: string) {
-  const supabase = createClient();
+export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   
   if (BATTLE_MODE === 'TEST') {
-    return await calculateDailyMenuBattleTest(targetDate, schoolCode);
+    return await calculateDailyMenuBattleTest(targetDate, schoolCode, supabase);
   } else {
-    return await calculateDailyMenuBattleProduction(targetDate, schoolCode);
+    return await calculateDailyMenuBattleProduction(targetDate, schoolCode, supabase);
   }
 }
 
 /**
  * 🧪 테스트 모드: 실시간 집계 계산 후 DB 저장
  */
-export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCode?: string) {
-  const supabase = createClient();
+export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   const date = targetDate || new Date().toISOString().split('T')[0];
   
   console.log(`🧪 [TEST MODE] 일별 메뉴 배틀 계산 시작: ${date}`);
@@ -146,8 +147,8 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
 /**
  * 🚀 실전 모드: 스케줄러용 배치 처리
  */
-async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCode?: string) {
-  const supabase = createClient();
+async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   const date = targetDate || new Date().toISOString().split('T')[0];
   
   console.log(`🚀 [PRODUCTION MODE] 일별 메뉴 배틀 배치 처리 시작: ${date}`);
@@ -241,21 +242,21 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
 /**
  * 🏆 메뉴 배틀 월별 순위 계산 및 저장
  */
-export async function calculateMonthlyMenuBattle(targetYear?: number, targetMonth?: number, schoolCode?: string) {
-  const supabase = createClient();
+export async function calculateMonthlyMenuBattle(year?: number, month?: number, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   
   if (BATTLE_MODE === 'TEST') {
-    return await calculateMonthlyMenuBattleTest(targetYear, targetMonth, schoolCode);
+    return await calculateMonthlyMenuBattleTest(year, month, schoolCode, supabase);
   } else {
-    return await calculateMonthlyMenuBattleProduction(targetYear, targetMonth, schoolCode);
+    return await calculateMonthlyMenuBattleProduction(year, month, schoolCode, supabase);
   }
 }
 
 /**
  * 🧪 월별 테스트 모드: 실시간 집계 계산 후 DB 저장
  */
-export async function calculateMonthlyMenuBattleTest(targetYear?: number, targetMonth?: number, schoolCode?: string) {
-  const supabase = createClient();
+export async function calculateMonthlyMenuBattleTest(targetYear?: number, targetMonth?: number, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   const year = targetYear || new Date().getFullYear();
   const month = targetMonth || new Date().getMonth() + 1;
   
@@ -367,7 +368,8 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
 /**
  * 🚀 월별 실전 모드: 스케줄러용 배치 처리
  */
-async function calculateMonthlyMenuBattleProduction(targetYear?: number, targetMonth?: number, schoolCode?: string) {
+async function calculateMonthlyMenuBattleProduction(year?: number, month?: number, schoolCode?: string, supabaseClient?: SupabaseClient) {
+  const supabase = supabaseClient || createClient();
   // 실전 모드 구현 (테스트 모드와 유사하지만 DB 저장 포함)
   console.log('🚀 [PRODUCTION MODE] 월별 배치 처리는 추후 구현 예정');
   return { success: false, message: '월별 실전 모드 구현 예정' };

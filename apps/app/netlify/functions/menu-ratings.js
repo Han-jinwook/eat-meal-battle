@@ -129,13 +129,25 @@ exports.handler = async function(event, context) {
           const mealDate = menuData.meal_menus.meal_date;
           const schoolCode = menuData.meal_menus.school_code;
           
-          // 일별 배틀 계산
-          await calculateDailyMenuBattle(mealDate, schoolCode);
+          // Admin 권한의 Supabase 클라이언트 생성
+          const adminClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false
+              }
+            }
+          );
+          
+          // 일별 배틀 계산 (Admin 클라이언트 전달)
+          await calculateDailyMenuBattle(mealDate, schoolCode, adminClient);
           console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`);
           
-          // 월별 배틀 계산
+          // 월별 배틀 계산 (Admin 클라이언트 전달)
           const date = new Date(mealDate);
-          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, adminClient);
           console.log(`✅ 월별 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
         }
       } catch (battleError) {
