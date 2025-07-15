@@ -440,7 +440,7 @@ export default function QuizClient() {
         {userSchool ? (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-              {userSchool.school_name}
+              {userSchool.school_name || '학교 정보 없음'}
             </span>
             {(userSchool.grade || userSchool.class) && (
               <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
