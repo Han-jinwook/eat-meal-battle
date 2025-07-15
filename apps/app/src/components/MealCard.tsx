@@ -127,7 +127,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     if (user) console.log('사용자 ID:', user.id); // 사용자 ID 디버깅 로그 추가
   }, [user]);
 
-  // 사용자 별점 저장 함수 - 단순화된 버전, 타입 변환 오류 수정
+  // 사용자 별점 저장 함수 (Netlify Functions 사용)
   const saveRating = async (menuItemId: string, rating: number) => {
     try {
       // 사용자 인증 확인
@@ -142,48 +142,41 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         return false;
       }
       
-      console.log('💾 별점 저장 시도:', menuItemId, rating);
+      console.log('💾 별점 저장 시도 (Netlify Functions):', menuItemId, rating);
       
-      // Supabase에 별점 저장 - UPSERT 사용
-      const { error } = await supabase
-        .from('menu_item_ratings')
-        .upsert({
-          user_id: user.id,
-          menu_item_id: menuItemId,
-          rating: rating,  // 명시적으로 숫자 전달
-          updated_at: new Date().toISOString()
-        }, { 
-          onConflict: 'user_id,menu_item_id'
-        });
-      
-      if (error) {
-        console.error('❌ 저장 오류:', error.message);
+      // 🔥 Netlify Functions를 통한 별점 저장 (배틀 계산 트리거 포함)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('❌ 인증 토큰이 없습니다');
         return false;
       }
       
-      console.log('✅ 별점 저장 성공!');
-    
-    // 🧪 테스트 모드: 별점 저장 후 배틀 계산 실행
-    if (mealDate) {
-      console.log('🧪 테스트 모드 배틀 계산 시작...');
-      try {
-        // 일별 배틀 계산
-        await calculateDailyMenuBattleTest(mealDate);
-        // 월별 배틀 계산
-        const date = new Date(mealDate);
-        await calculateMonthlyMenuBattleTest(date.getFullYear(), date.getMonth() + 1);
-        console.log('🧪 테스트 모드 배틀 계산 완료!');
-      } catch (battleError) {
-        console.error('⚠️ 배틀 계산 오류 (별점 저장은 성공):', battleError);
+      const response = await fetch('/.netlify/functions/menu-ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          menu_item_id: menuItemId,
+          rating: rating
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('❌ 저장 오류:', result.error);
+        return false;
       }
+      
+      console.log('✅ 별점 저장 성공 (배틀 계산 트리거 포함)!');
+      return true;
+    } catch (error) {
+      console.error('❌ 별점 저장 중 오류:', error);
+      return false;
     }
-    
-    return true;
-  } catch (error) {
-    console.error('❌ 별점 저장 중 오류:', error);
-    return false;
-  }
-};
+  };
 
   // 사용자 별점 삭제 함수 (Netlify Functions 사용)
   const deleteRating = async (menuItemId: string) => {
