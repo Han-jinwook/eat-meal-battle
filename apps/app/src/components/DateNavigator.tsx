@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 
 interface DateNavigatorProps {
@@ -20,6 +20,24 @@ export default function DateNavigator({
   size = 'md',
   showWeekday = true
 }: DateNavigatorProps) {
+  // 모바일 환경인지 확인
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // 모바일 기기 감지
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
   // AI 검증 실패 이미지 삭제 함수
   const deleteRejectedImage = async () => {
     try {
@@ -110,8 +128,21 @@ export default function DateNavigator({
 
   // 날짜 선택기 열기
   const openDatePicker = () => {
+    // AI 검증 실패 이미지가 있는지 확인
+    if (typeof window !== 'undefined' && (window as any).hasRejectedImage) {
+      window.confirm(
+        'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
+      ) && deleteRejectedImage();
+      return;
+    }
+    
     const dateInput = document.getElementById('date-navigator-input') as HTMLInputElement;
-    dateInput?.showPicker?.();
+    try {
+      dateInput?.showPicker?.();
+    } catch (error) {
+      console.log('📱 showPicker가 지원되지 않습니다. 클릭 이벤트를 직접 발생시킵니다.');
+      dateInput?.click();
+    }
   };
 
   // 테마별 색상 설정
@@ -184,13 +215,13 @@ export default function DateNavigator({
 
   return (
     <div className={`mb-2 mt-1 ${className}`}>
-      {/* 숨겨진 날짜 입력 필드 */}
+      {/* 날짜 입력 필드 (모바일에서는 표시, 데스크탑에서는 숨김) */}
       <input
         type="date"
         id="date-navigator-input"
         value={selectedDate}
         onChange={handleDateInputChange}
-        className="sr-only" // 화면에서 숨김
+        className={`${isMobile ? 'absolute opacity-0 w-full h-full left-0 top-0 z-10' : 'sr-only'}`}
       />
       
       {/* 날짜 네비게이션 UI */}
