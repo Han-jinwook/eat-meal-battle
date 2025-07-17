@@ -137,11 +137,17 @@ export default function DateNavigator({
     }
     
     const dateInput = document.getElementById('date-navigator-input') as HTMLInputElement;
-    try {
-      dateInput?.showPicker?.();
-    } catch (error) {
-      console.log('📱 showPicker가 지원되지 않습니다. 클릭 이벤트를 직접 발생시킵니다.');
+    if (isMobile) {
+      // 모바일에서는 input을 클릭하여 네이티브 달력 UI를 표시
       dateInput?.click();
+    } else {
+      // 데스크톱에서는 showPicker 메소드 시도
+      try {
+        dateInput?.showPicker?.();
+      } catch (error) {
+        console.log('showPicker가 지원되지 않습니다. 클릭 이벤트를 직접 발생시킵니다.');
+        dateInput?.click();
+      }
     }
   };
 
@@ -221,7 +227,7 @@ export default function DateNavigator({
         id="date-navigator-input"
         value={selectedDate}
         onChange={handleDateInputChange}
-        className={`${isMobile ? 'absolute opacity-0 w-full h-full left-0 top-0 z-10' : 'sr-only'}`}
+        className="sr-only" // 항상 숨김 처리
       />
       
       {/* 날짜 네비게이션 UI */}
@@ -240,8 +246,18 @@ export default function DateNavigator({
         {/* 날짜 표시 버튼 */}
         <button 
           onClick={openDatePicker}
-          className={`flex items-center justify-between ${sizeStyles.padding} ${themeColors.bg} rounded border ${themeColors.border} shadow-sm transition-colors min-w-0`}
+          className={`relative flex items-center justify-between ${sizeStyles.padding} ${themeColors.bg} rounded border ${themeColors.border} shadow-sm transition-colors min-w-0`}
         >
+          {isMobile && (
+            <input
+              type="date"
+              id="mobile-date-input"
+              value={selectedDate}
+              onChange={handleDateInputChange}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-0" 
+              aria-label="날짜 선택"
+            />
+          )}
           {selectedDate && (() => {
             const date = new Date(selectedDate);
             if (!isNaN(date.getTime())) {
