@@ -347,7 +347,7 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   
   return (
     <div className={`mt-4 ${className}`}>
-      <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">댓글</h3>
+      <h3 className="text-lg font-bold mb-4 text-gray-900 dark:!text-white">댓글</h3>
       
       {loading ? (
         <p className="text-gray-500 mb-4">로딩 중...</p>
