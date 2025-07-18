@@ -234,7 +234,7 @@ export default function SchoolSearchPage() {
 
   return (
     <div className="max-w-lg mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">학교 설정</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">학교 정보 설정</h1>
 
       {/* 학교 검색 폼 */}
       <div className="mb-6">
@@ -271,9 +271,9 @@ export default function SchoolSearchPage() {
                 }`}
                 onClick={() => selectSchool(school)}
               >
-                <div className="font-medium">{school.SCHUL_NM}</div>
-                <div className="text-sm text-gray-600">{school.LCTN_SC_NM} | {school.SCHUL_KND_SC_NM}</div>
-                <div className="text-xs text-gray-500">{school.ORG_RDNMA}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{school.SCHUL_NM}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">{school.LCTN_SC_NM} | {school.SCHUL_KND_SC_NM}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{school.ORG_RDNMA}</div>
               </li>
             ))}
           </ul>
@@ -282,18 +282,18 @@ export default function SchoolSearchPage() {
 
       {/* 학교 선택 결과 */}
       {selectedSchool && (
-        <div className="mb-6 p-4 border rounded bg-gray-50">
-          <h2 className="text-lg font-semibold mb-2">선택한 학교</h2>
-          <div className="font-medium">{selectedSchool.SCHUL_NM}</div>
-          <div className="text-sm text-gray-600">
+        <div className="mb-6 p-4 border rounded bg-gray-50 dark:bg-gray-800">
+          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">선택한 학교</h2>
+          <div className="font-medium text-gray-900 dark:text-white">{selectedSchool.SCHUL_NM}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             {selectedSchool.LCTN_SC_NM} | {selectedSchool.SCHUL_KND_SC_NM}
           </div>
-          <div className="text-xs text-gray-500 mb-4">{selectedSchool.ORG_RDNMA}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">{selectedSchool.ORG_RDNMA}</div>
           
           {/* 학년/반 선택 */}
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="grade" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+              <label htmlFor="grade" className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 학년
               </label>
               <select
@@ -301,7 +301,7 @@ export default function SchoolSearchPage() {
                 name="grade"
                 value={classInfo.grade}
                 onChange={handleClassInfoChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">선택하세요</option>
                 {getGradeOptions().map((grade) => (
@@ -312,7 +312,7 @@ export default function SchoolSearchPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="classNumber" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+              <label htmlFor="classNumber" className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 반
               </label>
               <select
@@ -320,7 +320,7 @@ export default function SchoolSearchPage() {
                 name="classNumber"
                 value={classInfo.classNumber}
                 onChange={handleClassInfoChange}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">선택하세요</option>
                 {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => (

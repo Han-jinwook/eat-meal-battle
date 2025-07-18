@@ -142,9 +142,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-2xl font-bold mb-4">프로필</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">프로필</h2>
         {loading ? (
-          <div className="py-8 text-center text-gray-500">로딩 중...</div>
+          <div className="py-8 text-center text-gray-500 dark:text-gray-300">로딩 중...</div>
         ) : error ? (
           <div className="py-4 text-red-600 text-center">{error}</div>
         ) : userProfile ? (
@@ -161,15 +161,15 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 )}
               </div>
               <div>
-                <div className="font-semibold text-lg">{userProfile.nickname || '닉네임 없음'}</div>
-                <div className="text-sm text-gray-500">{user?.email}</div>
+                <div className="font-semibold text-lg text-gray-900 dark:text-white">{userProfile.nickname || '닉네임 없음'}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300">{user?.email}</div>
               </div>
             </div>
 
             {/* 학교 정보 */}
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-gray-700">학교 정보</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">학교 정보</span>
                 <Link
                   href="/school-search"
                   className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
@@ -180,12 +180,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </div>
               {schoolInfo ? (
                 <div className="grid grid-cols-1 gap-2 text-sm">
-                  <div><span className="text-gray-500">학교명:</span> {schoolInfo.school_name}</div>
-                  <div><span className="text-gray-500">유형:</span> {schoolInfo.school_type}</div>
-                  <div><span className="text-gray-500">지역:</span> {schoolInfo.region}</div>
-                  <div><span className="text-gray-500">주소:</span> {schoolInfo.address}</div>
-                  <div><span className="text-gray-500">학년:</span> {schoolInfo.grade}학년</div>
-                  <div><span className="text-gray-500">반:</span> {schoolInfo.class_number}반</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">학교명:</span> {schoolInfo.school_name}</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">유형:</span> {schoolInfo.school_type}</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">지역:</span> {schoolInfo.region}</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">주소:</span> {schoolInfo.address}</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">학년:</span> {schoolInfo.grade}학년</div>
+                  <div><span className="text-gray-500 dark:text-gray-300">반:</span> {schoolInfo.class_number}반</div>
                 </div>
               ) : (
                 <div className="text-xs text-yellow-700 bg-yellow-50 rounded p-2">학교 정보가 아직 없습니다.</div>
@@ -210,7 +210,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
           </div>
         ) : (
-          <div className="text-center text-gray-500">데이터베이스에 사용자 정보가 없습니다.</div>
+          <div className="text-center text-gray-500 dark:text-gray-300">데이터베이스에 사용자 정보가 없습니다.</div>
         )}
       </div>
     </div>
