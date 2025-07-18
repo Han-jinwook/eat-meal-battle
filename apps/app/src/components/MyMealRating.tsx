@@ -236,7 +236,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   if (isLoading) {
     return (
       <div className="my-4">
-        <div className="text-lg font-medium text-gray-900 dark:text-white">
+        <div className="text-lg font-medium text-gray-900">
           오늘 나의 평가는?
         </div>
       </div>
@@ -245,7 +245,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   return (
     <div className="my-4">
-      <div className="text-lg font-medium text-gray-900 dark:text-white">
+      <div className="text-lg font-medium text-gray-900">
         오늘 나의 평가는?
         {/* 로그인 + 평점 있는 유저만 평점 표시 */}
         {user && myRating !== null && (
@@ -253,7 +253,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         )}
       </div>
       {/* 시간 제약 안내 문구 - 작은 글씨 */}
-      <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+      <div className="text-xs text-gray-500 mt-1">
         (별점은 당일 오후 12시부터 자정까지만 가능합니다.)
       </div>
     </div>
