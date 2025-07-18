@@ -642,7 +642,7 @@ useEffect(() => {
             </div>
           </div>
         ) : (
-          <p className="mt-2 text-sm font-medium text-gray-800 whitespace-pre-wrap break-words">{comment.content}</p>
+          <p className="mt-2 text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{comment.content}</p>
         )}
 
         {/* 좋아요 및 답글 버튼 - 유튜브 스타일 */}
