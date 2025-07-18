@@ -470,12 +470,12 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
             size="medium"
           />
         </div>
-        <div className="text-gray-700 dark:text-gray-300">{item.item_name}</div>
+        <div className="text-gray-700 dark:text-white">{item.item_name}</div>
       </div>
       
       {/* 평균 별점 표시 - 소수점 첨째자리까지만 표시 */}
       {avgRating && ratingCount ? (
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-gray-500 dark:text-gray-300">
           {avgRating.toFixed(1)} ({ratingCount}명)
         </div>
       ) : null}
@@ -588,7 +588,7 @@ export default function MealCard({
             ) : (
               // 기존 menu_items 배열 사용 (하위 호환성 유지)
               meal.menu_items.map((item, idx) => (
-                <li key={idx} className="text-gray-700 dark:text-gray-300">
+                <li key={idx} className="text-gray-700 dark:text-white">
                   {item}
                 </li>
               ))
