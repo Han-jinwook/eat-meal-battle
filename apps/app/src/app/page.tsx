@@ -440,7 +440,7 @@ export default function Home() {
                 {/* 데이터 소스 정보 표시 */}
                 {dataSource && (
                   <div className="col-span-1 md:col-span-2 mt-2 text-right">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       데이터 소스: <span className="font-medium">{dataSource}</span>
                     </p>
                   </div>
@@ -456,19 +456,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                <h3 className="text-lg font-medium text-center mb-2">
+                <h3 className="text-lg font-medium text-center mb-2 text-gray-900 dark:text-white">
                   {userSchool?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
                 </h3>
 
                 <div className="bg-gray-50 p-4 rounded-md text-center">
-                  <p className="text-gray-700 font-medium">
+                  <p className="text-gray-700 dark:text-gray-300 font-medium">
                     {(error || pageError || userError) || '해당 날짜의 급식 정보가 없습니다.'}
                   </p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     다른 날짜를 선택해보세요.
                   </p>
                   {dataSource && (
-                    <p className="text-xs text-gray-500 mt-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
                       데이터 소스: <span className="font-medium">{dataSource}</span>
                     </p>
                   )}
