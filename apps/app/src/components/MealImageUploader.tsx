@@ -993,6 +993,10 @@ export default function MealImageUploader({
         fileInputRef.current.value = '';
       }
       
+      // AI 이미지 생성 버튼 활성화 - 이미지 삭제 후 바로 버튼을 사용할 수 있도록 함
+      setShowAiGenButton(true);
+      setImageStatus('none'); // 이미지 상태를 초기화하여 버튼이 활성화되도록 함
+      
       // 전역 플래그 해제 - 날짜 이동 차단 해제
       if (typeof window !== 'undefined') {
         (window as any).hasRejectedImage = false;
