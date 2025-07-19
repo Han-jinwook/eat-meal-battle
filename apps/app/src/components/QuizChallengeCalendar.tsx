@@ -740,7 +740,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               
               {/* 퀴즈 결과 표시 - 선생님 채점 느낌 */}
               {day.hasQuiz && day.isCurrentMonth && (
-                <div className="flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center mt-1">
                   {day.isCorrect ? (
                     <img 
                       src="/images/quiz-correct.png" 
