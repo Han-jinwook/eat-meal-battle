@@ -34,14 +34,17 @@ async function updateAverageRating(menu_item_id) {
     
     console.log(`메뉴 아이템 ${menu_item_id}의 평균 평점 업데이트: ${avg.toFixed(1)} (${ratings.length}명)`);
     
-    // 메뉴 아이템 업데이트
+    // menu_item_rating_stats 테이블에 평점 통계 업데이트
     const { error: updateError } = await supabaseAdmin
-      .from('meal_menu_items')
-      .update({
+      .from('menu_item_rating_stats')
+      .upsert({
+        menu_item_id: menu_item_id,
         avg_rating: avg,
-        rating_count: ratings.length
-      })
-      .eq('id', menu_item_id);
+        rating_count: ratings.length,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'menu_item_id'
+      });
       
     if (updateError) {
       console.error('평균 평점 업데이트 오류:', updateError);
