@@ -250,6 +250,7 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
     sortedItems.forEach((item, index) => {
       battleResults.push({
         menu_item_id: item.id,
+        battle_date: date,  // 중요: 누락된 battle_date 필드 추가
         final_avg_rating: Number(item.avg_rating),
         final_rating_count: item.rating_count,
         daily_rank: index + 1
@@ -257,22 +258,46 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
     });
   }
   
+  console.log(`📊 생성된 배틀 결과 개수: ${battleResults.length}개`);
+  if (battleResults.length > 0) {
+    console.log('📝 첫 번째 배틀 결과 예시:', battleResults[0]);
+  }
+  
   // 4. 실전 모드에서는 DB에 실제 저장
   if (battleResults.length > 0) {
-    // 기존 데이터 삭제 (재실행 대비)
-    await supabase
-      .from('menu_battle_daily')
-      .delete()
-      .in('menu_item_id', battleResults.map(r => r.menu_item_id));
-    
-    // 새 데이터 삽입
-    const { error: insertError } = await supabase
-      .from('menu_battle_daily')
-      .insert(battleResults);
-    
-    if (insertError) {
-      console.error('일별 배틀 결과 저장 실패:', insertError);
-      return { success: false, error: insertError };
+    try {
+      console.log(`🔄 날짜별 배틀 데이터 처리 시작 - 날짜: ${date}`);
+      
+      // 기존 데이터 삭제 방식 변경 - 날짜 기준으로 삭제
+      const { error: deleteError } = await supabase
+        .from('menu_battle_daily')
+        .delete()
+        .eq('battle_date', date);
+      
+      if (deleteError) {
+        console.error('❌ 일별 배틀 데이터 삭제 실패:', deleteError);
+      } else {
+        console.log(`✅ 일별 배틀 기존 데이터 삭제 성공 - 날짜: ${date}`);
+      }
+      
+      // 삽입할 데이터 로깅
+      console.log(`📥 일별 배틀 데이터 ${battleResults.length}개 삽입 시작`);
+      
+      // 새 데이터 삽입
+      const { data: insertedData, error: insertError } = await supabase
+        .from('menu_battle_daily')
+        .insert(battleResults)
+        .select();
+      
+      if (insertError) {
+        console.error('❌ 일별 배틀 결과 저장 실패:', insertError);
+        return { success: false, error: insertError };
+      }
+      
+      console.log(`✅ 일별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+    } catch (err) {
+      console.error('❌ 일별 배틀 데이터 저장 중 예외 발생:', err);
+      return { success: false, error: err };
     }
   }
   
@@ -439,9 +464,165 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
  */
 async function calculateMonthlyMenuBattleProduction(year?: number, month?: number, schoolCode?: string, supabaseClient?: SupabaseClient) {
   const supabase = supabaseClient || createClient();
-  // 실전 모드 구현 (테스트 모드와 유사하지만 DB 저장 포함)
-  console.log('🚀 [PRODUCTION MODE] 월별 배치 처리는 추후 구현 예정');
-  return { success: false, message: '월별 실전 모드 구현 예정' };
+  const targetYear = year || new Date().getFullYear();
+  const targetMonth = month || new Date().getMonth() + 1;
+  
+  console.log(`🚀 [PRODUCTION MODE] 월별 메뉴 배틀 배치 처리 시작: ${targetYear}년 ${targetMonth}월`);
+  
+  try {
+    // 1. 해당 월의 메뉴 아이템들 조회 (테스트 모드와 유사한 로직)
+    const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
+    const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+    
+    console.log(`📆 조회 기간: ${startDate} ~ ${endDate}`);
+    
+    // 메뉴 아이템 평점 통계 조회 (테스트 모드와 유사)
+    const { data: ratingStats, error: statsError } = await supabase
+      .from('menu_item_rating_stats')
+      .select(`
+        menu_item_id,
+        avg_rating,
+        rating_count
+      `);
+      
+    if (statsError) {
+      console.error('❌ 평점 통계 조회 실패:', statsError);
+      return { success: false, error: statsError };
+    }
+    
+    // 월별 메뉴 아이템 조회
+    let query = supabase
+      .from('meal_menu_items')
+      .select(`
+        id,
+        item_name,
+        meal_menus!inner(
+          meal_id,
+          school_code,
+          meal_date
+        )
+      `)
+      .gte('meal_menus.meal_date', startDate)
+      .lte('meal_menus.meal_date', endDate);
+      
+    if (schoolCode) {
+      query = query.eq('meal_menus.school_code', schoolCode);
+    }
+    
+    const { data: menuItems, error } = await query;
+    
+    if (error) {
+      console.error('❌ 메뉴 아이템 조회 실패:', error);
+      return { success: false, error };
+    }
+    
+    if (!menuItems || menuItems.length === 0) {
+      console.log(`❗ 해당 월(${targetYear}년 ${targetMonth}월)에 등록된 메뉴가 없습니다.`);
+      return { success: true, data: [] };
+    }
+    
+    console.log(`✅ 메뉴 아이템 ${menuItems.length}개 조회됨`);
+    
+    // 통계 정보와 조인
+    const menuItemsWithStats = menuItems.map(item => {
+      const stats = ratingStats?.find(s => s.menu_item_id === item.id);
+      return {
+        ...item,
+        avg_rating: stats?.avg_rating || 0,
+        rating_count: stats?.rating_count || 0
+      };
+    }).filter(item => item.rating_count > 0);
+    
+    if (menuItemsWithStats.length === 0) {
+      console.log(`❗ 해당 월(${targetYear}년 ${targetMonth}월)에 평가된 메뉴가 없습니다.`);
+      return { success: true, data: [] };
+    }
+    
+    console.log(`✅ 평가된 메뉴 아이템 ${menuItemsWithStats.length}개 필터링됨`);
+    
+    // 2. 학교별로 그룹화
+    const schoolGroups = menuItemsWithStats.reduce((acc, item) => {
+      const school = item.meal_menus.school_code;
+      if (!acc[school]) acc[school] = [];
+      acc[school].push(item);
+      return acc;
+    }, {} as Record<string, any[]>);
+    
+    const monthlyResults: any[] = [];
+    
+    // 3. 각 학교별로 순위 매기기
+    for (const [school, items] of Object.entries(schoolGroups)) {
+      const sortedItems = items.sort((a, b) => b.avg_rating - a.avg_rating);
+      
+      sortedItems.forEach((item, index) => {
+        monthlyResults.push({
+          menu_item_id: item.id,
+          battle_year: targetYear,  // 중요: 필수 필드 추가
+          battle_month: targetMonth,  // 중요: 필수 필드 추가
+          school_code: school,
+          final_avg_rating: Number(item.avg_rating),
+          final_rating_count: item.rating_count,
+          monthly_rank: index + 1
+        });
+      });
+    }
+    
+    console.log(`📊 생성된 월별 배틀 결과 개수: ${monthlyResults.length}개`);
+    if (monthlyResults.length > 0) {
+      console.log('📝 첫 번째 월별 배틀 결과 예시:', monthlyResults[0]);
+    }
+    
+    // 4. DB에 저장
+    if (monthlyResults.length > 0) {
+      try {
+        console.log(`🔄 월별 배틀 데이터 처리 시작 - ${targetYear}년 ${targetMonth}월`);
+        
+        // 기존 데이터 삭제
+        const { error: deleteError } = await supabase
+          .from('menu_battle_monthly')
+          .delete()
+          .eq('battle_year', targetYear)
+          .eq('battle_month', targetMonth);
+        
+        if (deleteError) {
+          console.error('❌ 월별 배틀 데이터 삭제 실패:', deleteError);
+        } else {
+          console.log(`✅ 월별 배틀 기존 데이터 삭제 성공 - ${targetYear}년 ${targetMonth}월`);
+        }
+        
+        // 삽입할 데이터 로깅
+        console.log(`📥 월별 배틀 데이터 ${monthlyResults.length}개 삽입 시작`);
+        
+        // 새 데이터 삽입
+        const { data: insertedData, error: insertError } = await supabase
+          .from('menu_battle_monthly')
+          .insert(monthlyResults)
+          .select();
+        
+        if (insertError) {
+          console.error('❌ 월별 배틀 결과 저장 실패:', insertError);
+          return { success: false, error: insertError };
+        }
+        
+        console.log(`✅ 월별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+      } catch (err) {
+        console.error('❌ 월별 배틀 데이터 저장 중 예외 발생:', err);
+        return { success: false, error: err };
+      }
+    }
+    
+    console.log(`🚀 [PRODUCTION MODE] 월별 배치 처리 완료: ${monthlyResults.length}개 메뉴 저장`);
+    
+    return { 
+      success: true, 
+      data: monthlyResults,
+      mode: 'PRODUCTION',
+      message: `월별 배틀 결과 DB 저장 완료: ${monthlyResults.length}개`
+    };
+  } catch (err) {
+    console.error('❌ 월별 배틀 계산 중 예상치 못한 오류:', err);
+    return { success: false, error: err };
+  }
 }
 
 /**
