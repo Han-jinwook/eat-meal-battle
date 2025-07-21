@@ -120,14 +120,19 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     // 평점 순으로 정렬 (높은 순)
     const sortedItems = items.sort((a, b) => b.rating_info.avg_rating - a.rating_info.avg_rating);
     
+    console.log(`📊 학교별 메뉴 아이템 정렬 결과: ${school}`);
+    console.log(`📝 정렬된 메뉴 아이템 개수: ${sortedItems.length}`);
+    
     sortedItems.forEach((item, index) => {
+      console.log(`📝 순위 매기기: ${item.item_name} (평점: ${item.rating_info.avg_rating}, 순위: ${index + 1})`);
+      
       battleResults.push({
         menu_item_id: item.id,
         item_name: item.item_name,
         school_code: school,
         battle_date: date,
-        final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
-        final_rating_count: item.menu_item_rating_stats.rating_count,
+        final_avg_rating: Number(item.rating_info.avg_rating),
+        final_rating_count: item.rating_info.rating_count,
         daily_rank: index + 1
       });
     });
@@ -385,7 +390,11 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     // 평점 순으로 정렬 (높은 순) - 7/3 김치 vs 7/11 김치 개별 경쟁
     const sortedItems = items.sort((a, b) => b.menu_item_rating_stats.avg_rating - a.menu_item_rating_stats.avg_rating);
     
+    console.log(`📊 월별 배틀: 학교별 메뉴 아이템 정렬 결과: ${school}`);
+    console.log(`📝 정렬된 메뉴 아이템 개수: ${sortedItems.length}`);
+    
     sortedItems.forEach((item, index) => {
+      console.log(`📝 월별 순위 매기기: ${item.item_name} (평점: ${item.menu_item_rating_stats.avg_rating}, 순위: ${index + 1})`);
       monthlyResults.push({
         menu_item_id: item.id,
         item_name: item.item_name,
@@ -404,6 +413,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     // 로깅: 저장할 배틀 결과
     console.log(`🔍 월별 배틀 저장 시도: ${monthlyResults.length}개 항목, 년/월: ${year}/${month}`);
     console.log(`🔄 첫번째 항목 예시:`, monthlyResults[0]);
+    console.log(`📊 배틀 필드 확인: 년=${year}, 월=${month}, menu_item_id=${monthlyResults[0].menu_item_id}`);
     
     try {
       // 기존 데이터 삭제 후 신규 저장
@@ -450,12 +460,13 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   }
   
   console.log(`🧪 [TEST MODE] 월별 계산 완료 및 DB 저장: ${monthlyResults.length}개 메뉴`);
+  console.log(`🔍 마지막 저장 결과:`, monthlyResults.slice(0, 2));
   
   return { 
     success: true, 
     data: monthlyResults,
     mode: 'TEST',
-    message: '테스트 모드: 실시간 월별 계산 후 DB 저장 완료'
+    message: `테스트 모드: 실시간 월별 계산 후 DB 저장 완료 (${year}년 ${month}월)`
   };
 }
 
