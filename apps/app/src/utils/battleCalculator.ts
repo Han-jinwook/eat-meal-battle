@@ -135,26 +135,49 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   
   // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
   if (battleResults.length > 0) {
-    // 기존 데이터 삭제 (해당 날짜)
-    await supabase
-      .from('menu_battle_daily')
-      .delete()
-      .eq('battle_date', date);
+    // 로깅: 저장할 배틀 결과
+    console.log(`🔍 일별 배틀 저장 시도: ${battleResults.length}개 항목, 날짜: ${date}`);
+    console.log(`🔄 첫번째 항목 예시:`, battleResults[0]);
     
-    // 새 데이터 저장
-    const { error: insertError } = await supabase
-      .from('menu_battle_daily')
-      .insert(battleResults.map(result => ({
+    try {
+      // 기존 데이터 삭제 후 신규 저장
+      const { error: deleteError } = await supabase
+        .from('menu_battle_daily')
+        .delete()
+        .eq('battle_date', date);
+        
+      if (deleteError) {
+        console.error('❌ 일별 배틀 데이터 삭제 실패:', deleteError);
+      } else {
+        console.log(`✅ 일별 배틀 기존 데이터 삭제 성공: ${date}`);
+      }
+      
+      // 삽입할 데이터 구조 로깅
+      const insertData = battleResults.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_date: result.battle_date,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         daily_rank: result.daily_rank
-      })));
-    
-    if (insertError) {
-      console.error('테스트 모드 DB 저장 실패:', insertError);
-      return { success: false, error: insertError };
+      }));
+      
+      console.log(`📝 일별 배틀 데이터 삽입 시도:`, insertData[0]);
+      
+      // 신규 배틀 결과 저장
+      const { data: insertedData, error: insertError } = await supabase
+        .from('menu_battle_daily')
+        .insert(insertData)
+        .select();
+      
+      if (insertError) {
+        console.error('❌ 일별 테스트 모드 DB 저장 실패:', insertError);
+        return { success: false, error: insertError };
+      }
+      
+      console.log(`✅ 일별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+    } catch (err) {
+      console.error('❌ 일별 배틀 데이터 저장 중 예외 발생:', err);
+      return { success: false, error: err };
     }
   }
   
@@ -353,28 +376,51 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   
   // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
   if (monthlyResults.length > 0) {
-    // 기존 데이터 삭제 (해당 년월)
-    await supabase
-      .from('menu_battle_monthly')
-      .delete()
-      .eq('battle_year', year)
-      .eq('battle_month', month);
+    // 로깅: 저장할 배틀 결과
+    console.log(`🔍 월별 배틀 저장 시도: ${monthlyResults.length}개 항목, 년/월: ${year}/${month}`);
+    console.log(`🔄 첫번째 항목 예시:`, monthlyResults[0]);
     
-    // 새 데이터 저장
-    const { error: insertError } = await supabase
-      .from('menu_battle_monthly')
-      .insert(monthlyResults.map(result => ({
+    try {
+      // 기존 데이터 삭제 후 신규 저장
+      const { error: deleteError } = await supabase
+        .from('menu_battle_monthly')
+        .delete()
+        .eq('battle_year', year)
+        .eq('battle_month', month);
+        
+      if (deleteError) {
+        console.error('❌ 월별 배틀 데이터 삭제 실패:', deleteError);
+      } else {
+        console.log(`✅ 월별 배틀 기존 데이터 삭제 성공: ${year}/${month}`);
+      }
+      
+      // 삽입할 데이터 구조 로깅
+      const insertData = monthlyResults.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_year: result.battle_year,
         battle_month: result.battle_month,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         monthly_rank: result.monthly_rank
-      })));
-    
-    if (insertError) {
-      console.error('월별 테스트 모드 DB 저장 실패:', insertError);
-      return { success: false, error: insertError };
+      }));
+      
+      console.log(`📝 월별 배틀 데이터 삽입 시도:`, insertData[0]);
+      
+      // 새 데이터 저장
+      const { data: insertedData, error: insertError } = await supabase
+        .from('menu_battle_monthly')
+        .insert(insertData)
+        .select();
+      
+      if (insertError) {
+        console.error('❌ 월별 테스트 모드 DB 저장 실패:', insertError);
+        return { success: false, error: insertError };
+      }
+      
+      console.log(`✅ 월별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+    } catch (err) {
+      console.error('❌ 월별 배틀 데이터 저장 중 예외 발생:', err);
+      return { success: false, error: err };
     }
   }
   
