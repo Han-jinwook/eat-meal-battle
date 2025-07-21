@@ -49,12 +49,28 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   console.log(`🧪 [TEST MODE] 일별 메뉴 배틀 계산 시작: ${date}`);
   
   // 1. 해당 날짜의 메뉴 아이템들과 평점 정보 조회
+  // 다중 관계 문제를 방지하기 위해 조인 대신 별도 쿼리로 분리
+  const { data: menuRatings, error: ratingsError } = await supabase
+    .from('menu_item_rating_stats')
+    .select('menu_item_id, avg_rating, rating_count')
+    .gt('rating_count', 0); // 평가가 있는 메뉴만
+    
+  if (ratingsError) {
+    console.error('메뉴 평점 조회 실패:', ratingsError);
+    return { success: false, error: ratingsError };
+  }
+  
+  if (!menuRatings || menuRatings.length === 0) {
+    console.log('평가된 메뉴가 없습니다.');
+    return { success: true, data: [] };
+  }
+  
+  // 메뉴 아이템 정보 조회
   let query = supabase
     .from('meal_menu_items')
     .select(`
       id,
       item_name,
-      menu_item_rating_stats!inner(avg_rating, rating_count),
       meal_menus!inner(
         meal_id,
         school_code,
@@ -62,7 +78,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
       )
     `)
     .eq('meal_menus.meal_date', date)
-    .gt('menu_item_rating_stats.rating_count', 0); // 평가가 있는 메뉴만
+    .in('id', menuRatings.map(item => item.menu_item_id))
     
   if (schoolCode) {
     query = query.eq('meal_menus.school_code', schoolCode);
@@ -80,8 +96,17 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     return { success: true, data: [] };
   }
   
+  // 메뉴 아이템에 평점 정보 추가
+  const menuItemsWithRatings = menuItems.map(item => {
+    const ratingInfo = menuRatings.find(rating => rating.menu_item_id === item.id);
+    return {
+      ...item,
+      rating_info: ratingInfo || { avg_rating: 0, rating_count: 0 }
+    };
+  });
+  
   // 2. 학교별로 그룹화하여 순위 계산
-  const schoolGroups = menuItems.reduce((acc, item) => {
+  const schoolGroups = menuItemsWithRatings.reduce((acc, item) => {
     const school = item.meal_menus.school_code;
     if (!acc[school]) acc[school] = [];
     acc[school].push(item);
@@ -93,7 +118,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   // 3. 각 학교별로 순위 매기기
   for (const [school, items] of Object.entries(schoolGroups)) {
     // 평점 순으로 정렬 (높은 순)
-    const sortedItems = items.sort((a, b) => b.menu_item_rating_stats.avg_rating - a.menu_item_rating_stats.avg_rating);
+    const sortedItems = items.sort((a, b) => b.rating_info.avg_rating - a.rating_info.avg_rating);
     
     sortedItems.forEach((item, index) => {
       battleResults.push({
@@ -386,7 +411,7 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
     if (type === 'daily') {
       const targetDate = date || new Date().toISOString().split('T')[0];
       
-      // 일별 배틀 결과 조회 (menu_item_id로 JOIN)
+      // 메뉴 배틀 결과 조회 (명시적 조인으로 다중 관계 문제 방지)
       let query = supabase
         .from('menu_battle_daily')
         .select(`
@@ -395,12 +420,8 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
           final_avg_rating,
           final_rating_count,
           daily_rank,
-          meal_menu_items(
-            item_name,
-            meal_menus(
-              school_code,
-              meal_date
-            )
+          meal_menu_items!menu_battle_daily_menu_item_id_fkey(
+            item_name
           )
         `)
         .eq('battle_date', targetDate)
@@ -433,11 +454,8 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
           final_avg_rating,
           final_rating_count,
           monthly_rank,
-          meal_menu_items(
-            item_name,
-            meal_menus(
-              school_code
-            )
+          meal_menu_items!menu_battle_monthly_menu_item_id_fkey(
+            item_name
           )
         `)
         .eq('battle_year', year)
