@@ -60,7 +60,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
         rating_count
       ),
       meal_menus!meal_menu_items_meal_id_fkey!inner(
-        meal_id,
+        id,
         school_code,
         meal_date
       )
@@ -282,7 +282,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
         rating_count
       ),
       meal_menus!meal_menu_items_meal_id_fkey!inner(
-        meal_id,
+        id,
         school_code,
         meal_date
       )

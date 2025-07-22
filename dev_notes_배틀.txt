@@ -1,0 +1,128 @@
+# 메뉴 배틀 시스템 알고리즘 정리
+
+## 📊 전체 구조
+```
+사용자 평점 입력 → 평점 집계 → 배틀 계산 → 순위 결정 → 결과 저장
+```
+
+## 🗄️ 데이터베이스 테이블 구조
+
+### 1. meal_menu_items (메뉴 아이템)
+- id: 메뉴 아이템 ID
+- item_name: 메뉴명 (예: "김치찌개")
+- meal_id: 급식 ID (외래키)
+
+### 2. meal_menus (급식 정보)
+- id: 급식 ID
+- meal_date: 급식 날짜
+- school_code: 학교 코드
+
+### 3. menu_item_ratings (개별 평점)
+- user_id: 사용자 ID
+- menu_item_id: 메뉴 아이템 ID
+- rating: 개별 평점 (1-5점)
+
+### 4. menu_item_rating_stats (평점 집계)
+- menu_item_id: 메뉴 아이템 ID (외래키)
+- avg_rating: 평균 평점
+- rating_count: 평점 개수
+
+### 5. menu_battle_daily (일별 배틀 결과)
+- menu_item_id: 메뉴 아이템 ID
+- battle_date: 배틀 날짜
+- school_code: 학교 코드
+- final_avg_rating: 최종 평균 평점
+- final_rating_count: 최종 평점 개수
+- daily_rank: 일별 순위
+
+### 6. menu_battle_monthly (월별 배틀 결과)
+- menu_item_id: 메뉴 아이템 ID
+- battle_year: 배틀 연도
+- battle_month: 배틀 월
+- school_code: 학교 코드
+- final_avg_rating: 최종 평균 평점
+- final_rating_count: 최종 평점 개수
+- monthly_rank: 월별 순위
+
+## 🔄 배틀 계산 알고리즘
+
+### 일별 배틀 (calculateDailyMenuBattleTest)
+1. **데이터 조회**
+   - 특정 날짜의 모든 메뉴 아이템 조회
+   - 평점 집계 데이터 조인 (menu_item_rating_stats)
+   - 급식 정보 조인 (meal_menus)
+   - 조건: rating_count > 0 (평가가 있는 메뉴만)
+
+2. **학교별 그룹화**
+   - 같은 학교 내에서만 경쟁
+   - schoolGroups[school_code] = [메뉴들...]
+
+3. **순위 계산**
+   - 각 학교별로 평균 평점 기준 내림차순 정렬
+   - 순위 부여 (1위, 2위, 3위...)
+
+4. **결과 저장**
+   - menu_battle_daily 테이블에 저장
+   - 기존 데이터 삭제 후 새로 삽입
+
+### 월별 배틀 (calculateMonthlyMenuBattleTest)
+1. **데이터 조회**
+   - 특정 월의 모든 메뉴 아이템 조회 (1일~31일)
+   - 평점 집계 데이터 조인
+   - 급식 정보 조인
+
+2. **학교별 그룹화**
+   - 같은 학교 내에서만 경쟁
+   - 같은 메뉴라도 날짜별로 개별 경쟁
+
+3. **순위 계산**
+   - 각 학교별로 평균 평점 기준 내림차순 정렬
+   - 월별 순위 부여
+
+4. **결과 저장**
+   - menu_battle_monthly 테이블에 저장
+
+## 🔧 핵심 기술 구현
+
+### Supabase 관계 조인
+```javascript
+.select(`
+  id,
+  item_name,
+  menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
+    avg_rating,
+    rating_count
+  ),
+  meal_menus!meal_menu_items_meal_id_fkey!inner(
+    meal_id,
+    school_code,
+    meal_date
+  )
+`)
+```
+
+### 외래키 관계
+- meal_menu_items.id ← menu_item_rating_stats.menu_item_id
+- meal_menus.id ← meal_menu_items.meal_id
+
+## 🎯 배틀 트리거 조건
+1. 사용자가 메뉴 평점을 입력/수정
+2. menu_item_rating_stats 테이블 업데이트
+3. Netlify Function (menu-ratings.js)에서 배틀 계산 호출
+4. 해당 날짜와 월의 배틀 결과 재계산
+
+## 🧪 테스트 모드 vs 프로덕션 모드
+- **테스트 모드**: 상세한 디버그 로그 출력, 실제 DB 저장 안함
+- **프로덕션 모드**: 최소 로그, 실제 DB 저장
+
+## 🚨 주요 해결된 이슈들
+1. **관계 참조 오류**: 명시적 외래키 관계명 사용
+2. **테이블 참조 오류**: menu_item_rating_stats 테이블 사용
+3. **스키마 캐시 오류**: DB에 외래키 관계 추가
+4. **배포 경로 혼동**: apps/app/netlify/functions 경로 사용
+
+## 📈 성능 최적화
+- Inner Join 사용으로 필요한 데이터만 조회
+- 평가가 있는 메뉴만 필터링 (rating_count > 0)
+- 학교별 그룹화로 효율적인 순위 계산
+- 배치 삽입으로 DB 부하 최소화
