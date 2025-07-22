@@ -743,13 +743,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 <div className="flex items-center justify-center">
                   {day.isCorrect ? (
                     <img 
-                      src="/images/quiz-correct.svg" 
+                      src="/images/quiz-correct.png" 
                       alt="정답" 
                       className="w-8 h-8 transform rotate-12 drop-shadow-sm"
                     />
                   ) : (
                     <img 
-                      src="/images/quiz-incorrect.svg" 
+                      src="/images/quiz-incorrect.png" 
                       alt="오답" 
                       className="w-8 h-8 transform -rotate-12 drop-shadow-sm"
                     />

@@ -126,6 +126,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
       .insert(battleResults.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_date: result.battle_date,
+        school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         daily_rank: result.daily_rank
@@ -348,6 +349,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
         menu_item_id: result.menu_item_id,
         battle_year: result.battle_year,
         battle_month: result.battle_month,
+        school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         monthly_rank: result.monthly_rank
