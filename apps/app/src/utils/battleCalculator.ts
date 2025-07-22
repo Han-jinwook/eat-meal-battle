@@ -7,9 +7,8 @@ const BATTLE_MODE = 'TEST'; // 'TEST' | 'PRODUCTION'
 
 interface MenuBattleResult {
   menu_item_id: string;
-  item_name: string;
-  school_code: string;
   battle_date: string;
+  school_code: string;
   final_avg_rating: number;
   final_rating_count: number;
   daily_rank: number;
@@ -17,10 +16,9 @@ interface MenuBattleResult {
 
 interface MonthlyBattleResult {
   menu_item_id: string;
-  item_name: string;
-  school_code: string;
   battle_year: number;
   battle_month: number;
+  school_code: string;
   final_avg_rating: number;
   final_rating_count: number;
   monthly_rank: number;
@@ -47,6 +45,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   const date = targetDate || new Date().toISOString().split('T')[0];
   
   console.log(`🧪 [TEST MODE] 일별 메뉴 배틀 계산 시작: ${date}`);
+  console.log(`📋 입력 파라미터: targetDate=${targetDate}, schoolCode=${schoolCode}`);
   
   // 1. 해당 날짜의 메뉴 아이템들과 평점 정보 조회
   // 다중 관계 문제를 방지하기 위해 조인 대신 별도 쿼리로 분리
@@ -71,14 +70,27 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     .select(`
       id,
       item_name,
+<<<<<<< HEAD
       meal_menus!inner(
         meal_id,
+=======
+      menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
+        avg_rating,
+        rating_count
+      ),
+      meal_menus!meal_menu_items_meal_id_fkey!inner(
+        id,
+>>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
         school_code,
         meal_date
       )
     `)
     .eq('meal_menus.meal_date', date)
+<<<<<<< HEAD
     .in('id', menuRatings.map(item => item.menu_item_id))
+=======
+    .gt('menu_item_rating_stats.rating_count', 0); // 평가가 있는 메뉴만
+>>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
     
   if (schoolCode) {
     query = query.eq('meal_menus.school_code', schoolCode);
@@ -118,31 +130,60 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   // 3. 각 학교별로 순위 매기기
   for (const [school, items] of Object.entries(schoolGroups)) {
     // 평점 순으로 정렬 (높은 순)
-    const sortedItems = items.sort((a, b) => b.rating_info.avg_rating - a.rating_info.avg_rating);
+    const sortedItems = items.sort((a, b) => b.menu_item_rating_stats.avg_rating - a.menu_item_rating_stats.avg_rating);
     
     console.log(`📊 학교별 메뉴 아이템 정렬 결과: ${school}`);
     console.log(`📝 정렬된 메뉴 아이템 개수: ${sortedItems.length}`);
     
+    // 표준 동점자 순위 처리: 동일한 평점이면 동일한 순위를 가지고, 다음 순위는 그만큼 건너뜀
+    let currentRank = 1;
+    let previousRating = -1;
+    let sameRankCount = 0;
+    
     sortedItems.forEach((item, index) => {
-      console.log(`📝 순위 매기기: ${item.item_name} (평점: ${item.rating_info.avg_rating}, 순위: ${index + 1})`);
+      const currentRating = Number(item.menu_item_rating_stats.avg_rating);
+      
+      // 동점자 처리: 이전 평점과 현재 평점 비교
+      if (index > 0 && currentRating === previousRating) {
+        // 동점이면 이전 순위를 유지
+        sameRankCount++;
+      } else if (index > 0) {
+        // 다른 점수면 건너뛴 만큼 순위 증가
+        currentRank += sameRankCount + 1;
+        sameRankCount = 0;
+      }
+      
+      previousRating = currentRating;
+      
+      console.log(`📝 순위 매기기: ${item.item_name} (평점: ${currentRating}, 순위: ${currentRank})`);
       
       battleResults.push({
         menu_item_id: item.id,
-        item_name: item.item_name,
-        school_code: school,
         battle_date: date,
-        final_avg_rating: Number(item.rating_info.avg_rating),
-        final_rating_count: item.rating_info.rating_count,
-        daily_rank: index + 1
+        school_code: school,
+        final_avg_rating: currentRating,
+        final_rating_count: item.menu_item_rating_stats.rating_count,
+        daily_rank: currentRank
       });
     });
   }
   
   // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
+  console.log(`📊 배틀 결과 계산 완료: ${battleResults.length}개 항목`);
+  
   if (battleResults.length > 0) {
+<<<<<<< HEAD
     // 로깅: 저장할 배틀 결과
     console.log(`🔍 일별 배틀 저장 시도: ${battleResults.length}개 항목, 날짜: ${date}`);
     console.log(`🔄 첫번째 항목 예시:`, battleResults[0]);
+=======
+    console.log(`🔍 첫 번째 배틀 결과:`, battleResults[0]);
+    // 기존 데이터 삭제 (해당 날짜)
+    await supabase
+      .from('menu_battle_daily')
+      .delete()
+      .eq('battle_date', date);
+>>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
     
     try {
       // 기존 데이터 삭제 후 신규 저장
@@ -161,6 +202,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
       const insertData = battleResults.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_date: result.battle_date,
+        school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         daily_rank: result.daily_rank
@@ -348,9 +390,18 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     .select(`
       id,
       item_name,
+<<<<<<< HEAD
       menu_item_rating_stats!inner(avg_rating, rating_count),
       meal_menus!inner(
         meal_id,
+=======
+      menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
+        avg_rating,
+        rating_count
+      ),
+      meal_menus!meal_menu_items_meal_id_fkey!inner(
+        id,
+>>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
         school_code,
         meal_date
       )
@@ -393,17 +444,35 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     console.log(`📊 월별 배틀: 학교별 메뉴 아이템 정렬 결과: ${school}`);
     console.log(`📝 정렬된 메뉴 아이템 개수: ${sortedItems.length}`);
     
+    // 표준 동점자 순위 처리: 동일한 평점이면 동일한 순위를 가지고, 다음 순위는 그만큼 건너뜀
+    let currentRank = 1;
+    let previousRating = -1;
+    let sameRankCount = 0;
+    
     sortedItems.forEach((item, index) => {
-      console.log(`📝 월별 순위 매기기: ${item.item_name} (평점: ${item.menu_item_rating_stats.avg_rating}, 순위: ${index + 1})`);
+      const currentRating = Number(item.menu_item_rating_stats.avg_rating);
+      
+      // 동점자 처리: 이전 평점과 현재 평점 비교
+      if (index > 0 && currentRating === previousRating) {
+        // 동점이면 이전 순위를 유지
+        sameRankCount++;
+      } else if (index > 0) {
+        // 다른 점수면 건너뛴 만큼 순위 증가
+        currentRank += sameRankCount + 1;
+        sameRankCount = 0;
+      }
+      
+      previousRating = currentRating;
+      
+      console.log(`📝 월별 순위 매기기: ${item.item_name} (평점: ${currentRating}, 순위: ${currentRank})`);
       monthlyResults.push({
         menu_item_id: item.id,
-        item_name: item.item_name,
-        school_code: school,
         battle_year: year,
         battle_month: month,
-        final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
+        school_code: school,
+        final_avg_rating: currentRating,
         final_rating_count: item.menu_item_rating_stats.rating_count,
-        monthly_rank: index + 1
+        monthly_rank: currentRank
       });
     });
   }
@@ -434,6 +503,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
         menu_item_id: result.menu_item_id,
         battle_year: result.battle_year,
         battle_month: result.battle_month,
+        school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
         monthly_rank: result.monthly_rank
