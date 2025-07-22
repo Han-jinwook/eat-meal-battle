@@ -7,9 +7,8 @@ const BATTLE_MODE = 'TEST'; // 'TEST' | 'PRODUCTION'
 
 interface MenuBattleResult {
   menu_item_id: string;
-  item_name: string;
-  school_code: string;
   battle_date: string;
+  school_code: string;
   final_avg_rating: number;
   final_rating_count: number;
   daily_rank: number;
@@ -17,10 +16,9 @@ interface MenuBattleResult {
 
 interface MonthlyBattleResult {
   menu_item_id: string;
-  item_name: string;
-  school_code: string;
   battle_year: number;
   battle_month: number;
+  school_code: string;
   final_avg_rating: number;
   final_rating_count: number;
   monthly_rank: number;
@@ -102,9 +100,8 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     sortedItems.forEach((item, index) => {
       battleResults.push({
         menu_item_id: item.id,
-        item_name: item.item_name,
-        school_code: school,
         battle_date: date,
+        school_code: school,
         final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
         final_rating_count: item.menu_item_rating_stats.rating_count,
         daily_rank: index + 1
@@ -325,10 +322,9 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     sortedItems.forEach((item, index) => {
       monthlyResults.push({
         menu_item_id: item.id,
-        item_name: item.item_name,
-        school_code: school,
         battle_year: year,
         battle_month: month,
+        school_code: school,
         final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
         final_rating_count: item.menu_item_rating_stats.rating_count,
         monthly_rank: index + 1
