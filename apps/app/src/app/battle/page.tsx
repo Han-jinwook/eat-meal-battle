@@ -16,6 +16,20 @@ export default function BattlePage() {
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
+
+  // URL의 date 파라미터를 상태에 반영 (초기 1회)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dateParam = params.get('date');
+      if (dateParam) {
+        setSelectedDate(dateParam);
+      }
+    } catch (err) {
+      console.error('날짜 파라미터 파싱 오류:', err);
+    }
+  }, []);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -125,7 +139,19 @@ export default function BattlePage() {
               }`}>
                 <DateNavigator 
                   selectedDate={selectedDate}
-                  onDateChange={setSelectedDate}
+                  onDateChange={(date) => {
+                    setSelectedDate(date);
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('date', date);
+                        const url = `${window.location.pathname}?${params.toString()}`;
+                        window.history.replaceState({}, '', url);
+                      } catch (err) {
+                        console.error('URL 날짜 파라미터 업데이트 오류:', err);
+                      }
+                    }
+                  }}
                   theme={activeTab === 'menu' ? 'red' : 'blue'}
                   size="sm"
                 />
