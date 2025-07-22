@@ -47,6 +47,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   const date = targetDate || new Date().toISOString().split('T')[0];
   
   console.log(`🧪 [TEST MODE] 일별 메뉴 배틀 계산 시작: ${date}`);
+  console.log(`📋 입력 파라미터: targetDate=${targetDate}, schoolCode=${schoolCode}`);
   
   // 1. 해당 날짜의 메뉴 아이템들과 평점 정보 조회
   let query = supabase
@@ -110,7 +111,10 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   }
   
   // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
+  console.log(`📊 배틀 결과 계산 완료: ${battleResults.length}개 항목`);
+  
   if (battleResults.length > 0) {
+    console.log(`🔍 첫 번째 배틀 결과:`, battleResults[0]);
     // 기존 데이터 삭제 (해당 날짜)
     await supabase
       .from('menu_battle_daily')
