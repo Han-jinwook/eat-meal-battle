@@ -70,27 +70,18 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     .select(`
       id,
       item_name,
-<<<<<<< HEAD
-      meal_menus!inner(
-        meal_id,
-=======
       menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
         avg_rating,
         rating_count
       ),
       meal_menus!meal_menu_items_meal_id_fkey!inner(
         id,
->>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
         school_code,
         meal_date
       )
     `)
     .eq('meal_menus.meal_date', date)
-<<<<<<< HEAD
-    .in('id', menuRatings.map(item => item.menu_item_id))
-=======
     .gt('menu_item_rating_stats.rating_count', 0); // 평가가 있는 메뉴만
->>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
     
   if (schoolCode) {
     query = query.eq('meal_menus.school_code', schoolCode);
@@ -172,18 +163,15 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   console.log(`📊 배틀 결과 계산 완료: ${battleResults.length}개 항목`);
   
   if (battleResults.length > 0) {
-<<<<<<< HEAD
     // 로깅: 저장할 배틀 결과
     console.log(`🔍 일별 배틀 저장 시도: ${battleResults.length}개 항목, 날짜: ${date}`);
     console.log(`🔄 첫번째 항목 예시:`, battleResults[0]);
-=======
-    console.log(`🔍 첫 번째 배틀 결과:`, battleResults[0]);
+    
     // 기존 데이터 삭제 (해당 날짜)
     await supabase
       .from('menu_battle_daily')
       .delete()
       .eq('battle_date', date);
->>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
     
     try {
       // 기존 데이터 삭제 후 신규 저장
@@ -390,18 +378,12 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     .select(`
       id,
       item_name,
-<<<<<<< HEAD
-      menu_item_rating_stats!inner(avg_rating, rating_count),
-      meal_menus!inner(
-        meal_id,
-=======
       menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
         avg_rating,
         rating_count
       ),
       meal_menus!meal_menu_items_meal_id_fkey!inner(
         id,
->>>>>>> d0766ab409d2788c11f96f2e927a76722d844976
         school_code,
         meal_date
       )
