@@ -55,7 +55,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     .select(`
       id,
       item_name,
-      menu_item_rating_stats!inner(
+      menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
         avg_rating,
         rating_count
       ),
@@ -277,7 +277,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     .select(`
       id,
       item_name,
-      menu_item_rating_stats!inner(
+      menu_item_rating_stats!fk_menu_item_rating_stats_menu_item_id!inner(
         avg_rating,
         rating_count
       ),
