@@ -55,16 +55,18 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     .select(`
       id,
       item_name,
-      avg_rating,
-      rating_count,
-      meal_menus!inner(
+      menu_item_rating_stats!inner(
+        avg_rating,
+        rating_count
+      ),
+      meal_menus!meal_menu_items_meal_id_fkey!inner(
         meal_id,
         school_code,
         meal_date
       )
     `)
     .eq('meal_menus.meal_date', date)
-    .gt('rating_count', 0); // 평가가 있는 메뉴만
+    .gt('menu_item_rating_stats.rating_count', 0); // 평가가 있는 메뉴만
     
   if (schoolCode) {
     query = query.eq('meal_menus.school_code', schoolCode);
@@ -95,7 +97,7 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   // 3. 각 학교별로 순위 매기기
   for (const [school, items] of Object.entries(schoolGroups)) {
     // 평점 순으로 정렬 (높은 순)
-    const sortedItems = items.sort((a, b) => b.avg_rating - a.avg_rating);
+    const sortedItems = items.sort((a, b) => b.menu_item_rating_stats.avg_rating - a.menu_item_rating_stats.avg_rating);
     
     sortedItems.forEach((item, index) => {
       battleResults.push({
@@ -103,8 +105,8 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
         item_name: item.item_name,
         school_code: school,
         battle_date: date,
-        final_avg_rating: Number(item.avg_rating),
-        final_rating_count: item.rating_count,
+        final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
+        final_rating_count: item.menu_item_rating_stats.rating_count,
         daily_rank: index + 1
       });
     });
@@ -275,9 +277,11 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     .select(`
       id,
       item_name,
-      avg_rating,
-      rating_count,
-      meal_menus!inner(
+      menu_item_rating_stats!inner(
+        avg_rating,
+        rating_count
+      ),
+      meal_menus!meal_menu_items_meal_id_fkey!inner(
         meal_id,
         school_code,
         meal_date
@@ -285,7 +289,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     `)
     .gte('meal_menus.meal_date', startDate)
     .lte('meal_menus.meal_date', endDate)
-    .gt('rating_count', 0);
+    .gt('menu_item_rating_stats.rating_count', 0);
     
   if (schoolCode) {
     query = query.eq('meal_menus.school_code', schoolCode);
@@ -316,7 +320,7 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   // 3. 각 학교별로 순위 매기기 (각 menu_item_id별 개별 경쟁)
   for (const [school, items] of Object.entries(schoolGroups)) {
     // 평점 순으로 정렬 (높은 순) - 7/3 김치 vs 7/11 김치 개별 경쟁
-    const sortedItems = items.sort((a, b) => b.avg_rating - a.avg_rating);
+    const sortedItems = items.sort((a, b) => b.menu_item_rating_stats.avg_rating - a.menu_item_rating_stats.avg_rating);
     
     sortedItems.forEach((item, index) => {
       monthlyResults.push({
@@ -325,8 +329,8 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
         school_code: school,
         battle_year: year,
         battle_month: month,
-        final_avg_rating: Number(item.avg_rating),
-        final_rating_count: item.rating_count,
+        final_avg_rating: Number(item.menu_item_rating_stats.avg_rating),
+        final_rating_count: item.menu_item_rating_stats.rating_count,
         monthly_rank: index + 1
       });
     });
