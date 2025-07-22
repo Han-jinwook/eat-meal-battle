@@ -112,6 +112,7 @@ exports.handler = async function(event, context) {
       // 🔥 배틀 계산 트리거 (별점 변경 시 배틀 데이터 재계산)
       try {
         console.log('🏆 배틀 계산 트리거 시작...');
+        console.log('🔍 배틀 계산 함수 import 상태:', typeof calculateDailyMenuBattle, typeof calculateMonthlyMenuBattle);
         
         // 해당 메뉴 아이템의 날짜 정보 조회
         const { data: menuData, error: menuError } = await supabaseAdmin
@@ -125,9 +126,13 @@ exports.handler = async function(event, context) {
           .eq('id', menu_item_id)
           .single();
           
+        console.log('📊 메뉴 데이터 조회 결과:', { menuError, menuData });
+          
         if (!menuError && menuData) {
           const mealDate = menuData.meal_menus.meal_date;
           const schoolCode = menuData.meal_menus.school_code;
+          
+          console.log(`📅 배틀 계산 대상: 날짜=${mealDate}, 학교=${schoolCode}`);
           
           // Admin 권한의 Supabase 클라이언트 생성
           const adminClient = createClient(
@@ -141,17 +146,24 @@ exports.handler = async function(event, context) {
             }
           );
           
+          console.log('🔧 Admin 클라이언트 생성 완료');
+          
           // 일별 배틀 계산 (Admin 클라이언트 전달)
+          console.log('🔄 일별 배틀 계산 호출 시작...');
           await calculateDailyMenuBattle(mealDate, schoolCode, adminClient);
           console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`);
           
           // 월별 배틀 계산 (Admin 클라이언트 전달)
+          console.log('🔄 월별 배틀 계산 호출 시작...');
           const date = new Date(mealDate);
           await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, adminClient);
           console.log(`✅ 월별 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+        } else {
+          console.log('❌ 메뉴 데이터 조회 실패 또는 데이터 없음');
         }
       } catch (battleError) {
-        console.error('⚠️ 배틀 계산 중 오류 (별점 저장은 성공):', battleError);
+        console.error('❌ 배틀 계산 중 오류 (별점 저장은 성공):', battleError);
+        console.error('🔍 오류 스택:', battleError.stack);
         // 배틀 계산 실패해도 별점 저장은 성공으로 처리
       }
       
