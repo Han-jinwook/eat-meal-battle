@@ -118,7 +118,7 @@ exports.handler = async function(event, context) {
         const { data: menuData, error: menuError } = await supabaseAdmin
           .from('meal_menu_items')
           .select(`
-            meal_menus!inner(
+            meal_menus!meal_menu_items_meal_id_fkey!inner(
               meal_date,
               school_code
             )
