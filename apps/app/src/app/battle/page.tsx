@@ -299,7 +299,7 @@ export default function BattlePage() {
                     (sortOrder === 'asc' ? battleData : [...battleData].reverse()).map((item, index) => (
                       <div key={item.menu_item_id} className="grid grid-cols-4 gap-4 px-4 py-4 hover:bg-red-25 transition-colors">
                         <div className="text-center font-medium text-red-600">
-                          {sortOrder === 'asc' ? item.daily_rank || item.monthly_rank : battleData.length - index}
+                          {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank : item.monthly_rank) : battleData.length - index}
                         </div>
                         <div className="text-center font-medium text-gray-800">
                           {item.item_name}
