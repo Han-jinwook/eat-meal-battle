@@ -707,18 +707,16 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
         .select(`
           menu_item_id,
           battle_date,
+          school_code,
           final_avg_rating,
           final_rating_count,
-          daily_rank,
-          meal_menu_items!menu_battle_daily_menu_item_id_fkey(
-            item_name
-          )
+          daily_rank
         `)
         .eq('battle_date', targetDate)
         .order('daily_rank');
       
       if (schoolCode) {
-        query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
+        query = query.eq('school_code', schoolCode);
       }
       
       const { data, error } = await query;
@@ -741,19 +739,17 @@ export async function getBattleResults(type: 'daily' | 'monthly', date?: string,
           menu_item_id,
           battle_year,
           battle_month,
+          school_code,
           final_avg_rating,
           final_rating_count,
-          monthly_rank,
-          meal_menu_items!menu_battle_monthly_menu_item_id_fkey(
-            item_name
-          )
+          monthly_rank
         `)
         .eq('battle_year', year)
         .eq('battle_month', month)
         .order('monthly_rank');
       
       if (schoolCode) {
-        query = query.eq('meal_menu_items.meal_menus.school_code', schoolCode);
+        query = query.eq('school_code', schoolCode);
       }
       
       const { data, error } = await query;
