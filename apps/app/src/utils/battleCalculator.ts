@@ -83,17 +83,8 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   }
   
   // 2. 학교별로 그룹화하여 순위 계산
-  console.log('🔍 첫 번째 메뉴 아이템 구조:', JSON.stringify(menuItems[0], null, 2));
-  
   const schoolGroups = menuItems.reduce((acc, item) => {
-    const school = item.meal_menus?.school_code || item.meal_menus?.[0]?.school_code;
-    console.log(`📍 아이템 ${item.id}의 school_code:`, school);
-    
-    if (!school) {
-      console.error('❌ school_code가 null/undefined:', item);
-      return acc;
-    }
-    
+    const school = item.meal_menus.school_code;
     if (!acc[school]) acc[school] = [];
     acc[school].push(item);
     return acc;
@@ -314,17 +305,8 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   }
   
   // 2. 학교별로 그룹화하여 순위 계산 (각 menu_item_id는 개별 경쟁자)
-  console.log('🔍 [월별] 첫 번째 메뉴 아이템 구조:', JSON.stringify(menuItems[0], null, 2));
-  
   const schoolGroups = menuItems.reduce((acc, item) => {
-    const school = item.meal_menus?.school_code || item.meal_menus?.[0]?.school_code;
-    console.log(`📍 [월별] 아이템 ${item.id}의 school_code:`, school);
-    
-    if (!school) {
-      console.error('❌ [월별] school_code가 null/undefined:', item);
-      return acc;
-    }
-    
+    const school = item.meal_menus.school_code;
     if (!acc[school]) acc[school] = [];
     acc[school].push(item);
     return acc;
