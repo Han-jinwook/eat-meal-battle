@@ -202,3 +202,81 @@ DROP TABLE IF EXISTS quiz_champion_history;
 1. 기존 시스템과 병행 운영으로 안정성 확보
 2. 새 시스템 테스트 완료 후 기존 시스템 제거
 3. 불필요한 코드 및 테이블 정리 완료
+
+---
+
+## ✅ 퀴즈 장원 시스템 통합 완료 (2025-07-23)
+
+### 🎯 완료된 작업
+
+#### 1. quiz.js에 ChampionCalculator 통합 ✅
+- **파일**: `apps/app/netlify/functions/quiz.js`
+- **추가**: `ChampionCalculator` import 및 호출
+- **위치**: `submitQuizAnswer` 함수 내, `quiz_champions` 업데이트 완료 후
+- **기능**: 퀴즈 정답 제출 시 자동으로 장원 상태 체크 및 기록
+
+```javascript
+// 장원 상태 체크 및 기록 (ChampionCalculator 호출)
+try {
+  const championCalculator = new ChampionCalculator(supabaseAdmin);
+  await championCalculator.checkChampionStatusOnQuizSubmit(
+    userId, userSchoolCode, userGrade, year, month, weekOfMonth
+  );
+  console.log('[quiz] 장원 상태 체크 완료');
+} catch (championError) {
+  console.error('[quiz] 장원 상태 체크 중 오류 (무시하고 계속):', championError);
+}
+```
+
+#### 2. 중복 함수 제거 및 정리 ✅
+
+**제거된 파일:**
+- `apps/app/src/utils/championCriteriaService.ts` - 완전 삭제
+  - 중복된 장원 계산 로직 포함
+  - 잘못된 월장원 계산 방식 (week_N_correct 합산)
+  - ChampionCalculator로 완전 대체
+
+**수정된 파일:**
+- `apps/app/src/app/api/champion/records/route.ts`
+  - ChampionCriteriaService → ChampionCalculator로 교체
+  - 직접 Supabase 쿼리로 단순화
+  - championCalculator.checkWeeklyChampion/checkMonthlyChampion 사용
+
+- `apps/app/src/components/ChampionHistory.tsx`
+  - `/api/champion/calculate` → `/api/champion/records`로 수정
+  - 존재하지 않는 API 엔드포인트 문제 해결
+
+- `apps/app/netlify/functions/quiz.js`
+  - 사용되지 않는 `getChampions` 함수 제거
+  - `/quiz/champions` API 엔드포인트 제거
+  - 잘못된 필드(`correct_count`, `total_count`) 사용하던 코드 정리
+
+- `apps/app/src/utils/championCalculator.ts`
+  - `checkWeeklyChampion`, `checkMonthlyChampion` 메서드를 public으로 변경
+  - API에서 직접 호출 가능하도록 수정
+
+#### 3. 시스템 통합 결과 ✅
+
+**이제 퀴즈 정답 제출 시 자동으로:**
+1. `quiz_results` 테이블에 정답 결과 저장
+2. `quiz_champions` 테이블에 정답수 누적 (일별/월별/주차별)
+3. **ChampionCalculator 자동 호출** 🆕
+4. 장원 조건 충족 시 `user_champion_records` 테이블에 장원 기록
+5. 트로피 UI에 즉시 반영
+
+**제거된 중복/혼란 요소:**
+- ❌ ChampionCriteriaService (잘못된 계산 로직)
+- ❌ 존재하지 않는 `/api/champion/calculate` API 호출
+- ❌ 사용되지 않는 `/quiz/champions` API
+- ❌ 잘못된 필드명을 사용하는 함수들
+
+### 🎉 최종 상태
+- **퀴즈 장원 시스템 완전 통합** ✅
+- **실시간 장원 체크 및 기록** ✅  
+- **중복 코드 제거 완료** ✅
+- **API 엔드포인트 정리 완료** ✅
+- **트로피 표시 정상화** ✅
+
+### 🔄 다음 단계
+- 실제 배포 후 퀴즈 정답 제출 → 장원 기록 → 트로피 표시 전체 플로우 테스트
+- 필요시 추가 디버깅 및 최적화

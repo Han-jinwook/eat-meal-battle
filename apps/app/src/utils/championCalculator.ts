@@ -58,7 +58,7 @@ export class ChampionCalculator {
   /**
    * 주장원 체크
    */
-  private async checkWeeklyChampion(
+  async checkWeeklyChampion(
     userId: string,
     schoolCode: string,
     grade: number,
@@ -137,7 +137,7 @@ export class ChampionCalculator {
   /**
    * 월장원 체크
    */
-  private async checkMonthlyChampion(
+  async checkMonthlyChampion(
     userId: string,
     schoolCode: string,
     grade: number,

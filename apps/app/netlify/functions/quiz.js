@@ -1,4 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
+
+// Champion Calculator import
+const { ChampionCalculator } = require('../../src/utils/championCalculator');
 
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -459,6 +463,45 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       }
     }
     
+    // 장원 상태 체크 및 기록 (ChampionCalculator 호출)
+    try {
+      console.log('[quiz] 장원 상태 체크 시작:', { userId, schoolCode: quiz.school_code, grade: quiz.grade });
+      
+      // 사용자 학교 정보 조회 (quiz 테이블에 school_code, grade가 없을 경우)
+      let userSchoolCode = quiz.school_code;
+      let userGrade = quiz.grade;
+      
+      if (!userSchoolCode || !userGrade) {
+        const { data: userSchool, error: userSchoolError } = await supabaseAdmin
+          .from('school_infos')
+          .select('school_code, grade')
+          .eq('user_id', userId)
+          .single();
+        
+        if (!userSchoolError && userSchool) {
+          userSchoolCode = userSchool.school_code;
+          userGrade = userSchool.grade;
+        }
+      }
+      
+      if (userSchoolCode && userGrade) {
+        const championCalculator = new ChampionCalculator(supabaseAdmin);
+        await championCalculator.checkChampionStatusOnQuizSubmit(
+          userId,
+          userSchoolCode,
+          userGrade,
+          year,
+          month,
+          weekOfMonth
+        );
+        console.log('[quiz] 장원 상태 체크 완료');
+      } else {
+        console.log('[quiz] 사용자 학교 정보 부족으로 장원 체크 건너뜀');
+      }
+    } catch (championError) {
+      console.error('[quiz] 장원 상태 체크 중 오류 (무시하고 계속):', championError);
+    }
+    
     console.log('[quiz] submitQuizAnswer 성공!');
     return {
       success: true,
@@ -474,38 +517,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
   }
 }
 
-// 장원 목록 가져오기
-async function getChampions(schoolCode, grade, month, year) {
-  // 현재 월과 연도가 없으면 현재 날짜 사용
-  if (!month || !year) {
-    const now = new Date();
-    month = month || now.getMonth() + 1;
-    year = year || now.getFullYear();
-  }
 
-  // 장원 목록 조회
-  const { data: champions, error } = await supabaseClient
-    .from('quiz_champions')
-    .select(`
-      id,
-      user_id,
-      correct_count,
-      total_count,
-      users:user_id(nickname, avatar_url)
-    `)
-    .eq('school_code', schoolCode)
-    .eq('grade', grade)
-    .eq('month', month)
-    .eq('year', year)
-    .order('correct_count', { ascending: false })
-    .limit(10);
-
-  if (error) {
-    return { error: "장원 목록을 가져오는 중 오류가 발생했습니다." };
-  }
-
-  return { champions };
-}
 
 // API 핸들러
 exports.handler = async function(event, context) {
@@ -759,25 +771,6 @@ exports.handler = async function(event, context) {
           body: JSON.stringify({ error: '퀴즈 답안 제출 중 오류가 발생했습니다.', details: error.message })
         };
       }
-      
-      return {
-        statusCode: result.error ? 400 : 200,
-        headers,
-        body: JSON.stringify(result)
-      };
-    }
-    
-    // GET /quiz/champions - 장원 목록 가져오기
-    if (method === 'GET' && pathSegments[0] === 'champions') {
-      if (!params.school_code || !params.grade) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: '학교 코드와 학년이 필요합니다.' })
-        };
-      }
-      
-      const result = await getChampions(params.school_code, params.grade, params.month, params.year);
       
       return {
         statusCode: result.error ? 400 : 200,

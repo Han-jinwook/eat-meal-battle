@@ -74,7 +74,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             period_type: 'weekly'
           })
 
-          const url = `/api/champion/calculate?${params.toString()}`
+          const url = `/api/champion/records?${params.toString()}`
           console.log(`🔍 주 ${week} API 요청:`, url)
 
           const response = await fetch(url)
@@ -117,7 +117,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           period_type: 'monthly'
         })
 
-        const monthlyUrl = `/api/champion/calculate?${monthlyParams.toString()}`
+        const monthlyUrl = `/api/champion/records?${monthlyParams.toString()}`
         console.log('🔍 월별 API 요청:', monthlyUrl)
 
         let monthlyData = { is_champion: false, total_meal_days: 0, correct_count: 0 }
