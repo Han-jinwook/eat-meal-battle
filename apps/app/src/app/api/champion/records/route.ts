@@ -5,9 +5,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
-import { ChampionCriteriaService } from '@/utils/championCriteriaService'
+import { ChampionCalculator } from '@/utils/championCalculator'
 
-const criteriaService = new ChampionCriteriaService();
+const championCalculator = new ChampionCalculator();
 
 /**
  * GET /api/champion/records
@@ -50,13 +50,15 @@ export async function GET(request: NextRequest) {
     }
 
     // 사용자의 장원 기록 조회
-    const userChampionRecords = await criteriaService.getUserChampionRecords(
-      user_id,
-      school_code,
-      grade,
-      year,
-      month
-    )
+    const { data: userChampionRecords, error: recordsError } = await supabase
+      .from('user_champion_records')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('school_code', school_code)
+      .eq('grade', grade)
+      .eq('year', year)
+      .eq('month', month)
+      .maybeSingle()
 
     if (!userChampionRecords) {
       // 장원 기록이 없는 경우, 빈 기록 반환
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
     let isChampion = false;
     
     if (period_type === 'weekly') {
-      isChampion = await criteriaService.checkAndUpdateChampionStatus(
+      isChampion = await championCalculator.checkWeeklyChampion(
         user_id,
         school_code,
         grade,
@@ -152,7 +154,7 @@ export async function POST(request: NextRequest) {
         week_number
       )
     } else {
-      isChampion = await criteriaService.checkAndUpdateChampionStatus(
+      isChampion = await championCalculator.checkMonthlyChampion(
         user_id,
         school_code,
         grade,

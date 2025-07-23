@@ -126,3 +126,60 @@
 - 평가가 있는 메뉴만 필터링 (rating_count > 0)
 - 학교별 그룹화로 효율적인 순위 계산
 - 배치 삽입으로 DB 부하 최소화
+
+---
+
+# 🍱 급식 배틀 시스템 (학교 vs 학교)
+
+## 1️⃣ Daily 단계 구축 계획
+| 컬럼 | 타입 | 설명 |
+|-------|------|------|
+| school_code | varchar(20) | PK, 학교 식별자 |
+| battle_date | date | PK, YYYY-MM-DD |
+| avg_rating | numeric(3,2) | 누적 평균 평점 |
+| rating_count | int4 | 누적 평가수 |
+| daily_rank | int4 | 일별 순위 (1 base) |
+
+> pk = (school_code, battle_date)
+
+### 핵심 로직
+1. **평점 입력/수정 → meal_rating_stats 업데이트**
+2. **집계 프로세스 (트리거나 CRON)**
+   - 특정 `battle_date` + `school_code` 행이 없으면 INSERT
+   - 있으면 `avg_rating`, `rating_count` 재계산 후 UPDATE
+3. **랭킹 계산**
+   - 동일 region+school_type 그룹 내에서 `ORDER BY avg_rating DESC, rating_count DESC`
+4. **프론트**
+   - `GET /api/battle/meal?type=daily&date=YYYY-MM-DD&schoolType=고등학교`
+   - `school_infos` 조인으로 지역/학교명 표시
+
+## 2️⃣ Monthly 단계 (추후)
+- 동일 구조로 `meal_battle_monthly` (school_code, year, month) 테이블 추가 예정.
+- Daily 검증 완료 후 생성.
+
+---
+
+- Inner Join 사용으로 필요한 데이터만 조회
+- 평가가 있는 메뉴만 필터링 (rating_count > 0)
+- 학교별 그룹화로 효율적인 순위 계산
+- 배치 삽입으로 DB 부하 최소화
+
+---
+
+## 3️⃣ Daily 테이블 생성 & 보안 (2025-07-23)
+
+### SQL 진행 내역
+1. `school_infos` 중복 2행 정리 → `UNIQUE(school_code)` 제약 추가
+2. `meal_battle_daily` 테이블 생성 + FK(`school_code`) + 인덱스 2개
+3. RLS 활성화
+   - `meal_battle_daily_select`: public SELECT 허용
+   - `meal_battle_daily_no_dml`: 모든 클라이언트 DML 차단
+
+### RLS 흐름
+- 클라이언트 → 순위 조회만 `SELECT`
+- Netlify Function(service_role) → UPSERT 집계 가능 (RLS 우회)
+
+### 다음 작업
+- Daily 집계 Function 구현 및 CRON 연동
+- 프론트 API 호출 분기 추가 (`type=meal`)
+- Monthly 테이블 구축 후 동일 RLS 적용
