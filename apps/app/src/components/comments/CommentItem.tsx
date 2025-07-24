@@ -200,9 +200,30 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                 console.log('답글 작성자 정보 가져오기 오류:', userError);
               }
               
-              // reply_to_user 정보 가져오기 (나중에 처리)
+              // reply_to_user 정보 가져오기 (중청 답글용)
               let replyToUser = null;
-              // 일단 reply_to_user는 null로 설정
+              if (reply.reply_to_user_id) {
+                try {
+                  const { data: replyToUserData } = await supabase
+                    .from('users')
+                    .select('id, email, nickname, profile_image')
+                    .eq('id', reply.reply_to_user_id)
+                    .single();
+                    
+                  if (replyToUserData) {
+                    replyToUser = {
+                      id: replyToUserData.id,
+                      email: replyToUserData.email,
+                      user_metadata: {
+                        name: replyToUserData.nickname || replyToUserData.email?.split('@')[0] || '사용자',
+                        avatar_url: replyToUserData.profile_image
+                      }
+                    };
+                  }
+                } catch (replyToUserError) {
+                  console.log('reply_to_user 정보 가져오기 오류:', replyToUserError);
+                }
+              }
               
               // 좋아요 개수 가져오기
               const { count: likesCount } = await supabase

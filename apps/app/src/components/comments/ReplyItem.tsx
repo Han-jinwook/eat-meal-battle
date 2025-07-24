@@ -351,7 +351,17 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   </div>
                 )}
               </div>
-              <p className="mt-1 text-sm font-medium break-words whitespace-pre-wrap">{reply.content}</p>
+              <div className="mt-1 text-sm font-medium break-words whitespace-pre-wrap">
+                {/* 답글 대상자가 있으면 @언급 표시 */}
+                {reply.reply_to_user && (
+                  <span className="text-blue-500 font-semibold">
+                    @{reply.reply_to_user?.user_metadata?.name || 
+                      reply.reply_to_user?.email?.split('@')[0] || 
+                      '사용자'}{' '}
+                  </span>
+                )}
+                {reply.content}
+              </div>
               
               {/* 좋아요 버튼 및 연필 아이콘 */}
               <div className="mt-1 flex items-center gap-3">
