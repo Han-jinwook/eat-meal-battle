@@ -165,15 +165,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     try {
       const { data, error } = await supabase
         .from('comment_replies')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          comment_id,
-          reply_to_user_id,
-          user:user_id (id, email, user_metadata)
-        `)
+        .select('id, content, created_at, user_id, comment_id, reply_to_user_id')
         .eq('comment_id', comment.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: true });
@@ -181,34 +173,36 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       if (error) throw error;
       
       if (data) {
-        // 좋아요 정보와 reply_to_user 정보 추가
+        // 사용자 정보와 좋아요 정보 추가
         const repliesWithExtras = await Promise.all(
           data.map(async (reply) => {
             try {
-              // reply_to_user 정보 가져오기
-              let replyToUser = null;
-              if (reply.reply_to_user_id) {
-                try {
-                  const { data: userData } = await supabase
-                    .from('users')
-                    .select('id, email, nickname, profile_image')
-                    .eq('id', reply.reply_to_user_id)
-                    .single();
-                    
-                  if (userData) {
-                    replyToUser = {
-                      id: userData.id,
-                      email: userData.email,
-                      user_metadata: {
-                        name: userData.nickname || userData.email?.split('@')[0] || '사용자',
-                        avatar_url: userData.profile_image
-                      }
-                    };
-                  }
-                } catch (userError) {
-                  console.log('사용자 정보 가져오기 오류:', userError);
+              // 답글 작성자 정보 가져오기
+              let replyUser = null;
+              try {
+                const { data: userData } = await supabase
+                  .from('users')
+                  .select('id, email, nickname, profile_image')
+                  .eq('id', reply.user_id)
+                  .single();
+                  
+                if (userData) {
+                  replyUser = {
+                    id: userData.id,
+                    email: userData.email,
+                    user_metadata: {
+                      name: userData.nickname || userData.email?.split('@')[0] || '사용자',
+                      avatar_url: userData.profile_image
+                    }
+                  };
                 }
+              } catch (userError) {
+                console.log('답글 작성자 정보 가져오기 오류:', userError);
               }
+              
+              // reply_to_user 정보 가져오기 (나중에 처리)
+              let replyToUser = null;
+              // 일단 reply_to_user는 null로 설정
               
               // 좋아요 개수 가져오기
               const { count: likesCount } = await supabase
@@ -231,6 +225,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               
               return {
                 ...reply,
+                user: replyUser,
                 reply_to_user: replyToUser,
                 likes_count: likesCount || 0,
                 user_has_liked: isLiked
@@ -240,6 +235,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               // 오류 발생 시 기본값으로 반환
               return {
                 ...reply,
+                user: null,
                 reply_to_user: null,
                 likes_count: 0,
                 user_has_liked: false
