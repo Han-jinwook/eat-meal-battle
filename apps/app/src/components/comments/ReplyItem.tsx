@@ -232,14 +232,14 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     if (!user || !content.trim()) return false;
     
     try {
-      // 답글에 대한 답글도 같은 테이블에 저장하되, parent_id를 설정
-      const { data, error } = await supabase
+      // 답글에 대한 답글 작성 시 reply_to_user_id를 현재 답글 작성자로 설정
+      const { error } = await supabase
         .from('comment_replies')
         .insert({
           comment_id: reply.comment_id, // 원래 댓글 ID
           user_id: user.id,
           content: content.trim(),
-          parent_id: reply.id // 부모 답글 ID 설정
+          reply_to_user_id: reply.user_id // 현재 답글 작성자를 대상으로 설정
         });
         
       if (error) throw error;
