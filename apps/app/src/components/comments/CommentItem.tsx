@@ -175,6 +175,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
           user:user_id (id, email, user_metadata)
         `)
         .eq('comment_id', comment.id)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: true });
         
       if (error) throw error;
@@ -183,53 +184,72 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         // 좋아요 정보와 reply_to_user 정보 추가
         const repliesWithExtras = await Promise.all(
           data.map(async (reply) => {
-            // reply_to_user 정보 가져오기
-            let replyToUser = null;
-            if (reply.reply_to_user_id) {
-              try {
-                const { data: userData } = await supabase
-                  .from('profiles')
-                  .select('id, email, user_metadata')
-                  .eq('id', reply.reply_to_user_id)
-                  .single();
-                  
-                if (userData) {
-                  replyToUser = userData;
+            try {
+              // reply_to_user 정보 가져오기
+              let replyToUser = null;
+              if (reply.reply_to_user_id) {
+                try {
+                  const { data: userData } = await supabase
+                    .from('users')
+                    .select('id, email, nickname, profile_image')
+                    .eq('id', reply.reply_to_user_id)
+                    .single();
+                    
+                  if (userData) {
+                    replyToUser = {
+                      id: userData.id,
+                      email: userData.email,
+                      user_metadata: {
+                        name: userData.nickname || userData.email?.split('@')[0] || '사용자',
+                        avatar_url: userData.profile_image
+                      }
+                    };
+                  }
+                } catch (userError) {
+                  console.log('사용자 정보 가져오기 오류:', userError);
                 }
-              } catch (error) {
-                console.log('사용자 정보 가져오기 오류:', error);
               }
-            }
-            
-            // 좋아요 개수 가져오기
-            const { count: likesCount } = await supabase
-              .from('reply_likes')
-              .select('*', { count: 'exact', head: true })
-              .eq('reply_id', reply.id);
               
-            // 현재 사용자의 좋아요 여부
-            let isLiked = false;
-            if (user && user.id) {
-              const { data: userLike } = await supabase
+              // 좋아요 개수 가져오기
+              const { count: likesCount } = await supabase
                 .from('reply_likes')
-                .select('id')
-                .eq('reply_id', reply.id)
-                .eq('user_id', user.id)
-                .maybeSingle();
+                .select('*', { count: 'exact', head: true })
+                .eq('reply_id', reply.id);
                 
-              isLiked = !!userLike;
+              // 현재 사용자의 좋아요 여부
+              let isLiked = false;
+              if (user && user.id) {
+                const { data: userLike } = await supabase
+                  .from('reply_likes')
+                  .select('id')
+                  .eq('reply_id', reply.id)
+                  .eq('user_id', user.id)
+                  .maybeSingle();
+                  
+                isLiked = !!userLike;
+              }
+              
+              return {
+                ...reply,
+                reply_to_user: replyToUser,
+                likes_count: likesCount || 0,
+                user_has_liked: isLiked
+              };
+            } catch (error) {
+              console.log('답글 처리 중 오류:', error);
+              // 오류 발생 시 기본값으로 반환
+              return {
+                ...reply,
+                reply_to_user: null,
+                likes_count: 0,
+                user_has_liked: false
+              };
             }
-            
-            return {
-              ...reply,
-              reply_to_user: replyToUser,
-              likes_count: likesCount || 0,
-              user_has_liked: isLiked
-            };
           })
         );
         
         setReplies(repliesWithExtras);
+        setRepliesCount(repliesWithExtras.length);
       }
     } catch (err) {
       console.error('답글 불러오기 오류:', err);
@@ -254,7 +274,10 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         
       if (error) throw error;
       
-      loadReplies();
+      // 답글 목록 새로고침
+      await loadReplies();
+      // 답글 작성 폼 숨기기
+      setIsReplyFormVisible(false);
       return true;
     } catch (err) {
       console.error('답글 추가 오류:', err);
