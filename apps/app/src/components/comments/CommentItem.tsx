@@ -308,7 +308,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       <div className="flex items-start space-x-3">
         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
           {comment.user?.user_metadata?.name?.charAt(0) || 
@@ -318,17 +318,17 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {comment.user?.user_metadata?.name || 
                  comment.user?.email?.split('@')[0] || '익명'}
               </span>
-              <span className="text-xs text-gray-500">{formattedDate}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</span>
             </div>
             
             {isAuthor && !isEditing && (
               <button 
                 onClick={() => setIsEditing(true)}
-                className="text-gray-500 hover:text-gray-700 text-sm"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
               >
                 수정
               </button>
@@ -340,7 +340,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                className="w-full p-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 rounded-md text-sm"
                 rows={3}
               />
               <div className="flex space-x-2 mt-2">
@@ -364,7 +364,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
             </form>
           ) : (
             <>
-              <div className="mt-1 text-sm text-gray-900 break-words whitespace-pre-wrap">
+              <div className="mt-1 text-sm text-gray-900 dark:text-gray-100 break-words whitespace-pre-wrap">
                 {comment.content}
               </div>
               
@@ -387,7 +387,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                         }
                         setShowReplies(!showReplies);
                       }}
-                      className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
+                      className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center"
                     >
                       <span>답글 {repliesCount}개 &gt;</span>
                     </button>
@@ -399,7 +399,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                         }
                         setShowReplies(!showReplies);
                       }}
-                      className="text-sm text-gray-600 hover:text-gray-900 flex items-center opacity-0 hover:opacity-50"
+                      className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 flex items-center opacity-0 hover:opacity-50"
                     >
                       <span>답글 &gt;</span>
                     </button>
@@ -407,7 +407,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
 
                   {user && isStudentOfSchool && (
                     <button
-                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                      className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
                       onClick={() => {
                         setIsReplyFormVisible(!isReplyFormVisible);
                         if (!showReplies) {

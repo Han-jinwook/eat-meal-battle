@@ -297,7 +297,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                 />
               ) : (
                 <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-300">
                     {reply.user.user_metadata?.name?.[0] || reply.user.email[0]?.toUpperCase() || '?'}
                   </span>
                 </div>
@@ -306,10 +306,10 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-gray-700">
+                  <span className="text-xs text-gray-700 dark:text-gray-200">
                     {reply.user.user_metadata?.name || reply.user.email?.split('@')[0] || '사용자'}
                   </span>
-                  <span className="ml-2 text-xs text-gray-400">{formattedDate}</span>
+                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-400">{formattedDate}</span>
                 </div>
                 
                 {/* 점 3개 아이콘 - 자기가 쓴 글에만 표시 */}
@@ -320,20 +320,20 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                         e.stopPropagation();
                         setShowMenu(!showMenu);
                       }}
-                      className="text-gray-500 hover:text-gray-700 p-1"
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 p-1"
                     >
                       <span className="text-xl leading-none">⋮</span>
                     </button>
                     
                     {/* 수정/삭제 드롭다운 메뉴 */}
                     {showMenu && (
-                      <div className="absolute right-0 top-6 bg-white shadow-md rounded-md py-1 z-10 w-20">
+                      <div className="absolute right-0 top-6 bg-white dark:bg-gray-800 shadow-md rounded-md py-1 z-10 w-20">
                         <button
                           onClick={() => {
                             setIsEditing(true);
                             setShowMenu(false);
                           }}
-                          className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-gray-700"
+                          className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                         >
                           수정
                         </button>
@@ -351,7 +351,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                   </div>
                 )}
               </div>
-              <div className="mt-1 text-sm font-medium break-words whitespace-pre-wrap">
+              <div className="mt-1 text-sm font-medium break-words whitespace-pre-wrap dark:text-gray-100">
                 {/* 답글 대상자가 있으면 @언급 표시 */}
                 {reply.reply_to_user && (
                   <span className="text-blue-500 font-semibold">
@@ -378,7 +378,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                 {user && isStudentOfSchool && (
                   <button
                     onClick={() => setIsReplyFormVisible(!isReplyFormVisible)}
-                    className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 flex items-center gap-1"
                     title="답글 작성"
                   >
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
