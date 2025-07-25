@@ -275,7 +275,6 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     }
   };
 
-*/
   // 답글 추가 함수
   const handleAddReply = async (content: string): Promise<boolean> => {
     if (!user || !content.trim()) return false;
@@ -390,7 +389,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                       }}
                       className="text-sm text-gray-600 hover:text-gray-900 flex items-center"
                     >
-                      <span>답글 {repliesCount}개></span>
+                      <span>답글 {repliesCount}개 &gt;</span>
                     </button>
                   ) : (
                     <button
@@ -402,7 +401,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                       }}
                       className="text-sm text-gray-600 hover:text-gray-900 flex items-center opacity-0 hover:opacity-50"
                     >
-                      <span>답글 ></span>
+                      <span>답글 &gt;</span>
                     </button>
                   )}
 
