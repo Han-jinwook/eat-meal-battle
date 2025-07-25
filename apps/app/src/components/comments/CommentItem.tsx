@@ -275,6 +275,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     }
   };
 
+*/
   // 답글 추가 함수
   const handleAddReply = async (content: string): Promise<boolean> => {
     if (!user || !content.trim()) return false;
@@ -286,7 +287,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
           comment_id: comment.id,
           user_id: user.id,
           content: content.trim(),
-          reply_to_user_id: comment.user_id // 댓글 작성자에게 답글
+          // 1차 답글이므로 reply_to_user_id를 지정하지 않음
         });
         
       if (error) throw error;
