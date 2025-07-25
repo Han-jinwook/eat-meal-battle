@@ -255,7 +255,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   };
   
   return (
-    <div className="py-2 pl-8 border-l border-gray-200">
+    <div className="py-2 pl-8 border-l border-gray-200 bg-white rounded-md my-1">
       {isEditing ? (
         // 수정 폼
         <form onSubmit={handleEditSubmit} className="mt-2">
@@ -327,7 +327,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
                     
                     {/* 수정/삭제 드롭다운 메뉴 */}
                     {showMenu && (
-                      <div className="absolute right-0 top-6 bg-white dark:bg-gray-800 shadow-md rounded-md py-1 z-10 w-20">
+                      <div className="absolute right-0 top-6 bg-white shadow-md rounded-md py-1 z-10 w-20">
                         <button
                           onClick={() => {
                             setIsEditing(true);
