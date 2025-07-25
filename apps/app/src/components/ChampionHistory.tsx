@@ -218,7 +218,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         <h3 className="text-lg font-bold text-center mb-4 border-2 border-black rounded-lg py-2">
           급식장원 History
         </h3>
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 dark:text-gray-700">
           <div className="text-4xl mb-2">🔍</div>
           <p>장원 데이터를 불러오는 중 문제가 발생했습니다.</p>
           <p className="text-sm">API 응답: {championStats.length}개 항목</p>
@@ -239,7 +239,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300">
           <thead>
-            <tr className="bg-gray-50">
+            <tr className="bg-gray-50 dark:bg-white">
               <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">월/주차</th>
               <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">나의 기록</th>
               <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">반</th>
@@ -264,13 +264,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                     <span className="text-indigo-500">💪 도전</span>
                   )}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500">
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.class_count}명 / {stat.total_students || 0}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500">
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.grade_count}명 / {stat.total_students || 0}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500">
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.school_count}명 / {stat.total_students || 0}
                 </td>
               </tr>
@@ -279,11 +279,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             {/* 빈 행들 채우기 */}
             {Array.from({ length: Math.max(0, 5 - championStats.length) }, (_, index) => (
               <tr key={`empty-${index}`}>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300">-</td>
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
               </tr>
             ))}
           </tbody>
@@ -291,7 +291,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       </div>
       
       {/* 범례 */}
-      <div className="mt-4 text-xs text-gray-500 text-center">
+      <div className="mt-4 text-xs text-gray-500 dark:text-gray-700 text-center">
         <p>🏆 주장원: 해당 주 급식일수만큼 모두 정답 | 👑 월장원: 해당 월 급식일수만큼 모두 정답</p>
         <p>* 반/학년/학교 통계는 추후 업데이트 예정</p>
       </div>

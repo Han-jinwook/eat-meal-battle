@@ -488,8 +488,8 @@ export default function QuizClient() {
             <div className="quiz-container">
               {/* 퀴즈 문제 */}
               <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-2">오늘의 퀴즈</h3>
-                <p className="text-gray-700">{quiz.question}</p>
+                <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">오늘의 퀴즈</h3>
+                <p className="text-gray-700 dark:text-gray-200">{quiz.question}</p>
               </div>
               
               {/* 퀴즈 보기 */}
@@ -522,10 +522,10 @@ export default function QuizClient() {
                       }}
                     >
                       <div className="flex items-start">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-800 text-sm font-medium mr-3">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-800 dark:text-gray-900 text-sm font-medium mr-3">
                           {index + 1}
                         </span>
-                        <span>{option}</span>
+                        <span className="dark:text-gray-100">{option}</span>
                         
                         {submitted && quiz.correct_answer !== undefined && (
                           <div className="ml-auto">
