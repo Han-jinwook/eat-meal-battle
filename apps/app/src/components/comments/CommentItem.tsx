@@ -308,7 +308,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   };
 
   return (
-    <div className="bg-white dark:bg-white p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-300 text-gray-900 dark:text-gray-900">
+    <div className="bg-white dark:bg-white p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-300" style={{ color: '#111827' }}>
       <div className="flex items-start space-x-3">
         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
           {comment.user?.user_metadata?.name?.charAt(0) || 
@@ -342,6 +342,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                 onChange={(e) => setEditContent(e.target.value)}
                 className="w-full p-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 rounded-md text-sm"
                 rows={3}
+                style={{ color: '#111827' }}
               />
               <div className="flex space-x-2 mt-2">
                 <button

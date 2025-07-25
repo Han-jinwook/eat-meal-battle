@@ -255,7 +255,7 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
   };
   
   return (
-    <div className="py-2 pl-8 border-l border-gray-200 bg-white dark:bg-white rounded-md my-1 text-gray-900 dark:text-gray-900">
+    <div className="py-2 pl-8 border-l border-gray-200 bg-white dark:bg-white rounded-md my-1" style={{ color: '#111827' }}>
       {isEditing ? (
         // 수정 폼
         <form onSubmit={handleEditSubmit} className="mt-2">
