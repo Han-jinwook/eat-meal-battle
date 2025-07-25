@@ -308,7 +308,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-white p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-300">
       <div className="flex items-start space-x-3">
         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
           {comment.user?.user_metadata?.name?.charAt(0) || 
