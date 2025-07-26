@@ -135,13 +135,17 @@ export default function MealImageUploader({
       minute
     });
     
-    // mealDate가 오늘이 아니면 AI 버튼 비활성화
+    // mealDate가 오늘이 아니면 AI 버튼 비활성화 (테스트 모드 - 날짜 제약 해제)
+    // 테스트용: 날짜 제약 해제 (주석 처리)
+    /*
     if (mealDate !== today) {
       console.log('버튼들 비활성화: 오늘 날짜가 아님');
       setShowAiGenButton(false);
       setCanUploadImage(false);
       return;
     }
+    */
+    // 프로덕션용: 위 주석을 해제하고 이 주석을 삭제
     
     let currentMealId = null;
     let isPastAiCutoffTime = false;

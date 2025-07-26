@@ -36,15 +36,38 @@ function checkCurrentMode() {
                             !mealCardContent.includes('// return true;');
     
     // MealImageUploader 테스트 모드 확인
-    const uploaderTestMode = uploaderContent.includes('const isPastCutoffTime = true;') ||
-                            uploaderContent.includes('isPastAiCutoffTime = true;');
+    const hasTimeTestMode = uploaderContent.includes('isPastCutoffTime = true') &&
+                           uploaderContent.includes('isPastAiCutoffTime = true');
+  
+    const hasDateTestMode = uploaderContent.includes('/*') &&
+                           uploaderContent.includes('if (mealDate !== today)') &&
+                           uploaderContent.includes('*/');
     
     console.log('🔍 급식 시스템 시간 제약 현재 상태\n');
     console.log('📊 현재 모드 상태:');
     console.log(`   별점 시간 제약: ${mealCardTestMode ? '🟡 테스트 모드 (시간 제약 해제)' : '🟢 프로덕션 모드 (12시 이후)'}`);
-    console.log(`   이미지 업로드: ${uploaderTestMode ? '🟡 테스트 모드 (시간 제약 해제)' : '🟢 프로덕션 모드 (12시/12:30 이후)'}`);
     
-    if (mealCardTestMode || uploaderTestMode) {
+    console.log('\n2. MealImageUploader.tsx (이미지 업로드 제약):');
+  
+    if (hasDateTestMode) {
+      console.log('   ✅ 날짜 제약 해제 - 언제든지 업로드 가능');
+    } else {
+      console.log('   🔒 날짜 제약 활성화 - 오늘만 업로드 가능');
+    }
+  
+    if (hasTimeTestMode) {
+      console.log('   ✅ 시간 제약 해제 - 시간 무관');
+      console.log('   - 이미지 업로드: 언제든지 가능');
+      console.log('   - AI 이미지 생성: 언제든지 가능');
+    } else {
+      console.log('   🔒 시간 제약 활성화');
+      console.log('   - 이미지 업로드: 12시 이후만 가능');
+      console.log('   - AI 이미지 생성: 12:30 이후만 가능');
+    }
+    
+    console.log(`   이미지 업로드: ${hasTimeTestMode ? '🟡 테스트 모드 (시간 제약 해제)' : '🟢 프로덕션 모드 (12시/12:30 이후)'}`);
+    
+    if (mealCardTestMode || hasTimeTestMode) {
       console.log('\n⚠️  경고: 일부 기능이 테스트 모드입니다!');
       console.log('   배포 전에 반드시 프로덕션 모드로 전환하세요.');
       console.log('   명령어: node scripts/toggle-time-constraints.js prod');

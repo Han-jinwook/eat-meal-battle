@@ -82,25 +82,16 @@ function updateMealImageUploader() {
     let content = fs.readFileSync(mealImageUploaderPath, 'utf8');
     
     if (isTestMode) {
-      // 테스트 모드: 시간 제약 해제
-      content = content.replace(
-        /\/\/ const isPastCutoffTime = hour >= 12;.*?\n/g,
-        '// const isPastCutoffTime = hour >= 12; // 프로덕션용: 12시 이후\n'
-      );
-      content = content.replace(
-        /const isPastCutoffTime = hour >= 12;/g,
-        'const isPastCutoffTime = true; // 테스트용: 항상 활성화'
-      );
+      // 테스트 모드: 날짜 및 시간 제약 해제
       
-      content = content.replace(
-        /\/\/ isPastAiCutoffTime = hour > 12.*?\n/g,
-        '// isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30); // 프로덕션용: 12:30 이후\n'
-      );
-      content = content.replace(
-        /isPastAiCutoffTime = hour > 12 \|\| \(hour === 12 && minute >= 30\);/g,
-        'isPastAiCutoffTime = true; // 테스트용: 항상 활성화'
-      );
-    } else {
+      // 날짜 제약 해제 (주석 처리)
+      const dateConditionPattern = /if \(mealDate !== today\) \{[\s\S]*?return;\s*\}/;
+      if (dateConditionPattern.test(content)) {
+        content = content.replace(
+          dateConditionPattern,
+          '/*\n    if (mealDate !== today) {\n      console.log(\'\ubc84\ud2bc\ub4e4 \ube44\ud65c\uc131\ud654: \uc624\ub298 \ub0a0\uc9dc\uac00 \uc544\ub2d8\');\n      setShowAiGenButton(false);\n      setCanUploadImage(false);\n      return;\n    }\n    */'
+        );
+      }
       // 프로덕션 모드: 시간 제약 활성화
       content = content.replace(
         /const isPastCutoffTime = true;.*?\n/g,
