@@ -29,7 +29,11 @@ function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
   // 학교 유형이 없는 경우 처리
   if (!schoolType) {
     console.error('[manual-generate-meal-quiz] school_type 조회 실패 - 기본값 없이 진행');
+    console.log(`[DEBUG] generateQuizPrompt 함수: schoolType이 없음, '정보없음'으로 설정`);
+    console.log(`[DEBUG] 코드 버전: 2025-07-26 수정본 (fallback 제거)`);
     schoolType = '정보없음'; // fallback 로직 제거
+  } else {
+    console.log(`[DEBUG] generateQuizPrompt 함수: schoolType = ${schoolType}`);
   }
   
   // 학년과 학교 유형에 따른 기본 설정 분리
@@ -93,58 +97,72 @@ JSON 형식으로 반환:
  */
 const generateQuizWithAI = async function(meal, grade) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
+  console.log(`[DEBUG] 코드 버전: 2025-07-26 수정본 (fallback 제거)`);
+  console.log(`[DEBUG] 학교 코드: ${meal.school_code}, 학년: ${grade}`);
   
   // 학교 유형 정보 가져오기
   let schoolType;
   try {
     // 학교 정보에서 school_type 가져오기 시도
-    const { data: schoolInfo } = await supabaseAdmin
+    console.log(`[DEBUG] Supabase 쿼리 시작: school_infos 테이블에서 school_type 조회`);
+    const { data: schoolInfo, error: schoolInfoError } = await supabaseAdmin
       .from('school_infos')
       .select('school_type')
       .eq('school_code', meal.school_code)
       .single();
     
+    if (schoolInfoError) {
+      console.error(`[DEBUG] Supabase 쿼리 오류:`, schoolInfoError);
+    }
+    
+    console.log(`[DEBUG] 쿼리 결과:`, JSON.stringify(schoolInfo));
+    
     if (schoolInfo && schoolInfo.school_type) {
       schoolType = schoolInfo.school_type;
       console.log(`[manual-generate-meal-quiz] 학교 유형 정보 찾음: ${schoolType}`);
+      console.log(`[DEBUG] 학교 유형 설정 완료: ${schoolType}`);
     } else {
-      // 학교 유형 정보가 없는 경우 학년으로 추측
-      schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
-      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 없음, 학년으로 추측: ${schoolType}`);
+      // 학교 유형 정보가 없는 경우 - 더 이상 추측하지 않음
+      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 없음, 에러 로깅`);
+      console.error(`[manual-generate-meal-quiz] 학교 유형(school_type) 정보 조회 실패 - ${meal.school_code}`);
+      console.log(`[DEBUG] 학교 유형 정보 없음, schoolType = undefined로 유지`);
+      console.log(`[DEBUG] 이전 버전에서는 이 시점에 학년으로 학교 유형을 추측했으나, 현재 버전에서는 제거됨`);
     }
   } catch (error) {
-    // 오류 발생 시 학년으로 추측
-    schoolType = grade <= 6 ? '초등학교' : (grade <= 9 ? '중학교' : '고등학교');
-    console.log(`[manual-generate-meal-quiz] 학교 정보 조회 오류, 학년으로 추측: ${schoolType}`, error);
+    // 오류 발생 시 더 이상 추측하지 않고 오류만 기록
+    console.error(`[manual-generate-meal-quiz] 학교 정보 조회 오류:`, error);
+    console.log(`[DEBUG] 예외 발생, schoolType = undefined로 유지`);
+    console.log(`[DEBUG] 이전 버전에서는 이 시점에 학년으로 학교 유형을 추측했으나, 현재 버전에서는 제거됨`);
   }
   
   // OpenAI 프롬프트 생성
+  console.log(`[DEBUG] generateQuizPrompt 함수 호출 전 schoolType = ${schoolType || '정의되지 않음'}`);
   const prompt = generateQuizPrompt(meal, grade, meal.meal_date, meal.school_code, schoolType);
+  console.log(`[DEBUG] 프롬프트 생성 완료, 길이: ${prompt.length}자`);
   
   try {
-    // OpenAI API 호출
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    console.log(`[manual-generate-meal-quiz] OpenAI API 호출 시작...`);
+    console.log(`[DEBUG] OpenAI 호출 전 schoolType = ${schoolType || '정의되지 않음'}`);
+    console.log(`[DEBUG] 프롬프트에 포함된 학교 유형: ${schoolType || '없음'}`);
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
-        { 
-          role: "system", 
-          content: "당신은 한국 교육과정에 맞는 교육적인 퀴즈를 생성하는 전문가입니다. 각 학년에 적합한 난이도와 주제로 퀴즈를 만들어주세요."
-        },
-        { 
-          role: "user", 
-          content: prompt 
-        }
+        {"role": "system", "content": "당신은 교육적이고 재미있는 퀴즈를 만드는 전문가입니다."},
+        {"role": "user", "content": prompt}
       ],
       temperature: 0.7,
+      max_tokens: 500,
     });
-
-    // 응답 파싱
-    const content = response.choices[0].message.content;
-    console.log(`[manual-generate-meal-quiz] GPT 응답 수신: ${content.length}자`);
+    
+    console.log(`[manual-generate-meal-quiz] OpenAI API 응답 받음`);
+    const responseText = completion.choices[0].message.content;
+    console.log(`[manual-generate-meal-quiz] GPT 응답 수신: ${responseText.length}자`);
     
     // JSON 형식 추출 ('{...}' 형태의 문자열 찾기)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, responseText);
       console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, content);
       throw new Error("JSON 형식을 찾을 수 없습니다");
     }
