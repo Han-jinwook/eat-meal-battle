@@ -167,7 +167,7 @@ const generateQuizWithAI = async function(meal, grade, userId) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, responseText);
-      console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, content);
+      console.error(`[manual-generate-meal-quiz] JSON 형식을 찾을 수 없음`, responseText);
       throw new Error("JSON 형식을 찾을 수 없습니다");
     }
     
