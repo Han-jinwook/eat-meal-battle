@@ -77,6 +77,12 @@ function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
 **난이도:** ${difficultyLevel}
 **보기 스타일:** ${optionComplexity}
 
+**사실 정확성 필수:**
+- 모든 역사적 사실, 과학적 정보, 지리적 정보는 반드시 정확해야 함
+- 추측이나 불확실한 정보는 절대 포함하지 말 것
+- 특히 역사적 인물, 시대, 지명, 과학 원리 등은 철저히 검증된 내용만 사용
+- 틀린 정보로 인한 오개념 형성 방지가 최우선
+
 **중요:** 이전에 만든 문제와 완전히 다른 새로운 관점으로 접근하세요.
 
 JSON 형식으로 반환:
