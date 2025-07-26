@@ -93,22 +93,23 @@ JSON 형식으로 반환:
  * OpenAI를 사용하여 급식 메뉴 기반 퀴즈 생성
  * @param {Object} meal 급식 메뉴 데이터
  * @param {number} grade 학년 (1-12)
+ * @param {string} userId 사용자 ID
  * @returns {Promise<Object>} 생성된 퀴즈 데이터
  */
-const generateQuizWithAI = async function(meal, grade) {
+const generateQuizWithAI = async function(meal, grade, userId) {
   console.log(`[manual-generate-meal-quiz] ${grade}학년용 퀴즈 생성 시작`);
-  console.log(`[DEBUG] 코드 버전: 2025-07-26 수정본 (fallback 제거)`);
-  console.log(`[DEBUG] 학교 코드: ${meal.school_code}, 학년: ${grade}`);
+  console.log(`[DEBUG] 코드 버전: 2025-07-26 수정본 (사용자별 조회)`);
+  console.log(`[DEBUG] 사용자 ID: ${userId}, 학년: ${grade}`);
   
-  // 학교 유형 정보 가져오기
+  // 사용자별 학교 유형 정보 가져오기
   let schoolType;
   try {
-    // 학교 정보에서 school_type 가져오기 시도
-    console.log(`[DEBUG] Supabase 쿼리 시작: school_infos 테이블에서 school_type 조회`);
+    // 사용자 ID로 school_infos 테이블에서 school_type과 grade 조회
+    console.log(`[DEBUG] Supabase 쿼리 시작: user_id로 school_infos 테이블 조회`);
     const { data: schoolInfo, error: schoolInfoError } = await supabaseAdmin
       .from('school_infos')
-      .select('school_type')
-      .eq('school_code', meal.school_code)
+      .select('school_type, grade')
+      .eq('user_id', userId)
       .single();
     
     if (schoolInfoError) {
@@ -119,20 +120,23 @@ const generateQuizWithAI = async function(meal, grade) {
     
     if (schoolInfo && schoolInfo.school_type) {
       schoolType = schoolInfo.school_type;
-      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 찾음: ${schoolType}`);
+      console.log(`[manual-generate-meal-quiz] 사용자별 학교 정보 찾음: ${schoolType}, 학년: ${schoolInfo.grade}`);
       console.log(`[DEBUG] 학교 유형 설정 완료: ${schoolType}`);
+      
+      // 전달받은 grade와 DB의 grade가 다른 경우 경고
+      if (schoolInfo.grade && schoolInfo.grade !== grade) {
+        console.log(`[DEBUG] 경고: 전달받은 학년(${grade})과 DB 학년(${schoolInfo.grade})이 다름`);
+      }
     } else {
       // 학교 유형 정보가 없는 경우 - 더 이상 추측하지 않음
-      console.log(`[manual-generate-meal-quiz] 학교 유형 정보 없음, 에러 로깅`);
-      console.error(`[manual-generate-meal-quiz] 학교 유형(school_type) 정보 조회 실패 - ${meal.school_code}`);
+      console.log(`[manual-generate-meal-quiz] 사용자 학교 정보 없음, 에러 로깅`);
+      console.error(`[manual-generate-meal-quiz] 사용자(${userId})의 학교 정보 조회 실패`);
       console.log(`[DEBUG] 학교 유형 정보 없음, schoolType = undefined로 유지`);
-      console.log(`[DEBUG] 이전 버전에서는 이 시점에 학년으로 학교 유형을 추측했으나, 현재 버전에서는 제거됨`);
     }
   } catch (error) {
     // 오류 발생 시 더 이상 추측하지 않고 오류만 기록
-    console.error(`[manual-generate-meal-quiz] 학교 정보 조회 오류:`, error);
+    console.error(`[manual-generate-meal-quiz] 사용자 학교 정보 조회 오류:`, error);
     console.log(`[DEBUG] 예외 발생, schoolType = undefined로 유지`);
-    console.log(`[DEBUG] 이전 버전에서는 이 시점에 학년으로 학교 유형을 추측했으나, 현재 버전에서는 제거됨`);
   }
   
   // OpenAI 프롬프트 생성

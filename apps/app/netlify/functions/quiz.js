@@ -652,7 +652,7 @@ exports.handler = async function(event, context) {
         
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
           try {
-            generatedQuiz = await generateQuizWithAI(meal, grade);
+            generatedQuiz = await generateQuizWithAI(meal, grade, userId);
             break; // 성공하면 루프 종료
           } catch (error) {
             console.error(`[quiz] 퀴즈 생성 시도 ${attempt} 실패:`, error.message);
