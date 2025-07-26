@@ -12,14 +12,8 @@ import { createClient as createServerClient } from '@/lib/supabase-server'
 
 export class ChampionCalculator {
   private getSupabaseClient() {
-    if (typeof window === 'undefined') {
-      try {
-        return createServerClient() as any
-      } catch (error) {
-        console.log('서버 클라이언트 생성 실패, 기본 클라이언트 사용:', error)
-        return createClient() as any
-      }
-    }
+    console.log('DEBUG', '서버 환경에서 Supabase 클라이언트 호출 - 제한된 기능');
+    // 서버 환경에서는 기본 클라이언트만 사용
     return createClient() as any
   }
   
