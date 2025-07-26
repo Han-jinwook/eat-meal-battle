@@ -204,8 +204,9 @@ export default function MealImageUploader({
         
         // hasValidMeal 체크는 위에서 이미 완료됨
         
-        // 3. 시간 조건 확인 (12:00 이후, 한국 시간 기준)
-        const isPastCutoffTime = hour >= 12;
+        // 3. 시간 조건 확인 (테스트 모드 - 시간 제약 해제)
+        const isPastCutoffTime = true; // 테스트용: 항상 활성화
+        // const isPastCutoffTime = hour >= 12; // 프로덕션용: 12시 이후
         
         console.log('시간 조건 확인:', {
           hour,
@@ -216,8 +217,9 @@ export default function MealImageUploader({
         // 파일선택 버튼은 12:00 이후부터 활성화
         setCanUploadImage(isPastCutoffTime);
         
-        // AI 이미지 생성 버튼은 12:30 이후부터 활성화
-        isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30);
+        // AI 이미지 생성 버튼은 12:30 이후부터 활성화 (테스트 모드 - 시간 제약 해제)
+        isPastAiCutoffTime = true; // 테스트용: 항상 활성화
+        // isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30); // 프로덕션용: 12:30 이후
         if (!isPastAiCutoffTime) {
           console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
           setShowAiGenButton(false);
