@@ -7,14 +7,16 @@
  * - 결과는 user_champion_records 테이블에 저장
  */
 
-import { createClient } from '@/lib/supabase'
-import { createClient as createServerClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export class ChampionCalculator {
   private getSupabaseClient() {
-    console.log('DEBUG', '서버 환경에서 Supabase 클라이언트 호출 - 제한된 기능');
-    // 서버 환경에서는 기본 클라이언트만 사용
-    return createClient() as any
+    console.log('DEBUG', '서버 환경에서 Supabase 클라이언트 호출 - 직접 클라이언트 생성');
+    // 서버 환경에서 직접 Supabase 클라이언트 생성
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
   }
   
   private get supabase() {
