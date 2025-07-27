@@ -60,9 +60,12 @@ export default function BattlePage() {
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth })
       });
       
-      const apiUrl = `/api/battle/menu?${params}`;
+      // 탭에 따라 다른 API 호출
+      const apiEndpoint = activeTab === 'menu' ? '/api/battle/menu' : '/api/battle/meal';
+      const apiUrl = `${apiEndpoint}?${params}`;
       console.log('📡 API 호출 URL:', apiUrl);
       console.log('📋 API 파라미터:', Object.fromEntries(params));
+      console.log('🏷️ 활성 탭:', activeTab);
       
       const response = await fetch(apiUrl);
       const result = await response.json();
@@ -88,7 +91,7 @@ export default function BattlePage() {
 
   // 데이터 로딩 useEffect
   useEffect(() => {
-    if (activeTab === 'menu' && userSchool?.school_code) {
+    if (userSchool?.school_code) {
       loadBattleData();
     }
   }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth]);

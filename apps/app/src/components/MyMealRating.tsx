@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { calculateDailyMealBattle, calculateMonthlyMealBattle } from '@/utils/battleCalculator';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -161,6 +162,41 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           console.error('meal_ratings upsert 오류:', upsertError);
         } else {
           // 급식 평점 재계산 완료
+          console.log('✅ 급식 평점 저장 성공, 배틀 계산 트리거 시작...');
+          
+          // 🔥 급식 배틀 계산 트리거
+          try {
+            // 급식 정보 조회를 위해 meal_menus 테이블에서 날짜와 학교 코드 조회
+            const { data: mealData, error: mealError } = await supabase
+              .from('meal_menus')
+              .select('meal_date, school_code')
+              .eq('id', mealId)
+              .single();
+              
+            if (mealError) {
+              console.error('⚠️ 급식 정보 조회 실패:', mealError);
+              return;
+            }
+            
+            if (mealData) {
+              const mealDate = mealData.meal_date;
+              const schoolCode = mealData.school_code;
+              
+              console.log('🏆 급식 배틀 계산 시작:', { mealDate, schoolCode });
+              
+              // 일별 급식 배틀 계산
+              await calculateDailyMealBattle(mealDate, schoolCode);
+              console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
+              
+              // 월별 급식 배틀 계산
+              const date = new Date(mealDate);
+              await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+              console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+            }
+          } catch (battleError) {
+            console.error('⚠️ 급식 배틀 계산 중 오류 (급식 평점 저장은 성공):', battleError);
+            // 배틀 계산 실패해도 급식 평점 저장은 성공으로 처리
+          }
         }
       } catch (error) {
         console.error('❌ 급식 평점 재계산 실패:', error);

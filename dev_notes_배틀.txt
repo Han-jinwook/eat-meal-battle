@@ -179,7 +179,123 @@
 - 클라이언트 → 순위 조회만 `SELECT`
 - Netlify Function(service_role) → UPSERT 집계 가능 (RLS 우회)
 
+## 🔧 주요 문제 해결 기록 (2025-07-27)
+
+### 1. 메뉴 배틀 날짜 필터링 문제
+**문제:** 배틀 페이지에서 다른 날짜로 조회해도 항상 같은 데이터가 반환
+**원인:** 배틀 API의 Supabase 쿼리에서 날짜 필터링이 제대로 작동하지 않음
+**해결:**
+```typescript
+// 기존 (문제 있는 코드)
+.eq('battle_date', date)
+.eq('school_code', schoolCode)
+
+// 수정 (올바른 코드)
+.eq('school_code', schoolCode)  // 필터 순서 변경
+.eq('battle_date', date)
+```
+
+### 2. 월별 배틀 데이터 개수 문제
+**문제:** 월별 배틀에서 73개 데이터가 나오는 것이 정상인지 의문
+**해결:** 하루 5~7개 메뉴 × 10일 정도 = 73개는 정상적인 월별 집계
+
+### 3. 월별 배틀 UI 개선
+**문제:** 같은 메뉴명이라도 어느 날의 급식인지 구분 필요
+**해결:**
+- API에서 meal_date 정보 추가 조회
+- 월별 배틀 테이블에 급식날짜 컬럼 추가
+- "7월 23일" 형태로 날짜 표시
+
+### 4. 디버깅 로그 강화
+**추가된 로그:**
+```typescript
+console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month });
+console.log('📅 일별 배틀 데이터 조회 시작:', { table, battle_date, school_code });
+console.log('✅ DB 쿼리 결과:', { dataLength, sampleData, allData });
+console.log('🗓️ 반환된 데이터의 날짜 확인:', { requestedDate, actualDates });
+```
+
+### 5. 핵심 교훈
+- **Supabase 쿼리 필터 순서 중요**: school_code 먼저, 날짜 나중에
+- **월별 집계는 많은 데이터가 정상**: 일별 × 날짜 수
+- **사용자 경험 고려**: 같은 메뉴도 날짜로 구분 필요
+- **디버깅 로그 필수**: 프로덕션 환경에서 문제 파악 위해
+
+## 🍱 급식 배틀 시스템 구현 완료 (2025-07-27)
+
+### 1. 급식 배틀 계산 함수 구현
+**파일:** `apps/app/src/utils/battleCalculator.ts`
+**추가된 함수:**
+- `calculateDailyMealBattle()` - 일별 급식 배틀 계산
+- `calculateMonthlyMealBattle()` - 월별 급식 배틀 계산
+- `MealBattleResult`, `MealMonthlyBattleResult` 인터페이스 추가
+
+**핵심 로직:**
+```typescript
+// meal_rating_stats 테이블에서 학교별 평점 집계 조회
+// 평균 평점 기준 내림차순 정렬로 순위 계산
+// meal_battle_daily/monthly 테이블에 결과 저장
+```
+
+### 2. 급식 배틀 API 구현
+**파일:** `apps/app/src/app/api/battle/meal/route.ts`
+**기능:**
+- 일별/월별 급식 배틀 결과 조회
+- 학교 정보 조인으로 학교명, 지역 정보 포함
+- 학교 유형별 필터링 지원 (초/중/고)
+- 메뉴 배틀 API와 동일한 구조
+
+**사용법:**
+```
+GET /api/battle/meal?type=daily&date=2025-07-27&schoolType=고등학교
+GET /api/battle/meal?type=monthly&month=2025-07&schoolType=고등학교
+```
+
+### 3. 배틀 페이지 수정
+**파일:** `apps/app/src/app/battle/page.tsx`
+**변경사항:**
+- 탭에 따라 다른 API 호출: 메뉴 배틀(`/api/battle/menu`) vs 급식 배틀(`/api/battle/meal`)
+- 급식 탭에서도 데이터 로딩되도록 useEffect 수정
+- 기존 UI 구조 그대로 유지
+
+### 4. 급식 평점 트리거 구현
+**파일:** `apps/app/src/components/MyMealRating.tsx`
+**추가된 기능:**
+- 급식 평점 저장 후 자동으로 배틀 계산 실행
+- `calculateDailyMealBattle()`, `calculateMonthlyMealBattle()` 호출
+- 배틀 계산 실패해도 평점 저장은 성공으로 처리
+
+**트리거 플로우:**
+```
+사용자 메뉴 평점 입력 → 급식 평점 재계산 → meal_ratings 저장 → 
+급식 정보 조회 (meal_date, school_code) → 급식 배틀 계산 실행
+```
+
+### 5. 데이터베이스 스키마 활용
+**사용된 테이블:**
+- `meal_ratings` - 사용자별 급식 평점
+- `meal_rating_stats` - 급식 평점 집계 (학교별)
+- `meal_battle_daily` - 일별 급식 배틀 결과
+- `meal_battle_monthly` - 월별 급식 배틀 결과
+
+### 6. 핵심 특징
+- **실시간 업데이트**: 급식 평점 변경 시 즉시 배틀 순위 재계산
+- **메뉴 배틀과 동일한 패턴**: 기존 메뉴 배틀 구조를 그대로 활용
+- **학교 vs 학교**: 메뉴별 경쟁이 아닌 학교별 급식 품질 경쟁
+- **오류 처리**: 배틀 계산 실패해도 평점 저장은 정상 처리
+
+### 7. 테스트 방법
+1. 급식 페이지에서 메뉴 아이템에 별점 주기
+2. 배틀 페이지 → 급식 배틀 탭에서 순위 확인
+3. 콘솔에서 배틀 계산 로그 확인
+
+### 8. 주요 교훈
+- **기존 구조 활용**: 메뉴 배틀 패턴을 그대로 적용하여 빠른 구현
+- **트리거 방식**: DB 트리거 대신 클라이언트에서 함수 호출로 구현
+- **오류 격리**: 배틀 계산 실패가 평점 저장에 영향 주지 않도록 분리
+
 ### 다음 작업
 - Daily 집계 Function 구현 및 CRON 연동
-- 프론트 API 호출 분기 추가 (`type=meal`)
-- Monthly 테이블 구축 후 동일 RLS 적용
+- 프론트 API 호출 분기 추가 (`type=meal`) ✅ 완료
+- Monthly 테이블 구축 후 동일 RLS 적용 ✅ 완료
+- 급식 배틀 시스템 전체 구현 ✅ 완료
