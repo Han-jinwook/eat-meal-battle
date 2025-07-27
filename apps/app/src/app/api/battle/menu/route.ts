@@ -47,12 +47,14 @@ export async function GET(request: NextRequest) {
     // DB에서 저장된 배틀 데이터만 조회
     let query;
     if (type === 'daily') {
-      // 일별 배틀 데이터 조회 - 간소화된 방식
+      // 일별 배틀 데이터 조회 - 명확한 필터링
       console.log('📅 일별 배틀 데이터 조회 시작:', {
         table: 'menu_battle_daily',
         battle_date: date,
-        school_code: schoolCode
+        school_code: schoolCode,
+        dateType: typeof date
       });
+      
       query = supabase
         .from('menu_battle_daily')
         .select(`
@@ -63,12 +65,28 @@ export async function GET(request: NextRequest) {
           final_rating_count,
           daily_rank
         `)
-        .eq('battle_date', date)
         .eq('school_code', schoolCode)
+        .eq('battle_date', date)
         .order('daily_rank', { ascending: true });
+        
+      console.log('🔍 일별 쿼리 필터 조건:', {
+        school_code: schoolCode,
+        battle_date: date
+      });
     } else {
-      // 월별 배틀 데이터 조회 - 간소화된 방식
+      // 월별 배틀 데이터 조회 - 명확한 필터링
       const [year, monthNum] = month.split('-');
+      const battleYear = parseInt(year);
+      const battleMonth = parseInt(monthNum);
+      
+      console.log('📅 월별 배틀 데이터 조회 시작:', {
+        table: 'menu_battle_monthly',
+        battle_year: battleYear,
+        battle_month: battleMonth,
+        school_code: schoolCode,
+        originalMonth: month
+      });
+      
       query = supabase
         .from('menu_battle_monthly')
         .select(`
@@ -80,10 +98,16 @@ export async function GET(request: NextRequest) {
           final_rating_count,
           monthly_rank
         `)
-        .eq('battle_year', parseInt(year))
-        .eq('battle_month', parseInt(monthNum))
         .eq('school_code', schoolCode)
+        .eq('battle_year', battleYear)
+        .eq('battle_month', battleMonth)
         .order('monthly_rank', { ascending: true });
+        
+      console.log('🔍 월별 쿼리 필터 조건:', {
+        school_code: schoolCode,
+        battle_year: battleYear,
+        battle_month: battleMonth
+      });
     }
 
     console.log('🔍 DB 쿼리 실행 중...');
