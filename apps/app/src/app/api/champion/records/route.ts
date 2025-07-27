@@ -4,7 +4,7 @@
  * - 기존 API와 호환되며 점진적 전환 가능
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { ChampionCalculator } from '@/utils/championCalculator'
 
 const championCalculator = new ChampionCalculator();
@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Supabase 클라이언트 초기화
-    const supabase = createClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     if (!supabase) {
       return NextResponse.json(
         { error: 'Supabase 클라이언트 초기화 실패' },
@@ -124,7 +127,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Supabase 클라이언트 초기화
-    const supabase = createClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     if (!supabase) {
       return NextResponse.json(
         { error: 'Supabase 클라이언트 초기화 실패' },
