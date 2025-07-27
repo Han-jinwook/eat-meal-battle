@@ -153,11 +153,17 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // 메뉴 아이템 이름 별도 조회
+    // 메뉴 아이템 이름 및 급식 날짜 조회
     const menuItemIds = data.map(item => item.menu_item_id);
     const { data: menuItems, error: menuItemsError } = await supabase
       .from('meal_menu_items')
-      .select('id, item_name')
+      .select(`
+        id, 
+        item_name,
+        meal_menus!meal_menu_items_meal_id_fkey(
+          meal_date
+        )
+      `)
       .in('id', menuItemIds);
       
     if (menuItemsError) {
@@ -168,21 +174,28 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // 데이터 변환 - 메뉴 아이템 정보를 조합
+    // 데이터 변환 - 메뉴 아이템 정보와 급식 날짜 조합
     const menuItemMap = {};
     menuItems?.forEach(item => {
-      menuItemMap[item.id] = item.item_name;
+      menuItemMap[item.id] = {
+        item_name: item.item_name,
+        meal_date: item.meal_menus?.meal_date || null
+      };
     });
     
     // 배틀 결과와 메뉴 아이템 정보 합치기
-    const battleResults = data?.map(item => ({
-      menu_item_id: item.menu_item_id,
-      item_name: menuItemMap[item.menu_item_id] || '알 수 없는 메뉴',
-      final_avg_rating: item.final_avg_rating,
-      final_rating_count: item.final_rating_count,
-      daily_rank: item.daily_rank,
-      monthly_rank: item.monthly_rank
-    })) || [];
+    const battleResults = data?.map(item => {
+      const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
+      return {
+        menu_item_id: item.menu_item_id,
+        item_name: menuInfo.item_name,
+        meal_date: menuInfo.meal_date,
+        final_avg_rating: item.final_avg_rating,
+        final_rating_count: item.final_rating_count,
+        daily_rank: item.daily_rank,
+        monthly_rank: item.monthly_rank
+      };
+    }) || [];
 
     return NextResponse.json({
       success: true,

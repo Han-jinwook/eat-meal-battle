@@ -310,8 +310,11 @@ export default function BattlePage() {
                 
                 {/* 테이블 헤더 */}
                 <div className="bg-red-50 border-b border-red-200">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm font-medium text-red-700">
+                  <div className={`grid gap-4 px-4 py-3 text-sm font-medium text-red-700 ${
+                    viewMode === 'monthly' ? 'grid-cols-5' : 'grid-cols-4'
+                  }`}>
                     <div className="text-center">순위</div>
+                    {viewMode === 'monthly' && <div className="text-center">급식날짜</div>}
                     <div className="text-center">메뉴명</div>
                     <div className="text-center">점수</div>
                     <div className="text-center">평가수</div>
@@ -343,10 +346,20 @@ export default function BattlePage() {
                     </div>
                   ) : (
                     (sortOrder === 'asc' ? battleData : [...battleData].reverse()).map((item, index) => (
-                      <div key={item.menu_item_id} className="grid grid-cols-4 gap-4 px-4 py-4 hover:bg-red-25 transition-colors">
+                      <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
+                        viewMode === 'monthly' ? 'grid-cols-5' : 'grid-cols-4'
+                      }`}>
                         <div className="text-center font-medium text-red-600">
                           {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank : item.monthly_rank) : battleData.length - index}
                         </div>
+                        {viewMode === 'monthly' && (
+                          <div className="text-center text-gray-600 text-sm">
+                            {item.meal_date ? new Date(item.meal_date).toLocaleDateString('ko-KR', {
+                              month: 'short',
+                              day: 'numeric'
+                            }) : '-'}
+                          </div>
+                        )}
                         <div className="text-center font-medium text-gray-800">
                           {item.item_name}
                         </div>
