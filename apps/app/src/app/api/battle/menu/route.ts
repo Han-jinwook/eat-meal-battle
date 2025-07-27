@@ -109,6 +109,19 @@ export async function GET(request: NextRequest) {
       allData: data
     });
     
+    // 필터링 검증: 실제 반환된 데이터의 날짜 확인
+    if (data && data.length > 0) {
+      console.log('🗓️ 반환된 데이터의 날짜 확인:', {
+        requestedDate: type === 'daily' ? date : `${month} (월별)`,
+        actualDates: data.map(item => ({
+          menu_item_id: item.menu_item_id,
+          battle_date: item.battle_date || 'N/A',
+          battle_year: item.battle_year || 'N/A',
+          battle_month: item.battle_month || 'N/A'
+        }))
+      });
+    }
+    
     if (!data || data.length === 0) {
       return NextResponse.json({
         success: true,
