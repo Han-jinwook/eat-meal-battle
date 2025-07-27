@@ -43,14 +43,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // JWT 토큰 검증
-    const { error: authError } = await supabase.auth.getUser()
-    if (authError) {
-      return NextResponse.json(
-        { error: '인증 실패', details: authError.message },
-        { status: 401 }
-      )
-    }
+    // 인증 검증 생략 - 파라미터 검증만 수행
 
     // 사용자의 장원 기록 조회
     const { data: userChampionRecords, error: recordsError } = await supabase
@@ -138,14 +131,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // JWT 토큰 검증
-    const { error: authError } = await supabase.auth.getUser()
-    if (authError) {
-      return NextResponse.json(
-        { error: '인증 실패', details: authError.message },
-        { status: 401 }
-      )
-    }
+    // 인증 검증 생략 - 파라미터 검증만 수행
 
     // 장원 상태 계산
     let isChampion = false;
