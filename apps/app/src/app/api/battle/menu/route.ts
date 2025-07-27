@@ -14,7 +14,14 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') as 'daily' | 'monthly';
     const month = searchParams.get('month');
 
-    console.log('배틀 API 호출:', { schoolCode, type, date, month });
+    console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month });
+    console.log('📋 요청 파라미터 상세:', {
+      schoolCode: schoolCode,
+      type: type,
+      date: date,
+      month: month,
+      url: request.url
+    });
 
     if (!schoolCode) {
       return NextResponse.json(
@@ -41,6 +48,11 @@ export async function GET(request: NextRequest) {
     let query;
     if (type === 'daily') {
       // 일별 배틀 데이터 조회 - 간소화된 방식
+      console.log('📅 일별 배틀 데이터 조회 시작:', {
+        table: 'menu_battle_daily',
+        battle_date: date,
+        school_code: schoolCode
+      });
       query = supabase
         .from('menu_battle_daily')
         .select(`
@@ -74,12 +86,12 @@ export async function GET(request: NextRequest) {
         .order('monthly_rank', { ascending: true });
     }
 
-    console.log('DB 쿼리 실행 중...');
+    console.log('🔍 DB 쿼리 실행 중...');
     const { data, error } = await query;
 
     if (error) {
-      console.error('배틀 데이터 조회 오류:', error);
-      console.error('오류 세부사항:', {
+      console.error('❌ 배틀 데이터 조회 오류:', error);
+      console.error('🚨 오류 세부사항:', {
         message: error.message,
         details: error.details,
         hint: error.hint,
@@ -91,7 +103,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('DB 쿼리 결과:', { dataLength: data?.length || 0, data: data?.slice(0, 2) });
+    console.log('✅ DB 쿼리 결과:', { 
+      dataLength: data?.length || 0, 
+      sampleData: data?.slice(0, 2),
+      allData: data
+    });
     
     if (!data || data.length === 0) {
       return NextResponse.json({

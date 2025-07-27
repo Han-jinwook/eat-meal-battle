@@ -38,7 +38,17 @@ export default function BattlePage() {
 
   // 배틀 데이터 로딩 함수
   const loadBattleData = async () => {
-    if (!userSchool?.school_code) return;
+    if (!userSchool?.school_code) {
+      console.log('⚠️ 학교 코드가 없어 배틀 데이터 로딩 중단');
+      return;
+    }
+    
+    console.log('🔍 배틀 데이터 로딩 시작:', {
+      schoolCode: userSchool.school_code,
+      viewMode: viewMode,
+      selectedDate: selectedDate,
+      selectedMonth: selectedMonth
+    });
     
     setBattleLoading(true);
     setBattleError(null);
@@ -50,8 +60,18 @@ export default function BattlePage() {
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth })
       });
       
-      const response = await fetch(`/api/battle/menu?${params}`);
+      const apiUrl = `/api/battle/menu?${params}`;
+      console.log('📡 API 호출 URL:', apiUrl);
+      console.log('📋 API 파라미터:', Object.fromEntries(params));
+      
+      const response = await fetch(apiUrl);
       const result = await response.json();
+      
+      console.log('📨 API 응답:', {
+        status: response.status,
+        ok: response.ok,
+        result: result
+      });
       
       if (!response.ok) {
         throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
