@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
           school_code,
           battle_year,
           battle_month,
-          avg_rating,
-          rating_count,
+          final_avg_rating,
+          final_rating_count,
           monthly_rank
         `)
         .eq('battle_year', year)
