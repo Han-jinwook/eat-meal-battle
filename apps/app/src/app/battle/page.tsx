@@ -368,18 +368,6 @@ export default function BattlePage() {
             </div>
           ) : (
             <div>
-              {/* 급식 배틀 헤더 */}
-              <div className="text-center mb-8">
-                <h2 className="text-xl font-bold text-blue-600 mb-2">급식 배틀</h2>
-                <p className="text-blue-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 급식별 배틀 결과를 보여줍니다.</p>
-                <p className="text-sm text-blue-400 mt-2">
-                  {viewMode === 'daily' 
-                    ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
-                    : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
-                  }
-                </p>
-              </div>
-
               {/* 지역 및 학교 유형 선택 */}
               <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
                 {/* 지역 정보 - 왼쪽 정렬 */}
