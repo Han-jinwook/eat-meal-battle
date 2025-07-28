@@ -716,7 +716,7 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
   console.log(`📋 입력 파라미터: targetDate=${targetDate}, schoolCode=${schoolCode}`);
   
   try {
-    // 1. 해당 날짜의 급식 평점 집계 조회
+    // 1. 해당 날짜의 급식 평점 집계 조회 (meal_menus와 조인)
     let query = supabase
       .from('meal_rating_stats')
       .select(`
@@ -728,9 +728,12 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
         grade3_avg, grade3_count,
         grade4_avg, grade4_count,
         grade5_avg, grade5_count,
-        grade6_avg, grade6_count
+        grade6_avg, grade6_count,
+        meal_menus!inner(
+          meal_date
+        )
       `)
-      .eq('meal_date', date)
+      .eq('meal_menus.meal_date', date)
       .gt('rating_count', 0); // 평가가 있는 급식만
       
     if (schoolCode) {
@@ -825,7 +828,7 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   console.log(`📋 입력 파라미터: year=${year}, month=${month}, schoolCode=${schoolCode}`);
   
   try {
-    // 1. 해당 월의 급식 평점 집계 조회
+    // 1. 해당 월의 급식 평점 집계 조회 (meal_menus와 조인)
     const startDate = `${targetYear}-${targetMonth.toString().padStart(2, '0')}-01`;
     const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0]; // 월 마지막 날
     
@@ -835,10 +838,12 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
         school_code,
         avg_rating,
         rating_count,
-        meal_date
+        meal_menus!inner(
+          meal_date
+        )
       `)
-      .gte('meal_date', startDate)
-      .lte('meal_date', endDate)
+      .gte('meal_menus.meal_date', startDate)
+      .lte('meal_menus.meal_date', endDate)
       .gt('rating_count', 0);
       
     if (schoolCode) {

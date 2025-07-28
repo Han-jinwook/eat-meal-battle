@@ -250,7 +250,12 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
 
   // meal_rating_stats 변경 시 배틀 계산, meal_ratings 변경 시 UI 업데이트
   useEffect(() => {
-    if (!mealId || !user) return;
+    if (!mealId || !user) {
+      console.log('❌ 실시간 구독 설정 불가:', { mealId, userId: user?.id });
+      return;
+    }
+    
+    console.log('🔔 실시간 구독 설정 시작:', { mealId, userId: user.id });
     
     // 배틀 계산용: meal_rating_stats 구독 (학교/학년별 통계 완료 후)
     // UI 업데이트용: meal_ratings 구독 (개인 평점 표시용)
@@ -260,8 +265,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       { table: 'meal_ratings', filter: `meal_id=eq.${mealId}` },
     ];
     
-    const channels = tables.map(({ table, filter }) =>
-      supabase
+    const channels = tables.map(({ table, filter }) => {
+      console.log(`🔔 ${table} 구독 채널 생성:`, { table, filter });
+      
+      return supabase
         .channel(`${table}:${mealId}`)
         .on('postgres_changes', {
           event: '*',
@@ -270,10 +277,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           ...(filter ? { filter } : {}),
         }, (payload) => {
           // 테이블 실시간 업데이트 수신
+          console.log(`🔔 ${table} 변경 감지:`, payload);
           
           if (table === 'meal_rating_stats') {
             // 급식 통계 완료 시 배틀 계산 트리거
-            console.log('📊 meal_rating_stats 변경 감지, 배틀 계산 트리거 시작...');
+            console.log('📊 meal_rating_stats 변경 감지, 배틀 계산 트리거 시작...', payload);
             triggerBattleCalculation();
           } else if (table === 'meal_ratings') {
             // 현재 사용자의 데이터인지 확인
