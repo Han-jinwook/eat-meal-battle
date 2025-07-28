@@ -263,18 +263,6 @@ export default function BattlePage() {
         }`}>
           {activeTab === 'menu' ? (
             <div>
-              {/* 메뉴 배틀 헤더 */}
-              <div className="text-center mb-8">
-                <h2 className="text-xl font-bold text-red-600 mb-2">메뉴 배틀</h2>
-                <p className="text-red-500">선택한 {viewMode === 'daily' ? '날짜' : '월'}의 메뉴별 배틀 결과를 보여줍니다.</p>
-                <p className="text-sm text-red-400 mt-2">
-                  {viewMode === 'daily' 
-                    ? `선택 날짜: ${new Date(selectedDate).toLocaleDateString('ko-KR')}`
-                    : `선택 월: ${new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}`
-                  }
-                </p>
-              </div>
-
               {/* 일간 베스트 메뉴 도표 */}
               <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
                 {/* 도표 제목 */}
