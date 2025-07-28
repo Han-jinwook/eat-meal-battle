@@ -155,28 +155,77 @@ const isPastUploadCutoffTime = true; // 이 줄로 강제 설정
 - 평균 평점 실시간 계산
 - 평점 통계 표시
 
-### 4️⃣ 이미지 업로드
-**파일**: `apps/app/src/components/MealImageUploader.tsx`
-- 급식 사진 업로드 기능
-- AI 이미지 분석 연동
-- 메뉴 일치 여부 검증
+```javascript
+// POST, DELETE 요청에서 배틀 계산 트리거 주석 처리
+// await triggerBattleCalculation(mealId, schoolCode);
+```
 
-## 🔄 정기 유지보수
+#### 2️⃣ 프론트엔드 실시간 구독 최적화
+**파일**: `src/components/MyMealRating.tsx`
+- meal_rating_stats 테이블 변경 감지 실시간 구독
+- 디바운스된 배틀 계산 트리거 구현
 
-### 일별 체크
-- [ ] NEIS API 정상 작동 확인
-- [ ] 급식 데이터 수집 상태 확인
-- [ ] 퀴즈 생성 및 정답 체크 정상 작동
+```typescript
+// meal_rating_stats 변경 감지 시 배틀 계산 트리거
+const triggerBattleCalculation = useCallback(
+  debounce(async () => {
+    // 배틀 계산 로직
+  }, 1000),
+  [mealId]
+);
+```
 
-### 주별 체크
-- [ ] 장원 시스템 정상 작동 확인
-- [ ] 데이터 동기화 상태 점검
-- [ ] 사용자 피드백 확인 및 대응
+#### 3️⃣ 데이터베이스 스키마 개선
+**외래키 관계 설정**: meal_rating_stats.meal_id ↔ meal_menus.id
 
-### 월별 체크
-- [ ] 데이터베이스 성능 최적화
-- [ ] 불필요한 데이터 정리
-- [ ] 시스템 전반적인 안정성 점검
+#### 4️⃣ 배틀 계삸 함수 최적화
+**파일**: `src/utils/battleCalculator.ts`
+
+##### 일별 급식 배틀 계산 (`calculateDailyMealBattle`)
+```typescript
+// 외래키 조인 방식으로 변경
+let query = supabase
+  .from('meal_rating_stats')
+  .select(`
+    school_code,
+    avg_rating,
+    rating_count,
+    meal_menus!inner(
+      meal_date
+    )
+  `)
+  .eq('meal_menus.meal_date', date)
+  .gt('rating_count', 0);
+```
+
+##### 월별 급식 배틀 계산 (`calculateMonthlyMealBattle`)
+```typescript
+// 외래키 조인 방식으로 변경
+let query = supabase
+  .from('meal_rating_stats')
+  .select(`
+    school_code,
+    avg_rating,
+    rating_count,
+    meal_menus!inner(
+      meal_date
+    )
+  `)
+  .gte('meal_menus.meal_date', startDate)
+  .lte('meal_menus.meal_date', endDate)
+  .gt('rating_count', 0);
+```
+
+### 최적화 결과
+✅ **중복 트리거 방지**: meal_rating_stats 변경 시에만 배틀 계산 실행
+✅ **DB 오류 해결**: unique constraint 오류 제거
+✅ **성능 향상**: 외래키 조인으로 효율적인 쿼리 실행
+✅ **실시간 동기화**: 프론트엔드에서 실시간 배틀 계산 트리거
+
+### 주의사항
+- **외래키 관계 유지**: meal_rating_stats.meal_id ↔ meal_menus.id 관계 유지 필수
+- **실시간 구독 모니터링**: Supabase Realtime 채널 오류 모니터링
+- **디바운스 설정**: 배틀 계산 트리거 디바운스 시간 조정 가능
 
 ## 📋 핵심 시스템 구조
 
