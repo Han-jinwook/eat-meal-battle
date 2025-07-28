@@ -112,7 +112,9 @@ exports.handler = async function(event, context) {
       // 평균 별점 업데이트
       await updateAverageRating(menu_item_id);
       
-      // 🔥 배틀 계산 트리거 (별점 변경 시 배틀 데이터 재계산)
+      // 🔥 배틀 계산 트리거 제거 - MyMealRating.tsx에서 meal_rating_stats 변경 시에만 트리거되도록 변경
+      // 중복 실행 방지를 위해 주석 처리 (2025-01-22)
+      /*
       try {
         console.log('🏆 배틀 계산 트리거 시작...');
         console.log('🔍 배틀 계산 함수 import 상태:', typeof calculateDailyMenuBattle, typeof calculateMonthlyMenuBattle);
@@ -169,6 +171,7 @@ exports.handler = async function(event, context) {
         console.error('🔍 오류 스택:', battleError.stack);
         // 배틀 계산 실패해도 별점 저장은 성공으로 처리
       }
+      */
       
       return {
         statusCode: 200,
@@ -240,7 +243,9 @@ exports.handler = async function(event, context) {
       // 평균 별점 업데이트
       await updateAverageRating(menu_item_id);
       
-      // 🔥 배틀 계산 트리거 (별점 삭제 시 배틀 데이터 재계산)
+      // 🔥 배틀 계산 트리거 제거 - MyMealRating.tsx에서 meal_rating_stats 변경 시에만 트리거되도록 변경
+      // 중복 실행 방지를 위해 주석 처리 (2025-01-22)
+      /*
       try {
         console.log('🏆 배틀 계산 트리거 시작 (삭제)...');
         
@@ -261,6 +266,7 @@ exports.handler = async function(event, context) {
         console.error('⚠️ 배틀 계산 중 오류 (별점 삭제는 성공):', battleError);
         // 배틀 계산 실패해도 별점 삭제는 성공으로 처리
       }
+      */
       
       return {
         statusCode: 200,
