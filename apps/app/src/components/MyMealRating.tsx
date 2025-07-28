@@ -21,6 +21,9 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   
   // 컴포넌트 마운트 상태 추적
   const isMounted = useRef<boolean>(true);
+  
+  // 배틀 계산 디바운싱을 위한 ref
+  const battleCalculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -79,6 +82,63 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const recalculateTimerRef = useRef<NodeJS.Timeout | null>(null);
   // 실행 중 플래그 (중복 실행 방지)
   const isRecalculatingRef = useRef<boolean>(false);
+  
+  // 배틀 계산 트리거 함수 (meal_rating_stats 변경 시 호출)
+  const triggerBattleCalculation = useCallback(async () => {
+    if (!mealId) return;
+    
+    try {
+      // 급식 정보 조회를 위해 meal_menus 테이블에서 날짜와 학교 코드 조회
+      const { data: mealData, error: mealError } = await supabase
+        .from('meal_menus')
+        .select('meal_date, school_code')
+        .eq('id', mealId)
+        .single();
+        
+      if (mealError) {
+        console.error('⚠️ 급식 정보 조회 실패:', mealError);
+        return;
+      }
+      
+      if (mealData) {
+        // 배틀 계산 트리거 (디바운싱 적용)
+        // 기존 타이머가 있으면 취소
+        if (battleCalculationTimeoutRef.current) {
+          clearTimeout(battleCalculationTimeoutRef.current);
+        }
+        
+        // 2초 후에 배틀 계산 실행 (중복 방지)
+        battleCalculationTimeoutRef.current = setTimeout(async () => {
+          try {
+            const mealDate = mealData.meal_date;
+            const schoolCode = mealData.school_code;
+            
+            console.log('🏆 배틀 계산 시작 (meal_rating_stats 트리거):', { mealDate, schoolCode });
+            
+            const date = new Date(mealDate);
+            
+            // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
+            await calculateDailyMenuBattle(mealDate, schoolCode);
+            console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
+            
+            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+            console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+            
+            // 급식 배틀 계산 (학교 간 경쟁)
+            await calculateDailyMealBattle(mealDate, schoolCode);
+            console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
+            
+            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+            console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+          } catch (battleError) {
+            console.error('⚠️ 배틀 계산 중 오류:', battleError);
+          }
+        }, 2000); // 2초 디바운싱
+      }
+    } catch (error) {
+      console.error('⚠️ 배틀 계산 트리거 중 오류:', error);
+    }
+  }, [mealId, supabase]);
   
   // 메뉴별 별점 기반으로 전체 급식 평점을 재계산하여 meal_ratings에 저장 (디바운싱 적용)
   const recalculateAndSaveMyMealRating = useCallback(async () => {
@@ -162,48 +222,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           console.error('meal_ratings upsert 오류:', upsertError);
         } else {
           // 급식 평점 재계산 완료
-          console.log('✅ 급식 평점 저장 성공, 배틀 계산 트리거 시작...');
-          
-          // 🔥 급식 배틀 계산 트리거
-          try {
-            // 급식 정보 조회를 위해 meal_menus 테이블에서 날짜와 학교 코드 조회
-            const { data: mealData, error: mealError } = await supabase
-              .from('meal_menus')
-              .select('meal_date, school_code')
-              .eq('id', mealId)
-              .single();
-              
-            if (mealError) {
-              console.error('⚠️ 급식 정보 조회 실패:', mealError);
-              return;
-            }
-            
-            if (mealData) {
-              const mealDate = mealData.meal_date;
-              const schoolCode = mealData.school_code;
-              
-              console.log('🏆 배틀 계산 시작:', { mealDate, schoolCode });
-              
-              const date = new Date(mealDate);
-              
-              // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
-              await calculateDailyMenuBattle(mealDate, schoolCode);
-              console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
-              
-              await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
-              console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
-              
-              // 급식 배틀 계산 (학교 간 경쟁)
-              await calculateDailyMealBattle(mealDate, schoolCode);
-              console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
-              
-              await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
-              console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
-            }
-          } catch (battleError) {
-          console.error('⚠️ 배틀 계산 중 오류 (급식 평점 저장은 성공):', battleError);
-            // 배틀 계산 실패해도 급식 평점 저장은 성공으로 처리
-          }
+          console.log('✅ 급식 평점 저장 성공 (배틀 계산은 meal_rating_stats 변경 시 자동 트리거됨)');
+          // 배틀 계산은 meal_rating_stats 변경 시 별도로 트리거됨
         }
       } catch (error) {
         console.error('❌ 급식 평점 재계산 실패:', error);
@@ -228,15 +248,15 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
     fetchMyRating();
   }, [user, mealId]);
 
-  // menu_item_ratings, menu_item_rating_stats, meal_rating_stats 중 하나가 변경이 발생하면 평점을 재계산
+  // meal_rating_stats 변경 시 배틀 계산, meal_ratings 변경 시 UI 업데이트
   useEffect(() => {
     if (!mealId || !user) return;
     
-    // 재계산용: menu_item_ratings 구독
-    // UI 업데이트용: meal_ratings 구독 (최종 결과만 받음)
+    // 배틀 계산용: meal_rating_stats 구독 (학교/학년별 통계 완료 후)
+    // UI 업데이트용: meal_ratings 구독 (개인 평점 표시용)
     // 실시간 구독 설정
     const tables = [
-      { table: 'menu_item_ratings', filter: `user_id=eq.${user.id}` },
+      { table: 'meal_rating_stats', filter: `meal_id=eq.${mealId}` },
       { table: 'meal_ratings', filter: `meal_id=eq.${mealId}` },
     ];
     
@@ -251,9 +271,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         }, (payload) => {
           // 테이블 실시간 업데이트 수신
           
-          if (table === 'menu_item_ratings') {
-            // 메뉴 아이템 별점 변경 시 재계산
-            recalculateAndSaveMyMealRating();
+          if (table === 'meal_rating_stats') {
+            // 급식 통계 완료 시 배틀 계산 트리거
+            console.log('📊 meal_rating_stats 변경 감지, 배틀 계산 트리거 시작...');
+            triggerBattleCalculation();
           } else if (table === 'meal_ratings') {
             // 현재 사용자의 데이터인지 확인
             if (payload.new && 
