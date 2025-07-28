@@ -758,10 +758,10 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     const sortedStats = mealStats
       .sort((a, b) => {
         // 평균 평점 내림차순, 평점 개수 내림차순
-        if (b.avg_rating !== a.avg_rating) {
-          return b.avg_rating - a.avg_rating;
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
         }
-        return b.rating_count - a.rating_count;
+        return b.final_rating_count - a.final_rating_count;
       })
       .map((stat, index) => ({
         school_code: stat.school_code,
@@ -889,16 +889,16 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
         school_code: group.school_code,
         battle_year: targetYear,
         battle_month: targetMonth,
-        avg_rating: group.total_count > 0 ? group.total_rating / group.total_count : 0,
-        rating_count: group.total_count,
+        final_avg_rating: group.total_count > 0 ? group.total_rating / group.total_count : 0,
+        final_rating_count: group.total_count,
         monthly_rank: 0 // 임시값
       }))
       .sort((a, b) => {
         // 평균 평점 내림차순, 평점 개수 내림차순
-        if (b.avg_rating !== a.avg_rating) {
-          return b.avg_rating - a.avg_rating;
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
         }
-        return b.rating_count - a.rating_count;
+        return b.final_rating_count - a.final_rating_count;
       })
       .map((result, index) => ({
         ...result,
