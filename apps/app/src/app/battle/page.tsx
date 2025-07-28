@@ -441,16 +441,81 @@ export default function BattlePage() {
                   </div>
                 </div>
                 
-                {/* 테이블 내용 - 데이터 대기 */}
-                <div className="p-8 text-center text-blue-400">
-                  <p>데이터를 불러오는 중...</p>
-                  <p className="text-sm mt-2">
-                    선택된 지역: <span className="font-medium">{userSchool?.region || '로딩 중...'}</span>
-                  </p>
-                  <p className="text-sm mt-1">
-                    선택된 유형: <span className="font-medium">{selectedSchoolType || userSchool?.school_type || '선택 안됨'}</span>
-                  </p>
-                </div>
+                {/* 테이블 내용 - 데이터 표시 */}
+                {battleLoading ? (
+                  <div className="p-8 text-center text-blue-400">
+                    <div className="animate-pulse flex justify-center mb-4">
+                      <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent border-opacity-50 animate-spin"></div>
+                    </div>
+                    <p>데이터를 불러오는 중...</p>
+                  </div>
+                ) : battleError ? (
+                  <div className="p-8 text-center text-red-400">
+                    <p>오류가 발생했습니다</p>
+                    <p className="text-sm mt-1">{battleError}</p>
+                  </div>
+                ) : battleData.length === 0 ? (
+                  <div className="p-8 text-center text-blue-400">
+                    <p>표시할 배틀 데이터가 없습니다</p>
+                    <p className="text-sm mt-2">다른 날짜나 학교 유형을 선택해보세요</p>
+                  </div>
+                ) : (
+                  <div>
+                    {/* 필터링 및 정렬된 배틀 데이터 표시 */}
+                    {battleData
+                      .filter(item => !selectedSchoolType || 
+                        (item.school_name && item.school_name.includes(selectedSchoolType)))
+                      .sort((a, b) => {
+                        // 정렬 로직 (asc는 1위부터, desc는 마지막부터)
+                        const rankField = activeTab === 'menu' ?
+                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank') :
+                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank');
+                        
+                        return sortOrder === 'asc' ? 
+                          a[rankField] - b[rankField] : 
+                          b[rankField] - a[rankField];
+                      })
+                      .map((item, index) => {
+                        // 순위 필드 결정
+                        const rankField = activeTab === 'menu' ?
+                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank') :
+                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank');
+                        
+                        // 점수와 평가 수 필드 결정
+                        const ratingField = activeTab === 'menu' ?
+                          (viewMode === 'daily' ? 'avg_rating' : 'avg_rating') :
+                          (viewMode === 'daily' ? 'avg_rating' : 'final_avg_rating');
+                          
+                        const countField = activeTab === 'menu' ?
+                          (viewMode === 'daily' ? 'rating_count' : 'rating_count') :
+                          (viewMode === 'daily' ? 'rating_count' : 'final_rating_count');
+                          
+                        return (
+                          <div 
+                            key={`${item.school_code}-${index}`}
+                            className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/30'}`}
+                          >
+                            <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm">
+                              <div className="text-center">
+                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${item[rankField] <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                                  {item[rankField]}
+                                </span>
+                              </div>
+                              <div className="text-center font-medium text-gray-800">
+                                {item.school_name || '-'}
+                              </div>
+                              <div className="text-center font-medium text-blue-700">
+                                {item[ratingField] ? item[ratingField].toFixed(1) : '-'}
+                              </div>
+                              <div className="text-center text-gray-500">
+                                {item[countField] || '0'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             </div>
           )}
