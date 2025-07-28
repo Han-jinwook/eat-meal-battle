@@ -294,8 +294,8 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
             }
           }
         })
-        .subscribe()
-    );
+        .subscribe();
+    });
     
     // 언마운트 시 구독 해제
     return () => {
