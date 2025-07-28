@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { calculateDailyMealBattle, calculateMonthlyMealBattle } from '@/utils/battleCalculator';
+import { calculateDailyMenuBattle, calculateMonthlyMenuBattle, calculateDailyMealBattle, calculateMonthlyMealBattle } from '@/utils/battleCalculator';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -182,19 +182,26 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
               const mealDate = mealData.meal_date;
               const schoolCode = mealData.school_code;
               
-              console.log('🏆 급식 배틀 계산 시작:', { mealDate, schoolCode });
+              console.log('🏆 배틀 계산 시작:', { mealDate, schoolCode });
               
-              // 일별 급식 배틀 계산
+              const date = new Date(mealDate);
+              
+              // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
+              await calculateDailyMenuBattle(mealDate, schoolCode);
+              console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
+              
+              await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+              console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+              
+              // 급식 배틀 계산 (학교 간 경쟁)
               await calculateDailyMealBattle(mealDate, schoolCode);
               console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
               
-              // 월별 급식 배틀 계산
-              const date = new Date(mealDate);
               await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
               console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
             }
           } catch (battleError) {
-            console.error('⚠️ 급식 배틀 계산 중 오류 (급식 평점 저장은 성공):', battleError);
+          console.error('⚠️ 배틀 계산 중 오류 (급식 평점 저장은 성공):', battleError);
             // 배틀 계산 실패해도 급식 평점 저장은 성공으로 처리
           }
         }
