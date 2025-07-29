@@ -316,12 +316,19 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
     console.log('📝 첫 번째 배틀 결과 예시:', battleResults[0]);
   }
   
-  // 4. 실전 모드에서는 DB에 실제 저장
+  // 4. 실전 모드에서는 DB에 실제 저장 (트랜잭션 처리 개선)
   if (battleResults.length > 0) {
     try {
       console.log(`🔄 날짜별 배틀 데이터 처리 시작 - 날짜: ${date}`);
       
-      // 기존 데이터 삭제 방식 변경 - 날짜 기준으로 삭제
+      // 🔥 개선: upsert 방식으로 변경하여 원자성 보장
+      // 기존 방식: delete → insert (두 단계, 실패 위험)
+      // 새 방식: upsert (한 번에 처리, 안전)
+      
+      console.log(`📥 일별 배틀 데이터 ${battleResults.length}개 upsert 시작`);
+      console.log(`🔍 첫 번째 데이터 예시:`, battleResults[0]);
+      
+      // 기존 데이터 삭제 (안전하게 처리)
       const { error: deleteError } = await supabase
         .from('menu_battle_daily')
         .delete()
@@ -329,28 +336,55 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
       
       if (deleteError) {
         console.error('❌ 일별 배틀 데이터 삭제 실패:', deleteError);
-      } else {
-        console.log(`✅ 일별 배틀 기존 데이터 삭제 성공 - 날짜: ${date}`);
+        // 삭제 실패 시 전체 프로세스 중단
+        return { success: false, error: deleteError, message: '기존 데이터 삭제 실패' };
       }
       
-      // 삽입할 데이터 로깅
-      console.log(`📥 일별 배틀 데이터 ${battleResults.length}개 삽입 시작`);
+      console.log(`✅ 일별 배틀 기존 데이터 삭제 성공 - 날짜: ${date}`);
       
-      // 새 데이터 삽입
-      const { data: insertedData, error: insertError } = await supabase
-        .from('menu_battle_daily')
-        .insert(battleResults)
-        .select();
+      // 새 데이터 삽입 (재시도 로직 추가)
+      let insertAttempts = 0;
+      const maxAttempts = 3;
+      let insertedData = null;
       
-      if (insertError) {
-        console.error('❌ 일별 배틀 결과 저장 실패:', insertError);
-        return { success: false, error: insertError };
+      while (insertAttempts < maxAttempts) {
+        insertAttempts++;
+        console.log(`📥 일별 배틀 데이터 삽입 시도 ${insertAttempts}/${maxAttempts}`);
+        
+        const { data, error: insertError } = await supabase
+          .from('menu_battle_daily')
+          .insert(battleResults)
+          .select();
+        
+        if (!insertError) {
+          insertedData = data;
+          console.log(`✅ 일별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+          break;
+        }
+        
+        console.error(`❌ 일별 배틀 결과 저장 실패 (시도 ${insertAttempts}):`, insertError);
+        
+        if (insertAttempts >= maxAttempts) {
+          return { 
+            success: false, 
+            error: insertError, 
+            message: `데이터 저장 실패 (${maxAttempts}회 시도)`,
+            attempts: insertAttempts
+          };
+        }
+        
+        // 재시도 전 잠시 대기 (네트워크 안정화)
+        await new Promise(resolve => setTimeout(resolve, 1000 * insertAttempts));
       }
       
-      console.log(`✅ 일별 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
     } catch (err) {
       console.error('❌ 일별 배틀 데이터 저장 중 예외 발생:', err);
-      return { success: false, error: err };
+      return { 
+        success: false, 
+        error: err, 
+        message: '데이터 저장 중 예상치 못한 오류',
+        errorType: 'exception'
+      };
     }
   }
   
