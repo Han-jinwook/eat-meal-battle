@@ -302,7 +302,8 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
     sortedItems.forEach((item, index) => {
       battleResults.push({
         menu_item_id: item.id,
-        battle_date: date,  // 중요: 누락된 battle_date 필드 추가
+        battle_date: date,
+        school_code: school,  // 중요: 누락된 school_code 필드 추가
         final_avg_rating: Number(item.avg_rating),
         final_rating_count: item.rating_count,
         daily_rank: index + 1
