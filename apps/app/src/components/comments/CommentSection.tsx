@@ -231,7 +231,7 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       )
       .subscribe();
       
-    // 좋아요 추가 구독
+    // 좋아요 추가 구독 - 필터링 개선
     const likesInsertChannel = supabase
       .channel(`comment-likes-insert-${mealId}`)
       .on('postgres_changes', 
@@ -240,33 +240,42 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
           schema: 'public',
           table: 'comment_likes'
         }, 
-        (payload) => {
+        async (payload) => {
           console.log('댓글 좋아요 추가:', payload);
-          // 전체 댓글을 다시 로드하는 대신 해당 댓글의 좋아요 수만 업데이트
+          // 🔥 현재 meal의 댓글에 대한 좋아요인지 확인
           if (payload.new && typeof payload.new === 'object' && 'comment_id' in payload.new) {
             const commentId = payload.new.comment_id;
             const userId = payload.new.user_id;
             
-            // 현재 댓글 목록에서 해당 댓글 찾기
-            setComments(prevComments => {
-              return prevComments.map(comment => {
-                if (comment.id === commentId) {
-                  // 좋아요 수 증가 및 현재 사용자가 좋아요 눌렀음을 표시
-                  return {
-                    ...comment,
-                    likes_count: comment.likes_count + 1,
-                    user_has_liked: user?.id === userId ? true : comment.user_has_liked
-                  };
-                }
-                return comment;
+            // 해당 댓글이 현재 meal의 댓글인지 확인
+            const { data: commentData } = await supabase
+              .from('comments')
+              .select('meal_id')
+              .eq('id', commentId)
+              .single();
+              
+            if (commentData && commentData.meal_id === mealId) {
+              // 현재 댓글 목록에서 해당 댓글 찾기
+              setComments(prevComments => {
+                return prevComments.map(comment => {
+                  if (comment.id === commentId) {
+                    // 좋아요 수 증가 및 현재 사용자가 좋아요 눌렀음을 표시
+                    return {
+                      ...comment,
+                      likes_count: comment.likes_count + 1,
+                      user_has_liked: user?.id === userId ? true : comment.user_has_liked
+                    };
+                  }
+                  return comment;
+                });
               });
-            });
+            }
           }
         }
       )
       .subscribe();
       
-    // 좋아요 삭제 구독 - 필터링 적용
+    // 좋아요 삭제 구독 - 필터링 개선
     const likesDeleteChannel = supabase
       .channel(`comment-likes-delete-${mealId}`)
       .on('postgres_changes', 
@@ -274,34 +283,103 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
           event: 'DELETE',
           schema: 'public',
           table: 'comment_likes'
-          // meal_id와 직접 연결되지 않아 filter를 사용하지 않음
         }, 
-        (payload) => {
+        async (payload) => {
           console.log('댓글 좋아요 삭제:', payload);
           const oldData = payload.old as Record<string, any>;
           if (oldData && oldData.comment_id) {
             const commentId = oldData.comment_id;
             const userId = oldData.user_id;
             
-            // 현재 댓글 목록에서 해당 댓글 찾기
-            setComments(prevComments => {
-              return prevComments.map(comment => {
-                if (comment.id === commentId) {
-                  // 좋아요 수 감소 및 현재 사용자가 좋아요 취소했음을 표시
-                  return {
-                    ...comment,
-                    likes_count: Math.max(0, comment.likes_count - 1), // 음수가 되지 않도록 방지
-                    user_has_liked: user?.id === userId ? false : comment.user_has_liked
-                  };
-                }
-                return comment;
+            // 🔥 해당 댓글이 현재 meal의 댓글인지 확인
+            const { data: commentData } = await supabase
+              .from('comments')
+              .select('meal_id')
+              .eq('id', commentId)
+              .single();
+              
+            if (commentData && commentData.meal_id === mealId) {
+              // 현재 댓글 목록에서 해당 댓글 찾기
+              setComments(prevComments => {
+                return prevComments.map(comment => {
+                  if (comment.id === commentId) {
+                    // 좋아요 수 감소 및 현재 사용자가 좋아요 취소했음을 표시
+                    return {
+                      ...comment,
+                      likes_count: Math.max(0, comment.likes_count - 1), // 음수가 되지 않도록 방지
+                      user_has_liked: user?.id === userId ? false : comment.user_has_liked
+                    };
+                  }
+                  return comment;
+                });
               });
-            });
+            }
           }
         }
       )
       .subscribe();
       
+    // 🔥 답글 추가 구독 (중첩답글 수정 후 누락된 부분)
+    const repliesInsertChannel = supabase
+      .channel(`comment-replies-insert-${mealId}`)
+      .on('postgres_changes', 
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_replies'
+        }, 
+        async (payload) => {
+          console.log('답글 추가:', payload);
+          // 답글이 추가된 댓글이 현재 meal의 댓글인지 확인
+          if (payload.new && typeof payload.new === 'object' && 'comment_id' in payload.new) {
+            const commentId = payload.new.comment_id;
+            
+            // 해당 댓글이 현재 meal의 댓글인지 확인
+            const { data: commentData } = await supabase
+              .from('comments')
+              .select('meal_id')
+              .eq('id', commentId)
+              .single();
+              
+            if (commentData && commentData.meal_id === mealId) {
+              // 답글 수 업데이트를 위해 전체 댓글 다시 로드
+              loadComments(true);
+            }
+          }
+        }
+      )
+      .subscribe();
+      
+    // 🔥 답글 삭제 구독
+    const repliesDeleteChannel = supabase
+      .channel(`comment-replies-delete-${mealId}`)
+      .on('postgres_changes', 
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_replies'
+        }, 
+        async (payload) => {
+          console.log('답글 삭제:', payload);
+          const oldData = payload.old as Record<string, any>;
+          
+          if (oldData && oldData.comment_id) {
+            // 해당 댓글이 현재 meal의 댓글인지 확인
+            const { data: commentData } = await supabase
+              .from('comments')
+              .select('meal_id')
+              .eq('id', oldData.comment_id)
+              .single();
+              
+            if (commentData && commentData.meal_id === mealId) {
+              // 답글 수 업데이트를 위해 전체 댓글 다시 로드
+              loadComments(true);
+            }
+          }
+        }
+      )
+      .subscribe();
+
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
       supabase.removeChannel(commentsInsertChannel);
@@ -309,6 +387,8 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       supabase.removeChannel(commentsUpdateChannel);
       supabase.removeChannel(likesInsertChannel);
       supabase.removeChannel(likesDeleteChannel);
+      supabase.removeChannel(repliesInsertChannel);
+      supabase.removeChannel(repliesDeleteChannel);
     };
   }, [mealId]);
 
