@@ -8,6 +8,7 @@ interface SchoolInfo {
   school_name?: string;
   office_code?: string;
   region?: string;
+  school_type?: string; // 학교 유형 (초등학교/중학교/고등학교)
   grade?: string | number; // 학년
   class?: string | number; // 반
   created_at: string;

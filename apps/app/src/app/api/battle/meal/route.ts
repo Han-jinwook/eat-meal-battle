@@ -14,14 +14,16 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type') as 'daily' | 'monthly';
     const month = searchParams.get('month');
     const schoolType = searchParams.get('schoolType');
+    const region = searchParams.get('region'); // 지역 기반 필터링
 
-    console.log('🔍 급식 배틀 API 호출:', { schoolCode, type, date, month, schoolType });
+    console.log('🔍 급식 배틀 API 호출:', { schoolCode, type, date, month, schoolType, region });
     console.log('📋 요청 파라미터 상세:', {
       schoolCode: schoolCode,
       type: type,
       date: date,
       month: month,
       schoolType: schoolType,
+      region: region,
       url: request.url
     });
 
@@ -32,9 +34,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let data;
-    let error;
-
     if (type === 'daily') {
       if (!date) {
         return NextResponse.json(
@@ -43,21 +42,57 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      console.log('📅 일별 급식 배틀 데이터 조회 시작:', { table: 'meal_battle_daily', battle_date: date });
+      console.log('📅 일별 급식 배틀 데이터 조회 시작:', { table: 'meal_battle_daily', battle_date: date, region, schoolType });
 
-      // 일별 급식 배틀 데이터 조회 - 지역 내 모든 학교 경쟁
+      // 1. 먼저 지역 및 학교 유형에 맞는 학교들 찾기
+      let schoolQuery = supabase
+        .from('school_infos')
+        .select('school_code, school_name, region, school_type');
+      
+      if (region) {
+        schoolQuery = schoolQuery.eq('region', region);
+        console.log(`🌍 지역 기반 필터링: ${region}`);
+      }
+      
+      if (schoolType) {
+        schoolQuery = schoolQuery.like('school_type', `${schoolType.charAt(0)}%`); // 초/중/고
+        console.log(`🏠 학교 유형 필터링: ${schoolType}`);
+      }
+      
+      const { data: targetSchools, error: schoolError } = await schoolQuery;
+      
+      if (schoolError) {
+        console.error('학교 정보 조회 오류:', schoolError);
+        return NextResponse.json(
+          { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      if (!targetSchools || targetSchools.length === 0) {
+        console.log('⚠️ 조건에 맞는 학교가 없습니다');
+        return NextResponse.json({
+          data: [],
+          message: '해당 지역/학교 유형에 맞는 학교가 없습니다'
+        });
+      }
+      
+      const targetSchoolCodes = targetSchools.map(school => school.school_code);
+      console.log(`🏠 대상 학교 수: ${targetSchoolCodes.length}개`);
+      
+      // 2. 해당 학교들의 배틀 데이터만 조회
       const query = supabase
         .from('meal_battle_daily')
         .select('*')
         .eq('battle_date', date)
+        .in('school_code', targetSchoolCodes)
         .order('avg_rating', { ascending: false });
       
-      // 🔥 중요: schoolCode 필터링 제거 - 모든 학교가 경쟁해야 함
-      console.log(`🌍 모든 학교 대상 급식 배틀 조회: ${date}`);
+      console.log(`🎆 지역 기반 급식 배틀 조회: ${date} (지역: ${region || '전체'}, 학교유형: ${schoolType || '전체'})`);
 
       const result = await query;
-      data = result.data;
-      error = result.error;
+      const data = result.data;
+      const error = result.error;
 
       console.log('✅ DB 쿼리 결과:', { 
         dataLength: data?.length || 0, 
@@ -67,11 +102,53 @@ export async function GET(request: NextRequest) {
 
       if (data && data.length > 0) {
         const actualDates = [...new Set(data.map(item => item.battle_date))];
-        console.log('🗓️ 반환된 데이터의 날짜 확인:', { 
+        console.log('🗺️ 반환된 데이터의 날짜 확인:', { 
           requestedDate: date, 
           actualDates: actualDates 
         });
       }
+      
+      // 일별 배틀 오류 처리
+      if (error) {
+        console.error('일별 급식 배틀 데이터 조회 오류:', error);
+        return NextResponse.json(
+          { error: `일별 급식 배틀 데이터를 조회하는데 실패했습니다: ${error.message}` },
+          { status: 500 }
+        );
+      }
+
+      if (!data || data.length === 0) {
+        console.log('⚠️ 일별 급식 배틀 데이터가 없습니다');
+        return NextResponse.json({
+          data: [],
+          message: '해당 조건에 맞는 일별 급식 배틀 데이터가 없습니다'
+        });
+      }
+      
+      // 일별 데이터와 학교 정보 결합
+      const enrichedData = data.map(battleItem => {
+        const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
+        return {
+          ...battleItem,
+          school_name: schoolInfo?.school_name || '알 수 없는 학교',
+          region: schoolInfo?.region || '알 수 없는 지역',
+          school_type: schoolInfo?.school_type || '알 수 없는 유형'
+        };
+      });
+
+      console.log('📤 일별 최종 응답 데이터:', {
+        count: enrichedData.length,
+        sample: enrichedData[0] || null
+      });
+
+      return NextResponse.json({
+        data: enrichedData,
+        total: enrichedData.length,
+        type: 'daily',
+        date: date,
+        ...(schoolType && { schoolType }),
+        ...(region && { region })
+      });
 
     } else if (type === 'monthly') {
       if (!month) {
@@ -86,11 +163,49 @@ export async function GET(request: NextRequest) {
       console.log('📅 월별 급식 배틀 데이터 조회 시작:', { 
         table: 'meal_battle_monthly', 
         battle_year: year, 
-        battle_month: monthNum 
+        battle_month: monthNum,
+        region,
+        schoolType
       });
 
-      // 월별 급식 배틀 데이터 조회
-      let query = supabase
+      // 1. 먼저 지역 및 학교 유형에 맞는 학교들 찾기 (일별과 동일)
+      let schoolQuery = supabase
+        .from('school_infos')
+        .select('school_code, school_name, region, school_type');
+      
+      if (region) {
+        schoolQuery = schoolQuery.eq('region', region);
+        console.log(`🌍 지역 기반 필터링: ${region}`);
+      }
+      
+      if (schoolType) {
+        schoolQuery = schoolQuery.like('school_type', `${schoolType.charAt(0)}%`); // 초/중/고
+        console.log(`🏠 학교 유형 필터링: ${schoolType}`);
+      }
+      
+      const { data: targetSchools, error: schoolError } = await schoolQuery;
+      
+      if (schoolError) {
+        console.error('학교 정보 조회 오류:', schoolError);
+        return NextResponse.json(
+          { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      if (!targetSchools || targetSchools.length === 0) {
+        console.log('⚠️ 조건에 맞는 학교가 없습니다');
+        return NextResponse.json({
+          data: [],
+          message: '해당 지역/학교 유형에 맞는 학교가 없습니다'
+        });
+      }
+      
+      const targetSchoolCodes = targetSchools.map(school => school.school_code);
+      console.log(`🏠 대상 학교 수: ${targetSchoolCodes.length}개`);
+      
+      // 2. 해당 학교들의 월별 배틀 데이터만 조회
+      const query = supabase
         .from('meal_battle_monthly')
         .select(`
           school_code,
@@ -102,90 +217,69 @@ export async function GET(request: NextRequest) {
         `)
         .eq('battle_year', year)
         .eq('battle_month', monthNum)
+        .in('school_code', targetSchoolCodes)
         .order('monthly_rank');
 
-      if (schoolCode) {
-        query = query.eq('school_code', schoolCode);
-      }
+      console.log(`🎆 지역 기반 월별 급식 배틀 조회: ${year}-${monthNum} (지역: ${region || '전체'}, 학교유형: ${schoolType || '전체'})`);
 
       const result = await query;
-      data = result.data;
-      error = result.error;
+      const data = result.data;
+      const error = result.error;
 
       console.log('✅ DB 쿼리 결과:', { 
         dataLength: data?.length || 0, 
         sampleData: data?.[0] || null,
         allData: data
       });
-    }
+      
+      // 월별 배틀 오류 처리
+      if (error) {
+        console.error('월별 급식 배틀 데이터 조회 오류:', error);
+        return NextResponse.json(
+          { error: `월별 급식 배틀 데이터를 조회하는데 실패했습니다: ${error.message}` },
+          { status: 500 }
+        );
+      }
 
-    if (error) {
-      console.error('급식 배틀 데이터 조회 오류:', error);
-      return NextResponse.json(
-        { error: `급식 배틀 데이터를 조회하는데 실패했습니다: ${error.message}` },
-        { status: 500 }
-      );
-    }
+      if (!data || data.length === 0) {
+        console.log('⚠️ 월별 급식 배틀 데이터가 없습니다');
+        return NextResponse.json({
+          data: [],
+          message: '해당 조건에 맞는 월별 급식 배틀 데이터가 없습니다'
+        });
+      }
+      
+      // 월별 데이터와 학교 정보 결합
+      const enrichedData = data.map(battleItem => {
+        const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
+        return {
+          ...battleItem,
+          school_name: schoolInfo?.school_name || '알 수 없는 학교',
+          region: schoolInfo?.region || '알 수 없는 지역',
+          school_type: schoolInfo?.school_type || '알 수 없는 유형'
+        };
+      });
 
-    if (!data || data.length === 0) {
-      console.log('⚠️ 조회된 급식 배틀 데이터가 없습니다');
+      console.log('📤 월별 최종 응답 데이터:', {
+        count: enrichedData.length,
+        sample: enrichedData[0] || null
+      });
+
       return NextResponse.json({
-        data: [],
-        message: '해당 조건에 맞는 급식 배틀 데이터가 없습니다'
+        data: enrichedData,
+        total: enrichedData.length,
+        type: 'monthly',
+        month: month,
+        ...(schoolType && { schoolType }),
+        ...(region && { region })
       });
     }
 
-    // 학교 정보 조회하여 학교명과 지역 정보 추가
-    const schoolCodes = [...new Set(data.map(item => item.school_code))];
-    const { data: schoolInfos, error: schoolError } = await supabase
-      .from('school_infos')
-      .select('school_code, school_name, region, school_type')
-      .in('school_code', schoolCodes);
-
-    if (schoolError) {
-      console.error('학교 정보 조회 오류:', schoolError);
-      // 학교 정보 조회 실패해도 배틀 데이터는 반환
-    }
-
-    // 학교 유형 필터링 (선택사항)
-    let filteredData = data;
-    if (schoolType && schoolInfos) {
-      const filteredSchoolCodes = schoolInfos
-        .filter(school => school.school_type?.includes(schoolType.charAt(0))) // 초/중/고
-        .map(school => school.school_code);
-      
-      filteredData = data.filter(item => filteredSchoolCodes.includes(item.school_code));
-      
-      console.log('🏫 학교 유형 필터링:', {
-        requestedType: schoolType,
-        originalCount: data.length,
-        filteredCount: filteredData.length
-      });
-    }
-
-    // 학교 정보와 배틀 데이터 결합
-    const enrichedData = filteredData.map(battleItem => {
-      const schoolInfo = schoolInfos?.find(school => school.school_code === battleItem.school_code);
-      return {
-        ...battleItem,
-        school_name: schoolInfo?.school_name || '알 수 없는 학교',
-        region: schoolInfo?.region || '알 수 없는 지역',
-        school_type: schoolInfo?.school_type || '알 수 없는 유형'
-      };
-    });
-
-    console.log('📤 최종 응답 데이터:', {
-      count: enrichedData.length,
-      sample: enrichedData[0] || null
-    });
-
-    return NextResponse.json({
-      data: enrichedData,
-      total: enrichedData.length,
-      type: type,
-      ...(type === 'daily' ? { date } : { month }),
-      ...(schoolType && { schoolType })
-    });
+    // 잘못된 타입인 경우 오류 반환
+    return NextResponse.json(
+      { error: '지원하지 않는 타입입니다. daily 또는 monthly를 사용해주세요.' },
+      { status: 400 }
+    );
 
   } catch (error) {
     console.error('급식 배틀 API 오류:', error);

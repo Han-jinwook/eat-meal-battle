@@ -54,10 +54,18 @@ export default function BattlePage() {
     setBattleError(null);
     
     try {
+      // 학교 유형 결정: 선택된 유형 또는 사용자 학교 유형
+      const schoolTypeForApi = selectedSchoolType || 
+        (userSchool?.school_type?.includes('초') ? '초등학교' :
+         userSchool?.school_type?.includes('중') ? '중학교' :
+         userSchool?.school_type?.includes('고') ? '고등학교' : '');
+      
       const params = new URLSearchParams({
         schoolCode: userSchool.school_code,
         type: viewMode,
-        ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth })
+        ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
+        ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
+        ...(userSchool.region && { region: userSchool.region }) // 지역 기반 필터링
       });
       
       // 탭에 따라 다른 API 호출
@@ -94,7 +102,7 @@ export default function BattlePage() {
     if (userSchool?.school_code) {
       loadBattleData();
     }
-  }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth]);
+  }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -461,10 +469,8 @@ export default function BattlePage() {
                   </div>
                 ) : (
                   <div>
-                    {/* 필터링 및 정렬된 배틀 데이터 표시 */}
+                    {/* 정렬된 배틀 데이터 표시 - API에서 이미 schoolType으로 필터링됨 */}
                     {battleData
-                      .filter(item => !selectedSchoolType || 
-                        (item.school_name && item.school_name.includes(selectedSchoolType)))
                       .sort((a, b) => {
                         // 정렬 로직 (asc는 1위부터, desc는 마지막부터)
                         const rankField = activeTab === 'menu' ?
