@@ -6,6 +6,7 @@ import useUserSchool from '@/hooks/useUserSchool';
 
 interface ReplyFormProps {
   onSubmit: (content: string) => Promise<boolean>;
+  onCancel?: () => void; // 🔥 취소 콜백 추가
   autoFocus?: boolean;
   placeholder?: string;
   buttonText?: string;
@@ -13,6 +14,7 @@ interface ReplyFormProps {
 
 export default function ReplyForm({ 
   onSubmit, 
+  onCancel, // 🔥 취소 콜백 받기
   autoFocus = true, 
   placeholder = '답글 추가...', 
   buttonText = '답글'
@@ -94,6 +96,10 @@ export default function ReplyForm({
     if (textareaRef.current) {
       textareaRef.current.blur();
       textareaRef.current.style.height = "auto";
+    }
+    // 🔥 부모 컴포넌트에 취소 알림
+    if (onCancel) {
+      onCancel();
     }
   };
   

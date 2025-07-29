@@ -440,7 +440,10 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                   </div>
                   
                   {isReplyFormVisible && user && isStudentOfSchool && (
-                    <ReplyForm onSubmit={handleAddReply} />
+                    <ReplyForm 
+                      onSubmit={handleAddReply} 
+                      onCancel={() => setIsReplyFormVisible(false)} // 🔥 취소 시 답글 폼 숨기기
+                    />
                   )}
                   
                   {repliesLoading ? (
