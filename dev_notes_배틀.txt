@@ -657,3 +657,59 @@ console.log('🗺️ 반환된 데이터의 날짜 확인:', {
 3. **성능 고려**: 불필요한 중복 쿼리 제거로 DB 부하 감소
 4. **로깅 중요성**: 상세한 로깅으로 디버깅 및 모니터링 용이성 확보
 5. **점진적 개선**: 기존 기능을 보호하면서 단계적으로 개선하는 접근법의 중요성
+
+---
+
+# 🔧 급식 배틀 월별 계산 함수 schoolCode 필터링 제거 (2025-07-29)
+
+## 📋 문제 상황
+- 급식 배틀 월별 조회 시 내 학교만 표시되는 문제 발생
+- 인천 서구에 초등 2개, 고등 2개 학교가 있는데 1개 학교만 순위에 표시
+- 급식 배틀은 **학교 vs 학교 경쟁**이어야 하는데 개별 학교 순위만 표시
+
+## 🔧 원인 분석
+- `calculateMonthlyMealBattle` 함수에서 `schoolCode` 필터링이 적용되어 있었음
+- 각 학교별로 개별 계산되어 다른 학교들과 경쟁하지 않음
+- API는 올바르게 구현되어 있었으나, 계산 함수에서 데이터가 학교별로 분리 저장됨
+
+## 🛠️ 수정 내용
+
+### calculateMonthlyMealBattle 함수 수정
+```typescript
+// 이전: schoolCode 필터링 적용
+if (schoolCode) {
+  query = query.eq('school_code', schoolCode);
+}
+
+// 수정: schoolCode 필터링 제거
+// 🔥 중요: 급식 배틀은 모든 학교가 경쟁해야 함 - schoolCode 필터링 제거
+// if (schoolCode) {
+//   query = query.eq('school_code', schoolCode);
+// }
+console.log(`🌍 모든 학교 대상 월별 급식 배틀 계산 (지역 무관)`);
+```
+
+### 데이터 삭제 로직도 수정
+```typescript
+// 이전: schoolCode별 개별 삭제
+if (schoolCode) {
+  deleteQuery = deleteQuery.eq('school_code', schoolCode);
+}
+
+// 수정: 모든 학교 데이터 함께 삭제
+// 🔥 중요: 급식 배틀은 모든 학교 데이터를 삭제해야 함 - schoolCode 필터링 제거
+// if (schoolCode) {
+//   deleteQuery = deleteQuery.eq('school_code', schoolCode);
+// }
+console.log(`🌍 모든 학교 대상 월별 급식 배틀 데이터 삭제`);
+```
+
+## 🎯 수정 결과
+✅ **다중 학교 경쟁**: 같은 지역의 모든 학교가 월별 급식 배틀에 참여
+✅ **올바른 순위**: 각 학교의 실제 순위가 정확하게 표시
+✅ **실제 경쟁 시스템**: 지역 내 모든 학교의 순위 확인 가능
+
+## 📝 주요 교훈
+- **비즈니스 로직 중요성**: 급식 배틀 = 학교 간 경쟁, 메뉴 배틀 = 학교 내 메뉴 간 경쟁
+- **데이터 일관성**: 계산 함수와 API 조회 로직이 동일한 필터링 기준을 가져야 함
+- **전체 시스템 고려**: 개별 함수 수정이 전체 배틀 시스템에 미치는 영향 고려 필요

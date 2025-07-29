@@ -882,9 +882,11 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       .lte('meal_menus.meal_date', endDate)
       .gt('rating_count', 0);
       
-    if (schoolCode) {
-      query = query.eq('school_code', schoolCode);
-    }
+    // 🔥 중요: 급식 배틀은 모든 학교가 경쟁해야 함 - schoolCode 필터링 제거
+    // if (schoolCode) {
+    //   query = query.eq('school_code', schoolCode);
+    // }
+    console.log(`🌍 모든 학교 대상 월별 급식 배틀 계산 (지역 무관)`);
     
     const { data: mealStats, error } = await query;
     
@@ -950,9 +952,11 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       .eq('battle_year', targetYear)
       .eq('battle_month', targetMonth);
       
-    if (schoolCode) {
-      deleteQuery = deleteQuery.eq('school_code', schoolCode);
-    }
+    // 🔥 중요: 급식 배틀은 모든 학교 데이터를 삭제해야 함 - schoolCode 필터링 제거
+    // if (schoolCode) {
+    //   deleteQuery = deleteQuery.eq('school_code', schoolCode);
+    // }
+    console.log(`🌍 모든 학교 대상 월별 급식 배틀 데이터 삭제`);
     
     const { error: deleteError } = await deleteQuery;
     
