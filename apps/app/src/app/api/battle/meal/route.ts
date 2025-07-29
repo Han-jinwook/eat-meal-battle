@@ -45,22 +45,15 @@ export async function GET(request: NextRequest) {
 
       console.log('📅 일별 급식 배틀 데이터 조회 시작:', { table: 'meal_battle_daily', battle_date: date });
 
-      // 일별 급식 배틀 데이터 조회
-      let query = supabase
+      // 일별 급식 배틀 데이터 조회 - 지역 내 모든 학교 경쟁
+      const query = supabase
         .from('meal_battle_daily')
-        .select(`
-          school_code,
-          battle_date,
-          avg_rating,
-          rating_count,
-          daily_rank
-        `)
+        .select('*')
         .eq('battle_date', date)
-        .order('daily_rank');
-
-      if (schoolCode) {
-        query = query.eq('school_code', schoolCode);
-      }
+        .order('avg_rating', { ascending: false });
+      
+      // 🔥 중요: schoolCode 필터링 제거 - 모든 학교가 경쟁해야 함
+      console.log(`🌍 모든 학교 대상 급식 배틀 조회: ${date}`);
 
       const result = await query;
       data = result.data;

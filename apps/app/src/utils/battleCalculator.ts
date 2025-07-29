@@ -741,7 +741,7 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
 }
 
 /**
- * 🍱 급식 배틀 일별 순위 계산 및 저장
+ * 🍱 급식 배틀 일별 순위 계산 및 저장 (지역 기반 경쟁)
  */
 export async function calculateDailyMealBattle(targetDate?: string, schoolCode?: string, supabaseClient?: SupabaseClient) {
   const supabase = supabaseClient || createClient();
@@ -751,8 +751,11 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
   console.log(`📋 입력 파라미터: targetDate=${targetDate}, schoolCode=${schoolCode}`);
   
   try {
+    // 🔥 중요: 급식 배틀은 지역 내 모든 학교가 경쟁해야 함
+    // schoolCode 필터링 제거 - 모든 학교의 데이터를 가져와서 경쟁
+    
     // 1. 해당 날짜의 급식 평점 집계 조회 (meal_menus와 조인)
-    let query = supabase
+    const query = supabase
       .from('meal_rating_stats')
       .select(`
         school_code,
@@ -771,9 +774,8 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
       .eq('meal_menus.meal_date', date)
       .gt('rating_count', 0); // 평가가 있는 급식만
       
-    if (schoolCode) {
-      query = query.eq('school_code', schoolCode);
-    }
+    // 🚫 schoolCode 필터링 제거 - 모든 학교가 경쟁해야 함
+    console.log(`🌍 모든 학교 대상 급식 배틀 계산 (지역 무관)`);
     
     const { data: mealStats, error } = await query;
     
@@ -809,14 +811,13 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     console.log(`🏆 급식 배틀 순위 계산 완료: ${sortedStats.length}개 학교`);
     
     // 3. 기존 데이터 삭제 후 새 데이터 삽입
-    let deleteQuery = supabase
+    const deleteQuery = supabase
       .from('meal_battle_daily')
       .delete()
       .eq('battle_date', date);
       
-    if (schoolCode) {
-      deleteQuery = deleteQuery.eq('school_code', schoolCode);
-    }
+    // 🚫 schoolCode 필터링 제거 - 해당 날짜의 모든 배틀 데이터 삭제
+    console.log(`🗑️ 해당 날짜의 모든 급식 배틀 데이터 삭제: ${date}`);
     
     const { error: deleteError } = await deleteQuery;
     
