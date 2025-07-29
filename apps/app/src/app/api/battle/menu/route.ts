@@ -112,6 +112,24 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 DB 쿼리 실행 중...');
     const { data, error } = await query;
+    
+    // 긴급 디버깅: 월별 쿼리 결과 상세 로깅
+    if (type === 'monthly') {
+      console.log('😨 긴급 디버깅 - 월별 쿼리 결과:');
+      console.log('  오류:', error);
+      console.log('  데이터 길이:', data?.length || 0);
+      console.log('  전체 데이터:', data);
+      
+      // 수동 쿼리 테스트
+      console.log('🔧 수동 쿼리 테스트 시작...');
+      const testQuery = await supabase
+        .from('menu_battle_monthly')
+        .select('*')
+        .eq('school_code', schoolCode)
+        .limit(5);
+      
+      console.log('🔍 테스트 쿼리 결과:', testQuery);
+    }
 
     if (error) {
       console.error('❌ 배틀 데이터 조회 오류:', error);
@@ -198,24 +216,14 @@ export async function GET(request: NextRequest) {
     // 배틀 결과와 메뉴 아이템 정보 합치기
     const battleResults = data?.map(item => {
       const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
-      
-      // 월별 배틀의 경우 meal_date 대신 battle_year/month 정보 사용
-      const displayDate = type === 'monthly' 
-        ? `${item.battle_year}-${item.battle_month.toString().padStart(2, '0')}` 
-        : menuInfo.meal_date;
-      
       return {
         menu_item_id: item.menu_item_id,
         item_name: menuInfo.item_name,
-        meal_date: displayDate,
+        meal_date: menuInfo.meal_date,
         final_avg_rating: item.final_avg_rating,
         final_rating_count: item.final_rating_count,
         daily_rank: item.daily_rank,
-        monthly_rank: item.monthly_rank,
-        ...(type === 'monthly' && {
-          battle_year: item.battle_year,
-          battle_month: item.battle_month
-        })
+        monthly_rank: item.monthly_rank
       };
     }) || [];
 
