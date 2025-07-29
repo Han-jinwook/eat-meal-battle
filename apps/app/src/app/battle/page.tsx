@@ -165,12 +165,24 @@ export default function BattlePage() {
               >
                 일별 집계
               </button>
-              <div className={`transition-all duration-300 ${
-                viewMode === 'daily' ? 'transform-none' : 'transform scale-95'
-              }`}>
+              <div 
+                className={`transition-all duration-300 cursor-pointer ${
+                  viewMode === 'daily' ? 'transform-none' : 'transform scale-95'
+                }`}
+                onClick={() => {
+                  // 🎯 UX 개선: 날짜 선택기 클릭 시 일별 모드로 자동 전환
+                  if (viewMode !== 'daily') {
+                    setViewMode('daily');
+                  }
+                }}
+              >
                 <DateNavigator 
                   selectedDate={selectedDate}
                   onDateChange={(date) => {
+                    // 🎯 UX 개선: 날짜 변경 시 일별 모드로 자동 전환
+                    if (viewMode !== 'daily') {
+                      setViewMode('daily');
+                    }
                     setSelectedDate(date);
                     if (typeof window !== 'undefined') {
                       try {
@@ -203,11 +215,15 @@ export default function BattlePage() {
               >
                 월별 집계
               </button>
-              <div className={`flex items-center gap-1 w-fit transition-all duration-300 ${
+              <div className={`flex items-center gap-1 w-fit transition-all duration-300 cursor-pointer ${
                 viewMode === 'monthly' ? 'transform-none' : 'transform scale-95'
               }`}>
                 <button
                   onClick={() => {
+                    // 🎯 UX 개선: 월별 선택기 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      setViewMode('monthly');
+                    }
                     const current = new Date(selectedMonth + '-01');
                     current.setMonth(current.getMonth() - 1);
                     setSelectedMonth(current.toISOString().slice(0, 7));
@@ -225,11 +241,19 @@ export default function BattlePage() {
                   </svg>
                 </button>
                 
-                <div className={`rounded-lg px-2 py-1.5 min-w-20 text-center border transition-all duration-200 text-xs ${
-                  viewMode === 'monthly'
-                    ? (activeTab === 'menu' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
-                    : 'bg-gray-50 border-gray-200'
-                }`}>
+                <div 
+                  className={`rounded-lg px-2 py-1.5 min-w-20 text-center border transition-all duration-200 text-xs cursor-pointer hover:opacity-80 ${
+                    viewMode === 'monthly'
+                      ? (activeTab === 'menu' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                  onClick={() => {
+                    // 🎯 UX 개선: 월별 날짜 표시 영역 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      setViewMode('monthly');
+                    }
+                  }}
+                >
                   <span className={`font-medium transition-colors duration-200 ${
                     viewMode === 'monthly' 
                       ? (activeTab === 'menu' ? 'text-red-700' : 'text-blue-700') 
@@ -244,6 +268,10 @@ export default function BattlePage() {
                 
                 <button
                   onClick={() => {
+                    // 🎯 UX 개선: 월별 선택기 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      setViewMode('monthly');
+                    }
                     const current = new Date(selectedMonth + '-01');
                     current.setMonth(current.getMonth() + 1);
                     setSelectedMonth(current.toISOString().slice(0, 7));
