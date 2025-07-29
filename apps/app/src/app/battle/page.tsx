@@ -307,29 +307,39 @@ export default function BattlePage() {
                     <h3 className="font-bold">
                       {viewMode === 'daily' ? '일간' : '월간'} 베스트 메뉴
                     </h3>
-                    {/* 순위 정렬 버튼 */}
+                    {/* 순위 정렬 버튼 - 개선된 디자인 */}
                     <button
                       onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="flex flex-col items-center justify-center w-6 h-6 hover:bg-red-400 rounded transition-colors duration-200"
-                      title={sortOrder === 'asc' ? '내림차순으로 변경' : '오름차순으로 변경'}
+                      className="flex flex-col items-center justify-center w-8 h-8 hover:bg-red-400 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경 (높은 순위부터)' : '오름차순으로 변경 (낮은 순위부터)'}
                     >
+                      {/* 위쪽 화살표 (오름차순) */}
                       <svg 
-                        className={`w-3 h-3 transition-opacity duration-200 ${
-                          sortOrder === 'asc' ? 'opacity-100' : 'opacity-40'
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          sortOrder === 'asc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-red-100'
                         }`} 
                         fill="currentColor" 
-                        viewBox="0 0 20 20"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
                       >
-                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                       </svg>
+                      {/* 아래쪽 화살표 (내림차순) */}
                       <svg 
-                        className={`w-3 h-3 -mt-1 transition-opacity duration-200 ${
-                          sortOrder === 'desc' ? 'opacity-100' : 'opacity-40'
+                        className={`w-5 h-5 -mt-2 transition-all duration-200 ${
+                          sortOrder === 'desc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-red-100'
                         }`} 
                         fill="currentColor" 
-                        viewBox="0 0 20 20"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
                       >
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                   </div>
@@ -439,29 +449,39 @@ export default function BattlePage() {
                     <h3 className="font-bold">
                       우리동네 급식배틀
                     </h3>
-                    {/* 순위 정렬 버튼 */}
+                    {/* 순위 정렬 버튼 - 개선된 디자인 */}
                     <button
                       onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="flex flex-col items-center justify-center w-6 h-6 hover:bg-blue-400 rounded transition-colors duration-200"
-                      title={sortOrder === 'asc' ? '내림차순으로 변경' : '오름차순으로 변경'}
+                      className="flex flex-col items-center justify-center w-8 h-8 hover:bg-blue-400 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경 (높은 순위부터)' : '오름차순으로 변경 (낮은 순위부터)'}
                     >
+                      {/* 위쪽 화살표 (오름차순) */}
                       <svg 
-                        className={`w-3 h-3 transition-opacity duration-200 ${
-                          sortOrder === 'asc' ? 'opacity-100' : 'opacity-40'
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          sortOrder === 'asc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-blue-100'
                         }`} 
                         fill="currentColor" 
-                        viewBox="0 0 20 20"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
                       >
-                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                       </svg>
+                      {/* 아래쪽 화살표 (내림차순) */}
                       <svg 
-                        className={`w-3 h-3 -mt-1 transition-opacity duration-200 ${
-                          sortOrder === 'desc' ? 'opacity-100' : 'opacity-40'
+                        className={`w-5 h-5 -mt-2 transition-all duration-200 ${
+                          sortOrder === 'desc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-blue-100'
                         }`} 
                         fill="currentColor" 
-                        viewBox="0 0 20 20"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
                       >
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                   </div>
