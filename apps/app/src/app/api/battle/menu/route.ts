@@ -133,6 +133,18 @@ export async function GET(request: NextRequest) {
       allData: data
     });
     
+    // 특별 로깅: 월별 배틀 데이터 상세 분석
+    if (type === 'monthly' && data && data.length > 0) {
+      console.log('📅 월별 배틀 데이터 상세 분석:');
+      data.forEach((item, index) => {
+        console.log(`  ${index + 1}. menu_item_id: ${item.menu_item_id}`);
+        console.log(`     battle_year: ${item.battle_year}`);
+        console.log(`     battle_month: ${item.battle_month}`);
+        console.log(`     final_avg_rating: ${item.final_avg_rating}`);
+        console.log(`     monthly_rank: ${item.monthly_rank}`);
+      });
+    }
+    
     // 필터링 검증: 실제 반환된 데이터의 날짜 확인
     if (data && data.length > 0) {
       console.log('🗓️ 반환된 데이터의 날짜 확인:', {
@@ -186,14 +198,24 @@ export async function GET(request: NextRequest) {
     // 배틀 결과와 메뉴 아이템 정보 합치기
     const battleResults = data?.map(item => {
       const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
+      
+      // 월별 배틀의 경우 meal_date 대신 battle_year/month 정보 사용
+      const displayDate = type === 'monthly' 
+        ? `${item.battle_year}-${item.battle_month.toString().padStart(2, '0')}` 
+        : menuInfo.meal_date;
+      
       return {
         menu_item_id: item.menu_item_id,
         item_name: menuInfo.item_name,
-        meal_date: menuInfo.meal_date,
+        meal_date: displayDate,
         final_avg_rating: item.final_avg_rating,
         final_rating_count: item.final_rating_count,
         daily_rank: item.daily_rank,
-        monthly_rank: item.monthly_rank
+        monthly_rank: item.monthly_rank,
+        ...(type === 'monthly' && {
+          battle_year: item.battle_year,
+          battle_month: item.battle_month
+        })
       };
     }) || [];
 
