@@ -1,0 +1,88 @@
+=== ⚙️ 설정 시스템 개발 노트 ===
+
+## 🔔 알림 시스템
+
+### 핵심 구조
+- **테이블**: notifications, notification_recipients
+- **트리거**: `ai_meal_image_notification_trigger` (meal_images AFTER INSERT)
+- **함수**: `send_notification_on_meal_image_confirmed`, `send_notification_on_ai_meal_image`
+- **컴포넌트**: NotificationBell.tsx
+
+### 알림 발송 로직
+1. **일반 이미지**: `source='user' AND status='approved'` 조건
+2. **AI 이미지**: `source='user_ai'` 또는 `source='auto_ai'` (바로 approved 저장)
+3. **수신자**: school_infos 테이블에서 같은 학교 유저 조회
+4. **리얼타임**: notification_recipients INSERT 이벤트 구독
+
+### 알림 시스템 분석 (2025-01-30)
+- ✅ DB 트리거/함수 존재 확인
+- ✅ 일반/AI 이미지 알림 로직 정상
+- ✅ NotificationBell 컴포넌트 구현 완료
+
+### 잠재적 문제점
+1. **리얼타임 구독**: NotificationBell에서 실시간 수신 이슈 가능성
+2. **학교 매칭**: school_infos 테이블 데이터 정합성
+3. **트리거 실행**: 실제 함수 실행 여부
+
+### 디버깅 체크리스트
+- [ ] AI 이미지 생성 → notifications 테이블 알림 생성 확인
+- [ ] notification_recipients 수신자 목록 생성 확인
+- [ ] NotificationBell 리얼타임 구독 이벤트 수신 확인
+- [ ] 브라우저 콘솔 에러 로그 확인
+
+---
+
+## 👤 프로필 시스템
+
+### 핵심 구조
+- **인증**: Supabase Auth
+- **사용자 정보**: users, school_infos 테이블
+- **메타데이터**: 프로필 이미지, 닉네임
+
+### 주요 기능
+- 프로필 편집, 학교 연결, 권한 관리
+
+---
+
+## 🔐 로그인 시스템
+
+### 핵심 구조
+- **기본**: Supabase Auth (JWT 토큰)
+- **소셜**: Google, 카카오 OAuth
+
+### 주요 기능
+- 이메일/소셜 로그인, 세션 관리, 자동 로그인
+
+---
+
+## 🎯 추천 시스템
+
+### 핵심 구조
+- **기반**: 급식 평점, 사용자 선호도
+- **알고리즘**: 학교별 인기 메뉴, 계절별 추천
+
+### 주요 기능
+- 개인화 추천, 인기 랭킹, 트렌드 분석
+
+---
+
+## 📝 개발 히스토리
+
+### 2025-01-30
+- 알림 시스템 구조 분석 및 문제점 파악
+- 리얼타임 알림 디버깅 체크리스트 작성
+- 데브노트_설정.txt 파일 생성
+
+---
+
+## 🔄 TODO
+
+### 알림 시스템
+- [ ] 리얼타임 알림 테스트 및 디버깅
+- [ ] 알림 설정 페이지 구현
+- [ ] FCM 푸시 알림 연동
+
+### 기타 시스템
+- [ ] 프로필 편집 페이지
+- [ ] 소셜 로그인 확장 (네이버, 애플)
+- [ ] 머신러닝 기반 추천 알고리즘
