@@ -179,7 +179,7 @@ const generateQuizWithAI = async function(meal, grade, userId) {
     console.log(`[DEBUG] 프롬프트에 포함된 학교 유형: ${schoolType || '없음'}`);
     
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {"role": "system", "content": "당신은 교육적이고 재미있는 퀴즈를 만드는 전문가입니다."},
         {"role": "user", "content": prompt}
