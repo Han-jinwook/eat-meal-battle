@@ -29,7 +29,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   const [repliesLoading, setRepliesLoading] = useState<boolean>(false);
 
   const { user, userSchool } = useUserSchool();
-  const supabase = createClient();
+  const supabase = createClient() as any;
 
   const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;
   const isAuthor = user && user.id === comment.user_id;
@@ -38,6 +38,57 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     addSuffix: true,
     locale: ko
   });
+  
+  // 실시간 좋아요 업데이트를 위한 구독 설정
+  useEffect(() => {
+    if (!comment.id) return;
+
+    // 좋아요 추가 구독
+    const likesInsertChannel = supabase
+      .channel(`comment-likes-insert-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          console.log('댓글 좋아요 추가:', payload);
+          fetchLikesCount();
+        }
+      )
+      .subscribe();
+      
+    // 좋아요 삭제 구독 - DELETE 이벤트에서는 filter를 사용하지 않음
+    const likesDeleteChannel = supabase
+      .channel(`comment-likes-delete-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_likes'
+          // DELETE 이벤트에서는 이미 레코드가 삭제되었으므로 filter를 사용하지 않음
+        },
+        (payload) => {
+          console.log('댓글 좋아요 삭제:', payload);
+          const oldData = payload.old as Record<string, any>;
+          // 삭제된 좋아요가 현재 댓글의 좋아요인지 확인
+          if (oldData && oldData.comment_id === comment.id) {
+            fetchLikesCount();
+          }
+        }
+      )
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(likesInsertChannel);
+      supabase.removeChannel(likesDeleteChannel);
+    };
+  }, [comment.id]);
   
   // 실시간으로 좋아요 개수를 가져오는 함수
   const fetchLikesCount = async () => {
