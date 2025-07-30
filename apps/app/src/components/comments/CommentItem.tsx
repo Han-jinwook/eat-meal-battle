@@ -99,10 +99,60 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       )
       .subscribe();
 
+    // 답글 추가 구독
+    const repliesInsertChannel = supabase
+      .channel(`comment-replies-insert-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_replies',
+          filter: `comment_id=eq.${comment.id}`
+        },
+        (payload) => {
+          console.log('답글 추가:', payload);
+          // 답글 개수 업데이트
+          setRepliesCount(prevCount => prevCount + 1);
+          // 답글 목록이 열려있으면 새로고침
+          if (showReplies) {
+            loadReplies();
+          }
+        }
+      )
+      .subscribe();
+      
+    // 답글 삭제 구독
+    const repliesDeleteChannel = supabase
+      .channel(`comment-replies-delete-${comment.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_replies'
+        },
+        (payload) => {
+          console.log('답글 삭제:', payload);
+          const oldData = payload.old as Record<string, any>;
+          // 삭제된 답글이 현재 댓글의 답글인지 확인
+          if (oldData && oldData.comment_id === comment.id) {
+            setRepliesCount(prevCount => Math.max(0, prevCount - 1));
+            // 답글 목록이 열려있으면 새로고침
+            if (showReplies) {
+              loadReplies();
+            }
+          }
+        }
+      )
+      .subscribe();
+
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
       supabase.removeChannel(likesInsertChannel);
       supabase.removeChannel(likesDeleteChannel);
+      supabase.removeChannel(repliesInsertChannel);
+      supabase.removeChannel(repliesDeleteChannel);
     };
   }, [comment.id]);
   
