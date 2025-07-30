@@ -84,7 +84,7 @@ function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
 
 **재미와 정확성의 균형:**
 - 창의적이고 재미있게 접근하되, 핵심 정보는 정확하게
-- 고2 수준에 맞는 흥미로운 소재와 접근 방식 활용
+- ${schoolType} ${grade}학년 수준에 맞는 흥미로운 소재와 접근 방식 활용
 
 **중요:** 이전에 만든 문제와 완전히 다른 새로운 관점으로 접근하세요.
 
@@ -166,8 +166,8 @@ const generateQuizWithAI = async function(meal, grade, userId) {
         {"role": "system", "content": "당신은 교육적이고 재미있는 퀴즈를 만드는 전문가입니다."},
         {"role": "user", "content": prompt}
       ],
-      temperature: 0.8,
-      max_tokens: 500,
+      temperature: 0.9,
+      max_tokens: 700,
     });
     
     console.log(`[manual-generate-meal-quiz] OpenAI API 응답 받음`);
