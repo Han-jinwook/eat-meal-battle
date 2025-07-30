@@ -55,8 +55,9 @@ export async function GET(request: NextRequest) {
       }
       
       if (schoolType) {
-        schoolQuery = schoolQuery.like('school_type', `${schoolType.charAt(0)}%`); // 초/중/고
-        console.log(`🏠 학교 유형 필터링: ${schoolType}`);
+        // 정확한 학교 유형 매칭으로 개선 (일별)
+        schoolQuery = schoolQuery.eq('school_type', schoolType);
+        console.log(`🏠 학교 유형 필터링 (일별, 정확 매칭): ${schoolType}`);
       }
       
       const { data: targetSchools, error: schoolError } = await schoolQuery;
@@ -125,16 +126,26 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      // 일별 데이터와 학교 정보 결합
-      const enrichedData = data.map(battleItem => {
-        const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
-        return {
-          ...battleItem,
-          school_name: schoolInfo?.school_name || '알 수 없는 학교',
-          region: schoolInfo?.region || '알 수 없는 지역',
-          school_type: schoolInfo?.school_type || '알 수 없는 유형'
-        };
-      });
+      // 일별 데이터와 학교 정보 결합 + 공백 레코드 방지
+      const enrichedData = data
+        .map(battleItem => {
+          const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
+          return {
+            ...battleItem,
+            school_name: schoolInfo?.school_name,
+            region: schoolInfo?.region,
+            school_type: schoolInfo?.school_type,
+            _hasSchoolInfo: !!schoolInfo
+          };
+        })
+        .filter(item => {
+          if (!item._hasSchoolInfo) {
+            console.warn(`⚠️ 학교 정보 누락된 배틀 데이터 제외: school_code=${item.school_code}`);
+            return false;
+          }
+          return true;
+        })
+        .map(({ _hasSchoolInfo, ...item }) => item); // _hasSchoolInfo 필드 제거
 
       console.log('📤 일별 최종 응답 데이터:', {
         count: enrichedData.length,
@@ -179,8 +190,9 @@ export async function GET(request: NextRequest) {
       }
       
       if (schoolType) {
-        schoolQuery = schoolQuery.like('school_type', `${schoolType.charAt(0)}%`); // 초/중/고
-        console.log(`🏠 학교 유형 필터링: ${schoolType}`);
+        // 정확한 학교 유형 매칭으로 개선 (월별)
+        schoolQuery = schoolQuery.eq('school_type', schoolType);
+        console.log(`🏠 학교 유형 필터링 (월별, 정확 매칭): ${schoolType}`);
       }
       
       const { data: targetSchools, error: schoolError } = await schoolQuery;
@@ -249,16 +261,26 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      // 월별 데이터와 학교 정보 결합
-      const enrichedData = data.map(battleItem => {
-        const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
-        return {
-          ...battleItem,
-          school_name: schoolInfo?.school_name || '알 수 없는 학교',
-          region: schoolInfo?.region || '알 수 없는 지역',
-          school_type: schoolInfo?.school_type || '알 수 없는 유형'
-        };
-      });
+      // 월별 데이터와 학교 정보 결합 + 공백 레코드 방지
+      const enrichedData = data
+        .map(battleItem => {
+          const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
+          return {
+            ...battleItem,
+            school_name: schoolInfo?.school_name,
+            region: schoolInfo?.region,
+            school_type: schoolInfo?.school_type,
+            _hasSchoolInfo: !!schoolInfo
+          };
+        })
+        .filter(item => {
+          if (!item._hasSchoolInfo) {
+            console.warn(`⚠️ 학교 정보 누락된 배틀 데이터 제외: school_code=${item.school_code}`);
+            return false;
+          }
+          return true;
+        })
+        .map(({ _hasSchoolInfo, ...item }) => item); // _hasSchoolInfo 필드 제거
 
       console.log('📤 월별 최종 응답 데이터:', {
         count: enrichedData.length,
