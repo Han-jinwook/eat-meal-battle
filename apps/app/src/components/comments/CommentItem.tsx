@@ -131,11 +131,27 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     setIsLikeLoading(true);
     
     try {
+      // 낙관적 UI 업데이트 - 즉시 UI 변경
       const newIsLiked = !isLiked;
       setIsLiked(newIsLiked);
       setLikesCount(prevCount => newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
       
-      if (newIsLiked) {
+      if (isLiked) {
+        // 좋아요 취소
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', comment.id)
+          .eq('user_id', user.id);
+          
+        if (error) {
+          // 에러 발생 시 UI 롤백
+          setIsLiked(!newIsLiked);
+          setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
+          throw error;
+        }
+      } else {
+        // 좋아요 추가
         const { error } = await supabase
           .from('comment_likes')
           .insert({
@@ -144,25 +160,12 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
           });
           
         if (error) {
-          console.error('좋아요 추가 오류:', error);
-          setIsLiked(false);
-          setLikesCount(prevCount => Math.max(0, prevCount - 1));
-        }
-      } else {
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .eq('comment_id', comment.id)
-          .eq('user_id', user.id);
-          
-        if (error) {
-          console.error('좋아요 취소 오류:', error);
-          setIsLiked(true);
-          setLikesCount(prevCount => prevCount + 1);
+          // 에러 발생 시 UI 롤백
+          setIsLiked(!newIsLiked);
+          setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
+          throw error;
         }
       }
-      
-      fetchLikesCount();
     } catch (err) {
       console.error('좋아요 처리 중 오류:', err);
     } finally {
