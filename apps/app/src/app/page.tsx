@@ -371,7 +371,7 @@ export default function Home() {
         {/* 학교 정보 표시 (복원, region → grade/class) */}
 {userSchool ? (
   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
-    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+    <span className="text-blue-700 text-base font-semibold">
       {userSchool.school_name}
     </span>
     {(userSchool.grade || userSchool.class) && (
