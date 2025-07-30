@@ -68,6 +68,9 @@ function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
 - 애매하거나 논란의 여지가 있는 내용 절대 금지
 - 추측, 가정, 불확실한 정보는 일체 사용 금지
 - 정답을 두 번, 세 번 재검토하여 확실히 맞는지 확인
+- 베트남 우동, 중국 동파육 등 부정확한 문화적 연결 금지
+- 역사적 사실은 정확한 연도와 인물만 사용
+- 과학적 원리는 교과서에 명시된 내용만 사용
 
 **정답 검증 체크리스트:**
 1. 이 정답이 100% 확실한가?
@@ -167,6 +170,8 @@ const generateQuizWithAI = async function(meal, grade, userId) {
   console.log(`[DEBUG] generateQuizPrompt 함수 호출 전 schoolType = ${schoolType || '정의되지 않음'}`);
   const prompt = generateQuizPrompt(meal, grade, meal.meal_date, meal.school_code, schoolType);
   console.log(`[DEBUG] 프롬프트 생성 완료, 길이: ${prompt.length}자`);
+  console.log(`[DEBUG] 프롬프트 첫 200자:`, prompt.substring(0, 200));
+  console.log(`[DEBUG] 프롬프트 마지막 200자:`, prompt.substring(prompt.length - 200));
   
   try {
     console.log(`[manual-generate-meal-quiz] OpenAI API 호출 시작...`);
