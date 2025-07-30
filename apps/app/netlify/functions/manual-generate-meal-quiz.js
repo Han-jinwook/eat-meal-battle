@@ -416,7 +416,7 @@ const handler = async function(event, context) {
     console.log(`[manual-generate-meal-quiz] 급식 메뉴 조회 성공: ${meal.id}`);
     
     // 퀴즈 생성
-    const quiz = await generateQuizWithAI(meal, grade);
+    const quiz = await generateQuizWithAI(meal, grade, userId);
     
     // DB에 저장
     const saved = await saveQuizToDatabase(quiz, meal, grade);
