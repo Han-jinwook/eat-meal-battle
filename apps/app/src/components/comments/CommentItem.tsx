@@ -27,6 +27,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   const [replies, setReplies] = useState<CommentReply[]>([]);
   const [repliesCount, setRepliesCount] = useState<number>(comment.replies_count);
   const [repliesLoading, setRepliesLoading] = useState<boolean>(false);
+  const [showMenu, setShowMenu] = useState<boolean>(false);
 
   const { user, userSchool } = useUserSchool();
   const supabase = createClient() as any;
@@ -38,6 +39,21 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     addSuffix: true,
     locale: ko
   });
+  
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.comment-menu')) {
+        setShowMenu(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
   
   // 실시간 좋아요 업데이트를 위한 구독 설정
   useEffect(() => {
@@ -379,13 +395,43 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
               <span className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</span>
             </div>
             
+            {/* 점 3개 아이콘 - 자기가 쓴 글에만 표시 */}
             {isAuthor && !isEditing && (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
-              >
-                수정
-              </button>
+              <div className="relative comment-menu">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 p-1"
+                >
+                  <span className="text-xl leading-none">⋮</span>
+                </button>
+                
+                {/* 수정/삭제 드롭다운 메뉴 */}
+                {showMenu && (
+                  <div className="absolute right-0 top-6 bg-white dark:bg-white shadow-md rounded-md py-1 z-10 w-20 text-gray-900 dark:text-gray-900">
+                    <button
+                      onClick={() => {
+                        setIsEditing(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-gray-700"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDelete();
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-1 text-xs hover:bg-gray-100 text-red-500"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           
