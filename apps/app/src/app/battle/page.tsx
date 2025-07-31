@@ -100,6 +100,7 @@ export default function BattlePage() {
   // 데이터 로딩 useEffect
   useEffect(() => {
     if (userSchool?.school_code) {
+      console.log('📣 배틀 데이터 로딩 트리거됨', { activeTab, viewMode, selectedDate, selectedMonth });
       loadBattleData();
     }
   }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
@@ -156,7 +157,15 @@ export default function BattlePage() {
               viewMode === 'daily' ? 'opacity-100' : 'opacity-60'
             }`}>
               <button
-                onClick={() => setViewMode('daily')}
+                onClick={() => {
+                  if (viewMode === 'monthly') {
+                    // 월별에서 일별로 전환 시 해당 월의 1일로 selectedDate 설정
+                    const newDate = `${selectedMonth}-01`;
+                    console.log(`🔄 월별→일별 전환: selectedDate를 ${newDate}로 설정`);
+                    setSelectedDate(newDate);
+                  }
+                  setViewMode('daily');
+                }}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
                   viewMode === 'daily' 
                     ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
@@ -172,6 +181,12 @@ export default function BattlePage() {
                 onClick={() => {
                   // 🎯 UX 개선: 날짜 선택기 클릭 시 일별 모드로 자동 전환
                   if (viewMode !== 'daily') {
+                    if (viewMode === 'monthly') {
+                      // 월별에서 일별로 전환 시 해당 월의 1일로 selectedDate 설정
+                      const newDate = `${selectedMonth}-01`;
+                      console.log(`🔄 날짜 선택기 클릭→일별 전환: selectedDate를 ${newDate}로 설정`);
+                      setSelectedDate(newDate);
+                    }
                     setViewMode('daily');
                   }
                 }}
@@ -206,7 +221,15 @@ export default function BattlePage() {
               viewMode === 'monthly' ? 'opacity-100' : 'opacity-60'
             }`}>
               <button
-                onClick={() => setViewMode('monthly')}
+                onClick={() => {
+                  if (viewMode === 'daily') {
+                    // 일별에서 월별로 전환 시 selectedMonth를 해당 월로 설정
+                    const newMonth = selectedDate.substring(0, 7);
+                    console.log(`🔄 일별→월별 전환: selectedMonth를 ${newMonth}로 설정`);
+                    setSelectedMonth(newMonth);
+                  }
+                  setViewMode('monthly');
+                }}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
                   viewMode === 'monthly' 
                     ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
@@ -250,6 +273,12 @@ export default function BattlePage() {
                   onClick={() => {
                     // 🎯 UX 개선: 월별 날짜 표시 영역 클릭 시 월별 모드로 자동 전환
                     if (viewMode !== 'monthly') {
+                      if (viewMode === 'daily') {
+                        // 일별에서 월별로 전환 시 selectedMonth를 해당 월로 설정
+                        const newMonth = selectedDate.substring(0, 7);
+                        console.log(`🔄 월별 표시 클릭→월별 전환: selectedMonth를 ${newMonth}로 설정`);
+                        setSelectedMonth(newMonth);
+                      }
                       setViewMode('monthly');
                     }
                   }}
@@ -521,28 +550,27 @@ export default function BattlePage() {
                     {battleData
                       .sort((a, b) => {
                         // 정렬 로직 (asc는 1위부터, desc는 마지막부터)
-                        const rankField = activeTab === 'menu' ?
-                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank') :
-                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank');
+                        // menu와 meal 모두 동일한 필드명 사용
+                        const rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
                         
                         return sortOrder === 'asc' ? 
                           a[rankField] - b[rankField] : 
                           b[rankField] - a[rankField];
                       })
                       .map((item, index) => {
-                        // 순위 필드 결정
-                        const rankField = activeTab === 'menu' ?
-                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank') :
-                          (viewMode === 'daily' ? 'daily_rank' : 'monthly_rank');
+                        // 순위 필드 결정 - menu와 meal 모두 동일한 필드명 사용
+                        const rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
                         
                         // 점수와 평가 수 필드 결정
-                        const ratingField = activeTab === 'menu' ?
-                          (viewMode === 'daily' ? 'avg_rating' : 'avg_rating') :
-                          (viewMode === 'daily' ? 'avg_rating' : 'final_avg_rating');
+                        let ratingField = 'avg_rating';
+                        if (activeTab === 'meal' && viewMode === 'monthly') {
+                          ratingField = 'final_avg_rating';
+                        }
                           
-                        const countField = activeTab === 'menu' ?
-                          (viewMode === 'daily' ? 'rating_count' : 'rating_count') :
-                          (viewMode === 'daily' ? 'rating_count' : 'final_rating_count');
+                        let countField = 'rating_count';
+                        if (activeTab === 'meal' && viewMode === 'monthly') {
+                          countField = 'final_rating_count';
+                        }
                           
                         return (
                           <div 
