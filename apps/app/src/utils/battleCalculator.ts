@@ -872,7 +872,13 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     }
     
     // 5. 새 데이터 삽입 (school_type 필드 제거하고 저장)
-    const resultsToInsert = allResults.map(({ school_type, ...result }) => result);
+    const resultsToInsert = allResults.map(({ school_type, ...result }) => ({
+      school_code: result.school_code,
+      battle_date: result.battle_date,
+      avg_rating: result.avg_rating,
+      rating_count: result.rating_count,
+      daily_rank: result.daily_rank
+    }));
     
     const { data: insertedData, error: insertError } = await supabase
       .from('meal_battle_daily')
