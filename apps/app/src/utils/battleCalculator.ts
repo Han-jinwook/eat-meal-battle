@@ -793,8 +793,7 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     const { data: schoolInfos, error: schoolError } = await supabase
       .from('school_infos')
       .select('school_code, school_type')
-      .in('school_code', schoolCodes)
-      .distinct('school_code');
+      .in('school_code', schoolCodes);
     
     if (schoolError) {
       console.error('학교 정보 조회 실패:', schoolError);
