@@ -7,9 +7,6 @@
   # 변경사항 없으면 빌드 스킵
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
 
-[build.environment]
-  NODE_VERSION = "20"
-
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["sharp", "firebase-admin"]
@@ -34,7 +31,7 @@
   timeout = 120
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   # 빌드 속도 최적화 환경변수 (기능 변경 없음)
   NEXT_TELEMETRY_DISABLED = "1"
   NPM_FLAGS = "--prefer-offline --no-audit --no-fund"
