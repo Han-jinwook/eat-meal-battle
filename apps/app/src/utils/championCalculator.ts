@@ -10,7 +10,22 @@
 import { createClient } from '@supabase/supabase-js'
 
 export class ChampionCalculator {
+  private supabaseClient;
+  
+  /**
+   * ChampionCalculator 생성자
+   * @param externalClient 외부에서 전달받은 Supabase 클라이언트 (선택적)
+   */
+  constructor(externalClient = null) {
+    this.supabaseClient = externalClient;
+  }
+  
   private getSupabaseClient() {
+    if (this.supabaseClient) {
+      console.log('DEBUG', '외부에서 전달받은 Supabase 클라이언트 사용');
+      return this.supabaseClient;
+    }
+    
     console.log('DEBUG', '서버 환경에서 Supabase 클라이언트 호출 - 직접 클라이언트 생성');
     // 서버 환경에서 직접 Supabase 클라이언트 생성
     return createClient(
@@ -25,19 +40,22 @@ export class ChampionCalculator {
 
   /**
    * 실시간 장원 체크 (퀴즈 정답 시 호출)
+   * @param userId 사용자 ID
+   * @param schoolCode 학교 코드
+   * @param grade 학년
+   * @param year 연도
+   * @param month 월
    * @param currentWeekNumber 현재 주차 번호 (정답이 누적된 주차)
    */
   async checkChampionStatusOnQuizSubmit(
     userId: string,
     schoolCode: string,
     grade: number,
+    year: number,
+    month: number,
     currentWeekNumber: number
   ): Promise<void> {
     try {
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = now.getMonth() + 1
-      
       console.log('실시간 장원 체크:', { userId, schoolCode, grade, year, month, currentWeekNumber })
       
       // 해당 주차만 체크
