@@ -1,5 +1,46 @@
 # 메뉴 배틀 시스템 알고리즘 정리
 
+## 📅 2025-07-31 추가: 배틀 페이지 날짜 동기화 기능 개선
+
+### 💡 문제 상황
+- 일별/월별 뷰 모드 전환 시 `selectedDate`와 `selectedMonth` 파라미터가 비동기적으로 처리되어 데이터 로딩 불일치 발생
+- 특히 특정 날짜로 일별 조회 후 월별로 전환했다가 다시 일별로 돌아오면 월1의 1일로 초기화되는 문제
+
+### 👷 수정 로직
+1. **마지막 선택 날짜 저장 기능 추가**
+   ```typescript
+   // 이전 일별 보기에서 사용했던 날짜를 저장하는 상태
+   const [lastSelectedDate, setLastSelectedDate] = useState(getCurrentDate());
+   ```
+
+2. **일별 → 월별 전환 시 현재 날짜 기억**
+   ```typescript
+   // 일별에서 월별로 전환 시 현재 날짜 저장
+   setLastSelectedDate(selectedDate);
+   const month = selectedDate.substring(0, 7);
+   setSelectedMonth(month);
+   ```
+
+3. **월별 → 일별 전환 시 이전 날짜 복원**
+   ```typescript
+   // 이전 날짜가 현재 선택된 월에 속하는지 확인
+   const lastMonth = lastSelectedDate.substring(0, 7);
+   if (lastMonth === selectedMonth) {
+     // 동일한 월이면 이전 날짜 사용
+     setSelectedDate(lastSelectedDate);
+   } else {
+     // 다른 월이면 현재 선택된 월의 1일로 설정
+     setSelectedDate(`${selectedMonth}-01`);
+   }
+   ```
+
+### 💯 개선 결과
+- 일별 뷰에서 특정 날짜(7월 15일)를 보던 중 월별 뷰로 전환했다가 다시 일별로 돌아오면 월이 변경되지 않는 한 이전에 보던 날짜(7월 15일)가 유지됨
+- 문제 해결 방식: 현재 보는 날짜 상태를 기억하는 로직 추가 완료
+
+### 🔍 관련 파일
+- `apps/app/src/app/battle/page.tsx`
+
 ## 📊 전체 구조
 ```
 사용자 평점 입력 → 평점 집계 → 배틀 계산 → 순위 결정 → 결과 저장
