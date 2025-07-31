@@ -795,10 +795,10 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     const sortedStats = mealStats
       .sort((a, b) => {
         // 평균 평점 내림차순, 평점 개수 내림차순
-        if (b.final_avg_rating !== a.final_avg_rating) {
-          return b.final_avg_rating - a.final_avg_rating;
+        if (b.avg_rating !== a.avg_rating) {
+          return b.avg_rating - a.avg_rating;
         }
-        return b.final_rating_count - a.final_rating_count;
+        return b.rating_count - a.rating_count;
       })
       .map((stat, index) => ({
         school_code: stat.school_code,
