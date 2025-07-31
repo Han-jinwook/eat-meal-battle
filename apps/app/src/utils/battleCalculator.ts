@@ -741,7 +741,7 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
 }
 
 /**
- * 🍱 급식 배틀 일별 순위 계산 및 저장 (지역 기반 경쟁)
+ * 🍱 급식 배틀 일별 순위 계산 및 저장 (학교 유형별 분리)
  */
 export async function calculateDailyMealBattle(targetDate?: string, schoolCode?: string, supabaseClient?: SupabaseClient) {
   const supabase = supabaseClient || createClient();
@@ -751,9 +751,6 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
   console.log(`📋 입력 파라미터: targetDate=${targetDate}, schoolCode=${schoolCode}`);
   
   try {
-    // 🔥 중요: 급식 배틀은 지역 내 모든 학교가 경쟁해야 함
-    // schoolCode 필터링 제거 - 모든 학교의 데이터를 가져와서 경쟁
-    
     // 1. 해당 날짜의 급식 평점 집계 조회 (meal_menus와 조인)
     const query = supabase
       .from('meal_rating_stats')
@@ -775,7 +772,7 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
       .gt('rating_count', 0); // 평가가 있는 급식만
       
     // 🚫 schoolCode 필터링 제거 - 모든 학교가 경쟁해야 함
-    console.log(`🌍 모든 학교 대상 급식 배틀 계산 (지역 무관)`);
+    console.log(`🌍 모든 학교 대상 급식 배틀 계산 (학교 유형별 분리)`);
     
     const { data: mealStats, error } = await query;
     
@@ -791,32 +788,79 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     
     console.log(`📊 조회된 급식 평점 데이터: ${mealStats.length}개 학교`);
     
-    // 2. 평균 평점 기준으로 순위 계산
-    const sortedStats = mealStats
-      .sort((a, b) => {
-        // 평균 평점 내림차순, 평점 개수 내림차순
-        if (b.avg_rating !== a.avg_rating) {
-          return b.avg_rating - a.avg_rating;
-        }
-        return b.rating_count - a.rating_count;
-      })
-      .map((stat, index) => ({
-        school_code: stat.school_code,
-        battle_date: date,
-        avg_rating: stat.avg_rating,
-        rating_count: stat.rating_count,
-        daily_rank: index + 1
-      }));
+    // 1.5 학교 코드별로 학교 타입 정보 가져오기
+    const schoolCodes = mealStats.map(stat => stat.school_code);
+    const { data: schoolInfos, error: schoolError } = await supabase
+      .from('school_infos')
+      .select('school_code, school_type')
+      .in('school_code', schoolCodes)
+      .distinct('school_code');
     
-    console.log(`🏆 급식 배틀 순위 계산 완료: ${sortedStats.length}개 학교`);
+    if (schoolError) {
+      console.error('학교 정보 조회 실패:', schoolError);
+      return { success: false, error: schoolError };
+    }
     
-    // 3. 기존 데이터 삭제 후 새 데이터 삽입
+    if (!schoolInfos || schoolInfos.length === 0) {
+      console.log('학교 정보를 찾을 수 없습니다.');
+      return { success: false, error: '학교 정보 누락' };
+    }
+    
+    console.log(`🏫 학교 정보 조회 성공: ${schoolInfos.length}개 학교`);
+    
+    // 학교 코드별 타입 매핑 생성
+    const schoolTypeMap: Record<string, string> = {};
+    schoolInfos.forEach(school => {
+      schoolTypeMap[school.school_code] = school.school_type;
+    });
+    
+    // 2. 학교 타입별로 분류
+    const schoolTypeGroups: Record<string, any[]> = {};
+    
+    // 모든 학교를 타입별로 그룹화
+    mealStats.forEach(stat => {
+      const schoolType = schoolTypeMap[stat.school_code] || '기타';
+      if (!schoolTypeGroups[schoolType]) {
+        schoolTypeGroups[schoolType] = [];
+      }
+      schoolTypeGroups[schoolType].push(stat);
+    });
+    
+    // 3. 학교 타입별로 순위 계산 및 저장
+    let allResults: any[] = [];
+    
+    // 학교 타입별 결과 계산
+    for (const schoolType of Object.keys(schoolTypeGroups)) {
+      console.log(`🏆 ${schoolType} 학교 그룹 순위 계산 시작 - ${schoolTypeGroups[schoolType].length}개 학교`);
+      
+      const sortedGroupStats = schoolTypeGroups[schoolType]
+        .sort((a, b) => {
+          // 평균 평점 내림차순, 평점 개수 내림차순
+          if (b.avg_rating !== a.avg_rating) {
+            return b.avg_rating - a.avg_rating;
+          }
+          return b.rating_count - a.rating_count;
+        })
+        .map((stat, index) => ({
+          school_code: stat.school_code,
+          battle_date: date,
+          avg_rating: stat.avg_rating,
+          rating_count: stat.rating_count,
+          daily_rank: index + 1,
+          school_type: schoolType // 학교 타입 추가
+        }));
+      
+      allResults = [...allResults, ...sortedGroupStats];
+    }
+    
+    console.log(`🏆 급식 배틀 순위 계산 완료: 총 ${allResults.length}개 학교, ${Object.keys(schoolTypeGroups).length}개 학교 유형`);
+    
+    // 4. 기존 데이터 삭제 후 새 데이터 삽입
     const deleteQuery = supabase
       .from('meal_battle_daily')
       .delete()
       .eq('battle_date', date);
       
-    // 🚫 schoolCode 필터링 제거 - 해당 날짜의 모든 배틀 데이터 삭제
     console.log(`🗑️ 해당 날짜의 모든 급식 배틀 데이터 삭제: ${date}`);
     
     const { error: deleteError } = await deleteQuery;
@@ -827,10 +871,12 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
       console.log(`✅ 기존 급식 배틀 데이터 삭제 성공 - ${date}`);
     }
     
-    // 4. 새 데이터 삽입
+    // 5. 새 데이터 삽입 (school_type 필드 제거하고 저장)
+    const resultsToInsert = allResults.map(({ school_type, ...result }) => result);
+    
     const { data: insertedData, error: insertError } = await supabase
       .from('meal_battle_daily')
-      .insert(sortedStats)
+      .insert(resultsToInsert)
       .select();
     
     if (insertError) {
@@ -842,8 +888,8 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     
     return {
       success: true,
-      data: sortedStats,
-      message: `급식 배틀 결과 저장 완료: ${sortedStats.length}개 학교`
+      data: allResults,
+      message: `급식 배틀 결과 저장 완료: ${allResults.length}개 학교`
     };
     
   } catch (err) {
@@ -853,7 +899,7 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
 }
 
 /**
- * 🍱 급식 배틀 월별 순위 계산 및 저장
+ * 🍱 급식 배틀 월별 순위 계산 및 저장 (학교 유형별 분리)
  */
 export async function calculateMonthlyMealBattle(year?: number, month?: number, schoolCode?: string, supabaseClient?: SupabaseClient) {
   const supabase = supabaseClient || createClient();
@@ -882,11 +928,7 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       .lte('meal_menus.meal_date', endDate)
       .gt('rating_count', 0);
       
-    // 🔥 중요: 급식 배틀은 모든 학교가 경쟁해야 함 - schoolCode 필터링 제거
-    // if (schoolCode) {
-    //   query = query.eq('school_code', schoolCode);
-    // }
-    console.log(`🌍 모든 학교 대상 월별 급식 배틀 계산 (지역 무관)`);
+    console.log(`🌍 모든 학교 대상 월별 급식 배틀 계산 (학교 유형별 분리)`);
     
     const { data: mealStats, error } = await query;
     
@@ -902,12 +944,38 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
     
     console.log(`📊 조회된 월별 급식 평점 데이터: ${mealStats.length}개`);
     
+    // 1.5 학교 코드별로 학교 타입 정보 가져오기
+    const schoolCodes = [...new Set(mealStats.map(stat => stat.school_code))];
+    const { data: schoolInfos, error: schoolError } = await supabase
+      .from('school_infos')
+      .select('school_code, school_type')
+      .in('school_code', schoolCodes);
+    
+    if (schoolError) {
+      console.error('학교 정보 조회 실패:', schoolError);
+      return { success: false, error: schoolError };
+    }
+    
+    if (!schoolInfos || schoolInfos.length === 0) {
+      console.log('학교 정보를 찾을 수 없습니다.');
+      return { success: false, error: '학교 정보 누락' };
+    }
+    
+    console.log(`🏫 학교 정보 조회 성공: ${schoolInfos.length}개 학교`);
+    
+    // 학교 코드별 타입 매핑 생성
+    const schoolTypeMap: Record<string, string> = {};
+    schoolInfos.forEach(school => {
+      schoolTypeMap[school.school_code] = school.school_type;
+    });
+    
     // 2. 학교별로 그룹화하여 월별 평균 계산
     const schoolGroups = mealStats.reduce((acc, stat) => {
       const school = stat.school_code;
       if (!acc[school]) {
         acc[school] = {
           school_code: school,
+          school_type: schoolTypeMap[school] || '기타',
           total_rating: 0,
           total_count: 0,
           days: 0
@@ -921,42 +989,65 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       return acc;
     }, {} as Record<string, any>);
     
-    // 3. 학교별 월별 평균 계산 및 순위 매기기
-    const monthlyResults = Object.values(schoolGroups)
-      .map((group: any) => ({
-        school_code: group.school_code,
-        battle_year: targetYear,
-        battle_month: targetMonth,
-        final_avg_rating: group.total_count > 0 ? group.total_rating / group.total_count : 0,
-        final_rating_count: group.total_count,
-        monthly_rank: 0 // 임시값
-      }))
-      .sort((a, b) => {
-        // 평균 평점 내림차순, 평점 개수 내림차순
-        if (b.final_avg_rating !== a.final_avg_rating) {
-          return b.final_avg_rating - a.final_avg_rating;
-        }
-        return b.final_rating_count - a.final_rating_count;
-      })
-      .map((result, index) => ({
-        ...result,
-        monthly_rank: index + 1
-      }));
+    // 3. 학교 타입별로 분류하고 순위 계산
+    const schoolTypeGroups: Record<string, any[]> = {};
     
-    console.log(`🏆 월별 급식 배틀 순위 계산 완료: ${monthlyResults.length}개 학교`);
+    // 학교별 월별 평균 계산
+    const schoolResults = Object.values(schoolGroups).map((group: any) => ({
+      school_code: group.school_code,
+      school_type: group.school_type,
+      battle_year: targetYear,
+      battle_month: targetMonth,
+      final_avg_rating: group.total_count > 0 ? group.total_rating / group.total_count : 0,
+      final_rating_count: group.total_count
+    }));
     
-    // 4. 기존 데이터 삭제 후 새 데이터 삽입
+    // 학교 타입별로 그룹화
+    schoolResults.forEach(result => {
+      const schoolType = result.school_type;
+      if (!schoolTypeGroups[schoolType]) {
+        schoolTypeGroups[schoolType] = [];
+      }
+      schoolTypeGroups[schoolType].push(result);
+    });
+    
+    // 4. 학교 타입별로 순위 계산
+    let allResults: any[] = [];
+    
+    for (const schoolType of Object.keys(schoolTypeGroups)) {
+      console.log(`🏆 ${schoolType} 학교 그룹 월별 순위 계산 시작 - ${schoolTypeGroups[schoolType].length}개 학교`);
+      
+      const sortedGroupResults = schoolTypeGroups[schoolType]
+        .sort((a, b) => {
+          // 평균 평점 내림차순, 평점 개수 내림차순
+          if (b.final_avg_rating !== a.final_avg_rating) {
+            return b.final_avg_rating - a.final_avg_rating;
+          }
+          return b.final_rating_count - a.final_rating_count;
+        })
+        .map((result, index) => ({
+          school_code: result.school_code,
+          battle_year: targetYear,
+          battle_month: targetMonth,
+          final_avg_rating: result.final_avg_rating,
+          final_rating_count: result.final_rating_count,
+          monthly_rank: index + 1,
+          school_type: schoolType // 학교 타입 추가
+        }));
+      
+      allResults = [...allResults, ...sortedGroupResults];
+    }
+    
+    console.log(`🏆 월별 급식 배틀 순위 계산 완료: 총 ${allResults.length}개 학교, ${Object.keys(schoolTypeGroups).length}개 학교 유형`);
+    
+    // 5. 기존 데이터 삭제 후 새 데이터 삽입
     let deleteQuery = supabase
       .from('meal_battle_monthly')
       .delete()
       .eq('battle_year', targetYear)
       .eq('battle_month', targetMonth);
       
-    // 🔥 중요: 급식 배틀은 모든 학교 데이터를 삭제해야 함 - schoolCode 필터링 제거
-    // if (schoolCode) {
-    //   deleteQuery = deleteQuery.eq('school_code', schoolCode);
-    // }
-    console.log(`🌍 모든 학교 대상 월별 급식 배틀 데이터 삭제`);
+    console.log(`🗑️ 해당 월의 모든 급식 배틀 데이터 삭제: ${targetYear}년 ${targetMonth}월`);
     
     const { error: deleteError } = await deleteQuery;
     
@@ -966,10 +1057,12 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       console.log(`✅ 기존 월별 급식 배틀 데이터 삭제 성공 - ${targetYear}년 ${targetMonth}월`);
     }
     
-    // 5. 새 데이터 삽입
+    // 6. 새 데이터 삽입 (school_type 필드 제거하고 저장)
+    const resultsToInsert = allResults.map(({ school_type, ...result }) => result);
+    
     const { data: insertedData, error: insertError } = await supabase
       .from('meal_battle_monthly')
-      .insert(monthlyResults)
+      .insert(resultsToInsert)
       .select();
     
     if (insertError) {
@@ -981,8 +1074,8 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
     
     return {
       success: true,
-      data: monthlyResults,
-      message: `월별 급식 배틀 결과 저장 완료: ${monthlyResults.length}개 학교`
+      data: allResults,
+      message: `월별 급식 배틀 결과 저장 완료: ${allResults.length}개 학교`
     };
     
   } catch (err) {
