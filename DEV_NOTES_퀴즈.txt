@@ -1,3 +1,131 @@
+=== 🎯 퀴즈 관련 개발 노트 (2025-07-31 추가) ===
+
+## 📆 퀴즈 장원 주차별 토요일 계산 로직 개선
+
+### 📋 문제 상황
+- 퀴즈 장원 주차 표시가 프론트엔드에서 ISO 8601 계산을 통해 표시되어 백엔드와 불일치 발생
+- 백엔드에서는 월 1일부터 월요일 시작 주차로 계산하는데, 프론트엔드 계산 로직에 오차 발생
+- 프론트엔드/백엔드 간 주차 표시 불일치로 인해 장원 트로피가 잘못된 주차에 표시되는 문제
+
+### 🛠️ 해결 방식
+- 주차별 대표일(토요일)을 `champion_criteria` 테이블에 직접 저장하는 방식으로 변경
+- 백엔드 계산 로직을 단일 진실 공급원(single source of truth)으로 사용
+- 프론트엔드에서는 DB에 저장된 주차별 토요일 날짜만 가져와 표시
+
+### 📌 주요 변경 사항
+
+#### 1. DB 필드 추가
+**테이블:** `champion_criteria`
+**필드:** 
+- `week_1_saturday` (YYYY-MM-DD 형식)
+- `week_2_saturday` (YYYY-MM-DD 형식)
+- `week_3_saturday` (YYYY-MM-DD 형식)
+- `week_4_saturday` (YYYY-MM-DD 형식)
+- `week_5_saturday` (YYYY-MM-DD 형식)
+
+#### 2. 백엔드 로직 추가
+##### 자동 월별 크리테리아 설정 함수 (schedule-champion-criteria.js)
+```javascript
+// 주차별 토요일 계산 함수 추가
+function calculateWeeklySaturdays(year, month) {
+  // 해당 월의 1일
+  const firstDayOfMonth = new Date(year, month - 1, 1);
+  
+  // ISO 8601 첫 주의 월요일 찾기
+  const dayOfWeek = firstDayOfMonth.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+  
+  const firstMonday = new Date(firstDayOfMonth);
+  firstMonday.setDate(1 + daysToMonday);
+  
+  // 각 주차별 토요일 계산 (월요일+5)
+  const weeklySaturdays = {};
+  let saturday = new Date(firstMonday);
+  saturday.setDate(firstMonday.getDate() + 5);
+  
+  // 최대 5주차까지 계산
+  for (let week = 1; week <= 5; week++) {
+    const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`;
+    weeklySaturdays[`week_${week}_saturday`] = formattedDate;
+    
+    // 다음 주 토요일
+    saturday = new Date(saturday);
+    saturday.setDate(saturday.getDate() + 7);
+  }
+  
+  return weeklySaturdays;
+}
+
+// saveChampionCriteria 함수에 토요일 데이터 저장 추가
+async function saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal, weeklySaturdays) {
+  // ...
+  upsert({
+    // 기존 필드들
+    school_code: schoolCode,
+    year,
+    month,
+    week_1_days: weeklyMealDays[1] || 0,
+    // ...
+    
+    // 주차별 토요일 필드 추가
+    week_1_saturday: weeklySaturdays?.week_1_saturday || null,
+    week_2_saturday: weeklySaturdays?.week_2_saturday || null,
+    week_3_saturday: weeklySaturdays?.week_3_saturday || null,
+    week_4_saturday: weeklySaturdays?.week_4_saturday || null,
+    week_5_saturday: weeklySaturdays?.week_5_saturday || null,
+  });
+  // ...
+}
+```
+
+##### 6월/7월 크리테리아 강제 업데이트 함수 (force-june-champion-criteria.js)
+- `calculateWeeklySaturdays` 함수 동일하게 추가
+- `saveChampionCriteria` 함수에 토요일 필드 저장 추가
+- 6월/7월 처리 로직에 토요일 계산 및 저장 코드 추가
+
+#### 3. 프론트엔드 수정 (QuizChallengeCalendar.tsx)
+- ISO 8601 주차 계산 로직 제거
+- DB에서 `champion_criteria` 테이블의 주차별 토요일 데이터 가져오기
+- 토요일 날짜를 기준으로 달력에 주차 표시
+
+```typescript
+// 기존 ISO 주차 계산 로직 제거
+
+// DB에서 주차별 토요일 가져오기
+const { data: championCriteria } = await supabase
+  .from('champion_criteria')
+  .select('*')
+  .eq('school_code', schoolCode)
+  .eq('year', currentYear)
+  .eq('month', currentMonth)
+  .single();
+
+// 주차 표시는 토요일에만
+if (championCriteria && 
+    Object.values(championCriteria)
+      .some(val => val === formattedDate && 
+            typeof val === 'string' && 
+            val.includes('-'))) {
+  // 해당 날짜가 주차 대표일(토요일)인 경우 주차 표시
+  // week_1_saturday ~ week_5_saturday 값으로 표시
+}
+```
+
+### 🔄 배포 프로세스
+1. DB 테이블에 토요일 컬럼 추가
+2. 스케줄러 함수와 강제 업데이트 함수 수정 완료
+3. 프론트엔드 코드 수정하여 주차 표시 로직 변경
+4. 기존 데이터 업데이트를 위한 주차별 토요일 일괄 계산 API 개발
+   - `update_saturdays` 액션으로 지정된 기간 데이터 갱신
+
+### 💯 개선 결과
+- 백엔드와 프론트엔드 간의 주차 표시 일관성 확보
+- 장원 트로피가 정확한 주차에 표시됨
+- DB에 저장된 값을 기준으로 작동하므로 클라이언트/서버 간 계산 불일치 해소
+- 향후 주차 계산 방식이 변경되어도 백엔드 로직만 수정하면 전체 시스템에 반영
+
+---
+
 === 🎯 퀴즈 관련 개발 노트 (2025-07-14 정리) ===
 
 ## 📋 퀴즈 시간 제약 관리

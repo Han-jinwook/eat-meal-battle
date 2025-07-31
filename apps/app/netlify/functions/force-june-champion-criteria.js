@@ -87,34 +87,77 @@ function calculateWeeklyMealDays(mealDays, year, month) {
         weeklyCount[weekNumber] = (weeklyCount[weekNumber] || 0) + 1
         console.log(`${dateStr} -> ${weekNumber}주차 (해당 월 주차)`)
       } else {
-        console.log(`${dateStr} -> ${weekNumber}주차 (다음 월 주차로 제외)`)
+        console.log(`${dateStr} -> 다음달에 속함, 무시`)
       }
     } else {
-      console.log(`${dateStr} -> ${weekNumber}주차 (제외: 5주차 초과)`)
+      console.log(`${dateStr} -> 주차번호 범위 초과 (${weekNumber}), 무시`)
     }
   }
   
-  console.log('주차별 급식일 계산 결과:', weeklyCount)
+  console.log('주차별 급식 일수 계산 결과:', weeklyCount)
   return weeklyCount
 }
 
+// 주차별 토요일 날짜 계산 (ISO 8601 기준)
+function calculateWeeklySaturdays(year, month) {
+  console.log(`${year}년 ${month}월 주차별 토요일 계산 시작...`)
+  
+  // 각 주차별 토요일 날짜 저장
+  const weeklySaturdays = {}
+  
+  // 해당 월의 1일
+  const firstDayOfMonth = new Date(year, month - 1, 1)
+  
+  // ISO 8601 첫 주의 월요일 찾기
+  const dayOfWeek = firstDayOfMonth.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
+  
+  const firstMonday = new Date(firstDayOfMonth)
+  firstMonday.setDate(1 + daysToMonday)
+  
+  // 첫 주 토요일 계산 (월요일 + 5일)
+  let saturday = new Date(firstMonday)
+  saturday.setDate(firstMonday.getDate() + 5)
+  
+  // 최대 5주차까지 계산 (실제로는 월에 따라 4~5주)
+  for (let week = 1; week <= 5; week++) {
+    // 토요일 날짜 포맷팅 (YYYY-MM-DD)
+    const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`
+    
+    // 결과에 저장
+    weeklySaturdays[`week_${week}_saturday`] = formattedDate
+    
+    // 다음 주 토요일 (7일 후)
+    saturday = new Date(saturday)
+    saturday.setDate(saturday.getDate() + 7)
+  }
+  
+  console.log(`주차별 토요일 계산 완료:`, weeklySaturdays)
+  return weeklySaturdays
+}
+
 // 장원 조건 저장
-async function saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal) {
+async function saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal, weeklySaturdays) {
   try {
-    const { error } = await supabase.from('champion_criteria').upsert({
-      school_code: schoolCode,
-      year,
-      month,
-      week_1_days: weeklyMealDays[1] || 0,
-      week_2_days: weeklyMealDays[2] || 0,
-      week_3_days: weeklyMealDays[3] || 0,
-      week_4_days: weeklyMealDays[4] || 0,
-      week_5_days: weeklyMealDays[5] || 0,
-      month_total: monthlyTotal,
-      created_at: new Date().toISOString()
-    }, {
-      onConflict: 'school_code,year,month'
-    })
+    const { error } = await supabase
+      .from('champion_criteria')
+      .upsert({
+        school_code: schoolCode,
+        year,
+        month,
+        week_1_days: weeklyMealDays[1] || 0,
+        week_2_days: weeklyMealDays[2] || 0,
+        week_3_days: weeklyMealDays[3] || 0,
+        week_4_days: weeklyMealDays[4] || 0,
+        week_5_days: weeklyMealDays[5] || 0,
+        month_total: monthlyTotal,
+        // 주차별 토요일 필드 추가
+        week_1_saturday: weeklySaturdays?.week_1_saturday || null,
+        week_2_saturday: weeklySaturdays?.week_2_saturday || null,
+        week_3_saturday: weeklySaturdays?.week_3_saturday || null,
+        week_4_saturday: weeklySaturdays?.week_4_saturday || null,
+        week_5_saturday: weeklySaturdays?.week_5_saturday || null,
+      }, { onConflict: 'school_code,year,month' });
     
     if (error) {
       throw new Error(`장원 조건 저장 실패: ${error.message}`)
@@ -188,7 +231,10 @@ exports.handler = async (event, context) => {
           const juneWeeklyMealDays = calculateWeeklyMealDays(juneAllMealDays, 2025, 6);
           const juneMonthlyTotal = juneMealDays.length;
           
-          await saveChampionCriteria(supabase, schoolCode, 2025, 6, juneWeeklyMealDays, juneMonthlyTotal);
+          // 6월 주차별 토요일 계산
+          const juneWeeklySaturdays = calculateWeeklySaturdays(2025, 6);
+          
+          await saveChampionCriteria(supabase, schoolCode, 2025, 6, juneWeeklyMealDays, juneMonthlyTotal, juneWeeklySaturdays);
           console.log(`✅ ${schoolCode}: 6월 데이터 저장 완료`);
         } else {
           console.log(`⚠️ ${schoolCode}: 6월 급식 데이터 없음`);
@@ -200,7 +246,10 @@ exports.handler = async (event, context) => {
           const julyWeeklyMealDays = calculateWeeklyMealDays(julyAllMealDays, 2025, 7);
           const julyMonthlyTotal = julyMealDays.length;
           
-          await saveChampionCriteria(supabase, schoolCode, 2025, 7, julyWeeklyMealDays, julyMonthlyTotal);
+          // 7월 주차별 토요일 계산
+          const julyWeeklySaturdays = calculateWeeklySaturdays(2025, 7);
+          
+          await saveChampionCriteria(supabase, schoolCode, 2025, 7, julyWeeklyMealDays, julyMonthlyTotal, julyWeeklySaturdays);
           console.log(`✅ ${schoolCode}: 7월 데이터 저장 완료`);
         } else {
           console.log(`⚠️ ${schoolCode}: 7월 급식 데이터 없음`);

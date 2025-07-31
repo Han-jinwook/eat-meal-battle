@@ -38,6 +38,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 5, 1)); // 6월
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
   const [weeklyTrophies, setWeeklyTrophies] = useState<WeeklyTrophy[]>([]);
+  const [championCriteria, setChampionCriteria] = useState<any>(null);
   const [monthlyTrophy, setMonthlyTrophy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [holidays, setHolidays] = useState<{[key: string]: string}>({});
@@ -110,26 +111,30 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('급식 메뉴 조회 오류:', mealMenusError);
       }
       
-      // 2. 퀴즈 결과 조회 - 더 이상 사용하지 않음 (quiz_champions.day_N 필드 사용)
-      /*
-      const { data: results, error } = await supabase
-        .from('quiz_results')
+      // 1.5 주차 기준일(토요일) 정보 조회 (champion_criteria 테이블)
+      const { data: weekCriteria, error: criteriaError } = await supabase
+        .from('champion_criteria')
         .select(`
-          quiz_id,
-          selected_option,
-          is_correct,
-          meal_quizzes!inner(meal_date)
+          week_1_saturday, 
+          week_2_saturday, 
+          week_3_saturday, 
+          week_4_saturday, 
+          week_5_saturday
         `)
-        .eq('user_id', session.data.session.user.id)
-        .gte('meal_quizzes.meal_date', formatLocalDate(startDate))
-        .lte('meal_quizzes.meal_date', formatLocalDate(endDate));
-
-      if (error) {
-        console.error('퀴즈 결과 조회 오류:', error);
-        return;
+        .eq('school_code', userSchool.school_code)
+        .eq('year', year)
+        .eq('month', month + 1) // JavaScript의 month는 0부터 시작하므로 +1
+        .single();
+        
+      if (criteriaError && criteriaError.code !== 'PGRST116') { // PGRST116: 결과 없음
+        console.error('주차 기준일 조회 오류:', criteriaError);
       }
-      */
-
+      
+      console.log('조회된 주차별 토요일 정보:', weekCriteria);
+      
+      // 주차별 토요일 정보 상태 업데이트
+      setChampionCriteria(weekCriteria || null);
+      
       // 2. 장원 기록 조회 (user_champion_records 테이블)
       const { data: championData, error: championError } = await supabase
         .from('user_champion_records')
@@ -165,6 +170,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       console.log('조회된 퀴즈 결과 (quiz_champions):', quizStats);
       console.log('조회된 장원 기록:', championData);
       console.log('조회된 급식 메뉴:', mealMenus);
+      console.log('조회된 주차별 토요일:', weekCriteria);
       
       // 4. 퀴즈 결과 처리 - quiz_champions 테이블의 day_N 필드 사용
       const processedResults: QuizResult[] = [];
@@ -469,13 +475,31 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     const dayOfWeek = firstDay.getDay();
     startDate.setDate(firstDay.getDate() - dayOfWeek);
     
-    const days = [];
+    const days: CalendarDay[] = [];
     const currentDate = new Date(startDate);
+    
+    // 주차별 토요일 날짜 매핑 객체 생성 (DB에서 가져온 정보)
+    const weekSaturdays: {[key: string]: string} = {};
+    
+    // champion_criteria 테이블에서 가져온 주차별 토요일 정보
+    if (championCriteria) {
+      for (let week = 1; week <= 5; week++) {
+        const fieldName = `week_${week}_saturday` as keyof typeof championCriteria;
+        const saturdayDate = championCriteria[fieldName] as string | null;
+        
+        if (saturdayDate) {
+          weekSaturdays[saturdayDate] = `${month + 1}월${week}주차`;
+        }
+      }
+    }
     
     // 6주 * 7일 = 42일
     for (let i = 0; i < 42; i++) {
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
       const quizResult = quizResults.find(r => r.date === dateStr);
+      
+      // 주차 레이블 확인 - champion_criteria 테이블의 토요일 날짜와 비교
+      let weekLabel = weekSaturdays[dateStr] || undefined;
       
       days.push({
         day: currentDate.getDate(),
@@ -486,7 +510,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         hasQuiz: quizResult?.has_quiz || false,
         isCorrect: quizResult?.is_correct || false,
         isHoliday: !!holidays[dateStr],
-        hasMeal: quizResult?.has_meal || false // 급식 정보 유무 추가
+        hasMeal: quizResult?.has_meal || false, // 급식 정보 유무 추가
+        weekLabel // 주차 레이블 추가
       });
       
       currentDate.setDate(currentDate.getDate() + 1);
@@ -755,6 +780,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                     />
                   )}
                 </div>
+              )}
+              
+              {/* 주차 레이블 표시 (토요일) */}
+              {day.weekLabel && day.isCurrentMonth && (
+                <span className="absolute bottom-1 right-1 text-xs font-medium bg-gray-100/90 px-1 py-0.5 rounded-sm text-gray-600 shadow-sm">
+                  {day.weekLabel}
+                </span>
               )}
             </div>
           );
