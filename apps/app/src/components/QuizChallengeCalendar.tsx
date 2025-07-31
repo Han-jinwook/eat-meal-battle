@@ -643,16 +643,37 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           const weekIndex = Math.floor(index / 8);
           
           if (isWeeklyTrophyCell) {
-            // 주장원 트로피 열 (빈칸 - 나중에 조건식 추가 예정)
-            const weeklyTrophy = weeklyTrophies[weekIndex];
+            // 주장원 트로피 열 - 해당 주차의 토요일을 찾기 위한 좀더 효율적인 로직
+            // 이 주의 토요일은 인덱스 6에 있음 (0=일요일, 6=토요일)
+            const saturdayIndex = Math.floor(index / 8) * 7 + 6;
+            const saturdayDay = saturdayIndex < calendarDays.length ? calendarDays[saturdayIndex] : null;
+            
+            // 주차 번호와 트로피 정보
+            let weekNumber = null;
+            let weeklyTrophy = null;
+            
+            // 토요일이 있고 해당 월의 토요일이면 그 주차 정보 가져오기
+            if (saturdayDay && saturdayDay.isCurrentMonth && saturdayDay.weekLabel) {
+              // 주차 레이블에서 번호 추출 ("7월1주차" -> 1)
+              const labelMatch = saturdayDay.weekLabel.match(/([0-9])주차/);
+              if (labelMatch && labelMatch[1]) {
+                weekNumber = parseInt(labelMatch[1]);
+                // 주차 번호에 맞는 트로피 찾기 (1부터 시작하므로 -1)
+                weeklyTrophy = weeklyTrophies[weekNumber - 1];
+                
+                // 디버깅
+                console.log(`트로피 열 ${weekIndex}: 토요일=${saturdayDay.dateStr}, 주차=${weekNumber}, 트로피=`, weeklyTrophy);
+              }
+            }
+            
             return (
               <div
                 key={`trophy-${weekIndex}`}
                 className="h-16 border border-yellow-300 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg flex items-center justify-center"
               >
-                {/* 트로피 표시 - 해당 주 급식정보 있는 날수 전부 맞추면 수여 */}
-                {weeklyTrophy?.earned && (
-                  <span className="text-2xl">🏆</span>
+                {/* 트로피 표시 - 해당 주차의 트로피 정보가 있는 경우만 표시 */}
+                {weeklyTrophy && weeklyTrophy.earned && (
+                  <span className="text-2xl" title={`${weekNumber}주차 장원`}>🏆</span>
                 )}
               </div>
             );
