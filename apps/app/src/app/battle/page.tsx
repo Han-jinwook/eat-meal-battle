@@ -11,8 +11,9 @@ export default function BattlePage() {
   
   // 상태 관리
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().substring(0, 7));
+  const [lastSelectedDate, setLastSelectedDate] = useState<string>(getCurrentDate());
   const [activeTab, setActiveTab] = useState<'menu' | 'meal'>('menu');
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
@@ -158,13 +159,25 @@ export default function BattlePage() {
             }`}>
               <button
                 onClick={() => {
-                  if (viewMode === 'monthly') {
-                    // 월별에서 일별로 전환 시 해당 월의 1일로 selectedDate 설정
-                    const newDate = `${selectedMonth}-01`;
-                    console.log(`🔄 월별→일별 전환: selectedDate를 ${newDate}로 설정`);
-                    setSelectedDate(newDate);
+                  // 일별 뷰 모드로 전환
+                  if (viewMode !== 'daily') {
+                    // 월별에서 일별로 전환 시 이전에 저장해둔 날짜로 돌아가기
+                    if (viewMode === 'monthly') {
+                      // 이전에 보던 날짜(lastSelectedDate)가 현재 선택된 월에 속하는지 확인
+                      const lastMonth = lastSelectedDate.substring(0, 7);
+                      if (lastMonth === selectedMonth) {
+                        // 동일한 월이면 이전 날짜 사용
+                        console.log(`🔄 일별 버튼→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
+                        setSelectedDate(lastSelectedDate);
+                      } else {
+                        // 다른 월이면 현재 선택된 월의 1일로 설정
+                        const newDate = `${selectedMonth}-01`;
+                        console.log(`🔄 일별 버튼→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
+                        setSelectedDate(newDate);
+                      }
+                    }
+                    setViewMode('daily');
                   }
-                  setViewMode('daily');
                 }}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
                   viewMode === 'daily' 
@@ -182,10 +195,18 @@ export default function BattlePage() {
                   // 🎯 UX 개선: 날짜 선택기 클릭 시 일별 모드로 자동 전환
                   if (viewMode !== 'daily') {
                     if (viewMode === 'monthly') {
-                      // 월별에서 일별로 전환 시 해당 월의 1일로 selectedDate 설정
-                      const newDate = `${selectedMonth}-01`;
-                      console.log(`🔄 날짜 선택기 클릭→일별 전환: selectedDate를 ${newDate}로 설정`);
-                      setSelectedDate(newDate);
+                      // 월별에서 일별로 전환 시 이전에 저장해둔 날짜로 돌아가기
+                      const lastMonth = lastSelectedDate.substring(0, 7);
+                      if (lastMonth === selectedMonth) {
+                        // 동일한 월이면 이전 날짜 사용
+                        console.log(`🔄 날짜 선택기 클릭→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
+                        setSelectedDate(lastSelectedDate);
+                      } else {
+                        // 다른 월이면 현재 선택된 월의 1일로 설정
+                        const newDate = `${selectedMonth}-01`;
+                        console.log(`🔄 날짜 선택기 클릭→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
+                        setSelectedDate(newDate);
+                      }
                     }
                     setViewMode('daily');
                   }
@@ -222,13 +243,19 @@ export default function BattlePage() {
             }`}>
               <button
                 onClick={() => {
-                  if (viewMode === 'daily') {
-                    // 일별에서 월별로 전환 시 selectedMonth를 해당 월로 설정
-                    const newMonth = selectedDate.substring(0, 7);
-                    console.log(`🔄 일별→월별 전환: selectedMonth를 ${newMonth}로 설정`);
-                    setSelectedMonth(newMonth);
+                  // 월별 뷰 모드로 전환
+                  if (viewMode !== 'monthly') {
+                    // 일별에서 월별로 전환 시 해당 날짜의 연월을 selectedMonth로 설정
+                    if (viewMode === 'daily') {
+                      // 현재 선택된 날짜를 기억해두기
+                      setLastSelectedDate(selectedDate);
+                      
+                      const month = selectedDate.substring(0, 7);
+                      console.log(`🔄 월별 버튼→월별 전환: selectedMonth를 ${month}로 설정, 이전 날짜 ${selectedDate} 저장`);
+                      setSelectedMonth(month);
+                    }
+                    setViewMode('monthly');
                   }
-                  setViewMode('monthly');
                 }}
                 className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
                   viewMode === 'monthly' 
