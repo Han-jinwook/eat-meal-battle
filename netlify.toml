@@ -9,20 +9,18 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@supabase/supabase-js", "jsonwebtoken", "sharp", "firebase-admin", "axios", "openai", "date-fns", "uuid"]
-  bundle_node_modules = false
 
 [functions.generate-meal-image]
   timeout = 60
-  bundle_node_modules = false
 
 [functions.quiz]
-  bundle_node_modules = false
+  # 최적화된 번들링 설정
   
 [functions.menu-ratings]
-  bundle_node_modules = false
+  # 최적화된 번들링 설정
   
 [functions.meals]
-  bundle_node_modules = false
+  # 최적화된 번들링 설정
 
 [functions.verify-meal-image]
   timeout = 60
