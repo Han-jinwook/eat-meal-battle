@@ -1,6 +1,6 @@
 // 메뉴 아이템 별점 API
 const { createClient } = require('@supabase/supabase-js');
-const { calculateDailyMenuBattle, calculateMonthlyMenuBattle } = require('../../src/utils/battleCalculator');
+const { calculateDailyMenuBattle, calculateMonthlyMenuBattle } = require('./utils/battleCalculator');
 
 // Supabase 클라이언트 초기화
 const supabase = createClient(

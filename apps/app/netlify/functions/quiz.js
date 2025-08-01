@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
 
 // Champion Calculator import
-const { ChampionCalculator } = require('../../src/utils/championCalculator');
+const { ChampionCalculator } = require('./utils/championCalculator');
 
 // Supabase 클라이언트 초기화
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
