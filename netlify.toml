@@ -1,7 +1,7 @@
 [build]
   base = "apps/app"
   command = "npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
-  publish = "."
+  publish = ".next"
   functions = "netlify/functions"
   # 변경사항 없으면 빌드 스킵
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
