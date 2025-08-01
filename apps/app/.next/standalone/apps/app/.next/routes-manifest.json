@@ -70,12 +70,6 @@
       "namedRegex": "^/quiz(?:/)?$"
     },
     {
-      "page": "/ranking",
-      "regex": "^/ranking(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/ranking(?:/)?$"
-    },
-    {
       "page": "/school-search",
       "regex": "^/school\\-search(?:/)?$",
       "routeKeys": {},

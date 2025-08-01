@@ -1,6 +1,5 @@
 [build]
   base = "."
-  # 빌드 속도 최적화 (기능 변경 없음)
   command = "npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
   publish = "apps/app/.next"
   functions = "apps/app/netlify/functions"
@@ -52,9 +51,4 @@
 [functions.monthly-champion-criteria-last-day]
   schedule = "0 9 L * *"
 
-# API 경로를 Netlify Functions로 리다이렉트
-[[redirects]]
-  from = "/api/meals"
-  to = "/.netlify/functions/meals"
-  status = 200
-  force = true
+# Next.js API Routes 사용 (Netlify Functions 리다이렉트 제거)
