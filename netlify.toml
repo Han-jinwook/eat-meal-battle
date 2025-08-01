@@ -41,7 +41,6 @@
   timeout = 120
 
 [build.environment]
-  NODE_VERSION = "20"
   # 빌드 속도 최적화 환경변수 (기능 변경 없음)
   NEXT_TELEMETRY_DISABLED = "1"
   NPM_FLAGS = "--prefer-offline --no-audit --no-fund"
@@ -53,13 +52,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Netlify 스케줄된 함수 설정
-
+# 추가 스케줄된 함수 설정
 [functions.auto-generate-meal-images]
   timeout = 60
 
-# 스케줄된 함수 설정 - 직접 함수 지정 방식
 [functions.monthly-champion-criteria-last-day]
   schedule = "0 9 L * *"
-
-# Next.js API Routes 사용 (Netlify Functions 리다이렉트 제거)
+  timeout = 60
