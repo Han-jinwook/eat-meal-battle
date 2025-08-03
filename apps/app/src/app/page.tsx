@@ -12,11 +12,17 @@ import useModal from '@/hooks/useModal';
 import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
 import { CommentSection } from '@/components/comments';
 import DateNavigator from '@/components/DateNavigator';
+import ShareButton from '@/components/ShareButton';
+import ShareModal from '@/components/ShareModal';
 // 디버그 패널 제거
 
 export default function Home() {
   const router = useRouter();
   const supabase = createClient();
+  
+  // 공유 모달 상태 관리
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [currentMeal, setCurrentMeal] = useState<MealInfo | null>(null);
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
@@ -428,6 +434,13 @@ export default function Home() {
                         setTimeout(() => setPageError(''), 3000);
                       }}
                     />
+                    {/* 공유 버튼 - MealCard와 CommentSection 사이에 배치 */}
+                    <ShareButton 
+                      onClick={() => {
+                        setCurrentMeal(meal);
+                        setIsShareModalOpen(true);
+                      }} 
+                    />
                     {/* 댓글 섹션 - MealCard 외부에 배치 */}
                     <CommentSection 
                       mealId={meal.id} 
@@ -478,6 +491,17 @@ export default function Home() {
           </>
         )}
       </div>
+
+      {/* 공유 모달 */}
+      {currentMeal && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          mealDate={currentMeal.meal_date}
+          schoolName={currentMeal.school_name || '학교정보 없음'}
+          rating={4.1} // 실제 평점 데이터로 대체 필요
+        />
+      )}
     </div>
   );
 }
