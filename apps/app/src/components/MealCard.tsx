@@ -567,7 +567,7 @@ export default function MealCard({
         </div>
 
         {/* 메뉴 목록 */}
-        <div className="mb-2">
+        <div className="mb-4">
           <ul className="space-y-2">
             {meal.menuItems && meal.menuItems.length > 0 ? (
               // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
@@ -596,6 +596,18 @@ export default function MealCard({
           </ul>
         </div>
 
+        {/* 공유하기 버튼 */}
+        <div className="my-4 flex justify-center">
+          <button
+            onClick={() => console.log('공유하기 버튼 클릭됨')}
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+            급식평가 친구와 공유하기
+          </button>
+        </div>
 
         {/* 버튼들 상단으로 이동함 */}
       </div>
