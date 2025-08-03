@@ -6,6 +6,7 @@ interface ShareModalProps {
   onClose: () => void;
   mealDate: string;
   schoolName: string;
+  schoolCode?: string; // 학교 코드 추가 (선택적)
   rating?: number; // 선택적으로 변경
 }
 
@@ -14,6 +15,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
   onClose,
   mealDate,
   schoolName,
+  schoolCode,
   rating,
 }) => {
   const [isSharing, setIsSharing] = useState(false);
@@ -38,10 +40,9 @@ const ShareModal: React.FC<ShareModalProps> = ({
         url.searchParams.set('date', mealDate);
       }
       
-      // 학교 코드 정보 추가
-      // 학교 이름에서 학교 코드 추출 (예: '서울학교 3학년 2반' 에서 '서울학교' 부분만 추출)
-      const schoolCode = schoolName.split(' ')[0];
-      url.searchParams.set('school', schoolCode);
+      // 학교 코드 정보 추가 (schoolCode가 있으면 사용, 없으면 학교명에서 추출)
+      const finalSchoolCode = schoolCode || schoolName.split(' ')[0];
+      url.searchParams.set('school_code', finalSchoolCode);
       
       const shareUrl = url.toString();
       
