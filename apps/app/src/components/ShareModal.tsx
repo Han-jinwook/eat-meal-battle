@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 interface ShareModalProps {
@@ -16,6 +16,42 @@ const ShareModal: React.FC<ShareModalProps> = ({
   schoolName,
   rating,
 }) => {
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+  
+  // 공유 처리 함수
+  const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    setShareMessage('');
+    
+    try {
+      // 공유할 텍스트와 URL 준비
+      const shareTitle = `${schoolName} ${mealDate} 급식 평가`;
+      const shareText = '오늘 먹은 급식의 맛평가를 친구들과 함께 하기';
+      const shareUrl = window.location.href;
+      
+      // 브라우저 공유 API 사용 (모바일에서 주로 작동)
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      }
+      
+      // 공유 API가 없으면 클립보드에 URL 복사
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage('URL이 클립보드에 복사되었습니다!');
+    } catch (error) {
+      console.error('공유 중 오류 발생:', error);
+      setShareMessage('공유 중 문제가 발생했습니다.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+  
   if (!isOpen) return null;
 
   // 날짜 포맷 변환 (YYYY-MM-DD -> YYYY-MM-DD 급식)
@@ -60,9 +96,21 @@ const ShareModal: React.FC<ShareModalProps> = ({
           </div>
 
           {/* 공유 버튼들 */}
-          <button className="w-full py-3 bg-yellow-400 text-black font-medium rounded-md flex items-center justify-center">
-            <span className="mr-2">•</span> 카카오톡으로 공유하기
+          <button 
+            onClick={handleShare}
+            disabled={isSharing}
+            className={`w-full py-3 bg-yellow-400 text-black font-medium rounded-md flex items-center justify-center ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            <span className="mr-2">•</span> 
+            {isSharing ? '공유 중...' : '급식 평가 공유하기'}
           </button>
+          
+          {/* 상태 메시지 */}
+          {shareMessage && (
+            <div className="mt-2 text-center text-sm text-gray-600">
+              {shareMessage}
+            </div>
+          )}
         </div>
       </div>
     </div>
