@@ -29,7 +29,21 @@ const ShareModal: React.FC<ShareModalProps> = ({
       // 공유할 텍스트와 URL 준비
       const shareTitle = `${schoolName} ${mealDate} 급식 평가`;
       const shareText = '오늘 먹은 급식의 맛평가를 친구들과 함께 하기';
-      const shareUrl = window.location.href;
+      
+      // URL에 필요한 파라미터 추가 (날짜와 학교 정보)
+      const url = new URL(window.location.href);
+      
+      // 기존 날짜 파라미터 유지
+      if (!url.searchParams.has('date')) {
+        url.searchParams.set('date', mealDate);
+      }
+      
+      // 학교 코드 정보 추가
+      // 학교 이름에서 학교 코드 추출 (예: '서울학교 3학년 2반' 에서 '서울학교' 부분만 추출)
+      const schoolCode = schoolName.split(' ')[0];
+      url.searchParams.set('school', schoolCode);
+      
+      const shareUrl = url.toString();
       
       // 브라우저 공유 API 사용 (모바일에서 주로 작동)
       if (navigator.share) {
