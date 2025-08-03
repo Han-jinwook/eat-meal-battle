@@ -499,6 +499,7 @@ export default function Home() {
           onClose={() => setIsShareModalOpen(false)}
           mealDate={formatDisplayDate(currentMeal.meal_date)}
           schoolName={userSchool.school_name}
+          schoolCode={currentMeal.school_code}
         />
       )}
     </div>
