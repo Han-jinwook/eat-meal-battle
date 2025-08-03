@@ -57,3 +57,10 @@
 [functions.monthly-champion-criteria-last-day]
   schedule = "0 9 L * *"
   timeout = 60
+
+# API 경로를 Netlify Functions로 리다이렉트
+[[redirects]]
+  from = "/api/meals"
+  to = "/.netlify/functions/meals"
+  status = 200
+  force = true
