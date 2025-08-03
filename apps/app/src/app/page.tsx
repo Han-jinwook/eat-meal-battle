@@ -493,13 +493,12 @@ export default function Home() {
       </div>
 
       {/* 공유 모달 */}
-      {currentMeal && (
+      {currentMeal && userSchool && (
         <ShareModal
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
-          mealDate={currentMeal.meal_date}
-          schoolName={currentMeal.school_name || '학교정보 없음'}
-          rating={4.1} // 실제 평점 데이터로 대체 필요
+          mealDate={formatDisplayDate(currentMeal.meal_date)}
+          schoolName={userSchool.school_name}
         />
       )}
     </div>
