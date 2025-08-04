@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useReferralCode } from '@/hooks/useReferralCode';
 
 interface ShareButtonProps {
   mealDate: string;
@@ -17,6 +18,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const { referralCode, nickname } = useReferralCode();
 
   const handleShare = async () => {
     if (isSharing) return;
@@ -25,7 +27,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     try {
       // 공유할 텍스트와 URL 준비
       const shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
-      const shareText = `메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
+      const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
+      const shareText = `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
 #급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
       
       // URL에 필요한 파라미터 추가
@@ -35,6 +38,12 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       }
       const finalSchoolCode = schoolCode || schoolName.split(' ')[0];
       url.searchParams.set('school_code', finalSchoolCode);
+      
+      // 추천 코드 추가
+      if (referralCode) {
+        url.searchParams.set('ref', referralCode);
+      }
+      
       const shareUrl = url.toString();
       
       // 모바일 체크
