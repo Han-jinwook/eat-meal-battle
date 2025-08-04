@@ -54,12 +54,14 @@ const ShareModal: React.FC<ShareModalProps> = ({
           text: shareText,
           url: shareUrl,
         });
+        setShareMessage('공유가 완료되었습니다!');
         return;
       }
       
-      // 공유 API가 없으면 클립보드에 URL과 텍스트 함께 복사
-      await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
-      setShareMessage('URL과 텍스트가 클립보드에 복사되었습니다!');
+      // PC에서는 클립보드에 제목, 텍스트, URL 모두 복사
+      const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
+      await navigator.clipboard.writeText(fullShareContent);
+      setShareMessage('제목, 내용, URL이 모두 클립보드에 복사되었습니다!\n어디든 붙여넣기 하세요!');
     } catch (error) {
       console.error('공유 중 오류 발생:', error);
       setShareMessage('공유 중 문제가 발생했습니다.');
