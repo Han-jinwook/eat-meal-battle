@@ -14,10 +14,15 @@ import { CommentSection } from '@/components/comments';
 import DateNavigator from '@/components/DateNavigator';
 import ShareButton from '@/components/ShareButton';
 import ShareModal from '@/components/ShareModal';
+import { useReferralParam } from '@/hooks/useReferralParam';
+import ReferralHandler from '@/components/ReferralHandler';
 // 디버그 패널 제거
 
 export default function Home() {
   const router = useRouter();
+  
+  // 추천 파라미터 처리
+  useReferralParam();
   const supabase = createClient();
   
   // 공유 모달 상태 관리
@@ -502,6 +507,9 @@ export default function Home() {
           schoolCode={currentMeal.school_code}
         />
       )}
+      
+      {/* 추천 관계 처리 */}
+      <ReferralHandler />
     </div>
   );
 }

@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
 
       if (data.session) {
         console.log('Session successfully created')
+        
         // 세션이 성공적으로 생성되었으면 홈페이지로 리디렉션
         redirectUrl = '/'
       }

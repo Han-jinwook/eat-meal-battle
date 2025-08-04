@@ -549,10 +549,7 @@ if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
 - 압축 품질: JPEG 85%
 - OpenAI API 타임아웃 방지 목적
 
-```typescript
-// 이미지 리사이징 로직 (이미 구현됨)
-const resizeImage = (file: File): Promise<string> => {
-  return new Promise((resolve) => {
+=== 📱 급식 공유 기능 & 추천 시스템 (2025-08-04) ===
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     const img = new Image();
