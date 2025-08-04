@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
 import useUserSchool from '@/hooks/useUserSchool';
@@ -18,11 +18,14 @@ import { useReferralParam } from '@/hooks/useReferralParam';
 import ReferralHandler from '@/components/ReferralHandler';
 // 디버그 패널 제거
 
+// 추천 파라미터 처리 컴포넌트
+function ReferralParamHandler() {
+  useReferralParam();
+  return null;
+}
+
 export default function Home() {
   const router = useRouter();
-  
-  // 추천 파라미터 처리
-  useReferralParam();
   const supabase = createClient();
   
   // 공유 모달 상태 관리
@@ -509,7 +512,10 @@ export default function Home() {
       )}
       
       {/* 추천 관계 처리 */}
-      <ReferralHandler />
+      <Suspense fallback={null}>
+        <ReferralParamHandler />
+        <ReferralHandler />
+      </Suspense>
     </div>
   );
 }
