@@ -437,7 +437,7 @@ export default function Home() {
                     {/* 공유 버튼 - MealCard와 CommentSection 사이에 배치 */}
                     <ShareButton 
                       mealDate={meal.meal_date}
-                      schoolName={meal.school_name || '학교정보 없음'}
+                      schoolName={userSchool?.school_name || meal.school_name || '학교정보 없음'}
                       schoolCode={meal.school_code}
                       rating={4.1}
                     />
