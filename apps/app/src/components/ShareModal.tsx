@@ -57,9 +57,9 @@ const ShareModal: React.FC<ShareModalProps> = ({
         return;
       }
       
-      // 공유 API가 없으면 클립보드에 URL 복사
-      await navigator.clipboard.writeText(shareUrl);
-      setShareMessage('URL이 클립보드에 복사되었습니다!');
+      // 공유 API가 없으면 클립보드에 URL과 텍스트 함께 복사
+      await navigator.clipboard.writeText(`${shareText}\n\n${shareUrl}`);
+      setShareMessage('URL과 텍스트가 클립보드에 복사되었습니다!');
     } catch (error) {
       console.error('공유 중 오류 발생:', error);
       setShareMessage('공유 중 문제가 발생했습니다.');
