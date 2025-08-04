@@ -7,6 +7,7 @@ import SupabaseProvider from '@/lib/supabase/supabase-provider';
 import FirebaseMessagingWrapper from '@/components/firebase/FirebaseMessagingWrapper';
 import MainHeader from '@/components/MainHeader';
 import Footer from '@/components/Footer';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,6 +23,30 @@ export const metadata: Metadata = {
   title: "급식 배틀 - 학교 급식 평가 및 경쟁 서비스",
   description: "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 서비스입니다.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "급식배틀",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "급식 배틀",
+    title: "급식 배틀 - 학교 급식 평가 서비스",
+    description: "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 서비스",
+  },
+  twitter: {
+    card: "summary",
+    title: "급식 배틀",
+    description: "학교 급식 평가 및 경쟁 서비스",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({
@@ -33,12 +58,21 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <meta name="theme-color" content="#4F46E5" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="급식배틀" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SupabaseProvider>
+          <ServiceWorkerRegistration />
           <Suspense fallback={
             <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
               <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">

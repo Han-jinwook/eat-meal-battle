@@ -16,6 +16,7 @@ import ShareButton from '@/components/ShareButton';
 import ShareModal from '@/components/ShareModal';
 import { useReferralParam } from '@/hooks/useReferralParam';
 import ReferralHandler from '@/components/ReferralHandler';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 // 디버그 패널 제거
 
 // 추천 파라미터 처리 컴포넌트
@@ -516,6 +517,9 @@ export default function Home() {
         <ReferralParamHandler />
         <ReferralHandler />
       </Suspense>
+      
+      {/* PWA 설치 프롬프트 */}
+      <PWAInstallPrompt />
     </div>
   );
 }

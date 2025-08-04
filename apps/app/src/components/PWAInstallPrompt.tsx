@@ -1,0 +1,127 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+export default function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // PWA가 이미 설치되었는지 확인
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+
+    // beforeinstallprompt 이벤트 리스너
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowInstallPrompt(true);
+    };
+
+    // appinstalled 이벤트 리스너
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // 로컬스토리지에서 사용자가 이전에 설치를 거부했는지 확인
+    const installDismissed = localStorage.getItem('pwa-install-dismissed');
+    if (installDismissed) {
+      const dismissedTime = parseInt(installDismissed);
+      const oneDayInMs = 24 * 60 * 60 * 1000;
+      if (Date.now() - dismissedTime < oneDayInMs) {
+        setShowInstallPrompt(false);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    
+    if (choiceResult.outcome === 'accepted') {
+      console.log('사용자가 PWA 설치를 수락했습니다');
+    } else {
+      console.log('사용자가 PWA 설치를 거부했습니다');
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    }
+    
+    setDeferredPrompt(null);
+    setShowInstallPrompt(false);
+  };
+
+  const handleDismiss = () => {
+    setShowInstallPrompt(false);
+    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+  };
+
+  // 이미 설치되었거나 설치 프롬프트를 보여주지 않는 경우
+  if (isInstalled || !showInstallPrompt || !deferredPrompt) {
+    return null;
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900">
+              앱으로 설치하기
+            </p>
+            <p className="text-sm text-gray-500">
+              홈 화면에 급식배틀을 추가하여 더 빠르게 접속하세요!
+            </p>
+          </div>
+          <button
+            onClick={handleDismiss}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-500"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="mt-4 flex space-x-2">
+          <button
+            onClick={handleInstallClick}
+            className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            설치하기
+          </button>
+          <button
+            onClick={handleDismiss}
+            className="flex-1 bg-gray-100 text-gray-700 text-sm font-medium py-2 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          >
+            나중에
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
