@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/lib/supabase';
 
 export function useReferralCode() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
