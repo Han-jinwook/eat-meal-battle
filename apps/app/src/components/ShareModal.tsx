@@ -47,8 +47,10 @@ const ShareModal: React.FC<ShareModalProps> = ({
       
       const shareUrl = url.toString();
       
-      // 브라우저 공유 API 사용 (모바일에서 주로 작동)
-      if (navigator.share) {
+      // 모바일에서만 브라우저 공유 API 사용 (PC는 클립보드 복사만)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (navigator.share && isMobile) {
         await navigator.share({
           title: shareTitle,
           text: shareText,
