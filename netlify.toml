@@ -9,38 +9,21 @@
 [functions]
   node_bundler = "esbuild"
   # 번들 크기 최적화를 위한 외부 모듈 확장
-  external_node_modules = ["@supabase/supabase-js", "jsonwebtoken", "sharp", "firebase-admin", "axios", "openai", "date-fns", "uuid", "canvas", "jimp", "node-fetch", "form-data", "mime-types"]
+  external_node_modules = ["@supabase/supabase-js", "jsonwebtoken", "sharp", "firebase-admin", "axios", "openai", "date-fns", "uuid", "canvas", "jimp", "node-fetch", "form-data", "mime-types", "lodash", "crypto-js", "buffer", "stream", "util", "path", "fs"]
 
 [functions.generate-meal-image]
   timeout = 60
 
-[functions.quiz]
-  # 최적화된 번들링 설정 - 큰 함수 최적화
-  node_bundler = "esbuild"
-  external_node_modules = ["@supabase/supabase-js", "openai", "axios"]
-  
-[functions.menu-ratings]
-  # 최적화된 번들링 설정
-  
-[functions.meals]
-  # 최적화된 번들링 설정 - 큰 함수 최적화
-  node_bundler = "esbuild"
-  external_node_modules = ["@supabase/supabase-js", "axios", "date-fns"]
+# 전역 [functions] 설정에서 처리되므로 개별 설정 제거
 
 [functions.verify-meal-image]
   timeout = 60
 
-[functions.initialize-champion-criteria]
+# 실제 파일명과 일치하는 함수 설정
+[functions.initialize-school-champion-criteria]
   timeout = 120
 
-[functions.monthly-champion-criteria]
-  timeout = 120
-  schedule = "0 1 1 * *"
-
-[functions.update-champion-status-on-quiz-submit]
-  timeout = 30
-
-[functions.mark-missing-submissions-failed]
+[functions.schedule-champion-criteria]
   timeout = 120
 
 [build.environment]
@@ -55,13 +38,7 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# 추가 스케줄된 함수 설정
-[functions.auto-generate-meal-images]
-  timeout = 60
-
-[functions.monthly-champion-criteria-last-day]
-  schedule = "0 9 L * *"
-  timeout = 60
+# 존재하지 않는 함수 설정 제거 완료
 
 # API 경로를 Netlify Functions로 리다이렉트
 [[redirects]]
