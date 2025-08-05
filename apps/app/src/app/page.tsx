@@ -400,6 +400,13 @@ export default function Home() {
   <div className="mb-6"></div>
 )}
 
+        {/* 관심학교 버튼 (독립적, 새로고침에도 사라지지 않음) */}
+        <div className="mb-3">
+          <button className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm">
+            관심학교
+          </button>
+        </div>
+
         {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
         <DateNavigator 
           selectedDate={selectedDate}
