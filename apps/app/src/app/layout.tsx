@@ -42,11 +42,12 @@ export const metadata: Metadata = {
     title: "급식 배틀",
     description: "학교 급식 평가 및 경쟁 서비스",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
