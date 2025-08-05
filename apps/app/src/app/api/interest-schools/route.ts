@@ -123,7 +123,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ message: '관심학교가 삭제되었습니다' });
 
   } catch (error) {
-    console.error('API 오료:', error);
+    console.error('API 오류:', error);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
   }
 }
