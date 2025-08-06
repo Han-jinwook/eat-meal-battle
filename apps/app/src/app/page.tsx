@@ -324,8 +324,7 @@ export default function Home() {
         .insert({
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
-          school_code: schoolData.SD_SCHUL_CODE,
-          office_code: schoolData.ATPT_OFCDC_SC_CODE
+          school_code: schoolData.SD_SCHUL_CODE
         })
         .select();
       
