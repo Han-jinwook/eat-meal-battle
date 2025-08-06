@@ -385,30 +385,34 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         {/* 학교 정보 표시 (복원, region → grade/class) */}
 {userSchool ? (
-  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
-    <span className="text-blue-700 text-base font-semibold">
-      {userSchool.school_name}
-    </span>
-    {(userSchool.grade || userSchool.class) && (
-      <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-        {userSchool.grade ? `${userSchool.grade}학년` : ''}
-        {userSchool.class ? ` ${userSchool.class}반` : ''}
+  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+    {/* 왼쪽: 학교 정보 */}
+    <div className="flex items-center">
+      <span className="text-blue-700 text-base font-semibold">
+        {userSchool.school_name}
       </span>
-    )}
+      {(userSchool.grade || userSchool.class) && (
+        <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+          {userSchool.grade ? `${userSchool.grade}학년` : ''}
+          {userSchool.class ? ` ${userSchool.class}반` : ''}
+        </span>
+      )}
+    </div>
+    
+    {/* 오른쪽: 관심학교 드롭다운 */}
+    <button 
+      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+      onClick={() => console.log('관심학교 버튼 클릭')}
+    >
+      <span>관심학교</span>
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
   </div>
 ) : (
   <div className="mb-6"></div>
 )}
-
-        {/* 관심학교 버튼 - 1단계: 독립적 렌더링 */}
-        <div className="mb-3">
-          <button 
-            className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm"
-            onClick={() => console.log('관심학교 버튼 클릭')}
-          >
-            관심학교
-          </button>
-        </div>
 
         {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
         <DateNavigator 
