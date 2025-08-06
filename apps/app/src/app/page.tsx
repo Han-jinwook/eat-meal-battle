@@ -13,6 +13,7 @@ import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
 import { CommentSection } from '@/components/comments';
 import DateNavigator from '@/components/DateNavigator';
 import ShareButton from '@/components/ShareButton';
+import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareModal from '@/components/ShareModal';
 import { useReferralParam } from '@/hooks/useReferralParam';
 import ReferralHandler from '@/components/ReferralHandler';
@@ -36,9 +37,31 @@ export default function Home() {
   // 관심학교 드롭다운 상태 관리
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [interestSchools, setInterestSchools] = useState<any[]>([]);
+  const [interestSchoolsLoading, setInterestSchoolsLoading] = useState<boolean>(false);
+  
+  // 학교검색 모달 상태 관리
+  const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+
+  // 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   // URL에서 날짜 매개변수 가져오기
   // 클라이언트 사이드에서만 처리
@@ -235,6 +258,107 @@ export default function Home() {
   // 관심학교 드롭다운 토글 함수
   const handleDropdownToggle = () => {
     setIsDropdownOpen(!isDropdownOpen);
+    // 드롭다운을 열 때만 관심학교 데이터 로드
+    if (!isDropdownOpen && user && interestSchools.length === 0) {
+      fetchInterestSchools();
+    }
+  };
+
+  // 관심학교 데이터 조회 함수
+  const fetchInterestSchools = async () => {
+    if (!user) return;
+    
+    try {
+      setInterestSchoolsLoading(true);
+      console.log('관심학교 데이터 조회 시작:', user.id);
+      
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('관심학교 조회 오류:', error);
+        return;
+      }
+      
+      console.log('관심학교 데이터 조회 성공:', data);
+      setInterestSchools(data || []);
+      
+    } catch (error) {
+      console.error('관심학교 조회 중 예외 발생:', error);
+    } finally {
+      setInterestSchoolsLoading(false);
+    }
+  };
+
+  // 관심학교 등록 함수
+  const addInterestSchool = async (schoolData: any) => {
+    if (!user) {
+      console.error('사용자 인증이 필요합니다');
+      return;
+    }
+
+    // 최대 3개 제한 확인
+    if (interestSchools.length >= 3) {
+      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+
+    // 중복 등록 확인
+    const isDuplicate = interestSchools.some(
+      school => school.school_code === schoolData.SD_SCHUL_CODE
+    );
+    
+    if (isDuplicate) {
+      alert('이미 등록된 관심학교입니다.');
+      return;
+    }
+
+    try {
+      console.log('관심학교 등록 시작:', schoolData);
+      
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .insert({
+          user_id: user.id,
+          school_name: schoolData.SCHUL_NM,
+          school_code: schoolData.SD_SCHUL_CODE,
+          office_code: schoolData.ATPT_OFCDC_SC_CODE
+        })
+        .select();
+      
+      if (error) {
+        console.error('관심학교 등록 오류:', error);
+        alert('관심학교 등록에 실패했습니다.');
+        return;
+      }
+      
+      console.log('관심학교 등록 성공:', data);
+      
+      // 로컬 상태 업데이트
+      if (data && data[0]) {
+        setInterestSchools(prev => [data[0], ...prev]);
+      }
+      
+      // 모달 닫기
+      setIsSchoolSearchOpen(false);
+      alert('관심학교가 성공적으로 등록되었습니다!');
+      
+    } catch (error) {
+      console.error('관심학교 등록 중 예외 발생:', error);
+      alert('관심학교 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 학교등록 버튼 클릭 핸들러
+  const handleSchoolRegister = () => {
+    if (interestSchools.length >= 3) {
+      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+    setIsSchoolSearchOpen(true);
   };
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
@@ -447,8 +571,11 @@ export default function Home() {
         <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
           <div className="p-3">
             {/* 학교등록 버튼 */}
-            <button className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors mb-3">
-              <span>학교등록 (0/3)</span>
+            <button 
+              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors mb-3"
+              onClick={handleSchoolRegister}
+            >
+              <span>학교등록 ({interestSchools.length}/3)</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -467,12 +594,33 @@ export default function Home() {
               <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
             </button>
             
-            {/* 빈 상태 메시지 */}
-            <div className="text-center py-6 text-gray-500">
-              <div className="text-2xl mb-2">📚</div>
-              <div className="text-sm">등록된 관심학교가 없습니다</div>
-              <div className="text-xs text-gray-400 mt-1">학교등록 버튼을 눌러 추가해보세요</div>
-            </div>
+            {/* 관심학교 목록 또는 빈 상태 */}
+            {interestSchoolsLoading ? (
+              <div className="text-center py-6 text-gray-500">
+                <div className="text-sm">로딩 중...</div>
+              </div>
+            ) : interestSchools.length > 0 ? (
+              <div className="space-y-2">
+                {interestSchools.map((school) => (
+                  <button 
+                    key={school.id}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <span className="text-blue-600">🏠</span>
+                    <div className="flex-1 text-left">
+                      <div className="font-medium">{school.school_name}</div>
+                      <div className="text-xs text-gray-500">관심학교</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <div className="text-2xl mb-2">📚</div>
+                <div className="text-sm">등록된 관심학교가 없습니다</div>
+                <div className="text-xs text-gray-400 mt-1">학교등록 버튼을 눌러 추가해보세요</div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -593,6 +741,13 @@ export default function Home() {
           schoolCode={currentMeal.school_code}
         />
       )}
+      
+      {/* 학교검색 모달 */}
+      <SchoolSearchModal 
+        isOpen={isSchoolSearchOpen}
+        onClose={() => setIsSchoolSearchOpen(false)}
+        onSelectSchool={addInterestSchool}
+      />
       
       {/* 추천 관계 처리 */}
       <Suspense fallback={null}>
