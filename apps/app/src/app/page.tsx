@@ -552,29 +552,22 @@ export default function Home() {
       ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500' 
       : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
   }`}>
-    {/* 왼쪽: 학교 정보 */}
+    {/* 왼쪽: 학교 정보 (내 학교 모드일 때만 표시) */}
     <div className="flex items-center">
-      <span className={`text-base font-semibold ${
-        schoolMode.isStudentMode ? 'text-blue-700' : 'text-orange-700'
-      }`}>
-        {schoolMode.getDisplaySchoolName()}
-      </span>
-      
-      {/* 모드 표시 */}
-      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-        schoolMode.isStudentMode 
-          ? 'bg-white text-gray-600' 
-          : 'bg-white text-orange-600'
-      }`}>
-        {schoolMode.isStudentMode ? '내 학교' : '관심학교'}
-      </span>
-      
-      {/* 내 학교일 때만 학년/반 정보 표시 */}
-      {schoolMode.isStudentMode && (userSchool?.grade || userSchool?.class) && (
-        <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-          {userSchool.grade ? `${userSchool.grade}학년` : ''}
-          {userSchool.class ? ` ${userSchool.class}반` : ''}
-        </span>
+      {schoolMode.isStudentMode && (
+        <>
+          <span className="text-blue-700 text-base font-semibold">
+            {userSchool?.school_name}
+          </span>
+          
+          {/* 학년/반 정보 */}
+          {(userSchool?.grade || userSchool?.class) && (
+            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+              {userSchool.grade ? `${userSchool.grade}학년` : ''}
+              {userSchool.class ? ` ${userSchool.class}반` : ''}
+            </span>
+          )}
+        </>
       )}
     </div>
     
@@ -584,7 +577,12 @@ export default function Home() {
         className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
         onClick={handleDropdownToggle}
       >
-        <span>관심학교</span>
+        <span>
+          {schoolMode.isStudentMode 
+            ? '관심학교' 
+            : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
+          }
+        </span>
         <svg 
           className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
           fill="none" 
