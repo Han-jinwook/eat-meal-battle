@@ -18,6 +18,7 @@ import ShareModal from '@/components/ShareModal';
 import { useReferralParam } from '@/hooks/useReferralParam';
 import ReferralHandler from '@/components/ReferralHandler';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 // 디버그 패널 제거
 
 // 추천 파라미터 처리 컴포넌트
@@ -45,6 +46,18 @@ export default function Home() {
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+  
+  // 학교 모드 관리 훅
+  const schoolMode = useSchoolMode(userSchool);
+  
+  // 디버그 로그 (개발 중에만)
+  console.log('학교 모드 상태:', {
+    currentMode: schoolMode.currentMode,
+    hasMySchool: schoolMode.hasMySchool,
+    isStudentMode: schoolMode.isStudentMode,
+    permissions: schoolMode.permissions,
+    currentSchoolInfo: schoolMode.currentSchoolInfo
+  });
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -532,15 +545,32 @@ export default function Home() {
       )}
       
       <div className="max-w-4xl mx-auto">
-        {/* 학교 정보 표시 (복원, region → grade/class) */}
-{userSchool ? (
-  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+        {/* 학교 정보 표시 (현재 선택된 학교 기준) */}
+{schoolMode.currentSchoolInfo ? (
+  <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
+    schoolMode.isStudentMode 
+      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500' 
+      : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
+  }`}>
     {/* 왼쪽: 학교 정보 */}
     <div className="flex items-center">
-      <span className="text-blue-700 text-base font-semibold">
-        {userSchool.school_name}
+      <span className={`text-base font-semibold ${
+        schoolMode.isStudentMode ? 'text-blue-700' : 'text-orange-700'
+      }`}>
+        {schoolMode.getDisplaySchoolName()}
       </span>
-      {(userSchool.grade || userSchool.class) && (
+      
+      {/* 모드 표시 */}
+      <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+        schoolMode.isStudentMode 
+          ? 'bg-white text-gray-600' 
+          : 'bg-white text-orange-600'
+      }`}>
+        {schoolMode.isStudentMode ? '내 학교' : '관심학교'}
+      </span>
+      
+      {/* 내 학교일 때만 학년/반 정보 표시 */}
+      {schoolMode.isStudentMode && (userSchool?.grade || userSchool?.class) && (
         <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
           {userSchool.grade ? `${userSchool.grade}학년` : ''}
           {userSchool.class ? ` ${userSchool.class}반` : ''}
@@ -583,15 +613,31 @@ export default function Home() {
             {/* 구분선 */}
             <div className="border-t border-gray-200 my-3"></div>
             
-            {/* 내 학교 (현재) */}
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 bg-green-50 rounded-md mb-2">
-              <span className="text-green-600">🏠</span>
-              <div className="flex-1 text-left">
-                <div className="font-medium">내 학교</div>
-                <div className="text-xs text-gray-500">현재</div>
-              </div>
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
-            </button>
+            {/* 내 학교 (사용자 학교가 있을 때만 표시) */}
+            {schoolMode.hasMySchool && (
+              <button 
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md mb-2 transition-colors ${
+                  schoolMode.isStudentMode 
+                    ? 'text-gray-700 bg-green-50' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => {
+                  schoolMode.returnToMySchool();
+                  setIsDropdownOpen(false);
+                }}
+              >
+                <span className="text-green-600">🏠</span>
+                <div className="flex-1 text-left">
+                  <div className="font-medium">내 학교</div>
+                  <div className="text-xs text-gray-500">
+                    {schoolMode.isStudentMode ? '현재' : '내 학교로 돌아가기'}
+                  </div>
+                </div>
+                {schoolMode.isStudentMode && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
+                )}
+              </button>
+            )}
             
             {/* 관심학교 목록 또는 빈 상태 */}
             {interestSchoolsLoading ? (
@@ -600,18 +646,40 @@ export default function Home() {
               </div>
             ) : interestSchools.length > 0 ? (
               <div className="space-y-2">
-                {interestSchools.map((school) => (
-                  <button 
-                    key={school.id}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    <span className="text-blue-600">🏠</span>
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">{school.school_name}</div>
-                      <div className="text-xs text-gray-500">관심학교</div>
-                    </div>
-                  </button>
-                ))}
+                {interestSchools.map((school) => {
+                  const isSelected = schoolMode.selectedInterestSchool?.id === school.id;
+                  
+                  return (
+                    <button 
+                      key={school.id}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                        isSelected 
+                          ? 'text-gray-700 bg-blue-50' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => {
+                        schoolMode.selectInterestSchool({
+                          id: school.id,
+                          school_name: school.school_name,
+                          school_code: school.school_code,
+                          created_at: school.created_at
+                        });
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className="text-blue-600">🏠</span>
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">{school.school_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {isSelected ? '현재 선택됨' : '관심학교'}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">현재</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-6 text-gray-500">
