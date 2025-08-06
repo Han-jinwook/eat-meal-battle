@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
+import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 
 interface MealImageUploaderProps {
   schoolCode: string;
@@ -22,6 +24,13 @@ export default function MealImageUploader({
   onUploadError
 }: MealImageUploaderProps) {
   const supabase = createClient();
+  
+  // 권한 확인
+  const { userSchool } = useUserSchool();
+  const schoolMode = useSchoolMode(userSchool);
+  const canUploadPhoto = schoolMode.canPerformAction('canUploadPhoto');
+  const canUseAI = schoolMode.canPerformAction('canUseAI');
+  
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -382,6 +391,12 @@ export default function MealImageUploader({
     try {
       console.log('AI 이미지 생성 버튼 클릭!');
       
+      // 권한 확인
+      if (!canUseAI) {
+        setError('내 학교에서만 AI 기능을 사용할 수 있습니다.');
+        return;
+      }
+      
       // 업로드 상태와 검증 상태를 모두 초기화
       setPreview(null);
       if (fileInputRef.current) {
@@ -533,6 +548,12 @@ export default function MealImageUploader({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // 권한 확인
+    if (!canUploadPhoto) {
+      setError('내 학교에서만 사진을 업로드할 수 있습니다.');
+      return;
+    }
 
     console.log('파일 선택됨:', { 
       fileName: file.name, 
@@ -1118,13 +1139,13 @@ export default function MealImageUploader({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={!canUploadImage}
+              disabled={!canUploadImage || !canUploadPhoto}
               className={`w-full px-4 py-2 rounded-lg transition-colors ${
-                canUploadImage 
+                canUploadImage && canUploadPhoto
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              title={!canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
+              title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
             >
               파일 선택
             </button>
@@ -1157,8 +1178,12 @@ export default function MealImageUploader({
 
           <div className="flex justify-end space-x-2">
             <button
-              disabled={uploading || verifying || !preview || !isButtonReady}
+              disabled={uploading || verifying || !preview || !isButtonReady || !canUploadPhoto}
               onClick={() => {
+                if (!canUploadPhoto) {
+                  setError('내 학교에서만 사진을 업로드할 수 있습니다.');
+                  return;
+                }
                 console.log('업로드 버튼 클릭, 상태:', {
                   uploading,
                   verifying,
@@ -1168,7 +1193,7 @@ export default function MealImageUploader({
                 handleUpload();
               }}
               className={`px-4 py-2 rounded-md text-white ${
-                uploading || verifying || !preview || !isButtonReady
+                uploading || verifying || !preview || !isButtonReady || !canUploadPhoto
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
@@ -1204,8 +1229,9 @@ export default function MealImageUploader({
             
             <button
                 onClick={handleAiImageGeneration}
-                disabled={!showAiGenButton || imageStatus === 'generating'}
-                className={`px-4 py-2 rounded-md text-white ${!showAiGenButton || imageStatus === 'generating' ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} flex items-center`}
+                disabled={!showAiGenButton || imageStatus === 'generating' || !canUseAI}
+                className={`px-4 py-2 rounded-md text-white ${!showAiGenButton || imageStatus === 'generating' || !canUseAI ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} flex items-center`}
+                title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : ''}
               >
                 {imageStatus === 'generating' ? (
                   <>

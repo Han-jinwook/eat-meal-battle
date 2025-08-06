@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 import DateNavigator from '@/components/DateNavigator';
 import { getCurrentDate } from '@/utils/DateUtils';
 
 export default function BattlePage() {
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+  
+  // 권한 확인
+  const schoolMode = useSchoolMode(userSchool);
+  const canParticipateInBattle = schoolMode.canPerformAction('canParticipateInBattle');
   
   // 상태 관리
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
@@ -112,9 +117,9 @@ export default function BattlePage() {
       {userSchool ? (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-            {userSchool.school_name}
+            {schoolMode.mode === 'visitor' ? schoolMode.selectedSchool?.school_name : userSchool.school_name}
           </span>
-          {(userSchool.grade || userSchool.class) && (
+          {schoolMode.mode === 'student' && (userSchool.grade || userSchool.class) && (
             <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
               {userSchool.grade ? `${userSchool.grade}학년` : ''}
               {userSchool.class ? ` ${userSchool.class}반` : ''}
@@ -124,6 +129,22 @@ export default function BattlePage() {
       ) : (
         <div className="mb-6"></div>
       )}
+      
+      {/* 권한 확인 */}
+      {!canParticipateInBattle ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <div className="text-yellow-600 mb-2">
+            <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">배틀 참여 제한</h3>
+          <p className="text-yellow-700">
+            배틀 기능은 내 학교에서만 사용할 수 있습니다.<br/>
+            관심학교를 선택한 상태에서는 배틀 데이터를 볼 수 없습니다.
+          </p>
+        </div>
+      ) : (
 
       {/* 2개 섹션 탭 UI */}
       <div className="mb-6">
@@ -630,6 +651,7 @@ export default function BattlePage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import CommentForm from './CommentForm';
 import { User } from '@supabase/supabase-js';
 import { Comment } from './types';
 import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 
 // 순환 참조를 피하기 위해 동적 임포트 대신 타입 단언을 사용
 import CommentItem from './CommentItem';
@@ -26,8 +27,11 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   // useUserSchool 후크을 통해 사용자 정보 가져오기
   const { user, userSchool } = useUserSchool();
   
-  // 현재 사용자가 해당 학교 학생인지 확인
-  const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;
+  // 학교 모드 및 권한 관리
+  const schoolMode = useSchoolMode(userSchool);
+  
+  // 댓글 작성 권한 확인
+  const canComment = schoolMode.canPerformAction('canComment');
   const supabase = createClient();
   
   const PAGE_SIZE = 10;
@@ -431,10 +435,18 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
       
       {loading ? (
         <p className="text-gray-500 mb-4">로딩 중...</p>
-      ) : user && isStudentOfSchool ? (
+      ) : user && canComment ? (
         <CommentForm onSubmit={addComment} />
-      ) : user && !isStudentOfSchool ? (
-        <p className="text-gray-500 mb-4">해당 학교 학생만 댓글을 작성할 수 있습니다.</p>
+      ) : user && !canComment ? (
+        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+          <p className="text-orange-700 text-sm font-medium">댓글 작성 권한이 없습니다</p>
+          <p className="text-orange-600 text-xs mt-1">
+            {schoolMode.isVisitorMode 
+              ? '내 학교로 돌아가서 댓글을 작성해보세요.' 
+              : '학교 정보를 설정하면 댓글을 작성할 수 있습니다.'
+            }
+          </p>
+        </div>
       ) : (
         <p className="text-gray-500 mb-4">댓글을 작성하려면 로그인하세요.</p>
       )}

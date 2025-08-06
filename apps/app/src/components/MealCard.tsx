@@ -10,6 +10,8 @@ import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
 import { calculateDailyMenuBattleTest, calculateMonthlyMenuBattleTest } from '@/utils/battleCalculator';
+import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -68,6 +70,11 @@ interface MealCardProps {
 function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
   // 상태로 사용자 관리
   const [user, setUser] = useState(null);
+  
+  // 학교 정보 및 권한 확인
+  const { userSchool } = useUserSchool();
+  const schoolMode = useSchoolMode(userSchool);
+  const canRate = schoolMode.canPerformAction('canRate');
   
   // 컴포넌트 마운트 시 사용자 정보 가져오기
   useEffect(() => {
@@ -357,6 +364,12 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         alert('별점을 남기려면 로그인해주세요!');
         return;
       }
+      
+      // 권한 확인
+      if (!canRate) {
+        alert('내 학교에서만 별점을 남길 수 있습니다.');
+        return;
+      }
       if (!item.id) {
         console.error('메뉴 아이템 ID가 없습니다');
         return;
@@ -465,7 +478,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           <StarRating 
             value={rating || 0}
             onChange={handleRating}
-            interactive={interactive}
+            interactive={interactive && canRate}
             showValue={false}
             size="medium"
           />

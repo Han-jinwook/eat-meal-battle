@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Comment, CommentReply } from './types';
 import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import LikeButton from './LikeButton';
@@ -30,9 +31,12 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
   const { user, userSchool } = useUserSchool();
+  const schoolMode = useSchoolMode(userSchool);
   const supabase = createClient() as any;
 
-  const isStudentOfSchool = userSchool && schoolCode && userSchool.school_code === schoolCode;
+  // 권한 확인
+  const canLike = schoolMode.canPerformAction('canLike');
+  const canComment = schoolMode.canPerformAction('canComment');
   const isAuthor = user && user.id === comment.user_id;
 
   const formattedDate = formatDistanceToNow(new Date(comment.created_at), {
@@ -524,8 +528,12 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                   <LikeButton
                     count={likesCount}
                     isLiked={isLiked}
-                    onToggle={user && isStudentOfSchool ? handleLikeToggle : () => {
-                      alert('해당 학교 학생만 좋아요를 할 수 있습니다.');
+                    onToggle={user && canLike ? handleLikeToggle : () => {
+                      if (!user) {
+                        alert('로그인이 필요합니다.');
+                      } else {
+                        alert('내 학교에서만 좋아요를 할 수 있습니다.');
+                      }
                     }}
                     disabled={isLikeLoading}
                   />
@@ -556,7 +564,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                     </button>
                   )}
 
-                  {user && isStudentOfSchool && (
+                  {user && canComment && (
                     <button
                       className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
                       onClick={() => {
@@ -589,7 +597,7 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
                     </svg>
                   </div>
                   
-                  {isReplyFormVisible && user && isStudentOfSchool && (
+                  {isReplyFormVisible && user && canComment && (
                     <ReplyForm 
                       onSubmit={handleAddReply} 
                       onCancel={() => setIsReplyFormVisible(false)} // 🔥 취소 시 답글 폼 숨기기
