@@ -341,7 +341,11 @@ export default function Home() {
         .insert({
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
-          school_code: schoolData.SD_SCHUL_CODE
+          school_code: schoolData.SD_SCHUL_CODE,
+          office_code: schoolData.ATPT_OFCDC_SC_CODE, // 교육청 코드 추가
+          region: schoolData.LCTN_SC_NM, // 지역명도 추가
+          school_type: schoolData.SCHUL_KND_SC_NM, // 학교 종류도 추가
+          address: schoolData.ORG_RDNMA // 주소도 추가
         })
         .select();
       
@@ -413,8 +417,14 @@ export default function Home() {
     return 'B10';
   };
 
-  // userSchool 정보 기준 officeCode 결정
+  // 현재 선택된 학교 정보 기준 officeCode 결정
   const resolveOfficeCode = () => {
+    // 관심학교가 선택되었으면 해당 학교의 office_code 사용
+    if (schoolMode.selectedSchool?.office_code) {
+      return schoolMode.selectedSchool.office_code;
+    }
+    
+    // 내 학교의 office_code 사용
     let office = 'E10';
     if (userSchool) {
       if (userSchool.office_code) {
@@ -682,6 +692,10 @@ export default function Home() {
                           id: school.id,
                           school_name: school.school_name,
                           school_code: school.school_code,
+                          office_code: school.office_code, // 교육청 코드 추가
+                          region: school.region, // 지역명 추가
+                          school_type: school.school_type, // 학교 종류 추가
+                          address: school.address, // 주소 추가
                           created_at: school.created_at
                         });
                         

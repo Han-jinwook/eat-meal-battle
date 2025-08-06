@@ -20,6 +20,10 @@ export interface InterestSchoolInfo {
   id: string;
   school_name: string;
   school_code: string;
+  office_code?: string; // 교육청 코드 추가
+  region?: string; // 지역명 추가
+  school_type?: string; // 학교 종류 추가
+  address?: string; // 주소 추가
   created_at: string;
 }
 
