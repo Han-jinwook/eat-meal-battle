@@ -242,14 +242,18 @@ export default function Home() {
 
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
+    // 현재 표시할 학교 코드 결정 (관심학교가 선택되었으면 해당 학교, 아니면 내 학교)
+    const currentSchoolCode = schoolMode.selectedSchool?.school_code || userSchool?.school_code;
+    
     // 학교 정보와 날짜가 모두 있을 때만 실행
-    if (userSchool?.school_code && selectedDate && !pageLoading && !isLoading && !userLoading) {
-      console.log(`급식 정보 자동 로드 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
+    if (currentSchoolCode && selectedDate && !pageLoading && !isLoading && !userLoading) {
+      console.log(`급식 정보 자동 로드 - 학교: ${currentSchoolCode}, 날짜: ${selectedDate}`);
+      console.log(`현재 모드: ${schoolMode.currentMode}, 선택된 학교:`, schoolMode.selectedSchool);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
-      fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
+      fetchMealInfo(currentSchoolCode, selectedDate, resolveOfficeCode());
     }
-  }, [userSchool?.school_code, selectedDate, pageLoading, userLoading]);
+  }, [userSchool?.school_code, schoolMode.selectedSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.currentMode]);
 
   // 관심학교 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -430,9 +434,13 @@ export default function Home() {
     // 날짜 변경 시 기존 오류 메시지 초기화
     setPageError('');
     
+    // 현재 표시할 학교 코드 결정 (관심학교가 선택되었으면 해당 학교, 아니면 내 학교)
+    const currentSchoolCode = schoolMode.selectedSchool?.school_code || userSchool?.school_code;
+    
     // 학교 정보가 있으면 자동으로 급식 정보 조회
-    if (userSchool?.school_code) {
-      fetchMealInfo(userSchool.school_code, newDate, resolveOfficeCode());
+    if (currentSchoolCode) {
+      console.log(`날짜 변경 - 학교: ${currentSchoolCode}, 날짜: ${newDate}`);
+      fetchMealInfo(currentSchoolCode, newDate, resolveOfficeCode());
       
       // 이미지 목록 새로고침 트리거 - 급식 정보 가져온 후 약간의 지연 후 이미지 목록 갱신
       setTimeout(() => {
@@ -620,7 +628,20 @@ export default function Home() {
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => {
+                  // 내 학교로 돌아가기
                   schoolMode.returnToMySchool();
+                  
+                  // 내 학교의 급식 데이터 새로 가져오기
+                  if (userSchool?.school_code && selectedDate) {
+                    console.log(`내 학교로 돌아가기 - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
+                    fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
+                    
+                    // 이미지 목록 새로고침
+                    setTimeout(() => {
+                      setRefreshImageList(prev => prev + 1);
+                    }, 300);
+                  }
+                  
                   setIsDropdownOpen(false);
                 }}
               >
@@ -656,12 +677,25 @@ export default function Home() {
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                       onClick={() => {
+                        // 관심학교 선택
                         schoolMode.selectInterestSchool({
                           id: school.id,
                           school_name: school.school_name,
                           school_code: school.school_code,
                           created_at: school.created_at
                         });
+                        
+                        // 선택된 관심학교의 급식 데이터 새로 가져오기
+                        console.log(`관심학교 선택 - 학교: ${school.school_code}, 날짜: ${selectedDate}`);
+                        if (selectedDate) {
+                          fetchMealInfo(school.school_code, selectedDate, resolveOfficeCode());
+                          
+                          // 이미지 목록 새로고침
+                          setTimeout(() => {
+                            setRefreshImageList(prev => prev + 1);
+                          }, 300);
+                        }
+                        
                         setIsDropdownOpen(false);
                       }}
                     >
