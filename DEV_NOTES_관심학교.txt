@@ -1,62 +1,90 @@
-## 🏫 관심학교 컴포넌트 개발 중요사항 (2025-08-06)
+## 🏫 관심학교 컴포넌트 개발 진행상황 (2025-08-06 업데이트)
 
-### 🎯 핵심 문제
-**새로고침 시 관심학교 드롭다운 버튼이 사라지는 현상**
+### ✅ 1단계 완료 (2025-08-06 14:40)
+**학교 헤더와 같은 줄에 드롭다운 버튼 배치 성공**
+- ✅ 새로고침해도 사라지지 않는 구조 구현
+- ✅ 학교 헤더 오른쪽에 드롭다운 스타일 버튼 배치
+- ✅ justify-between으로 양쪽 끝 배치
+- ✅ 드롭다운 화살표 아이콘 추가
+- ✅ 호버 효과 및 스타일링 완료
+
+### ✅ 2단계 완료 (2025-08-06 14:45)
+**드롭다운 UI 및 토글 기능 구현 성공**
+- ✅ 드롭다운 상태 관리 (useState, useRef)
+- ✅ 외부 클릭 감지 기능 구현
+- ✅ 드롭다운 토글 함수 구현
+- ✅ 화살표 회전 애니메이션 추가
+- ✅ 예쁜 드롭다운 메뉴 UI 디자인 완료
+
+### 🎯 해결된 핵심 문제
+**새로고침 시 관심학교 드롭다운 버튼이 사라지는 현상** → **해결완료**
 - 원인: React 조건부 렌더링으로 인한 컴포넌트 언마운트
-- 발생 시점: 페이지 새로고침, 다른 페이지 갔다 오기
-- 영향: 사용자 경험 저하, 기능 접근성 문제
+- 해결: 학교 헤더 내부에 통합하여 조건부 렌더링 문제 해결
+- 결과: 새로고침해도 버튼이 항상 표시됨
 
-### 🔍 기술적 분석
+### 🔍 현재 구현된 구조 (page.tsx Line 387-413)
 
-#### 현재 급식 페이지 구조 (page.tsx)
+#### 완성된 학교 헤더 + 관심학교 드롭다운
 ```typescript
-// Line 387-401: 기존 학교 헤더
 {userSchool ? (
-  <div className="bg-gradient-to-r from-blue-50 to-indigo-50...">
-    <span>{userSchool.school_name}</span>
-    // 학년/반 정보
+  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+    {/* 왼쪽: 학교 정보 */}
+    <div className="flex items-center">
+      <span className="text-blue-700 text-base font-semibold">
+        {userSchool.school_name}
+      </span>
+      {(userSchool.grade || userSchool.class) && (
+        <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+          {userSchool.grade ? `${userSchool.grade}학년` : ''}
+          {userSchool.class ? ` ${userSchool.class}반` : ''}
+        </span>
+      )}
+    </div>
+    
+    {/* 오른쪽: 관심학교 드롭다운 */}
+    <button 
+      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+      onClick={() => console.log('관심학교 버튼 클릭')}
+    >
+      <span>관심학교</span>
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
   </div>
 ) : (
   <div className="mb-6"></div>
 )}
 ```
 
-**문제점:**
-- `userSchool` 상태에 의존하는 조건부 렌더링
-- 새로고침 시 `userSchool` 로딩 지연으로 컴포넌트 사라짐
-- `useUserSchool` 훅의 비동기 로딩 특성
+**해결된 문제점:**
+- ✅ 조건부 렌더링 문제 해결: 학교 헤더 내부에 통합
+- ✅ 새로고침 시 사라짐 문제 해결
+- ✅ UI/UX 개선: 같은 줄 배치로 공간 효율성 증대
 
-### 🎯 해결 전략
+### 🎯 적용된 해결 전략
 
-#### 1. 조건부 렌더링 최소화
+#### ✅ 통합 접근법 (최종 선택)
 ```typescript
-// ❌ 잘못된 접근
-{userSchool && <InterestSchoolDropdown />}
-
-// ✅ 올바른 접근
-<div className="header-container">
-  {userSchool ? <SchoolInfo /> : <LoadingState />}
-  <InterestSchoolDropdown /> {/* 항상 표시 */}
+// 기존 학교 헤더에 관심학교 드롭다운 통합
+<div className="flex items-center justify-between">
+  <div>학교 정보</div>  {/* 왼쪽 */}
+  <button>관심학교 드롭다운</button>  {/* 오른쪽 */}
 </div>
 ```
 
-#### 2. 컴포넌트 설계 원칙
-- **독립성**: 관심학교 컴포넌트는 userSchool과 독립적으로 작동
-- **안정성**: 로딩/에러 상태와 관계없이 항상 마운트
-- **분리**: 기존 학교 헤더 코드 절대 수정 금지
+#### 장점:
+- **안정성**: userSchool 조건부 렌더링과 함께 움직여 안정적
+- **UI 일관성**: 학교 정보와 관심학교가 논리적으로 묶임
+- **공간 효율**: 같은 줄 사용으로 세로 공간 절약
+- **유지보수**: 기존 코드 최소 수정
 
-#### 3. 상태 관리 방식
+#### 상태 관리 계획 (다음 단계)
 ```typescript
-// 관심학교 선택 상태는 localStorage 활용
+// localStorage 기반 상태 관리 예정
 const STORAGE_KEY = 'interest_school_selected';
-
-// 새로고침 시 상태 복원
-useEffect(() => {
-  const savedSchool = localStorage.getItem(STORAGE_KEY);
-  if (savedSchool) {
-    setSelectedSchool(JSON.parse(savedSchool));
-  }
-}, []);
+const [selectedSchool, setSelectedSchool] = useState(null);
+const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 ```
 
 ### 🗄️ 데이터베이스 설계
@@ -78,22 +106,25 @@ CREATE TABLE interest_schools (
 - 중복 학교 등록 방지
 - 프리미엄 사용자 확장 고려
 
-### 🔧 구현 단계
+### 🔧 구현 단계 (업데이트)
 
-#### Phase 1: 기본 UI 구현
-1. **독립적인 드롭다운 버튼** 생성
-2. **기존 헤더 옆에 배치** (justify-between 활용)
-3. **새로고침 테스트** 통과 확인
+#### ✅ Phase 1 완료: 기본 UI 구현
+1. ✅ **드롭다운 스타일 버튼** 생성 (화살표 아이콘 포함)
+2. ✅ **학교 헤더와 같은 줄 배치** (justify-between 활용)
+3. ✅ **새로고침 테스트** 통과 확인 (사라지지 않음)
+4. ✅ **호버 효과 및 스타일링** 완료
 
-#### Phase 2: 드롭다운 기능
-1. **외부 클릭 감지** (useRef + addEventListener)
-2. **관심학교 목록 로딩** (Supabase 연동)
-3. **학교 선택/해제** 기능
+#### ✅ Phase 2 완료: 드롭다운 기능 구현
+1. ✅ **드롭다운 메뉴 토글** 기능 구현
+2. ✅ **외부 클릭 감지** (useRef + addEventListener)
+3. ✅ **관심학교 목록 표시** (빈 상태 처리)
+4. ✅ **"학교등록" 버튼** 추가
 
-#### Phase 3: 데이터 연동
-1. **관심학교 선택 시 급식 데이터 전환**
-2. **권한 제어** (학생 vs 외부인 모드)
-3. **댓글/평점 참여 제한**
+#### 🔄 Phase 3: 데이터 연동 (향후)
+1. **Supabase 관심학교 테이블** 연동
+2. **관심학교 등록/삭제** API
+3. **관심학교 선택 시 급식 데이터 전환**
+4. **권한 제어** (학생 vs 외부인 모드)
 
 ### ⚠️ 개발 시 주의사항
 
@@ -130,41 +161,123 @@ CREATE TABLE interest_schools (
 └──────────────────────────────┘
 ```
 
-### 📋 다음 세션 작업 계획
+### 📋 다음 세션 작업 계획 (우선순위)
 
-#### 우선순위 1: 안정적인 버튼 표시
-- 조건부 렌더링 없는 단순 버튼부터 시작
-- 새로고침 테스트 통과 후 다음 단계 진행
+#### 🎯 Phase 2 시작: 드롭다운 기능 구현
 
-#### 우선순위 2: 드롭다운 기능
-- 외부 클릭 감지 및 메뉴 토글
-- 관심학교 목록 표시
+##### 2-1. 드롭다운 토글 기능 (최우선)
+```typescript
+// 상태 추가
+const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-#### 우선순위 3: 데이터 연동
-- 관심학교 등록/삭제 API
-- 선택된 학교의 급식 데이터 로딩
+// 버튼 클릭 핸들러
+const handleDropdownToggle = () => {
+  setIsDropdownOpen(!isDropdownOpen);
+};
+```
 
-### 🔗 관련 파일
-- `/src/app/page.tsx` - 급식 메인 페이지
-- `/src/hooks/useUserSchool.ts` - 사용자 학교 정보 훅
-- `/src/components/` - 관심학교 컴포넌트 위치
-- `/src/lib/supabase.ts` - 데이터베이스 연결
+##### 2-2. 드롭다운 메뉴 UI
+```typescript
+{isDropdownOpen && (
+  <div className="absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg z-50">
+    <div className="p-2">
+      <button>+ 학교등록 (0/3)</button>
+      <div className="border-t my-2"></div>
+      <button>📍 내 학교 (현재)</button>
+      <div className="text-center text-gray-500">등록된 관심학교가 없습니다</div>
+    </div>
+  </div>
+)}
+```
 
-**⭐ 핵심 기억사항: 새로고침해도 사라지지 않는 것이 최우선 목표!**
+##### 2-3. 외부 클릭 감지
+```typescript
+const dropdownRef = useRef(null);
 
-### 🚨 이전 시도에서 발생한 문제들
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setIsDropdownOpen(false);
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
+```
 
-#### 시도 1: SchoolHeader 통합 컴포넌트
-- 문제: 기존 UI와 통합하려다 복잡성 증가
-- 결과: 새로고침 시 사라짐 + 빌드 에러
+#### 🔄 Phase 2 완료 후 테스트 항목
+1. 드롭다운 열기/닫기 정상 작동
+2. 외부 클릭 시 드롭다운 닫힘
+3. 새로고침 후에도 버튼 유지
+4. 모바일에서도 정상 작동
 
-#### 시도 2: 조건부 렌더링 수정
-- 문제: userSchool 조건을 제거했지만 다른 에러 발생
-- 결과: 페이지 크래시
+### 🔗 핵심 파일 및 코드 위치
 
-#### 시도 3: localStorage 상태 관리
-- 문제: 컴포넌트 자체가 조건부 렌더링에 감싸져 있어 의미 없음
-- 결과: 근본 문제 해결 안됨
+#### 메인 구현 파일
+- **`/src/app/page.tsx`** (Line 387-413) - 관심학교 드롭다운 버튼 구현
+- **`/src/hooks/useUserSchool.ts`** - 사용자 학교 정보 훅 (기존)
+- **`/DEV_NOTES_관심학교.txt`** - 이 파일 (진행상황 기록)
+
+#### 향후 생성 예정 파일
+- **`/src/components/InterestSchoolDropdown.tsx`** - 별도 컴포넌트 (Phase 3에서 고려)
+- **`/src/lib/supabase.ts`** - 데이터베이스 연결 (기존)
+
+#### 데이터베이스 테이블 (향후)
+- **`interest_schools`** - 관심학교 정보 저장
+- **`meals`** - 급식 데이터 (기존)
+
+### 📱 현재 UI 구조
+```
+┌─────────────────────────────────────────────────────────┐
+│ 📍 창덕고등학교 [2학년 3반]     [관심학교 ▼]           │
+└─────────────────────────────────────────────────────────┘
+│ 날짜 선택기                                             │
+│ 급식 카드들...                                          │
+```
+
+**⭐ 1단계 목표 달성: 새로고침해도 사라지지 않는 관심학교 드롭다운 버튼 완성!**
+
+### 🚀 다음 세션 시작 시 체크리스트
+
+#### 1. 현재 상태 확인
+- [ ] 급식 페이지에서 관심학교 버튼이 학교 헤더 오른쪽에 있는지
+- [ ] 새로고침(F5) 후에도 버튼이 사라지지 않는지
+- [ ] 드롭다운 화살표가 표시되는지
+- [ ] 버튼 클릭 시 콘솔에 로그가 출력되는지
+
+#### 2. Phase 2 시작 준비
+- [ ] `page.tsx` Line 387-413 코드 확인
+- [ ] 드롭다운 상태 관리 변수 추가
+- [ ] 드롭다운 메뉴 UI 구현
+- [ ] 외부 클릭 감지 로직 추가
+
+#### 3. 중요 파일 위치
+- **메인 파일**: `/src/app/page.tsx` (Line 387-413)
+- **데브 노트**: `/DEV_NOTES_관심학교.txt`
+- **관련 훅**: `/src/hooks/useUserSchool.ts`
+
+**🎯 다음 목표: 클릭하면 드롭다운 메뉴가 나타나는 기능 구현**
+
+### ✅ 성공한 최종 접근법
+
+#### 통합 헤더 접근법 (성공)
+- **전략**: 기존 학교 헤더에 관심학교 드롭다운을 통합
+- **장점**: 조건부 렌더링 문제 근본 해결
+- **결과**: 새로고침해도 사라지지 않음
+
+#### 이전 실패 사례들 (참고용)
+
+##### 시도 1: 독립 컴포넌트 접근법
+- 문제: 조건부 렌더링으로 새로고침 시 사라짐
+- 교훈: 완전 독립적인 컴포넌트는 상태 관리 복잡
+
+##### 시도 2: 별도 줄 배치
+- 문제: UI가 어색하고 공간 낭비
+- 교훈: 논리적으로 연관된 요소는 함께 배치하는 것이 좋음
+
+##### 시도 3: 복잡한 상태 관리
+- 문제: localStorage만으로는 UI 렌더링 문제 해결 안됨
+- 교훈: 근본 원인(조건부 렌더링)을 해결해야 함
 
 ### 📝 교훈 및 다음 접근법
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
 import useUserSchool from '@/hooks/useUserSchool';
@@ -32,6 +32,10 @@ export default function Home() {
   // 공유 모달 상태 관리
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [currentMeal, setCurrentMeal] = useState<MealInfo | null>(null);
+
+  // 관심학교 드롭다운 상태 관리
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
@@ -210,6 +214,28 @@ export default function Home() {
       fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
     }
   }, [userSchool?.school_code, selectedDate, pageLoading, userLoading]);
+
+  // 관심학교 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // 관심학교 드롭다운 토글 함수
+  const handleDropdownToggle = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
 
@@ -400,15 +426,57 @@ export default function Home() {
     </div>
     
     {/* 오른쪽: 관심학교 드롭다운 */}
-    <button 
-      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
-      onClick={() => console.log('관심학교 버튼 클릭')}
-    >
-      <span>관심학교</span>
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
+    <div className="relative" ref={dropdownRef}>
+      <button 
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+        onClick={handleDropdownToggle}
+      >
+        <span>관심학교</span>
+        <svg 
+          className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      {/* 드롭다운 메뉴 */}
+      {isDropdownOpen && (
+        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <div className="p-3">
+            {/* 학교등록 버튼 */}
+            <button className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors mb-3">
+              <span>학교등록 (0/3)</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+            
+            {/* 구분선 */}
+            <div className="border-t border-gray-200 my-3"></div>
+            
+            {/* 내 학교 (현재) */}
+            <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 bg-green-50 rounded-md mb-2">
+              <span className="text-green-600">🏠</span>
+              <div className="flex-1 text-left">
+                <div className="font-medium">내 학교</div>
+                <div className="text-xs text-gray-500">현재</div>
+              </div>
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
+            </button>
+            
+            {/* 빈 상태 메시지 */}
+            <div className="text-center py-6 text-gray-500">
+              <div className="text-2xl mb-2">📚</div>
+              <div className="text-sm">등록된 관심학교가 없습니다</div>
+              <div className="text-xs text-gray-400 mt-1">학교등록 버튼을 눌러 추가해보세요</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   </div>
 ) : (
   <div className="mb-6"></div>
