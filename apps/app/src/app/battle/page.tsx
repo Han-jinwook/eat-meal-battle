@@ -145,6 +145,7 @@ export default function BattlePage() {
           </p>
         </div>
       ) : (
+        <div>
 
       {/* 2개 섹션 탭 UI */}
       <div className="mb-6">
@@ -651,6 +652,7 @@ export default function BattlePage() {
           )}
         </div>
       </div>
+        </div>
       )}
     </div>
   );
