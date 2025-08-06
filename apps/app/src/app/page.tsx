@@ -416,8 +416,12 @@ export default function Home() {
 
   // 현재 선택된 학교 정보 기준 officeCode 결정
   const resolveOfficeCode = () => {
+    console.log('현재 선택된 학교:', schoolMode.selectedSchool);
+    console.log('내 학교 정보:', userSchool);
+    
     // 관심학교가 선택되었으면 해당 학교의 office_code 사용
     if (schoolMode.selectedSchool?.office_code) {
+      console.log('관심학교 office_code 사용:', schoolMode.selectedSchool.office_code);
       return schoolMode.selectedSchool.office_code;
     }
     
@@ -426,10 +430,13 @@ export default function Home() {
     if (userSchool) {
       if (userSchool.office_code) {
         office = userSchool.office_code;
+        console.log('내 학교 office_code 사용:', office);
       } else if (userSchool.region) {
         office = getOfficeCode(userSchool.region);
+        console.log('내 학교 region에서 office_code 계산:', office);
       }
     }
+    console.log('최종 office_code:', office);
     return office;
   };
 
@@ -694,9 +701,9 @@ export default function Home() {
                         });
                         
                         // 선택된 관심학교의 급식 데이터 새로 가져오기
-                        console.log(`관심학교 선택 - 학교: ${school.school_code}, 날짜: ${selectedDate}`);
+                        console.log(`관심학교 선택 - 학교: ${school.school_code}, office_code: ${school.office_code}, 날짜: ${selectedDate}`);
                         if (selectedDate) {
-                          fetchMealInfo(school.school_code, selectedDate, resolveOfficeCode());
+                          fetchMealInfo(school.school_code, selectedDate, school.office_code || 'E10');
                           
                           // 이미지 목록 새로고침
                           setTimeout(() => {
