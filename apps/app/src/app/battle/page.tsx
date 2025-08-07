@@ -285,11 +285,10 @@ export default function BattlePage() {
         {/* 오른쪽: 관심학교 드롭다운 */}
         {user && (
           <div className="relative" ref={dropdownRef}>
-            <button
+            <button 
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
               onClick={handleDropdownToggle}
-              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center gap-2"
             >
-              <span className="text-blue-600">🏠</span>
               <span>
                 {schoolMode.isStudentMode 
                   ? '관심학교' 
