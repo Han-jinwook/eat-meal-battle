@@ -264,7 +264,11 @@ export default function BattlePage() {
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+      <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
+        schoolMode.isStudentMode 
+          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500' 
+          : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
+      }`}>
         {/* 왼쪽: 학교 정보 (isStudentMode일 때만 표시) */}
         <div className="flex items-center">
           {schoolMode.isStudentMode && (
