@@ -240,20 +240,21 @@ export default function Home() {
     }
   }, [dateParam, userLoading, userSchool, supabase]);
 
-  // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
+  // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드 (내 학교만)
   useEffect(() => {
-    // 현재 표시할 학교 코드 결정 (관심학교가 선택되었으면 해당 학교, 아니면 내 학교)
-    const currentSchoolCode = schoolMode.selectedInterestSchool?.school_code || userSchool?.school_code;
-    
-    // 학교 정보와 날짜가 모두 있을 때만 실행
-    if (currentSchoolCode && selectedDate && !pageLoading && !isLoading && !userLoading) {
-      console.log(`급식 정보 자동 로드 - 학교: ${currentSchoolCode}, 날짜: ${selectedDate}`);
-      console.log(`현재 모드: ${schoolMode.currentMode}, 선택된 학교:`, schoolMode.selectedInterestSchool);
-      // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
-      console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
-      fetchMealInfo(currentSchoolCode, selectedDate, resolveOfficeCode());
+    // 관심학교가 선택된 경우 자동 로드 하지 않음 (관심학교 선택 핸들러에서 처리)
+    if (schoolMode.selectedInterestSchool) {
+      console.log('관심학교 선택됨, 자동 로드 건너뜀');
+      return;
     }
-  }, [userSchool?.school_code, schoolMode.selectedInterestSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.currentMode]);
+    
+    // 내 학교 정보와 날짜가 모두 있을 때만 실행
+    if (userSchool?.school_code && selectedDate && !pageLoading && !isLoading && !userLoading) {
+      console.log(`급식 정보 자동 로드 (내 학교) - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
+      console.log(`현재 모드: ${schoolMode.currentMode}`);
+      fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
+    }
+  }, [userSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.selectedInterestSchool]);
 
   // 관심학교 드롭다운 외부 클릭 감지
   useEffect(() => {
