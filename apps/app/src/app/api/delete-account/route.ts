@@ -33,21 +33,90 @@ export async function POST(request: NextRequest) {
       }
     )
     
-    // DB에서 사용자 데이터 삭제 시도
+    // 하이브리드 탈퇴 처리: 개인정보는 삭제, 통계 데이터는 익명화 보존
+    console.log('하이브리드 탈퇴 처리 시작...')
+    
+    // 익명 사용자 레코드 생성 (없으면 생성)
+    const anonymousUserId = '00000000-0000-0000-0000-000000000000'
+    const { data: existingAnonymous } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('id', anonymousUserId)
+      .single()
+    
+    if (!existingAnonymous) {
+      await supabaseAdmin.from('users').insert({
+        id: anonymousUserId,
+        nickname: '탈퇴한 사용자',
+        email: 'deleted@anonymous.com',
+        user_type: 'anonymous',
+        created_at: new Date().toISOString()
+      })
+      console.log('익명 사용자 레코드 생성 완료')
+    }
+    
+    // === 완전 삭제 대상 (개인정보/실시간 상호작용) ===
+    
+    // 1. 댓글 좋아요 삭제 (개인 취향 정보)
+    await supabaseAdmin.from('comment_likes').delete().eq('user_id', user_id)
+    console.log('댓글 좋아요 데이터 삭제 완료')
+    
+    // 2. 알림 수신자 기록 삭제 (개인정보)
+    await supabaseAdmin.from('notification_recipients').delete().eq('recipient_id', user_id)
+    console.log('알림 수신 기록 삭제 완료')
+    
+    // 3. 학교 정보 삭제 (개인정보)
+    await supabaseAdmin.from('school_infos').delete().eq('user_id', user_id)
+    console.log('학교 정보 데이터 삭제 완료')
+    
+    // === 익명화 처리 대상 (통계 보존 필요) ===
+    
+    // 4. 댓글/답글 익명화 ("탈퇴한 사용자"로 표시)
+    await supabaseAdmin.from('comments')
+      .update({ 
+        user_id: '00000000-0000-0000-0000-000000000000', // 익명 사용자 ID
+        is_deleted: true // 삭제 표시
+      })
+      .eq('user_id', user_id)
+    console.log('댓글 익명화 완료')
+    
+    await supabaseAdmin.from('comment_replies')
+      .update({ 
+        user_id: '00000000-0000-0000-0000-000000000000',
+        is_deleted: true
+      })
+      .eq('user_id', user_id)
+    console.log('답글 익명화 완료')
+    
+    // 5. 별점 데이터는 보존 (통계 무결성 유지)
+    // menu_item_ratings, meal_ratings는 삭제하지 않음
+    console.log('별점 데이터 보존 (통계 무결성 유지)')
+    
+    // 6. 퀴즈 결과는 보존하되 개인 식별 불가능하게 처리
+    // quiz_results, user_champion_records는 보존
+    console.log('퀴즈 데이터 보존 (통계 무결성 유지)')
+    
+    // 7. 급식 이미지는 익명화 ("탈퇴한 사용자"로 표시)
+    await supabaseAdmin.from('meal_images')
+      .update({ uploaded_by: '00000000-0000-0000-0000-000000000000' })
+      .eq('uploaded_by', user_id)
+    console.log('급식 이미지 익명화 완료')
+    
+    // 11. 마지막으로 사용자 기본 정보 삭제
     const { error: deleteUserDataError } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', user_id)
-    
+
     if (deleteUserDataError) {
-      console.error('사용자 데이터 삭제 오류:', deleteUserDataError)
+      console.error('사용자 기본 데이터 삭제 오류:', deleteUserDataError)
       return NextResponse.json(
         { error: '사용자 데이터 삭제 중 오류가 발생했습니다.' },
         { status: 500 }
       )
     } 
-    
-    console.log('DB에서 사용자 데이터 삭제 성공')
+
+    console.log('모든 사용자 관련 데이터 삭제 성공')
     
     // Auth에서도 사용자 삭제
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)

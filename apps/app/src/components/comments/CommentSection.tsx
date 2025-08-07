@@ -32,6 +32,13 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   
   // 댓글 작성 권한 확인
   const canComment = schoolMode.canPerformAction('canComment');
+  
+  console.log('💬 CommentSection 권한 체크:', {
+    canComment,
+    currentMode: schoolMode.currentMode,
+    isStudentMode: schoolMode.isStudentMode,
+    selectedSchool: schoolMode.selectedInterestSchool?.school_name
+  });
   const supabase = createClient();
   
   const PAGE_SIZE = 10;

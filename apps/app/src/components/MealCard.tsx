@@ -76,6 +76,14 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   const schoolMode = useSchoolMode(userSchool);
   const canRate = schoolMode.canPerformAction('canRate');
   
+  console.log('⭐ MenuItemWithRating 권한 체크:', {
+    canRate,
+    currentMode: schoolMode.currentMode,
+    isStudentMode: schoolMode.isStudentMode,
+    selectedSchool: schoolMode.selectedInterestSchool?.school_name,
+    permissions: schoolMode.permissions
+  });
+  
   // 컴포넌트 마운트 시 사용자 정보 가져오기
   useEffect(() => {
     // 비동기로 사용자 정보 가져오기
@@ -366,7 +374,15 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       }
       
       // 권한 확인
+      console.log('🔒 별점 클릭 시 권한 체크:', {
+        canRate,
+        currentMode: schoolMode.currentMode,
+        isStudentMode: schoolMode.isStudentMode,
+        userId: user?.id
+      });
+      
       if (!canRate) {
+        console.log('❌ 별점 권한 없음 - 방문자 모드');
         alert('내 학교에서만 별점을 남길 수 있습니다.');
         return;
       }

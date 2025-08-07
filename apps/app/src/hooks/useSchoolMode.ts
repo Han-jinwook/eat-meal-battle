@@ -85,9 +85,20 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   
   // 권한 계산 (student 모드에서만 모든 권한 허용)
   const permissions: Permissions = useMemo(() => {
-    const hasFullPermissions = isStudentMode;
+    // 명확한 권한 계산: 관심학교가 선택되지 않고, 내 학교가 있을 때만 권한 허용
+    const hasFullPermissions = !selectedInterestSchool && hasMySchool;
     
-    return {
+    console.log('🔐 권한 계산:', {
+      currentMode,
+      isStudentMode,
+      isVisitorMode,
+      hasMySchool,
+      selectedInterestSchool: selectedInterestSchool?.school_name,
+      hasFullPermissions,
+      '계산근거': `!selectedInterestSchool(${!selectedInterestSchool}) && hasMySchool(${hasMySchool})`
+    });
+    
+    const calculatedPermissions = {
       canComment: hasFullPermissions,
       canRate: hasFullPermissions,
       canLike: hasFullPermissions,
@@ -95,7 +106,11 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
       canUseAI: hasFullPermissions,
       canParticipateInBattle: hasFullPermissions,
     };
-  }, [isStudentMode]);
+    
+    console.log('📋 최종 권한 결과:', calculatedPermissions);
+    
+    return calculatedPermissions;
+  }, [selectedInterestSchool, hasMySchool, currentMode]);
   
   // 현재 표시할 학교 정보
   const currentSchoolInfo = useMemo(() => {
