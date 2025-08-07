@@ -289,6 +289,7 @@ export default function BattlePage() {
               className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
               onClick={handleDropdownToggle}
             >
+              <span className="text-blue-600">🏠</span>
               <span>
                 {schoolMode.isStudentMode 
                   ? '관심학교' 

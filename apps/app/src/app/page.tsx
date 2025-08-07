@@ -621,6 +621,7 @@ export default function Home() {
         className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
         onClick={handleDropdownToggle}
       >
+        <span className="text-blue-600">🏠</span>
         <span>
           {schoolMode.isStudentMode 
             ? '관심학교' 
@@ -642,10 +643,7 @@ export default function Home() {
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div className="p-4">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                <span className="text-blue-600">🏠</span>
-                관심학교 선택
-              </h3>
+              <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
               <button
                 onClick={handleSchoolRegister}
                 className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
