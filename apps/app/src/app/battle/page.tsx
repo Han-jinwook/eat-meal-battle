@@ -26,9 +26,7 @@ export default function BattlePage() {
   // 학교검색 모달 상태 관리
   const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
   
-  // 권한 확인 - 관심학교에서도 배틀 조회는 가능하게 수정
-  const canViewBattle = schoolMode.hasMySchool || schoolMode.selectedInterestSchool;
-  const canParticipateInBattle = schoolMode.canPerformAction('canParticipateInBattle');
+  // 배틀 페이지는 읽기 전용이므로 권한 체크 불필요
   
   // 상태 관리
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
@@ -266,25 +264,27 @@ export default function BattlePage() {
   return (
     <div className="max-w-6xl mx-auto p-4">
       {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
-      <div className="flex justify-between items-center mb-3">
-        {/* 학교 정보 - isStudentMode일 때만 표시 */}
-        {schoolMode.isStudentMode && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 border-l-2 border-blue-500 flex items-center flex-1">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-              {userSchool?.school_name || '학교 정보 없음'}
-            </span>
-            {(userSchool?.grade || userSchool?.class) && (
-              <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-                {userSchool.grade ? `${userSchool.grade}학년` : ''}
-                {userSchool.class ? ` ${userSchool.class}반` : ''}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+        {/* 왼쪽: 학교 정보 (isStudentMode일 때만 표시) */}
+        <div className="flex items-center">
+          {schoolMode.isStudentMode && (
+            <>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+                {userSchool?.school_name || '학교 정보 없음'}
               </span>
-            )}
-          </div>
-        )}
+              {(userSchool?.grade || userSchool?.class) && (
+                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                  {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                  {userSchool.class ? ` ${userSchool.class}반` : ''}
+                </span>
+              )}
+            </>
+          )}
+        </div>
         
-        {/* 관심학교 드롭다운 */}
+        {/* 오른쪽: 관심학교 드롭다운 */}
         {user && (
-          <div className={`relative ${schoolMode.isStudentMode ? 'ml-3' : 'flex-1'}`} ref={dropdownRef}>
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={handleDropdownToggle}
               className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center gap-2"
@@ -404,21 +404,7 @@ export default function BattlePage() {
         )}
       </div>
       
-      {/* 권한 확인 */}
-      {!canViewBattle ? (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <div className="text-yellow-600 mb-2">
-            <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 15.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">배틀 접근 제한</h3>
-          <p className="text-yellow-700">
-            배틀 기능을 사용하려면 내 학교를 등록하거나 관심학교를 선택해주세요.
-          </p>
-        </div>
-      ) : (
-        <div>
+
 
       {/* 2개 섹션 탭 UI */}
       <div className="mb-6">
@@ -925,8 +911,6 @@ export default function BattlePage() {
           )}
         </div>
       </div>
-        </div>
-      )}
       
       {/* 학교검색 모달 */}
       <SchoolSearchModal 
