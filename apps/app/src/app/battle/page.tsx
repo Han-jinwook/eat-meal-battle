@@ -267,28 +267,35 @@ export default function BattlePage() {
     <div className="max-w-6xl mx-auto p-4">
       {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
       <div className="flex justify-between items-center mb-3">
-        {/* 학교 정보 */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 border-l-2 border-blue-500 flex items-center flex-1">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-            {schoolMode.currentSchoolInfo?.school_name || '학교 정보 없음'}
-          </span>
-          {schoolMode.isStudentMode && (userSchool?.grade || userSchool?.class) && (
-            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-              {userSchool.grade ? `${userSchool.grade}학년` : ''}
-              {userSchool.class ? ` ${userSchool.class}반` : ''}
+        {/* 학교 정보 - isStudentMode일 때만 표시 */}
+        {schoolMode.isStudentMode && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 border-l-2 border-blue-500 flex items-center flex-1">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+              {userSchool?.school_name || '학교 정보 없음'}
             </span>
-          )}
-        </div>
+            {(userSchool?.grade || userSchool?.class) && (
+              <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                {userSchool.class ? ` ${userSchool.class}반` : ''}
+              </span>
+            )}
+          </div>
+        )}
         
         {/* 관심학교 드롭다운 */}
         {user && (
-          <div className="relative ml-3" ref={dropdownRef}>
+          <div className={`relative ${schoolMode.isStudentMode ? 'ml-3' : 'flex-1'}`} ref={dropdownRef}>
             <button
               onClick={handleDropdownToggle}
               className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center gap-2"
             >
               <span className="text-blue-600">🏠</span>
-              <span>관심학교</span>
+              <span>
+                {schoolMode.isStudentMode 
+                  ? '관심학교' 
+                  : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
+                }
+              </span>
               <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
