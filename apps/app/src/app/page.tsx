@@ -240,11 +240,31 @@ export default function Home() {
     }
   }, [dateParam, userLoading, userSchool, supabase]);
 
-  // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드 (내 학교만)
+  // 관심학교 데이터 로드 완료 플래그
+  const [interestSchoolDataLoaded, setInterestSchoolDataLoaded] = useState<string | null>(null);
+
+  // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
-    // 관심학교가 선택된 경우 자동 로드 하지 않음 (별도 useEffect에서 처리)
-    if (schoolMode.selectedInterestSchool) {
-      console.log('관심학교 선택됨, 자동 로드 건너뜀');
+    // 관심학교가 선택된 경우
+    if (schoolMode.selectedInterestSchool && selectedDate && !pageLoading && !isLoading && !userLoading) {
+      const school = schoolMode.selectedInterestSchool;
+      const loadKey = `${school.school_code}-${selectedDate}`;
+      
+      // 이미 로드된 데이터와 같으면 건너뜀 (무한루프 방지)
+      if (interestSchoolDataLoaded === loadKey) {
+        console.log('관심학교 데이터 이미 로드됨, 건너뜀');
+        return;
+      }
+      
+      console.log(`관심학교 자동 로드 - 학교: ${school.school_code}, office_code: ${school.office_code}, 날짜: ${selectedDate}`);
+      fetchMealInfo(school.school_code, selectedDate, school.office_code || 'E10');
+      setInterestSchoolDataLoaded(loadKey);
+      
+      // 이미지 목록 새로고침
+      setTimeout(() => {
+        setRefreshImageList(prev => prev + 1);
+      }, 300);
+      
       return;
     }
     
@@ -253,23 +273,9 @@ export default function Home() {
       console.log(`급식 정보 자동 로드 (내 학교) - 학교: ${userSchool.school_code}, 날짜: ${selectedDate}`);
       console.log(`현재 모드: ${schoolMode.currentMode}`);
       fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
+      setInterestSchoolDataLoaded(null); // 내 학교로 돌아왔을 때 플래그 초기화
     }
-  }, [userSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.selectedInterestSchool]);
-
-  // 관심학교 선택 상태에서 페이지 복귀 시 자동 데이터 로딩
-  useEffect(() => {
-    // 관심학교가 선택되어 있고, 필요한 정보가 모두 있을 때 실행
-    if (schoolMode.selectedInterestSchool && selectedDate && !pageLoading && !isLoading && !userLoading) {
-      const school = schoolMode.selectedInterestSchool;
-      console.log(`관심학교 자동 로드 (페이지 복귀) - 학교: ${school.school_code}, office_code: ${school.office_code}, 날짜: ${selectedDate}`);
-      fetchMealInfo(school.school_code, selectedDate, school.office_code || 'E10');
-      
-      // 이미지 목록 새로고침
-      setTimeout(() => {
-        setRefreshImageList(prev => prev + 1);
-      }, 300);
-    }
-  }, [schoolMode.selectedInterestSchool, selectedDate, pageLoading, isLoading, userLoading]);
+  }, [userSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.selectedInterestSchool, interestSchoolDataLoaded]);
 
   // 관심학교 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -672,6 +678,8 @@ export default function Home() {
                     }, 300);
                   }
                   
+                  // 플래그 초기화
+                  setInterestSchoolDataLoaded(null);
                   setIsDropdownOpen(false);
                 }}
               >
@@ -720,6 +728,10 @@ export default function Home() {
                         console.log(`관심학교 선택 - 학교: ${school.school_code}, office_code: ${school.office_code}, 날짜: ${selectedDate}`);
                         if (selectedDate) {
                           fetchMealInfo(school.school_code, selectedDate, school.office_code || 'E10');
+                          
+                          // 플래그 업데이트
+                          const loadKey = `${school.school_code}-${selectedDate}`;
+                          setInterestSchoolDataLoaded(loadKey);
                           
                           // 이미지 목록 새로고침
                           setTimeout(() => {
