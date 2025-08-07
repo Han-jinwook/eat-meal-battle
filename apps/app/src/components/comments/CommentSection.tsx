@@ -471,7 +471,14 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
         ) : loading ? (
           <p className="text-gray-500">댓글을 불러오는 중...</p>
         ) : (
-          <p className="text-gray-500">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">아직 댓글이 없습니다.</p>
+            {canComment ? (
+              <p className="text-gray-400 text-sm">첫 댓글을 남겨보세요!</p>
+            ) : (
+              <p className="text-gray-400 text-sm">이 학교 학생들의 댓글을 기다려보세요.</p>
+            )}
+          </div>
         )}
       </div>
       
