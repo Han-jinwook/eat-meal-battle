@@ -753,9 +753,21 @@ export default function Home() {
             setSelectedDate(date);
             updateDateWithUrl(date);
             
-            // 급식 정보 자동 조회
-            if (userSchool?.school_code && !userLoading) {
-              fetchMealInfo(userSchool.school_code, date, resolveOfficeCode());
+            // 관심학교 선택 상태에 따른 급식 정보 조회
+            const currentSchool = schoolMode.selectedInterestSchool;
+            const mySchool = userSchool;
+            
+            console.log('현재 선택된 학교:', currentSchool);
+            console.log('내 학교 정보:', mySchool);
+            
+            if (currentSchool) {
+              // 관심학교가 선택된 경우
+              console.log(`관심학교 office_code 사용: ${currentSchool.office_code}`);
+              fetchMealInfo(currentSchool.school_code, date, currentSchool.office_code || 'E10');
+            } else if (mySchool?.school_code && !userLoading) {
+              // 내 학교 모드인 경우
+              console.log(`내 학교 office_code 사용: ${resolveOfficeCode()}`);
+              fetchMealInfo(mySchool.school_code, date, resolveOfficeCode());
             }
           }}
         />
