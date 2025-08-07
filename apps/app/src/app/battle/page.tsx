@@ -1,17 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useUserSchool from '@/hooks/useUserSchool';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import DateNavigator from '@/components/DateNavigator';
 import { getCurrentDate } from '@/utils/DateUtils';
+import { createClient } from '@/lib/supabase';
+import SchoolSearchModal from '@/components/SchoolSearchModal';
 
 export default function BattlePage() {
+  const supabase = createClient();
+  
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
   
-  // 권한 확인
+  // 학교 모드 관리 훅
   const schoolMode = useSchoolMode(userSchool);
+  
+  // 관심학교 드롭다운 상태 관리
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [interestSchools, setInterestSchools] = useState<any[]>([]);
+  const [interestSchoolsLoading, setInterestSchoolsLoading] = useState<boolean>(false);
+  
+  // 학교검색 모달 상태 관리
+  const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
+  
+  // 권한 확인 - 관심학교에서도 배틀 조회는 가능하게 수정
+  const canViewBattle = schoolMode.hasMySchool || schoolMode.selectedInterestSchool;
   const canParticipateInBattle = schoolMode.canPerformAction('canParticipateInBattle');
   
   // 상태 관리
@@ -42,15 +58,143 @@ export default function BattlePage() {
   const [battleLoading, setBattleLoading] = useState(false);
   const [battleError, setBattleError] = useState<string | null>(null);
 
+  // 관심학교 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // 관심학교 드롭다운 토글 함수
+  const handleDropdownToggle = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+    // 드롭다운을 열 때만 관심학교 데이터 로드
+    if (!isDropdownOpen && user && interestSchools.length === 0) {
+      fetchInterestSchools();
+    }
+  };
+
+  // 관심학교 데이터 조회 함수
+  const fetchInterestSchools = async () => {
+    if (!user) return;
+    
+    try {
+      setInterestSchoolsLoading(true);
+      console.log('관심학교 데이터 조회 시작:', user.id);
+      
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('관심학교 조회 오류:', error);
+        return;
+      }
+      
+      console.log('관심학교 데이터 조회 성공:', data);
+      setInterestSchools(data || []);
+      
+    } catch (error) {
+      console.error('관심학교 조회 중 예외 발생:', error);
+    } finally {
+      setInterestSchoolsLoading(false);
+    }
+  };
+
+  // 관심학교 등록 함수
+  const addInterestSchool = async (schoolData: any) => {
+    if (!user) {
+      console.error('사용자 인증이 필요합니다');
+      return;
+    }
+
+    // 최대 3개 제한 확인
+    if (interestSchools.length >= 3) {
+      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+
+    // 중복 등록 확인
+    const isDuplicate = interestSchools.some(
+      school => school.school_code === schoolData.SD_SCHUL_CODE
+    );
+    
+    if (isDuplicate) {
+      alert('이미 등록된 관심학교입니다.');
+      return;
+    }
+
+    try {
+      console.log('관심학교 등록 시작:', schoolData);
+      
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .insert({
+          user_id: user.id,
+          school_name: schoolData.SCHUL_NM,
+          school_code: schoolData.SD_SCHUL_CODE,
+          office_code: schoolData.ATPT_OFCDC_SC_CODE
+        })
+        .select();
+      
+      if (error) {
+        console.error('관심학교 등록 오류:', error);
+        alert('관심학교 등록에 실패했습니다.');
+        return;
+      }
+      
+      console.log('관심학교 등록 성공:', data);
+      
+      // 로컬 상태 업데이트
+      if (data && data[0]) {
+        setInterestSchools(prev => [data[0], ...prev]);
+      }
+      
+      // 모달 닫기
+      setIsSchoolSearchOpen(false);
+      alert('관심학교가 성공적으로 등록되었습니다!');
+      
+    } catch (error) {
+      console.error('관심학교 등록 중 예외 발생:', error);
+      alert('관심학교 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 학교등록 버튼 클릭 핸들러
+  const handleSchoolRegister = () => {
+    if (interestSchools.length >= 3) {
+      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+    setIsSchoolSearchOpen(true);
+  };
+
   // 배틀 데이터 로딩 함수
   const loadBattleData = async () => {
-    if (!userSchool?.school_code) {
+    // 현재 선택된 학교 정보 결정 (관심학교 또는 내 학교)
+    const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    
+    if (!currentSchool?.school_code) {
       console.log('⚠️ 학교 코드가 없어 배틀 데이터 로딩 중단');
       return;
     }
     
     console.log('🔍 배틀 데이터 로딩 시작:', {
-      schoolCode: userSchool.school_code,
+      currentSchool: currentSchool.school_name,
+      schoolCode: currentSchool.school_code,
+      isInterestSchool: !!schoolMode.selectedInterestSchool,
       viewMode: viewMode,
       selectedDate: selectedDate,
       selectedMonth: selectedMonth
@@ -60,18 +204,18 @@ export default function BattlePage() {
     setBattleError(null);
     
     try {
-      // 학교 유형 결정: 선택된 유형 또는 사용자 학교 유형
+      // 학교 유형 결정: 선택된 유형 또는 현재 학교 유형
       const schoolTypeForApi = selectedSchoolType || 
-        (userSchool?.school_type?.includes('초') ? '초등학교' :
-         userSchool?.school_type?.includes('중') ? '중학교' :
-         userSchool?.school_type?.includes('고') ? '고등학교' : '');
+        (currentSchool?.school_type?.includes('초') ? '초등학교' :
+         currentSchool?.school_type?.includes('중') ? '중학교' :
+         currentSchool?.school_type?.includes('고') ? '고등학교' : '');
       
       const params = new URLSearchParams({
-        schoolCode: userSchool.school_code,
+        schoolCode: currentSchool.school_code,
         type: viewMode,
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
         ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
-        ...(userSchool.region && { region: userSchool.region }) // 지역 기반 필터링
+        ...(currentSchool.region && { region: currentSchool.region }) // 지역 기반 필터링
       });
       
       // 탭에 따라 다른 API 호출
@@ -105,43 +249,165 @@ export default function BattlePage() {
 
   // 데이터 로딩 useEffect
   useEffect(() => {
-    if (userSchool?.school_code) {
-      console.log('📣 배틀 데이터 로딩 트리거됨', { activeTab, viewMode, selectedDate, selectedMonth });
+    const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    if (currentSchool?.school_code) {
+      console.log('📣 배틀 데이터 로딩 트리거됨', { 
+        currentSchool: currentSchool.school_name,
+        isInterestSchool: !!schoolMode.selectedInterestSchool,
+        activeTab, 
+        viewMode, 
+        selectedDate, 
+        selectedMonth 
+      });
       loadBattleData();
     }
-  }, [activeTab, userSchool?.school_code, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
+  }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      {/* 학교 정보 헤더 */}
-      {userSchool ? (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
+      {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
+      <div className="flex justify-between items-center mb-3">
+        {/* 학교 정보 */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 border-l-2 border-blue-500 flex items-center flex-1">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-            {schoolMode.mode === 'visitor' ? schoolMode.selectedSchool?.school_name : userSchool.school_name}
+            {schoolMode.currentSchoolInfo?.school_name || '학교 정보 없음'}
           </span>
-          {schoolMode.mode === 'student' && (userSchool.grade || userSchool.class) && (
+          {schoolMode.isStudentMode && (userSchool?.grade || userSchool?.class) && (
             <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
               {userSchool.grade ? `${userSchool.grade}학년` : ''}
               {userSchool.class ? ` ${userSchool.class}반` : ''}
             </span>
           )}
         </div>
-      ) : (
-        <div className="mb-6"></div>
-      )}
+        
+        {/* 관심학교 드롭다운 */}
+        {user && (
+          <div className="relative ml-3" ref={dropdownRef}>
+            <button
+              onClick={handleDropdownToggle}
+              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center gap-2"
+            >
+              <span className="text-blue-600">🏠</span>
+              <span>관심학교</span>
+              <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* 드롭다운 메뉴 */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
+                    <button
+                      onClick={handleSchoolRegister}
+                      className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
+                    >
+                      + 학교등록
+                    </button>
+                  </div>
+                  
+                  {/* 내 학교 옵션 */}
+                  {schoolMode.hasMySchool && (
+                    <button
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md mb-2 transition-colors ${
+                        schoolMode.isStudentMode 
+                          ? 'text-gray-700 bg-green-50' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => {
+                        // 내 학교로 돌아가기
+                        schoolMode.returnToMySchool();
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className="text-green-600">🏠</span>
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">내 학교</div>
+                        <div className="text-xs text-gray-500">
+                          {schoolMode.isStudentMode ? '현재' : '내 학교로 돌아가기'}
+                        </div>
+                      </div>
+                      {schoolMode.isStudentMode && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
+                      )}
+                    </button>
+                  )}
+                  
+                  {/* 관심학교 목록 또는 빈 상태 */}
+                  {interestSchoolsLoading ? (
+                    <div className="text-center py-6 text-gray-500">
+                      <div className="text-sm">로딩 중...</div>
+                    </div>
+                  ) : interestSchools.length > 0 ? (
+                    <div className="space-y-2">
+                      {interestSchools.map((school) => {
+                        const isSelected = schoolMode.selectedInterestSchool?.id === school.id;
+                        
+                        return (
+                          <button 
+                            key={school.id}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                              isSelected 
+                                ? 'text-gray-700 bg-blue-50' 
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                            onClick={() => {
+                              // 관심학교 선택
+                              schoolMode.selectInterestSchool({
+                                id: school.id,
+                                school_name: school.school_name,
+                                school_code: school.school_code,
+                                office_code: school.office_code,
+                                created_at: school.created_at
+                              });
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <span className="text-blue-600">🏠</span>
+                            <div className="flex-1 text-left">
+                              <div className="font-medium">{school.school_name}</div>
+                              <div className="text-xs text-gray-500">
+                                {isSelected ? '현재 선택됨' : '선택하기'}
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">선택됨</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <div className="text-sm mb-2">등록된 관심학교가 없습니다</div>
+                      <button
+                        onClick={handleSchoolRegister}
+                        className="text-xs text-blue-600 hover:text-blue-700 underline"
+                      >
+                        관심학교 등록하기
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       {/* 권한 확인 */}
-      {!canParticipateInBattle ? (
+      {!canViewBattle ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <div className="text-yellow-600 mb-2">
             <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-yellow-800 mb-2">배틀 참여 제한</h3>
+          <h3 className="text-lg font-semibold text-yellow-800 mb-2">배틀 접근 제한</h3>
           <p className="text-yellow-700">
-            배틀 기능은 내 학교에서만 사용할 수 있습니다.<br/>
-            관심학교를 선택한 상태에서는 배틀 데이터를 볼 수 없습니다.
+            배틀 기능을 사용하려면 내 학교를 등록하거나 관심학교를 선택해주세요.
           </p>
         </div>
       ) : (
@@ -654,6 +920,13 @@ export default function BattlePage() {
       </div>
         </div>
       )}
+      
+      {/* 학교검색 모달 */}
+      <SchoolSearchModal 
+        isOpen={isSchoolSearchOpen}
+        onClose={() => setIsSchoolSearchOpen(false)}
+        onSelectSchool={addInterestSchool}
+      />
     </div>
   );
 }
