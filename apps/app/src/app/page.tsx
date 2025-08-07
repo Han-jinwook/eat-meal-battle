@@ -243,17 +243,17 @@ export default function Home() {
   // 페이지 진입 시 학교 정보와 날짜가 설정되면 급식 정보 자동 로드
   useEffect(() => {
     // 현재 표시할 학교 코드 결정 (관심학교가 선택되었으면 해당 학교, 아니면 내 학교)
-    const currentSchoolCode = schoolMode.selectedSchool?.school_code || userSchool?.school_code;
+    const currentSchoolCode = schoolMode.selectedInterestSchool?.school_code || userSchool?.school_code;
     
     // 학교 정보와 날짜가 모두 있을 때만 실행
     if (currentSchoolCode && selectedDate && !pageLoading && !isLoading && !userLoading) {
       console.log(`급식 정보 자동 로드 - 학교: ${currentSchoolCode}, 날짜: ${selectedDate}`);
-      console.log(`현재 모드: ${schoolMode.currentMode}, 선택된 학교:`, schoolMode.selectedSchool);
+      console.log(`현재 모드: ${schoolMode.currentMode}, 선택된 학교:`, schoolMode.selectedInterestSchool);
       // 페이지 진입 시 자동 로드에서 발생하는 문제 해결을 위한 디버깅 로그
       console.log(`자동 로드 시 날짜 형식: ${selectedDate}, 타입: ${typeof selectedDate}`);
       fetchMealInfo(currentSchoolCode, selectedDate, resolveOfficeCode());
     }
-  }, [userSchool?.school_code, schoolMode.selectedSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.currentMode]);
+  }, [userSchool?.school_code, schoolMode.selectedInterestSchool?.school_code, selectedDate, pageLoading, userLoading, schoolMode.currentMode]);
 
   // 관심학교 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -416,13 +416,13 @@ export default function Home() {
 
   // 현재 선택된 학교 정보 기준 officeCode 결정
   const resolveOfficeCode = () => {
-    console.log('현재 선택된 학교:', schoolMode.selectedSchool);
+    console.log('현재 선택된 학교:', schoolMode.selectedInterestSchool);
     console.log('내 학교 정보:', userSchool);
     
     // 관심학교가 선택되었으면 해당 학교의 office_code 사용
-    if (schoolMode.selectedSchool?.office_code) {
-      console.log('관심학교 office_code 사용:', schoolMode.selectedSchool.office_code);
-      return schoolMode.selectedSchool.office_code;
+    if (schoolMode.selectedInterestSchool?.office_code) {
+      console.log('관심학교 office_code 사용:', schoolMode.selectedInterestSchool.office_code);
+      return schoolMode.selectedInterestSchool.office_code;
     }
     
     // 내 학교의 office_code 사용
@@ -449,7 +449,7 @@ export default function Home() {
     setPageError('');
     
     // 현재 표시할 학교 코드 결정 (관심학교가 선택되었으면 해당 학교, 아니면 내 학교)
-    const currentSchoolCode = schoolMode.selectedSchool?.school_code || userSchool?.school_code;
+    const currentSchoolCode = schoolMode.selectedInterestSchool?.school_code || userSchool?.school_code;
     
     // 학교 정보가 있으면 자동으로 급식 정보 조회
     if (currentSchoolCode) {

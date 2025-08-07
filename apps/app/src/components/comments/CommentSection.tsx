@@ -444,19 +444,9 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
         <p className="text-gray-500 mb-4">로딩 중...</p>
       ) : user && canComment ? (
         <CommentForm onSubmit={addComment} />
-      ) : user && !canComment ? (
-        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
-          <p className="text-orange-700 text-sm font-medium">댓글 작성 권한이 없습니다</p>
-          <p className="text-orange-600 text-xs mt-1">
-            {schoolMode.isVisitorMode 
-              ? '내 학교로 돌아가서 댓글을 작성해보세요.' 
-              : '학교 정보를 설정하면 댓글을 작성할 수 있습니다.'
-            }
-          </p>
-        </div>
-      ) : (
+      ) : !user ? (
         <p className="text-gray-500 mb-4">댓글을 작성하려면 로그인하세요.</p>
-      )}
+      ) : null}
       
       <div className="mt-4 space-y-4">
         {comments.length > 0 ? (
