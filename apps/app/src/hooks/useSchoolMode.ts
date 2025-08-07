@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo, useCallback, createContext, useContext } from 'react';
 
 // 사용자 모드 타입 정의
 export type UserMode = 'student' | 'visitor';
@@ -54,14 +54,37 @@ export interface UseSchoolModeReturn {
   canPerformAction: (action: keyof Permissions) => boolean;
 }
 
+// 전역 상태 관리를 위한 Context
+interface SchoolModeContextType {
+  selectedInterestSchool: InterestSchoolInfo | null;
+  setSelectedInterestSchool: (school: InterestSchoolInfo | null) => void;
+}
+
+const SchoolModeContext = createContext<SchoolModeContextType | null>(null);
+
+// Context Provider 컴포넌트
+export function SchoolModeProvider({ children }: { children: React.ReactNode }): JSX.Element {
+  const [selectedInterestSchool, setSelectedInterestSchool] = useState<InterestSchoolInfo | null>(null);
+  
+  return (
+    <SchoolModeContext.Provider value={{ selectedInterestSchool, setSelectedInterestSchool }}>
+      {children}
+    </SchoolModeContext.Provider>
+  );
+}
+
 /**
  * 학교 모드 관리 훅
  * - student 모드: 사용자의 본인 학교, 모든 권한 허용
  * - visitor 모드: 관심학교 선택 또는 학교 미설정, 읽기 전용
  */
 export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
-  // 선택된 관심학교 상태 (메모리 기반)
-  const [selectedInterestSchool, setSelectedInterestSchool] = useState<InterestSchoolInfo | null>(null);
+  // Context에서 전역 상태 가져오기
+  const context = useContext(SchoolModeContext);
+  if (!context) {
+    throw new Error('useSchoolMode must be used within SchoolModeProvider');
+  }
+  const { selectedInterestSchool, setSelectedInterestSchool } = context;
   
   // 사용자 학교 존재 여부
   const hasMySchool = useMemo(() => {
