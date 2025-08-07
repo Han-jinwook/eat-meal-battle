@@ -65,7 +65,18 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   
   // 사용자 학교 존재 여부
   const hasMySchool = useMemo(() => {
-    return !!(userSchool?.school_code && userSchool?.school_name);
+    console.log('🏫 hasMySchool 계산:', {
+      userSchool,
+      school_code: userSchool?.school_code,
+      school_name: userSchool?.school_name,
+      hasSchoolCode: !!(userSchool?.school_code),
+      hasSchoolName: !!(userSchool?.school_name),
+      결과: !!(userSchool?.school_code && userSchool?.school_name)
+    });
+    // school_code가 있으면 학교 정보가 있다고 판단 (school_name은 optional)
+    const hasSchool = !!(userSchool?.school_code);
+    console.log('🏫 hasMySchool 최종 결과:', hasSchool);
+    return hasSchool;
   }, [userSchool]);
   
   // 현재 모드 계산
