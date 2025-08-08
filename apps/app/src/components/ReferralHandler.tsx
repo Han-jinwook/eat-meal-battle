@@ -14,28 +14,48 @@ export default function ReferralHandler() {
       if (processed) return;
 
       try {
+        console.log('🔍 ReferralHandler: 추천 관계 처리 시작');
+        
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) return;
+        if (!user) {
+          console.log('❌ ReferralHandler: 사용자 인증 정보 없음');
+          return;
+        }
+        
+        console.log('✅ ReferralHandler: 사용자 인증됨', user.id);
 
         // 저장된 추천 코드 확인
         const referralCode = getStoredReferralCode();
-        if (!referralCode) return;
+        if (!referralCode) {
+          console.log('❌ ReferralHandler: 저장된 추천 코드 없음');
+          return;
+        }
+        
+        console.log('🔗 ReferralHandler: 추천 코드 발견', referralCode);
 
         // 사용자가 이미 추천 관계가 있는지 확인
-        const { data: existingReferral } = await supabase
+        console.log('🔍 ReferralHandler: 기존 추천 관계 확인 중...');
+        const { data: existingReferral, error: existingError } = await supabase
           .from('referrals')
           .select('id')
           .eq('referee_id', user.id)
           .single();
 
+        if (existingError && existingError.code !== 'PGRST116') {
+          console.error('❌ ReferralHandler: 기존 추천 관계 조회 오류:', existingError);
+        }
+
         if (existingReferral) {
+          console.log('⚠️ ReferralHandler: 이미 추천 관계 존재, 코드 삭제');
           // 이미 추천 관계가 있으면 저장된 코드 삭제
           clearReferralCode();
           setProcessed(true);
           return;
         }
+        
+        console.log('✅ ReferralHandler: 추천 관계 없음, 새로 생성 진행');
 
         // 추천 관계 저장
         const result = await saveReferralRelationship(
