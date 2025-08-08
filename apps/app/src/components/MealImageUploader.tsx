@@ -447,16 +447,24 @@ export default function MealImageUploader({
         schoolCode: mealMenuData.school_code
       });
       
-      // 2. OpenAI API 호출하여 이미지 생성
+      // 2. 사용자 인증 토큰 가져오기
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('로그인이 필요합니다.');
+      }
+      
+      // 3. OpenAI API 호출하여 이미지 생성
       // 테스트를 위해 항상 Netlify 함수 사용
       const apiUrl = '/.netlify/functions/generate-meal-image';
       
       console.log('AI 이미지 생성 API 요청 URL:', apiUrl);
+      console.log('사용자 토큰으로 인증하여 요청');
       
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`, // ✅ 사용자 토큰 전달
         },
         body: JSON.stringify({
           menu_items: mealMenuData.menu_items,

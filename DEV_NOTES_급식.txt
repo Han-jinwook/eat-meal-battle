@@ -1142,3 +1142,86 @@ isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30); // 원래 로�
 - `grade` 필드 관련 코드가 다른 곳에 남아있는지 주기적 점검 필요
 - 챔피언 통계 계산 로직의 성능 최적화 고려 (대용량 데이터 시)
 - **시간 제약 테스트 모드는 반드시 배포 전에 프로덕션 모드로 복원할 것**
+
+---
+
+=== 🔧 AI 이미지 생성 시 로그인 풀림 문제 해결 (2025-08-08) ===
+
+## 문제 상황
+- **컴퓨터**: AI 사진 등록 → 성공
+- **갤럭시폰**: 로그인이 자동으로 풀림
+- **재로그인 후**: AI 사진이 정상적으로 등록되어 있다는 알림 표시
+
+## 원인 분석
+**Service Role Key 사용으로 인한 세션 충돌**
+```javascript
+// 문제 코드 (generate-meal-image.js)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY  // ⚠️ 모든 RLS 우회하는 관리자 권한
+);
+```
+
+**발생 과정**:
+1. 컴퓨터에서 AI 이미지 생성 요청
+2. Netlify 함수가 Service Role Key로 DB 작업
+3. meal_images 테이블에 INSERT → 실시간 알림 전송
+4. Service Role 권한으로 인한 세션 충돌 발생
+5. 갤럭시폰 로그인 세션 무효화
+
+## 해결 방법
+
+### 1️⃣ 클라이언트: 사용자 토큰 전달
+**파일**: `apps/app/src/components/MealImageUploader.tsx`
+```typescript
+// 사용자 인증 토큰 가져오기
+const { data: { session } } = await supabase.auth.getSession();
+if (!session?.access_token) {
+  throw new Error('로그인이 필요합니다.');
+}
+
+// API 요청에 토큰 포함
+const response = await fetch(apiUrl, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`, // ✅ 사용자 토큰 전달
+  },
+  body: JSON.stringify({...})
+});
+```
+
+### 2️⃣ 서버: Service Role → Anon Key + 사용자 토큰
+**파일**: `apps/app/netlify/functions/generate-meal-image.js`
+```javascript
+// 인증 토큰 확인
+const authHeader = event.headers.authorization;
+if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  return { statusCode: 401, body: JSON.stringify({ success: false, error: '인증 토큰이 필요합니다.' }) };
+}
+
+const token = authHeader.replace('Bearer ', '');
+
+// Supabase 클라이언트 초기화 (사용자 토큰 사용)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, // ✅ Service Role → Anon Key 변경
+  {
+    auth: { persistSession: false },
+    global: {
+      headers: { Authorization: `Bearer ${token}` } // ✅ 사용자 토큰 사용
+    }
+  }
+);
+```
+
+## 해결 효과
+- ✅ **실시간 알림 유지**: 같은 학교 학생들에게 정상적으로 알림 전송
+- ✅ **세션 보호**: 사용자별 개별 토큰으로 세션 충돌 방지
+- ✅ **보안 강화**: RLS 정책 정상 적용
+- ✅ **취지 보존**: 학교 단위 공동체 기능 완전 유지
+
+## 주의사항
+- Service Role Key는 관리자 전용 작업에만 사용
+- 사용자 요청 기반 작업은 반드시 사용자 토큰 사용
+- 실시간 구독 범위 제한 시 공동체 기능 손상 주의

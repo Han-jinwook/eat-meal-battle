@@ -15,6 +15,21 @@ exports.handler = async (event) => {
   console.log('[generate-meal-image] 함수 시작');
   
   try {
+    // 인증 토큰 확인
+    const authHeader = event.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          success: false,
+          error: '인증 토큰이 필요합니다.'
+        })
+      };
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    console.log('[generate-meal-image] 사용자 토큰으로 인증');
+    
     // 요청 데이터 파싱
     const { menu_items, meal_id, school_code, meal_date, meal_type, user_id } = JSON.parse(event.body);
     
@@ -33,13 +48,23 @@ exports.handler = async (event) => {
       throw new Error('OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.');
     }
     
-    // Supabase 클라이언트 초기화
+    // Supabase 클라이언트 초기화 (사용자 토큰 사용)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, // ✅ Service Role → Anon Key 변경
+      {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}` // ✅ 사용자 토큰 사용
+          }
+        }
+      }
     );
     
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       throw new Error('Supabase 환경 변수가 올바르게 설정되지 않았습니다.');
     }
     
