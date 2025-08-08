@@ -115,9 +115,15 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
           filter: `comment_id=eq.${comment.id}`
         },
         (payload) => {
-          console.log('답글 추가:', payload);
+          console.log(`🔔 [댓글 ${comment.id}] 답글 추가:`, payload);
+          console.log(`🔔 [댓글 ${comment.id}] payload.new.comment_id:`, payload.new?.comment_id);
+          console.log(`🔔 [댓글 ${comment.id}] 현재 댓글 ID와 일치:`, payload.new?.comment_id === comment.id);
+          
           // 답글 개수 업데이트
-          setRepliesCount(prevCount => prevCount + 1);
+          setRepliesCount(prevCount => {
+            console.log(`🔔 [댓글 ${comment.id}] 답글 카운트 업데이트: ${prevCount} → ${prevCount + 1}`);
+            return prevCount + 1;
+          });
           // 답글 목록이 열려있으면 새로고침
           if (showReplies) {
             loadReplies();
@@ -137,11 +143,18 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
           table: 'comment_replies'
         },
         (payload) => {
-          console.log('답글 삭제:', payload);
+          console.log(`🗑️ [댓글 ${comment.id}] 답글 삭제:`, payload);
           const oldData = payload.old as Record<string, any>;
+          console.log(`🗑️ [댓글 ${comment.id}] oldData.comment_id:`, oldData?.comment_id);
+          console.log(`🗑️ [댓글 ${comment.id}] 현재 댓글 ID와 일치:`, oldData?.comment_id === comment.id);
+          
           // 삭제된 답글이 현재 댓글의 답글인지 확인
           if (oldData && oldData.comment_id === comment.id) {
-            setRepliesCount(prevCount => Math.max(0, prevCount - 1));
+            setRepliesCount(prevCount => {
+              const newCount = Math.max(0, prevCount - 1);
+              console.log(`🗑️ [댓글 ${comment.id}] 답글 카운트 감소: ${prevCount} → ${newCount}`);
+              return newCount;
+            });
             // 답글 목록이 열려있으면 새로고침
             if (showReplies) {
               loadReplies();
