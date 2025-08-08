@@ -7,6 +7,7 @@ import DateNavigator from '@/components/DateNavigator';
 import { getCurrentDate } from '@/utils/DateUtils';
 import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
+import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
 
 export default function BattlePage() {
   const supabase = createClient();
@@ -179,6 +180,29 @@ export default function BattlePage() {
     setIsSchoolSearchOpen(true);
   };
 
+  // 배틀 계산 트리거 함수 (Plan A)
+  const triggerBattleCalculation = async (schoolCode: string, viewMode: 'daily' | 'monthly', selectedDate: string, selectedMonth: string) => {
+    try {
+      console.log('🔄 배틀 계산 트리거 시작:', { schoolCode, viewMode, selectedDate, selectedMonth });
+      
+      if (viewMode === 'daily') {
+        // 일별 메뉴 배틀 계산
+        console.log('📅 일별 메뉴 배틀 계산 시작...');
+        await calculateDailyMenuBattle(selectedDate, schoolCode);
+        console.log('✅ 일별 메뉴 배틀 계산 완료');
+      } else {
+        // 월별 메뉴 배틀 계산
+        const [year, month] = selectedMonth.split('-');
+        console.log('📅 월별 메뉴 배틀 계산 시작...');
+        await calculateMonthlyMenuBattle(parseInt(year), parseInt(month), schoolCode);
+        console.log('✅ 월별 메뉴 배틀 계산 완료');
+      }
+    } catch (error) {
+      console.error('❌ 배틀 계산 트리거 오류:', error);
+      throw error;
+    }
+  };
+
   // 배틀 데이터 로딩 함수
   const loadBattleData = async () => {
     // 현재 선택된 학교 정보 결정 (관심학교 또는 내 학교)
@@ -238,7 +262,26 @@ export default function BattlePage() {
         throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
       }
       
-      setBattleData(result.data || []);
+      // Plan A: 데이터가 없으면 자동 집계 계산
+      if (!result.data || result.data.length === 0) {
+        console.log('🔄 배틀 데이터가 없어 자동 집계 계산 시작...');
+        await triggerBattleCalculation(currentSchool.school_code, viewMode, selectedDate, selectedMonth);
+        
+        // 집계 후 다시 조회
+        console.log('🔄 집계 후 데이터 재조회...');
+        const retryResponse = await fetch(apiUrl);
+        const retryResult = await retryResponse.json();
+        
+        if (retryResponse.ok && retryResult.data) {
+          setBattleData(retryResult.data);
+          console.log('✅ 자동 집계 후 데이터 조회 성공:', retryResult.data.length);
+        } else {
+          setBattleData([]);
+          console.log('⚠️ 자동 집계 후에도 데이터 없음');
+        }
+      } else {
+        setBattleData(result.data);
+      }
     } catch (error) {
       console.error('배틀 데이터 로딩 오류:', error);
       setBattleError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
