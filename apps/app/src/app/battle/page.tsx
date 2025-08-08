@@ -203,10 +203,12 @@ export default function BattlePage() {
     
     try {
       // 학교 유형 결정: 선택된 유형 또는 현재 학교 유형
+      // 관심학교 모드일 때는 유저 학교의 school_type을 기준으로 함
+      const schoolForType = schoolMode.selectedInterestSchool ? userSchool : currentSchool;
       const schoolTypeForApi = selectedSchoolType || 
-        (currentSchool?.school_type?.includes('초') ? '초등학교' :
-         currentSchool?.school_type?.includes('중') ? '중학교' :
-         currentSchool?.school_type?.includes('고') ? '고등학교' : '');
+        (schoolForType?.school_type?.includes('초') ? '초등학교' :
+         schoolForType?.school_type?.includes('중') ? '중학교' :
+         schoolForType?.school_type?.includes('고') ? '고등학교' : '');
       
       const params = new URLSearchParams({
         schoolCode: currentSchool.school_code,
