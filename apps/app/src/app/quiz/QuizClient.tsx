@@ -446,18 +446,9 @@ export default function QuizClient() {
               퀴즈는 내 학교에서만 이용 가능합니다
             </h2>
             <p className="text-blue-700 mb-6 leading-relaxed">
-              개인 퀴즈 기록 및 성취 관리를 위해<br />
+              개인 퀴즈 기록 및 성취 관리를 위한 공간이어서<br />
               관심학교 모드에서는 퀴즈를 이용할 수 없습니다.
             </p>
-            <button 
-              onClick={() => {
-                schoolMode.returnToMySchool();
-                window.location.reload();
-              }}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              내 학교로 돌아가기
-            </button>
           </div>
         </div>
       </>
