@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
 import ChampionHistory from '@/components/ChampionHistory';
 import DateNavigator from '@/components/DateNavigator';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 
 // Quiz type definition
 type Quiz = {
@@ -50,6 +51,7 @@ export default function QuizClient() {
   const [noMenuMessage, setNoMenuMessage] = useState<string>('');
   
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
+  const schoolMode = useSchoolMode(userSchool);
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -429,6 +431,38 @@ export default function QuizClient() {
       fetchQuiz();
     }
   }, [selectedDate, userSchool, userLoading]);
+
+  // 관심학교 모드일 때 접근 차단
+  if (!schoolMode.isStudentMode && userSchool) {
+    return (
+      <>
+        {/* @ts-ignore - Next.js styled-jsx 타입 오류 무시 */}
+        <style jsx>{styles}</style>
+        
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+            <div className="text-blue-600 text-5xl mb-4">📚</div>
+            <h2 className="text-xl font-semibold text-blue-800 mb-3">
+              퀴즈는 내 학교에서만 이용 가능합니다
+            </h2>
+            <p className="text-blue-700 mb-6 leading-relaxed">
+              개인 퀴즈 기록 및 성취 관리를 위해<br />
+              관심학교 모드에서는 퀴즈를 이용할 수 없습니다.
+            </p>
+            <button 
+              onClick={() => {
+                schoolMode.returnToMySchool();
+                window.location.reload();
+              }}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              내 학교로 돌아가기
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
