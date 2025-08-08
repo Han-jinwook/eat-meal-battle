@@ -46,6 +46,7 @@ export default function QuizClient() {
   const [error, setError] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [noMenu, setNoMenu] = useState<boolean>(false);
   const [noMenuMessage, setNoMenuMessage] = useState<string>('');
@@ -209,7 +210,9 @@ export default function QuizClient() {
 
   // Submit answer
   const submitAnswer = async () => {
-    if (!quiz || selectedOption === null) return;
+    if (!quiz || selectedOption === null || submitting) return;
+    
+    setSubmitting(true);
     
     try {
       // 디버깅: quiz 상태 확인
@@ -288,6 +291,8 @@ export default function QuizClient() {
   } catch (err) {
       console.error('답안 제출 오류:', err);
       toast.error('답안 제출에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -571,13 +576,22 @@ export default function QuizClient() {
               <div>
                 {!submitted ? (
                   <button
-                    disabled={selectedOption === null}
-                    className={`w-full py-3 px-4 rounded-lg font-medium ${selectedOption === null
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    disabled={selectedOption === null || submitting}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      selectedOption === null || submitting
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                     onClick={submitAnswer}
                   >
-                    정답 제출
+                    {submitting ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>정답제출 & AI채점 중</span>
+                      </div>
+                    ) : (
+                      '정답 제출'
+                    )}
                   </button>
                 ) : (
                   <div>
