@@ -434,7 +434,24 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
   return (
     <div className="bg-white dark:bg-white p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-300" style={{ color: '#111827' }}>
       <div className="flex items-start space-x-3">
-        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+        {comment.user?.user_metadata?.avatar_url ? (
+          <img 
+            src={comment.user.user_metadata.avatar_url} 
+            alt="프로필" 
+            className="w-8 h-8 rounded-full object-cover"
+            onError={(e) => {
+              // 이미지 로드 실패 시 텍스트 아바타로 대체
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const fallback = target.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div 
+          className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium"
+          style={{ display: comment.user?.user_metadata?.avatar_url ? 'none' : 'flex' }}
+        >
           {comment.user?.user_metadata?.name?.charAt(0) || 
            comment.user?.email?.charAt(0).toUpperCase() || 'U'}
         </div>
