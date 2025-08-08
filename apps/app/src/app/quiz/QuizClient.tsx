@@ -443,11 +443,11 @@ export default function QuizClient() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
             <div className="text-blue-600 text-5xl mb-4">📚</div>
             <h2 className="text-xl font-semibold text-blue-800 mb-3">
-              퀴즈는 내 학교에서만 이용 가능합니다
+              개인 기록과 성취 관리를 위한 공간인 퀴즈 페이지는<br />
+              내 학교에서만 이용 가능합니다!
             </h2>
             <p className="text-blue-700 mb-6 leading-relaxed">
-              개인 퀴즈 기록 및 성취 관리를 위한 공간이어서<br />
-              관심학교 모드에서는 퀴즈를 이용할 수 없습니다.
+              (퀴즈를 푼 학생이 초대하면 볼 수 있음)
             </p>
           </div>
         </div>
