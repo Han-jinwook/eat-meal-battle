@@ -345,7 +345,7 @@ export default function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer"
+                className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
               >
                 모두 읽음 표시
               </button>
@@ -365,13 +365,13 @@ export default function NotificationBell() {
               notifications.map(notification => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b ${notification.is_read ? 'bg-white' : 'bg-blue-50'} hover:bg-gray-50`}
+                  className={`p-3 sm:p-4 border-b ${notification.is_read ? 'bg-white' : 'bg-blue-50'} hover:bg-gray-50`}
                 >
-                  <div className="flex">
-                    <div className="flex-shrink-0 mr-3">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
                       {getNotificationIcon(notification.related_type)}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       <Link 
                         href={`/?notification=${notification.related_id}`}
                         onClick={() => {
