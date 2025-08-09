@@ -8,6 +8,7 @@ interface ShareButtonProps {
   rating?: number;
   className?: string;
   isBattlePage?: boolean; // 배틀 페이지 여부 구분
+  activeTab?: 'menu' | 'meal'; // 배틀 페이지의 현재 활성 탭
 }
 
 const ShareButton: React.FC<ShareButtonProps> = ({ 
@@ -16,7 +17,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   schoolCode, 
   rating, 
   className = '',
-  isBattlePage = false
+  isBattlePage = false,
+  activeTab = 'meal'
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -27,17 +29,28 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     setIsSharing(true);
     
     try {
-      // 공유할 텍스트와 URL 준비 - 배틀 페이지 여부에 따라 다르게 설정
-      const shareTitle = isBattlePage 
-        ? `🏆 ${schoolName} ${mealDate} 급식배틀 결과! 🥇`
-        : `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
-      
+      // 공유할 텍스트와 URL 준비 - 배틀 페이지의 활성 탭에 따라 다르게 설정
+      let shareTitle, shareText;
       const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
-      const shareText = isBattlePage
-        ? `${referrerText}우리 지역 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
-#급식배틀 #학교순위 #급식평가 #배틀결과 #${schoolName.split(' ')[0]}`
-        : `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
+      
+      if (isBattlePage) {
+        if (activeTab === 'menu') {
+          // 메뉴배틀 섹션
+          shareTitle = `🍽️ ${schoolName} ${mealDate} 메뉴배틀 결과! 🥇`;
+          shareText = `${referrerText}우리동네 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
+#메뉴배틀 #급식메뉴 #인기메뉴 #메뉴순위 #${schoolName.split(' ')[0]}`;
+        } else {
+          // 급식배틀 섹션 (meal)
+          shareTitle = `🏆 ${schoolName} ${mealDate} 급식배틀 결과! 🥇`;
+          shareText = `${referrerText}우리동네 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
+#급식배틀 #학교순위 #급식평가 #배틀결과 #${schoolName.split(' ')[0]}`;
+        }
+      } else {
+        // 급식 페이지
+        shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
+        shareText = `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
 #급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
+      }
       
       // URL에 필요한 파라미터 추가
       const url = new URL(window.location.href);
@@ -89,7 +102,11 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
           </svg>
-          {isSharing ? '공유 중...' : (isBattlePage ? '급식배틀 결과 공유하기' : '급식평가 공유하기')}
+          {isSharing ? '공유 중...' : (
+            isBattlePage 
+              ? (activeTab === 'menu' ? '메뉴배틀 결과 공유하기' : '급식배틀 결과 공유하기')
+              : '급식평가 공유하기'
+          )}
         </button>
       </div>
 
@@ -106,7 +123,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               <h3 className="text-lg font-medium text-gray-900 mb-2">복사 완료!</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {isBattlePage 
-                  ? '급식배틀 결과가 클립보드에 복사되었습니다.' 
+                  ? (activeTab === 'menu' ? '메뉴배틀 결과가 클립보드에 복사되었습니다.' : '급식배틀 결과가 클립보드에 복사되었습니다.')
                   : '급식 평가 내용이 클립보드에 복사되었습니다.'}<br/>
                 카카오톡, 이메일 등 원하는 곳에 붙여넣으세요!
               </p>

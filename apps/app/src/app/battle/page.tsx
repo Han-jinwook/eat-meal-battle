@@ -960,15 +960,15 @@ export default function BattlePage() {
             </div>
           )}
           
-          {/* 배틀평가 공유하기 버튼 - 배틀 테이블 하단에 배치 */}
-          <ShareButton 
-            mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
-            schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
-            schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
-            rating={4.2}
-            className="mt-6"
-            isBattlePage={true}
-          />
+          {/* 공유 버튼 */}
+        <ShareButton
+          mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
+          schoolName={schoolName}
+          schoolCode={schoolCode}
+          isBattlePage={true}
+          activeTab={activeTab}
+          className="mt-8"
+        />
         </div>
       </div>
       
