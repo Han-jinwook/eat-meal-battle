@@ -48,20 +48,26 @@ exports.handler = async (event) => {
       throw new Error('OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.');
     }
     
-    // Supabase 클라이언트 초기화 (사용자 토큰 사용)
+    // Supabase 클라이언트 초기화 (사용자 토큰 사용 - 인증용)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, // ✅ Service Role → Anon Key 변경
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
         auth: {
           persistSession: false
         },
         global: {
           headers: {
-            Authorization: `Bearer ${token}` // ✅ 사용자 토큰 사용
+            Authorization: `Bearer ${token}` // 사용자 토큰 사용
           }
         }
       }
+    );
+    
+    // Service Role 클라이언트 (Storage 업로드 및 DB 저장용)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY // Service Role Key 사용
     );
     
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -136,8 +142,8 @@ exports.handler = async (event) => {
 
 특별 요구사항: 정확히 6칸만 사용, 한국 급식 특유의 정갈한 느낌, 실제 학교에서 먹는 급식 같은 자연스러운 모습`,
       n: 1,
-      size: "1024x1024", // DALL-E 3는 정사각형이 최적
-      quality: "standard" // DALL-E 3 표준 품질 (standard 또는 hd)
+      size: "256x256", // 최소 크기로 타임아웃 방지
+      quality: "standard" // DALL-E 3 표준 품질
       // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
@@ -176,9 +182,9 @@ exports.handler = async (event) => {
     // 파일명 생성
     const fileName = `ai_generated_${meal_id}_${Date.now()}.png`;
     
-    // 이미지를 Supabase Storage에 업로드
+    // 이미지를 Supabase Storage에 업로드 (Service Role 사용)
     console.log(`[generate-meal-image] Supabase Storage에 업로드 중: ${fileName}`);
-    const { data: fileData, error: uploadError } = await supabase.storage
+    const { data: fileData, error: uploadError } = await supabaseAdmin.storage
       .from('meal-images')
       .upload(fileName, Buffer.from(base64Image, 'base64'), {
         contentType: 'image/png',
@@ -190,8 +196,8 @@ exports.handler = async (event) => {
       throw uploadError;
     }
     
-    // 이미지 URL 가져오기
-    const { data: urlData } = supabase.storage
+    // 이미지 URL 가져오기 (Service Role 사용)
+    const { data: urlData } = supabaseAdmin.storage
       .from('meal-images')
       .getPublicUrl(fileName);
       
@@ -208,9 +214,9 @@ exports.handler = async (event) => {
     console.log('[generate-meal-image] 이미지 정보 DB에 저장 중...');
     console.log(`[generate-meal-image] 저장할 데이터:`, { meal_id });
     
-    // meal_images 테이블 구조에 맞게 이미지 정보 저장
+    // meal_images 테이블 구조에 맞게 이미지 정보 저장 (Service Role 사용)
     // status='approved'로 설정하면 트리거로 자동 알림 발송
-    const { data: imageRecord, error: dbError } = await supabase
+    const { data: imageRecord, error: dbError } = await supabaseAdmin
       .from('meal_images')
       .insert({
         meal_id: meal_id,
