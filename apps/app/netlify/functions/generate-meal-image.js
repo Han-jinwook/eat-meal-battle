@@ -108,7 +108,7 @@ exports.handler = async (event) => {
     
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
-      model: "gpt-5", // GPT-5 모델 사용 (최신 이미지 생성 엔진 내장)
+      model: "dall-e-3", // DALL-E 3 모델 사용 (현재 최고 품질)
       prompt: `한국 학교 급식 사진 생성 - 이원화 접근법
 
 【1단계: 급식판 구조】
