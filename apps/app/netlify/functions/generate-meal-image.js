@@ -121,9 +121,10 @@ exports.handler = async (event) => {
 
 반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
       n: 1,
-      size: "1536x1024", // 식판은 가로가 더 길기 때문에 가로형 이미지 사용
-      quality: "low"     // 데이터 가볍고 처리 속도 빠름(low, medium, high 중 선택)
-      // GPT-4o는 response_format 파라미터를 지원하지 않음
+      size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
+      quality: "high",   // 품질 최대로 올려서 체감 품질 유지 (low/medium/high/auto)
+      response_format: "b64_json", // Base64 JSON 형식으로 받기
+      style: "natural"   // 자연스러운 스타일
     });
     
     console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
@@ -158,15 +159,15 @@ exports.handler = async (event) => {
     console.log(`[generate-meal-image] 이미지 데이터 길이=${imageData.length}`);
     const base64Image = imageData; // 사용하는 변수명 유지
     
-    // 파일명 생성
-    const fileName = `ai_generated_${meal_id}_${Date.now()}.png`;
+    // 파일명 생성 (JPEG 포맷)
+    const fileName = `ai_generated_${meal_id}_${Date.now()}.jpg`;
     
     // 이미지를 Supabase Storage에 업로드
     console.log(`[generate-meal-image] Supabase Storage에 업로드 중: ${fileName}`);
     const { data: fileData, error: uploadError } = await supabaseAdmin.storage
       .from('meal-images')
       .upload(fileName, Buffer.from(base64Image, 'base64'), {
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         upsert: true
       });
       
