@@ -51,14 +51,14 @@ exports.handler = async (event) => {
     // Supabase 클라이언트 초기화 (사용자 토큰 사용 - 인증용)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, // ✅ Service Role → Anon Key 변경
       {
         auth: {
           persistSession: false
         },
         global: {
           headers: {
-            Authorization: `Bearer ${token}` // 사용자 토큰 사용
+            Authorization: `Bearer ${token}` // ✅ 사용자 토큰 사용
           }
         }
       }
@@ -114,36 +114,15 @@ exports.handler = async (event) => {
     
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
-      model: "dall-e-3", // DALL-E 3 모델 사용 (현재 최고 품질)
-      prompt: `한국 학교 급식 사진 생성 - 이원화 접근법
+      model: "gpt-image-1", // GPT-4o의 이미지 생성 모델 사용 (품질 및 정확도 향상)
+      prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질.${structuredMenuString}
 
-【1단계: 급식판 구조】
-- 스테인리스 스틸 6칸 식판
-- 상단 4개: 작은 사각형 칸 (반찬용)
-- 하단 왼쪽: 큰 사각형 칸 (주메뉴용) 
-- 하단 오른쪽: 큰 원형 칸 (주메뉴용)
-- 스테인리스 표면, 일반 식당 테이블 배경
-- 탑다운 뷰 (위에서 내려다보는 각도)
+배치: 하단왼쪽 칸(사각형)=${riceMenu || '밥'}, 하단오른쪽 칸(원형)=${soupMenu || '국'}, 상단 4개 칸=반찬(${sideMenus.join(', ')}).
 
-【2단계: 음식 배치 및 표현】
-메뉴 구성:
-• 하단 왼쪽 (주메뉴1): ${riceMenu || (menu_items[0] || '밥')}
-• 하단 오른쪽 (주메뉴2): ${soupMenu || (menu_items[1] || '국')}
-• 상단 4칸 (반찬): ${sideMenus.length > 0 ? sideMenus.join(', ') : (menu_items.slice(2).join(', ') || '배추김치, 시금치나물, 단무지, 미역줄기볶음')}
-
-【3단계: 시각적 완성도】
-- 포토리얼리스틱 품질 (실제 사진 같은 느낌)
-- 한국 학교 급식실 분위기
-- 실내 식당 조명 (형광등)
-- 각 음식의 고유 색상과 질감 표현
-- 적당한 양으로 담겨있되 넘치지 않게
-- 신선하고 맛있어 보이는 비주얼
-- 고해상도, 선명한 포커스
-
-특별 요구사항: 정확히 6칸만 사용, 한국 급식 특유의 정갈한 느낌, 실제 학교에서 먹는 급식 같은 자연스러운 모습`,
+반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
       n: 1,
-      size: "1024x1024", // DALL-E 3 지원 최소 크기
-      quality: "standard" // DALL-E 3 지원 품질 (standard 또는 hd)
+      size: "1536x1024", // 식판은 가로가 더 길기 때문에 가로형 이미지 사용
+      quality: "low"     // 데이터 가볍고 처리 속도 빠름(low, medium, high 중 선택)
       // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
@@ -182,7 +161,7 @@ exports.handler = async (event) => {
     // 파일명 생성
     const fileName = `ai_generated_${meal_id}_${Date.now()}.png`;
     
-    // 이미지를 Supabase Storage에 업로드 (Service Role 사용)
+    // 이미지를 Supabase Storage에 업로드
     console.log(`[generate-meal-image] Supabase Storage에 업로드 중: ${fileName}`);
     const { data: fileData, error: uploadError } = await supabaseAdmin.storage
       .from('meal-images')
