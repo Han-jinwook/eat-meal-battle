@@ -7,6 +7,7 @@ import DateNavigator from '@/components/DateNavigator';
 import { getCurrentDate } from '@/utils/DateUtils';
 import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
+import ShareButton from '@/components/ShareButton';
 import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
 
 export default function BattlePage() {
@@ -958,6 +959,15 @@ export default function BattlePage() {
               </div>
             </div>
           )}
+          
+          {/* 배틀평가 공유하기 버튼 - 배틀 테이블 하단에 배치 */}
+          <ShareButton 
+            mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
+            schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+            schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
+            rating={4.2}
+            className="mt-6"
+          />
         </div>
       </div>
       
