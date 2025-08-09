@@ -117,14 +117,17 @@ exports.handler = async (event) => {
       model: "gpt-image-1", // GPT-4o의 이미지 생성 모델 사용 (품질 및 정확도 향상)
       prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질.${structuredMenuString}
 
-배치: 하단왼쪽 칸(사각형)=${riceMenu || '밥'}, 하단오른쪽 칸(원형)=${soupMenu || '국'}, 상단 4개 칸=반찬(${sideMenus.join(', ')}).
+필수 구조: 정확히 6칸만 사용 (하단 2칸 + 상단 4칸)
+- 하단왼쪽 칸(사각형): ${riceMenu || (menu_items[0] || '밥')}
+- 하단오른쪽 칸(원형): ${soupMenu || (menu_items[1] || '국')}  
+- 상단 4개 칸: ${sideMenus.length > 0 ? sideMenus.slice(0, 4).join(', ') : '김치, 나물, 단무지, 미역국'}
 
-반찬이 4개 미만이면 다른 한국식 반찬 추가. 반찬이 4개 초과는 중요한 것만 선택. 탑다운 구도, 실제 생생한 표현.`,
+중요: 반드시 6칸만 사용, 빈 칸 없이, 탑다운 구도, 실제 급식 느낌.`,
       n: 1,
       size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
       quality: "high",   // 품질 최대로 올려서 체감 품질 유지 (low/medium/high/auto)
-      response_format: "b64_json", // Base64 JSON 형식으로 받기
       style: "natural"   // 자연스러운 스타일
+      // gpt-image-1 모델은 response_format 파라미터를 지원하지 않음
     });
     
     console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
