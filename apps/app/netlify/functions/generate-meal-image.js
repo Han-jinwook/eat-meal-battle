@@ -125,9 +125,8 @@ exports.handler = async (event) => {
 중요: 반드시 6칸만 사용, 빈 칸 없이, 탑다운 구도, 실제 급식 느낌.`,
       n: 1,
       size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
-      quality: "high",   // 품질 최대로 올려서 체감 품질 유지 (low/medium/high/auto)
-      style: "natural"   // 자연스러운 스타일
-      // gpt-image-1 모델은 response_format 파라미터를 지원하지 않음
+      quality: "high"    // 품질 최대로 올려서 체감 품질 유지 (low/medium/high/auto)
+      // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
     
     console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
