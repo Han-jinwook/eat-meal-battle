@@ -127,7 +127,7 @@ exports.handler = async (event, context) => {
 중요: 반드시 6칸만 사용, 빈 칸 없이, 탑다운 구도, 실제 급식 느낌.`,
       n: 1,
       size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
-      quality: "standard"    // 품질 최대로 올려서 체감 품질 유지 (low/medium/high/auto)
+      quality: "medium"    // 품질 중간으로 설정하여 속도와 품질 균형 (low/medium/high/auto)
       // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
     
