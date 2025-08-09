@@ -142,8 +142,8 @@ exports.handler = async (event) => {
 
 특별 요구사항: 정확히 6칸만 사용, 한국 급식 특유의 정갈한 느낌, 실제 학교에서 먹는 급식 같은 자연스러운 모습`,
       n: 1,
-      size: "256x256", // 최소 크기로 타임아웃 방지
-      quality: "standard" // DALL-E 3 표준 품질
+      size: "1024x1024", // DALL-E 3 지원 최소 크기
+      quality: "low" // 최저 품질로 속도 및 용량 최적화
       // GPT-4o는 response_format 파라미터를 지원하지 않음
     });
     
