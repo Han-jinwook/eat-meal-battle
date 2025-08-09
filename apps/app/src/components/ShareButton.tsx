@@ -37,7 +37,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         if (activeTab === 'menu') {
           // 메뉴배틀 섹션
           shareTitle = `🍽️ ${schoolName} ${mealDate} 메뉴배틀 결과! 🥇`;
-          shareText = `${referrerText}우리동네 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
+          shareText = `${referrerText}우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
 #메뉴배틀 #급식메뉴 #인기메뉴 #메뉴순위 #${schoolName.split(' ')[0]}`;
         } else {
           // 급식배틀 섹션 (meal)
@@ -104,7 +104,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           </svg>
           {isSharing ? '공유 중...' : (
             isBattlePage 
-              ? (activeTab === 'menu' ? '메뉴배틀 결과 공유하기' : '급식배틀 결과 공유하기')
+              ? (activeTab === 'menu' ? '메뉴배틀 결과 공유하기' : '급식배틀 공유하기')
               : '급식평가 공유하기'
           )}
         </button>
