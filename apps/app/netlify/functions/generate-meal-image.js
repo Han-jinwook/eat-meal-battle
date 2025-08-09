@@ -116,15 +116,22 @@ exports.handler = async (event, context) => {
     
     // images.generate API를 사용하여 이미지 생성
     const imageResponse = await openai.images.generate({
-      model: "gpt-image-1", // GPT-4o의 이미지 생성 모델 사용 (품질 및 정확도 향상)
-      prompt: `한국 학교 급식 - 6칸 스테인리스 식판에 실제처럼 촬영한 사진. 포토리얼리스틱 품질.${structuredMenuString}
+      model: "gpt-image-1",
+      prompt: `한국 학교 급식 스테인리스 식판 - 정확히 6개 칸만 있는 구조${structuredMenuString}
 
-필수 구조: 정확히 6칸만 사용 (하단 2칸 + 상단 4칸)
-- 하단왼쪽 칸(사각형): ${riceMenu || (menu_items[0] || '밥')}
-- 하단오른쪽 칸(원형): ${soupMenu || (menu_items[1] || '국')}  
-- 상단 4개 칸: ${sideMenus.length > 0 ? sideMenus.slice(0, 4).join(', ') : '김치, 나물, 단무지, 미역국'}
+      절대 규칙 (무조건 지켜야 함):
+      1. 정확히 6칸만 존재 (5칸 아님, 7칸 아님, 오직 6칸)
+      2. 하단 2칸: 왼쪽(사각형/밥), 오른쪽(원형/국)
+      3. 상단 4칸: 작은 사각형들 (반찬용)
+      4. 식판 전체가 프레임 안에 완전히 들어와야 함 (테두리 잘림 금지)
+      5. 위에서 내려다보는 탑다운 뷰
 
-중요: 반드시 6칸만 사용, 빈 칸 없이, 탑다운 구도, 실제 급식 느낌.`,
+      메뉴 배치:
+      - 하단왼쪽(밥): ${riceMenu || (menu_items[0] || '밥')}
+      - 하단오른쪽(국): ${soupMenu || (menu_items[1] || '국')}  
+      - 상단 4칸(반찬): ${sideMenus.length > 0 ? sideMenus.slice(0, 4).join(', ') : '김치, 나물, 단무지, 미역국'}
+
+      스타일: 실제 한국 학교 급식실 느낌, 자연광, 포토리얼리스틱`,
       n: 1,
       size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
       quality: "medium"    // 품질 중간으로 설정하여 속도와 품질 균형 (low/medium/high/auto)
