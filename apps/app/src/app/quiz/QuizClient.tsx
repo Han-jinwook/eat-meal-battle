@@ -10,6 +10,7 @@ import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
 import ChampionHistory from '@/components/ChampionHistory';
 import DateNavigator from '@/components/DateNavigator';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
+import QuizShareButton from '@/components/QuizShareButton';
 
 // Quiz type definition
 type Quiz = {
@@ -58,10 +59,16 @@ export default function QuizClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   
-  // Handle date parameter from URL
+  // Handle URL parameters (date and viewer_invite)
   useEffect(() => {
     try {
       const dateParam = searchParams?.get('date');
+      const viewerInviteParam = searchParams?.get('viewer_invite');
+      
+      // 초대 링크 처리
+      if (viewerInviteParam) {
+        handleViewerInvite(viewerInviteParam);
+      }
       
       if (dateParam && typeof dateParam === 'string') {
         const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) || /^\d{8}$/.test(dateParam);
@@ -118,6 +125,76 @@ export default function QuizClient() {
       setSelectedDate(getCurrentDate());
     }
   }, [searchParams]);
+
+  // 초대 링크 처리 함수
+  const handleViewerInvite = async (token: string) => {
+    try {
+      console.log('초대 링크 처리 시작:', token);
+      
+      // 토큰 디코딩
+      const tokenData = JSON.parse(atob(token));
+      console.log('디코딩된 토큰:', tokenData);
+      
+      // 토큰 만료 확인
+      if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
+        toast.error('초대 링크가 만료되었습니다.');
+        return;
+      }
+      
+      // 현재 사용자 확인
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('로그인이 필요합니다.');
+        router.push('/login');
+        return;
+      }
+      
+      // 자기 자신을 초대하는 경우 방지
+      if (user.id === tokenData.quiz_owner_id) {
+        toast.error('자신의 퀴즈는 공유할 수 없습니다.');
+        return;
+      }
+      
+      // 이미 등록된 관람자인지 확인
+      const { data: existingViewer } = await supabase
+        .from('quiz_viewers')
+        .select('id')
+        .eq('quiz_owner_id', tokenData.quiz_owner_id)
+        .eq('viewer_id', user.id)
+        .single();
+      
+      if (existingViewer) {
+        toast.success(`이미 ${tokenData.owner_nickname}님의 퀴즈 관람자로 등록되어 있습니다!`);
+      } else {
+        // 새 관람자 등록
+        const { error: insertError } = await supabase
+          .from('quiz_viewers')
+          .insert({
+            quiz_owner_id: tokenData.quiz_owner_id,
+            viewer_id: user.id
+          });
+        
+        if (insertError) {
+          console.error('관람자 등록 오류:', insertError);
+          toast.error('관람자 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        
+        toast.success(`🎉 ${tokenData.owner_nickname}님의 퀴즈 관람자로 등록되었습니다!`);
+      }
+      
+      // URL에서 viewer_invite 파라미터 제거하고 해당 사용자의 퀴즈로 이동
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('viewer_invite');
+      newUrl.searchParams.set('viewing', tokenData.quiz_owner_id);
+      
+      router.replace(newUrl.pathname + newUrl.search);
+      
+    } catch (error) {
+      console.error('초대 링크 처리 오류:', error);
+      toast.error('초대 링크 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   // Fetch quiz for selected date
   const fetchQuiz = async () => {
@@ -669,6 +746,16 @@ export default function QuizClient() {
           }}
           onRefreshNeeded={() => {}}
         />
+        
+        {/* 퀴즈 공유 버튼 - 월간 현황판 바로 아래 배치 */}
+        {userSchool?.school_name && (
+          <QuizShareButton
+            userId={userSchool.user_id || ''}
+            schoolName={userSchool.school_name}
+            userNickname={userSchool.nickname}
+            className="mt-6 mb-6"
+          />
+        )}
         
         {/* 장원 히스토리 - 무한 루프 수정 완료 */}
         <ChampionHistory currentMonth={new Date()} />
