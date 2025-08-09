@@ -7,6 +7,7 @@ interface ShareButtonProps {
   schoolCode?: string;
   rating?: number;
   className?: string;
+  isBattlePage?: boolean; // 배틀 페이지 여부 구분
 }
 
 const ShareButton: React.FC<ShareButtonProps> = ({ 
@@ -14,7 +15,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   schoolName, 
   schoolCode, 
   rating, 
-  className = '' 
+  className = '',
+  isBattlePage = false
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -25,10 +27,16 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     setIsSharing(true);
     
     try {
-      // 공유할 텍스트와 URL 준비
-      const shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
+      // 공유할 텍스트와 URL 준비 - 배틀 페이지 여부에 따라 다르게 설정
+      const shareTitle = isBattlePage 
+        ? `🏆 ${schoolName} ${mealDate} 급식배틀 결과! 🥇`
+        : `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
+      
       const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
-      const shareText = `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
+      const shareText = isBattlePage
+        ? `${referrerText}우리 지역 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
+#급식배틀 #학교순위 #급식평가 #배틀결과 #${schoolName.split(' ')[0]}`
+        : `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
 #급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
       
       // URL에 필요한 파라미터 추가
@@ -81,7 +89,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
           </svg>
-          {isSharing ? '공유 중...' : '급식평가 공유하기'}
+          {isSharing ? '공유 중...' : (isBattlePage ? '급식배틀 결과 공유하기' : '급식평가 공유하기')}
         </button>
       </div>
 
@@ -97,7 +105,9 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">복사 완료!</h3>
               <p className="text-sm text-gray-600 mb-4">
-                급식 평가 내용이 클립보드에 복사되었습니다.<br/>
+                {isBattlePage 
+                  ? '급식배틀 결과가 클립보드에 복사되었습니다.' 
+                  : '급식 평가 내용이 클립보드에 복사되었습니다.'}<br/>
                 카카오톡, 이메일 등 원하는 곳에 붙여넣으세요!
               </p>
               <button

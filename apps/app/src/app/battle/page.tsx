@@ -967,6 +967,7 @@ export default function BattlePage() {
             schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
             rating={4.2}
             className="mt-6"
+            isBattlePage={true}
           />
         </div>
       </div>
