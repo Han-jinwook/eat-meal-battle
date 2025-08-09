@@ -963,8 +963,8 @@ export default function BattlePage() {
           {/* 공유 버튼 */}
         <ShareButton
           mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
-          schoolName={schoolName}
-          schoolCode={schoolCode}
+          schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+          schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
           isBattlePage={true}
           activeTab={activeTab}
           className="mt-8"
