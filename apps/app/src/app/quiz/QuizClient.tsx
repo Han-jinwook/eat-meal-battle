@@ -53,6 +53,16 @@ export default function QuizClient() {
   const [noMenu, setNoMenu] = useState<boolean>(false);
   const [noMenuMessage, setNoMenuMessage] = useState<string>('');
   
+  // 관람 모드 상태
+  const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserInfo, setViewingUserInfo] = useState<{
+    nickname: string;
+    school_name: string;
+    grade?: number;
+    class?: number;
+  } | null>(null);
+  
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
   const schoolMode = useSchoolMode(userSchool);
   const supabase = createBrowserClient(
@@ -65,6 +75,18 @@ export default function QuizClient() {
     try {
       const dateParam = searchParams?.get('date');
       const viewerInviteParam = searchParams?.get('viewer_invite');
+      const viewingParam = searchParams?.get('viewing');
+      
+      // 관람 모드 처리
+      if (viewingParam) {
+        setIsViewingMode(true);
+        setViewingUserId(viewingParam);
+        loadViewingUserInfo(viewingParam);
+      } else {
+        setIsViewingMode(false);
+        setViewingUserId(null);
+        setViewingUserInfo(null);
+      }
       
       // 초대 링크 처리
       if (viewerInviteParam) {
@@ -126,6 +148,47 @@ export default function QuizClient() {
       setSelectedDate(getCurrentDate());
     }
   }, [searchParams]);
+
+  // 관람 사용자 정보 로드 함수
+  const loadViewingUserInfo = async (userId: string) => {
+    try {
+      console.log('🔍 관람 사용자 정보 로드:', userId);
+      
+      // 사용자 닉네임 가져오기
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('nickname')
+        .eq('id', userId)
+        .single();
+      
+      // 사용자 학교 정보 가져오기
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_name, grade, class')
+        .eq('user_id', userId)
+        .single();
+      
+      if (userError || schoolError) {
+        console.error('관람 사용자 정보 로드 오류:', userError, schoolError);
+        toast.error('관람 사용자 정보를 불러오는데 실패했습니다.');
+        return;
+      }
+      
+      const userInfo = {
+        nickname: userData?.nickname || '익명',
+        school_name: schoolData?.school_name || '알 수 없음',
+        grade: schoolData?.grade,
+        class: schoolData?.class
+      };
+      
+      setViewingUserInfo(userInfo);
+      console.log('👀 관람 사용자 정보:', userInfo);
+      
+    } catch (error) {
+      console.error('관람 사용자 정보 로드 오류:', error);
+      toast.error('관람 사용자 정보를 불러오는데 실패했습니다.');
+    }
+  };
 
   // 초대 링크 처리 함수
   const handleViewerInvite = async (token: string) => {
@@ -202,7 +265,12 @@ export default function QuizClient() {
 
   // Fetch quiz for selected date
   const fetchQuiz = async () => {
-    if (!userSchool || !selectedDate) return;
+    // 관람 모드일 때는 관람 사용자 정보와 선택된 날짜가 필요
+    if (isViewingMode) {
+      if (!viewingUserInfo || !selectedDate) return;
+    } else {
+      if (!userSchool || !selectedDate) return;
+    }
     
     setLoading(true);
     setError(null);
@@ -217,12 +285,34 @@ export default function QuizClient() {
       }
 
       const params = new URLSearchParams();
-      params.set('school_code', userSchool.school_code);
       
-      if (userSchool.grade) {
-        params.set('grade', userSchool.grade.toString());
+      // 관람 모드일 때는 관람 대상 사용자의 정보 사용
+      if (isViewingMode && viewingUserId) {
+        // 관람 대상 사용자의 학교 정보 가져오기
+        const { data: viewingSchoolData } = await supabase
+          .from('school_infos')
+          .select('school_code, grade')
+          .eq('user_id', viewingUserId)
+          .single();
+          
+        if (!viewingSchoolData) {
+          setError('관람 대상 사용자의 학교 정보를 찾을 수 없습니다.');
+          setLoading(false);
+          return;
+        }
+        
+        params.set('school_code', viewingSchoolData.school_code);
+        params.set('grade', viewingSchoolData.grade?.toString() || '1');
+        params.set('viewing_user_id', viewingUserId); // 관람 모드 표시
       } else {
-        params.set('grade', '1');
+        // 일반 모드 (내 퀴즈)
+        params.set('school_code', userSchool.school_code);
+        
+        if (userSchool.grade) {
+          params.set('grade', userSchool.grade.toString());
+        } else {
+          params.set('grade', '1');
+        }
       }
       
       if (selectedDate) {
@@ -504,19 +594,24 @@ export default function QuizClient() {
     return dates;
   };
 
-  // Fetch quiz when date or user school changes
+  // Fetch quiz when date, user school, or viewing mode changes
   useEffect(() => {
-    if (selectedDate && userSchool && !userLoading) {
-      // 날짜가 변경되면 모든 상태 초기화
-      setNoMenu(false);
-      setNoMenuMessage('');
-      setGeneratingQuiz(false); // 퀴즈 생성 상태 초기화
-      setQuiz(null); // 이전 퀴즈 데이터 초기화
-      setSelectedOption(null); // 선택된 옵션 초기화
-      setSubmitted(false); // 제출 상태 초기화
-      fetchQuiz();
+    if (selectedDate && !userLoading) {
+      // 관람 모드일 때는 viewingUserInfo가 필요, 일반 모드일 때는 userSchool이 필요
+      const canFetch = isViewingMode ? viewingUserInfo : userSchool;
+      
+      if (canFetch) {
+        // 날짜가 변경되면 모든 상태 초기화
+        setNoMenu(false);
+        setNoMenuMessage('');
+        setGeneratingQuiz(false); // 퀴즈 생성 상태 초기화
+        setQuiz(null); // 이전 퀴즈 데이터 초기화
+        setSelectedOption(null); // 선택된 옵션 초기화
+        setSubmitted(false); // 제출 상태 초기화
+        fetchQuiz();
+      }
     }
-  }, [selectedDate, userSchool, userLoading]);
+  }, [selectedDate, userSchool, userLoading, isViewingMode, viewingUserInfo]);
 
   // 관심학교 모드일 때 접근 차단
   if (!schoolMode.isStudentMode && userSchool) {
@@ -548,23 +643,59 @@ export default function QuizClient() {
 
       <div className="max-w-4xl mx-auto">
         {/* 학교 정보 헤더 및 관심퀴즈 드롭다운 */}
-        {userSchool ? (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
-            {/* 왼쪽: 학교 정보 */}
+        {(userSchool || isViewingMode) ? (
+          <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
+            isViewingMode 
+              ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-500' 
+              : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500'
+          }`}>
+            {/* 왼쪽: 학교 정보 또는 관람 정보 */}
             <div className="flex items-center">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-                {userSchool.school_name || '학교 정보 없음'}
-              </span>
-              {(userSchool.grade || userSchool.class) && (
-                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-                  {userSchool.grade ? `${userSchool.grade}학년` : ''}
-                  {userSchool.class ? ` ${userSchool.class}반` : ''}
-                </span>
-              )}
+              {isViewingMode && viewingUserInfo ? (
+                <>
+                  <span className="text-purple-600 mr-2">👀</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold">
+                    {viewingUserInfo.nickname}님의 퀴즈 관람 중
+                  </span>
+                  <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                    {viewingUserInfo.school_name}
+                    {viewingUserInfo.grade && ` ${viewingUserInfo.grade}학년`}
+                    {viewingUserInfo.class && ` ${viewingUserInfo.class}반`}
+                  </span>
+                </>
+              ) : userSchool ? (
+                <>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+                    {userSchool.school_name || '학교 정보 없음'}
+                  </span>
+                  {(userSchool.grade || userSchool.class) && (
+                    <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                      {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                      {userSchool.class ? ` ${userSchool.class}반` : ''}
+                    </span>
+                  )}
+                </>
+              ) : null}
             </div>
             
-            {/* 오른쪽: 관심퀴즈 드롭다운 */}
-            <QuizDropdown userId={userSchool.user_id || ''} />
+            {/* 오른쪽: 관심퀴즈 드롭다운 또는 관람 모드 종료 버튼 */}
+            {isViewingMode ? (
+              <button
+                onClick={() => {
+                  const newUrl = new URL(window.location.href);
+                  newUrl.searchParams.delete('viewing');
+                  router.replace(newUrl.pathname + newUrl.search);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+              >
+                <span>관람 종료</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            ) : userSchool ? (
+              <QuizDropdown userId={userSchool.user_id || ''} />
+            ) : null}
           </div>
         ) : (
           <div className="mb-6"></div>
@@ -633,7 +764,7 @@ export default function QuizClient() {
                       key={index}
                       className={optionClass}
                       onClick={() => {
-                        if (!submitted) {
+                        if (!submitted && !isViewingMode) {
                           setSelectedOption(index + 1);
                         }
                       }}
@@ -662,24 +793,30 @@ export default function QuizClient() {
               {/* 제출 버튼 또는 결과 */}
               <div>
                 {!submitted ? (
-                  <button
-                    disabled={selectedOption === null || submitting}
-                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                      selectedOption === null || submitting
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                    onClick={submitAnswer}
-                  >
-                    {submitting ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>정답제출 & AI채점 중</span>
-                      </div>
-                    ) : (
-                      '정답 제출'
-                    )}
-                  </button>
+                  isViewingMode ? (
+                    <div className="w-full py-3 px-4 rounded-lg font-medium bg-purple-100 text-purple-700 text-center border-2 border-purple-200">
+                      👀 관람 모드에서는 답변을 제출할 수 없습니다
+                    </div>
+                  ) : (
+                    <button
+                      disabled={selectedOption === null || submitting}
+                      className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                        selectedOption === null || submitting
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                      onClick={submitAnswer}
+                    >
+                      {submitting ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>정답제출 & AI채점 중</span>
+                        </div>
+                      ) : (
+                        '정답 제출'
+                      )}
+                    </button>
+                  )
                 ) : (
                   <div>
                     <div className="text-center">
