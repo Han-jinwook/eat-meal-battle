@@ -39,11 +39,12 @@ export default function Profile() {
           console.log('인증된 사용자 정보:', user)
           setUser(user)
           
-          // 사용자 테이블과 학교 정보를 병렬로 가져오기 (성능 개선)
+          // 모든 데이터를 병렬로 가져오기 (성능 개선)
           setDbStatus('loading')
-          const [profileResult, schoolResult] = await Promise.allSettled([
+          const [profileResult, schoolResult, referralResult] = await Promise.allSettled([
             supabase.from('users').select('*').eq('id', user.id).single(),
-            supabase.from('school_infos').select('*').eq('user_id', user.id).single()
+            supabase.from('school_infos').select('*').eq('user_id', user.id).single(),
+            fetchReferredUsers(user.id)
           ])
           
           // 사용자 프로필 처리
@@ -64,8 +65,7 @@ export default function Profile() {
             setSchoolInfo(schoolResult.value.data)
           }
 
-          // 추천한 회원 목록 가져오기
-          await fetchReferredUsers(user.id)
+          // 추천 회원 목록은 이미 fetchReferredUsers에서 처리됨
         } else {
           router.push('/login')
         }
@@ -97,12 +97,14 @@ export default function Profile() {
 
       if (error) {
         console.error('추천 회원 목록 조회 에러:', error)
-        return
+        throw error // Promise.allSettled에서 처리할 수 있도록 에러 던지기
       }
 
       setReferredUsers(data || [])
+      return data || []
     } catch (error) {
       console.error('추천 회원 목록 가져오기 실패:', error)
+      throw error
     } finally {
       setReferralLoading(false)
     }
@@ -222,11 +224,64 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          {/* 로딩 스피너 */}
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-lg text-gray-600">프로필 로딩 중...</div>
+      <div className="flex min-h-screen flex-col p-4">
+        <div className="mx-auto w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+          </div>
+
+          {/* 사용자 기본 정보 스켈레톤 */}
+          <div className="mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="h-6 bg-gray-200 rounded w-24 mx-auto animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-32 mx-auto animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* 학교 정보 스켈레톤 */}
+          <div className="mb-8 border-t border-b py-4">
+            <div className="flex justify-between items-center mb-3">
+              <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
+              <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* 추천 회원 목록 스켈레톤 */}
+          <div className="mb-8 border-b py-4">
+            <div className="h-5 bg-gray-200 rounded w-48 mx-auto mb-3 animate-pulse"></div>
+            <div className="bg-gray-50 rounded-lg p-3 h-72">
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-md p-3 shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                        <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                      </div>
+                      <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center mt-4">
+              <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-4 mt-12">
+            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+          </div>
         </div>
       </div>
     )
