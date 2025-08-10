@@ -836,6 +836,22 @@ export default function QuizClient() {
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                           <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
                           <p className="text-gray-600">{quiz.explanation}</p>
+                          
+                          {/* 오답 신고 버튼 - 1단계 UI만 */}
+                          {!isViewingMode && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <button
+                                onClick={() => {
+                                  // TODO: 2단계에서 신고 로직 구현
+                                  toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors duration-200"
+                              >
+                                <span>🚨</span>
+                                <span>이 문제가 틀렸나요?</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
