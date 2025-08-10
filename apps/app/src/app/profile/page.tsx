@@ -306,14 +306,8 @@ export default function Profile() {
   return (
     <div className="flex min-h-screen flex-col p-4">
       <div className="mx-auto w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4">
           <h1 className="text-xl font-bold">내 프로필</h1>
-          <Link
-            href="/"
-            className="text-sm text-gray-500"
-          >
-            닫기
-          </Link>
         </div>
 
         {/* 사용자 기본 정보 - 간결하게 표시 */}
