@@ -6,8 +6,6 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import NotificationBell from '@/components/NotificationBell';
-import ImageWithFallback from '@/components/ImageWithFallback';
-import ProfileModal from '@/components/ProfileModal';
 import useUserSchool from '@/hooks/useUserSchool';
 
 // User 타입을 확장하여 필요한 필드 추가
@@ -28,16 +26,11 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function MainHeader() {
-  // 명시적인 타입 정의로 SupabaseClient 타입 적용
   const supabase = createClient() as SupabaseClient;
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // any 대신 확장된 User 타입 사용
   const [user, setUser] = useState<ExtendedUser | null>(null);
-  const profileRef = useRef<HTMLDivElement>(null);
-  
-  // 사용자 정보 가져오기
   const [nickname, setNickname] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
@@ -49,7 +42,6 @@ export default function MainHeader() {
     
     fetchUser();
     
-    // 인증 상태 변경 리스너
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
@@ -81,17 +73,16 @@ export default function MainHeader() {
     fetchNickname();
   }, [user?.id, supabase]);
 
-  // 페이지 변경 감지하여 로딩 상태 초기화
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
 
-  // 프로필 이미지 클릭 시 바로 프로필 페이지로 이동
   const navigateToProfile = () => {
-    if (isNavigating) return; // 중복 클릭 방지
+    if (isNavigating) return;
     setIsNavigating(true);
     router.push('/profile');
   };
+
   const logout = async () => {
     await supabase.auth.signOut();
     router.refresh();
@@ -104,46 +95,26 @@ export default function MainHeader() {
           <img src="/images/logo.png" alt="뭐먹지?" className="h-10 w-auto" />
         </Link>
 
-        {/* 메인 메뉴 - 모바일에서도 표시 */}
         <nav className="flex overflow-x-auto gap-3 sm:gap-6 px-1 py-1 -mx-1 scrollbar-hide">
           {NAV_ITEMS.map((item) => {
-            // 현재 URL의 date 파라미터를 다른 페이지로 전달
             const currentDate = searchParams?.get('date');
             const linkHref = currentDate ? `${item.href}?date=${currentDate}` : item.href;
             
-            // 네비게이션 차단 핸들러
             const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>) => {
-              // AI 검증 실패 이미지가 있는지 확인
-              const hasRejectedImage = typeof window !== 'undefined' && (window as any).hasRejectedImage;
-              console.log('📍 MainHeader - 메뉴 네비게이션 시도:', { href: item.href, hasRejectedImage, rejectedImageId: (window as any)?.rejectedImageId });
-              
-              if (hasRejectedImage) {
-                e.preventDefault();
-                const confirmed = window.confirm(
-                  'AI 검증에 실패한 이미지가 있습니다. 먼저 해당 이미지를 삭제해주세요.\n\n삭제하고 계속하시겠습니까?'
-                );
-                
-                if (confirmed) {
-                  // 전역 플래그 해제
-                  (window as any).hasRejectedImage = false;
-                  (window as any).rejectedImageId = null;
-                  // 네비게이션 진행
-                  router.push(linkHref);
-                }
-                // confirmed가 false면 네비게이션 취소
-              }
+              // 간단한 네비게이션 처리
+              e.preventDefault();
+              router.push(linkHref);
             };
-            
+
             return (
               <Link
                 key={item.href}
                 href={linkHref}
                 onClick={handleNavigation}
-                className={`text-xs sm:text-sm font-medium whitespace-nowrap px-2 py-1 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${
-                  // 홈 경로('/')(급식 메뉴)의 경우 정확히 일치할 때만 강조
-                  item.href === '/' 
-                    ? (pathname === '/' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
-                    : (pathname.startsWith(item.href) ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700')
+                className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === item.href
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 {item.label}
@@ -152,88 +123,77 @@ export default function MainHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-4">
-          {/* 알림 벨 - 로그인 상태일 때만 표시 */}
+        <div className="flex items-center gap-3">
           {user && <NotificationBell />}
+          
+          {user ? (
+            <button
+              onClick={navigateToProfile}
+              disabled={isNavigating}
+              className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-200 hover:bg-gray-300 transition-colors disabled:opacity-50"
+            >
+              {isNavigating ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="animate-spin h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              ) : (
+                <>
+                  {(() => {
+                    let avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+                    
+                    if (avatarUrl && avatarUrl.startsWith('http://')) {
+                      avatarUrl = avatarUrl.replace('http://', 'https://');
+                    }
+                    
+                    const nicknameToDisplay = nickname;
 
-          {/* 프로필 또는 로그인 버튼 */}
-          <div className="relative" ref={profileRef}>
-            {user ? (
-              // 로그인 상태: 사용자 프로필 이미지 표시
-              <button
-                onClick={navigateToProfile}
-                disabled={isNavigating}
-                className={`relative h-8 w-8 overflow-hidden rounded-full border border-gray-300 bg-white hover:border-indigo-500 transition-colors ${isNavigating ? 'opacity-70 cursor-not-allowed' : ''}`}
-              >
-                {isNavigating ? (
-                  // 로딩 중일 때 스피너 표시
-                  <div className="flex h-full w-full items-center justify-center bg-indigo-50">
-                    <svg className="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  </div>
-                ) : (() => {
-                  // 메모에서 언급한 대로 user.user_metadata.avatar_url 사용
-                  let avatarUrl = user.user_metadata?.avatar_url as string | undefined;
-                  
-                  // 카카오 프로필 이미지 URL이 http로 시작하는 경우 https로 변환
-                  if (avatarUrl && avatarUrl.startsWith('http://')) {
-                    avatarUrl = avatarUrl.replace('http://', 'https://');
-                    console.log('Profile image URL changed to HTTPS:', avatarUrl);
-                  }
-                  
-                  // users 테이블의 nickname 사용
-                  const nicknameToDisplay = nickname;
-
-                  if (avatarUrl) {
-                    return (
-                      <img
-                        src={avatarUrl}
-                        alt={nicknameToDisplay || 'User Avatar'}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // 이미지 로드 실패 시 닉네임 이니셜로 대체
-                          e.currentTarget.style.display = 'none';
-                          const parent = e.currentTarget.parentElement;
-                          if (parent && nicknameToDisplay) {
-                            parent.classList.add('flex', 'items-center', 'justify-center', 'bg-slate-300');
-                            parent.textContent = nicknameToDisplay.charAt(0).toUpperCase();
-                          }
-                        }}
-                      />
-                    );
-                  } else if (nicknameToDisplay) {
-                    // 이미지 URL이 없으면 닉네임 첫 글자 표시
-                    const initial = nicknameToDisplay.charAt(0).toUpperCase();
-                    return (
-                      <div className="flex h-full w-full items-center justify-center bg-slate-300 text-slate-700 text-sm font-semibold">
-                        {initial}
-                      </div>
-                    );
-                  } else {
-                    // 닉네임도 없는 경우 기본 아이콘 표시
-                    return (
-                      <div className="flex h-full w-full items-center justify-center bg-gray-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                    );
-                  }
-                })())}
-              </button>
-            ) : (
-              // 비로그인 상태: 로그인 버튼 표시
-              <Link href="/login" className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                로그인
-              </Link>
-            )}
-            {/* 모달 메뉴 제거: 프로필 이미지 클릭 시 바로 프로필 페이지로 이동 */}
-          </div>
+                    if (avatarUrl) {
+                      return (
+                        <img
+                          src={avatarUrl}
+                          alt={nicknameToDisplay || 'User Avatar'}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const parent = e.currentTarget.parentElement;
+                            if (parent && nicknameToDisplay) {
+                              parent.classList.add('flex', 'items-center', 'justify-center', 'bg-slate-300');
+                              parent.textContent = nicknameToDisplay.charAt(0).toUpperCase();
+                            }
+                          }}
+                        />
+                      );
+                    } else if (nicknameToDisplay) {
+                      const initial = nicknameToDisplay.charAt(0).toUpperCase();
+                      return (
+                        <div className="flex h-full w-full items-center justify-center bg-slate-300 text-slate-700 text-sm font-semibold">
+                          {initial}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="flex h-full w-full items-center justify-center bg-gray-200">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      );
+                    }
+                  })()}
+                </>
+              )}
+            </button>
+          ) : (
+            <Link href="/login" className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              로그인
+            </Link>
+          )}
         </div>
       </div>
     </header>
