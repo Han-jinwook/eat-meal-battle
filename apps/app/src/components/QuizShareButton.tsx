@@ -32,9 +32,11 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
         referral_code: referralCode
       };
 
-      // Base64 인코딩으로 간단한 토큰 생성 (실제 운영에서는 JWT 등 사용 권장)
-      const token = btoa(JSON.stringify(tokenData));
-      return token;
+      // 한글 지원을 위한 UTF-8 인코딩 후 Base64 변환
+      const jsonString = JSON.stringify(tokenData);
+      const utf8Bytes = new TextEncoder().encode(jsonString);
+      const base64String = btoa(String.fromCharCode(...utf8Bytes));
+      return base64String;
     } catch (error) {
       console.error('토큰 생성 오류:', error);
       throw error;
@@ -112,9 +114,6 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
           <span className="font-medium">
             {isSharing ? '초대 링크 생성중...' : '내 퀴즈 공유하기'}
           </span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
         </button>
       </div>
 

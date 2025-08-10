@@ -131,8 +131,11 @@ export default function QuizClient() {
     try {
       console.log('초대 링크 처리 시작:', token);
       
-      // 토큰 디코딩
-      const tokenData = JSON.parse(atob(token));
+      // 한글 지원 토큰 디코딩
+      const base64Decoded = atob(token);
+      const utf8Bytes = new Uint8Array([...base64Decoded].map(char => char.charCodeAt(0)));
+      const jsonString = new TextDecoder().decode(utf8Bytes);
+      const tokenData = JSON.parse(jsonString);
       console.log('디코딩된 토큰:', tokenData);
       
       // 토큰 만료 확인
