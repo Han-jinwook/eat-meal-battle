@@ -11,6 +11,7 @@ import ChampionHistory from '@/components/ChampionHistory';
 import DateNavigator from '@/components/DateNavigator';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import QuizShareButton from '@/components/QuizShareButton';
+import QuizDropdown from '@/components/QuizDropdown';
 
 // Quiz type definition
 type Quiz = {
@@ -546,18 +547,24 @@ export default function QuizClient() {
       <style jsx>{styles}</style>
 
       <div className="max-w-4xl mx-auto">
-        {/* 학교 정보 표시 - 급식페이지와 동일한 UI */}
+        {/* 학교 정보 헤더 및 관심퀴즈 드롭다운 */}
         {userSchool ? (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-              {userSchool.school_name || '학교 정보 없음'}
-            </span>
-            {(userSchool.grade || userSchool.class) && (
-              <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-                {userSchool.grade ? `${userSchool.grade}학년` : ''}
-                {userSchool.class ? ` ${userSchool.class}반` : ''}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded p-2 mb-3 border-l-2 border-blue-500 flex items-center justify-between">
+            {/* 왼쪽: 학교 정보 */}
+            <div className="flex items-center">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+                {userSchool.school_name || '학교 정보 없음'}
               </span>
-            )}
+              {(userSchool.grade || userSchool.class) && (
+                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                  {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                  {userSchool.class ? ` ${userSchool.class}반` : ''}
+                </span>
+              )}
+            </div>
+            
+            {/* 오른쪽: 관심퀴즈 드롭다운 */}
+            <QuizDropdown userId={userSchool.user_id || ''} />
           </div>
         ) : (
           <div className="mb-6"></div>
