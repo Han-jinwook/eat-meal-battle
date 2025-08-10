@@ -120,9 +120,9 @@ export default function BattlePage() {
       return;
     }
 
-    // 최대 3개 제한 확인
-    if (interestSchools.length >= 3) {
-      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+    // 최대 10개 제한 확인
+    if (interestSchools.length >= 10) {
+      alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;
     }
 
@@ -172,10 +172,46 @@ export default function BattlePage() {
     }
   };
 
+  // 관심학교 삭제 함수
+  const removeInterestSchool = async (schoolId: number) => {
+    if (!user) {
+      console.error('사용자 인증이 필요합니다');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('interest_schools')
+        .delete()
+        .eq('id', schoolId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('관심학교 삭제 오류:', error);
+        alert('관심학교 삭제에 실패했습니다.');
+        return;
+      }
+
+      // 로컬 상태 업데이트
+      setInterestSchools(prev => prev.filter(school => school.id !== schoolId));
+      
+      // 삭제된 학교가 현재 선택된 학교라면 내 학교로 돌아가기
+      if (schoolMode.selectedInterestSchool?.id === schoolId) {
+        schoolMode.selectMySchool();
+      }
+      
+      alert('관심학교가 삭제되었습니다.');
+      
+    } catch (error) {
+      console.error('관심학교 삭제 중 예외 발생:', error);
+      alert('관심학교 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   // 학교등록 버튼 클릭 핸들러
   const handleSchoolRegister = () => {
-    if (interestSchools.length >= 3) {
-      alert('최대 3개의 관심학교만 등록할 수 있습니다.');
+    if (interestSchools.length >= 10) {
+      alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;
     }
     setIsSchoolSearchOpen(true);
@@ -403,36 +439,52 @@ export default function BattlePage() {
                         const isSelected = schoolMode.selectedInterestSchool?.id === school.id;
                         
                         return (
-                          <button 
+                          <div 
                             key={school.id}
                             className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
                               isSelected 
                                 ? 'text-gray-700 bg-blue-50' 
                                 : 'text-gray-700 hover:bg-gray-50'
                             }`}
-                            onClick={() => {
-                              // 관심학교 선택
-                              schoolMode.selectInterestSchool({
-                                id: school.id,
-                                school_name: school.school_name,
-                                school_code: school.school_code,
-                                office_code: school.office_code,
-                                created_at: school.created_at
-                              });
-                              setIsDropdownOpen(false);
-                            }}
                           >
-                            <span className="text-blue-600">🏠</span>
-                            <div className="flex-1 text-left">
-                              <div className="font-medium">{school.school_name}</div>
-                              <div className="text-xs text-gray-500">
-                                {isSelected ? '현재 선택됨' : '선택하기'}
+                            <button
+                              className="flex items-center gap-3 flex-1"
+                              onClick={() => {
+                                // 관심학교 선택
+                                schoolMode.selectInterestSchool({
+                                  id: school.id,
+                                  school_name: school.school_name,
+                                  school_code: school.school_code,
+                                  office_code: school.office_code,
+                                  created_at: school.created_at
+                                });
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              <span className="text-blue-600">🏠</span>
+                              <div className="flex-1 text-left">
+                                <div className="font-medium">{school.school_name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {isSelected ? '현재 선택됨' : '선택하기'}
+                                </div>
                               </div>
-                            </div>
-                            {isSelected && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">선택됨</span>
-                            )}
-                          </button>
+                              {isSelected && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">선택됨</span>
+                              )}
+                            </button>
+                            <button
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`${school.school_name}을(를) 관심학교에서 삭제하시겠습니까?`)) {
+                                  removeInterestSchool(school.id);
+                                }
+                              }}
+                              title="관심학교 삭제"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
