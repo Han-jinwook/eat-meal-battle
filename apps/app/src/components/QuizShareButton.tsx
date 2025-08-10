@@ -8,6 +8,8 @@ interface QuizShareButtonProps {
   userId: string;
   schoolName: string;
   userNickname?: string;
+  userGrade?: number;
+  userClass?: number;
   className?: string;
 }
 
@@ -15,6 +17,8 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
   userId,
   schoolName,
   userNickname,
+  userGrade,
+  userClass,
   className = ''
 }) => {
   const [isSharing, setIsSharing] = useState(false);
@@ -58,14 +62,17 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
       const baseUrl = window.location.origin;
       const shareUrl = `${baseUrl}/quiz?viewer_invite=${token}`;
 
+      // 학년/반 정보 구성
+      const gradeClassInfo = userGrade && userClass ? `${userGrade}학년 ${userClass}반 ` : '';
+      
       // 공유 내용 구성
       const shareTitle = `📚 ${userNickname || '학생'}님의 급식퀴즈 초대! 🎯`;
-      const shareText = `${schoolName} ${userNickname || '학생'}님이 급식퀴즈 결과를 공유했어요!
+      const shareText = `${schoolName} ${gradeClassInfo}${userNickname || '학생'}님이 급식퀴즈 결과를 공유했어요!
 
 📊 퀴즈 성적과 도전 현황을 확인해보세요
 🏆 매일매일 새로운 급식퀴즈 도전 중!
 
-#급식퀴즈 #학습현황 #부모자녀소통 #${schoolName.split(' ')[0]}`;
+#급식퀴즈 #학습현황 #부모자녀소통 #${schoolName.replace(/\s+/g, '')}`;
 
       // 네이티브 공유 API 지원 확인
       if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {

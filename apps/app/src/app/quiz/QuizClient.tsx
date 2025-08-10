@@ -756,6 +756,8 @@ export default function QuizClient() {
             userId={userSchool.user_id || ''}
             schoolName={userSchool.school_name}
             userNickname={userSchool.nickname}
+            userGrade={userSchool.grade}
+            userClass={userSchool.class}
             className="mt-6 mb-6"
           />
         )}
