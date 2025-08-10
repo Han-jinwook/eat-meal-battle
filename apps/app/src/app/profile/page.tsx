@@ -328,7 +328,7 @@ export default function Profile() {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold mb-1">센드림</div>
+            <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
             <div className="font-medium">{user?.email || '이메일 없음'}</div>
             <div className="text-sm text-gray-500 mt-1">
               {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
