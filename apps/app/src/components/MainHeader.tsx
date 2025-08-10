@@ -1,19 +1,19 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { SupabaseClient, User } from '@supabase/supabase-js';
+import NotificationBell from '@/components/NotificationBell';
+import ImageWithFallback from '@/components/ImageWithFallback';
+import ProfileModal from '@/components/ProfileModal';
+import useUserSchool from '@/hooks/useUserSchool';
 
 // User 타입을 확장하여 필요한 필드 추가
 type ExtendedUser = User & {
   profile_image?: string;
 };
-import NotificationBell from '@/components/NotificationBell';
-import ImageWithFallback from '@/components/ImageWithFallback';
-import { useState, useEffect, useRef } from 'react';
-import ProfileModal from '@/components/ProfileModal';
 
 // 네비게이션 항목 정의
 type NavItem = {
@@ -26,8 +26,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: '배틀', href: '/battle' },
   { label: '퀴즈', href: '/quiz' },
 ];
-
-import useUserSchool from '@/hooks/useUserSchool';
 
 export default function MainHeader() {
   // 명시적인 타입 정의로 SupabaseClient 타입 적용
