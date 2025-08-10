@@ -11,6 +11,7 @@ interface SchoolInfo {
   school_type?: string; // 학교 유형 (초등학교/중학교/고등학교)
   grade?: string | number; // 학년
   class?: string | number; // 반
+  nickname?: string; // 사용자 별명
   created_at: string;
 }
 
@@ -52,11 +53,22 @@ export default function useUserSchool(): UseUserSchoolReturn {
         setUser(user);
 
         if (user) {
-          const { data: schoolInfo, error: schoolError } = await supabase
-            .from('school_infos')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
+          // 학교 정보와 사용자 닉네임을 함께 가져오기
+          const [schoolResult, userResult] = await Promise.all([
+            supabase
+              .from('school_infos')
+              .select('*')
+              .eq('user_id', user.id)
+              .single(),
+            supabase
+              .from('users')
+              .select('nickname')
+              .eq('id', user.id)
+              .single()
+          ]);
+
+          const { data: schoolInfo, error: schoolError } = schoolResult;
+          const { data: userInfo } = userResult;
 
           if (schoolError && schoolError.code !== 'PGRST116') {
             throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
@@ -65,7 +77,8 @@ export default function useUserSchool(): UseUserSchoolReturn {
           if (schoolInfo) {
             setUserSchool({
               ...schoolInfo,
-              class: schoolInfo.class_number
+              class: schoolInfo.class_number,
+              nickname: userInfo?.nickname || '익명'
             });
           } else {
             setUserSchool(null);
