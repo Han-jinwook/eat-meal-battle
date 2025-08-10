@@ -13,6 +13,8 @@ export default function Profile() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(null)
   const [schoolInfo, setSchoolInfo] = useState<any>(null)
+  const [referredUsers, setReferredUsers] = useState<any[]>([])
+  const [referralLoading, setReferralLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -57,6 +59,9 @@ export default function Profile() {
           if (schoolResult.status === 'fulfilled' && !schoolResult.value.error) {
             setSchoolInfo(schoolResult.value.data)
           }
+
+          // 추천한 회원 목록 가져오기
+          await fetchReferredUsers(user.id)
         } else {
           router.push('/login')
         }
@@ -70,6 +75,34 @@ export default function Profile() {
 
     getUser()
   }, [supabase, router])
+
+  // 추천한 회원 목록 가져오기 함수
+  const fetchReferredUsers = async (userId: string) => {
+    try {
+      setReferralLoading(true)
+      
+      const { data, error } = await supabase
+        .from('referrals')
+        .select(`
+          created_at,
+          users!referee_id(nickname, email)
+        `)
+        .eq('referrer_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('추천 회원 목록 조회 에러:', error)
+        return
+      }
+
+      setReferredUsers(data || [])
+    } catch (error) {
+      console.error('추천 회원 목록 가져오기 실패:', error)
+    } finally {
+      setReferralLoading(false)
+    }
+  }
 
   // 로그아웃 처리 함수
   const handleSignOut = async () => {
@@ -233,6 +266,52 @@ export default function Profile() {
               </Link>
             </div>
           )}
+        </div>
+
+        {/* 나의 추천코드로 가입한 회원 목록 */}
+        <div className="mb-8 border-b py-4">
+          <h2 className="text-lg font-bold mb-3">나의 추천코드로 가입한 회원 목록</h2>
+          
+          <div className="bg-gray-50 rounded-lg p-3 h-72 overflow-y-auto">
+            {referralLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500">로딩 중...</div>
+              </div>
+            ) : referredUsers.length > 0 ? (
+              <div className="space-y-2">
+                {referredUsers.map((referral, index) => (
+                  <div key={index} className="bg-white rounded-md p-3 shadow-sm">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {referral.users?.nickname || '미설정'}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {referral.users?.email && referral.users.email.length > 25 
+                            ? `${referral.users.email.substring(0, 25)}...` 
+                            : referral.users?.email || '이메일 없음'}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 ml-2">
+                        {new Date(referral.created_at).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        }).replace(/\./g, '.').replace(/ /g, '')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-500">
+                  <div className="text-sm">아직 추천한 회원이 없습니다</div>
+                  <div className="text-xs mt-1">친구들에게 추천코드를 공유해보세요!</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-center gap-4 mt-6">
