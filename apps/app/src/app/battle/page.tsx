@@ -8,6 +8,7 @@ import { getCurrentDate } from '@/utils/DateUtils';
 import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareButton from '@/components/ShareButton';
+import AIAnalysisModal from '@/components/AIAnalysisModal';
 import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
 
 export default function BattlePage() {
@@ -27,6 +28,9 @@ export default function BattlePage() {
   
   // 학교검색 모달 상태 관리
   const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
+  
+  // AI 분석 모달 상태 관리
+  const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState<boolean>(false);
   
   // 배틀 페이지는 읽기 전용이므로 권한 체크 불필요
   
@@ -237,6 +241,60 @@ export default function BattlePage() {
     } catch (error) {
       console.error('❌ 배틀 계산 트리거 오류:', error);
       throw error;
+    }
+  };
+
+  // AI 앱 선택 핸들러
+  const handleAIAppSelection = async (selectedApp: any) => {
+    console.log('AI 앱 선택됨:', selectedApp);
+    setIsAIAnalysisOpen(false);
+    
+    // TODO: 여기에 데이터 수집 및 프롬프트 생성 로직 추가
+    // 임시로 간단한 프롬프트 생성
+    const currentSchoolName = schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음';
+    const currentDate = viewMode === 'daily' ? selectedDate : selectedMonth;
+    const monthYear = viewMode === 'daily' 
+      ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
+      : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`;
+    
+    const prompt = `# ${currentSchoolName} ${monthYear} 급식평가 분석 요청
+
+안녕하세요! ${schoolMode.isViewingMode ? '관심학교' : '우리학교'}의 급식배틀 데이터를 분석해주세요.
+
+## 📋 기본 정보
+- 학교: ${currentSchoolName}
+- 분석 대상: ${monthYear}
+- 보기 모드: ${viewMode === 'daily' ? '일별' : '월별'} 배틀
+- 카테고리: ${activeTab === 'menu' ? '메뉴별' : '급식별'} 순위
+
+## 🎯 분석 요청사항
+1. 현재 급식 배틀 순위의 의미를 분석해주세요
+2. 지역 내에서의 위치와 개선 방향을 제시해주세요
+3. 학생들의 만족도 향상을 위한 구체적인 방안을 제안해주세요
+
+분석을 마친 후, 추가 질문을 통해 더 자세한 분석이나 특정 부분에 대한 심화 논의를 이어가세요! 🤖✨`;
+
+    // 딥링크로 AI 앱 열기 시도
+    try {
+      const encodedPrompt = encodeURIComponent(prompt);
+      
+      if (selectedApp.id === 'chatgpt') {
+        // ChatGPT의 경우 웹 URL 사용 (더 안정적)
+        window.open(`https://chat.openai.com/?q=${encodedPrompt}`, '_blank');
+      } else {
+        // 다른 앱들은 딥링크 시도 후 웹 폴백
+        const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
+        window.location.href = deepLinkUrl;
+        
+        // 2초 후 앱이 열리지 않으면 웹 버전으로 폴백
+        setTimeout(() => {
+          window.open(`${selectedApp.webUrl}?q=${encodedPrompt}`, '_blank');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('AI 앱 열기 실패:', error);
+      // 에러 발생 시 웹 버전으로 폴백
+      window.open(selectedApp.webUrl, '_blank');
     }
   };
 
@@ -1014,15 +1072,39 @@ export default function BattlePage() {
             </div>
           )}
           
-          {/* 공유 버튼 */}
-        <ShareButton
-          mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
-          schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
-          schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
-          isBattlePage={true}
-          activeTab={activeTab}
-          className="mt-8"
-        />
+          {/* AI 분석 및 공유 버튼 */}
+          <div className="flex gap-3 mt-8">
+            {/* AI 분석 버튼 */}
+            <button
+              onClick={() => setIsAIAnalysisOpen(true)}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-lg">📊</span>
+                <div className="text-sm">
+                  <div className="font-bold">
+                    {viewMode === 'daily' 
+                      ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
+                      : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
+                    }
+                  </div>
+                  <div className="text-xs opacity-90">
+                    {schoolMode.isViewingMode ? '관심학교' : '우리학교'} 급식평가 AI분석
+                  </div>
+                </div>
+              </div>
+            </button>
+            
+            {/* 공유 버튼 */}
+            <ShareButton
+              mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
+              schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+              schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
+              isBattlePage={true}
+              activeTab={activeTab}
+              className="flex-1"
+            />
+          </div>
         </div>
       </div>
       
@@ -1031,6 +1113,19 @@ export default function BattlePage() {
         isOpen={isSchoolSearchOpen}
         onClose={() => setIsSchoolSearchOpen(false)}
         onSelectSchool={addInterestSchool}
+      />
+      
+      {/* AI 분석 모달 */}
+      <AIAnalysisModal
+        isOpen={isAIAnalysisOpen}
+        onClose={() => setIsAIAnalysisOpen(false)}
+        schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+        monthYear={viewMode === 'daily' 
+          ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
+          : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
+        }
+        isViewingMode={schoolMode.isViewingMode}
+        onSelectApp={handleAIAppSelection}
       />
     </div>
   );
