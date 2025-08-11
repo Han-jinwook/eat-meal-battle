@@ -393,7 +393,7 @@ export default function QuizClient() {
         return;
       }
       
-      const response = await fetch('/api/quiz/report', {
+      const response = await fetch('/.netlify/functions/quiz/report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
