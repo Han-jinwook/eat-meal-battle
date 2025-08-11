@@ -587,16 +587,216 @@ async function submitQuizReport(userId, quizId, reason) {
       return { error: '신고 접수 중 오류가 발생했습니다.' };
     }
     
+    // AI 자동 검증 수행
+    console.log('[quiz] AI 검증 시작...');
+    try {
+      const verificationResult = await verifyQuizWithAI(quiz);
+      console.log('[quiz] AI 검증 완료:', verificationResult);
+      
+      // 검증 결과에 따라 퀴즈 상태 업데이트
+      let finalStatus;
+      if (verificationResult.isCorrect) {
+        finalStatus = 'verified_correct';
+      } else {
+        finalStatus = 'verified_incorrect';
+        // 오답 확정 시 모든 사용자 정답 처리
+        await compensateAllUsersForIncorrectQuiz(quizId);
+      }
+      
+      // 퀴즈 상태 업데이트
+      await supabaseAdmin
+        .from('meal_quizzes')
+        .update({ report_status: finalStatus })
+        .eq('id', quizId);
+      
+      // 신고 레코드에 AI 검증 결과 저장
+      await supabaseAdmin
+        .from('quiz_reports')
+        .update({
+          status: 'processed',
+          ai_verification_result: verificationResult
+        })
+        .eq('id', reportRecord.id);
+        
+    } catch (aiError) {
+      console.error('[quiz] AI 검증 실패:', aiError);
+      // AI 검증 실패 시 보수적으로 정답으로 처리
+      await supabaseAdmin
+        .from('meal_quizzes')
+        .update({ report_status: 'verified_correct' })
+        .eq('id', quizId);
+    }
+    
     console.log('[quiz] submitQuizReport 성공!');
     return {
       success: true,
-      message: '신고가 접수되었습니다.',
+      message: '신고가 접수되었습니다. AI가 검증 중입니다...',
       reportId: reportRecord.id
     };
     
   } catch (error) {
     console.error('[quiz] submitQuizReport 예외 발생:', error);
     return { error: '신고 처리 중 오류가 발생했습니다.' };
+  }
+}
+
+// AI를 통한 퀴즈 검증 함수
+async function verifyQuizWithAI(quiz) {
+  console.log('[quiz] verifyQuizWithAI 시작:', quiz.id);
+  
+  try {
+    const prompt = `
+다음 퀴즈의 정답이 올바른지 검증해주세요.
+
+퀴즈 정보:
+- 문제: ${quiz.question}
+- 선택지: ${JSON.stringify(quiz.options)}
+- 정답: ${quiz.correct_answer}번 (${quiz.options[quiz.correct_answer - 1]})
+- 해설: ${quiz.explanation}
+
+검증 기준:
+1. 정답이 과학적으로 정확한가?
+2. 해설이 논리적이고 사실에 기반하는가?
+3. 선택지 중에서 정답이 가장 적절한가?
+4. 문제에 오해의 소지가 없는가?
+
+다음 JSON 형식으로 응답해주세요:
+{
+  "isCorrect": true/false,
+  "confidence": 0.0-1.0,
+  "reasoning": "검증 근거 설명",
+  "issues": ["발견된 문제점들"]
+}
+`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: '당신은 교육 전문가이자 사실 검증 전문가입니다. 퀴즈의 정답과 해설을 엄격하게 검증하여 학생들에게 올바른 정보를 제공하는 것이 목표입니다.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API 오류: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0].message.content;
+    
+    console.log('[quiz] AI 응답:', aiResponse);
+    
+    // JSON 파싱 시도
+    try {
+      const result = JSON.parse(aiResponse);
+      return {
+        isCorrect: result.isCorrect,
+        confidence: result.confidence || 0.5,
+        reasoning: result.reasoning || 'AI 검증 완료',
+        issues: result.issues || [],
+        rawResponse: aiResponse
+      };
+    } catch (parseError) {
+      console.error('[quiz] AI 응답 JSON 파싱 실패:', parseError);
+      // 파싱 실패 시 보수적으로 정답으로 처리
+      return {
+        isCorrect: true,
+        confidence: 0.5,
+        reasoning: 'AI 응답 파싱 실패로 인한 보수적 판단',
+        issues: ['JSON 파싱 실패'],
+        rawResponse: aiResponse
+      };
+    }
+    
+  } catch (error) {
+    console.error('[quiz] AI 검증 예외 발생:', error);
+    throw error;
+  }
+}
+
+// 오답 확정 시 모든 사용자 정답 처리 함수
+async function compensateAllUsersForIncorrectQuiz(quizId) {
+  console.log('[quiz] compensateAllUsersForIncorrectQuiz 시작:', quizId);
+  
+  try {
+    // 해당 퀴즈를 푼 모든 사용자 조회
+    const { data: quizResults, error: resultsError } = await supabaseAdmin
+      .from('quiz_results')
+      .select('*')
+      .eq('quiz_id', quizId);
+      
+    if (resultsError) {
+      console.error('[quiz] 퀴즈 결과 조회 실패:', resultsError);
+      return;
+    }
+    
+    if (!quizResults || quizResults.length === 0) {
+      console.log('[quiz] 해당 퀴즈를 푼 사용자가 없음');
+      return;
+    }
+    
+    console.log(`[quiz] ${quizResults.length}명의 사용자 결과를 정답으로 변경`);
+    
+    // 모든 결과를 정답으로 업데이트
+    const { error: updateError } = await supabaseAdmin
+      .from('quiz_results')
+      .update({ is_correct: true })
+      .eq('quiz_id', quizId);
+      
+    if (updateError) {
+      console.error('[quiz] 퀴즈 결과 업데이트 실패:', updateError);
+      return;
+    }
+    
+    // 각 사용자의 장원 통계 재계산
+    for (const result of quizResults) {
+      if (!result.is_correct) { // 원래 틀렸던 사용자들만 처리
+        console.log(`[quiz] 사용자 ${result.user_id} 장원 통계 재계산`);
+        
+        // 퀴즈 날짜로부터 년월 계산
+        const quizDate = new Date(result.created_at);
+        const year = quizDate.getFullYear();
+        const month = quizDate.getMonth() + 1;
+        
+        // 사용자 정보 조회
+        const { data: userInfo } = await supabaseAdmin
+          .from('school_infos')
+          .select('school_code, grade')
+          .eq('user_id', result.user_id)
+          .single();
+          
+        if (userInfo) {
+          // ChampionCalculator 호출하여 통계 재계산
+          const ChampionCalculator = require('./champion-calculator');
+          await ChampionCalculator.updateChampionStatus(
+            result.user_id,
+            userInfo.school_code,
+            userInfo.grade,
+            supabaseAdmin
+          );
+        }
+      }
+    }
+    
+    console.log('[quiz] 모든 사용자 보상 처리 완료');
+    
+  } catch (error) {
+    console.error('[quiz] compensateAllUsersForIncorrectQuiz 예외 발생:', error);
   }
 }
 
