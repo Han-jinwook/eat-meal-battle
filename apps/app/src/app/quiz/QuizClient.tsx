@@ -30,6 +30,12 @@ type Quiz = {
   is_correct?: boolean;
   // 오답 신고 관련 필드
   report_status?: 'none' | 'pending' | 'verified_correct' | 'verified_incorrect';
+  ai_verification?: {
+    isCorrect: boolean;
+    confidence: number;
+    reasoning: string;
+    issues: string[];
+  };
 };
 
 export default function QuizClient() {
@@ -883,21 +889,57 @@ export default function QuizClient() {
                             <div className="mt-3 pt-3 border-t border-gray-200">
                               {/* 신고 상태별 UI */}
                               {quiz.report_status === 'verified_incorrect' ? (
-                                // 오답 확정: 전원 정답 처리 안내
+                                // 오답 확정: 전원 정답 처리 안내 + AI 검증 결과 표시
                                 <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                                   <span className="text-green-600 text-sm">✅</span>
-                                  <p className="text-sm text-green-700 font-medium">
-                                    퀴즈가 오답이어서 전원 맞춘걸로 처리합니다.
-                                  </p>
+                                  <div className="flex-1">
+                                    <p className="text-sm text-green-700 font-medium mb-1">
+                                      퀴즈가 오답이어서 전원 맞춘걸로 처리합니다.
+                                    </p>
+                                    {quiz.ai_verification && (
+                                      <details className="text-xs text-green-600">
+                                        <summary className="cursor-pointer hover:text-green-800">
+                                          AI 검증 결과 보기
+                                        </summary>
+                                        <div className="mt-2 p-2 bg-white rounded border">
+                                          <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>
+                                          <p className="mt-1">{quiz.ai_verification.reasoning}</p>
+                                          {quiz.ai_verification.issues && quiz.ai_verification.issues.length > 0 && (
+                                            <div className="mt-1">
+                                              <p className="font-medium text-red-600">발견된 문제점:</p>
+                                              <ul className="list-disc list-inside text-red-600">
+                                                {quiz.ai_verification.issues.map((issue, index) => (
+                                                  <li key={index}>{issue}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </details>
+                                    )}
+                                  </div>
                                 </div>
-                              ) : quiz.report_status === 'verified_correct' ? (
-                                // 정답 확정: 신고 기각 안내 + 버튼 비활성화
+                               ) : quiz.report_status === 'verified_correct' ? (
+                                // 정답 확정: 신고 기각 안내 + AI 검증 결과 표시
                                 <div className="space-y-2">
                                   <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                     <span className="text-blue-600 text-sm">ℹ️</span>
-                                    <p className="text-sm text-blue-700 font-medium">
-                                      신고가 있었지만 정답풀이가 맞음이 확인되었습니다!
-                                    </p>
+                                    <div className="flex-1">
+                                      <p className="text-sm text-blue-700 font-medium mb-1">
+                                        신고가 있었지만 정답풀이가 맞음이 확인되었습니다!
+                                      </p>
+                                      {quiz.ai_verification && (
+                                        <details className="text-xs text-blue-600">
+                                          <summary className="cursor-pointer hover:text-blue-800">
+                                            AI 검증 결과 보기
+                                          </summary>
+                                          <div className="mt-2 p-2 bg-white rounded border">
+                                            <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>
+                                            <p className="mt-1">{quiz.ai_verification.reasoning}</p>
+                                          </div>
+                                        </details>
+                                      )}
+                                    </div>
                                   </div>
                                   <button
                                     disabled

@@ -76,7 +76,7 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
     };
   }
   
-  // 해당 날짜의 퀴즈 조회
+  // 해당 날짜의 퀴즈 조회 (AI 검증 결과 포함)
   const { data: dateQuiz, error: dateQuizError } = await supabaseClient
     .from('meal_quizzes')
     .select(`
@@ -88,7 +88,8 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
       meal_date,
       meal_id,
       report_status,
-      meal_menus(menu_items)
+      meal_menus(menu_items),
+      quiz_reports(ai_verification_result)
     `)
     .eq('school_code', schoolCode)
     .eq('grade', grade)
@@ -130,6 +131,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
         explanation: canShowAnswer ? quiz.explanation : undefined,       // 7시 이후에만 해설 제공
         meal_date: quiz.meal_date,
         report_status: quiz.report_status || 'none',
+        ai_verification: quiz.quiz_reports?.[0]?.ai_verification_result || null,
         menu_items: quiz.meal_menus?.menu_items || []
       },
       alreadyAnswered: existing && existing.length > 0,
