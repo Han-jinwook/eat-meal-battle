@@ -284,11 +284,12 @@ export default function BattlePage() {
       
       const analysisData = await analysisResponse.json();
       
-      if (!analysisData.success) {
+      // API 응답 구조 확인 (에러가 있으면 error 필드가 있음)
+      if (analysisData.error) {
         throw new Error(analysisData.error || '데이터 집계 중 오류 발생');
       }
 
-      console.log('✅ 급식 데이터 집계 완료:', analysisData.data);
+      console.log('✅ 급식 데이터 집계 완료:', analysisData);
 
       // 2단계: AI 프롬프트 생성
       const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
@@ -297,7 +298,7 @@ export default function BattlePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          analysis_data: analysisData.data,
+          analysis_data: analysisData,
           school_code: currentSchool.school_code
         })
       });
