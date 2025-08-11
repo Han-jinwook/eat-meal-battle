@@ -11,124 +11,105 @@ const supabase = createClient(
  * 수집된 급식 데이터를 바탕으로 GPT 앱들이 분석할 수 있는 상세한 프롬프트 생성
  */
 function generateAIAnalysisPrompt(analysisData) {
-  const { monthly_stats, regional_ranking, national_comparison, menu_trends } = analysisData;
+  // 신버전 데이터 구조에 맞게 완전히 새로 작성
+  const { school_info, my_school_performance, menu_performance, national_comparison, regional_comparison } = analysisData;
   
-  // 학교 기본 정보
-  const schoolInfo = regional_ranking.my_school;
-  const period = monthly_stats.period;
+  // 안전한 데이터 접근
+  const schoolName = school_info?.school_name || '학교명 없음';
+  const region = school_info?.region || '지역 없음';
+  const period = school_info?.period || '기간 없음';
+  
+  const myRating = my_school_performance?.avg_rating || 0;
+  const myRatingCount = my_school_performance?.rating_count || 0;
+  
+  const nationalRank = national_comparison?.my_national_rank || 0;
+  const nationalTotal = national_comparison?.total_schools || 0;
+  const nationalAvg = national_comparison?.national_average || 0;
+  const percentile = national_comparison?.my_percentile || 0;
+  
+  const regionalRank = regional_comparison?.my_regional_rank || 0;
+  const regionalTotal = regional_comparison?.total_schools || 0;
+  const regionalAvg = regional_comparison?.regional_average || 0;
+  
+  const topMenus = menu_performance?.top_menus || [];
+  const worstMenus = menu_performance?.worst_menus || [];
   
   // 성과 지표 계산
-  const regionalPerformance = regional_ranking.my_school.rank <= Math.ceil(regional_ranking.regional_stats.total_schools * 0.3) ? "상위권" : 
-                             regional_ranking.my_school.rank <= Math.ceil(regional_ranking.regional_stats.total_schools * 0.7) ? "중위권" : "하위권";
+  const regionalPerformance = regionalRank <= Math.ceil(regionalTotal * 0.3) ? "상위권" : 
+                             regionalRank <= Math.ceil(regionalTotal * 0.7) ? "중위권" : "하위권";
   
-  const nationalPerformance = national_comparison.my_school_national?.percentile >= 70 ? "상위권" : 
-                             national_comparison.my_school_national?.percentile >= 30 ? "중위권" : "하위권";
+  const nationalPerformance = percentile >= 70 ? "상위권" : 
+                             percentile >= 30 ? "중위권" : "하위권";
 
-  const prompt = `# 🍽️ ${schoolInfo.school_name} ${period} 급식 평가 분석 리포트
+  const prompt = `# 🍽️ ${schoolName} ${period} 급식 평가 분석 리포트
 
 ## 📋 분석 개요
-- **분석 대상**: ${schoolInfo.school_name} (${regional_ranking.region} ${regional_ranking.district})
+- **분석 대상**: ${schoolName} (${region})
 - **분석 기간**: ${period}
-- **총 급식일수**: ${monthly_stats.total_meal_days}일
-- **총 평가 참여**: ${monthly_stats.total_ratings.toLocaleString()}건
+- **총 평가 참여**: ${myRatingCount.toLocaleString()}건
 
 ## 🏆 종합 성과 요약
 
 ### 📊 우리학교 급식 평점
-- **월간 평균 평점**: ${monthly_stats.average_rating.toFixed(2)}점 (5점 만점)
-- **지역 내 순위**: ${regional_ranking.regional_stats.total_schools}개교 중 **${regional_ranking.my_school.rank}위** (${regionalPerformance})
-- **전국 순위**: ${national_comparison.national_stats.total_schools.toLocaleString()}개교 중 **${national_comparison.my_school_national?.national_rank || 'N/A'}위** (상위 ${national_comparison.my_school_national?.percentile || 0}%, ${nationalPerformance})
+- **월간 평균 평점**: ${myRating.toFixed(2)}점 (5점 만점)
+- **지역 내 순위**: ${regionalTotal}개교 중 **${regionalRank}위** (${regionalPerformance})
+- **전국 순위**: ${nationalTotal.toLocaleString()}개교 중 **${nationalRank}위** (상위 ${percentile}%, ${nationalPerformance})
 
 ### 🎯 비교 분석
-- **지역 평균 대비**: ${(monthly_stats.average_rating - regional_ranking.regional_stats.average_rating).toFixed(2)}점 ${monthly_stats.average_rating > regional_ranking.regional_stats.average_rating ? '높음 ⬆️' : '낮음 ⬇️'}
-- **전국 평균 대비**: ${(monthly_stats.average_rating - national_comparison.national_stats.average_rating).toFixed(2)}점 ${monthly_stats.average_rating > national_comparison.national_stats.average_rating ? '높음 ⬆️' : '낮음 ⬇️'}
+- **지역 평균 대비**: ${(myRating - regionalAvg).toFixed(2)}점 ${myRating > regionalAvg ? '높음 ⬆️' : '낮음 ⬇️'}
+- **전국 평균 대비**: ${(myRating - nationalAvg).toFixed(2)}점 ${myRating > nationalAvg ? '높음 ⬆️' : '낮음 ⬇️'}
 
 ## 📈 상세 분석 데이터
 
-### 1️⃣ 월간 급식 통계
+### 1️⃣ 메뉴별 성과 분석
 \`\`\`
-총 급식일수: ${monthly_stats.total_meal_days}일
-평균 평점: ${monthly_stats.average_rating.toFixed(2)}점
-총 평가 수: ${monthly_stats.total_ratings.toLocaleString()}건
+상위 메뉴 TOP 5:
+${topMenus.slice(0, 5).map((menu, index) => `${index + 1}. ${menu.menu_name}: ${menu.avg_rating.toFixed(2)}점 (${menu.rating_count}회 평가)`).join('\n')}
 
-평점 분포:
-- ⭐ 1점: ${monthly_stats.rating_distribution.rating_1}건 (${((monthly_stats.rating_distribution.rating_1 / monthly_stats.total_ratings) * 100).toFixed(1)}%)
-- ⭐⭐ 2점: ${monthly_stats.rating_distribution.rating_2}건 (${((monthly_stats.rating_distribution.rating_2 / monthly_stats.total_ratings) * 100).toFixed(1)}%)
-- ⭐⭐⭐ 3점: ${monthly_stats.rating_distribution.rating_3}건 (${((monthly_stats.rating_distribution.rating_3 / monthly_stats.total_ratings) * 100).toFixed(1)}%)
-- ⭐⭐⭐⭐ 4점: ${monthly_stats.rating_distribution.rating_4}건 (${((monthly_stats.rating_distribution.rating_4 / monthly_stats.total_ratings) * 100).toFixed(1)}%)
-- ⭐⭐⭐⭐⭐ 5점: ${monthly_stats.rating_distribution.rating_5}건 (${((monthly_stats.rating_distribution.rating_5 / monthly_stats.total_ratings) * 100).toFixed(1)}%)
+개선 필요 메뉴:
+${worstMenus.map((menu, index) => `${index + 1}. ${menu.menu_name}: ${menu.avg_rating.toFixed(2)}점 (${menu.rating_count}회 평가)`).join('\n')}
 \`\`\`
 
-### 2️⃣ 우수 메뉴 TOP 5
-${monthly_stats.menu_stats.top_menus.map((menu, index) => 
-  `${index + 1}. **${menu.name}** - ${menu.average_rating.toFixed(2)}점 (${menu.total_ratings}건 평가, ${menu.appearance_count}회 제공)`
-).join('\n')}
+### 2️⃣ 지역 내 순위 (${region})
+\`\`\`
+우리학교 순위: ${regionalRank}위 / ${regionalTotal}개교
+지역 평균 평점: ${regionalAvg.toFixed(2)}점
+우리학교 평점: ${myRating.toFixed(2)}점
+\`\`\`
 
-### 3️⃣ 개선 필요 메뉴
-${monthly_stats.menu_stats.worst_menus.map((menu, index) => 
-  `${index + 1}. **${menu.name}** - ${menu.average_rating.toFixed(2)}점 (${menu.total_ratings}건 평가, ${menu.appearance_count}회 제공)`
-).join('\n')}
-
-### 4️⃣ 지역 내 위치
-- **${regional_ranking.region} 지역 순위**: ${regional_ranking.regional_stats.total_schools}개교 중 ${regional_ranking.my_school.rank}위
-- **지역 평균**: ${regional_ranking.regional_stats.average_rating.toFixed(2)}점
-- **지역 1위 학교**: ${regional_ranking.regional_stats.top_3_schools[0]?.school_name} (${regional_ranking.regional_stats.top_3_schools[0]?.average_rating.toFixed(2)}점)
-
-### 5️⃣ 전국 비교
-- **전국 순위**: ${national_comparison.national_stats.total_schools.toLocaleString()}개교 중 ${national_comparison.my_school_national?.national_rank || 'N/A'}위
-- **전국 평균**: ${national_comparison.national_stats.average_rating.toFixed(2)}점
-- **상위 백분위**: ${national_comparison.my_school_national?.percentile || 0}%
-
-### 6️⃣ 메뉴 트렌드 분석
-- **전체 제공 메뉴**: ${menu_trends.my_school_comparison.total_menus}개
-- **전국 평균보다 우수한 메뉴**: ${menu_trends.my_school_comparison.better_than_national}개
-- **전국 평균보다 부족한 메뉴**: ${menu_trends.my_school_comparison.worse_than_national}개
-- **전국 인기 메뉴 제공**: ${menu_trends.my_school_comparison.nationally_popular_served}개
-
-#### 전국 대비 우수한 메뉴 TOP 5:
-${menu_trends.my_school_comparison.top_performing_menus.slice(0, 5).map((menu, index) => 
-  `${index + 1}. **${menu.menu_name}** - 우리학교 ${menu.my_school_rating.toFixed(2)}점 vs 전국 ${menu.national_average?.toFixed(2) || 'N/A'}점 (${menu.rating_difference > 0 ? '+' : ''}${menu.rating_difference?.toFixed(2) || 'N/A'}점 차이)`
-).join('\n')}
-
-#### 개선이 필요한 메뉴 TOP 3:
-${menu_trends.my_school_comparison.underperforming_menus.slice(0, 3).map((menu, index) => 
-  `${index + 1}. **${menu.menu_name}** - 우리학교 ${menu.my_school_rating.toFixed(2)}점 vs 전국 ${menu.national_average?.toFixed(2) || 'N/A'}점 (${menu.rating_difference > 0 ? '+' : ''}${menu.rating_difference?.toFixed(2) || 'N/A'}점 차이)`
-).join('\n')}
+### 3️⃣ 전국 순위 비교
+\`\`\`
+전국 순위: ${nationalRank}위 / ${nationalTotal.toLocaleString()}개교
+전국 평균: ${nationalAvg.toFixed(2)}점
+상위 백분위: ${percentile}%
+\`\`\`
 
 ### 7️⃣ 전국 인기 메뉴 TOP 10
-${menu_trends.national_trends.top_20_popular_menus.slice(0, 10).map((menu, index) => 
+${menu_performance.national_trends.top_20_popular_menus.slice(0, 10).map((menu, index) => 
   `${index + 1}. **${menu.menu_name}** - ${menu.average_rating.toFixed(2)}점 (${menu.total_ratings.toLocaleString()}건 평가, ${menu.school_count}개교 제공)`
 ).join('\n')}
 
 ## 🎯 AI 분석 요청
 
-위의 데이터를 바탕으로 다음 관점에서 **전문적이고 실용적인 분석**을 제공해주세요:
+위의 데이터를 바탕으로 다음 사항들을 분석해 주세요:
 
-### 📊 1. 현황 진단
-- 우리학교 급식의 전반적인 수준은 어떤가요?
-- 지역 및 전국 대비 우리학교의 위치는 적절한가요?
-- 학생들의 만족도 패턴에서 발견되는 특징은 무엇인가요?
+### 📊 성과 분석
+1. **종합 평가**: 우리학교의 급식 서비스 전반적인 수준은 어떤가요?
+2. **강점 분석**: 어떤 부분에서 우수한 성과를 보이고 있나요?
+3. **개선점 발견**: 어떤 영역에서 개선이 필요한가요?
 
-### 🎯 2. 강점 분석
-- 우리학교가 특히 잘하고 있는 메뉴나 영역은 무엇인가요?
-- 다른 학교 대비 우수한 점은 무엇인가요?
-- 지속적으로 유지해야 할 강점은 무엇인가요?
+### 🍽️ 메뉴 개선 제안
+1. **인기 메뉴 활용**: 높은 평점을 받은 메뉴들의 공통점은 무엇인가요?
+2. **저평점 메뉴 개선**: 낮은 평점을 받은 메뉴들을 어떻게 개선할 수 있을까요?
+3. **신메뉴 제안**: 학생들이 좋아할 만한 새로운 메뉴를 제안해 주세요.
 
-### ⚠️ 3. 개선 과제
-- 가장 시급하게 개선이 필요한 메뉴는 무엇인가요?
-- 전국 트렌드 대비 부족한 부분은 무엇인가요?
-- 학생 만족도 향상을 위한 우선순위는 무엇인가요?
+### 📈 전략적 제안
+1. **지역 내 순위 향상**: 지역 내에서 순위를 올리기 위한 구체적인 방안은?
+2. **전국 평균 달성**: 전국 평균에 도달하기 위해 필요한 개선사항은?
+3. **장기 발전 계획**: 지속적인 급식 품질 향상을 위한 로드맵을 제시해 주세요.
 
-### 💡 4. 구체적 개선 방안
-- 평점이 낮은 메뉴의 개선 방향을 제시해주세요
-- 전국 인기 메뉴 중 도입을 고려할 만한 것은 무엇인가요?
-- 조리법이나 재료 개선을 통한 실질적 방안을 제안해주세요
-
-### 📈 5. 목표 설정
-- 다음 달 목표 평점과 달성 전략을 제시해주세요
-- 지역 내 순위 향상을 위한 로드맵을 제안해주세요
-- 장기적인 급식 품질 향상 계획을 수립해주세요
-
+### 💡 실행 가능한 액션 아이템
+구체적이고 실행 가능한 개선 방안을 우선순위별로 제시해 주세요.
 ### 🏆 6. 벤치마킹
 - 우리 지역에서 우수한 학교들의 특징을 분석해주세요
 - 전국 상위권 학교들과의 차이점을 파악해주세요
