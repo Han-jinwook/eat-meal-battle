@@ -58,6 +58,7 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
+  const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
   const [noMenu, setNoMenu] = useState<boolean>(false);
   const [noMenuMessage, setNoMenuMessage] = useState<string>('');
   
@@ -389,13 +390,16 @@ export default function QuizClient() {
 
   // 오답 신고 처리
   const handleReportQuiz = async () => {
-    if (!quiz) return;
+    if (!quiz || reportingQuiz) return;
+    
+    setReportingQuiz(true);
+    toast.loading('오답 신고를 처리 중입니다...', { id: 'report-loading' });
     
     try {
       // 인증 토큰 가져오기
       const session = await supabase.auth.getSession();
       if (!session?.data?.session?.access_token) {
-        toast.error('로그인이 필요합니다.');
+        toast.error('로그인이 필요합니다.', { id: 'report-loading' });
         return;
       }
       
@@ -414,15 +418,17 @@ export default function QuizClient() {
       const result = await response.json();
       
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error, { id: 'report-loading' });
       } else {
-        toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
+        toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...', { id: 'report-loading' });
         // 퀴즈 상태 새로고침
         fetchQuiz();
       }
     } catch (error) {
       console.error('오답 신고 오류:', error);
-      toast.error('신고 처리 중 오류가 발생했습니다.');
+      toast.error('신고 처리 중 오류가 발생했습니다.', { id: 'report-loading' });
+    } finally {
+      setReportingQuiz(false);
     }
   };
 
@@ -970,10 +976,15 @@ export default function QuizClient() {
                                 // 기본 상태: 신고 가능
                                 <button
                                   onClick={handleReportQuiz}
-                                  className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors duration-200"
+                                  disabled={reportingQuiz}
+                                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200 ${
+                                    reportingQuiz 
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
+                                  }`}
                                 >
-                                  <span>🚨</span>
-                                  <span>오답신고</span>
+                                  <span>{reportingQuiz ? '⏳' : '🚨'}</span>
+                                  <span>{reportingQuiz ? '신고 처리중...' : '오답신고'}</span>
                                 </button>
                               )}
                             </div>
