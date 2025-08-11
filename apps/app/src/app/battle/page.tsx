@@ -276,7 +276,7 @@ export default function BattlePage() {
       document.body.appendChild(loadingToast);
 
       // 1단계: 월간 급식 데이터 집계
-      const analysisResponse = await fetch(`/netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`);
+      const analysisResponse = await fetch(`/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`);
       
       if (!analysisResponse.ok) {
         throw new Error(`데이터 집계 실패: ${analysisResponse.status}`);
@@ -291,7 +291,7 @@ export default function BattlePage() {
       console.log('✅ 급식 데이터 집계 완료:', analysisData.data);
 
       // 2단계: AI 프롬프트 생성
-      const promptResponse = await fetch('/netlify/functions/generate-ai-prompt', {
+      const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
