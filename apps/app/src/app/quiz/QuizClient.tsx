@@ -28,6 +28,8 @@ type Quiz = {
   };
   selected_option?: number;
   is_correct?: boolean;
+  // 오답 신고 관련 필드
+  report_status?: 'none' | 'pending' | 'verified_correct' | 'verified_incorrect';
 };
 
 export default function QuizClient() {
@@ -837,19 +839,65 @@ export default function QuizClient() {
                           <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
                           <p className="text-gray-600">{quiz.explanation}</p>
                           
-                          {/* 오답 신고 버튼 - 1단계 UI만 */}
+                          {/* 오답 신고 시스템 */}
                           {!isViewingMode && (
                             <div className="mt-3 pt-3 border-t border-gray-200">
-                              <button
-                                onClick={() => {
-                                  // TODO: 2단계에서 신고 로직 구현
-                                  toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors duration-200"
-                              >
-                                <span>🚨</span>
-                                <span>이 문제가 틀렸나요?</span>
-                              </button>
+                              {/* 신고 상태별 UI */}
+                              {quiz.report_status === 'verified_incorrect' ? (
+                                // 오답 확정: 전원 정답 처리 안내
+                                <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                  <span className="text-green-600 text-sm">✅</span>
+                                  <p className="text-sm text-green-700 font-medium">
+                                    퀴즈가 오답이어서 전원 맞춘걸로 처리합니다.
+                                  </p>
+                                </div>
+                              ) : quiz.report_status === 'verified_correct' ? (
+                                // 정답 확정: 신고 기각 안내 + 버튼 비활성화
+                                <div className="space-y-2">
+                                  <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <span className="text-blue-600 text-sm">ℹ️</span>
+                                    <p className="text-sm text-blue-700 font-medium">
+                                      신고가 있었지만 정답풀이가 맞음이 확인되었습니다!
+                                    </p>
+                                  </div>
+                                  <button
+                                    disabled
+                                    className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+                                  >
+                                    <span>🚨</span>
+                                    <span>오답신고</span>
+                                  </button>
+                                </div>
+                              ) : quiz.report_status === 'pending' ? (
+                                // 검증 중: 버튼 비활성화 + 대기 메시지
+                                <div className="space-y-2">
+                                  <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <span className="text-yellow-600 text-sm">⏳</span>
+                                    <p className="text-sm text-yellow-700 font-medium">
+                                      오답 가능성이 있다고 신고 접수중입니다.
+                                    </p>
+                                  </div>
+                                  <button
+                                    disabled
+                                    className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+                                  >
+                                    <span>🚨</span>
+                                    <span>오답신고</span>
+                                  </button>
+                                </div>
+                              ) : (
+                                // 기본 상태: 신고 가능
+                                <button
+                                  onClick={() => {
+                                    // TODO: 2단계에서 신고 로직 구현
+                                    toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors duration-200"
+                                >
+                                  <span>🚨</span>
+                                  <span>오답신고</span>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
