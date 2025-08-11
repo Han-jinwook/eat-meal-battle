@@ -35,6 +35,7 @@ type Quiz = {
     confidence: number;
     reasoning: string;
     issues: string[];
+    problemAreas?: string[];
   };
 };
 
@@ -900,20 +901,35 @@ export default function QuizClient() {
                                   <span className="text-green-600 text-sm">✅</span>
                                   <div className="flex-1">
                                     <p className="text-sm text-green-700 font-medium mb-1">
-                                      퀴즈가 오답이어서 전원 맞춘걸로 처리합니다.
+                                      출제에 오류가 있어서 전원 맞춘걸로 처리합니다.
                                     </p>
                                     {quiz.ai_verification && (
                                       <details className="text-xs text-green-600">
                                         <summary className="cursor-pointer hover:text-green-800">
-                                          AI 검증 결과 보기
+                                          AI 출제 검증 결과 보기
                                         </summary>
                                         <div className="mt-2 p-2 bg-white rounded border">
                                           <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>
                                           <p className="mt-1">{quiz.ai_verification.reasoning}</p>
+                                          {quiz.ai_verification.problemAreas && quiz.ai_verification.problemAreas.length > 0 && (
+                                            <div className="mt-2">
+                                              <p className="font-medium text-orange-600">문제 영역:</p>
+                                              <div className="flex flex-wrap gap-1 mt-1">
+                                                {quiz.ai_verification.problemAreas.map((area, index) => (
+                                                  <span key={index} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
+                                                    {area === 'question' ? '문제' : 
+                                                     area === 'options' ? '선택지' : 
+                                                     area === 'answer' ? '정답' : 
+                                                     area === 'explanation' ? '해설' : area}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
                                           {quiz.ai_verification.issues && quiz.ai_verification.issues.length > 0 && (
-                                            <div className="mt-1">
+                                            <div className="mt-2">
                                               <p className="font-medium text-red-600">발견된 문제점:</p>
-                                              <ul className="list-disc list-inside text-red-600">
+                                              <ul className="list-disc list-inside text-red-600 text-xs">
                                                 {quiz.ai_verification.issues.map((issue, index) => (
                                                   <li key={index}>{issue}</li>
                                                 ))}
@@ -932,12 +948,12 @@ export default function QuizClient() {
                                     <span className="text-blue-600 text-sm">ℹ️</span>
                                     <div className="flex-1">
                                       <p className="text-sm text-blue-700 font-medium mb-1">
-                                        신고가 있었지만 정답풀이가 맞음이 확인되었습니다!
+                                        신고가 있었지만 출제 내용이 적절함이 확인되었습니다!
                                       </p>
                                       {quiz.ai_verification && (
                                         <details className="text-xs text-blue-600">
                                           <summary className="cursor-pointer hover:text-blue-800">
-                                            AI 검증 결과 보기
+                                            AI 출제 검증 결과 보기
                                           </summary>
                                           <div className="mt-2 p-2 bg-white rounded border">
                                             <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>

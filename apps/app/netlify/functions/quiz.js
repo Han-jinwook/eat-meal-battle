@@ -648,7 +648,7 @@ async function verifyQuizWithAI(quiz) {
   
   try {
     const prompt = `
-다음 퀴즈의 정답이 올바른지 검증해주세요.
+다음 퀴즈의 출제 내용을 종합적으로 검증해주세요.
 
 퀴즈 정보:
 - 문제: ${quiz.question}
@@ -657,17 +657,27 @@ async function verifyQuizWithAI(quiz) {
 - 해설: ${quiz.explanation}
 
 검증 기준:
-1. 정답이 과학적으로 정확한가?
-2. 해설이 논리적이고 사실에 기반하는가?
-3. 선택지 중에서 정답이 가장 적절한가?
-4. 문제에 오해의 소지가 없는가?
+1. 출제 품질: 문제가 명확하고 모호하지 않은가? 학습 목표에 적합한가?
+2. 보기 적절성: 선택지가 논리적이고 구별 가능한가? 정답 외 선택지가 적절한 오답인가?
+3. 정답 정확성: 지정된 정답이 실제로 맞는가? 다른 선택지보다 명확히 우수한가?
+4. 해설 타당성: 해설이 정답을 올바르게 설명하는가? 사실에 기반하는가?
+5. 전체 일관성: 문제-보기-정답-해설이 서로 일치하고 논리적으로 연결되는가?
+6. 교육적 가치: 학생들에게 올바른 지식을 전달하는가?
+
+특히 다음 사항들을 주의깊게 확인해주세요:
+- 문제 표현의 명확성과 정확성
+- 선택지 간의 차별성과 적절성
+- 정답의 절대적 정확성
+- 해설의 논리성과 사실 정확성
+- 전체적인 교육적 타당성
 
 다음 JSON 형식으로 응답해주세요:
 {
   "isCorrect": true/false,
   "confidence": 0.0-1.0,
-  "reasoning": "검증 근거 설명",
-  "issues": ["발견된 문제점들"]
+  "reasoning": "종합 검증 결과 설명",
+  "issues": ["발견된 문제점들 (출제/보기/정답/해설 구분하여 명시)"],
+  "problemAreas": ["문제가 있는 영역: question/options/answer/explanation"]
 }
 `;
 
@@ -682,7 +692,7 @@ async function verifyQuizWithAI(quiz) {
         messages: [
           {
             role: 'system',
-            content: '당신은 교육 전문가이자 사실 검증 전문가입니다. 퀴즈의 정답과 해설을 엄격하게 검증하여 학생들에게 올바른 정보를 제공하는 것이 목표입니다.'
+            content: '당신은 교육 전문가이자 출제 검증 전문가입니다. 퀴즈의 출제 내용(문제, 선택지, 정답, 해설)을 종합적으로 검증하여 학생들에게 올바른 교육 콘텐츠를 제공하는 것이 목표입니다. 출제의 품질, 선택지의 적절성, 정답의 정확성, 해설의 타당성을 모두 고려하여 엄격하게 평가해주세요.'
           },
           {
             role: 'user',
@@ -711,6 +721,7 @@ async function verifyQuizWithAI(quiz) {
         confidence: result.confidence || 0.5,
         reasoning: result.reasoning || 'AI 검증 완료',
         issues: result.issues || [],
+        problemAreas: result.problemAreas || [],
         rawResponse: aiResponse
       };
     } catch (parseError) {
@@ -721,6 +732,7 @@ async function verifyQuizWithAI(quiz) {
         confidence: 0.5,
         reasoning: 'AI 응답 파싱 실패로 인한 보수적 판단',
         issues: ['JSON 파싱 실패'],
+        problemAreas: [],
         rawResponse: aiResponse
       };
     }
