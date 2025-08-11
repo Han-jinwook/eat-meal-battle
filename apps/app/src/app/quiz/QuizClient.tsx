@@ -381,6 +381,45 @@ export default function QuizClient() {
     }
   };
 
+  // 오답 신고 처리
+  const handleReportQuiz = async () => {
+    if (!quiz) return;
+    
+    try {
+      // 인증 토큰 가져오기
+      const session = await supabase.auth.getSession();
+      if (!session?.data?.session?.access_token) {
+        toast.error('로그인이 필요합니다.');
+        return;
+      }
+      
+      const response = await fetch('/api/quiz/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.data.session.access_token}`
+        },
+        body: JSON.stringify({
+          quiz_id: quiz.id,
+          reason: '오답 가능성 신고'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
+        // 퀴즈 상태 새로고침
+        fetchQuiz();
+      }
+    } catch (error) {
+      console.error('오답 신고 오류:', error);
+      toast.error('신고 처리 중 오류가 발생했습니다.');
+    }
+  };
+
   // Submit answer
   const submitAnswer = async () => {
     if (!quiz || selectedOption === null || submitting) return;
@@ -888,10 +927,7 @@ export default function QuizClient() {
                               ) : (
                                 // 기본 상태: 신고 가능
                                 <button
-                                  onClick={() => {
-                                    // TODO: 2단계에서 신고 로직 구현
-                                    toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...');
-                                  }}
+                                  onClick={handleReportQuiz}
                                   className="flex items-center gap-2 px-3 py-2 text-sm bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg transition-colors duration-200"
                                 >
                                   <span>🚨</span>

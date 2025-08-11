@@ -87,6 +87,7 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
       explanation,
       meal_date,
       meal_id,
+      report_status,
       meal_menus(menu_items)
     `)
     .eq('school_code', schoolCode)
@@ -128,6 +129,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
         correct_answer: canShowAnswer ? quiz.correct_answer : undefined, // 7시 이후에만 정답 제공
         explanation: canShowAnswer ? quiz.explanation : undefined,       // 7시 이후에만 해설 제공
         meal_date: quiz.meal_date,
+        report_status: quiz.report_status || 'none',
         menu_items: quiz.meal_menus?.menu_items || []
       },
       alreadyAnswered: existing && existing.length > 0,
@@ -143,6 +145,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
       question: quiz.question,
       options: quiz.options,
       meal_date: quiz.meal_date,
+      report_status: quiz.report_status || 'none',
       menu_items: quiz.meal_menus?.menu_items || []
     },
     alreadyAnswered: false
@@ -517,7 +520,85 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
   }
 }
 
-
+// 오답 신고 처리 함수
+async function submitQuizReport(userId, quizId, reason) {
+  console.log('[quiz] submitQuizReport 시작:', { userId, quizId, reason });
+  
+  try {
+    // 퀴즈 정보 조회
+    const { data: quiz, error: quizError } = await supabaseAdmin
+      .from('meal_quizzes')
+      .select('*')
+      .eq('id', quizId)
+      .single();
+      
+    if (quizError || !quiz) {
+      console.log('[quiz] 퀴즈 조회 실패:', quizError);
+      return { error: '퀴즈를 찾을 수 없습니다.' };
+    }
+    
+    // 이미 신고된 퀴즈인지 확인
+    if (quiz.report_status && quiz.report_status !== 'none') {
+      return { error: '이미 신고가 접수된 퀴즈입니다.' };
+    }
+    
+    // 사용자가 이미 이 퀴즈를 신고했는지 확인
+    const { data: existingReport } = await supabaseAdmin
+      .from('quiz_reports')
+      .select('id')
+      .eq('quiz_id', quizId)
+      .eq('reporter_user_id', userId)
+      .limit(1);
+      
+    if (existingReport && existingReport.length > 0) {
+      return { error: '이미 신고하신 퀴즈입니다.' };
+    }
+    
+    // 신고 접수 - 먼저 퀴즈 상태를 pending으로 변경
+    const { error: statusUpdateError } = await supabaseAdmin
+      .from('meal_quizzes')
+      .update({ report_status: 'pending' })
+      .eq('id', quizId);
+      
+    if (statusUpdateError) {
+      console.error('[quiz] 퀴즈 상태 업데이트 실패:', statusUpdateError);
+      return { error: '신고 접수 중 오류가 발생했습니다.' };
+    }
+    
+    // 신고 레코드 생성
+    const { data: reportRecord, error: reportError } = await supabaseAdmin
+      .from('quiz_reports')
+      .insert({
+        quiz_id: quizId,
+        reporter_user_id: userId,
+        report_reason: reason || '오답 가능성 신고',
+        status: 'pending'
+      })
+      .select()
+      .single();
+      
+    if (reportError) {
+      console.error('[quiz] 신고 레코드 생성 실패:', reportError);
+      // 퀴즈 상태 롤백
+      await supabaseAdmin
+        .from('meal_quizzes')
+        .update({ report_status: 'none' })
+        .eq('id', quizId);
+      return { error: '신고 접수 중 오류가 발생했습니다.' };
+    }
+    
+    console.log('[quiz] submitQuizReport 성공!');
+    return {
+      success: true,
+      message: '신고가 접수되었습니다.',
+      reportId: reportRecord.id
+    };
+    
+  } catch (error) {
+    console.error('[quiz] submitQuizReport 예외 발생:', error);
+    return { error: '신고 처리 중 오류가 발생했습니다.' };
+  }
+}
 
 // API 핸들러
 exports.handler = async function(event, context) {
@@ -777,6 +858,37 @@ exports.handler = async function(event, context) {
         headers,
         body: JSON.stringify(result)
       };
+    }
+
+    // POST /quiz/report - 오답 신고
+    if (method === 'POST' && pathSegments[0] === 'report') {
+      console.log('[quiz] POST /quiz/report 요청 받음');
+      
+      const { quiz_id, reason } = body;
+      
+      if (!quiz_id) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'quiz_id가 필요합니다.' })
+        };
+      }
+      
+      try {
+        const result = await submitQuizReport(userId, quiz_id, reason);
+        return {
+          statusCode: result.error ? 400 : 200,
+          headers,
+          body: JSON.stringify(result)
+        };
+      } catch (error) {
+        console.error('[quiz] 오답 신고 처리 중 예외 발생:', error);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: '오답 신고 처리 중 오류가 발생했습니다.', details: error.message })
+        };
+      }
     }
 
     // 지원하지 않는 엔드포인트
