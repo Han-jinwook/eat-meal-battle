@@ -97,16 +97,22 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         <button
           onClick={handleShare}
           disabled={isSharing}
-          className={`w-1/2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          className={`w-full px-4 py-3 bg-white border-2 border-blue-200 text-blue-700 rounded-lg font-medium hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm flex items-center justify-center gap-2 ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
           </svg>
-          {isSharing ? '공유 중...' : (
-            isBattlePage 
-              ? (activeTab === 'menu' ? '메뉴배틀 결과 공유하기' : '급식배틀 공유하기')
-              : '급식평가 공유하기'
-          )}
+          <div className="text-sm">
+            <div className="font-semibold">
+              {isSharing ? '공유 중...' : '공유하기'}
+            </div>
+            <div className="text-xs opacity-75">
+              {isBattlePage 
+                ? (activeTab === 'menu' ? '메뉴배틀 결과' : '급식배틀 결과')
+                : '급식평가'
+              }
+            </div>
+          </div>
         </button>
       </div>
 
