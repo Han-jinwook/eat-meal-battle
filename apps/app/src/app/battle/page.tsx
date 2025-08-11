@@ -1077,15 +1077,15 @@ export default function BattlePage() {
             {/* AI 분석 버튼 */}
             <button
               onClick={() => setIsAIAnalysisOpen(true)}
-              className="flex-1 bg-white border-2 border-purple-200 text-purple-700 py-3 px-4 rounded-lg font-medium hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg"
             >
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center justify-center gap-3">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <div className="text-sm">
-                  <div className="font-semibold">AI 분석</div>
-                  <div className="text-xs opacity-75">
+                <div>
+                  <div className="font-bold text-base">AI 분석</div>
+                  <div className="text-sm opacity-90">
                     {viewMode === 'daily' 
                       ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
                       : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
