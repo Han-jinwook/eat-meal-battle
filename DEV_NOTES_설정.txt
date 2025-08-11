@@ -339,3 +339,19 @@ import Component from '@/components/Component'
 - [ ] 성능 지표 확인
 - [ ] 사용자 피드백 수집
 - [ ] 이슈 대응 체계 구축
+
+#### 배포 관련
+- Netlify 자동 배포 설정됨
+- 환경변수: OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY 등
+- 도메인: lunbat.com
+
+## AI 분석 리포트 시스템 (2025-08)
+### 구현 완료
+- UI: 배틀페이지 AI분석 버튼 + 모달 (ChatGPT/제미나이/클로드/그록)
+- 관리자: /admin/ai-performance 성능 모니터링 대시보드
+- 성능 임계점: 응답시간 2초, 일일 요청 100회→500회 단계별 최적화
+- 최적화 전략: Phase1(메모리캐싱) → Phase2(Redis) → Phase3(사전집계)
+
+### TODO: 다음 단계
+- 실제 데이터 수집 로직 (월간 급식 데이터 집계, 지역순위, 프롬프트 생성)
+- 성능 로그 테이블 생성 및 실제 모니터링 연동

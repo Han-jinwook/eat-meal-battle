@@ -249,51 +249,150 @@ export default function BattlePage() {
     console.log('AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
     
-    // TODO: 여기에 데이터 수집 및 프롬프트 생성 로직 추가
-    // 임시로 간단한 프롬프트 생성
-    const currentSchoolName = schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음';
-    const currentDate = viewMode === 'daily' ? selectedDate : selectedMonth;
-    const monthYear = viewMode === 'daily' 
-      ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
-      : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`;
-    
-    const prompt = `# ${currentSchoolName} ${monthYear} 급식평가 분석 요청
-
-안녕하세요! ${schoolMode.isViewingMode ? '관심학교' : '우리학교'}의 급식배틀 데이터를 분석해주세요.
-
-## 📋 기본 정보
-- 학교: ${currentSchoolName}
-- 분석 대상: ${monthYear}
-- 보기 모드: ${viewMode === 'daily' ? '일별' : '월별'} 배틀
-- 카테고리: ${activeTab === 'menu' ? '메뉴별' : '급식별'} 순위
-
-## 🎯 분석 요청사항
-1. 현재 급식 배틀 순위의 의미를 분석해주세요
-2. 지역 내에서의 위치와 개선 방향을 제시해주세요
-3. 학생들의 만족도 향상을 위한 구체적인 방안을 제안해주세요
-
-분석을 마친 후, 추가 질문을 통해 더 자세한 분석이나 특정 부분에 대한 심화 논의를 이어가세요! 🤖✨`;
-
-    // 딥링크로 AI 앱 열기 시도
     try {
-      const encodedPrompt = encodeURIComponent(prompt);
+      // 현재 학교 정보 확인
+      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      if (!currentSchool?.school_code) {
+        alert('학교 정보가 없어 AI 분석을 진행할 수 없습니다.');
+        return;
+      }
+
+      // 현재 날짜 정보 추출
+      const targetDate = viewMode === 'daily' ? new Date(selectedDate) : new Date(selectedMonth);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+
+      console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
+      
+      // 로딩 상태 표시 (선택적)
+      const loadingToast = document.createElement('div');
+      loadingToast.innerHTML = '📊 급식 데이터 분석 중...';
+      loadingToast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white; padding: 12px 20px; border-radius: 8px;
+        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      document.body.appendChild(loadingToast);
+
+      // 1단계: 월간 급식 데이터 집계
+      const analysisResponse = await fetch(`/netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`);
+      
+      if (!analysisResponse.ok) {
+        throw new Error(`데이터 집계 실패: ${analysisResponse.status}`);
+      }
+      
+      const analysisData = await analysisResponse.json();
+      
+      if (!analysisData.success) {
+        throw new Error(analysisData.error || '데이터 집계 중 오류 발생');
+      }
+
+      console.log('✅ 급식 데이터 집계 완료:', analysisData.data);
+
+      // 2단계: AI 프롬프트 생성
+      const promptResponse = await fetch('/netlify/functions/generate-ai-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysis_data: analysisData.data,
+          school_code: currentSchool.school_code
+        })
+      });
+
+      if (!promptResponse.ok) {
+        throw new Error(`프롬프트 생성 실패: ${promptResponse.status}`);
+      }
+
+      const promptData = await promptResponse.json();
+      
+      if (!promptData.success) {
+        throw new Error(promptData.error || '프롬프트 생성 중 오류 발생');
+      }
+
+      console.log('✅ AI 프롬프트 생성 완료:', promptData.data.prompt_length, '자');
+
+      // 로딩 토스트 제거
+      document.body.removeChild(loadingToast);
+
+      // 3단계: AI 앱으로 프롬프트 전달
+      const aiPrompt = promptData.data.prompt;
+      const encodedPrompt = encodeURIComponent(aiPrompt);
       
       if (selectedApp.id === 'chatgpt') {
         // ChatGPT의 경우 웹 URL 사용 (더 안정적)
         window.open(`https://chat.openai.com/?q=${encodedPrompt}`, '_blank');
+      } else if (selectedApp.id === 'gemini') {
+        // Gemini의 경우
+        window.open(`https://gemini.google.com/app?q=${encodedPrompt}`, '_blank');
+      } else if (selectedApp.id === 'claude') {
+        // Claude의 경우
+        window.open(`https://claude.ai/chat?q=${encodedPrompt}`, '_blank');
+      } else if (selectedApp.id === 'grok') {
+        // Grok의 경우
+        window.open(`https://x.com/i/grok?q=${encodedPrompt}`, '_blank');
       } else {
-        // 다른 앱들은 딥링크 시도 후 웹 폴백
-        const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
-        window.location.href = deepLinkUrl;
-        
-        // 2초 후 앱이 열리지 않으면 웹 버전으로 폴백
-        setTimeout(() => {
-          window.open(`${selectedApp.webUrl}?q=${encodedPrompt}`, '_blank');
-        }, 2000);
+        // 기본 처리: 딥링크 시도 후 웹 폴백
+        try {
+          const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
+          window.location.href = deepLinkUrl;
+          
+          // 2초 후 앱이 열리지 않으면 웹 버전으로 폴백
+          setTimeout(() => {
+            window.open(`${selectedApp.webUrl}?q=${encodedPrompt}`, '_blank');
+          }, 2000);
+        } catch (deepLinkError) {
+          console.error('딥링크 실패:', deepLinkError);
+          window.open(selectedApp.webUrl, '_blank');
+        }
       }
+
+      // 성공 메시지 표시
+      const successToast = document.createElement('div');
+      successToast.innerHTML = `✅ ${selectedApp.name}에서 분석 시작!`;
+      successToast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        color: white; padding: 12px 20px; border-radius: 8px;
+        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      document.body.appendChild(successToast);
+      
+      setTimeout(() => {
+        if (document.body.contains(successToast)) {
+          document.body.removeChild(successToast);
+        }
+      }, 3000);
+
     } catch (error) {
-      console.error('AI 앱 열기 실패:', error);
-      // 에러 발생 시 웹 버전으로 폴백
+      console.error('❌ AI 분석 처리 오류:', error);
+      
+      // 로딩 토스트 제거 (있다면)
+      const loadingToast = document.querySelector('div[style*="급식 데이터 분석 중"]');
+      if (loadingToast) {
+        document.body.removeChild(loadingToast);
+      }
+      
+      // 에러 메시지 표시
+      const errorToast = document.createElement('div');
+      errorToast.innerHTML = `❌ 분석 중 오류 발생: ${error.message}`;
+      errorToast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white; padding: 12px 20px; border-radius: 8px;
+        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      document.body.appendChild(errorToast);
+      
+      setTimeout(() => {
+        if (document.body.contains(errorToast)) {
+          document.body.removeChild(errorToast);
+        }
+      }, 5000);
+      
+      // 에러 발생 시에도 기본 웹 버전으로 폴백
       window.open(selectedApp.webUrl, '_blank');
     }
   };
