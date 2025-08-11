@@ -664,20 +664,16 @@ async function verifyQuizWithAI(quiz) {
 5. 전체 일관성: 문제-보기-정답-해설이 서로 일치하고 논리적으로 연결되는가?
 6. 교육적 가치: 학생들에게 올바른 지식을 전달하는가?
 
-특히 다음 사항들을 주의깊게 확인해주세요:
-- 문제 표현의 명확성과 정확성
-- 선택지 간의 차별성과 적절성
-- 정답의 절대적 정확성
-- 해설의 논리성과 사실 정확성
-- 전체적인 교육적 타당성
+중요 고려사항:
+- 이 퀴즈는 초등학교~고등학교 학생들을 대상으로 한 학년별 맞춤 퀴즈입니다
+- 해당 학년 수준에 맞는 내용과 난이도로 검증해주세요
+- 신뢰도는 보수적으로 평가하여 과도한 확신을 피해주세요
 
 다음 JSON 형식으로 응답해주세요:
 {
   "isCorrect": true/false,
   "confidence": 0.0-1.0,
-  "reasoning": "종합 검증 결과 설명",
-  "issues": ["발견된 문제점들 (출제/보기/정답/해설 구분하여 명시)"],
-  "problemAreas": ["문제가 있는 영역: question/options/answer/explanation"]
+  "reasoning": "출제 내용에 대한 종합적 검증 결과를 학생들이 이해하기 쉽게 설명"
 }
 `;
 
@@ -688,7 +684,7 @@ async function verifyQuizWithAI(quiz) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-5',
         messages: [
           {
             role: 'system',
@@ -720,8 +716,6 @@ async function verifyQuizWithAI(quiz) {
         isCorrect: result.isCorrect,
         confidence: result.confidence || 0.5,
         reasoning: result.reasoning || 'AI 검증 완료',
-        issues: result.issues || [],
-        problemAreas: result.problemAreas || [],
         rawResponse: aiResponse
       };
     } catch (parseError) {
@@ -731,8 +725,6 @@ async function verifyQuizWithAI(quiz) {
         isCorrect: true,
         confidence: 0.5,
         reasoning: 'AI 응답 파싱 실패로 인한 보수적 판단',
-        issues: ['JSON 파싱 실패'],
-        problemAreas: [],
         rawResponse: aiResponse
       };
     }

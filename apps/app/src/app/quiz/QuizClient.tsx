@@ -34,8 +34,6 @@ type Quiz = {
     isCorrect: boolean;
     confidence: number;
     reasoning: string;
-    issues: string[];
-    problemAreas?: string[];
   };
 };
 
@@ -909,33 +907,10 @@ export default function QuizClient() {
                                           AI 출제 검증 결과 보기
                                         </summary>
                                         <div className="mt-2 p-2 bg-white rounded border">
-                                          <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>
-                                          <p className="mt-1">{quiz.ai_verification.reasoning}</p>
-                                          {quiz.ai_verification.problemAreas && quiz.ai_verification.problemAreas.length > 0 && (
-                                            <div className="mt-2">
-                                              <p className="font-medium text-orange-600">문제 영역:</p>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {quiz.ai_verification.problemAreas.map((area, index) => (
-                                                  <span key={index} className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
-                                                    {area === 'question' ? '문제' : 
-                                                     area === 'options' ? '선택지' : 
-                                                     area === 'answer' ? '정답' : 
-                                                     area === 'explanation' ? '해설' : area}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                          {quiz.ai_verification.issues && quiz.ai_verification.issues.length > 0 && (
-                                            <div className="mt-2">
-                                              <p className="font-medium text-red-600">발견된 문제점:</p>
-                                              <ul className="list-disc list-inside text-red-600 text-xs">
-                                                {quiz.ai_verification.issues.map((issue, index) => (
-                                                  <li key={index}>{issue}</li>
-                                                ))}
-                                              </ul>
-                                            </div>
-                                          )}
+                                          <p className="text-xs text-gray-600 mb-1">
+                                            AI 검증 신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%
+                                          </p>
+                                          <p className="text-sm">{quiz.ai_verification.reasoning}</p>
                                         </div>
                                       </details>
                                     )}
@@ -956,8 +931,10 @@ export default function QuizClient() {
                                             AI 출제 검증 결과 보기
                                           </summary>
                                           <div className="mt-2 p-2 bg-white rounded border">
-                                            <p className="font-medium">신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%</p>
-                                            <p className="mt-1">{quiz.ai_verification.reasoning}</p>
+                                            <p className="text-xs text-gray-600 mb-1">
+                                              AI 검증 신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%
+                                            </p>
+                                            <p className="text-sm">{quiz.ai_verification.reasoning}</p>
                                           </div>
                                         </details>
                                       )}
