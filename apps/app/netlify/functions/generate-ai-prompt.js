@@ -134,7 +134,7 @@ async function getSchoolInfo(schoolCode) {
   try {
     const { data, error } = await supabase
       .from('school_infos')
-      .select('school_name, region, district, school_type')
+      .select('school_name, region, school_type')
       .eq('school_code', schoolCode)
       .single();
 
@@ -203,12 +203,12 @@ exports.handler = async (event, context) => {
         school_info: schoolInfo,
         analysis_summary: {
           school_code: school_code,
-          period: analysis_data.monthly_stats.period,
-          average_rating: analysis_data.monthly_stats.average_rating,
-          regional_rank: analysis_data.regional_ranking.my_school.rank,
-          national_percentile: analysis_data.national_comparison.my_school_national?.percentile || 0,
-          total_menus: analysis_data.menu_trends.my_school_comparison.total_menus,
-          better_than_national_menus: analysis_data.menu_trends.my_school_comparison.better_than_national
+          period: analysis_data.school_info?.period || '기간 없음',
+          average_rating: analysis_data.my_school_performance?.avg_rating || 0,
+          regional_rank: analysis_data.regional_comparison?.my_regional_rank || 0,
+          national_percentile: analysis_data.national_comparison?.my_percentile || 0,
+          total_menus: analysis_data.menu_performance?.total_menus || 0,
+          better_than_national_menus: analysis_data.menu_performance?.better_than_national || 0
         },
         generated_at: new Date().toISOString(),
         prompt_length: aiPrompt.length
