@@ -318,24 +318,108 @@ export default function BattlePage() {
       // 로딩 토스트 제거
       document.body.removeChild(loadingToast);
 
-      // 3단계: AI 앱으로 프롬프트 전달
+      // 3단계: AI 앱으로 프롬프트 전달 및 자동 전송
       const aiPrompt = promptData.data.prompt;
-      const encodedPrompt = encodeURIComponent(aiPrompt);
+      
+      // 클립보드에 프롬프트 복사 (백업용)
+      try {
+        await navigator.clipboard.writeText(aiPrompt);
+        console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
+      } catch (error) {
+        console.warn('클립보드 복사 실패:', error);
+      }
       
       if (selectedApp.id === 'chatgpt') {
-        // ChatGPT의 경우 웹 URL 사용 (더 안정적)
-        window.open(`https://chat.openai.com/?q=${encodedPrompt}`, '_blank');
+        // ChatGPT - 자동 전송을 위한 URL 파라미터 사용
+        const encodedPrompt = encodeURIComponent(aiPrompt);
+        
+        // ChatGPT는 여러 방식으로 자동 전송 지원
+        // 방법 1: ?q= 파라미터 (자동 입력 + 전송)
+        const autoSendUrls = [
+          `https://chat.openai.com/?model=gpt-4&q=${encodedPrompt}&submit=true`,
+          `https://chat.openai.com/?q=${encodedPrompt}&auto_send=1`,
+          `https://chatgpt.com/?prompt=${encodedPrompt}&send=1`,
+          `https://chat.openai.com/?message=${encodedPrompt}&submit=auto`
+        ];
+        
+        // 첫 번째 URL로 시도
+        let windowOpened = false;
+        for (const url of autoSendUrls) {
+          try {
+            window.open(url, '_blank');
+            windowOpened = true;
+            console.log(`✅ ChatGPT 자동 전송 URL 사용: ${url}`);
+            break;
+          } catch (error) {
+            console.warn(`ChatGPT URL 실패: ${url}`, error);
+          }
+        }
+        
+        // 모든 URL이 실패하면 기본 방식
+        if (!windowOpened) {
+          window.open(`https://chat.openai.com/?q=${encodedPrompt}`, '_blank');
+        }
+        
       } else if (selectedApp.id === 'gemini') {
-        // Gemini의 경우
-        window.open(`https://gemini.google.com/app?q=${encodedPrompt}`, '_blank');
+        // Gemini - 자동 전송 URL 사용
+        const encodedPrompt = encodeURIComponent(aiPrompt);
+        
+        // Gemini 자동 전송 URL들
+        const autoSendUrls = [
+          `https://gemini.google.com/app?q=${encodedPrompt}&submit=true`,
+          `https://gemini.google.com/app?prompt=${encodedPrompt}&send=1`,
+          `https://bard.google.com/chat?q=${encodedPrompt}&auto_send=1`
+        ];
+        
+        let windowOpened = false;
+        for (const url of autoSendUrls) {
+          try {
+            window.open(url, '_blank');
+            windowOpened = true;
+            console.log(`✅ Gemini 자동 전송 URL 사용: ${url}`);
+            break;
+          } catch (error) {
+            console.warn(`Gemini URL 실패: ${url}`, error);
+          }
+        }
+        
+        if (!windowOpened) {
+          window.open(`https://gemini.google.com/app?q=${encodedPrompt}`, '_blank');
+        }
+        
       } else if (selectedApp.id === 'claude') {
-        // Claude의 경우
-        window.open(`https://claude.ai/chat?q=${encodedPrompt}`, '_blank');
+        // Claude - 자동 전송 URL 사용
+        const encodedPrompt = encodeURIComponent(aiPrompt);
+        
+        // Claude 자동 전송 URL들
+        const autoSendUrls = [
+          `https://claude.ai/chat?q=${encodedPrompt}&submit=true`,
+          `https://claude.ai/chat?prompt=${encodedPrompt}&send=1`,
+          `https://claude.ai/new?message=${encodedPrompt}&auto_send=1`
+        ];
+        
+        let windowOpened = false;
+        for (const url of autoSendUrls) {
+          try {
+            window.open(url, '_blank');
+            windowOpened = true;
+            console.log(`✅ Claude 자동 전송 URL 사용: ${url}`);
+            break;
+          } catch (error) {
+            console.warn(`Claude URL 실패: ${url}`, error);
+          }
+        }
+        
+        if (!windowOpened) {
+          window.open(`https://claude.ai/chat?q=${encodedPrompt}`, '_blank');
+        }
       } else if (selectedApp.id === 'grok') {
         // Grok의 경우
+        const encodedPrompt = encodeURIComponent(aiPrompt);
         window.open(`https://x.com/i/grok?q=${encodedPrompt}`, '_blank');
       } else {
         // 기본 처리: 딥링크 시도 후 웹 폴백
+        const encodedPrompt = encodeURIComponent(aiPrompt);
         try {
           const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
           window.location.href = deepLinkUrl;
