@@ -40,10 +40,17 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       throw mealError;
     }
 
-    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회
+    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회 (메뉴명과 날짜 포함)
     const { data: mySchoolMenuData, error: menuError } = await supabase
       .from('menu_battle_monthly')
-      .select('*')
+      .select(`
+        *,
+        menu_items:menu_item_id (
+          menu_name,
+          meal_date,
+          meal_type
+        )
+      `)
       .eq('school_code', schoolCode)
       .eq('battle_year', year)
       .eq('battle_month', month);
@@ -115,7 +122,9 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.sort((a, b) => b.final_avg_rating - a.final_avg_rating)
           ?.slice(0, 5)
           ?.map(menu => ({
-            menu_name: menu.menu_item_id, // 실제 메뉴명 필요시 조인
+            menu_name: menu.menu_items?.menu_name || menu.menu_item_id,
+            meal_date: menu.menu_items?.meal_date || null,
+            meal_type: menu.menu_items?.meal_type || null,
             avg_rating: menu.final_avg_rating,
             rating_count: menu.final_rating_count,
             rank: menu.monthly_rank
@@ -124,7 +133,9 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.sort((a, b) => a.final_avg_rating - b.final_avg_rating)
           ?.slice(0, 3)
           ?.map(menu => ({
-            menu_name: menu.menu_item_id,
+            menu_name: menu.menu_items?.menu_name || menu.menu_item_id,
+            meal_date: menu.menu_items?.meal_date || null,
+            meal_type: menu.menu_items?.meal_type || null,
             avg_rating: menu.final_avg_rating,
             rating_count: menu.final_rating_count,
             rank: menu.monthly_rank

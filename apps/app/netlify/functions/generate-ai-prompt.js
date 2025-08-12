@@ -64,21 +64,32 @@ ${schoolName} 학생들이 ${myRatingCount.toLocaleString()}번의 평가를 통
 
 ## 🍽️ **아이들이 사랑하는 메뉴 TOP 5**
 
-${topMenus.slice(0, 5).map((menu, index) => 
-  `**${index + 1}위. ${menu.menu_name}** ⭐ ${menu.avg_rating.toFixed(2)}점
-   📊 ${menu.rating_count}명 평가 | 🏆 이 메뉴의 성공 비결을 꼭 분석해주세요!
-   💡 **분석 포인트**: 왜 아이들이 "${menu.menu_name}"을 이렇게 좋아할까요? 
-       재료, 조리법, 비주얼, 온도감 등을 구체적으로 분석하고 다른 메뉴에 적용할 방법을 제시해주세요.`
-).join('\n\n')}
+${topMenus.slice(0, 5).map((menu, index) => {
+  const dateStr = menu.meal_date ? new Date(menu.meal_date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '';
+  const mealTypeStr = menu.meal_type === 'lunch' ? '점심' : menu.meal_type === 'dinner' ? '저녁' : '';
+  return `**${index + 1}위. ${menu.menu_name}** ⭐ ${menu.avg_rating.toFixed(2)}점
+   📅 ${dateStr} ${mealTypeStr} | 📊 ${menu.rating_count}명 평가
+   🏆 **성공 비결 분석 필수**: 왜 아이들이 "${menu.menu_name}"을 이렇게 좋아했을까요?
+   💡 **구체적 분석 포인트**: 
+       - 이 메뉴의 재료, 조리법, 비주얼, 온도감의 특징은?
+       - 다른 메뉴에 어떻게 적용할 수 있을까요?
+       - ${dateStr}에 제공된 이유가 성공에 영향을 줬을까요? (날씨, 계절감 등)`
+}).join('\n\n')}
 
-## 😅 **개선이 필요한 메뉴들 (구체적 분석 필요!)**
+## 😅 **개선이 필요한 메뉴들 (구체적 분석 필수!)**
 
-${worstMenus.slice(0, 3).map((menu, index) => 
-  `**❌ ${menu.menu_name}** 📉 ${menu.avg_rating.toFixed(2)}점
-   📊 ${menu.rating_count}명이 평가 | ⚠️ 시급한 개선 필요!
-   🔍 **개선 방향**: "${menu.menu_name}"이 낮은 점수를 받은 구체적 이유를 추정하고,
-       실현 가능한 개선 방안을 제시해주세요. (양념 조절, 조리법 변경, 플레이팅 개선 등)`
-).join('\n\n')}
+${worstMenus.slice(0, 3).map((menu, index) => {
+  const dateStr = menu.meal_date ? new Date(menu.meal_date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : '';
+  const mealTypeStr = menu.meal_type === 'lunch' ? '점심' : menu.meal_type === 'dinner' ? '저녁' : '';
+  return `**❌ ${menu.menu_name}** 📉 ${menu.avg_rating.toFixed(2)}점
+   📅 ${dateStr} ${mealTypeStr} | 📊 ${menu.rating_count}명이 평가
+   ⚠️ **시급한 개선 필요**: "${menu.menu_name}"이 왜 낮은 점수를 받았을까요?
+   🔍 **구체적 개선 방향**: 
+       - 이 메뉴의 어떤 부분이 아이들에게 아쉬웠을까요?
+       - ${dateStr}에 제공된 것이 문제였을까요? (날씨, 타이밍 등)
+       - 양념, 조리법, 플레이팅 중 어떤 부분을 개선하면 좋을까요?
+       - 다음에 다시 제공할 때 어떻게 바꿔야 할까요?`
+}).join('\n\n')}
 
 ## 📊 **성과 분석 & 제안사항**
 
