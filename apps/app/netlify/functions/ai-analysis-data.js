@@ -45,10 +45,12 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       .from('menu_battle_monthly')
       .select(`
         *,
-        menu_items:menu_item_id (
-          menu_name,
-          meal_date,
-          meal_type
+        meal_menu_items!menu_item_id (
+          item_name,
+          meal_menus!meal_id (
+            meal_date,
+            meal_type
+          )
         )
       `)
       .eq('school_code', schoolCode)
@@ -122,9 +124,9 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.sort((a, b) => b.final_avg_rating - a.final_avg_rating)
           ?.slice(0, 5)
           ?.map(menu => ({
-            menu_name: menu.menu_items?.menu_name || menu.menu_item_id,
-            meal_date: menu.menu_items?.meal_date || null,
-            meal_type: menu.menu_items?.meal_type || null,
+            menu_name: menu.meal_menu_items?.item_name || '메뉴명 없음',
+            meal_date: menu.meal_menu_items?.meal_menus?.meal_date || null,
+            meal_type: menu.meal_menu_items?.meal_menus?.meal_type || null,
             avg_rating: menu.final_avg_rating,
             rating_count: menu.final_rating_count,
             rank: menu.monthly_rank
@@ -133,9 +135,9 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.sort((a, b) => a.final_avg_rating - b.final_avg_rating)
           ?.slice(0, 3)
           ?.map(menu => ({
-            menu_name: menu.menu_items?.menu_name || menu.menu_item_id,
-            meal_date: menu.menu_items?.meal_date || null,
-            meal_type: menu.menu_items?.meal_type || null,
+            menu_name: menu.meal_menu_items?.item_name || '메뉴명 없음',
+            meal_date: menu.meal_menu_items?.meal_menus?.meal_date || null,
+            meal_type: menu.meal_menu_items?.meal_menus?.meal_type || null,
             avg_rating: menu.final_avg_rating,
             rating_count: menu.final_rating_count,
             rank: menu.monthly_rank
