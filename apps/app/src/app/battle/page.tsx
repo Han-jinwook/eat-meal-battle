@@ -246,13 +246,16 @@ export default function BattlePage() {
 
   // AI 앱 선택 핸들러
   const handleAIAppSelection = async (selectedApp: any) => {
-    console.log('AI 앱 선택됨:', selectedApp);
+    console.log('🎯 AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
     
     try {
       // 현재 학교 정보 확인
       const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      console.log('🏫 현재 학교 정보:', currentSchool);
+      
       if (!currentSchool?.school_code) {
+        console.error('❌ 학교 정보 없음');
         alert('학교 정보가 없어 AI 분석을 진행할 수 없습니다.');
         return;
       }
@@ -263,6 +266,7 @@ export default function BattlePage() {
       const month = targetDate.getMonth() + 1;
 
       console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
+      console.log(`📅 분석 대상: viewMode=${viewMode}, selectedDate=${selectedDate}, selectedMonth=${selectedMonth}`);
       
       // 로딩 상태 표시 (선택적)
       const loadingToast = document.createElement('div');
@@ -276,13 +280,21 @@ export default function BattlePage() {
       document.body.appendChild(loadingToast);
 
       // 1단계: 월간 급식 데이터 집계
-      const analysisResponse = await fetch(`/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`);
+      console.log('📡 1단계: 급식 데이터 집계 API 호출 시작...');
+      const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`;
+      console.log('🔗 API URL:', apiUrl);
+      
+      const analysisResponse = await fetch(apiUrl);
+      console.log('📊 API 응답 상태:', analysisResponse.status, analysisResponse.statusText);
       
       if (!analysisResponse.ok) {
-        throw new Error(`데이터 집계 실패: ${analysisResponse.status}`);
+        const errorText = await analysisResponse.text();
+        console.error('❌ API 응답 오류:', errorText);
+        throw new Error(`데이터 집계 실패: ${analysisResponse.status} - ${errorText}`);
       }
       
       const analysisData = await analysisResponse.json();
+      console.log('✅ 급식 데이터 집계 완료:', analysisData);
       
       // API 응답 구조 확인 (에러가 있으면 error 필드가 있음)
       if (analysisData.error) {
@@ -292,24 +304,34 @@ export default function BattlePage() {
       console.log('✅ 급식 데이터 집계 완료:', analysisData);
 
       // 2단계: AI 프롬프트 생성
+      console.log('📝 2단계: AI 프롬프트 생성 API 호출 시작...');
+      const promptPayload = {
+        analysis_data: analysisData,
+        school_code: currentSchool.school_code
+      };
+      console.log('📤 프롬프트 생성 요청 데이터:', promptPayload);
+      
       const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          analysis_data: analysisData,
-          school_code: currentSchool.school_code
-        })
+        body: JSON.stringify(promptPayload)
       });
 
+      console.log('📝 프롬프트 API 응답 상태:', promptResponse.status, promptResponse.statusText);
+
       if (!promptResponse.ok) {
-        throw new Error(`프롬프트 생성 실패: ${promptResponse.status}`);
+        const errorText = await promptResponse.text();
+        console.error('❌ 프롬프트 API 응답 오류:', errorText);
+        throw new Error(`프롬프트 생성 실패: ${promptResponse.status} - ${errorText}`);
       }
 
       const promptData = await promptResponse.json();
+      console.log('📋 프롬프트 API 응답 데이터:', promptData);
       
       if (!promptData.success) {
+        console.error('❌ 프롬프트 생성 실패:', promptData.error);
         throw new Error(promptData.error || '프롬프트 생성 중 오류 발생');
       }
 
@@ -319,36 +341,48 @@ export default function BattlePage() {
       document.body.removeChild(loadingToast);
 
       // 3단계: AI 앱으로 프롬프트 전달 및 자동 전송
+      console.log('🚀 3단계: AI 앱으로 프롬프트 전달 시작...');
       const aiPrompt = promptData.data.prompt;
+      console.log('📝 생성된 프롬프트 길이:', aiPrompt.length, '자');
+      console.log('📱 선택된 AI 앱:', selectedApp.id, selectedApp.name);
       
       // 클립보드에 프롬프트 복사 (백업용)
       try {
         await navigator.clipboard.writeText(aiPrompt);
         console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
       } catch (error) {
-        console.warn('클립보드 복사 실패:', error);
+        console.warn('⚠️ 클립보드 복사 실패:', error);
       }
       
       // 스마트 자동 전송: GET 파라미터 시도 후 클립보드 폴백
       const sendPromptSmart = (appUrl: string, appName: string, prompt: string) => {
+        console.log(`🎯 ${appName} 프롬프트 전송 시도 시작...`);
+        console.log(`📏 프롬프트 길이: ${prompt.length}자 (임계값: 1000자)`);
+        
         try {
           // 1단계: 짧은 프롬프트면 GET 파라미터로 시도
           if (prompt.length < 1000) {
+            console.log(`✅ 짧은 프롬프트 - GET 파라미터 방식 사용`);
             const encodedPrompt = encodeURIComponent(prompt);
             const urlWithPrompt = `${appUrl}?q=${encodedPrompt}`;
+            console.log(`🔗 생성된 URL: ${urlWithPrompt.substring(0, 100)}...`);
+            
             window.open(urlWithPrompt, '_blank');
+            console.log(`🚀 ${appName} 창 열기 완료`);
             
             // 성공 토스트
             showToast(`🚀 ${appName} 자동 전송!`, 'GET 파라미터로 프롬프트 전송됨', 'green');
             return true;
           } else {
             // 2단계: 긴 프롬프트면 바로 클립보드 폴백
+            console.log(`⚠️ 긴 프롬프트 - 클립보드 폴백 사용`);
             throw new Error('프롬프트가 너무 길어서 클립보드 사용');
           }
         } catch (error) {
-          console.warn(`${appName} 자동 전송 실패, 클립보드 폴백:`, error);
+          console.warn(`❌ ${appName} 자동 전송 실패, 클립보드 폴백:`, error);
           
           // 폴백: 기본 페이지 열고 클립보드 사용
+          console.log(`🔄 ${appName} 기본 페이지로 폴백...`);
           window.open(appUrl, '_blank');
           showToast(`📋 ${appName} 열림!`, '클립보드에서 Ctrl+V로 붙여넣기', 'blue');
           return false;
@@ -378,31 +412,42 @@ export default function BattlePage() {
         }, 4000);
       };
 
+      console.log('🔀 AI 앱별 처리 로직 시작...');
+      
       if (selectedApp.id === 'chatgpt') {
-        console.log(`프롬프트 길이: ${aiPrompt.length}자`);
+        console.log('🤖 ChatGPT 선택됨');
+        console.log(`📏 프롬프트 길이: ${aiPrompt.length}자`);
         sendPromptSmart('https://chat.openai.com', 'ChatGPT', aiPrompt);
         
       } else if (selectedApp.id === 'gemini') {
+        console.log('💎 Gemini 선택됨');
         sendPromptSmart('https://gemini.google.com/app', 'Gemini', aiPrompt);
         
       } else if (selectedApp.id === 'claude') {
+        console.log('🧠 Claude 선택됨');
         sendPromptSmart('https://claude.ai/chat', 'Claude', aiPrompt);
         
       } else if (selectedApp.id === 'grok') {
+        console.log('🚀 Grok 선택됨');
         sendPromptSmart('https://x.com/i/grok', 'Grok', aiPrompt);
       } else {
+        console.log('📱 기타 AI 앱 선택됨:', selectedApp);
         // 기본 처리: 딥링크 시도 후 웹 폴백
         const encodedPrompt = encodeURIComponent(aiPrompt);
         try {
+          console.log('🔗 딥링크 시도...');
           const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
+          console.log('🔗 딥링크 URL:', deepLinkUrl);
           window.location.href = deepLinkUrl;
           
           // 2초 후 앱이 열리지 않으면 웹 버전으로 폴백
           setTimeout(() => {
+            console.log('⏰ 딥링크 타임아웃, 웹 폴백 시도...');
             window.open(`${selectedApp.webUrl}?q=${encodedPrompt}`, '_blank');
           }, 2000);
         } catch (deepLinkError) {
-          console.error('딥링크 실패:', deepLinkError);
+          console.error('❌ 딥링크 실패:', deepLinkError);
+          console.log('🔄 웹 버전으로 직접 폴백...');
           window.open(selectedApp.webUrl, '_blank');
         }
       }
