@@ -709,9 +709,11 @@ async function verifyQuizWithAI(quiz) {
     
     console.log('[quiz] AI 응답:', aiResponse);
     
-    // JSON 파싱 시도
+    // JSON 파싱 시도 (코드블록 제거)
     try {
-      const result = JSON.parse(aiResponse);
+      // ```json과 ``` 제거
+      const cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const result = JSON.parse(cleanResponse);
       return {
         isCorrect: result.isCorrect,
         confidence: result.confidence || 0.5,
