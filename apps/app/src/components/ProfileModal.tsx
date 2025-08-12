@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import BirthConsentModal from './BirthConsentModal';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(null);
   const [schoolInfo, setSchoolInfo] = useState<any>(null);
+  const [showBirthConsentModal, setShowBirthConsentModal] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -170,13 +172,39 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-gray-700 dark:text-gray-200">학교 정보</span>
-                <Link
-                  href="/school-search"
-                  className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
-                  onClick={onClose}
-                >
-                  {schoolInfo ? '학교정보 수정' : '학교정보 설정'}
-                </Link>
+                {userProfile.birth_date_consent ? (
+                  // 이미 생년월일 동의한 경우 - 나이에 따라 버튼 활성화
+                  userProfile.birth_date && (() => {
+                    const today = new Date();
+                    const birthDate = new Date(userProfile.birth_date);
+                    const age = today.getFullYear() - birthDate.getFullYear() - 
+                      (today.getMonth() < birthDate.getMonth() || 
+                       (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate()) ? 1 : 0);
+                    const isStudent = age >= 6 && age <= 39; // 테스트용 범위 (출시 전 6-19로 변경)
+                    
+                    return isStudent ? (
+                      <Link
+                        href="/school-search"
+                        className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
+                        onClick={onClose}
+                      >
+                        {schoolInfo ? '학교정보 수정' : '학교정보 설정'}
+                      </Link>
+                    ) : (
+                      <span className="rounded bg-gray-400 px-2 py-1 text-xs text-white cursor-not-allowed">
+                        학교설정 불가 (연령 제한)
+                      </span>
+                    );
+                  })()
+                ) : (
+                  // 생년월일 동의하지 않은 경우 - 클릭 시 동의 팝업
+                  <button
+                    onClick={() => setShowBirthConsentModal(true)}
+                    className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
+                  >
+                    {schoolInfo ? '학교정보 수정' : '학교정보 설정'}
+                  </button>
+                )}
               </div>
               {schoolInfo ? (
                 <div className="grid grid-cols-1 gap-2 text-sm">
@@ -213,6 +241,19 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           <div className="text-center text-gray-500 dark:text-gray-300">데이터베이스에 사용자 정보가 없습니다.</div>
         )}
       </div>
+
+      {/* 생년월일 동의 팝업 */}
+      {user && (
+        <BirthConsentModal
+          isOpen={showBirthConsentModal}
+          onClose={() => setShowBirthConsentModal(false)}
+          onSuccess={() => {
+            // 성공 시 프로필 정보 새로고침
+            window.location.reload();
+          }}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

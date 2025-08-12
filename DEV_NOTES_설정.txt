@@ -500,14 +500,56 @@ await supabase.from('users').update({
 OAuth 로그인 → 생년월일 동의 (선택) → 자동 처리 → 홈페이지
 ```
 
-### 권한 시스템 연동
-- **is_student = true**: 학교 설정 가능, 모든 기능 이용
-- **is_student = false**: 관심학교만 이용 가능 (읽기 전용)
-- **동의 거부**: 기본값 false, 제한적 이용
+### 권한 시스템 연동 (최종 수정)
+**기존 권한 시스템 보존**: `school_code` 기반 권한 시스템은 절대 건드리지 않음
+- **권한 판단**: `useSchoolMode`에서 `school_code` 존재 여부만으로 결정
+- **is_student 필드**: 사용하지 않음 (향후 제거 검토)
+- **user_type 필드**: 계정 삭제 시에만 사용 (향후 제거 검토)
 
-### 구현 파일
+### 최종 구현 방식 (2025.01.12 완성)
+**학교설정 진입점에서만 나이 필터링**
+
+#### 1. ProfileModal 학교설정 버튼 로직
+```typescript
+// birth_date_consent가 true인 경우: 나이 계산하여 학생만 허용
+if (userProfile.birth_date_consent) {
+  const age = calculateAge(userProfile.birth_date);
+  const isStudent = age >= 6 && age <= 39; // 테스트용 (출시 전 6-19로 변경)
+  
+  return isStudent ? 
+    <Link href="/school-search">학교정보 설정</Link> :
+    <span>학교설정 불가 (연령 제한)</span>;
+}
+
+// birth_date_consent가 false인 경우: 클릭 시 추가동의 팝업
+return <button onClick={() => setShowBirthConsentModal(true)}>학교정보 설정</button>;
+```
+
+#### 2. BirthConsentModal 컴포넌트
+- 생년월일 입력 폼
+- 나이 계산 및 학생 여부 판단
+- 성인 차단: "학생 대상 서비스" 메시지
+- 학생 통과: DB 업데이트 후 `/school-search`로 이동
+
+#### 3. 완벽한 플로우
+**케이스 1: 가입 시 동의 O**
+```
+OAuth 로그인 → 생년월일 동의 → 나이 계산 →
+- 학생: 프로필에서 바로 학교설정 가능
+- 성인: 학교설정 버튼 비활성화 (연령 제한 표시)
+```
+
+**케이스 2: 가입 시 동의 X**
+```
+OAuth 로그인 → 동의 거부 → 
+프로필 학교설정 버튼 클릭 → 추가동의 팝업 → 나이 필터링
+```
+
+### 구현 파일 (최종)
 - `src/app/login/page.tsx`: OAuth scope에 birthday 추가
 - `src/app/auth/callback/route.ts`: 생년월일 자동 처리 로직
+- `src/components/ProfileModal.tsx`: 학교설정 버튼 조건부 로직
+- `src/components/BirthConsentModal.tsx`: 추가동의 팝업 컴포넌트
 - 기존 로그인 시스템: OAuth 확장으로 안전하게 개선
 
 ### 다음 단계
