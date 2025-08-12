@@ -497,7 +497,6 @@ export default function BattlePage() {
       console.error('❌ AI 분석 처리 오류:', error);
       
       // 로딩 토스트 제거 (있다면)
-{{ ... }}
       const loadingToast = document.querySelector('div[style*="급식 데이터 분석 중"]');
       if (loadingToast) {
         document.body.removeChild(loadingToast);
