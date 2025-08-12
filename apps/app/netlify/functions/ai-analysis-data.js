@@ -45,7 +45,7 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       .from('menu_battle_monthly')
       .select(`
         *,
-        meal_menu_items!menu_item_id (
+        meal_menu_items!fk_menu_battle_monthly_menu_item (
           item_name,
           meal_menus!meal_id (
             meal_date,
