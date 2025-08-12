@@ -84,7 +84,7 @@ function LoginContent() {
         options: {
           redirectTo: redirectUrl,
           queryParams: {
-            scope: 'profile_nickname,profile_image,account_email',
+            scope: 'profile_nickname,profile_image,account_email,birthday',
           },
         },
       })

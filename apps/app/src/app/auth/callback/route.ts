@@ -45,6 +45,81 @@ export async function GET(request: NextRequest) {
       if (data.session) {
         console.log('Session successfully created')
         
+        // OAuth에서 받은 생년월일 정보 처리
+        const userMetadata = data.session.user.user_metadata;
+        const rawProviderData = data.session.user.identities?.[0]?.identity_data;
+        
+        console.log('User metadata:', userMetadata);
+        console.log('Provider data:', rawProviderData);
+        
+        // 생년월일 정보가 있는 경우 처리
+        let birthDate = null;
+        let birthDateConsent = false;
+        
+        // 카카오에서 생년월일 정보 추출
+        if (rawProviderData?.birthday) {
+          birthDate = rawProviderData.birthday;
+          birthDateConsent = true;
+          console.log('카카오에서 생년월일 정보 받음:', birthDate);
+        }
+        // 구글에서 생년월일 정보 추출 (가능한 경우)
+        else if (rawProviderData?.birthdate) {
+          birthDate = rawProviderData.birthdate;
+          birthDateConsent = true;
+          console.log('구글에서 생년월일 정보 받음:', birthDate);
+        }
+        
+        // 생년월일이 있으면 나이 계산 및 학생 여부 판단
+        if (birthDate && birthDateConsent) {
+          try {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+              age--;
+            }
+            
+            const isStudent = age >= 7 && age <= 19; // 만 7-19세 (초1~고3)
+            
+            console.log(`나이 계산 결과: ${age}세, 학생 여부: ${isStudent}`);
+            
+            // users 테이블 업데이트
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({
+                birth_date: birthDate,
+                birth_date_consent: birthDateConsent,
+                is_student: isStudent
+              })
+              .eq('id', data.session.user.id);
+            
+            if (updateError) {
+              console.error('사용자 정보 업데이트 오류:', updateError);
+            } else {
+              console.log('사용자 정보 업데이트 완료');
+            }
+          } catch (ageError) {
+            console.error('나이 계산 오류:', ageError);
+          }
+        } else {
+          console.log('생년월일 정보 없음 - 기본값으로 설정');
+          
+          // 생년월일 정보가 없는 경우 기본값 설정
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              birth_date_consent: false,
+              is_student: false
+            })
+            .eq('id', data.session.user.id);
+            
+          if (updateError) {
+            console.error('기본값 설정 오류:', updateError);
+          }
+        }
+        
         // 세션이 성공적으로 생성되었으면 홈페이지로 리디렉션
         redirectUrl = '/'
       }
