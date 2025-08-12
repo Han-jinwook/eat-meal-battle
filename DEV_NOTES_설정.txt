@@ -432,3 +432,71 @@ import Component from '@/components/Component'
 ### TODO: 다음 단계
 - 실제 데이터 수집 로직 (월간 급식 데이터 집계, 지역순위, 프롬프트 생성)
 - 성능 로그 테이블 생성 및 실제 모니터링 연동
+
+---
+
+## 🎂 생년월일 동의 시스템 (2025-08-12 구현)
+
+### 핵심 목적
+- **성인 장난 가입 방지**: 학생 중심 서비스 보호
+- **선택적 동의**: 거부해도 서비스 이용 가능
+- **기존 시스템 보존**: 로그인 플로우 완전 분리
+
+### DB 스키마 (users 테이블)
+```sql
+-- 이미 준비된 필드들
+birth_date DATE                    -- 생년월일
+is_student BOOLEAN DEFAULT FALSE   -- 학생 여부 플래그
+user_type VARCHAR DEFAULT 'student' -- 사용자 타입
+
+-- 추가 필요 필드
+birth_date_consent BOOLEAN DEFAULT FALSE -- 생년월일 제공 동의
+```
+
+### 나이 검증 로직
+```typescript
+// 만 나이 계산
+const calculateAge = (birthDate: string) => {
+  const today = new Date()
+  const birth = new Date(birthDate)
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  return age
+}
+
+// 학생 여부 판단 (만 7-19세 = 초1~고3)
+const isStudentAge = (birthDate: string) => {
+  const age = calculateAge(birthDate)
+  return age >= 7 && age <= 19
+}
+```
+
+### 온보딩 플로우 설계
+```
+기존: 로그인 → 홈페이지
+신규: 로그인 → 생년월일 동의 → 학교설정 → 홈페이지
+```
+
+### 권한 시스템 연동
+- **is_student = true**: 학교 설정 가능, 모든 기능 이용
+- **is_student = false**: 관심학교만 이용 가능 (읽기 전용)
+- **동의 거부**: 일반 사용자로 분류, 제한적 이용
+
+### 안전성 보장
+- ✅ **기존 로그인 시스템 완전 보존**
+- ✅ **별도 경로 분리** (`/auth/birth-consent`)
+- ✅ **기존 사용자 영향 없음**
+- ✅ **선택적 동의** (강제 아님)
+
+### 구현 파일
+- `src/app/auth/birth-consent/page.tsx`: 생년월일 동의 페이지
+- 기존 로그인 시스템: 완전 보존, 수정 없음
+
+### 다음 단계
+1. birth_date_consent 컬럼 추가
+2. 로그인 후 리다이렉트 로직 연결 (선택적)
+3. 프로필에서 수동 설정 기능 추가
