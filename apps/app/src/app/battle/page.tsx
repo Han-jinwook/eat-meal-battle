@@ -384,7 +384,7 @@ export default function BattlePage() {
           // 폴백: 기본 페이지 열고 클립보드 사용
           console.log(`🔄 ${appName} 기본 페이지로 폴백...`);
           window.open(appUrl, '_blank');
-          showToast(`📋 ${appName} 열림!`, '클립보드에서 Ctrl+V로 붙여넣기', 'blue');
+          showToast(`📋 ${appName} 열림!`, `프롬프트가 클립보드에 복사됨! ${appName}에서 Ctrl+V로 붙여넣기 하세요`, 'blue');
           return false;
         }
       };
@@ -452,27 +452,52 @@ export default function BattlePage() {
         }
       }
 
-      // 성공 메시지 표시
-      const successToast = document.createElement('div');
-      successToast.innerHTML = `✅ ${selectedApp.name}에서 분석 시작!`;
-      successToast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 9999;
-        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-        color: white; padding: 12px 20px; border-radius: 8px;
-        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      // 클립보드 복사 완료 안내 메시지
+      const fallbackToast = document.createElement('div');
+      fallbackToast.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="font-size: 24px; margin-top: 2px;">📋</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px;">
+              🎯 급식 분석 리포트 준비 완료!
+            </div>
+            <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+              <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">📝 다음 단계:</div>
+              <div style="font-size: 12px; line-height: 1.4;">
+                1️⃣ ${selectedApp.name} 창에서 채팅창 클릭<br>
+                2️⃣ <strong style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">
+                  ${/Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? '길게 눌러서 붙여넣기' : 'Ctrl + V'}
+                </strong> 키로 붙여넣기<br>
+                3️⃣ Enter 키로 분석 시작!
+              </div>
+            </div>
+            <div style="font-size: 11px; opacity: 0.8; text-align: center;">
+              💡 ${Math.ceil(aiPrompt.length / 100) * 100}자의 상세한 분석 리포트가 클립보드에 복사되었습니다
+            </div>
+          </div>
+        </div>
       `;
-      document.body.appendChild(successToast);
+      fallbackToast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white; padding: 20px; border-radius: 16px;
+        font-size: 14px; font-weight: 500; box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+        max-width: 380px; border: 1px solid rgba(255,255,255,0.25);
+        backdrop-filter: blur(10px);
+      `;
+      document.body.appendChild(fallbackToast);
       
       setTimeout(() => {
-        if (document.body.contains(successToast)) {
-          document.body.removeChild(successToast);
+        if (document.body.contains(fallbackToast)) {
+          document.body.removeChild(fallbackToast);
         }
-      }, 3000);
+      }, 10000);
 
     } catch (error) {
       console.error('❌ AI 분석 처리 오류:', error);
       
       // 로딩 토스트 제거 (있다면)
+{{ ... }}
       const loadingToast = document.querySelector('div[style*="급식 데이터 분석 중"]');
       if (loadingToast) {
         document.body.removeChild(loadingToast);
