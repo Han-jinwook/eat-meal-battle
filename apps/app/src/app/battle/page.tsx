@@ -637,7 +637,7 @@ export default function BattlePage() {
       }`}>
         {/* 왼쪽: 학교 정보 (isStudentMode일 때만 표시) */}
         <div className="flex items-center">
-          {schoolMode.isStudentMode && (
+          {schoolMode.isStudentMode ? (
             <>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
                 {userSchool?.school_name || '학교 정보 없음'}
@@ -649,6 +649,11 @@ export default function BattlePage() {
                 </span>
               )}
             </>
+          ) : (
+            /* 관심학교 모드일 때 안내 메시지 */
+            <span className="text-orange-600 text-sm font-medium">
+              학생은 '프로필'에서 학교등록부터 하세요^^
+            </span>
           )}
         </div>
         
