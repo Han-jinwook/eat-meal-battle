@@ -40,24 +40,31 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       throw mealError;
     }
 
-    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회 (메뉴명과 날짜 포함)
+    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회 (기본 데이터만)
     const { data: mySchoolMenuData, error: menuError } = await supabase
       .from('menu_battle_monthly')
-      .select(`
-        *,
-        meal_menu_items!fk_menu_battle_monthly_menu_item (
-          item_name,
-          meal_menus!meal_id (
-            meal_date,
-            meal_type
-          )
-        )
-      `)
+      .select('*')
       .eq('school_code', schoolCode)
       .eq('battle_year', year)
       .eq('battle_month', month);
 
     if (menuError) throw menuError;
+
+    // 3. 메뉴 아이템 정보 별도 조회 (작동하는 패턴 사용)
+    const menuItemIds = mySchoolMenuData.map(item => item.menu_item_id);
+    const { data: menuItems, error: menuItemsError } = await supabase
+      .from('meal_menu_items')
+      .select(`
+        id, 
+        item_name,
+        meal_menus!meal_menu_items_meal_id_fkey(
+          meal_date,
+          meal_type
+        )
+      `)
+      .in('id', menuItemIds);
+
+    if (menuItemsError) throw menuItemsError;
 
     // 3. 학교 정보 조회
     const { data: schoolInfo, error: schoolError } = await supabase
@@ -117,31 +124,37 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
         monthly_rank: mySchoolMealData?.monthly_rank || null
       },
 
-      // 우리 학교 메뉴 성과 (상위/하위 메뉴)
+      // 우리 학교 메뉴 성과 (상위/하위 메뉴) - 분리된 데이터 매핑
       menu_performance: {
         total_menus: mySchoolMenuData?.length || 0,
         top_menus: mySchoolMenuData
           ?.sort((a, b) => b.final_avg_rating - a.final_avg_rating)
           ?.slice(0, 5)
-          ?.map(menu => ({
-            menu_name: menu.meal_menu_items?.item_name || '메뉴명 없음',
-            meal_date: menu.meal_menu_items?.meal_menus?.meal_date || null,
-            meal_type: menu.meal_menu_items?.meal_menus?.meal_type || null,
-            avg_rating: menu.final_avg_rating,
-            rating_count: menu.final_rating_count,
-            rank: menu.monthly_rank
-          })) || [],
+          ?.map(menu => {
+            const menuItem = menuItems?.find(item => item.id === menu.menu_item_id);
+            return {
+              menu_name: menuItem?.item_name || '메뉴명 없음',
+              meal_date: menuItem?.meal_menus?.meal_date || null,
+              meal_type: menuItem?.meal_menus?.meal_type || null,
+              avg_rating: menu.final_avg_rating,
+              rating_count: menu.final_rating_count,
+              rank: menu.monthly_rank
+            };
+          }) || [],
         worst_menus: mySchoolMenuData
           ?.sort((a, b) => a.final_avg_rating - b.final_avg_rating)
           ?.slice(0, 3)
-          ?.map(menu => ({
-            menu_name: menu.meal_menu_items?.item_name || '메뉴명 없음',
-            meal_date: menu.meal_menu_items?.meal_menus?.meal_date || null,
-            meal_type: menu.meal_menu_items?.meal_menus?.meal_type || null,
-            avg_rating: menu.final_avg_rating,
-            rating_count: menu.final_rating_count,
-            rank: menu.monthly_rank
-          })) || []
+          ?.map(menu => {
+            const menuItem = menuItems?.find(item => item.id === menu.menu_item_id);
+            return {
+              menu_name: menuItem?.item_name || '메뉴명 없음',
+              meal_date: menuItem?.meal_menus?.meal_date || null,
+              meal_type: menuItem?.meal_menus?.meal_type || null,
+              avg_rating: menu.final_avg_rating,
+              rating_count: menu.final_rating_count,
+              rank: menu.monthly_rank
+            };
+          }) || []
       },
 
       // 전국 비교
