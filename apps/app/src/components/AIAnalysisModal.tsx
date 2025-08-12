@@ -35,7 +35,7 @@ const AIAnalysisModal = ({
     { 
       id: 'chatgpt', 
       name: 'ChatGPT', 
-      icon: '🤖',
+      icon: '/images/ai-logos/chatgpt.png',
       deepLink: 'chatgpt://',
       webUrl: 'https://chat.openai.com',
       storeUrl: {
@@ -46,7 +46,7 @@ const AIAnalysisModal = ({
     { 
       id: 'gemini', 
       name: '제미나이', 
-      icon: '✨',
+      icon: '/images/ai-logos/gemini.png',
       deepLink: 'gemini://',
       webUrl: 'https://gemini.google.com',
       storeUrl: {
@@ -57,7 +57,7 @@ const AIAnalysisModal = ({
     { 
       id: 'claude', 
       name: '클로드', 
-      icon: '🧠',
+      icon: '/images/ai-logos/claude.png',
       deepLink: 'claude://',
       webUrl: 'https://claude.ai',
       storeUrl: {
@@ -68,7 +68,7 @@ const AIAnalysisModal = ({
     { 
       id: 'grok', 
       name: '그록', 
-      icon: '🚀',
+      icon: '/images/ai-logos/grok.png',
       deepLink: 'twitter://grok',
       webUrl: 'https://x.com/i/grok',
       storeUrl: {
@@ -130,8 +130,12 @@ const AIAnalysisModal = ({
                   onClick={() => onSelectApp(app)}
                   className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 group"
                 >
-                  <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
-                    {app.icon}
+                  <div className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <img 
+                      src={app.icon} 
+                      alt={`${app.name} 로고`}
+                      className="w-10 h-10 object-contain"
+                    />
                   </div>
                   <div className="font-medium text-gray-800 group-hover:text-purple-700">
                     {app.name}
