@@ -41,75 +41,78 @@ function generateAIAnalysisPrompt(analysisData) {
   const nationalPerformance = percentile >= 70 ? "상위권" : 
                              percentile >= 30 ? "중위권" : "하위권";
 
-  const prompt = `# 🍽️ ${schoolName} ${period} 급식 평가 분석 리포트
+  const prompt = `# 🍽️ ${schoolName} ${period} 급식 브리핑 리포트
 
-## 📋 분석 개요
-- **분석 대상**: ${schoolName} (${region})
-- **분석 기간**: ${period}
-- **총 평가 참여**: ${myRatingCount.toLocaleString()}건
+안녕하세요! ${schoolName} 급식 담당자님들께 ${period} 급식 현황을 브리핑드립니다. 😊
 
-## 🏆 종합 성과 요약
+## 📋 **우리 아이들의 급식 평가 현황**
 
-### 📊 우리학교 급식 평점
-- **월간 평균 평점**: ${myRating.toFixed(2)}점 (5점 만점)
-- **지역 내 순위**: ${regionalTotal}개교 중 **${regionalRank}위** (${regionalPerformance})
-- **전국 순위**: ${nationalTotal.toLocaleString()}개교 중 **${nationalRank}위** (상위 ${percentile}%, ${nationalPerformance})
+${schoolName} 학생들이 ${myRatingCount.toLocaleString()}번의 평가를 통해 솔직한 의견을 남겨주었습니다.
+평균 **${myRating.toFixed(2)}점**으로, ${myRating >= 4.0 ? '정말 훌륭한' : myRating >= 3.5 ? '양호한' : myRating >= 3.0 ? '보통' : '개선이 필요한'} 수준입니다.
 
-### 🎯 비교 분석
-- **지역 평균 대비**: ${(myRating - regionalAvg).toFixed(2)}점 ${myRating > regionalAvg ? '높음 ⬆️' : '낮음 ⬇️'}
-- **전국 평균 대비**: ${(myRating - nationalAvg).toFixed(2)}점 ${myRating > nationalAvg ? '높음 ⬆️' : '낮음 ⬇️'}
+### 🏆 **우리학교 위치는?**
+- **${region} 지역**: ${regionalTotal}개교 중 **${regionalRank}위** 
+  ${regionalRank <= Math.ceil(regionalTotal * 0.3) ? '👏 상위권 진입! 지역에서 인정받는 급식입니다!' : 
+    regionalRank <= Math.ceil(regionalTotal * 0.7) ? '📈 중위권이네요. 조금만 더 노력하면 상위권 도약 가능!' : 
+    '💪 하위권이지만 개선 여지가 충분합니다!'}
 
-## 📈 상세 분석 데이터
+- **전국 순위**: ${nationalTotal.toLocaleString()}개교 중 **${nationalRank}위** (상위 ${percentile}%)
+  ${percentile >= 70 ? '🎉 전국 상위권! 정말 자랑스럽습니다!' : 
+    percentile >= 50 ? '👍 전국 중상위권, 더 올라갈 수 있어요!' : 
+    percentile >= 30 ? '📊 전국 중위권, 발전 가능성이 큽니다!' : 
+    '🚀 아직 하위권이지만 상승 잠재력이 있습니다!'}
 
-### 1️⃣ 메뉴별 성과 분석
-\`\`\`
-상위 메뉴 TOP 5:
-${topMenus.slice(0, 5).map((menu, index) => `${index + 1}. ${menu.menu_name}: ${menu.avg_rating.toFixed(2)}점 (${menu.rating_count}회 평가)`).join('\n')}
+## 🍽️ **아이들이 좋아하는 메뉴 TOP 5**
 
-개선 필요 메뉴:
-${worstMenus.map((menu, index) => `${index + 1}. ${menu.menu_name}: ${menu.avg_rating.toFixed(2)}점 (${menu.rating_count}회 평가)`).join('\n')}
-\`\`\`
+${topMenus.slice(0, 5).map((menu, index) => 
+  `**${index + 1}위. ${menu.menu_name}** (${menu.avg_rating.toFixed(2)}점)
+   └ ${menu.rating_count}명이 평가했고, 이렇게 높은 점수를 받은 이유를 분석해보세요!`
+).join('\n\n')}
 
-### 2️⃣ 지역 내 순위 (${region})
-\`\`\`
-우리학교 순위: ${regionalRank}위 / ${regionalTotal}개교
-지역 평균 평점: ${regionalAvg.toFixed(2)}점
-우리학교 평점: ${myRating.toFixed(2)}점
-\`\`\`
+## 😅 **아이들이 아쉬워하는 메뉴들**
 
-### 3️⃣ 전국 순위 비교
-\`\`\`
-전국 순위: ${nationalRank}위 / ${nationalTotal.toLocaleString()}개교
-전국 평균: ${nationalAvg.toFixed(2)}점
-상위 백분위: ${percentile}%
-\`\`\`
+${worstMenus.slice(0, 3).map((menu, index) => 
+  `**${menu.menu_name}** (${menu.avg_rating.toFixed(2)}점)
+   └ ${menu.rating_count}명이 평가. 최근 아이들 입맛 트렌드를 고려한 개선이 필요해 보입니다.`
+).join('\n\n')}
 
-### 4️⃣ 메뉴 성과 요약
-- **전체 제공 메뉴**: ${menu_performance?.total_menus || 0}개
-- **우수 메뉴**: ${menu_performance?.better_than_national || 0}개
-- **개선 필요 메뉴**: ${menu_performance?.worse_than_national || 0}개
+## 📊 **성과 분석 & 제안사항**
 
-## 🎯 AI 분석 요청
+### ${myRating > regionalAvg ? '🎉 **칭찬할 점**' : '💡 **개선 포인트**'}
+${myRating > regionalAvg ? 
+  `지역 평균(${regionalAvg.toFixed(2)}점)보다 ${(myRating - regionalAvg).toFixed(2)}점 높습니다! 급식실 선생님들의 노고가 빛을 발하고 있어요. 👏` :
+  `지역 평균(${regionalAvg.toFixed(2)}점)보다 ${Math.abs(myRating - regionalAvg).toFixed(2)}점 낮습니다. 하지만 충분히 개선 가능합니다!`}
 
-위의 데이터를 바탕으로 다음 사항들을 분석해 주세요:
+${myRating > nationalAvg ? 
+  `전국 평균(${nationalAvg.toFixed(2)}점)보다도 ${(myRating - nationalAvg).toFixed(2)}점 높아서 정말 자랑스럽습니다! 🌟` :
+  `전국 평균(${nationalAvg.toFixed(2)}점)보다 ${Math.abs(myRating - nationalAvg).toFixed(2)}점 낮지만, 이는 곧 성장 기회입니다!`}
 
-### 📊 성과 분석
-1. **종합 평가**: 우리학교의 급식 서비스 전반적인 수준은 어떤가요?
-2. **강점 분석**: 어떤 부분에서 우수한 성과를 보이고 있나요?
-3. **개선점 발견**: 어떤 영역에서 개선이 필요한가요?
+---
 
-### 🍽️ 메뉴 개선 제안
-1. **인기 메뉴 활용**: 높은 평점을 받은 메뉴들의 공통점은 무엇인가요?
-2. **저평점 메뉴 개선**: 낮은 평점을 받은 메뉴들을 어떻게 개선할 수 있을까요?
-3. **신메뉴 제안**: 학생들이 좋아할 만한 새로운 메뉴를 제안해 주세요.
+## 🎯 **AI 분석 요청사항**
 
-### 📈 전략적 제안
-1. **지역 내 순위 향상**: 지역 내에서 순위를 올리기 위한 구체적인 방안은?
-2. **전국 평균 달성**: 전국 평균에 도달하기 위해 필요한 개선사항은?
-3. **장기 발전 계획**: 지속적인 급식 품질 향상을 위한 로드맵을 제시해 주세요.
+위 데이터를 바탕으로 **브리핑 스타일**로 친근하게 분석해 주세요:
 
-### 💡 실행 가능한 액션 아이템
-구체적이고 실행 가능한 개선 방안을 우선순위별로 제시해 주세요.
+### 🔍 **아이들 입맛 트렌드 분석**
+1. **인기 메뉴 분석**: 높은 점수를 받은 메뉴들의 공통점은? 요즘 아이들이 왜 이런 음식을 좋아할까요?
+2. **저평점 메뉴 분석**: 낮은 점수를 받은 이유를 최근 아이들 입맛 트렌드 관점에서 분석해주세요.
+3. **세대별 차이**: 어른들이 생각하는 '좋은 급식'과 아이들이 원하는 급식의 차이점은?
+
+### 👨‍🍳 **급식실 분들께 드리는 말씀**
+1. **잘하고 있는 점**: ${regionalPerformance === '상위권' || nationalPerformance === '상위권' ? '현재 좋은 성과를 내고 있는 부분에 대해 구체적으로 칭찬해주세요.' : ''}
+2. **개선 방향**: ${regionalPerformance === '하위권' || nationalPerformance === '하위권' ? '아이들 입맛 연구와 벤치마킹이 필요한 부분을 친근하게 제안해주세요.' : '더 나은 급식을 위한 발전 방향을 제시해주세요.'}
+
+### 🏫 **다른 학교 벤치마킹**
+1. **1등 학교 분석**: 우리 지역이나 전국에서 1등 하는 학교들은 어떤 메뉴로 성공했을까요?
+2. **성공 사례**: 비슷한 환경의 학교 중 급식 만족도가 높은 곳의 노하우는?
+3. **실현 가능한 벤치마킹**: 우리 학교에서도 당장 적용할 수 있는 아이디어는?
+
+### 💡 **구체적 실행 방안**
+1. **단기 개선안** (1-2개월 내): 바로 시도해볼 수 있는 것들
+2. **중기 계획** (3-6개월): 체계적으로 준비할 것들  
+3. **장기 비전** (1년 이상): 우리학교 급식의 목표와 방향
+
+**💬 분석 톤**: 마치 동료가 브리핑해주듯 친근하고 따뜻하게, 숫자 뒤에 숨은 아이들의 마음을 읽어주는 방식으로 분석해주세요. 급식실 선생님들의 노고도 인정하면서, 아이들이 더 맛있게 먹을 수 있는 현실적인 방안을 제시해주시기 바랍니다.
 ### 🏆 6. 벤치마킹
 - 우리 지역에서 우수한 학교들의 특징을 분석해주세요
 - 전국 상위권 학교들과의 차이점을 파악해주세요
