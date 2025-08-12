@@ -108,6 +108,26 @@ const AIAnalysisModal = ({
               유저님의 모바일에 깔려 있는 AI앱으로 {isViewingMode ? '관심학교' : '우리학교'} 급식데이터를 전송하여 
               <span className="font-semibold text-blue-600"> 무료 분석</span>을 받아보세요!
             </p>
+
+            {/* 사용법 강조 */}
+            <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4">
+              <div className="flex items-start gap-2">
+                <span className="text-orange-500 text-lg">📋</span>
+                <div>
+                  <div className="font-bold text-orange-800 mb-2">사용법 (중요!)</div>
+                  <div className="text-sm text-orange-700">
+                    <div className="font-medium mb-1">클립보드에 복사되어 있으니</div>
+                    <div className="font-bold text-base">
+                      <span className="bg-orange-200 px-2 py-1 rounded mr-2">붙여넣기</span> + 
+                      <span className="bg-orange-200 px-2 py-1 rounded ml-2">엔터</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-orange-600 mt-2">
+                    💡 PC와 모바일에서 동일한 방식
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
               <div className="font-medium mb-1">📊 분석 내용</div>
