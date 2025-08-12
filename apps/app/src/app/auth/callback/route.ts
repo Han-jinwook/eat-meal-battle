@@ -56,11 +56,15 @@ export async function GET(request: NextRequest) {
         let birthDate = null;
         let birthDateConsent = false;
         
-        // 카카오에서 생년월일 정보 추출
-        if (rawProviderData?.birthday) {
-          birthDate = rawProviderData.birthday;
+        // 카카오에서 생년월일 정보 추출 (birthday + birthyear 조합)
+        if (rawProviderData?.birthday && rawProviderData?.birthyear) {
+          const kakaoYear = rawProviderData.birthyear;
+          const kakaoBirthday = rawProviderData.birthday; // MMDD 형식
+          const month = kakaoBirthday.substring(0, 2);
+          const day = kakaoBirthday.substring(2, 4);
+          birthDate = `${kakaoYear}-${month}-${day}`; // YYYY-MM-DD 형식으로 변환
           birthDateConsent = true;
-          console.log('카카오에서 생년월일 정보 받음:', birthDate);
+          console.log('카카오에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
         }
         // 구글에서 생년월일 정보 추출 (가능한 경우)
         else if (rawProviderData?.birthdate) {
@@ -81,7 +85,8 @@ export async function GET(request: NextRequest) {
               age--;
             }
             
-            const isStudent = age >= 7 && age <= 19; // 만 7-19세 (초1~고3)
+            // 🚧 테스트 중: 나이 제한 임시 확장 (출시 전 만 6-19세로 변경 예정)
+            const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세 | 출시: 만 6-19세 (초등입학전~고3)
             
             console.log(`나이 계산 결과: ${age}세, 학생 여부: ${isStudent}`);
             
