@@ -84,10 +84,10 @@ ${worstMenus.map((menu, index) => `${index + 1}. ${menu.menu_name}: ${menu.avg_r
 상위 백분위: ${percentile}%
 \`\`\`
 
-### 7️⃣ 전국 인기 메뉴 TOP 10
-${menu_performance.national_trends.top_20_popular_menus.slice(0, 10).map((menu, index) => 
-  `${index + 1}. **${menu.menu_name}** - ${menu.average_rating.toFixed(2)}점 (${menu.total_ratings.toLocaleString()}건 평가, ${menu.school_count}개교 제공)`
-).join('\n')}
+### 4️⃣ 메뉴 성과 요약
+- **전체 제공 메뉴**: ${menu_performance?.total_menus || 0}개
+- **우수 메뉴**: ${menu_performance?.better_than_national || 0}개
+- **개선 필요 메뉴**: ${menu_performance?.worse_than_national || 0}개
 
 ## 🎯 AI 분석 요청
 
