@@ -1,6 +1,6 @@
 {
-  "name": "급식 배틀 - 학교 급식 평가 서비스",
-  "short_name": "급식배틀",
+  "name": "뭐먹지? - 학교 급식 평가 서비스",
+  "short_name": "뭐먹지?",
   "description": "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 앱",
   "start_url": "/",
   "display": "standalone",
