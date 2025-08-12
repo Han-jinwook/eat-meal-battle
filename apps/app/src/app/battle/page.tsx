@@ -329,186 +329,67 @@ export default function BattlePage() {
         console.warn('클립보드 복사 실패:', error);
       }
       
-      // HTML Form POST 방식으로 AI 앱에 프롬프트 전송
-      const sendPromptViaForm = (appUrl: string, promptParamName: string, prompt: string) => {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.target = '_blank';
-        form.action = appUrl;
-        form.style.display = 'none';
-
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = promptParamName;
-        input.value = prompt;
-
-        form.appendChild(input);
-        document.body.appendChild(form);
-        
-        console.log(`📤 ${appUrl}로 POST 전송 시도 (${prompt.length}자)`);
-        form.submit();
-        
-        // 폼 정리
-        setTimeout(() => {
-          if (document.body.contains(form)) {
-            document.body.removeChild(form);
+      // 스마트 자동 전송: GET 파라미터 시도 후 클립보드 폴백
+      const sendPromptSmart = (appUrl: string, appName: string, prompt: string) => {
+        try {
+          // 1단계: 짧은 프롬프트면 GET 파라미터로 시도
+          if (prompt.length < 1000) {
+            const encodedPrompt = encodeURIComponent(prompt);
+            const urlWithPrompt = `${appUrl}?q=${encodedPrompt}`;
+            window.open(urlWithPrompt, '_blank');
+            
+            // 성공 토스트
+            showToast(`🚀 ${appName} 자동 전송!`, 'GET 파라미터로 프롬프트 전송됨', 'green');
+            return true;
+          } else {
+            // 2단계: 긴 프롬프트면 바로 클립보드 폴백
+            throw new Error('프롬프트가 너무 길어서 클립보드 사용');
           }
-        }, 1000);
+        } catch (error) {
+          console.warn(`${appName} 자동 전송 실패, 클립보드 폴백:`, error);
+          
+          // 폴백: 기본 페이지 열고 클립보드 사용
+          window.open(appUrl, '_blank');
+          showToast(`📋 ${appName} 열림!`, '클립보드에서 Ctrl+V로 붙여넣기', 'blue');
+          return false;
+        }
+      };
 
-        return true;
+      // 토스트 메시지 표시 함수
+      const showToast = (title: string, message: string, color: string) => {
+        const toast = document.createElement('div');
+        const bgColor = color === 'green' ? 'bg-green-500' : 'bg-blue-500';
+        toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm`;
+        toast.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-xl">${color === 'green' ? '🚀' : '📋'}</span>
+            <div>
+              <div class="font-semibold">${title}</div>
+              <div class="text-sm opacity-90">${message}</div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+          }
+        }, 4000);
       };
 
       if (selectedApp.id === 'chatgpt') {
-        // ChatGPT - POST 방식 시도, 실패시 클립보드 폴백
         console.log(`프롬프트 길이: ${aiPrompt.length}자`);
-        
-        try {
-          // ChatGPT POST 파라미터 시도 (일반적인 파라미터명들)
-          const success = sendPromptViaForm('https://chat.openai.com/', 'message', aiPrompt) ||
-                         sendPromptViaForm('https://chat.openai.com/', 'prompt', aiPrompt) ||
-                         sendPromptViaForm('https://chat.openai.com/', 'q', aiPrompt);
-          
-          if (success) {
-            // 성공 토스트
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-            toast.innerHTML = `
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🚀</span>
-                <div>
-                  <div class="font-semibold">ChatGPT 자동 전송!</div>
-                  <div class="text-sm opacity-90">POST 방식으로 프롬프트 전송됨</div>
-                </div>
-              </div>
-            `;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 4000);
-          }
-        } catch (error) {
-          console.warn('POST 전송 실패, 클립보드 폴백:', error);
-          
-          // 폴백: 기본 페이지 열고 클립보드 사용
-          window.open('https://chat.openai.com/', '_blank');
-          
-          const toast = document.createElement('div');
-          toast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-          toast.innerHTML = `
-            <div class="flex items-center gap-2">
-              <span class="text-xl">📋</span>
-              <div>
-                <div class="font-semibold">ChatGPT 열림!</div>
-                <div class="text-sm opacity-90">클립보드에서 Ctrl+V로 붙여넣기</div>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(toast);
-          
-          setTimeout(() => {
-            if (document.body.contains(toast)) {
-              document.body.removeChild(toast);
-            }
-          }, 5000);
-        }
+        sendPromptSmart('https://chat.openai.com', 'ChatGPT', aiPrompt);
         
       } else if (selectedApp.id === 'gemini') {
-        // Gemini - POST 방식 시도, 실패시 URL 폴백
-        try {
-          const success = sendPromptViaForm('https://gemini.google.com/app', 'q', aiPrompt) ||
-                         sendPromptViaForm('https://gemini.google.com/app', 'prompt', aiPrompt) ||
-                         sendPromptViaForm('https://bard.google.com/chat', 'message', aiPrompt);
-          
-          if (success) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-            toast.innerHTML = `
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🚀</span>
-                <div>
-                  <div class="font-semibold">Gemini 자동 전송!</div>
-                  <div class="text-sm opacity-90">POST 방식으로 프롬프트 전송됨</div>
-                </div>
-              </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 4000);
-          }
-        } catch (error) {
-          console.warn('Gemini POST 실패, URL 폴백:', error);
-          const encodedPrompt = encodeURIComponent(aiPrompt);
-          window.open(`https://gemini.google.com/app?q=${encodedPrompt}`, '_blank');
-        }
+        sendPromptSmart('https://gemini.google.com/app', 'Gemini', aiPrompt);
         
       } else if (selectedApp.id === 'claude') {
-        // Claude - POST 방식 시도, 실패시 URL 폴백
-        try {
-          const success = sendPromptViaForm('https://claude.ai/chat', 'q', aiPrompt) ||
-                         sendPromptViaForm('https://claude.ai/chat', 'prompt', aiPrompt) ||
-                         sendPromptViaForm('https://claude.ai/new', 'message', aiPrompt);
-          
-          if (success) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-            toast.innerHTML = `
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🚀</span>
-                <div>
-                  <div class="font-semibold">Claude 자동 전송!</div>
-                  <div class="text-sm opacity-90">POST 방식으로 프롬프트 전송됨</div>
-                </div>
-              </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 4000);
-          }
-        } catch (error) {
-          console.warn('Claude POST 실패, URL 폴백:', error);
-          const encodedPrompt = encodeURIComponent(aiPrompt);
-          window.open(`https://claude.ai/chat?q=${encodedPrompt}`, '_blank');
-        }
+        sendPromptSmart('https://claude.ai/chat', 'Claude', aiPrompt);
         
       } else if (selectedApp.id === 'grok') {
-        // Grok - POST 방식 시도, 실패시 URL 폴백
-        try {
-          const success = sendPromptViaForm('https://x.com/i/grok', 'q', aiPrompt) ||
-                         sendPromptViaForm('https://x.com/i/grok', 'text', aiPrompt);
-          
-          if (success) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-            toast.innerHTML = `
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🚀</span>
-                <div>
-                  <div class="font-semibold">Grok 자동 전송!</div>
-                  <div class="text-sm opacity-90">POST 방식으로 프롬프트 전송됨</div>
-                </div>
-              </div>
-            `;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 4000);
-          }
-        } catch (error) {
-          console.warn('Grok POST 실패, URL 폴백:', error);
-          const encodedPrompt = encodeURIComponent(aiPrompt);
-          window.open(`https://x.com/i/grok?q=${encodedPrompt}`, '_blank');
-        }
+        sendPromptSmart('https://x.com/i/grok', 'Grok', aiPrompt);
       } else {
         // 기본 처리: 딥링크 시도 후 웹 폴백
         const encodedPrompt = encodeURIComponent(aiPrompt);
