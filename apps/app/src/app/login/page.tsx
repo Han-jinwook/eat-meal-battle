@@ -83,7 +83,7 @@ function LoginContent() {
         provider: 'kakao',
         options: {
           queryParams: {
-            scope: 'profile_nickname,profile_image,account_email,birthday',
+            scope: 'profile_nickname,profile_image,account_email,birthyear',
           },
         },
       })
