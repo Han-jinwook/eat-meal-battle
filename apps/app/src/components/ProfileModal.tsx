@@ -181,7 +181,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-gray-700 dark:text-gray-200">학교 정보</span>
-                {userProfile.birth_date_consent ? (
+                {userProfile.date_consent ? (
                   // 이미 생년월일 동의한 경우 - 나이에 따라 버튼 활성화
                   userProfile.birth_date && (() => {
                     const today = new Date();

@@ -4,14 +4,14 @@ import { createClient } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  console.log('Auth callback route triggered')
+  console.info('🚀 OAuth 콜백 라우트 시작')
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   let redirectUrl = '/'
 
   try {
     if (code) {
-      console.log('Auth code received, exchanging for session')
+      console.info('🔑 OAuth 코드 수신됨, 세션 교환 시작')
 
       // createClient는 동기 함수로 복원됨
       const supabase = createClient()
@@ -49,10 +49,22 @@ export async function GET(request: NextRequest) {
         const userMetadata = data.session.user.user_metadata;
         const rawProviderData = data.session.user.identities?.[0]?.identity_data;
         
-        console.log('🔍 OAuth 디버깅 - User metadata:', JSON.stringify(userMetadata, null, 2));
-        console.log('🔍 OAuth 디버깅 - Provider data:', JSON.stringify(rawProviderData, null, 2));
-        console.log('🔍 OAuth 디버깅 - birthyear 확인:', rawProviderData?.birthyear);
-        console.log('🔍 OAuth 디버깅 - birthday 확인:', rawProviderData?.birthday);
+        console.info('🔍 OAuth 콜백 실행됨 - 사용자 ID:', data.session.user.id);
+        console.info('🔍 OAuth 디버깅 - User metadata:', JSON.stringify(userMetadata, null, 2));
+        console.info('🔍 OAuth 디버깅 - Provider data:', JSON.stringify(rawProviderData, null, 2));
+        console.info('🔍 OAuth 디버깅 - birthyear 확인:', rawProviderData?.birthyear);
+        console.info('🔍 OAuth 디버깅 - birthday 확인:', rawProviderData?.birthday);
+        
+        // 카카오 데이터 구조 전체 분석
+        if (rawProviderData) {
+          console.info('🔍 카카오 데이터 모든 키:', Object.keys(rawProviderData));
+          console.info('🔍 생년 관련 필드 검색:');
+          Object.keys(rawProviderData).forEach(key => {
+            if (key.toLowerCase().includes('birth') || key.toLowerCase().includes('year')) {
+              console.info(`  - ${key}: ${rawProviderData[key]}`);
+            }
+          });
+        }
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
@@ -66,20 +78,20 @@ export async function GET(request: NextRequest) {
           const day = kakaoBirthday.substring(2, 4);
           birthDate = `${kakaoYear}-${month}-${day}`; // YYYY-MM-DD 형식으로 변환
           birthDateConsent = true;
-          console.log('카카오에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
+          console.info('✅ 카카오에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
         }
         // 카카오에서 생년만 받은 경우 (birthyear만 있는 경우)
         else if (rawProviderData?.birthyear) {
           const kakaoYear = rawProviderData.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
           birthDateConsent = true;
-          console.log('카카오에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+          console.info('✅ 카카오에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
         }
         // 구글에서 생년월일 정보 추출 (가능한 경우)
         else if (rawProviderData?.birthdate) {
           birthDate = rawProviderData.birthdate;
           birthDateConsent = true;
-          console.log('구글에서 생년월일 정보 받음:', birthDate);
+          console.info('✅ 구글에서 생년월일 정보 받음:', { birthdate: birthDate });
         }
         
         // 생년월일이 있으면 나이 계산 및 학생 여부 판단
@@ -104,7 +116,7 @@ export async function GET(request: NextRequest) {
               .from('users')
               .update({
                 birth_date: birthDate,
-                birth_date_consent: birthDateConsent,
+                date_consent: birthDateConsent,
                 is_student: isStudent
               })
               .eq('id', data.session.user.id);
@@ -124,7 +136,7 @@ export async function GET(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('users')
             .update({
-              birth_date_consent: false,
+              date_consent: false,
               is_student: false
             })
             .eq('id', data.session.user.id);

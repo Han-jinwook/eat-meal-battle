@@ -49,7 +49,7 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
         .from('users')
         .update({
           birth_date: birthDate,
-          birth_date_consent: true
+          date_consent: true
         })
         .eq('id', userId);
 
