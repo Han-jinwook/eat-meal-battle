@@ -49,8 +49,10 @@ export async function GET(request: NextRequest) {
         const userMetadata = data.session.user.user_metadata;
         const rawProviderData = data.session.user.identities?.[0]?.identity_data;
         
-        console.log('User metadata:', userMetadata);
-        console.log('Provider data:', rawProviderData);
+        console.log('🔍 OAuth 디버깅 - User metadata:', JSON.stringify(userMetadata, null, 2));
+        console.log('🔍 OAuth 디버깅 - Provider data:', JSON.stringify(rawProviderData, null, 2));
+        console.log('🔍 OAuth 디버깅 - birthyear 확인:', rawProviderData?.birthyear);
+        console.log('🔍 OAuth 디버깅 - birthday 확인:', rawProviderData?.birthday);
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
@@ -65,6 +67,13 @@ export async function GET(request: NextRequest) {
           birthDate = `${kakaoYear}-${month}-${day}`; // YYYY-MM-DD 형식으로 변환
           birthDateConsent = true;
           console.log('카카오에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
+        }
+        // 카카오에서 생년만 받은 경우 (birthyear만 있는 경우)
+        else if (rawProviderData?.birthyear) {
+          const kakaoYear = rawProviderData.birthyear;
+          birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
+          birthDateConsent = true;
+          console.log('카카오에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
         }
         // 구글에서 생년월일 정보 추출 (가능한 경우)
         else if (rawProviderData?.birthdate) {
