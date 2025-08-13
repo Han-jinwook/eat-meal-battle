@@ -109,34 +109,43 @@ export async function GET(request: NextRequest) {
             // 🚧 테스트 중: 나이 제한 임시 확장 (출시 전 만 6-19세로 변경 예정)
             const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세 | 출시: 만 6-19세 (초등입학전~고3)
             
-            console.log(`나이 계산 결과: ${age}세, 학생 여부: ${isStudent}`);
+            console.info(`✅ 나이 계산 결과: ${age}세, 학생 여부: ${isStudent}`);
             
             // users 테이블 업데이트
+            console.info('🔄 DB 업데이트 시작:', {
+              birth_date: birthDate,
+              birth_date_consent: birthDateConsent,
+              is_student: isStudent,
+              user_id: data.session.user.id
+            });
+            
             const { error: updateError } = await supabase
               .from('users')
               .update({
                 birth_date: birthDate,
-                date_consent: birthDateConsent,
+                birth_date_consent: birthDateConsent,
                 is_student: isStudent
               })
               .eq('id', data.session.user.id);
             
             if (updateError) {
-              console.error('사용자 정보 업데이트 오류:', updateError);
+              console.error('❌ 사용자 정보 업데이트 오류:', updateError);
             } else {
-              console.log('사용자 정보 업데이트 완료');
+              console.info('✅ 사용자 정보 DB 업데이트 완료!');
             }
           } catch (ageError) {
             console.error('나이 계산 오류:', ageError);
           }
         } else {
-          console.log('생년월일 정보 없음 - 기본값으로 설정');
+          console.info('❌ 생년월일 정보 없음 - 기본값으로 설정');
+          console.info('🔍 birthDate:', birthDate);
+          console.info('🔍 birthDateConsent:', birthDateConsent);
           
           // 생년월일 정보가 없는 경우 기본값 설정
           const { error: updateError } = await supabase
             .from('users')
             .update({
-              date_consent: false,
+              birth_date_consent: false,
               is_student: false
             })
             .eq('id', data.session.user.id);
