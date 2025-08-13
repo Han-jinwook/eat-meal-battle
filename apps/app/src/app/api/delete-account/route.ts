@@ -67,8 +67,13 @@ export async function POST(request: NextRequest) {
         id: anonymousUserId,
         nickname: '탈퇴한 사용자',
         email: 'deleted@anonymous.com',
-        user_type: 'anonymous',
-        created_at: new Date().toISOString()
+        profile_image: 'https://via.placeholder.com/100x100/cccccc/666666?text=DEL',
+        provider: 'email',
+        provider_id: 'anonymous_user',
+        user_type: 'student', // 'anonymous' 대신 허용되는 값 사용
+        is_student: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       console.log('익명 사용자 레코드 생성 완료')
     }

@@ -82,7 +82,6 @@ function LoginContent() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: redirectUrl,
           queryParams: {
             scope: 'profile_nickname,profile_image,account_email,birthday',
           },
