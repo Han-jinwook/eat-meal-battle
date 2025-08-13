@@ -118,19 +118,27 @@ export async function POST(request: NextRequest) {
 
     console.log('모든 사용자 관련 데이터 삭제 성공')
     
-    // Auth에서도 사용자 삭제
+    // ⚠️ 중요: Auth에서 사용자 삭제 (OAuth 연결 완전 해제)
+    console.log('Auth에서 사용자 계정 삭제 시도...')
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
     
     if (deleteAuthError) {
-      console.error('Auth 사용자 삭제 오류:', deleteAuthError)
-      // Auth 삭제 실패해도 DB는 삭제됨
-    } else {
-      console.log('Auth에서 사용자 계정 삭제 성공')
+      console.error('❌ Auth 사용자 삭제 실패:', deleteAuthError)
+      
+      // Auth 삭제 실패 시 사용자에게 명확한 안내
+      return NextResponse.json({
+        success: false,
+        error: 'OAuth 연결 해제에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        details: deleteAuthError.message,
+        requiresRetry: true
+      }, { status: 500 })
     }
+    
+    console.log('✅ Auth에서 사용자 계정 삭제 성공 - OAuth 연결 완전 해제됨')
     
     return NextResponse.json({
       success: true,
-      message: '사용자 데이터가 삭제되었습니다. 로그아웃이 완료되었습니다.'
+      message: '계정이 완전히 삭제되었습니다. OAuth 연결도 해제되어 재가입이 가능합니다.'
     })
   } catch (error: any) {
     console.error('계정 삭제 중 예외 발생:', error)

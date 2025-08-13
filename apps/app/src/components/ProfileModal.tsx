@@ -117,13 +117,22 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         body: JSON.stringify({ user_id: user.id })
       });
       const responseData = await response.json();
+      
       if (!response.ok) {
+        // OAuth 연결 해제 실패 시 재시도 안내
+        if (responseData.requiresRetry) {
+          throw new Error(`${responseData.error}\n\n다시 시도하면 해결될 수 있습니다.`);
+        }
         throw new Error(responseData.error || '회원 탈퇴 중 오류 발생');
       }
+      
+      // 성공 시 로그아웃 및 리디렉션
       await supabase.auth.signOut();
+      alert(responseData.message || '계정이 완전히 삭제되었습니다.');
       onClose();
       router.push('/');
     } catch (error: any) {
+      console.error('회원 탈퇴 오류:', error);
       setError(error.message || '회원 탈퇴 중 오류가 발생했습니다');
     } finally {
       setDeletingAccount(false);
