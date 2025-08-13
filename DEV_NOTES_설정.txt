@@ -32,26 +32,36 @@
 
 ---
 
-## 🗑️ 회원 탈퇴 시스템 (2025-08-07 완성)
+## 🗑️ 회원 탈퇴 시스템 (2025-08-13 최종 수정)
 
 ### 핵심 구조
 - **API**: `/api/delete-account` (POST)
 - **권한**: Supabase Service Role Key 사용
-- **처리 방식**: 개인정보 삭제 + 통계 데이터 익명화
+- **처리 방식**: Auth 우선 삭제 + 개인정보 삭제 + 통계 데이터 익명화
 
-### 탈퇴 처리 로직
+### 탈퇴 처리 로직 (수정된 순서)
 
-#### 1단계: 개인정보 완전 삭제
+#### 1단계: Auth 계정 삭제 (OAuth 연결 해제)
+```javascript
+// ⚠️ 최우선: Auth에서 사용자 삭제 (OAuth 연결 완전 해제)
+const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+if (deleteAuthError) {
+  // Auth 삭제 실패 시 전체 탈퇴 중단 (일관성 보장)
+  return error response;
+}
+```
+
+#### 2단계: 개인정보 완전 삭제
 ```javascript
 // 개인정보 관련 데이터 완전 삭제
 - comment_likes (댓글 좋아요)
 - notification_recipients (알림 수신 기록)
-- interest_schools (관심학교)
+- interest_schools (관심학교) ✅ 추가됨
 - school_infos (학교 정보)
 - users (사용자 기본 정보)
 ```
 
-#### 2단계: 통계 데이터 익명화
+#### 3단계: 통계 데이터 익명화
 ```javascript
 // "탈퇴한 사용자"로 익명화 처리
 - comments → user_id: '00000000-0000-0000-0000-000000000000'
@@ -59,7 +69,7 @@
 - meal_images → uploaded_by: '00000000-0000-0000-0000-000000000000'
 ```
 
-#### 3단계: 통계 무결성 보존
+#### 4단계: 통계 무결성 보존
 ```javascript
 // 삭제하지 않고 유지하는 데이터
 - meal_ratings (별점 - 통계 왜곡 방지)
@@ -88,17 +98,25 @@ INSERT INTO users (
 
 ### 안전장치 및 에러 처리
 
-#### 1. 외래키 제약 조건 순서 처리
+#### 1. Auth 삭제 우선 처리 (핵심 개선)
+- Auth 삭제를 최우선으로 실행
+- Auth 삭제 실패 시 전체 탈퇴 중단
+- OAuth 연결 완전 해제 보장
+
+#### 2. 외래키 제약 조건 순서 처리
 - 자식 테이블부터 순차적 삭제
 - 각 단계별 성공/실패 로그 기록
 
-#### 2. Supabase Auth 삭제 실패 대응
+#### 3. 일관성 보장
 ```javascript
-// Auth 삭제 실패해도 DB 정리 완료로 재가입 시 문제없음
-try {
-  await supabaseAdmin.auth.admin.deleteUser(userId);
-} catch (authError) {
-  console.log('Auth 삭제 실패하지만 DB는 정리됨:', authError.message);
+// ✅ 수정된 방식: Auth 삭제 실패 시 전체 중단
+const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+if (deleteAuthError) {
+  return NextResponse.json({
+    success: false,
+    error: 'OAuth 연결 해제에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    requiresRetry: true
+  }, { status: 500 })
 }
 ```
 

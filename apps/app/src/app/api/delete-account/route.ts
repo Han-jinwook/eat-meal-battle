@@ -33,8 +33,26 @@ export async function POST(request: NextRequest) {
       }
     )
     
-    // 하이브리드 탈퇴 처리: 개인정보는 삭제, 통계 데이터는 익명화 보존
-    console.log('하이브리드 탈퇴 처리 시작...')
+    // ⚠️ 1단계: Auth에서 먼저 사용자 삭제 (OAuth 연결 완전 해제)
+    console.log('1단계: Auth에서 사용자 계정 삭제 시도...')
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+    
+    if (deleteAuthError) {
+      console.error('❌ Auth 사용자 삭제 실패:', deleteAuthError)
+      
+      // Auth 삭제 실패 시 전체 탈퇴 중단
+      return NextResponse.json({
+        success: false,
+        error: 'OAuth 연결 해제에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        details: deleteAuthError.message,
+        requiresRetry: true
+      }, { status: 500 })
+    }
+    
+    console.log('✅ Auth에서 사용자 계정 삭제 성공 - OAuth 연결 완전 해제됨')
+    
+    // 2단계: 하이브리드 탈퇴 처리 - 개인정보는 삭제, 통계 데이터는 익명화 보존
+    console.log('2단계: 하이브리드 탈퇴 처리 시작...')
     
     // 익명 사용자 레코드 생성 (없으면 생성)
     const anonymousUserId = '00000000-0000-0000-0000-000000000000'
@@ -65,13 +83,17 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin.from('notification_recipients').delete().eq('recipient_id', user_id)
     console.log('알림 수신 기록 삭제 완료')
     
-    // 3. 학교 정보 삭제 (개인정보)
+    // 3. 관심학교 정보 삭제 (개인정보)
+    await supabaseAdmin.from('interest_schools').delete().eq('user_id', user_id)
+    console.log('관심학교 데이터 삭제 완료')
+    
+    // 4. 학교 정보 삭제 (개인정보)
     await supabaseAdmin.from('school_infos').delete().eq('user_id', user_id)
     console.log('학교 정보 데이터 삭제 완료')
     
     // === 익명화 처리 대상 (통계 보존 필요) ===
     
-    // 4. 댓글/답글 익명화 ("탈퇴한 사용자"로 표시)
+    // 5. 댓글/답글 익명화 ("탈퇴한 사용자"로 표시)
     await supabaseAdmin.from('comments')
       .update({ 
         user_id: '00000000-0000-0000-0000-000000000000', // 익명 사용자 ID
@@ -88,21 +110,21 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user_id)
     console.log('답글 익명화 완료')
     
-    // 5. 별점 데이터는 보존 (통계 무결성 유지)
+    // 6. 별점 데이터는 보존 (통계 무결성 유지)
     // menu_item_ratings, meal_ratings는 삭제하지 않음
     console.log('별점 데이터 보존 (통계 무결성 유지)')
     
-    // 6. 퀴즈 결과는 보존하되 개인 식별 불가능하게 처리
+    // 7. 퀴즈 결과는 보존하되 개인 식별 불가능하게 처리
     // quiz_results, user_champion_records는 보존
     console.log('퀴즈 데이터 보존 (통계 무결성 유지)')
     
-    // 7. 급식 이미지는 익명화 ("탈퇴한 사용자"로 표시)
+    // 8. 급식 이미지는 익명화 ("탈퇴한 사용자"로 표시)
     await supabaseAdmin.from('meal_images')
       .update({ uploaded_by: '00000000-0000-0000-0000-000000000000' })
       .eq('uploaded_by', user_id)
     console.log('급식 이미지 익명화 완료')
     
-    // 11. 마지막으로 사용자 기본 정보 삭제
+    // 9. 마지막으로 사용자 기본 정보 삭제
     const { error: deleteUserDataError } = await supabaseAdmin
       .from('users')
       .delete()
@@ -116,25 +138,7 @@ export async function POST(request: NextRequest) {
       )
     } 
 
-    console.log('모든 사용자 관련 데이터 삭제 성공')
-    
-    // ⚠️ 중요: Auth에서 사용자 삭제 (OAuth 연결 완전 해제)
-    console.log('Auth에서 사용자 계정 삭제 시도...')
-    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
-    
-    if (deleteAuthError) {
-      console.error('❌ Auth 사용자 삭제 실패:', deleteAuthError)
-      
-      // Auth 삭제 실패 시 사용자에게 명확한 안내
-      return NextResponse.json({
-        success: false,
-        error: 'OAuth 연결 해제에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        details: deleteAuthError.message,
-        requiresRetry: true
-      }, { status: 500 })
-    }
-    
-    console.log('✅ Auth에서 사용자 계정 삭제 성공 - OAuth 연결 완전 해제됨')
+    console.log('✅ 3단계: 모든 사용자 관련 데이터 삭제 성공')
     
     return NextResponse.json({
       success: true,
