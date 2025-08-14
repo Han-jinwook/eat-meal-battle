@@ -51,31 +51,60 @@ export async function GET(request: NextRequest) {
         
         console.info('🔍 OAuth 콜백 실행됨 - 사용자 ID:', data.session.user.id);
         console.info('🔍 OAuth 디버깅 - User metadata:', JSON.stringify(userMetadata, null, 2));
-        console.info('🔍 OAuth 디버깅 - Provider data:', JSON.stringify(rawProviderData, null, 2));
+        console.info('🔍 OAuth 디버깅 - Provider data:', rawProviderData);
         console.info('🔍 OAuth 디버깅 - birthyear 확인:', rawProviderData?.birthyear);
         console.info('🔍 OAuth 디버깅 - birthday 확인:', rawProviderData?.birthday);
+        console.info('🔍 카카오 데이터 모든 키:', Object.keys(rawProviderData || {}));
         
-        // 카카오 데이터 구조 전체 분석
-        if (rawProviderData) {
-          console.info('🔍 카카오 데이터 모든 키:', Object.keys(rawProviderData));
-          console.info('🔍 생년 관련 필드 검색:');
-          Object.keys(rawProviderData).forEach(key => {
-            if (key.toLowerCase().includes('birth') || key.toLowerCase().includes('year')) {
-              console.info(`  - ${key}: ${rawProviderData[key]}`);
+        // 추가 디버깅: 모든 필드 값 출력
+        console.info('🔍 카카오 데이터 전체 값:', JSON.stringify(rawProviderData, null, 2));
+        
+        // birth 관련 모든 키 검색
+        const birthKeys = Object.keys(rawProviderData || {}).filter(key => 
+          key.toLowerCase().includes('birth') || key.toLowerCase().includes('age') || key.toLowerCase().includes('year')
+        );
+        console.info('🔍 birth/age/year 관련 키들:', birthKeys);
+        
+        // 카카오 사용자 정보 API 직접 호출 (생년 정보 획득)
+        let kakaoUserInfo = null;
+        if (data.session.provider_token) {
+          try {
+            console.info('🔍 카카오 사용자 정보 API 호출 시작...');
+            const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
+              headers: {
+                'Authorization': `Bearer ${data.session.provider_token}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            });
+            
+            if (kakaoResponse.ok) {
+              kakaoUserInfo = await kakaoResponse.json();
+              console.info('✅ 카카오 사용자 정보 API 응답:', JSON.stringify(kakaoUserInfo, null, 2));
+            } else {
+              console.error('❌ 카카오 사용자 정보 API 오류:', kakaoResponse.status, kakaoResponse.statusText);
             }
-          });
+          } catch (apiError) {
+            console.error('❌ 카카오 API 호출 실패:', apiError);
+          }
+        } else {
+          console.info('⚠️ provider_token이 없어서 카카오 API 호출 불가');
         }
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
         let birthDateConsent = false;
         
-        // 카카오에서 생년 정보 추출 (birthyear만 사용)
-        if (rawProviderData?.birthyear) {
+        // 카카오에서 생년 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
+        if (kakaoUserInfo?.kakao_account?.birthyear) {
+          const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
+          birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
+          birthDateConsent = true;
+          console.info('✅ 카카오 API에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+        } else if (rawProviderData?.birthyear) {
           const kakaoYear = rawProviderData.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
           birthDateConsent = true;
-          console.info('✅ 카카오에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+          console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
         }
         // 구글에서 생년월일 정보 추출 (가능한 경우)
         else if (rawProviderData?.birthdate) {
