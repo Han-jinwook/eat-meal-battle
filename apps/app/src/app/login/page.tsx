@@ -84,6 +84,7 @@ function LoginContent() {
         options: {
           queryParams: {
             scope: 'profile_nickname,profile_image,account_email,birthyear',
+            prompt: 'consent',
           },
         },
       })
