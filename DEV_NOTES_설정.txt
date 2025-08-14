@@ -550,6 +550,7 @@ scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read'
 4. **강화된 디버깅 로그**: OAuth 콜백에서 상세한 서버 로그 출력
 5. **필드명 통일**: `birth_date_consent` 올바른 필드명으로 수정
 6. **탈퇴 시스템 안정화**: Auth 우선 삭제 + 데이터 익명화 완료
+7. **OAuth Redirect URI 문제 해결**: 카카오/구글 개발자 콘솔 설정 수정
 
 #### 🔧 적용된 디버깅 로그
 - `🚀 OAuth 콜백 라우트 시작`
@@ -561,7 +562,31 @@ scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read'
 - `🔄 DB 업데이트 시작: {...}` (업데이트 데이터 상세)
 - `✅ 사용자 정보 DB 업데이트 완료!` (성공 시)
 
-#### 🚨 해결해야 할 문제
+#### 🚨 해결된 주요 문제 (2025-08-14 15:35)
+
+**문제**: OAuth 콜백이 실행되지 않아 생년월일 데이터 수집 실패
+**원인**: 카카오/구글 개발자 콘솔의 Redirect URI 설정 오류
+
+**잘못된 설정**:
+- 카카오: `https://lunbat.com/auth/kakao/callback` ❌
+- 구글: 우리 도메인 URI 없음 ❌
+
+**올바른 설정**:
+- 카카오: `https://lunbat.com/auth/callback` ✅
+- 구글: `https://lunbat.com/auth/callback` ✅
+
+**증상**: 
+- OAuth 로그인 후 콜백 라우트 실행되지 않음
+- 서버 로그에 `🚀 OAuth 콜백 라우트 시작` 메시지 없음
+- 생년월일 데이터 수집되지 않음 (`birth_date: NULL`)
+
+**해결 후 예상 동작**:
+- OAuth 콜백 정상 실행
+- 카카오: `birthyear` 데이터 수집
+- 구글: `birthdate` 데이터 수집
+- DB에 `birth_date`, `birth_date_consent`, `is_student` 정상 저장
+
+#### 🚨 남은 문제
 1. **카카오 정책 제약**: `birthyear`는 "선택 동의"만 가능 (필수 동의 불가)
 2. **생년 데이터 수집**: 사용자가 동의하지 않으면 데이터 없음
 3. **BirthConsentModal 대안**: OAuth 실패 시 수동 입력 방식 유지
