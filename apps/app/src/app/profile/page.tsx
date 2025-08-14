@@ -325,8 +325,31 @@ export default function Profile() {
           </div>
           <div className="text-center">
             <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
-            <div className="font-medium">{user?.email || '이메일 없음'}</div>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
+            
+            {/* 출생연도와 초대코드 */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {/* 출생연도 */}
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="text-xs text-blue-600 font-medium mb-1">출생연도</div>
+                <div className="text-sm font-semibold text-blue-800">
+                  {userProfile?.birth_date 
+                    ? new Date(userProfile.birth_date).getFullYear() + '년'
+                    : '미설정'
+                  }
+                </div>
+              </div>
+              
+              {/* 초대코드 */}
+              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="text-xs text-green-600 font-medium mb-1">초대코드</div>
+                <div className="text-sm font-semibold text-green-800 font-mono">
+                  {userProfile?.referral_code || '생성중...'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-500">
               {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
             </div>
           </div>
