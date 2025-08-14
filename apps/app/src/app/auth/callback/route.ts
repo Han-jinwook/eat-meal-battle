@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
+import { generateReferralCode } from '@/utils/referralUtils'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,12 +134,36 @@ export async function GET(request: NextRequest) {
               user_id: data.session.user.id
             });
             
+            // 레퍼럴 코드 생성 (없는 경우에만)
+            let referralCodeToUpdate = null;
+            try {
+              const { data: existingUser } = await supabase
+                .from('users')
+                .select('referral_code')
+                .eq('id', data.session.user.id)
+                .single();
+              
+              if (!existingUser?.referral_code && data.session.user.email) {
+                referralCodeToUpdate = generateReferralCode(data.session.user.email, data.session.user.id);
+                console.info('🎫 새 레퍼럴 코드 생성:', referralCodeToUpdate);
+              }
+            } catch (referralError) {
+              console.error('레퍼럴 코드 확인 오류:', referralError);
+            }
+            
+            // DB 업데이트 (birth_date, is_student, referral_code)
+            const updateData: any = {
+              birth_date: birthDate,
+              is_student: isStudent
+            };
+            
+            if (referralCodeToUpdate) {
+              updateData.referral_code = referralCodeToUpdate;
+            }
+            
             const { error: updateError } = await supabase
               .from('users')
-              .update({
-                birth_date: birthDate,
-                is_student: isStudent
-              })
+              .update(updateData)
               .eq('id', data.session.user.id);
             
             if (updateError) {
@@ -153,8 +178,32 @@ export async function GET(request: NextRequest) {
           console.info('❌ 생년월일 정보 없음 - is_student를 null로 유지');
           console.info('🔍 birthDate:', birthDate);
           
-          // 생년월일 정보가 없는 경우 is_student는 null로 유지 (기본값)
-          // 별도 DB 업데이트 불필요 - 사용자가 나중에 수동으로 동의할 수 있음
+          // 생년월일 정보가 없어도 레퍼럴 코드는 생성
+          try {
+            const { data: existingUser } = await supabase
+              .from('users')
+              .select('referral_code')
+              .eq('id', data.session.user.id)
+              .single();
+            
+            if (!existingUser?.referral_code && data.session.user.email) {
+              const referralCode = generateReferralCode(data.session.user.email, data.session.user.id);
+              console.info('🎫 생년월일 없는 사용자 레퍼럴 코드 생성:', referralCode);
+              
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({ referral_code: referralCode })
+                .eq('id', data.session.user.id);
+              
+              if (updateError) {
+                console.error('❌ 레퍼럴 코드 업데이트 오류:', updateError);
+              } else {
+                console.info('✅ 레퍼럴 코드 DB 업데이트 완료!');
+              }
+            }
+          } catch (referralError) {
+            console.error('레퍼럴 코드 생성 오류:', referralError);
+          }
         }
         
         // 세션이 성공적으로 생성되었으면 사용자 상태에 따라 리디렉션
