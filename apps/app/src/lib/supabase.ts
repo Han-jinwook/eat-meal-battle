@@ -264,6 +264,7 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
           }
         }
       });

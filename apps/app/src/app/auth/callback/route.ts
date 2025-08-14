@@ -70,18 +70,8 @@ export async function GET(request: NextRequest) {
         let birthDate = null;
         let birthDateConsent = false;
         
-        // 카카오에서 생년월일 정보 추출 (birthday + birthyear 조합)
-        if (rawProviderData?.birthday && rawProviderData?.birthyear) {
-          const kakaoYear = rawProviderData.birthyear;
-          const kakaoBirthday = rawProviderData.birthday; // MMDD 형식
-          const month = kakaoBirthday.substring(0, 2);
-          const day = kakaoBirthday.substring(2, 4);
-          birthDate = `${kakaoYear}-${month}-${day}`; // YYYY-MM-DD 형식으로 변환
-          birthDateConsent = true;
-          console.info('✅ 카카오에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
-        }
-        // 카카오에서 생년만 받은 경우 (birthyear만 있는 경우)
-        else if (rawProviderData?.birthyear) {
+        // 카카오에서 생년 정보 추출 (birthyear만 사용)
+        if (rawProviderData?.birthyear) {
           const kakaoYear = rawProviderData.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
           birthDateConsent = true;
