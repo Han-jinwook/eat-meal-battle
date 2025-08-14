@@ -523,13 +523,27 @@ import Component from '@/components/Component'
 
 ### DB 스키마 (users 테이블)
 ```sql
--- 이미 준비된 필드들
-birth_date DATE                    -- OAuth에서 받은 생년월일
-is_student BOOLEAN DEFAULT FALSE   -- 자동 계산된 학생 여부
-user_type VARCHAR DEFAULT 'student' -- 사용자 타입
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email TEXT,
+  nickname TEXT,
+  profile_image TEXT,
+  school_code TEXT, -- 학교 코드 (권한 제어 핵심)
+  birth_date DATE, -- 생년월일 (나이 계산용) + 동의 여부 판단
+  is_student BOOLEAN DEFAULT NULL, -- 학생 여부 (나이 기반 자동 계산, null=미계산)
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
 
--- 추가 필요 필드
-birth_date_consent BOOLEAN DEFAULT FALSE -- 생년월일 제공 동의 여부
+-- 제거된 필드들
+-- birth_date_consent BOOLEAN -- 불필요 (birth_date 존재 여부로 판단)
+-- user_type TEXT -- 미사용 (제거 완료)
+```
+
+### 필드 값 타입 (TypeScript)
+```typescript
+birth_date: "1995-01-01" | null  // 동의 여부 판단
+is_student: true | false | null  // 계산 완료 여부 판단
 ```
 
 ### OAuth 권한 설정 (2025-08-14 최종)
@@ -643,20 +657,16 @@ OAuth 로그인 → 생년월일 동의 (선택) → 자동 처리 → 홈페이
 ### 최종 구현 방식 (2025.01.12 완성)
 **학교설정 진입점에서만 나이 필터링**
 
-#### 1. ProfileModal 학교설정 버튼 로직
+#### 1. ProfileModal 학교설정 버튼 로직 (최신)
 ```typescript
-// birth_date_consent가 true인 경우: 나이 계산하여 학생만 허용
-if (userProfile.birth_date_consent) {
-  const age = calculateAge(userProfile.birth_date);
-  const isStudent = age >= 6 && age <= 39; // 테스트용 (출시 전 6-19로 변경)
-  
-  return isStudent ? 
-    <Link href="/school-search">학교정보 설정</Link> :
-    <span>학교설정 불가 (연령 제한)</span>;
+// 새로운 단순화된 로직 (birth_date_consent 제거됨)
+if (userProfile?.birth_date && userProfile?.is_student === false) {
+  // 비학생 확인 완료 → 비활성화
+  return <button disabled>학교설정 (연령 제한)</button>;
+} else {
+  // 학생이거나 미확인 → 활성화
+  return <button onClick={handleSchoolSetting}>학교설정</button>;
 }
-
-// birth_date_consent가 false인 경우: 클릭 시 추가동의 팝업
-return <button onClick={() => setShowBirthConsentModal(true)}>학교정보 설정</button>;
 ```
 
 #### 2. BirthConsentModal 컴포넌트

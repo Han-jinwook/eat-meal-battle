@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase'
 import { useReferralCode } from '@/hooks/useReferralCode'
+import BirthConsentModal from '@/components/BirthConsentModal'
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
@@ -18,6 +19,7 @@ export default function Profile() {
   const [referralLoading, setReferralLoading] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { referralCode, nickname } = useReferralCode()
@@ -334,12 +336,33 @@ export default function Profile() {
         <div className="mb-8 border-t border-b py-4">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-lg font-bold">학교정보</h2>
-            <Link
-              href="/school-search"
-              className="px-4 py-2 bg-green-600 text-white rounded-md text-base font-medium hover:bg-green-700 shadow-sm"
-            >
-              학교설정
-            </Link>
+            {/* 학교설정 버튼 - 스마트 로직 적용 */}
+            {userProfile?.birth_date && userProfile?.is_student === false ? (
+              // 비학생 확인 완료 → 비활성화
+              <button
+                disabled
+                className="px-4 py-2 bg-gray-400 text-white rounded-md text-base font-medium cursor-not-allowed shadow-sm"
+                title="비학생은 학교설정을 할 수 없습니다"
+              >
+                학교설정
+              </button>
+            ) : (
+              // 학생이거나 미확인 → 활성화
+              <button
+                onClick={() => {
+                  // 생년월일 없거나 is_student가 null인 경우 → 나이 인증 모달
+                  if (!userProfile?.birth_date || userProfile?.is_student === null) {
+                    setShowBirthConsentModal(true);
+                  } else {
+                    // 학생 확인 완료 → 학교설정 페이지로 이동
+                    router.push('/school-search');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-base font-medium hover:bg-green-700 shadow-sm"
+              >
+                학교설정
+              </button>
+            )}
           </div>
           
           {schoolInfo ? (
@@ -472,6 +495,17 @@ export default function Profile() {
             </div>
           </div>
         )}
+
+        {/* BirthConsentModal */}
+        <BirthConsentModal
+          isOpen={showBirthConsentModal}
+          onClose={() => setShowBirthConsentModal(false)}
+          onSuccess={() => {
+            // 모달 성공 후 프로필 새로고침
+            window.location.reload();
+          }}
+          userId={user?.id || ''}
+        />
       </div>
     </div>
   )

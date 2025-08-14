@@ -92,29 +92,25 @@ export async function GET(request: NextRequest) {
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
-        let birthDateConsent = false;
         
         // 카카오에서 생년 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
         if (kakaoUserInfo?.kakao_account?.birthyear) {
           const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
-          birthDateConsent = true;
           console.info('✅ 카카오 API에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
         } else if (rawProviderData?.birthyear) {
           const kakaoYear = rawProviderData.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
-          birthDateConsent = true;
           console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
         }
         // 구글에서 생년월일 정보 추출 (가능한 경우)
         else if (rawProviderData?.birthdate) {
           birthDate = rawProviderData.birthdate;
-          birthDateConsent = true;
           console.info('✅ 구글에서 생년월일 정보 받음:', { birthdate: birthDate });
         }
         
         // 생년월일이 있으면 나이 계산 및 학생 여부 판단
-        if (birthDate && birthDateConsent) {
+        if (birthDate) {
           try {
             const today = new Date();
             const birth = new Date(birthDate);
@@ -133,7 +129,6 @@ export async function GET(request: NextRequest) {
             // users 테이블 업데이트
             console.info('🔄 DB 업데이트 시작:', {
               birth_date: birthDate,
-              birth_date_consent: birthDateConsent,
               is_student: isStudent,
               user_id: data.session.user.id
             });
@@ -142,7 +137,6 @@ export async function GET(request: NextRequest) {
               .from('users')
               .update({
                 birth_date: birthDate,
-                birth_date_consent: birthDateConsent,
                 is_student: isStudent
               })
               .eq('id', data.session.user.id);
@@ -156,26 +150,40 @@ export async function GET(request: NextRequest) {
             console.error('나이 계산 오류:', ageError);
           }
         } else {
-          console.info('❌ 생년월일 정보 없음 - 기본값으로 설정');
+          console.info('❌ 생년월일 정보 없음 - is_student를 null로 유지');
           console.info('🔍 birthDate:', birthDate);
-          console.info('🔍 birthDateConsent:', birthDateConsent);
           
-          // 생년월일 정보가 없는 경우 기본값 설정
-          const { error: updateError } = await supabase
-            .from('users')
-            .update({
-              birth_date_consent: false,
-              is_student: false
-            })
-            .eq('id', data.session.user.id);
-            
-          if (updateError) {
-            console.error('기본값 설정 오류:', updateError);
-          }
+          // 생년월일 정보가 없는 경우 is_student는 null로 유지 (기본값)
+          // 별도 DB 업데이트 불필요 - 사용자가 나중에 수동으로 동의할 수 있음
         }
         
-        // 세션이 성공적으로 생성되었으면 홈페이지로 리디렉션
-        redirectUrl = '/'
+        // 세션이 성공적으로 생성되었으면 사용자 상태에 따라 리디렉션
+        // 1. 학생 나이 (6-39세) + 생년월일 있음 → 학교설정 페이지
+        // 2. 비학생 나이 + 생년월일 있음 → 관심학교 안내 (홈페이지)
+        // 3. 생년월일 없음 → 관심학교 안내 (홈페이지)
+        if (birthDate) {
+          const today = new Date();
+          const birth = new Date(birthDate);
+          let age = today.getFullYear() - birth.getFullYear();
+          const monthDiff = today.getMonth() - birth.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+          }
+          
+          const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세
+          
+          if (isStudent) {
+            console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
+            redirectUrl = '/school-search';
+          } else {
+            console.info('✅ 비학생 나이 확인 → 홈페이지(관심학교 안내)로 리다이렉트');
+            redirectUrl = '/';
+          }
+        } else {
+          console.info('✅ 생년월일 없음 → 홈페이지(관심학교 안내)로 리다이렉트');
+          redirectUrl = '/';
+        }
       }
     } else {
       console.error('No auth code received')

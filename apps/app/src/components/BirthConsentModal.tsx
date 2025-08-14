@@ -44,12 +44,12 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
         return;
       }
 
-      // DB 업데이트
+      // DB 업데이트 (birth_date와 is_student만 업데이트)
       const { error: updateError } = await supabase
         .from('users')
         .update({
           birth_date: birthDate,
-          date_consent: true
+          is_student: isStudent
         })
         .eq('id', userId);
 
