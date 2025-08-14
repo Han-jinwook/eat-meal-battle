@@ -4,7 +4,7 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { Suspense } from 'react';
 import SupabaseProvider from '@/lib/supabase/supabase-provider';
-import FirebaseMessagingWrapper from '@/components/firebase/FirebaseMessagingWrapper';
+
 import MainHeader from '@/components/MainHeader';
 import Footer from '@/components/Footer';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
@@ -93,7 +93,7 @@ export default function RootLayout({
               <MainHeader />
             </Suspense>
             {children}
-            <FirebaseMessagingWrapper />
+
             <Toaster />
             <Footer />
           </SchoolModeProvider>

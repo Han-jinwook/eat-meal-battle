@@ -25,10 +25,37 @@
 3. **트리거 실행**: 실제 함수 실행 여부
 
 ### 디버깅 체크리스트
-- [ ] AI 이미지 생성 → notifications 테이블 알림 생성 확인
-- [ ] notification_recipients 수신자 목록 생성 확인
-- [ ] NotificationBell 리얼타임 구독 이벤트 수신 확인
-- [ ] 브라우저 콘솔 에러 로그 확인
+- [x] AI 이미지 생성 → notifications 테이블 알림 생성 확인
+- [x] notification_recipients 수신자 목록 생성 확인
+- [x] NotificationBell 리얼타임 구독 이벤트 수신 확인
+- [x] 브라우저 콘솔 에러 로그 확인
+
+### 📱 푸시 알림 시스템 완전 분석 (2025-08-14)
+
+#### **현재 작동 방식:**
+- **FCM 토큰 불필요**: `users.fcm_token`은 모두 NULL이지만 알림은 정상 작동
+- **Supabase 자체 알림**: DB 트리거 + 실시간 구독 방식 사용
+- **브라우저 알림**: 웹 기반 알림 (모바일 푸시 아님)
+
+#### **알림 플로우:**
+1. **이미지 업로드/승인** → `meal_images` 테이블 INSERT/UPDATE
+2. **DB 트리거 실행** → `ai_meal_image_notification_trigger`
+3. **알림 생성** → `notifications` 테이블에 알림 생성
+4. **수신자 설정** → `notification_recipients` 테이블에 같은 학교 유저 추가
+5. **실시간 전송** → NotificationBell에서 Supabase 실시간 구독으로 즉시 수신
+
+#### **FCM 관련 제거 대상:**
+- ❌ `users.fcm_token` 필드 (사용자가 직접 제거 예정)
+- ❌ `FirebaseMessaging.tsx` 컴포넌트 (사용되지 않음)
+- ❌ `firebaseConfig.ts`의 FCM 관련 함수
+- ❌ `supabase.ts` 타입 정의에서 fcm_token
+- ❌ Firebase 관련 설정 파일들
+
+#### **유지할 항목:**
+- ✅ `NotificationBell.tsx` - 실시간 알림 수신/표시
+- ✅ `notifications-read.js` - 알림 읽음 처리 API
+- ✅ DB 트리거 및 함수들
+- ✅ Supabase 실시간 구독 로직
 
 ---
 
