@@ -294,6 +294,24 @@ export default function Home() {
     };
   }, [isDropdownOpen]);
 
+  // 비학생 사용자 자동 관심학교 설정 모달 열기
+  useEffect(() => {
+    // 사용자 정보와 학교 모드가 로드된 후에만 실행
+    if (!userLoading && user && schoolMode.hasMySchool !== null) {
+      console.log('🔍 비학생 모달 체크:', {
+        hasMySchool: schoolMode.hasMySchool,
+        isStudent: user.user_metadata?.is_student,
+        userProfile: user
+      });
+      
+      // 비학생이고 내 학교가 없으면 관심학교 설정 모달 자동 열기
+      if (!schoolMode.hasMySchool && user.user_metadata?.is_student === false) {
+        console.log('🎯 비학생 관심학교 설정 모달 자동 열기');
+        setIsSchoolSearchOpen(true);
+      }
+    }
+  }, [userLoading, user, schoolMode.hasMySchool]);
+
   // 관심학교 드롭다운 토글 함수
   const handleDropdownToggle = () => {
     setIsDropdownOpen(!isDropdownOpen);

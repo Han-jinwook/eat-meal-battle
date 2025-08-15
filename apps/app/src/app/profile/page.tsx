@@ -412,13 +412,11 @@ export default function Profile() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-3">
-              <Link 
-                href="/school-search"
-                className="px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 inline-block"
-              >
-                학교 정보 설정하기
-              </Link>
+            <div className="text-center py-3 text-gray-500 text-sm">
+              {userProfile?.birth_date && userProfile?.is_student === false 
+                ? '비학생은 학교정보를 설정할 수 없습니다' 
+                : '학교정보가 설정되지 않았습니다'
+              }
             </div>
           )}
         </div>
