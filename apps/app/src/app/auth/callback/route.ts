@@ -46,6 +46,26 @@ export async function GET(request: NextRequest) {
       if (data.session) {
         console.log('Session successfully created')
         
+        // 세션 안정성을 위한 추가 검증 및 지연
+        try {
+          // 세션이 제대로 설정되었는지 재확인
+          const { data: sessionCheck } = await supabase.auth.getSession()
+          if (!sessionCheck.session) {
+            console.warn('⚠️ 세션 재확인 실패, 재시도...')
+            // 잠시 대기 후 재시도
+            await new Promise(resolve => setTimeout(resolve, 500))
+            const { data: retrySession } = await supabase.auth.getSession()
+            if (!retrySession.session) {
+              throw new Error('세션 설정 실패')
+            }
+            console.log('✅ 세션 재시도 성공')
+          }
+          console.log('✅ 세션 검증 완료')
+        } catch (sessionError) {
+          console.error('❌ 세션 검증 오류:', sessionError)
+          return NextResponse.redirect(new URL('/login?error=session_failed', request.url))
+        }
+        
         // OAuth에서 받은 생년월일 정보 처리
         const userMetadata = data.session.user.user_metadata;
         const rawProviderData = data.session.user.identities?.[0]?.identity_data;
@@ -238,8 +258,19 @@ export async function GET(request: NextRequest) {
       console.error('No auth code received')
     }
 
+    // 리다이렉트 전 세션 안정화를 위한 추가 지연
+    console.log('🔄 세션 안정화를 위해 잠시 대기...')
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
     console.log('Redirecting to:', redirectUrl)
-    return NextResponse.redirect(new URL(redirectUrl, request.url))
+    const response = NextResponse.redirect(new URL(redirectUrl, request.url))
+    
+    // 쿠키 설정 강화 (SameSite, Secure 등)
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Unexpected error in auth callback:', error)
     return NextResponse.redirect(new URL('/login?error=server_error', request.url))

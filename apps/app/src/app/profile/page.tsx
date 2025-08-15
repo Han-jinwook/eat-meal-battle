@@ -119,7 +119,7 @@ export default function Profile() {
     
     try {
       const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
-      const shareTitle = `🍽️ 급식배틀 - 우리학교 급식 평가 앱! 🏆`;
+      const shareTitle = `🍽️ 뭐먹지? - 우리학교 급식 평가 앱! 🏆`;
       const shareText = `${referrerText}친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!\n#급식배틀 #학교급식 #급식평가 #메뉴평가`;
       
       // 앱 홈으로 콜백하는 URL
