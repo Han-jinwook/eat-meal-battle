@@ -902,8 +902,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* 급식 정보 표시 */}
-        {!isLoading && !pageLoading && !userLoading && (
+        {/* 급식 정보 표시 - 사용자가 로그인했고 학교 정보가 있을 때만 표시 */}
+        {!isLoading && !pageLoading && !userLoading && user && schoolMode.currentSchoolInfo && (
           <>
             {meals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
