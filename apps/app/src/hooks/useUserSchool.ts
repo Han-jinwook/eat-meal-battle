@@ -62,7 +62,7 @@ export default function useUserSchool(): UseUserSchoolReturn {
               .single(),
             supabase
               .from('users')
-              .select('nickname')
+              .select('nickname, is_student, birth_date')
               .eq('id', user.id)
               .single()
           ]);
@@ -72,6 +72,18 @@ export default function useUserSchool(): UseUserSchoolReturn {
 
           if (schoolError && schoolError.code !== 'PGRST116') {
             throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
+          }
+
+          // DB 프로필 정보를 user 객체에 추가
+          if (userInfo) {
+            setUser({
+              ...user,
+              db_profile: {
+                nickname: userInfo.nickname,
+                is_student: userInfo.is_student,
+                birth_date: userInfo.birth_date
+              }
+            });
           }
 
           if (schoolInfo) {

@@ -300,12 +300,13 @@ export default function Home() {
     if (!userLoading && user && schoolMode.hasMySchool !== null) {
       console.log('🔍 비학생 모달 체크:', {
         hasMySchool: schoolMode.hasMySchool,
-        isStudent: user.user_metadata?.is_student,
+        isStudent: user.db_profile?.is_student,
+        userMetadata: user.user_metadata?.is_student,
         userProfile: user
       });
       
       // 비학생이고 내 학교가 없으면 관심학교 설정 모달 자동 열기
-      if (!schoolMode.hasMySchool && user.user_metadata?.is_student === false) {
+      if (!schoolMode.hasMySchool && user.db_profile?.is_student === false) {
         console.log('🎯 비학생 관심학교 설정 모달 자동 열기');
         setIsSchoolSearchOpen(true);
       }
