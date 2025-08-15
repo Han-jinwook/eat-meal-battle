@@ -30,6 +30,7 @@ export interface UseSchoolModeReturn {
   // 현재 모드 상태
   currentMode: UserMode;
   selectedInterestSchool: InterestSchoolInfo | null;
+  selectedSchool: InterestSchoolInfo | null; // 배틀 페이지 호환성을 위한 별칭
   
   // 사용자 학교 정보
   hasMySchool: boolean;
@@ -208,6 +209,7 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
     // 현재 모드 상태
     currentMode,
     selectedInterestSchool,
+    selectedSchool: selectedInterestSchool, // 배틀 페이지 호환성을 위한 별칭
     
     // 사용자 학교 정보
     hasMySchool,
