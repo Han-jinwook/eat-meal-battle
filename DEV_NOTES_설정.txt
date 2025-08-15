@@ -28,6 +28,22 @@
 - [x] AI 이미지 생성 → notifications 테이블 알림 생성 확인
 - [x] notification_recipients 수신자 목록 생성 확인
 - [x] NotificationBell 리얼타임 구독 이벤트 수신 확인
+
+## 🔐 Google OAuth 인증 설정 (2025.01.15)
+
+### 도메인 소유권 인증 완료
+- ✅ **도메인**: https://lunbat.com
+- ✅ **메타 태그**: layout.tsx <head>에 google-site-verification 추가
+- ✅ **개인정보처리방침**: /privacy → /privacy-policy 리다이렉트 설정
+
+### ⚠️ 중요 주의사항
+- **메타 태그 수정 금지**: Google 소유권 인증 완료 후 layout.tsx의 google-site-verification 메타 태그는 절대 수정하면 안됨
+- **코드**: `<meta name="google-site-verification" content="1SubKBLpvpoVZ4U63uD6crpSMHPxk1z-nnDwZWcxcXk" />`
+- **위치**: apps/app/src/app/layout.tsx 파일 <head> 섹션
+
+### OAuth 승인 상태
+- ✅ **도메인 소유권**: 인증 완료
+- 🔄 **OAuth 심사**: 진행 중 (Google 답장 대기)
 - [x] 브라우저 콘솔 에러 로그 확인
 
 ### 📱 푸시 알림 시스템 완전 분석 (2025-08-14)
