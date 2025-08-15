@@ -665,23 +665,33 @@ export default function QuizClient() {
     }
   }, [selectedDate, userSchool, userLoading, isViewingMode, viewingUserInfo]);
 
-  // 관심학교 모드일 때 접근 차단
-  if (!schoolMode.isStudentMode && userSchool) {
+  // 관심학교 모드일 때 접근 차단 (학생/비학생 구분 없이)
+  if (schoolMode.selectedInterestSchool && userSchool) {
     return (
       <>
         {/* @ts-ignore - Next.js styled-jsx 타입 오류 무시 */}
         <style jsx>{styles}</style>
         
         <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
-            <div className="text-blue-600 text-5xl mb-4">📚</div>
-            <h2 className="text-xl font-semibold text-blue-800 mb-3">
-              개인 기록과 성취 관리를 위한 공간인 퀴즈 페이지는<br />
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+            <div className="text-amber-600 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-amber-800 mb-3">
+              주의: 개인 기록과 성취 관리를 위한 퀴즈 페이지는<br />
               내 학교에서만 이용 가능합니다!
             </h2>
-            <p className="text-blue-700 mb-6 leading-relaxed">
-              (퀴즈를 푼 학생이 초대하면 볼 수 있음)
+            <p className="text-amber-700 mb-4 leading-relaxed">
+              현재 <strong>{schoolMode.selectedInterestSchool.school_name}</strong> 관심학교 모드입니다.<br />
+              퀴즈를 풀려면 내 학교로 돌아가세요.
             </p>
+            <button
+              onClick={() => {
+                schoolMode.returnToMySchool();
+                window.location.reload(); // 페이지 새로고침으로 상태 반영
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              내 학교로 돌아가기
+            </button>
           </div>
         </div>
       </>

@@ -1290,3 +1290,69 @@ const supabaseAdmin = createClient(
 - **커밋**: `aed478b` - "AI이미지새성 프롬프트개선16"
 - **변경 파일**: `apps/app/netlify/functions/generate-meal-image.js`
 - **주요 변경**: 원본 설정 복원 + 포맷 최적화 + 하이브리드 클라이언트
+
+---
+
+## 🎯 비학생 관심학교 급식 조회 권한 시스템 완성 (2025-08-15)
+
+### ✅ 권한 시스템 개선
+
+#### 1. canViewMeals 권한 추가
+**목적**: 비학생이 관심학교 급식을 조회할 수 있도록 읽기 전용 권한 제공
+
+```typescript
+// useSchoolMode.tsx 권한 계산
+const permissions: Permissions = {
+  canComment: hasFullPermissions,
+  canRate: hasFullPermissions,
+  canLike: hasFullPermissions,
+  canUploadPhoto: hasFullPermissions,
+  canUseAI: hasFullPermissions,
+  canParticipateInBattle: hasFullPermissions,
+  canViewMeals: hasReadPermissions, // ← 새로 추가된 읽기 권한
+};
+
+// 읽기 권한 조건
+const hasReadPermissions = !!(selectedInterestSchool || hasMySchool);
+```
+
+#### 2. 권한별 사용자 분류
+- **학생 + 내 학교**: 모든 권한 (hasFullPermissions = true)
+- **학생 + 관심학교**: 읽기 권한만 (hasReadPermissions = true, hasFullPermissions = false)
+- **비학생 + 관심학교**: 읽기 권한만 (hasReadPermissions = true, hasFullPermissions = false)
+
+#### 3. 비학생 자동 모달 시스템
+**자동 모달 조건**: 비학생이고 내 학교가 없고 관심학교도 선택되지 않았을 때
+```typescript
+if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && user.db_profile?.is_student === false) {
+  setIsSchoolSearchOpen(true);
+}
+```
+
+### 🔧 수정된 컴포넌트들
+
+#### 1. MealCard.tsx
+- 별점 클릭 시 `canRate` 권한 체크
+- 권한 없을 시 "내 학교에서만 가능합니다" 메시지
+
+#### 2. MealImageUploader.tsx  
+- 사진 업로드 시 `canUploadPhoto` 권한 체크
+- AI 분석 시 `canUseAI` 권한 체크
+
+#### 3. CommentSection.tsx
+- 댓글 작성 시 `canComment` 권한 체크
+- 좋아요 클릭 시 `canLike` 권한 체크
+
+### 🎯 최종 사용자 경험
+
+#### ✅ 비학생 사용자:
+1. 첫 방문 시 자동으로 관심학교 설정 모달 열림
+2. 관심학교 설정 후 해당 학교 급식 정보 조회 가능
+3. 별점, 댓글, 사진 업로드 등은 제한 (읽기 전용)
+4. 페이지 이동 후에도 관심학교 상태 유지
+
+#### ✅ 학생 사용자:
+1. 내 학교: 모든 기능 사용 가능
+2. 관심학교: 급식 조회만 가능 (상호작용 제한)
+
+**🎉 이제 비학생도 관심학교 급식 정보를 안전하게 조회할 수 있습니다!**

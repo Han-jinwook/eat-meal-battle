@@ -442,3 +442,64 @@ try {
 - 사용자 피드백 반영
 - 성능 개선기록 → 트로피 표시 전체 플로우 테스트
 - 필요시 추가 디버깅 및 최적화
+
+---
+
+## 🎯 관심학교 모드 퀴즈 페이지 접근 제한 구현 (2025-08-15)
+
+### ✅ 구현된 접근 제한 시스템
+
+#### 1. 접근 제한 조건문 수정
+**기존 문제**: 비학생도 차단되는 잘못된 조건
+**수정 완료**: 관심학교 모드 모든 사용자 차단
+
+```typescript
+// 수정 전 (잘못됨)
+if (!schoolMode.isStudentMode && userSchool)
+
+// 수정 후 (올바름)
+if (schoolMode.selectedInterestSchool && userSchool)
+```
+
+#### 2. 접근 제한 규칙
+- **내 학교 모드**: ✅ 모든 사용자 접근 허용
+- **관심학교 모드**: ❌ 학생/비학생 구분 없이 접근 차단
+
+#### 3. 주의 메시지 UI 개선
+```typescript
+<div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
+  <div className="text-amber-600 text-5xl mb-4">⚠️</div>
+  <h2 className="text-xl font-semibold text-amber-800 mb-3">
+    주의: 개인 기록과 성취 관리를 위한 퀴즈 페이지는<br />
+    내 학교에서만 이용 가능합니다!
+  </h2>
+  <p className="text-amber-700 mb-4 leading-relaxed">
+    현재 <strong>{schoolMode.selectedInterestSchool.school_name}</strong> 관심학교 모드입니다.<br />
+    퀴즈를 풀려면 내 학교로 돌아가세요.
+  </p>
+  <button onClick={() => schoolMode.returnToMySchool()}>
+    내 학교로 돌아가기
+  </button>
+</div>
+```
+
+### 🎯 설계 철학
+**퀴즈 페이지는 개인 학습 기록과 성취 관리 공간**
+- 내 학교에서만 의미가 있음
+- 관심학교에서는 개인 기록이 무의미
+- 학생/비학생 구분 없이 관심학교 모드에서는 접근 제한
+
+### 🔧 수정된 파일
+- `src/app/quiz/QuizClient.tsx`: 접근 제한 로직 개선
+
+### 📱 관심퀴즈 시스템 (학부모 초대)
+**QuizShareButton**: 학생이 학부모에게 퀴즈 결과 공유
+- 📱 모바일: 네이티브 공유 API
+- 💻 PC: 클립보드 복사
+- 🔗 초대 토큰 생성 (7일 만료)
+
+**QuizDropdown**: 관심퀴즈 관리
+- 📤 내가 공유한 퀴즈: 관람자 수 표시
+- 👀 내가 관람 중인 퀴즈: 다른 학생 퀴즈 관람
+
+**🎉 이제 퀴즈 페이지도 배틀 페이지와 동일한 접근 제한 정책을 가지게 되었습니다!**
