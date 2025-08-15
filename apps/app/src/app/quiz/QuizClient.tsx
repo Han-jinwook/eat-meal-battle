@@ -680,17 +680,15 @@ export default function QuizClient() {
               내 학교에서만 이용 가능합니다!
             </h2>
             <p className="text-amber-700 mb-4 leading-relaxed">
-              현재 <strong>{schoolMode.selectedInterestSchool.school_name}</strong> 관심학교 모드입니다.<br />
-              퀴즈를 풀려면 내 학교로 돌아가세요.
+              현재 <strong>{schoolMode.selectedInterestSchool.school_name}</strong> 관심학교 모드입니다.
             </p>
             <button
               onClick={() => {
-                schoolMode.returnToMySchool();
-                window.location.reload(); // 페이지 새로고침으로 상태 반영
+                window.history.back(); // 직전 페이지로 돌아가기
               }}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              내 학교로 돌아가기
+              직전으로 돌아가기
             </button>
           </div>
         </div>
