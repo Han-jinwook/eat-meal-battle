@@ -13,6 +13,7 @@ export interface Permissions {
   canUploadPhoto: boolean;
   canUseAI: boolean;
   canParticipateInBattle: boolean;
+  canViewMeals: boolean;
 }
 
 // 관심학교 정보 타입
@@ -117,10 +118,13 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   const isStudentMode = currentMode === 'student';
   const isVisitorMode = currentMode === 'visitor';
   
-  // 권한 계산 (student 모드에서만 모든 권한 허용)
+  // 권한 계산
   const permissions: Permissions = useMemo(() => {
-    // 명확한 권한 계산: 관심학교가 선택되지 않고, 내 학교가 있을 때만 권한 허용
+    // 학생 모드: 내 학교에서 모든 권한 허용
     const hasFullPermissions = !selectedInterestSchool && hasMySchool;
+    
+    // 비학생 또는 관심학교 모드: 관심학교가 설정되어 있으면 읽기 권한 허용
+    const hasReadPermissions = !!(selectedInterestSchool || hasMySchool);
     
     console.log('🔐 권한 계산:', {
       currentMode,
@@ -129,7 +133,9 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
       hasMySchool,
       selectedInterestSchool: selectedInterestSchool?.school_name,
       hasFullPermissions,
-      '계산근거': `!selectedInterestSchool(${!selectedInterestSchool}) && hasMySchool(${hasMySchool})`
+      hasReadPermissions,
+      '학생권한근거': `!selectedInterestSchool(${!selectedInterestSchool}) && hasMySchool(${hasMySchool})`,
+      '읽기권한근거': `selectedInterestSchool(${!!selectedInterestSchool}) || hasMySchool(${hasMySchool})`
     });
     
     const calculatedPermissions = {
@@ -139,10 +145,11 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
       canUploadPhoto: hasFullPermissions,
       canUseAI: hasFullPermissions,
       canParticipateInBattle: hasFullPermissions,
+      canViewMeals: hasReadPermissions, // 급식 조회 권한 추가
     };
     
     console.log('📋 최종 권한 결과:', calculatedPermissions);
-    
+
     return calculatedPermissions;
   }, [selectedInterestSchool, hasMySchool, currentMode]);
   
