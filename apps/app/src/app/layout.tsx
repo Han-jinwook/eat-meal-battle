@@ -59,6 +59,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* Google Site Verification */}
+        <meta name="google-site-verification" content="1SubKBLpvpoVZ4U63uD6crpSMHPxk1z-nnDwZWcxcXk" />
+        
         <meta name="theme-color" content="#4F46E5" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
