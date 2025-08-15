@@ -398,6 +398,15 @@ export default function Home() {
       // 로컬 상태 업데이트
       if (data && data[0]) {
         setInterestSchools(prev => [data[0], ...prev]);
+        
+        // 첫 번째 관심학교를 자동으로 선택 (Context 상태 업데이트)
+        schoolMode.selectInterestSchool({
+          id: data[0].id,
+          school_name: data[0].school_name,
+          school_code: data[0].school_code,
+          office_code: data[0].office_code,
+          created_at: data[0].created_at
+        });
       }
       
       // 모달 닫기
