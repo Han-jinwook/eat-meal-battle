@@ -666,7 +666,7 @@ export default function QuizClient() {
   }, [selectedDate, userSchool, userLoading, isViewingMode, viewingUserInfo]);
 
   // 관심학교 모드일 때 접근 차단 (학생/비학생 구분 없이)
-  if (schoolMode.selectedInterestSchool && userSchool) {
+  if (schoolMode.selectedInterestSchool) {
     return (
       <>
         {/* @ts-ignore - Next.js styled-jsx 타입 오류 무시 */}
