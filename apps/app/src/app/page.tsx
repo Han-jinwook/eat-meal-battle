@@ -692,15 +692,13 @@ export default function Home() {
             </span>
           )}
           
-          {/* 초중고 캐릭터 - 컨테이너 밖으로 튀어나오게 */}
+          {/* 초중고 캐릭터 - 반 끝에서 1cm 떨어진 곳에 */}
           {userSchool?.school_type && (
-            <div className="absolute -right-8 top-1/2 transform -translate-y-1/2 z-10">
-              <img 
-                src={getSchoolCharacterImage(userSchool.school_type)}
-                alt="학교 캐릭터"
-                className="w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
-              />
-            </div>
+            <img 
+              src={getSchoolCharacterImage(userSchool.school_type)}
+              alt="학교 캐릭터"
+              className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
+            />
           )}
         </>
       ) : (
