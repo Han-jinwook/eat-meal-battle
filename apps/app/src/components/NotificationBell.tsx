@@ -88,7 +88,6 @@ export default function NotificationBell() {
       if (!session?.user) return;
       
       // notification_recipients 테이블 변경 구독
-      console.log('🔗 실시간 구독 설정 중, 사용자 ID:', session.user.id);
       const subscription = supabase
         .channel('notifications-changes')
         .on('postgres_changes', {
@@ -97,8 +96,6 @@ export default function NotificationBell() {
           table: 'notification_recipients',
           filter: `recipient_id=eq.${session.user.id}`,
         }, (payload) => {
-          console.log('🔔 새 알림 실시간 수신:', payload);
-          
           // 새 알림을 받았을 때, 알림 정보를 가져와서 추가
           const fetchNewNotification = async () => {
             try {
@@ -108,10 +105,7 @@ export default function NotificationBell() {
                 .eq('id', payload.new.notification_id)
                 .single();
                 
-              if (error || !data) {
-                console.error('새 알림 데이터 조회 실패:', error);
-                return;
-              }
+              if (error || !data) return;
               
               const newNotificationItem = {
                 id: payload.new.id,
@@ -121,13 +115,8 @@ export default function NotificationBell() {
                 ...data
               };
               
-              console.log('📈 알림 카운트 업데이트 전:', unreadCount);
               setNotifications(current => [newNotificationItem, ...current].slice(0, 10));
-              setUnreadCount(current => {
-                const newCount = current + 1;
-                console.log('📈 알림 카운트 업데이트:', current, '→', newCount);
-                return newCount;
-              });
+              setUnreadCount(current => current + 1);
             } catch (error) {
               console.error('새 알림 조회 오류:', error);
             }

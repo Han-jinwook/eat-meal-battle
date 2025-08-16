@@ -286,7 +286,7 @@ export default function Profile() {
             <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
             
-            {/* 출생연도 */}
+            {/* 출생연도 & 계정생성 */}
             <div className="grid grid-cols-2 gap-3 mb-3">
               {/* 출생연도 */}
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -299,6 +299,20 @@ export default function Profile() {
                 </div>
               </div>
               
+              {/* 계정생성 */}
+              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="text-xs text-green-600 font-medium mb-1">계정생성</div>
+                <div className="text-sm font-semibold text-green-800">
+                  {user?.created_at 
+                    ? new Date(user.created_at).toLocaleDateString('ko-KR', { 
+                        year: 'numeric', 
+                        month: 'numeric', 
+                        day: 'numeric' 
+                      })
+                    : '정보 없음'
+                  }
+                </div>
+              </div>
             </div>
             
             {/* 친구에게 공유하기 버튼 */}
