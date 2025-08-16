@@ -1040,10 +1040,12 @@ export default function MealImageUploader({
       setShowAiGenButton(true);
       setImageStatus('none'); // 이미지 상태를 초기화하여 버튼이 활성화되도록 함
       
-      // 전역 플래그 해제 - 날짜 이동 차단 해제
-      if (typeof window !== 'undefined') {
+      // 전역 플래그 해제 - 리젝된 이미지 삭제 시에만 차단 해제
+      if (typeof window !== 'undefined' && 
+          (window as any).rejectedImageId === uploadedImage.id) {
         (window as any).hasRejectedImage = false;
         (window as any).rejectedImageId = null;
+        console.log('✅ 리젝된 이미지 삭제로 네비게이션 차단 해제:', uploadedImage.id);
       }
       
       // 성공 콜백 호출
