@@ -50,17 +50,12 @@ exports.handler = async (event) => {
 
     console.log(`총 ${schools.length}개 학교 발견`)
 
-    // 다음 달 계산
+    // 현재 달 계산 (매월 말에 실행되어 해당 월 데이터 생성)
     const now = new Date()
-    let nextMonth = now.getMonth() + 2 // 현재 월 + 1 (JavaScript의 월은 0부터 시작)
-    let nextYear = now.getFullYear()
-    
-    if (nextMonth > 12) {
-      nextMonth = nextMonth - 12
-      nextYear = nextYear + 1
-    }
+    let currentMonth = now.getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 +1
+    let currentYear = now.getFullYear()
 
-    console.log(`${nextYear}년 ${nextMonth}월 급식 데이터 수집 시작`)
+    console.log(`${currentYear}년 ${currentMonth}월 급식 데이터 수집 시작`)
     
     // 결과 저장용 변수
     const results = {
@@ -87,13 +82,13 @@ exports.handler = async (event) => {
         }
         
         // NEIS API를 통해 급식 데이터 조회
-        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, nextYear, nextMonth)
+        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, currentYear, currentMonth)
         
         // 주차별 급식 일수 계산
-        const weeklyMealDays = calculateWeeklyMealDays(mealDays, nextYear, nextMonth)
+        const weeklyMealDays = calculateWeeklyMealDays(mealDays, currentYear, currentMonth)
         
         // 주차별 토요일 계산
-        const weeklySaturdays = calculateWeeklySaturdays(nextYear, nextMonth)
+        const weeklySaturdays = calculateWeeklySaturdays(currentYear, currentMonth)
         
         // 학교별 급식 조건 저장 (학년 구분 없음)
         const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
@@ -101,8 +96,8 @@ exports.handler = async (event) => {
         await saveChampionCriteria(
           supabase,
           school.school_code,
-          nextYear,
-          nextMonth,
+          currentYear,
+          currentMonth,
           weeklyMealDays,
           monthlyTotal,
           weeklySaturdays
@@ -112,13 +107,13 @@ exports.handler = async (event) => {
         results.details.push({
           school_code: school.school_code,
           status: 'success',
-          month: nextMonth,
-          year: nextYear,
+          month: currentMonth,
+          year: currentYear,
           weekly: weeklyMealDays,
           monthly: monthlyTotal
         });
         
-        console.log(`[${school.school_code}] ${nextYear}년 ${nextMonth}월 장원 조건 설정 완료`);
+        console.log(`[${school.school_code}] ${currentYear}년 ${currentMonth}월 장원 조건 설정 완료`);
       } catch (schoolError) {
         console.error(`[${school.school_code}] 학교 처리 중 오류:`, schoolError);
         results.error++;
@@ -136,7 +131,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: `${results.success}개 학교의 ${nextYear}년 ${nextMonth}월 장원 조건 설정 완료 (오류: ${results.error}개)`,
+        message: `${results.success}개 학교의 ${currentYear}년 ${currentMonth}월 장원 조건 설정 완료 (오류: ${results.error}개)`,
         results
       })
     }
