@@ -112,9 +112,7 @@ exports.handler = async function(event, context) {
       // 평균 별점 업데이트
       await updateAverageRating(menu_item_id);
       
-      // 🔥 배틀 계산 트리거 제거 - MyMealRating.tsx에서 meal_rating_stats 변경 시에만 트리거되도록 변경
-      // 중복 실행 방지를 위해 주석 처리 (2025-01-22)
-      /*
+      // 🔥 배틀 계산 트리거 - 별점 저장 후 통계 업데이트 및 배틀 계산 실행
       try {
         console.log('🏆 배틀 계산 트리거 시작...');
         console.log('🔍 배틀 계산 함수 import 상태:', typeof calculateDailyMenuBattle, typeof calculateMonthlyMenuBattle);
@@ -171,7 +169,6 @@ exports.handler = async function(event, context) {
         console.error('🔍 오류 스택:', battleError.stack);
         // 배틀 계산 실패해도 별점 저장은 성공으로 처리
       }
-      */
       
       return {
         statusCode: 200,
@@ -243,9 +240,7 @@ exports.handler = async function(event, context) {
       // 평균 별점 업데이트
       await updateAverageRating(menu_item_id);
       
-      // 🔥 배틀 계산 트리거 제거 - MyMealRating.tsx에서 meal_rating_stats 변경 시에만 트리거되도록 변경
-      // 중복 실행 방지를 위해 주석 처리 (2025-01-22)
-      /*
+      // 🔥 배틀 계산 트리거 - 별점 삭제 후 통계 업데이트 및 배틀 계산 실행
       try {
         console.log('🏆 배틀 계산 트리거 시작 (삭제)...');
         
@@ -253,20 +248,31 @@ exports.handler = async function(event, context) {
           const mealDate = menuData.meal_menus.meal_date;
           const schoolCode = menuData.meal_menus.school_code;
           
+          // Admin 권한의 Supabase 클라이언트 생성
+          const adminClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false
+              }
+            }
+          );
+          
           // 일별 배틀 계산
-          await calculateDailyMenuBattle(mealDate, schoolCode);
+          await calculateDailyMenuBattle(mealDate, schoolCode, adminClient);
           console.log(`✅ 일별 배틀 계산 완료 (삭제): ${mealDate}`);
           
           // 월별 배틀 계산
           const date = new Date(mealDate);
-          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, adminClient);
           console.log(`✅ 월별 배틀 계산 완료 (삭제): ${date.getFullYear()}-${date.getMonth() + 1}`);
         }
       } catch (battleError) {
         console.error('⚠️ 배틀 계산 중 오류 (별점 삭제는 성공):', battleError);
         // 배틀 계산 실패해도 별점 삭제는 성공으로 처리
       }
-      */
       
       return {
         statusCode: 200,
