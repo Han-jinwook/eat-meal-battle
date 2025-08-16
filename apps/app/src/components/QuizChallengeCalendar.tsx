@@ -111,7 +111,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         console.error('급식 메뉴 조회 오류:', mealMenusError);
       }
       
-      // 1.5 주차 기준일(토요일) 정보 조회 (champion_criteria 테이블)
+      // 1.5 주차 기준일(토요일) 정보 및 월별 급식일수 조회 (champion_criteria 테이블)
       const { data: weekCriteria, error: criteriaError } = await supabase
         .from('champion_criteria')
         .select(`
@@ -119,7 +119,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           week_2_saturday, 
           week_3_saturday, 
           week_4_saturday, 
-          week_5_saturday
+          week_5_saturday,
+          month_total
         `)
         .eq('school_code', userSchool.school_code)
         .eq('year', year)
@@ -597,7 +598,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           {/* 성과 표시 */}
           <div className="text-lg font-bold text-green-600">
-            ( {monthlyStats.correct}/{monthlyStats.total}개 맞음 )
+            ( {monthlyStats.correct}/{championCriteria?.month_total || monthlyStats.total}개 맞음 )
           </div>
           
           {/* 월 표시 */}
@@ -607,7 +608,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           {/* 월장원 트로피 공간 */}
           <div className="w-8 h-8 flex items-center justify-center">
-            {monthlyStats.total > 0 && monthlyStats.correct === monthlyStats.total && (
+            {championCriteria?.month_total > 0 && monthlyStats.correct === championCriteria.month_total && (
               <span className="text-2xl">🏆</span>
             )}
           </div>

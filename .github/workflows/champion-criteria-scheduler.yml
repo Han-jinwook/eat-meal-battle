@@ -1,0 +1,23 @@
+name: champion-criteria-scheduler
+
+on:
+  schedule:
+    # 테스트: 8월 17일 오전 6시 (한국 시간, UTC+9)
+    # UTC 기준으로는 전날 오후 9시
+    - cron: '0 21 16 8 *'
+    # 실제 운영: 매월 31일 오전 6시 (한국 시간)
+    # - cron: '0 21 30 * *'
+  workflow_dispatch: {}
+
+jobs:
+  update-champion-criteria:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Champion Criteria Function
+        env:
+          API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+        run: |
+          echo "Starting Champion Criteria API call"
+          curl -v "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}" || true
+          echo "Champion Criteria API call completed"
