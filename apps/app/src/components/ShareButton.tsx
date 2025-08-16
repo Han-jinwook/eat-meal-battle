@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useReferralCode } from '@/hooks/useReferralCode';
 
 interface ShareButtonProps {
   mealDate: string;
@@ -22,7 +21,6 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { referralCode, nickname } = useReferralCode();
 
   const handleShare = async () => {
     if (isSharing) return;
@@ -31,24 +29,23 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     try {
       // 공유할 텍스트와 URL 준비 - 배틀 페이지의 활성 탭에 따라 다르게 설정
       let shareTitle, shareText;
-      const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
       
       if (isBattlePage) {
         if (activeTab === 'menu') {
           // 메뉴배틀 섹션
           shareTitle = `🍽️ ${schoolName} ${mealDate} 메뉴배틀 결과! 🥇`;
-          shareText = `${referrerText}우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
+          shareText = `우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
 #메뉴배틀 #급식메뉴 #인기메뉴 #메뉴순위 #${schoolName.split(' ')[0]}`;
         } else {
           // 급식배틀 섹션 (meal)
           shareTitle = `🏆 ${schoolName} ${mealDate} 급식배틀 결과! 🥇`;
-          shareText = `${referrerText}우리동네 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
+          shareText = `우리동네 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
 #급식배틀 #학교순위 #급식평가 #배틀결과 #${schoolName.split(' ')[0]}`;
         }
       } else {
         // 급식 페이지
         shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
-        shareText = `${referrerText}메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
+        shareText = `메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
 #급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
       }
       
@@ -60,10 +57,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       const finalSchoolCode = schoolCode || schoolName.split(' ')[0];
       url.searchParams.set('school_code', finalSchoolCode);
       
-      // 추천 코드 추가
-      if (referralCode) {
-        url.searchParams.set('ref', referralCode);
-      }
+      // 레퍼럴 코드 로직 제거됨
       
       const shareUrl = url.toString();
       

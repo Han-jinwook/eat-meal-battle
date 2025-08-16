@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { useReferralCode } from '@/hooks/useReferralCode';
 
 interface QuizShareButtonProps {
   userId: string;
@@ -23,7 +22,6 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
 }) => {
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const { referralCode } = useReferralCode();
 
   // 초대 토큰 생성 함수
   const generateInviteToken = async (ownerId: string, ownerInfo: any) => {
@@ -32,8 +30,7 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
         quiz_owner_id: ownerId,
         owner_nickname: ownerInfo.nickname || '익명',
         school_name: ownerInfo.school_name || schoolName,
-        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7일 후 만료
-        referral_code: referralCode
+        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7일 후 만료
       };
 
       // 한글 지원을 위한 UTF-8 인코딩 후 Base64 변환

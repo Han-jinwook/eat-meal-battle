@@ -15,17 +15,10 @@ import DateNavigator from '@/components/DateNavigator';
 import ShareButton from '@/components/ShareButton';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareModal from '@/components/ShareModal';
-import { useReferralParam } from '@/hooks/useReferralParam';
-import ReferralHandler from '@/components/ReferralHandler';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 // 디버그 패널 제거
 
-// 추천 파라미터 처리 컴포넌트
-function ReferralParamHandler() {
-  useReferralParam();
-  return null;
-}
 
 export default function Home() {
   const router = useRouter();
@@ -998,12 +991,6 @@ export default function Home() {
         onClose={() => setIsSchoolSearchOpen(false)}
         onSelectSchool={addInterestSchool}
       />
-      
-      {/* 추천 관계 처리 */}
-      <Suspense fallback={null}>
-        <ReferralParamHandler />
-        <ReferralHandler />
-      </Suspense>
       
       {/* PWA 설치 프롬프트 */}
       <PWAInstallPrompt />

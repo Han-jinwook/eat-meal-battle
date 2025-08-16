@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { useReferralCode } from '@/hooks/useReferralCode'
 import BirthConsentModal from '@/components/BirthConsentModal'
 
 export default function Profile() {
@@ -15,14 +14,11 @@ export default function Profile() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(null)
   const [schoolInfo, setSchoolInfo] = useState<any>(null)
-  const [referredUsers, setReferredUsers] = useState<any[]>([])
-  const [referralLoading, setReferralLoading] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-  const { referralCode, nickname } = useReferralCode()
 
   useEffect(() => {
     const getUser = async () => {
@@ -43,10 +39,9 @@ export default function Profile() {
           
           // 모든 데이터를 병렬로 가져오기 (성능 개선)
           setDbStatus('loading')
-          const [profileResult, schoolResult, referralResult] = await Promise.allSettled([
+          const [profileResult, schoolResult] = await Promise.allSettled([
             supabase.from('users').select('*').eq('id', user.id).single(),
-            supabase.from('school_infos').select('*').eq('user_id', user.id).single(),
-            fetchReferredUsers(user.id)
+            supabase.from('school_infos').select('*').eq('user_id', user.id).single()
           ])
           
           // 사용자 프로필 처리
@@ -67,7 +62,6 @@ export default function Profile() {
             setSchoolInfo(schoolResult.value.data)
           }
 
-          // 추천 회원 목록은 이미 fetchReferredUsers에서 처리됨
         } else {
           router.push('/login')
         }
@@ -82,35 +76,6 @@ export default function Profile() {
     getUser()
   }, [supabase, router])
 
-  // 추천한 회원 목록 가져오기 함수
-  const fetchReferredUsers = async (userId: string) => {
-    try {
-      setReferralLoading(true)
-      
-      const { data, error } = await supabase
-        .from('referrals')
-        .select(`
-          created_at,
-          users!referee_id(nickname, email)
-        `)
-        .eq('referrer_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('추천 회원 목록 조회 에러:', error)
-        throw error // Promise.allSettled에서 처리할 수 있도록 에러 던지기
-      }
-
-      setReferredUsers(data || [])
-      return data || []
-    } catch (error) {
-      console.error('추천 회원 목록 가져오기 실패:', error)
-      throw error
-    } finally {
-      setReferralLoading(false)
-    }
-  }
 
   // 친구에게 공유하기 함수
   const handleShareApp = async () => {
@@ -118,18 +83,12 @@ export default function Profile() {
     setIsSharing(true);
     
     try {
-      const referrerText = nickname ? `${nickname}님이 추천하는 ` : '';
       const shareTitle = `🍽️ 뭐먹지? - 우리학교 급식 평가 앱! 🏆`;
-      const shareText = `${referrerText}친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!\n#급식배틀 #학교급식 #급식평가 #메뉴평가`;
+      const shareText = `친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!\n#급식배틀 #학교급식 #급식평가 #메뉴평가`;
       
       // 앱 홈으로 콜백하는 URL
       const baseUrl = window.location.origin;
       let shareUrl = baseUrl;
-      
-      // 추천 코드 추가
-      if (referralCode) {
-        shareUrl += `?ref=${referralCode}`;
-      }
       
       // 모바일 체크
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -327,7 +286,7 @@ export default function Profile() {
             <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
             
-            {/* 출생연도와 초대코드 */}
+            {/* 출생연도 */}
             <div className="grid grid-cols-2 gap-3 mb-3">
               {/* 출생연도 */}
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
@@ -340,13 +299,6 @@ export default function Profile() {
                 </div>
               </div>
               
-              {/* 초대코드 */}
-              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                <div className="text-xs text-green-600 font-medium mb-1">초대코드</div>
-                <div className="text-sm font-semibold text-green-800 font-mono">
-                  {userProfile?.referral_code || '생성중...'}
-                </div>
-              </div>
             </div>
             
             {/* 친구에게 공유하기 버튼 */}
@@ -435,58 +387,6 @@ export default function Profile() {
           )}
         </div>
 
-        {/* 나의 추천코드로 가입한 회원 목록 */}
-        <div className="mb-8 border-b py-4">
-          <h2 className="text-lg font-bold mb-3 text-center">나의 추천코드로 가입한 회원 목록</h2>
-          
-          <div className="bg-gray-50 rounded-lg p-3 h-72 overflow-y-auto">
-            {referralLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500">로딩 중...</div>
-              </div>
-            ) : referredUsers.length > 0 ? (
-              <div className="space-y-2">
-                {referredUsers.map((referral, index) => (
-                  <div key={index}>
-                    <div className="bg-white rounded-md p-3 shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {referral.users?.nickname || '미설정'}
-                          </div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {referral.users?.email && referral.users.email.length > 25 
-                              ? `${referral.users.email.substring(0, 25)}...` 
-                              : referral.users?.email || '이메일 없음'}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 ml-2">
-                          {new Date(referral.created_at).toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                          }).replace(/\./g, '.').replace(/ /g, '')}
-                        </div>
-                      </div>
-                    </div>
-                    {index < referredUsers.length - 1 && (
-                      <div className="border-b border-gray-200 my-2"></div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center text-gray-500">
-                  <div className="text-sm">아직 추천한 회원이 없습니다</div>
-                  <div className="text-xs mt-1">친구들에게 추천코드를 공유해보세요!</div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-
-        </div>
 
         <div className="flex justify-center gap-4 mt-12">
           <button
