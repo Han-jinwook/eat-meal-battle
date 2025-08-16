@@ -19,6 +19,21 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 // 디버그 패널 제거
 
+// 학교 유형별 캐릭터 이미지 경로 반환 함수
+const getSchoolCharacterImage = (schoolType: string): string => {
+  if (schoolType?.includes('초등학교') || schoolType?.includes('초')) {
+    return '/images/characters/elementary.png';
+  }
+  if (schoolType?.includes('중학교') || schoolType?.includes('중')) {
+    return '/images/characters/middle.png';
+  }
+  if (schoolType?.includes('고등학교') || schoolType?.includes('고')) {
+    return '/images/characters/high.png';
+  }
+  // 기본값: 초등학교 캐릭터
+  return '/images/characters/elementary.png';
+};
+
 
 export default function Home() {
   const router = useRouter();
@@ -662,7 +677,7 @@ export default function Home() {
       : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
   }`}>
     {/* 왼쪽: 학교 정보 (내 학교 모드일 때만 표시) */}
-    <div className="flex items-center">
+    <div className="flex items-center relative">
       {schoolMode.isStudentMode ? (
         <>
           <span className="text-blue-700 text-base font-semibold">
@@ -675,6 +690,17 @@ export default function Home() {
               {userSchool.grade ? `${userSchool.grade}학년` : ''}
               {userSchool.class ? ` ${userSchool.class}반` : ''}
             </span>
+          )}
+          
+          {/* 초중고 캐릭터 - 컨테이너 밖으로 살짝 튀어나오게 */}
+          {userSchool?.school_type && (
+            <div className="absolute -right-4 -top-2 z-10">
+              <img 
+                src={getSchoolCharacterImage(userSchool.school_type)}
+                alt="학교 캐릭터"
+                className="w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
+              />
+            </div>
           )}
         </>
       ) : (

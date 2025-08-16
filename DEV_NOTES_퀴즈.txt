@@ -1,6 +1,77 @@
-=== 🎯 퀴즈 관련 개발 노트 (2025-07-31 추가) ===
+=== 🎯 퀴즈 관련 개발 노트 (2025-08-16 업데이트) ===
 
-## 📆 퀴즈 장원 주차별 토요일 계산 로직 개선
+## 🏆 월장원 버그 수정 및 자동 스케줄러 구축 (2025-08-16)
+
+### 📋 발견된 문제들
+1. **월장원 UI 표시 버그**: `quiz_champions.total_count` (퀴즈 참여횟수) 기준으로 잘못된 트로피 표시
+2. **champion_criteria 데이터 누락**: 8월 데이터가 자동 생성되지 않음 (스케줄러 부재)
+3. **스케줄러 로직 오류**: 다음달 데이터 생성으로 설정되어 현재달 데이터 누락
+
+### 🛠️ 해결 방안
+
+#### 1. 월장원 UI 로직 수정
+**파일**: `QuizChallengeCalendar.tsx`
+```typescript
+// 기존 (잘못됨)
+monthlyStats.total > 0 && monthlyStats.correct === monthlyStats.total
+
+// 수정 (올바름)  
+championCriteria?.month_total > 0 && monthlyStats.correct === championCriteria.month_total
+```
+- `quiz_champions.total_count` → `champion_criteria.month_total` 사용
+- 실제 급식일수 기준으로 정확한 월장원 판정
+
+#### 2. GitHub Actions 자동 스케줄러 추가
+**파일**: `.github/workflows/champion-criteria-scheduler.yml`
+```yaml
+schedule:
+  # 테스트: 8월 17일 오전 6시 (한국시간)
+  - cron: '0 21 16 8 *'
+  # 실제 운영: 매월 31일 오전 6시 (한국시간)  
+  # - cron: '0 21 30 * *'
+```
+- 매월 자동으로 champion_criteria 데이터 생성
+- API 키 인증을 통한 보안 호출
+
+#### 3. 스케줄러 함수 로직 수정
+**파일**: `schedule-champion-criteria.js`
+```javascript
+// 기존 (다음달 생성)
+let nextMonth = now.getMonth() + 2
+
+// 수정 (현재달 생성)
+let currentMonth = now.getMonth() + 1
+```
+- 매월 말일 실행 시 해당 월 데이터 생성
+- 8월 17일 테스트 → 8월 데이터 생성
+
+### 🎯 월장원 판정 트리거 로직
+
+#### 실시간 판정 시점
+```javascript
+// quiz.js - submitQuizAnswer() 함수 내부
+const championCalculator = new ChampionCalculator(supabaseAdmin);
+await championCalculator.checkChampionStatusOnQuizSubmit(
+  userId, userSchoolCode, userGrade, year, month, weekOfMonth
+);
+```
+
+#### 판정 알고리즘
+```typescript
+// championCalculator.ts - checkMonthlyChampion()
+const requiredDays = criteriaData.month_total      // 해당 월 급식일수
+const correctCount = quizData.month_correct        // 해당 월 정답수
+const isChampion = requiredDays === correctCount   // 급식일수 === 정답수
+```
+
+### 📅 배포 및 테스트 계획
+1. **2025-08-16**: 월장원 버그 수정 및 스케줄러 배포
+2. **2025-08-17 오전 6시**: 자동 스케줄러 테스트 실행 → 8월 데이터 생성
+3. **테스트 성공 후**: 정규 운영 스케줄러로 전환 (매월 31일 → 다음달 데이터)
+
+---
+
+## 📆 퀴즈 장원 주차별 토요일 계산 로직 개선 (2025-07-31)
 
 ### 📋 문제 상황
 - 퀴즈 장원 주차 표시가 프론트엔드에서 ISO 8601 계산을 통해 표시되어 백엔드와 불일치 발생
