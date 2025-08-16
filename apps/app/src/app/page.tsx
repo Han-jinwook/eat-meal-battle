@@ -671,15 +671,15 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         {/* 학교 정보 표시 (현재 선택된 학교 기준) */}
 {schoolMode.currentSchoolInfo ? (
-  <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
+  <div className={`shadow-sm rounded p-3 mb-3 border-l-2 flex items-center justify-between min-h-[3.5rem] ${
     schoolMode.isStudentMode 
       ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500' 
       : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
   }`}>
     {/* 왼쪽: 학교 정보 (내 학교 모드일 때만 표시) */}
-    <div className="flex items-center relative">
+    <div className="flex items-center">
       {schoolMode.isStudentMode ? (
-        <>
+        <div className="flex items-center relative">
           <span className="text-blue-700 text-base font-semibold">
             {userSchool?.school_name}
           </span>
@@ -692,17 +692,15 @@ export default function Home() {
             </span>
           )}
           
-          {/* 초중고 캐릭터 - 컨테이너 밖으로 살짝 튀어나오게 */}
+          {/* 초중고 캐릭터 - 학년/반 끝에서 1cm(약 10px) 떨어진 곳에 위치 */}
           {userSchool?.school_type && (
-            <div className="absolute -right-4 -top-2 z-10">
-              <img 
-                src={getSchoolCharacterImage(userSchool.school_type)}
-                alt="학교 캐릭터"
-                className="w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
-              />
-            </div>
+            <img 
+              src={getSchoolCharacterImage(userSchool.school_type)}
+              alt="학교 캐릭터"
+              className="ml-3 w-10 h-10 md:w-12 md:h-12 drop-shadow-sm flex-shrink-0"
+            />
           )}
-        </>
+        </div>
       ) : (
         /* 관심학교 모드일 때 안내 메시지 */
         <span className="text-orange-600 text-sm font-medium">
