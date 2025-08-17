@@ -1,5 +1,55 @@
 === 🍽️ 급식 시스템 개발 노트 ===
 
+## 🤖 스케줄러 시스템 정리 (2025-08-17)
+
+### 🎯 **월장원 Champion Criteria 스케줄러**
+
+#### **자동 실행 스케줄러** ✅ **활성화됨**
+- **파일**: `.github/workflows/champion-criteria-scheduler.yml`
+- **실행 시간**: 매월 6시 KST (UTC 21시)
+- **기능**: 모든 학교의 해당 월 champion_criteria 데이터 자동 생성
+- **API 키**: `ADMIN_API_KEY` 사용
+- **호출 대상**: `/.netlify/functions/schedule-champion-criteria`
+
+#### **1회성 실행 로직** ✅ **구현됨**
+- **파일**: `apps/app/src/app/school-search/page.tsx` (197-218줄)
+- **실행 시점**: 학생이 학교 등록/변경할 때 자동 실행
+- **기능**: 해당 학교의 현재 달 champion_criteria 즉시 생성
+- **호출 대상**: `/.netlify/functions/initialize-school-champion-criteria`
+- **특징**: 실패해도 학교 등록은 계속 진행 (warn 처리)
+
+### 🗑️ **삭제된 급식 자동 스케줄러** ❌ **제거됨**
+- **삭제된 파일들**:
+  - `.github/workflows/meal-scheduler.yml` (매일 오후 2시 2분 실행)
+  - `src/pages/api/cron/meals.ts` (급식 정보 자동 업데이트 API)
+  - `src/pages/api/cron/` 디렉토리
+- **삭제 이유**: 현재 로직은 사용자 페이지 진입 시 DB 확인 → 없으면 NEIS API 호출 방식 사용
+- **관련 환경변수**: `CRON_API_KEY` 삭제됨
+
+### 🔧 **현재 급식 정보 로직**
+```typescript
+// apps/app/src/app/api/meals/route.ts
+// 1. DB에서 급식 정보 먼저 확인
+const { data: dbMeals } = await supabase
+  .from('meal_menus')
+  .select('*')
+  .eq('school_code', schoolCode)
+  .eq('meal_date', formattedDate);
+
+// 2. DB에 있으면 바로 반환
+if (dbMeals && dbMeals.length > 0) {
+  return NextResponse.json({ meals: dbMeals, source: 'database' });
+}
+
+// 3. DB에 없으면 NEIS API 호출 후 저장
+const mealData = await fetchMealInfo(schoolCode, officeCode, date);
+```
+
+### 📋 **환경변수 최적화 결과**
+- ❌ **삭제됨**: `CRON_API_KEY`, `SECRETS_SCAN_SMART_DETECTION_ENABLED`, `SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES`
+- ✅ **추가됨**: `SECRETS_SCAN_SMART_DETECTION_ENABLED=false` (Firebase 스캔 문제 해결)
+- ✅ **유지됨**: `ADMIN_API_KEY` (월장원 스케줄러용)
+
 ## 📋 핵심 시스템 구조
 
 ### 1️⃣ 급식 데이터 관리
