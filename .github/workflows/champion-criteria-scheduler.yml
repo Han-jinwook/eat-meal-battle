@@ -19,5 +19,6 @@ jobs:
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
         run: |
           echo "Starting Champion Criteria API call"
+          echo "API_KEY length: ${#API_KEY}"
           curl -v "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}" || true
           echo "Champion Criteria API call completed"
