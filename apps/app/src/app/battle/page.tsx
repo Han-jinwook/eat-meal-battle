@@ -628,7 +628,8 @@ export default function BattlePage() {
   }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto">
       {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
       <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
         schoolMode.isStudentMode 
@@ -1368,6 +1369,7 @@ export default function BattlePage() {
         isViewingMode={schoolMode.isViewingMode}
         onSelectApp={handleAIAppSelection}
       />
+      </div>
     </div>
   );
 }
