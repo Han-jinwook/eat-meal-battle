@@ -804,9 +804,9 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
                 </div>
               )}
               
-              {/* 주차 레이블 표시 (토요일) - 모바일 최적화 */}
+              {/* 주차 레이블 표시 (토요일) - PC에서만 표시 */}
               {day.weekLabel && day.isCurrentMonth && (
-                <span className="absolute bottom-0.5 right-0.5 text-[10px] font-medium bg-gray-100/80 px-1 py-0.5 rounded-sm text-gray-500 shadow-sm max-w-[calc(100%-4px)] truncate">
+                <span className="hidden lg:block absolute bottom-0.5 right-0.5 text-[10px] font-medium bg-gray-100/80 px-1 py-0.5 rounded-sm text-gray-500 shadow-sm max-w-[calc(100%-4px)] truncate">
                   {day.weekLabel}
                 </span>
               )}
