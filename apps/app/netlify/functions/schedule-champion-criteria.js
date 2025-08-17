@@ -273,7 +273,6 @@ async function saveChampionCriteria(
       week_3_days: weeklyMealDays[3] || 0,
       week_4_days: weeklyMealDays[4] || 0,
       week_5_days: weeklyMealDays[5] || 0,
-      week_6_days: weeklyMealDays[6] || 0,
       month_total: monthlyTotal,
       // 주차별 토요일 필드 추가
       week_1_saturday: weeklySaturdays?.week_1_saturday || null,
