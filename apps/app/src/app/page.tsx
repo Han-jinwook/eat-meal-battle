@@ -668,7 +668,7 @@ export default function Home() {
         </div>
       )}
       
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* 학교 정보 표시 (현재 선택된 학교 기준) */}
 {schoolMode.currentSchoolInfo ? (
   <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between relative overflow-visible ${
