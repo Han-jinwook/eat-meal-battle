@@ -89,7 +89,7 @@ export default function MainHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-gradient-to-r from-yellow-400 to-orange-500 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-yellow-400 backdrop-blur">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center">
           <img src="/images/logo.png" alt="뭐먹지?" className="h-10 w-auto" />
