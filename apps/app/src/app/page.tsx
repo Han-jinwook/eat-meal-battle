@@ -980,13 +980,10 @@ export default function Home() {
                             rating={4.1}
                           />
                           
-                          {/* 광고 배너 예비 영역 - PC에서만 표시 */}
-                          <div className="hidden lg:block mt-4">
-                            {/* 향후 광고 배너가 들어갈 자리 */}
-                            <div className="h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500 text-sm">
-                              광고 배너 영역 (예비)
-                            </div>
-                          </div>
+                          {/* 광고 배너 예비 영역 - 향후 사용 예정 */}
+                          {/* <div className="hidden lg:block mt-4">
+                            <BannerAd position="share-bottom" />
+                          </div> */}
                         </div>
                         
                         {/* 댓글 섹션 - PC에서 오른쪽 */}
