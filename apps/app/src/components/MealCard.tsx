@@ -64,6 +64,8 @@ interface MealCardProps {
   onShowNutrition(meal: MealInfo): void;
   onUploadSuccess(): void;
   onUploadError(error: string): void;
+  showImageOnly?: boolean;
+  showInfoOnly?: boolean;
 }
 
 // 별점 지정/표시 컴포넌트
@@ -534,6 +536,8 @@ export default function MealCard({
   onShowNutrition,
   onUploadSuccess,
   onUploadError,
+  showImageOnly = false,
+  showInfoOnly = false,
 }: MealCardProps) {
   // 이미지 업로드 성공 시 호출되는 함수 (단순화됨)
   const handleImageChange = useCallback(() => {
@@ -544,6 +548,96 @@ export default function MealCard({
       onUploadSuccess();
     }
   }, [onUploadSuccess]);
+
+  // 이미지만 표시하는 경우
+  if (showImageOnly) {
+    return (
+      <div className="bg-white overflow-hidden rounded-lg shadow-sm">
+        <div className="p-2">
+          <MealImageUploader
+            key={`uploader-${meal.id}-${meal.meal_date}`}
+            schoolCode={meal.school_code}
+            mealDate={meal.meal_date}
+            mealType={meal.meal_type}
+            onUploadSuccess={handleImageChange}
+            onUploadError={onUploadError}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 정보만 표시하는 경우
+  if (showInfoOnly) {
+    return (
+      <div className="bg-white overflow-hidden rounded-lg shadow-sm h-full">
+        <div className="p-4 h-full flex flex-col">
+          {/* 학교 별점 */}
+          <SchoolRating schoolCode={meal.school_code} mealId={meal.id} className="mb-4" />
+
+          {/* 원산지/영양정보 버튼 */}
+          <div className="flex justify-between items-center mb-4 text-xs">
+            <div className="flex items-center gap-2">
+              {meal.origin_info && (
+                <button
+                  onClick={() => onShowOrigin(meal.origin_info!)}
+                  className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                >
+                  원산지
+                </button>
+              )}
+              {(meal.kcal || meal.ntr_info) && (
+                <button
+                  onClick={() => onShowNutrition(meal)}
+                  className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                >
+                  영양정보
+                </button>
+              )}
+            </div>
+            {meal.kcal && (
+              <div className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                {meal.kcal}kcal
+              </div>
+            )}
+          </div>
+
+          {/* 오늘 나의 평가는? 섹션 */}
+          <div className="mb-4">
+            <MyMealRating mealId={meal.id} />
+          </div>
+
+          {/* 메뉴 목록 */}
+          <div className="flex-1">
+            <ul className="space-y-3">
+              {meal.menuItems && meal.menuItems.length > 0 ? (
+                meal.menuItems.map((item) => (
+                  <MenuItemWithRating
+                    key={item.id}
+                    item={item}
+                    mealDate={meal.meal_date}
+                    interactive={
+                      (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') 
+                        ? false 
+                        : canRateAtCurrentTime(meal.meal_date)
+                    }
+                  />
+                ))
+              ) : (
+                meal.menu_items.map((item, idx) => (
+                  <li key={idx} className="text-gray-700 py-1">
+                    {item}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 기본 전체 표시 (모바일용)
   return (
     <div className="bg-white overflow-hidden">
 

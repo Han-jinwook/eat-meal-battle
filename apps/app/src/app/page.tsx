@@ -923,36 +923,82 @@ export default function Home() {
         {!isLoading && !pageLoading && !userLoading && user && schoolMode.currentSchoolInfo && (
           <>
             {meals.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-8">
                 {meals.map((meal) => (
                   <div key={meal.id} className="meal-wrapper">
-                    <MealCard
-                      meal={meal}
-                      onShowOrigin={(info) => {
-                        openModal('원산지 정보', formatOriginInfo(info));
-                      }}
-                      onShowNutrition={(m) => {
-                        openModal('영양 정보', formatNutritionInfo(m));
-                      }}
-                      onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
-                      onUploadError={(e) => {
-                        setPageError(e);
-                        setTimeout(() => setPageError(''), 3000);
-                      }}
-                    />
-                    {/* 공유 버튼 - MealCard와 CommentSection 사이에 배치 */}
-                    <ShareButton 
-                      mealDate={meal.meal_date}
-                      schoolName={userSchool?.school_name || meal.school_name || '학교정보 없음'}
-                      schoolCode={meal.school_code}
-                      rating={4.1}
-                    />
-                    {/* 댓글 섹션 - MealCard 외부에 배치 */}
-                    <CommentSection 
-                      mealId={meal.id} 
-                      className="mt-4" 
-                      schoolCode={meal.school_code} 
-                    />
+                    {/* PC: 2x2 그리드 배치, 모바일: 세로 배치 */}
+                    <div className="space-y-6 lg:space-y-0">
+                      {/* 1단: 급식 이미지 + 급식 정보 */}
+                      <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0">
+                        {/* 급식 이미지 영역 - PC에서 왼쪽 */}
+                        <div className="lg:order-1">
+                          <MealCard
+                            meal={meal}
+                            onShowOrigin={(info) => {
+                              openModal('원산지 정보', formatOriginInfo(info));
+                            }}
+                            onShowNutrition={(m) => {
+                              openModal('영양 정보', formatNutritionInfo(m));
+                            }}
+                            onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                            onUploadError={(e) => {
+                              setPageError(e);
+                              setTimeout(() => setPageError(''), 3000);
+                            }}
+                            showImageOnly={true}
+                          />
+                        </div>
+                        
+                        {/* 급식 정보 영역 - PC에서 오른쪽 */}
+                        <div className="lg:order-2">
+                          <MealCard
+                            meal={meal}
+                            onShowOrigin={(info) => {
+                              openModal('원산지 정보', formatOriginInfo(info));
+                            }}
+                            onShowNutrition={(m) => {
+                              openModal('영양 정보', formatNutritionInfo(m));
+                            }}
+                            onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                            onUploadError={(e) => {
+                              setPageError(e);
+                              setTimeout(() => setPageError(''), 3000);
+                            }}
+                            showInfoOnly={true}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* 2단: 공유 버튼 + 댓글 섹션 */}
+                      <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0 lg:mt-8">
+                        {/* 공유 버튼 영역 - PC에서 왼쪽 */}
+                        <div className="lg:order-1">
+                          <ShareButton 
+                            mealDate={meal.meal_date}
+                            schoolName={userSchool?.school_name || meal.school_name || '학교정보 없음'}
+                            schoolCode={meal.school_code}
+                            rating={4.1}
+                          />
+                          
+                          {/* 광고 배너 예비 영역 - PC에서만 표시 */}
+                          <div className="hidden lg:block mt-4">
+                            {/* 향후 광고 배너가 들어갈 자리 */}
+                            <div className="h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500 text-sm">
+                              광고 배너 영역 (예비)
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* 댓글 섹션 - PC에서 오른쪽 */}
+                        <div className="lg:order-2">
+                          <CommentSection 
+                            mealId={meal.id} 
+                            className="mt-4" 
+                            schoolCode={meal.school_code} 
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
                 
