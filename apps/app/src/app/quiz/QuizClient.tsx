@@ -13,6 +13,21 @@ import { useSchoolMode } from '@/hooks/useSchoolMode';
 import QuizShareButton from '@/components/QuizShareButton';
 import QuizDropdown from '@/components/QuizDropdown';
 
+// 학교 유형별 캐릭터 이미지 경로 반환 함수
+const getSchoolCharacterImage = (schoolType: string): string => {
+  if (schoolType?.includes('초등학교') || schoolType?.includes('초')) {
+    return '/images/characters/elementary.png';
+  }
+  if (schoolType?.includes('중학교') || schoolType?.includes('중')) {
+    return '/images/characters/middle.png';
+  }
+  if (schoolType?.includes('고등학교') || schoolType?.includes('고')) {
+    return '/images/characters/high.png';
+  }
+  // 기본값: 초등학교 캐릭터
+  return '/images/characters/elementary.png';
+};
+
 // Quiz type definition
 type Quiz = {
   id: string;
@@ -733,6 +748,15 @@ export default function QuizClient() {
                       {userSchool.grade ? `${userSchool.grade}학년` : ''}
                       {userSchool.class ? ` ${userSchool.class}반` : ''}
                     </span>
+                  )}
+                  
+                  {/* 초중고 캐릭터 - 반 끝에서 1cm 떨어진 곳에 */}
+                  {userSchool?.school_type && (
+                    <img 
+                      src={getSchoolCharacterImage(userSchool.school_type)}
+                      alt="학교 캐릭터"
+                      className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
+                    />
                   )}
                 </>
               ) : null}
