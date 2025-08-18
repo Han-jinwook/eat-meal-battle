@@ -106,98 +106,202 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="grid w-full max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
+      {/* 모바일: 상하단 구조, 데스크톱: 기존 좌우 구조 */}
+      <div className="lg:container lg:mx-auto lg:px-4 lg:py-8">
+        <div className="flex min-h-screen lg:items-center lg:justify-center">
+          <div className="w-full lg:max-w-6xl flex flex-col lg:grid lg:grid-cols-2 lg:gap-16">
             
-            {/* 왼쪽: 앱 소개 */}
-            <div className="flex flex-col justify-center space-y-8">
-              <div className="text-center lg:text-left">
-                <h1 className="text-4xl font-bold text-gray-900 lg:text-5xl">
-                  뭐먹지?
-                </h1>
-                <p className="mt-2 text-2xl font-semibold text-blue-600">
-                  급식배틀
-                </p>
-                <p className="mt-4 text-xl font-bold text-red-600">
-                  급식도 민주주의!
-                </p>
-                <p className="mt-3 text-lg text-gray-600 leading-relaxed">
-                  원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
-                </p>
-                <p className="mt-2 text-lg text-gray-700 font-medium">
-                  우리 스스로 맛을 평가하자! 🍽️
-                </p>
-                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-l-4 border-purple-400">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold text-purple-700">AI 54가지 기능</span>으로 
-                    <span className="mx-1">필요</span>와 
-                    <span className="mx-1">재미</span>와 
-                    <span className="mx-1">공감</span>과 
-                    <span className="mx-1 font-medium">AI 첨단</span>의 만남
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    급식사진 검증 • 급식이미지 생성 • 퀴즈 생성 • 오답 검증 • 급식 월간 분석리포트
-                  </p>
+            {/* 상단: 슬라이드 카드 (모바일), 왼쪽: 앱 소개 (데스크톱) */}
+            <div className="lg:flex lg:flex-col lg:justify-center lg:space-y-8 order-1 lg:order-1">
+              {/* 모바일: 슬라이드 카드 컨테이너 */}
+              <div className="lg:hidden">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-4 px-4 py-6" style={{width: 'max-content'}}>
+                    
+                    {/* 카드 1: 메인 소개 */}
+                    <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
+                      <div className="text-center">
+                        <h1 className="text-3xl font-bold text-gray-900">뭐먹지?</h1>
+                        <p className="mt-1 text-xl font-semibold text-blue-600">급식배틀</p>
+                        <p className="mt-3 text-lg font-bold text-red-600">급식도 민주주의!</p>
+                        <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+                          원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
+                        </p>
+                        <p className="mt-2 text-sm text-gray-700 font-medium">
+                          우리 스스로 맛을 평가하자! 🍽️
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 카드 2: AI 기능 */}
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px] border-l-4 border-purple-400">
+                      <div className="text-center">
+                        <h2 className="text-xl font-bold text-purple-700 mb-3">AI 54가지 기능</h2>
+                        <p className="text-sm text-gray-700 mb-3">
+                          <span className="mx-1">필요</span>와 
+                          <span className="mx-1">재미</span>와 
+                          <span className="mx-1">공감</span>과 
+                          <span className="mx-1 font-medium">AI 첨단</span>의 만남
+                        </p>
+                        <div className="space-y-2 text-xs text-gray-600">
+                          <p>🔍 급식사진 검증</p>
+                          <p>🤖 급식이미지 생성</p>
+                          <p>❓ 퀴즈 생성</p>
+                          <p>✅ 오답 검증</p>
+                          <p>📊 급식 월간 분석리포트</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 카드 3: 급식 기능 */}
+                    <div className="bg-orange-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
+                      <div className="text-center">
+                        <div className="flex justify-center mb-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
+                            <span className="text-2xl">🍽️</span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
+                        <p className="text-gray-600 text-sm">
+                          오늘의 급식을 확인하고 별점으로 평가하세요. AI가 생성한 이미지로 더욱 생생하게!
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 카드 4: 배틀 기능 */}
+                    <div className="bg-red-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
+                      <div className="text-center">
+                        <div className="flex justify-center mb-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
+                            <span className="text-2xl">⚔️</span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
+                        <p className="text-gray-600 text-sm">
+                          학교별, 메뉴별 급식 평점 경쟁! 우리 학교가 1등인지 확인해보세요.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 카드 5: 퀴즈 기능 */}
+                    <div className="bg-green-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
+                      <div className="text-center">
+                        <div className="flex justify-center mb-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                            <span className="text-2xl">🧠</span>
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
+                        <p className="text-gray-600 text-sm">
+                          급식 메뉴 맞추기 퀴즈로 친구들과 대결! 주장원, 월장원에 도전하세요.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+                
+                {/* 모바일 사용법 보기 버튼 */}
+                <div className="px-4 pb-4">
+                  <button
+                    onClick={() => setShowGuideModal(true)}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>📖</span>
+                    <span>자세한 사용법 보기</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-5">
-                {/* 급식 메뉴 */}
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                    <span className="text-2xl">🍽️</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">급식</h3>
-                    <p className="text-gray-600 text-sm">
-                      오늘의 급식을 확인하고 별점으로 평가하세요. AI가 생성한 이미지로 더욱 생생하게!
+              {/* 데스크톱: 기존 레이아웃 */}
+              <div className="hidden lg:block">
+                <div className="text-center lg:text-left">
+                  <h1 className="text-4xl font-bold text-gray-900 lg:text-5xl">
+                    뭐먹지?
+                  </h1>
+                  <p className="mt-2 text-2xl font-semibold text-blue-600">
+                    급식배틀
+                  </p>
+                  <p className="mt-4 text-xl font-bold text-red-600">
+                    급식도 민주주의!
+                  </p>
+                  <p className="mt-3 text-lg text-gray-600 leading-relaxed">
+                    원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
+                  </p>
+                  <p className="mt-2 text-lg text-gray-700 font-medium">
+                    우리 스스로 맛을 평가하자! 🍽️
+                  </p>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-l-4 border-purple-400">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold text-purple-700">AI 54가지 기능</span>으로 
+                      <span className="mx-1">필요</span>와 
+                      <span className="mx-1">재미</span>와 
+                      <span className="mx-1">공감</span>과 
+                      <span className="mx-1 font-medium">AI 첨단</span>의 만남
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      급식사진 검증 • 급식이미지 생성 • 퀴즈 생성 • 오답 검증 • 급식 월간 분석리포트
                     </p>
                   </div>
                 </div>
 
-                {/* 배틀 메뉴 */}
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                    <span className="text-2xl">⚔️</span>
+                <div className="space-y-5 mt-8">
+                  {/* 급식 메뉴 */}
+                  <div className="flex items-start space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
+                      <span className="text-2xl">🍽️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">급식</h3>
+                      <p className="text-gray-600 text-sm">
+                        오늘의 급식을 확인하고 별점으로 평가하세요. AI가 생성한 이미지로 더욱 생생하게!
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
-                    <p className="text-gray-600 text-sm">
-                      학교별, 메뉴별 급식 평점 경쟁! 우리 학교가 1등인지 확인해보세요.
-                    </p>
+
+                  {/* 배틀 메뉴 */}
+                  <div className="flex items-start space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
+                      <span className="text-2xl">⚔️</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
+                      <p className="text-gray-600 text-sm">
+                        학교별, 메뉴별 급식 평점 경쟁! 우리 학교가 1등인지 확인해보세요.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 퀴즈 메뉴 */}
+                  <div className="flex items-start space-x-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                      <span className="text-2xl">🧠</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
+                      <p className="text-gray-600 text-sm">
+                        급식 메뉴 맞추기 퀴즈로 친구들과 대결! 주장원, 월장원에 도전하세요.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* 퀴즈 메뉴 */}
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                    <span className="text-2xl">🧠</span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
-                    <p className="text-gray-600 text-sm">
-                      급식 메뉴 맞추기 퀴즈로 친구들과 대결! 주장원, 월장원에 도전하세요.
-                    </p>
-                  </div>
+                {/* 데스크톱 사용법 보기 버튼 */}
+                <div className="pt-4 border-t border-gray-200 mt-8">
+                  <button
+                    onClick={() => setShowGuideModal(true)}
+                    className="w-full lg:w-auto bg-blue-50 hover:bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>📖</span>
+                    <span>자세한 사용법 보기</span>
+                  </button>
                 </div>
-              </div>
-
-              {/* 사용법 보기 버튼 */}
-              <div className="pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowGuideModal(true)}
-                  className="w-full lg:w-auto bg-blue-50 hover:bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <span>📖</span>
-                  <span>자세한 사용법 보기</span>
-                </button>
               </div>
             </div>
 
-            {/* 오른쪽: 로그인 폼 */}
-            <div className="flex items-center justify-center">
-              <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-8 shadow-lg">
+            {/* 하단: 로그인 폼 (모바일), 오른쪽: 로그인 폼 (데스크톱) */}
+            <div className="flex items-center justify-center order-2 lg:order-2 px-4 pb-8 lg:px-0 lg:pb-0">
+              <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-6 lg:p-8 shadow-lg">
                 <div className="text-center">
                   <h2 className="text-2xl font-bold text-gray-900">로그인</h2>
                   <p className="mt-2 text-gray-600">소셜 계정으로 시작하세요</p>
@@ -221,27 +325,26 @@ function LoginContent() {
                         fill="#4285F4"
                       />
                     </svg>
-                    {loading ? '로그인 중...' : 'Google로 로그인'}
+                    Google로 로그인
                   </button>
 
                   <button
                     onClick={handleKakaoLogin}
                     disabled={loading}
-                    className="flex w-full items-center justify-center rounded-lg bg-[#FEE500] px-4 py-3 text-gray-900 shadow-sm transition-colors hover:bg-[#F3D900] focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50"
+                    className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
                   >
-                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 3C7.03125 3 3 6.03125 3 9.75C3 12.3125 4.71875 14.5312 7.21875 15.5625L6.46875 18.5625C6.40625 18.7812 6.625 18.9688 6.84375 18.8438L10.6562 16.2812C11.0938 16.3438 11.5312 16.375 12 16.375C16.9688 16.375 21 13.3438 21 9.625C21 5.90625 16.9688 3 12 3Z"
-                        fill="black"
-                      />
-                    </svg>
-                    {loading ? '로그인 중...' : '카카오로 로그인'}
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        로그인 중...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <span className="mr-3 text-lg">💬</span>
+                        <span className="text-lg">카카오로 간편 로그인</span>
+                      </div>
+                    )}
                   </button>
-                </div>
-
-                <div className="text-xs text-gray-500 rounded-lg bg-gray-50 p-3">
-                  <p className="font-medium">💡 로그인 팁</p>
-                  <p className="mt-1">처음 로그인하시거나 문제가 있다면 시크릿 창을 이용해보세요.</p>
                 </div>
 
                 <div className="text-center text-sm text-gray-500">
