@@ -362,11 +362,29 @@ export default function BattlePage() {
       console.log('📱 선택된 AI 앱:', selectedApp.id, selectedApp.name);
       
       // 클립보드에 프롬프트 복사 (백업용)
+      let clipboardSuccess = false;
       try {
-        await navigator.clipboard.writeText(aiPrompt);
-        console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(aiPrompt);
+          clipboardSuccess = true;
+          console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
+        } else {
+          // 폴백: textarea 사용
+          const textArea = document.createElement('textarea');
+          textArea.value = aiPrompt;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          clipboardSuccess = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          console.log(clipboardSuccess ? '✅ 폴백 방식으로 클립보드 복사 성공' : '❌ 클립보드 복사 실패');
+        }
       } catch (error) {
         console.warn('⚠️ 클립보드 복사 실패:', error);
+        clipboardSuccess = false;
       }
       
       // 스마트 자동 전송: GET 파라미터 시도 후 클립보드 폴백
@@ -399,7 +417,10 @@ export default function BattlePage() {
           // 폴백: 기본 페이지 열고 클립보드 사용
           console.log(`🔄 ${appName} 기본 페이지로 폴백...`);
           window.open(appUrl, '_blank');
-          showToast(`📋 ${appName} 열림!`, `프롬프트가 클립보드에 복사됨! ${appName}에서 Ctrl+V로 붙여넣기 하세요`, 'blue');
+          const clipboardMsg = clipboardSuccess 
+            ? `프롬프트가 클립보드에 복사됨! ${appName}에서 Ctrl+V로 붙여넣기 하세요`
+            : `클립보드 복사에 실패했습니다. AI 분석을 다시 시도해 주세요`;
+          showToast(`📋 ${appName} 열림!`, clipboardMsg, clipboardSuccess ? 'blue' : 'orange');
           return false;
         }
       };
@@ -407,7 +428,7 @@ export default function BattlePage() {
       // 토스트 메시지 표시 함수
       const showToast = (title: string, message: string, color: string) => {
         const toast = document.createElement('div');
-        const bgColor = color === 'green' ? 'bg-green-500' : 'bg-blue-500';
+        const bgColor = color === 'green' ? 'bg-green-500' : color === 'orange' ? 'bg-orange-500' : 'bg-blue-500';
         toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm`;
         toast.innerHTML = `
           <div class="flex items-center gap-2">
