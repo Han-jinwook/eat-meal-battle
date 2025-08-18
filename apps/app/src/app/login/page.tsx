@@ -107,7 +107,7 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* 모바일: 상하단 구조, 데스크톱: 기존 좌우 구조 */}
-      <div className="lg:container lg:mx-auto lg:px-4 lg:py-8">
+      <div className="lg:container lg:mx-auto lg:px-4 lg:py-2">
         <div className="flex min-h-screen lg:items-center lg:justify-center">
           <div className="w-full lg:max-w-6xl flex flex-col lg:grid lg:grid-cols-2 lg:gap-16">
             
@@ -201,16 +201,6 @@ function LoginContent() {
                   </div>
                 </div>
                 
-                {/* 모바일 사용법 보기 버튼 */}
-                <div className="px-4 pb-4">
-                  <button
-                    onClick={() => setShowGuideModal(true)}
-                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>📖</span>
-                    <span>자세한 사용법 보기</span>
-                  </button>
-                </div>
               </div>
 
               {/* 데스크톱: 기존 레이아웃 */}
@@ -286,16 +276,6 @@ function LoginContent() {
                   </div>
                 </div>
 
-                {/* 데스크톱 사용법 보기 버튼 */}
-                <div className="pt-4 border-t border-gray-200 mt-8">
-                  <button
-                    onClick={() => setShowGuideModal(true)}
-                    className="w-full lg:w-auto bg-blue-50 hover:bg-blue-100 text-blue-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>📖</span>
-                    <span>자세한 사용법 보기</span>
-                  </button>
-                </div>
               </div>
             </div>
 
@@ -331,19 +311,15 @@ function LoginContent() {
                   <button
                     onClick={handleKakaoLogin}
                     disabled={loading}
-                    className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-base font-medium rounded-lg text-white bg-yellow-400 hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
+                    className="flex w-full items-center justify-center rounded-lg bg-[#FEE500] px-4 py-3 text-gray-900 shadow-sm transition-colors hover:bg-[#F3D900] focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50"
                   >
-                    {loading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                        로그인 중...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <span className="mr-3 text-lg">💬</span>
-                        <span className="text-lg">카카오로 간편 로그인</span>
-                      </div>
-                    )}
+                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 3C7.03125 3 3 6.03125 3 9.75C3 12.3125 4.71875 14.5312 7.21875 15.5625L6.46875 18.5625C6.40625 18.7812 6.625 18.9688 6.84375 18.8438L10.6562 16.2812C11.0938 16.3438 11.5312 16.375 12 16.375C16.9688 16.375 21 13.3438 21 9.625C21 5.90625 16.9688 3 12 3Z"
+                        fill="black"
+                      />
+                    </svg>
+                    {loading ? '로그인 중...' : '카카오로 로그인'}
                   </button>
                 </div>
 
