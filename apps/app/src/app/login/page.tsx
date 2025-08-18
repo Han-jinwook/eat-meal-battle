@@ -9,6 +9,7 @@ import Link from 'next/link'
 function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showGuideModal, setShowGuideModal] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -214,11 +215,109 @@ function LoginContent() {
                 <div className="text-center text-sm text-gray-500">
                   <span>계정이 없으신가요? 소셜 로그인으로 자동 가입됩니다.</span>
                 </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={() => setShowGuideModal(true)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium underline"
+                  >
+                    📖 사용법 보기
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 사용법 가이드 모달 */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">🍚 급식배틀 사용법</h2>
+              <button 
+                onClick={() => setShowGuideModal(false)}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <div className="text-center">
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">1️⃣</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">회원가입</h3>
+                <p className="text-gray-600 text-sm">구글 또는 카카오 계정으로 간편하게 가입하세요</p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">2️⃣</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">학교 등록</h3>
+                <p className="text-gray-600 text-sm">내 학교를 등록하고 학년, 반 정보를 입력하세요</p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">3️⃣</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">급식 평가</h3>
+                <p className="text-gray-600 text-sm">오늘의 급식을 먹고 별점과 댓글을 남겨보세요</p>
+              </div>
+
+              <div className="text-center">
+                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">4️⃣</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">퀴즈 도전</h3>
+                <p className="text-gray-600 text-sm">친구들과 퀴즈 대결을 통해 챔피언에 도전하세요</p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 주요 기능</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🍽️</span>
+                  <div>
+                    <span className="font-medium">급식 평가:</span>
+                    <span className="text-gray-600 ml-2">AI 생성 이미지와 함께 급식 메뉴 확인 및 평점</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚔️</span>
+                  <div>
+                    <span className="font-medium">급식 배틀:</span>
+                    <span className="text-gray-600 ml-2">학교별, 메뉴별 급식 평점 경쟁</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🧠</span>
+                  <div>
+                    <span className="font-medium">급식 퀴즈:</span>
+                    <span className="text-gray-600 ml-2">급식 메뉴 맞추기 퀴즈로 주장원, 월장원 도전</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center mt-6">
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                시작하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

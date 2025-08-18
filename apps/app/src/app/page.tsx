@@ -17,6 +17,7 @@ import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareModal from '@/components/ShareModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
+import PublicDashboard from '@/components/PublicDashboard';
 // 디버그 패널 제거
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -129,12 +130,12 @@ export default function Home() {
     fetchMealInfo,
   } = useMeals();
 
-  // userError 발생 시 오류 처리 및 로그인 페이지 리다이렉트
+  // userError 발생 시 오류 처리 - 비로그인 사용자는 대시보드 표시
   useEffect(() => {
     if (userError) {
-      // Auth session missing 에러인 경우 로그인 페이지로 리다이렉트
+      // Auth session missing 에러인 경우 대시보드 표시 (로그인 페이지로 리다이렉트하지 않음)
       if (userError.includes('Auth session missing') || userError.includes('session missing')) {
-        router.push('/login');
+        console.log('비로그인 사용자 - 대시보드 표시');
         return;
       }
       setPageError(userError);
@@ -691,6 +692,17 @@ export default function Home() {
     // 서버에서 모든 정렬 및 처리가 완료되었으므로 그대로 반환
     return formattedInfo;
   };
+
+  // 비로그인 사용자인 경우 로그인 페이지로 리다이렉트
+  if (userError && (userError.includes('Auth session missing') || userError.includes('session missing'))) {
+    router.push('/login');
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-2xl mb-4">🍚</div>
+        <p className="text-gray-600">로그인 페이지로 이동 중...</p>
+      </div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
