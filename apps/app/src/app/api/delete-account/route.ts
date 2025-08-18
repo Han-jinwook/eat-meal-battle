@@ -35,10 +35,32 @@ export async function POST(request: NextRequest) {
     
     // ⚠️ 1단계: Auth에서 먼저 사용자 삭제 (OAuth 연결 완전 해제)
     console.log('1단계: Auth에서 사용자 계정 삭제 시도...')
-    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
+    
+    // 모바일 환경에서 더 안정적인 삭제를 위한 재시도 로직
+    let deleteAuthError = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+      
+      if (!error) {
+        deleteAuthError = null;
+        break;
+      }
+      
+      deleteAuthError = error;
+      retryCount++;
+      console.log(`Auth 삭제 시도 ${retryCount}/${maxRetries} 실패:`, error.message);
+      
+      if (retryCount < maxRetries) {
+        // 재시도 전 잠시 대기 (모바일 네트워크 안정성을 위해)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
     
     if (deleteAuthError) {
-      console.error('❌ Auth 사용자 삭제 실패:', deleteAuthError)
+      console.error('❌ Auth 사용자 삭제 최종 실패:', deleteAuthError)
       
       // Auth 삭제 실패 시 전체 탈퇴 중단
       return NextResponse.json({
