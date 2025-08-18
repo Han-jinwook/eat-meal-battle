@@ -141,11 +141,63 @@ export default function Home() {
     }
   }, [userError, router]);
 
-  // 클라이언트 사이드에서 URL 매개변수 초기화
+  // 초대링크 처리 함수
+  const handleInviteLink = async (schoolCode: string) => {
+    try {
+      if (!user) {
+        console.log('사용자가 로그인되지 않음');
+        return;
+      }
+
+      // 사용자 프로필과 학교 등록 상태 확인
+      const [userResult, schoolResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('is_student')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('school_infos')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+      ]);
+
+      const { data: userInfo } = userResult;
+      const { data: schoolInfo } = schoolResult;
+
+      // 학생 사용자인데 학교 등록이 안 된 경우만 프로필 페이지로 안내
+      if (userInfo?.is_student && !schoolInfo) {
+        alert('학교 등록이 필요합니다. 프로필에서 학교를 등록해주세요.');
+        router.push('/profile');
+        return;
+      }
+
+      // 학생이 아닌 사용자(학부모 등)인데 학교 등록이 안 된 경우 안내
+      if (!userInfo?.is_student && !schoolInfo) {
+        alert('급식 기능은 학교 등록이 필요합니다.');
+        return;
+      }
+
+      // 학교 등록이 완료된 경우 정상적으로 급식 페이지 표시
+      console.log('초대링크 처리 완료 - 학교 등록 확인됨');
+      
+    } catch (error) {
+      console.error('초대링크 처리 오류:', error);
+    }
+  };
+
+  // 클라이언트 사이드에서 URL 매개변수 초기화 및 초대링크 처리
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const dateFromUrl = params.get('date');
+      const schoolCodeFromUrl = params.get('school_code');
+      
+      // 초대링크 처리 (school_code 파라미터가 있는 경우)
+      if (schoolCodeFromUrl && user) {
+        handleInviteLink(schoolCodeFromUrl);
+      }
       
       // URL에서 날짜 파라미터가 있으면 그 값을 사용, 없으면 오늘 날짜 사용
       const dateToUse = dateFromUrl || getCurrentDate();
@@ -157,7 +209,7 @@ export default function Home() {
       
       // 기존 handleDateChange 함수에서 급식 정보를 가져오는 로직이 있으므로 여기서는 하지 않음
     }
-  }, []);
+  }, [user]);
 
   // URL 파라미터에서 notification ID 가져오기
   useEffect(() => {
