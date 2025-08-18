@@ -107,12 +107,12 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* 모바일: 상하단 구조, 데스크톱: 기존 좌우 구조 */}
-      <div className="lg:container lg:mx-auto lg:px-4 lg:py-2">
-        <div className="flex min-h-screen lg:items-center lg:justify-center">
+      <div className="lg:container lg:mx-auto lg:px-4 lg:py-0">
+        <div className="flex min-h-screen lg:items-start lg:justify-center lg:pt-4">
           <div className="w-full lg:max-w-6xl flex flex-col lg:grid lg:grid-cols-2 lg:gap-16">
             
             {/* 상단: 슬라이드 카드 (모바일), 왼쪽: 앱 소개 (데스크톱) */}
-            <div className="lg:flex lg:flex-col lg:justify-center lg:space-y-8 order-1 lg:order-1">
+            <div className="lg:flex lg:flex-col lg:justify-start lg:space-y-6 order-1 lg:order-1">
               {/* 모바일: 슬라이드 카드 컨테이너 */}
               <div className="lg:hidden">
                 <div className="overflow-x-auto scrollbar-hide">
@@ -235,7 +235,7 @@ function LoginContent() {
                   </div>
                 </div>
 
-                <div className="space-y-5 mt-8">
+                <div className="space-y-5 mt-4">
                   {/* 급식 메뉴 */}
                   <div className="flex items-start space-x-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
