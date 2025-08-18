@@ -16,6 +16,12 @@ interface QuizRelation {
     grade?: number;
     class?: number;
   };
+  viewer_info?: {
+    nickname: string;
+    school_name: string;
+    grade?: number;
+    class?: number;
+  };
   viewer_count?: number;
 }
 
@@ -56,7 +62,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
     console.log('🔍 퀴즈 관계 데이터 로드 시작:', userId);
 
     try {
-      // 내가 공유한 퀴즈 (다른 사람들이 내 퀴즈를 보는 경우)
+      // 내가 공유한 퀴즈 (다른 사람들이 내 퀴즈를 보는 경우) - 개별 관람자 정보 포함
       const { data: sharedData, error: sharedError } = await supabase
         .from('quiz_viewers')
         .select(`
@@ -69,27 +75,45 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
 
       if (sharedError) {
         console.error('공유 퀴즈 로드 오류:', sharedError);
-      } else {
-        // 공유한 퀴즈별 관람자 수 계산
-        const sharedQuizzes: QuizRelation[] = [];
-        const ownerCounts: { [key: string]: number } = {};
+        setMySharedQuizzes([]);
+      } else if (sharedData && sharedData.length > 0) {
+        // 관람자들의 정보 가져오기
+        const viewerIds = [...new Set(sharedData.map(item => item.viewer_id))];
         
-        sharedData?.forEach(item => {
-          ownerCounts[item.quiz_owner_id] = (ownerCounts[item.quiz_owner_id] || 0) + 1;
-        });
+        const { data: viewersData, error: viewersError } = await supabase
+          .from('users')
+          .select('id, nickname')
+          .in('id', viewerIds);
 
-        if (ownerCounts[userId] > 0) {
-          sharedQuizzes.push({
-            id: `shared-${userId}`,
-            quiz_owner_id: userId,
-            viewer_id: '',
-            created_at: new Date().toISOString(),
-            viewer_count: ownerCounts[userId]
-          });
+        const { data: viewerSchoolsData, error: viewerSchoolsError } = await supabase
+          .from('school_infos')
+          .select('user_id, school_name, grade, class')
+          .in('user_id', viewerIds);
+
+        if (viewersError || viewerSchoolsError) {
+          console.error('관람자 정보 로드 오류:', viewersError, viewerSchoolsError);
         }
+
+        // 각 관람자별로 개별 항목 생성
+        const sharedQuizzes = sharedData.map(item => {
+          const viewerUser = viewersData?.find(u => u.id === item.viewer_id);
+          const viewerSchool = viewerSchoolsData?.find(s => s.user_id === item.viewer_id);
+
+          return {
+            ...item,
+            viewer_info: {
+              nickname: viewerUser?.nickname || '익명',
+              school_name: viewerSchool?.school_name || '알 수 없음',
+              grade: viewerSchool?.grade,
+              class: viewerSchool?.class
+            }
+          };
+        });
 
         setMySharedQuizzes(sharedQuizzes);
         console.log('📤 내가 공유한 퀴즈:', sharedQuizzes);
+      } else {
+        setMySharedQuizzes([]);
       }
 
       // 내가 관람 중인 퀴즈 (내가 다른 사람의 퀴즈를 보는 경우)
@@ -105,6 +129,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
 
       if (viewingError) {
         console.error('관람 퀴즈 로드 오류:', viewingError);
+        setMyViewingQuizzes([]);
       } else if (viewingData && viewingData.length > 0) {
         // 각 퀴즈 소유자의 정보 가져오기
         const ownerIds = [...new Set(viewingData.map(item => item.quiz_owner_id))];
@@ -153,7 +178,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
     }
   };
 
-  // 관람자 제거
+  // 관람자 제거 (내가 관람 중인 퀴즈에서 나가기)
   const removeViewer = async (relationId: string, ownerNickname: string) => {
     try {
       const { error } = await supabase
@@ -171,6 +196,28 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
       loadQuizRelations(); // 데이터 새로고침
     } catch (error) {
       console.error('관람자 제거 오류:', error);
+      toast.error('관람자 제거에 실패했습니다.');
+    }
+  };
+
+  // 공유한 퀴즈에서 특정 관람자 제거
+  const removeSharedViewer = async (relationId: string, viewerNickname: string) => {
+    try {
+      const { error } = await supabase
+        .from('quiz_viewers')
+        .delete()
+        .eq('id', relationId);
+
+      if (error) {
+        console.error('공유 관람자 제거 오류:', error);
+        toast.error('관람자 제거에 실패했습니다.');
+        return;
+      }
+
+      toast.success(`${viewerNickname}님의 퀴즈 관람을 차단했습니다.`);
+      loadQuizRelations(); // 데이터 새로고침
+    } catch (error) {
+      console.error('공유 관람자 제거 오류:', error);
       toast.error('관람자 제거에 실패했습니다.');
     }
   };
@@ -222,41 +269,11 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
               </div>
             ) : (
               <>
-                {/* 내가 공유한 퀴즈 */}
-                {mySharedQuizzes.length > 0 && (
+                {/* 내가 관람 중인 퀴즈 (우선 표시) */}
+                {myViewingQuizzes.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-gray-600 mb-2">
-                      🔗 내가 공유한 퀴즈 ({mySharedQuizzes.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {mySharedQuizzes.map((quiz) => (
-                        <div key={quiz.id} className="bg-blue-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-blue-800">내 퀴즈</p>
-                              <p className="text-xs text-blue-600">
-                                관람자 {quiz.viewer_count}명
-                              </p>
-                            </div>
-                            <Link 
-                              href="/quiz"
-                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-                              onClick={() => setIsOpen(false)}
-                            >
-                              보기
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 내가 관람 중인 퀴즈 */}
-                {myViewingQuizzes.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-600 mb-2">
-                      👀 내가 관람 중인 퀴즈 ({myViewingQuizzes.length})
+                      👀 내가 관람중인 퀴즈 ({myViewingQuizzes.length})
                     </h4>
                     <div className="space-y-2">
                       {myViewingQuizzes.map((quiz) => (
@@ -272,21 +289,45 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                                 {quiz.owner_info?.class && ` ${quiz.owner_info.class}반`}
                               </p>
                             </div>
-                            <div className="flex gap-1">
-                              <Link 
-                                href={`/quiz?viewing=${quiz.quiz_owner_id}`}
-                                className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                보기
-                              </Link>
-                              <button
-                                onClick={() => removeViewer(quiz.id, quiz.owner_info?.nickname || '익명')}
-                                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                              >
-                                제거
-                              </button>
+                            <button
+                              onClick={() => removeViewer(quiz.id, quiz.owner_info?.nickname || '익명')}
+                              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            >
+                              제거
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 내가 공유한 퀴즈 */}
+                {mySharedQuizzes.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-600 mb-2">
+                      🔗 내가 공유한 퀴즈 ({mySharedQuizzes.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {mySharedQuizzes.map((quiz) => (
+                        <div key={quiz.id} className="bg-blue-50 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-800">
+                                {quiz.viewer_info?.nickname}님이 관람중
+                              </p>
+                              <p className="text-xs text-blue-600">
+                                {quiz.viewer_info?.school_name}
+                                {quiz.viewer_info?.grade && ` ${quiz.viewer_info.grade}학년`}
+                                {quiz.viewer_info?.class && ` ${quiz.viewer_info.class}반`}
+                              </p>
                             </div>
+                            <button
+                              onClick={() => removeSharedViewer(quiz.id, quiz.viewer_info?.nickname || '익명')}
+                              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            >
+                              제거
+                            </button>
                           </div>
                         </div>
                       ))}
