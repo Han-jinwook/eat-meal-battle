@@ -108,9 +108,11 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         throw new Error('로그인이 필요합니다.');
       }
       
-      // 모바일 환경에서 더 긴 타임아웃 설정
+      // iOS Safari에서 더 긴 타임아웃 설정 (iOS는 네트워크 요청이 더 느림)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 타임아웃
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const timeoutDuration = isIOS ? 45000 : 30000; // iOS: 45초, 기타: 30초
+      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
       
       const response = await fetch('/api/delete-account', {
         method: 'POST',
@@ -126,8 +128,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       const responseData = await response.json();
       
       if (!response.ok) {
-        // OAuth 연결 해제 실패 시 재시도 안내
-        if (responseData.requiresRetry) {
+        // iOS Safari OAuth 연결 해제 실패 시 특별 안내
+        if (responseData.requiresRetry && responseData.isIOSIssue) {
+          throw new Error(`${responseData.error}\n\niOS Safari에서는 OAuth 처리가 복잡할 수 있습니다.\n잠시 후 다시 시도하거나 다른 브라우저를 사용해보세요.`);
+        } else if (responseData.requiresRetry) {
           throw new Error(`${responseData.error}\n\n다시 시도하면 해결될 수 있습니다.`);
         }
         throw new Error(responseData.error || '회원 탈퇴 중 오류 발생');
