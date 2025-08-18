@@ -49,19 +49,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '학교 코드와 이름이 필요합니다' }, { status: 400 });
     }
 
-    // 현재 등록된 관심학교 개수 확인 (최대 3개 제한)
-    const { data: existingSchools, error: countError } = await supabase
+    // 중복 등록 확인
+    const { data: existingSchool, error: duplicateError } = await supabase
       .from('interest_schools')
-      .select('id', { count: 'exact' })
-      .eq('user_id', user.id);
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('school_code', school_code)
+      .maybeSingle();
 
-    if (countError) {
-      console.error('관심학교 개수 확인 오류:', countError);
+    if (duplicateError) {
+      console.error('중복 확인 오류:', duplicateError);
       return NextResponse.json({ error: '데이터 확인 실패' }, { status: 500 });
     }
 
-    if ((existingSchools?.length || 0) >= 3) {
-      return NextResponse.json({ error: '관심학교는 최대 3개까지만 등록할 수 있습니다' }, { status: 400 });
+    if (existingSchool) {
+      return NextResponse.json({ error: '이미 등록된 학교입니다' }, { status: 400 });
     }
 
     // 관심학교 추가
@@ -76,9 +78,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      if (error.code === '23505') { // UNIQUE constraint violation
-        return NextResponse.json({ error: '이미 등록된 학교입니다' }, { status: 400 });
-      }
       console.error('관심학교 추가 오류:', error);
       return NextResponse.json({ error: '등록 실패' }, { status: 500 });
     }

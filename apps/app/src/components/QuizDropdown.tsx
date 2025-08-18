@@ -178,27 +178,6 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
     }
   };
 
-  // 관람자 제거 (내가 관람 중인 퀴즈에서 나가기)
-  const removeViewer = async (relationId: string, ownerNickname: string) => {
-    try {
-      const { error } = await supabase
-        .from('quiz_viewers')
-        .delete()
-        .eq('id', relationId);
-
-      if (error) {
-        console.error('관람자 제거 오류:', error);
-        toast.error('관람자 제거에 실패했습니다.');
-        return;
-      }
-
-      toast.success(`${ownerNickname}님의 퀴즈 관람을 중단했습니다.`);
-      loadQuizRelations(); // 데이터 새로고침
-    } catch (error) {
-      console.error('관람자 제거 오류:', error);
-      toast.error('관람자 제거에 실패했습니다.');
-    }
-  };
 
   // 공유한 퀴즈에서 특정 관람자 제거
   const removeSharedViewer = async (relationId: string, viewerNickname: string) => {
@@ -278,7 +257,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                     <div className="space-y-2">
                       {myViewingQuizzes.map((quiz) => (
                         <div key={quiz.id} className="bg-green-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center">
                             <div className="flex-1">
                               <p className="text-sm font-medium text-green-800">
                                 {quiz.owner_info?.nickname}님의 퀴즈
@@ -289,12 +268,6 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                                 {quiz.owner_info?.class && ` ${quiz.owner_info.class}반`}
                               </p>
                             </div>
-                            <button
-                              onClick={() => removeViewer(quiz.id, quiz.owner_info?.nickname || '익명')}
-                              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                            >
-                              제거
-                            </button>
                           </div>
                         </div>
                       ))}

@@ -49,6 +49,47 @@ removeSharedViewer(relationId, viewerNickname)
 - 실시간 카운트 업데이트
 - 명확한 성공/실패 메시지 제공
 
+### 🔗 퀴즈 공유 링크 관심학교 자동 등록 연동 (2025-08-18)
+
+#### 문제 해결
+**이슈**: 퀴즈 공유 링크 클릭 시 관심학교에 대상학교가 등록되지 않아 급식/배틀 연동 불가
+
+#### 해결 방안
+1. **자동 관심학교 등록**: 퀴즈 초대 링크 처리 시 소유자 학교를 관심학교에 자동 등록
+2. **관심학교 제한 해제**: 기존 3개 제한을 제거하여 유연성 확보
+
+#### 구현 내용
+**파일**: `QuizClient.tsx` - `handleViewerInvite()` 함수
+```typescript
+// 퀴즈 소유자의 학교 정보를 관심학교에 자동 등록
+const { data: ownerSchoolInfo } = await supabase
+  .from('school_infos')
+  .select('school_code, school_name')
+  .eq('user_id', tokenData.quiz_owner_id)
+  .single();
+
+if (ownerSchoolInfo) {
+  const response = await fetch('/api/interest-schools', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      school_code: ownerSchoolInfo.school_code,
+      school_name: ownerSchoolInfo.school_name
+    })
+  });
+}
+```
+
+#### 연동 효과
+- **급식 페이지**: 관심학교 드롭다운에서 해당 학교 선택 가능
+- **배틀 페이지**: 해당 학교 배틀 데이터 조회 가능  
+- **자연스러운 UX**: 퀴즈 → 급식/배틀 원활한 연결
+
+#### 관람종료 버튼 제거
+**파일**: `QuizDropdown.tsx`
+- **변경**: "내가 관람중인 퀴즈" 섹션에서 제거 버튼 완전 삭제
+- **이유**: 자동 종료 방식으로 변경 (메뉴 이동 시 자연스럽게 관심학교 모드로 전환)
+
 ---
 
 ## 🏆 월장원 버그 수정 및 자동 스케줄러 구축 (2025-08-16)
