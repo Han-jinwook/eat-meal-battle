@@ -359,11 +359,11 @@ export default function Profile() {
             </div>
             
             {/* 친구에게 공유하기 버튼 */}
-            <div className="flex justify-center mb-3">
+            <div className="px-4 mb-3">
               <button
                 onClick={handleShareApp}
                 disabled={isSharing}
-                className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-2 text-sm ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full px-4 py-4 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium shadow-md ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />

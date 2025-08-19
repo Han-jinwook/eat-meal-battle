@@ -104,11 +104,11 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
 
   return (
     <>
-      <div className={`my-4 flex justify-center ${className}`}>
+      <div className={`my-4 px-4 ${className}`}>
         <button
           onClick={handleShare}
           disabled={isSharing}
-          className={`px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`w-full px-6 py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${
             isSharing ? 'opacity-70 cursor-not-allowed' : ''
           }`}
         >
@@ -143,7 +143,7 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
               </div>
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 transition-colors"
+                className="w-full py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-md hover:from-yellow-500 hover:to-yellow-600 transition-colors"
               >
                 확인
               </button>

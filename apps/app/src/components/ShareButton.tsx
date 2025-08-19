@@ -91,7 +91,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         <button
           onClick={handleShare}
           disabled={isSharing}
-          className={`w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg flex items-center justify-center gap-2 min-h-[60px] ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          className={`w-full px-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 shadow-lg flex items-center justify-center gap-2 min-h-[60px] ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
@@ -129,7 +129,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
               </p>
               <button
                 onClick={() => setShowSuccessModal(false)}
-                className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                className="w-full py-2 bg-yellow-400 text-black rounded-md hover:bg-yellow-500 transition-colors"
               >
                 확인
               </button>
