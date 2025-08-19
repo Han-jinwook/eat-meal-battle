@@ -24,10 +24,12 @@ interface ChampionStats {
 
 interface ChampionHistoryProps {
   currentMonth?: Date;
+  viewingUserId?: string; // For viewing shared quizzes
 }
 
 const ChampionHistory: React.FC<ChampionHistoryProps> = ({ 
-  currentMonth = new Date() 
+  currentMonth = new Date(),
+  viewingUserId 
 }) => {
   const [championStats, setChampionStats] = useState<ChampionStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +59,27 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         return;
       }
 
+      // 관람 모드일 때는 관람 대상 사용자의 학교 정보를 가져와야 함
+      let targetSchoolInfo = userSchool;
+      if (viewingUserId) {
+        const { data: viewingSchoolData } = await supabase
+          .from('school_infos')
+          .select('school_code, grade')
+          .eq('user_id', viewingUserId)
+          .single();
+          
+        if (viewingSchoolData) {
+          targetSchoolInfo = {
+            ...userSchool,
+            school_code: viewingSchoolData.school_code,
+            grade: viewingSchoolData.grade
+          };
+        }
+      }
+
       const stats: ChampionStats[] = [];
-      const userId = session.data.session.user.id; // 올바른 user_id 사용
+      // 관람 모드일 때는 관람 대상 사용자의 ID 사용
+      const userId = viewingUserId || session.data.session.user.id;
       
       // 주별 통계 (1-4주) API 호출
       const weeks = [1, 2, 3, 4];
@@ -66,8 +87,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         try {
           const params = new URLSearchParams({
             user_id: userId, // 수정: session에서 가져온 userId 사용
-            school_code: userSchool.school_code,
-            grade: userSchool.grade?.toString() || '1',
+            school_code: targetSchoolInfo.school_code,
+            grade: targetSchoolInfo.grade?.toString() || '1',
             year: currentMonth.getFullYear().toString(),
             month: (currentMonth.getMonth() + 1).toString(),
             week_number: week.toString(),
@@ -110,8 +131,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         // 월별 통계 API 호출
         const monthlyParams = new URLSearchParams({
           user_id: userId, // 수정: session에서 가져온 userId 사용
-          school_code: userSchool.school_code,
-          grade: userSchool.grade?.toString() || '1',
+          school_code: targetSchoolInfo.school_code,
+          grade: targetSchoolInfo.grade?.toString() || '1',
           year: currentMonth.getFullYear().toString(),
           month: (currentMonth.getMonth() + 1).toString(),
           period_type: 'monthly'

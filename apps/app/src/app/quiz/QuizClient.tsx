@@ -1103,6 +1103,7 @@ export default function QuizClient() {
             router.push(`/quiz?date=${date}`);
           }}
           onRefreshNeeded={() => {}}
+          viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
         
         {/* 퀴즈 공유 버튼 - 월간 현황판 바로 아래 배치 */}
@@ -1118,7 +1119,10 @@ export default function QuizClient() {
         )}
         
         {/* 장원 히스토리 - 무한 루프 수정 완료 */}
-        <ChampionHistory currentMonth={new Date()} />
+        <ChampionHistory 
+          currentMonth={new Date()} 
+          viewingUserId={isViewingMode ? viewingUserId : undefined}
+        />
       </div>
     </>
   );

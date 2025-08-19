@@ -28,12 +28,14 @@ interface QuizChallengeCalendarProps {
   currentQuizDate?: string;
   onDateSelect?: (date: string) => void;
   onRefreshNeeded?: () => void;
+  viewingUserId?: string; // For viewing shared quizzes
 }
 
 const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({ 
   currentQuizDate, 
   onDateSelect,
-  onRefreshNeeded 
+  onRefreshNeeded,
+  viewingUserId 
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 5, 1)); // 6월
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
@@ -82,6 +84,24 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
     try {
       const session = await supabase.auth.getSession();
       if (!session.data.session) return;
+      
+      // 관람 모드일 때는 관람 대상 사용자의 학교 정보를 가져와야 함
+      let targetSchoolInfo = userSchool;
+      if (viewingUserId) {
+        const { data: viewingSchoolData } = await supabase
+          .from('school_infos')
+          .select('school_code, grade')
+          .eq('user_id', viewingUserId)
+          .single();
+          
+        if (viewingSchoolData) {
+          targetSchoolInfo = {
+            ...userSchool,
+            school_code: viewingSchoolData.school_code,
+            grade: viewingSchoolData.grade
+          };
+        }
+      }
 
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
@@ -103,7 +123,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const { data: mealMenus, error: mealMenusError } = await supabase
         .from('meal_menus')
         .select('meal_date, menu_items')
-        .eq('school_code', userSchool.school_code)
+        .eq('school_code', targetSchoolInfo.school_code)
         .gte('meal_date', formatLocalDate(startDate))
         .lte('meal_date', formatLocalDate(endDate));
         
@@ -122,7 +142,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           week_5_saturday,
           month_total
         `)
-        .eq('school_code', userSchool.school_code)
+        .eq('school_code', targetSchoolInfo.school_code)
         .eq('year', year)
         .eq('month', month + 1) // JavaScript의 month는 0부터 시작하므로 +1
         .single();
@@ -137,11 +157,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       setChampionCriteria(weekCriteria || null);
       
       // 2. 장원 기록 조회 (user_champion_records 테이블)
+      // 관람 모드일 때는 관람 대상 사용자의 데이터를 조회
+      const targetUserId = viewingUserId || session.data.session.user.id;
       const { data: championData, error: championError } = await supabase
         .from('user_champion_records')
         .select('*')
-        .eq('user_id', session.data.session.user.id)
-        .eq('grade', userSchool.grade)
+        .eq('user_id', targetUserId)
+        .eq('grade', targetSchoolInfo.grade)
         .eq('year', year)
         .eq('month', month + 1) // JavaScript의 month는 0부터 시작하므로 +1
         .single();
@@ -159,7 +181,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           day_11, day_12, day_13, day_14, day_15, day_16, day_17, day_18, day_19, day_20,
           day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31
         `)
-        .eq('user_id', session.data.session.user.id)
+        .eq('user_id', targetUserId)
         .eq('year', year)
         .eq('month', month + 1)
         .single();
@@ -290,12 +312,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
       const displayMonth = month + 1;
       
-      console.log('월별 통계 조회:', year, displayMonth, '사용자:', session.data.session.user.id);
+      // 관람 모드일 때는 관람 대상 사용자의 데이터를 조회
+      const targetUserId = viewingUserId || session.data.session.user.id;
+      console.log('월별 통계 조회:', year, displayMonth, '사용자:', targetUserId);
       
       const { data, error } = await supabase
         .from('quiz_champions')
         .select('month_correct, total_count')
-        .eq('user_id', session.data.session.user.id)
+        .eq('user_id', targetUserId)
         .eq('year', year)
         .eq('month', displayMonth)
         .single();
