@@ -127,7 +127,20 @@ export default function Profile() {
 
   // 회원 탈퇴 처리 함수
   const handleDeleteAccount = async () => {
-    if (!confirm('정말로 계정을 삭제하시겠습니까? \n\n이 작업은 되돌릴 수 없으며, 모든 계정 데이터가 영구적으로 삭제됩니다.')) {
+    // iOS Safari에서 더 안정적인 확인 처리
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    
+    let confirmResult = false;
+    
+    if (isIOS) {
+      // iOS에서는 더 간단한 확인 메시지 사용
+      confirmResult = confirm('정말로 계정을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.');
+    } else {
+      confirmResult = confirm('정말로 계정을 삭제하시겠습니까? \n\n이 작업은 되돌릴 수 없으며, 모든 계정 데이터가 영구적으로 삭제됩니다.');
+    }
+    
+    if (!confirmResult) {
       return
     }
 
@@ -143,22 +156,44 @@ export default function Profile() {
         throw new Error('로그인이 필요합니다.');
       }
       
-      // Step 1: API 호출로 DB 데이터 삭제 (코드 중복 제거)
+      // Step 1: API 호출로 DB 데이터 삭제 (iOS 특화 처리)
       console.log('회원 탈퇴 API 호출')
-      const response = await fetch('/api/delete-account', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ user_id: user.id })
-      })
       
-      // API 응답 처리
-      const responseData = await response.json()
-      console.log('API 응답:', responseData)
+      // iOS에서 더 긴 타임아웃 설정
+      const timeoutMs = isIOS ? 30000 : 15000; // iOS: 30초, 기타: 15초
       
-      if (!response.ok) {
-        throw new Error(responseData.error || '계정 삭제 중 API 오류가 발생했습니다.')
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      try {
+        const response = await fetch('/api/delete-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: user.id }),
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId);
+        
+        // API 응답 처리
+        const responseData = await response.json()
+        console.log('API 응답:', responseData)
+        
+        if (!response.ok) {
+          // iOS 특화 에러 메시지 처리
+          if (responseData.isIOSIssue && isIOS) {
+            throw new Error('iOS에서 OAuth 연결 해제 중 문제가 발생했습니다. Safari를 완전히 종료한 후 다시 시도해주세요.');
+          }
+          throw new Error(responseData.error || '계정 삭제 중 API 오류가 발생했습니다.')
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error(isIOS ? 'iOS에서 처리 시간이 초과되었습니다. Safari를 완전히 종료한 후 다시 시도해주세요.' : '요청 시간이 초과되었습니다.');
+        }
+        throw fetchError;
       }
       
       // Step 2: 로그아웃 처리 - 이것이 실제 사용자 삭제를 트리거합니다
@@ -170,11 +205,19 @@ export default function Profile() {
         throw new Error(`로그아웃 오류: ${signOutError.message}`)
       }
       
-      // Step 3: 성공 메시지 표시
-      alert('회원 탈퇴가 성공적으로 완료되었습니다.')
-      
-      // Step 4: 홈페이지로 리다이렉트
-      router.push('/')
+      // Step 3: iOS 특화 성공 처리
+      if (isIOS) {
+        // iOS에서는 더 명확한 안내 메시지
+        alert('회원 탈퇴가 완료되었습니다.\n\nSafari를 완전히 종료한 후 재시작하시면 OAuth 연결이 완전히 해제됩니다.');
+        
+        // iOS에서 약간의 지연 후 리다이렉트
+        setTimeout(() => {
+          router.push('/');
+        }, 1000);
+      } else {
+        alert('회원 탈퇴가 성공적으로 완료되었습니다.');
+        router.push('/');
+      }
     } catch (error: any) {
       console.error('계정 삭제 중 오류 발생:', error)
       setError(error.message || '계정 삭제 중 오류가 발생했습니다.')
