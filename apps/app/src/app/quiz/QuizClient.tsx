@@ -977,10 +977,16 @@ export default function QuizClient() {
                                     </p>
                                     {quiz.ai_verification && (
                                       <details className="text-xs text-green-600">
-                                        <summary className="cursor-pointer hover:text-green-800">
+                                        <summary className="cursor-pointer hover:text-green-800 py-2 px-1 -mx-1 rounded">
                                           AI 출제 검증 결과 보기
                                         </summary>
-                                        <div className="mt-2 p-2 bg-white rounded border">
+                                        <div className="mt-2 p-2 bg-white rounded border cursor-pointer" onClick={(e) => {
+                                          // 모바일에서 터치 영역 확대: 검증 결과 영역 클릭 시 details 토글
+                                          const details = e.currentTarget.closest('details');
+                                          if (details) {
+                                            details.open = !details.open;
+                                          }
+                                        }}>
                                           <p className="text-xs text-gray-600 mb-1">
                                             AI 검증 신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%
                                           </p>
@@ -1001,10 +1007,16 @@ export default function QuizClient() {
                                       </p>
                                       {quiz.ai_verification && (
                                         <details className="text-xs text-blue-600">
-                                          <summary className="cursor-pointer hover:text-blue-800">
+                                          <summary className="cursor-pointer hover:text-blue-800 py-2 px-1 -mx-1 rounded">
                                             AI 출제 검증 결과 보기
                                           </summary>
-                                          <div className="mt-2 p-2 bg-white rounded border">
+                                          <div className="mt-2 p-2 bg-white rounded border cursor-pointer" onClick={(e) => {
+                                            // 모바일에서 터치 영역 확대: 검증 결과 영역 클릭 시 details 토글
+                                            const details = e.currentTarget.closest('details');
+                                            if (details) {
+                                              details.open = !details.open;
+                                            }
+                                          }}>
                                             <p className="text-xs text-gray-600 mb-1">
                                               AI 검증 신뢰도: {Math.round((quiz.ai_verification.confidence || 0) * 100)}%
                                             </p>
