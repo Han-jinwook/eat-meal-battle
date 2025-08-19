@@ -474,7 +474,10 @@ export default function QuizClient() {
         // 캘린더 데이터 새로고침 (오답신고 처리 후 달력 업데이트)
         if (typeof (window as any).refreshQuizCalendar === 'function') {
           console.log('🔄 오답신고 후 캘린더 새로고침 호출');
-          (window as any).refreshQuizCalendar();
+          // 약간의 지연 후 새로고침 (모바일 브라우저 호환성)
+          setTimeout(() => {
+            (window as any).refreshQuizCalendar();
+          }, 500);
         }
       }
     } catch (error) {
@@ -1108,7 +1111,10 @@ export default function QuizClient() {
             setSelectedDate(date);
             router.push(`/quiz?date=${date}`);
           }}
-          onRefreshNeeded={() => {}}
+          onRefreshNeeded={() => {
+            // 캘린더 새로고침이 필요할 때 호출되는 콜백
+            console.log('🔄 캘린더 새로고침 콜백 호출됨');
+          }}
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
         
