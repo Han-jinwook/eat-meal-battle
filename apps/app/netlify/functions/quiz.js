@@ -781,32 +781,69 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
       return;
     }
     
-    // 각 사용자의 장원 통계 재계산
+    // 퀴즈 정보 조회 (날짜 정보 필요)
+    const { data: quiz, error: quizError } = await supabaseAdmin
+      .from('meal_quizzes')
+      .select('meal_date')
+      .eq('id', quizId)
+      .single();
+      
+    if (quizError || !quiz) {
+      console.error('[quiz] 퀴즈 정보 조회 실패:', quizError);
+      return;
+    }
+    
+    // 각 사용자의 quiz_champions 테이블 업데이트
     for (const result of quizResults) {
       if (!result.is_correct) { // 원래 틀렸던 사용자들만 처리
-        console.log(`[quiz] 사용자 ${result.user_id} 장원 통계 재계산`);
+        console.log(`[quiz] 사용자 ${result.user_id} quiz_champions 업데이트`);
         
-        // 퀴즈 날짜로부터 년월 계산
-        const quizDate = new Date(result.created_at);
+        // 퀴즈 날짜로부터 day 필드 계산
+        const quizDate = new Date(quiz.meal_date);
+        const dayOfMonth = quizDate.getDate();
+        const dayField = `day_${dayOfMonth}`;
         const year = quizDate.getFullYear();
         const month = quizDate.getMonth() + 1;
         
-        // 사용자 정보 조회
-        const { data: userInfo } = await supabaseAdmin
-          .from('school_infos')
-          .select('school_code, grade')
+        // quiz_champions 테이블에서 해당 사용자의 월별 레코드 업데이트
+        const { data: championRecord } = await supabaseAdmin
+          .from('quiz_champions')
+          .select('id, month_correct')
           .eq('user_id', result.user_id)
+          .eq('month', month)
+          .eq('year', year)
           .single();
           
-        if (userInfo) {
-          // ChampionCalculator 호출하여 통계 재계산
-          const ChampionCalculator = require('./champion-calculator');
-          await ChampionCalculator.updateChampionStatus(
-            result.user_id,
-            userInfo.school_code,
-            userInfo.grade,
-            supabaseAdmin
-          );
+        if (championRecord) {
+          // month_correct +1, day_N을 'O'로 변경
+          await supabaseAdmin
+            .from('quiz_champions')
+            .update({
+              month_correct: championRecord.month_correct + 1,
+              [dayField]: 'O'
+            })
+            .eq('id', championRecord.id);
+          console.log(`[quiz] 사용자 ${result.user_id} quiz_champions 업데이트 완료: month_correct +1, ${dayField}='O'`);
+          
+          // 사용자 학교 정보 조회
+          const { data: userSchool } = await supabaseAdmin
+            .from('school_infos')
+            .select('school_code, grade')
+            .eq('user_id', result.user_id)
+            .single();
+            
+          if (userSchool) {
+            // 월장원 체크 실행
+            const { championCalculator } = require('./utils/championCalculator');
+            const calculator = new championCalculator.constructor(supabaseAdmin);
+            await calculator.checkMonthlyChampion(
+              result.user_id,
+              userSchool.school_code,
+              userSchool.grade,
+              year,
+              month
+            );
+          }
         }
       }
     }
