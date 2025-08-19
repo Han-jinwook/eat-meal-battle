@@ -83,7 +83,7 @@ export default function NavBar() {
           
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
             ) : user ? (
               <div className="ml-3 relative">
                 <Link 
@@ -188,8 +188,14 @@ export default function NavBar() {
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200">
           {loading ? (
-            <div className="flex justify-center py-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="px-4 py-2">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                <div className="ml-3">
+                  <div className="w-24 h-4 bg-gray-200 animate-pulse rounded mb-1"></div>
+                  <div className="w-32 h-3 bg-gray-200 animate-pulse rounded"></div>
+                </div>
+              </div>
             </div>
           ) : user ? (
             <div>
