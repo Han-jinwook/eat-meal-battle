@@ -120,23 +120,32 @@ async function processQuiz(userId, quiz, canShowAnswer) {
     .eq('quiz_id', quiz.id)
     .limit(1);
 
+  const hasAnswered = existing && existing.length > 0;
+  const isVerifiedIncorrect = quiz.report_status === 'verified_incorrect';
+  
+  // 정답/해설을 보여줄 조건:
+  // 1. 이미 풀었고 정답 확인 시간 이후이거나
+  // 2. 이미 풀었고 오출제 확정된 문제이거나  
+  // 3. 아직 안 풀었지만 정답 확인 시간 이후인 경우
+  const shouldShowAnswer = (hasAnswered && (canShowAnswer || isVerifiedIncorrect)) || (!hasAnswered && canShowAnswer);
+  
   // 이미 풀었거나 정답 확인 시간 이후인 경우
-  if ((existing && existing.length > 0) || canShowAnswer) {
+  if (hasAnswered || canShowAnswer) {
     return {
       quiz: {
         id: quiz.id,
         question: quiz.question,
         options: quiz.options,
-        correct_answer: canShowAnswer ? quiz.correct_answer : undefined, // 7시 이후에만 정답 제공
-        explanation: canShowAnswer ? quiz.explanation : undefined,       // 7시 이후에만 해설 제공
+        correct_answer: shouldShowAnswer ? quiz.correct_answer : undefined,
+        explanation: shouldShowAnswer ? quiz.explanation : undefined,
         meal_date: quiz.meal_date,
         report_status: quiz.report_status || 'none',
         ai_verification: quiz.quiz_reports?.[0]?.ai_verification_result || null,
         menu_items: quiz.meal_menus?.menu_items || []
       },
-      alreadyAnswered: existing && existing.length > 0,
-      isCorrect: existing && existing.length > 0 ? existing[0].is_correct : undefined,
-      selectedOption: existing && existing.length > 0 ? existing[0].selected_option : undefined
+      alreadyAnswered: hasAnswered,
+      isCorrect: hasAnswered ? (isVerifiedIncorrect ? true : existing[0].is_correct) : undefined, // 오출제 확정 시 정답 처리
+      selectedOption: hasAnswered ? existing[0].selected_option : undefined
     };
   }
 
@@ -148,6 +157,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
       options: quiz.options,
       meal_date: quiz.meal_date,
       report_status: quiz.report_status || 'none',
+      ai_verification: quiz.quiz_reports?.[0]?.ai_verification_result || null,
       menu_items: quiz.meal_menus?.menu_items || []
     },
     alreadyAnswered: false
