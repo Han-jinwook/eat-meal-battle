@@ -470,6 +470,12 @@ export default function QuizClient() {
         toast.success('오답 신고가 접수되었습니다. AI가 검증 중입니다...', { id: 'report-loading' });
         // 퀴즈 상태 새로고침
         fetchQuiz();
+        
+        // 캘린더 데이터 새로고침 (오답신고 처리 후 달력 업데이트)
+        if (typeof (window as any).refreshQuizCalendar === 'function') {
+          console.log('🔄 오답신고 후 캘린더 새로고침 호출');
+          (window as any).refreshQuizCalendar();
+        }
       }
     } catch (error) {
       console.error('오답 신고 오류:', error);
