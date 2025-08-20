@@ -669,14 +669,14 @@ if (schoolMode.selectedInterestSchool && userSchool)
 
 ---
 
-## 🔧 퀴즈 공유 관람자 모드 정상화 (2025-08-20)
+## 퀴즈 공유 관람자 모드 정상화 (2025-08-20)
 
-### 🐛 문제 상황
+### 문제 상황
 - 퀴즈 공유 링크를 통해 다른 사용자의 퀴즈를 관람할 때 잘못된 데이터 표시
 - 챌린지 달력과 장원 히스토리에서 관람 대상자가 아닌 현재 로그인 사용자의 데이터 조회
 - 관람자 모드에서 공유받은 친구의 데이터가 표시되지 않는 문제
 
-### 🛠️ 해결 방안
+### 해결 방안
 
 #### 1. 코드 수정 완료
 **파일**: `QuizChallengeCalendar.tsx`
@@ -693,13 +693,14 @@ if (schoolMode.selectedInterestSchool && userSchool)
 
 #### 2. RLS 정책 수정 (2025-08-20)
 **성공한 정책:**
-- `users` 테이블: `users_select_policy` 생성 성공 ✅
-- `school_infos` 테이블: `school_infos_select_policy` 생성 성공 ✅
+- `users` 테이블: `users_select_policy` 생성 성공 
+- `school_infos` 테이블: `school_infos_select_policy` 생성 성공 
 
 **기존 정책 유지:**
-- `quiz_champions` 테이블: 기존 정책 존재로 오류 (정상) ✅
-- `user_champion_records` 테이블: 기존 정책 존재로 오류 (정상) ✅
+- `quiz_champions` 테이블: 기존 정책 존재로 오류 (정상) 
+- `user_champion_records` 테이블: 기존 정책 존재로 오류 (정상) 
 
+### 수정된 기능
 ### 📋 수정된 기능
 1. **관람자 모드에서 올바른 사용자 데이터 표시**
 2. **챌린지 달력에서 관람 대상자의 퀴즈 참여 현황 표시**

@@ -766,21 +766,9 @@ export default function QuizClient() {
               ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-500' 
               : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500'
           }`}>
-            {/* 왼쪽: 학교 정보 또는 관람 정보 */}
+            {/* 왼쪽: 학교 정보 */}
             <div className="flex items-center">
-              {isViewingMode && viewingUserInfo ? (
-                <>
-                  <span className="text-purple-600 mr-2">👀</span>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold">
-                    {viewingUserInfo.nickname}님의 퀴즈 관람 중
-                  </span>
-                  <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-                    {viewingUserInfo.school_name}
-                    {viewingUserInfo.grade && ` ${viewingUserInfo.grade}학년`}
-                    {viewingUserInfo.class && ` ${viewingUserInfo.class}반`}
-                  </span>
-                </>
-              ) : userSchool ? (
+              {!isViewingMode && userSchool ? (
                 <>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
                     {userSchool.school_name || '학교 정보 없음'}
@@ -804,18 +792,26 @@ export default function QuizClient() {
               ) : null}
             </div>
             
-            {/* 오른쪽: 관심퀴즈 드롭다운 또는 관람 모드 종료 버튼 */}
-            {isViewingMode ? (
+            {/* 오른쪽: 관심퀴즈 드롭다운 또는 관람 종료 버튼 */}
+            {isViewingMode && viewingUserInfo ? (
               <button
                 onClick={() => {
                   const newUrl = new URL(window.location.href);
                   newUrl.searchParams.delete('viewing');
                   router.replace(newUrl.pathname + newUrl.search);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-white/90 border border-purple-200 rounded-lg hover:bg-white transition-colors shadow-sm"
               >
-                <span>관람 종료</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="text-purple-600">👀</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold">
+                  {viewingUserInfo.nickname}님의 퀴즈 관람 종료
+                </span>
+                <span className="ml-1 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                  {viewingUserInfo.school_name}
+                  {viewingUserInfo.grade && ` ${viewingUserInfo.grade}학년`}
+                  {viewingUserInfo.class && ` ${viewingUserInfo.class}반`}
+                </span>
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
