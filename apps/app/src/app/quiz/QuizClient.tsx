@@ -187,7 +187,7 @@ export default function QuizClient() {
       // 사용자 학교 정보 가져오기
       const { data: schoolData, error: schoolError } = await supabase
         .from('school_infos')
-        .select('school_name, grade, class')
+        .select('school_name, grade, class_number')
         .eq('user_id', userId)
         .single();
       
@@ -201,7 +201,7 @@ export default function QuizClient() {
         nickname: userData?.nickname || '익명',
         school_name: schoolData?.school_name || '알 수 없음',
         grade: schoolData?.grade,
-        class: schoolData?.class
+        class_number: schoolData?.class_number
       };
       
       setViewingUserInfo(userInfo);
