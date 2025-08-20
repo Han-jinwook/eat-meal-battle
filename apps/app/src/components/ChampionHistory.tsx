@@ -97,7 +97,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         .eq('month', currentMonth.getMonth() + 1)
         .single();
 
-      // 3. school_champions에서 집계 데이터 가져오기 (추후 구현)
+      // 3. school_champions에서 집계 데이터 가져오기
+      const { data: schoolStats } = await supabase
+        .from('school_champions')
+        .select('*')
+        .eq('school_code', targetSchoolInfo.school_code)
+        .eq('year', currentMonth.getFullYear())
+        .eq('month', currentMonth.getMonth() + 1);
       
       // 4. 주차별 데이터 생성 - criteriaData에 있는 모든 주차 표시
       const stats: ChampionStats[] = [];
@@ -118,16 +124,32 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
           const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
           
+          // school_champions에서 집계 데이터 계산
+          const classCount = schoolStats?.filter(s => 
+            s.week === week && 
+            s.grade === targetSchoolInfo.grade && 
+            s.class === targetSchoolInfo.class
+          ).length || 0;
+          
+          const gradeCount = schoolStats?.filter(s => 
+            s.week === week && 
+            s.grade === targetSchoolInfo.grade
+          ).length || 0;
+          
+          const schoolCount = schoolStats?.filter(s => 
+            s.week === week
+          ).length || 0;
+          
           stats.push({
             period_type: 'weekly',
             period_label: `${targetMonth}월 ${week}주`,
             my_record: isWeekChampion ? '주장원' : '도전!',
             me_count: isWeekChampion ? 1 : 0,
-            class_count: 0, // TODO: school_champions에서 가져오기
-            grade_count: 0, // TODO: school_champions에서 가져오기  
-            school_count: 0, // TODO: school_champions에서 가져오기
+            class_count: classCount,
+            grade_count: gradeCount,  
+            school_count: schoolCount,
             total_meal_days: weekDays,
-            total_students: 0
+            total_students: schoolCount
           });
         }
       }
@@ -137,16 +159,33 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       const isMonthChampion = myRecords?.month_champion || false;
       
       if (monthDays > 0) {
+        // 월간 집계 데이터 찾기 (week가 null인 데이터)
+        const monthlyClassStats = schoolStats?.find(s => 
+          s.week === null && 
+          s.grade === targetSchoolInfo.grade && 
+          s.class === targetSchoolInfo.class
+        );
+        const monthlyGradeStats = schoolStats?.find(s => 
+          s.week === null && 
+          s.grade === targetSchoolInfo.grade && 
+          s.class === null
+        );
+        const monthlySchoolStats = schoolStats?.find(s => 
+          s.week === null && 
+          s.grade === null && 
+          s.class === null
+        );
+        
         stats.push({
           period_type: 'monthly',
           period_label: `${currentMonth.getMonth() + 1}월`,
           my_record: isMonthChampion ? '월장원' : '도전!',
           me_count: isMonthChampion ? 1 : 0,
-          class_count: 0, // TODO: school_champions에서 가져오기
-          grade_count: 0, // TODO: school_champions에서 가져오기
-          school_count: 0, // TODO: school_champions에서 가져오기
+          class_count: monthlyClassStats?.champion_us || 0,
+          grade_count: monthlyGradeStats?.champion_us || 0,
+          school_count: monthlySchoolStats?.champion_us || 0,
           total_meal_days: monthDays,
-          total_students: 0
+          total_students: monthlySchoolStats?.champion_us || 0
         });
       }
 
