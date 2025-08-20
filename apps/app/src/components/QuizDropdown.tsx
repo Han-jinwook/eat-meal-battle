@@ -229,9 +229,15 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                         <div key={quiz.id} className="bg-green-50 rounded-lg p-3">
                           <div className="flex items-center">
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-green-800">
+                              <button
+                                onClick={() => {
+                                  window.location.href = `/quiz?viewer=${quiz.quiz_owner_id}`;
+                                  setIsOpen(false);
+                                }}
+                                className="text-sm font-medium text-green-800 hover:text-green-900 hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
                                 {quiz.owner_info?.nickname}님의 퀴즈
-                              </p>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -259,7 +265,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                               onClick={() => removeSharedViewer(quiz.id, quiz.viewer_info?.nickname || '익명')}
                               className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                             >
-                              제거
+                              취소
                             </button>
                           </div>
                         </div>
