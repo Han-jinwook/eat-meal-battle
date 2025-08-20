@@ -129,61 +129,69 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       const stats: ChampionStats[] = [];
       const targetMonth = currentMonth.getMonth() + 1; // 1-12
       
+      // criteriaData에서 실제 존재하는 주차만 처리하도록 변경
+      const availableWeeks = [];
       for (let week = 1; week <= 5; week++) {
-        // criteriaData에서 해당 주차 토요일 날짜가 있는지 확인
         const weekSaturdayField = `week_${week}_saturday` as keyof typeof criteriaData;
         const saturdayDateStr = criteriaData?.[weekSaturdayField] as string;
+        const weekDaysField = `week_${week}_days` as keyof typeof criteriaData;
+        const weekDays = criteriaData?.[weekDaysField] as number || 0;
         
-        // 토요일 날짜가 있으면 해당 주차 표시
-        if (saturdayDateStr) {
-          // criteriaData에서 해당 주차 급식일수 확인
-          const weekDaysField = `week_${week}_days` as keyof typeof criteriaData;
-          const weekDays = criteriaData?.[weekDaysField] as number || 0;
-          
-          // myRecords에서 해당 주차 장원 여부 확인  
-          const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
-          const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
-          
-          // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
-          const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
-          const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
-          const weekCorrect = quizStats?.[weekCorrectField] as number || 0;
-          const weekTotal = quizStats?.[weekTotalField] as number || 0;
-          
-          // school_champions에서 집계 데이터 계산 - 새로운 구조 사용
-          const weekStats = schoolStats?.find(s => 
-            s.week_number === week && 
-            s.grade === targetSchoolInfo.grade
-          );
-          
-          // 우리 반 장원수
-          const myClassCount = weekStats?.[`class_${targetSchoolInfo.class}`] || 0;
-          
-          // 우리 학년 장원수  
-          const myGradeCount = weekStats?.grade_total || 0;
-          
-          // 학교 전체 장원수 (모든 학년 합산)
-          const allGradeStats = schoolStats?.filter(s => s.week_number === week) || [];
-          const schoolTotal = allGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
-          
-          // 퀴즈 정답률을 바탕으로 my_record 상태 결정
-          let myRecord = '도전!';
-          if (isWeekChampion || (weekTotal > 0 && weekCorrect === weekTotal)) {
-            myRecord = '주장원';
-          }
-          
-          stats.push({
-            period_type: 'weekly',
-            period_label: `${targetMonth}월 ${week}주`,
-            my_record: myRecord,
-            me_count: weekCorrect,
-            class_count: myClassCount,
-            grade_count: myGradeCount,  
-            school_count: schoolTotal,
-            total_meal_days: weekDays,
-            total_students: schoolTotal
-          });
+        // 토요일 날짜가 있고 급식일수가 0보다 크면 유효한 주차
+        if (saturdayDateStr && weekDays > 0) {
+          availableWeeks.push(week);
         }
+      }
+      
+      // 실제 존재하는 주차만 처리
+      for (const week of availableWeeks) {
+        // criteriaData에서 해당 주차 급식일수 확인
+        const weekDaysField = `week_${week}_days` as keyof typeof criteriaData;
+        const weekDays = criteriaData?.[weekDaysField] as number || 0;
+        
+        // myRecords에서 해당 주차 장원 여부 확인  
+        const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
+        const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
+        
+        // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
+        const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
+        const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
+        const weekCorrect = quizStats?.[weekCorrectField] as number || 0;
+        const weekTotal = quizStats?.[weekTotalField] as number || 0;
+        
+        // school_champions에서 집계 데이터 계산 - 새로운 구조 사용
+        const weekStats = schoolStats?.find(s => 
+          s.week_number === week && 
+          s.grade === targetSchoolInfo.grade
+        );
+        
+        // 우리 반 장원수
+        const myClassCount = weekStats?.[`class_${targetSchoolInfo.class}`] || 0;
+        
+        // 우리 학년 장원수  
+        const myGradeCount = weekStats?.grade_total || 0;
+        
+        // 학교 전체 장원수 (모든 학년 합산)
+        const allGradeStats = schoolStats?.filter(s => s.week_number === week) || [];
+        const schoolTotal = allGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
+        
+        // 퀴즈 정답률을 바탕으로 my_record 상태 결정
+        let myRecord = '도전!';
+        if (isWeekChampion || (weekTotal > 0 && weekCorrect === weekTotal)) {
+          myRecord = '주장원';
+        }
+        
+        stats.push({
+          period_type: 'weekly',
+          period_label: `${targetMonth}월 ${week}주`,
+          my_record: myRecord,
+          me_count: weekCorrect,
+          class_count: myClassCount,
+          grade_count: myGradeCount,  
+          school_count: schoolTotal,
+          total_meal_days: weekDays,
+          total_students: schoolTotal
+        });
       }
       
       // 6. 월별 데이터 추가 - quiz_champions에서 바로 월별 정답 수 활용
