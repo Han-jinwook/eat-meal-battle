@@ -12,15 +12,9 @@ interface QuizRelation {
   created_at: string;
   owner_info?: {
     nickname: string;
-    school_name: string;
-    grade?: number;
-    class?: number;
   };
   viewer_info?: {
     nickname: string;
-    school_name: string;
-    grade?: number;
-    class?: number;
   };
   viewer_count?: number;
 }
@@ -85,27 +79,18 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
           .select('id, nickname')
           .in('id', viewerIds);
 
-        const { data: viewerSchoolsData, error: viewerSchoolsError } = await supabase
-          .from('school_infos')
-          .select('user_id, school_name, grade, class')
-          .in('user_id', viewerIds);
-
-        if (viewersError || viewerSchoolsError) {
-          console.error('관람자 정보 로드 오류:', viewersError, viewerSchoolsError);
+        if (viewersError) {
+          console.error('관람자 정보 로드 오류:', viewersError);
         }
 
         // 각 관람자별로 개별 항목 생성
         const sharedQuizzes = sharedData.map(item => {
           const viewerUser = viewersData?.find(u => u.id === item.viewer_id);
-          const viewerSchool = viewerSchoolsData?.find(s => s.user_id === item.viewer_id);
 
           return {
             ...item,
             viewer_info: {
-              nickname: viewerUser?.nickname || '익명',
-              school_name: viewerSchool?.school_name || '알 수 없음',
-              grade: viewerSchool?.grade,
-              class: viewerSchool?.class
+              nickname: viewerUser?.nickname || '익명'
             }
           };
         });
@@ -139,27 +124,18 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
           .select('id, nickname')
           .in('id', ownerIds);
 
-        const { data: schoolsData, error: schoolsError } = await supabase
-          .from('school_infos')
-          .select('user_id, school_name, grade, class')
-          .in('user_id', ownerIds);
-
-        if (ownersError || schoolsError) {
-          console.error('소유자 정보 로드 오류:', ownersError, schoolsError);
+        if (ownersError) {
+          console.error('소유자 정보 로드 오류:', ownersError);
         }
 
         // 데이터 병합
         const viewingQuizzes = viewingData.map(item => {
           const ownerUser = ownersData?.find(u => u.id === item.quiz_owner_id);
-          const ownerSchool = schoolsData?.find(s => s.user_id === item.quiz_owner_id);
 
           return {
             ...item,
             owner_info: {
-              nickname: ownerUser?.nickname || '익명',
-              school_name: ownerSchool?.school_name || '알 수 없음',
-              grade: ownerSchool?.grade,
-              class: ownerSchool?.class
+              nickname: ownerUser?.nickname || '익명'
             }
           };
         });
@@ -256,11 +232,6 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                               <p className="text-sm font-medium text-green-800">
                                 {quiz.owner_info?.nickname}님의 퀴즈
                               </p>
-                              <p className="text-xs text-green-600">
-                                {quiz.owner_info?.school_name}
-                                {quiz.owner_info?.grade && ` ${quiz.owner_info.grade}학년`}
-                                {quiz.owner_info?.class && ` ${quiz.owner_info.class}반`}
-                              </p>
                             </div>
                           </div>
                         </div>
@@ -281,12 +252,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <p className="text-sm font-medium text-blue-800">
-                                {quiz.viewer_info?.nickname}님이 관람중
-                              </p>
-                              <p className="text-xs text-blue-600">
-                                {quiz.viewer_info?.school_name}
-                                {quiz.viewer_info?.grade && ` ${quiz.viewer_info.grade}학년`}
-                                {quiz.viewer_info?.class && ` ${quiz.viewer_info.class}반`}
+                                {quiz.viewer_info?.nickname}님이 구독중
                               </p>
                             </div>
                             <button
