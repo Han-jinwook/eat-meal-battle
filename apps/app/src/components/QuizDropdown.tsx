@@ -219,7 +219,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
         onClick={toggleDropdown}
       >
         <span className="text-purple-600">📚</span>
-        <span>관심퀴즈</span>
+        <span>구독퀴즈</span>
         {totalQuizCount > 0 && (
           <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
             {totalQuizCount}
@@ -234,12 +234,6 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div className="p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-semibold text-gray-800">관심퀴즈 관리</h3>
-              <div className="text-xs text-gray-500">
-                총 {totalQuizCount}개
-              </div>
-            </div>
             
             {loading ? (
               <div className="text-center py-6">
@@ -252,7 +246,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                 {myViewingQuizzes.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-gray-600 mb-2">
-                      👀 내가 관람중인 퀴즈 ({myViewingQuizzes.length})
+                      👀 내가 구독중인 퀴즈 ({myViewingQuizzes.length})
                     </h4>
                     <div className="space-y-2">
                       {myViewingQuizzes.map((quiz) => (
@@ -279,7 +273,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                 {mySharedQuizzes.length > 0 && (
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-600 mb-2">
-                      🔗 내가 공유한 퀴즈 ({mySharedQuizzes.length})
+                      🔗 내 퀴즈 구독자 ({mySharedQuizzes.length})
                     </h4>
                     <div className="space-y-2">
                       {mySharedQuizzes.map((quiz) => (
