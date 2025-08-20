@@ -231,7 +231,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
                             <div className="flex-1">
                               <button
                                 onClick={() => {
-                                  window.location.href = `/quiz?viewer=${quiz.quiz_owner_id}`;
+                                  window.location.href = `/quiz?viewing=${quiz.quiz_owner_id}`;
                                   setIsOpen(false);
                                 }}
                                 className="text-sm font-medium text-green-800 hover:text-green-900 hover:underline cursor-pointer bg-transparent border-none p-0"
