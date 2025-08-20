@@ -150,21 +150,21 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           const weekCorrect = quizStats?.[weekCorrectField] as number || 0;
           const weekTotal = quizStats?.[weekTotalField] as number || 0;
           
-          // school_champions에서 집계 데이터 계산 (간소화)
-          const classCount = schoolStats?.filter(s => 
-            s.week === week && 
-            s.grade === targetSchoolInfo.grade && 
-            s.class === targetSchoolInfo.class
-          ).length || 0;
-          
-          const gradeCount = schoolStats?.filter(s => 
-            s.week === week && 
+          // school_champions에서 집계 데이터 계산 - 새로운 구조 사용
+          const weekStats = schoolStats?.find(s => 
+            s.week_number === week && 
             s.grade === targetSchoolInfo.grade
-          ).length || 0;
+          );
           
-          const schoolCount = schoolStats?.filter(s => 
-            s.week === week
-          ).length || 0;
+          // 우리 반 장원수
+          const myClassCount = weekStats?.[`class_${targetSchoolInfo.class}`] || 0;
+          
+          // 우리 학년 장원수  
+          const myGradeCount = weekStats?.grade_total || 0;
+          
+          // 학교 전체 장원수 (모든 학년 합산)
+          const allGradeStats = schoolStats?.filter(s => s.week_number === week) || [];
+          const schoolTotal = allGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
           
           // 퀴즈 정답률을 바탕으로 my_record 상태 결정
           let myRecord = '도전!';
@@ -177,11 +177,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             period_label: `${targetMonth}월 ${week}주`,
             my_record: myRecord,
             me_count: weekCorrect,
-            class_count: classCount,
-            grade_count: gradeCount,  
-            school_count: schoolCount,
+            class_count: myClassCount,
+            grade_count: myGradeCount,  
+            school_count: schoolTotal,
             total_meal_days: weekDays,
-            total_students: schoolCount
+            total_students: schoolTotal
           });
         }
       }
@@ -193,22 +193,21 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       const monthTotal = quizStats?.total_count || 0;
       
       if (monthDays > 0) {
-        // 월간 집계 데이터 찾기 (간소화)
-        const monthlyClassStats = schoolStats?.find(s => 
-          s.week === null && 
-          s.grade === targetSchoolInfo.grade && 
-          s.class === targetSchoolInfo.class
+        // 월간 집계 데이터 찾기 - 새로운 구조 사용
+        const monthlyStats = schoolStats?.find(s => 
+          s.week_number === null && 
+          s.grade === targetSchoolInfo.grade
         );
-        const monthlyGradeStats = schoolStats?.find(s => 
-          s.week === null && 
-          s.grade === targetSchoolInfo.grade && 
-          s.class === null
-        );
-        const monthlySchoolStats = schoolStats?.find(s => 
-          s.week === null && 
-          s.grade === null && 
-          s.class === null
-        );
+        
+        // 우리 반 월장원수
+        const monthlyClassCount = monthlyStats?.[`class_${targetSchoolInfo.class}`] || 0;
+        
+        // 우리 학년 월장원수  
+        const monthlyGradeCount = monthlyStats?.grade_total || 0;
+        
+        // 학교 전체 월장원수 (모든 학년 합산)
+        const allMonthlyGradeStats = schoolStats?.filter(s => s.week_number === null) || [];
+        const monthlySchoolTotal = allMonthlyGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
         // 월간 통계를 바탕으로 my_record 상태 결정
         let myMonthRecord = '도전!';
@@ -221,11 +220,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           period_label: `${currentMonth.getMonth() + 1}월`,
           my_record: myMonthRecord,
           me_count: monthCorrect,
-          class_count: monthlyClassStats?.champion_us || 0,
-          grade_count: monthlyGradeStats?.champion_us || 0,
-          school_count: monthlySchoolStats?.champion_us || 0,
+          class_count: monthlyClassCount,
+          grade_count: monthlyGradeCount,
+          school_count: monthlySchoolTotal,
           total_meal_days: monthDays,
-          total_students: monthlySchoolStats?.champion_us || 0
+          total_students: monthlySchoolTotal
         });
       }
 
