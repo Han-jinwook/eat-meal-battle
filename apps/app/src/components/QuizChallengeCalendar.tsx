@@ -28,6 +28,7 @@ interface QuizChallengeCalendarProps {
   currentQuizDate?: string;
   onDateSelect?: (date: string) => void;
   onRefreshNeeded?: () => void;
+  onMonthChange?: (month: Date) => void; // 월 변경 콜백 추가
   viewingUserId?: string; // For viewing shared quizzes
 }
 
@@ -35,6 +36,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   currentQuizDate, 
   onDateSelect,
   onRefreshNeeded,
+  onMonthChange,
   viewingUserId 
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 5, 1)); // 6월
@@ -369,6 +371,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             선택날짜: currentQuizDate
           });
           setCurrentMonth(selectedMonth);
+          onMonthChange?.(selectedMonth); // 부모 컴포넌트에 월 변경 알림
         }
       }
     }
@@ -572,6 +575,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       });
       
       setCurrentMonth(newMonth);
+      onMonthChange?.(newMonth); // 부모 컴포넌트에 월 변경 알림
     }
     
     // 날짜 선택 (퀴즈 유무 관계없이 모든 날짜 선택 가능)
@@ -583,11 +587,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   // 월 변경 핸들러
   const handlePrevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    const newMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    setCurrentMonth(newMonth);
+    onMonthChange?.(newMonth); // 부모 컴포넌트에 월 변경 알림
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    const newMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    setCurrentMonth(newMonth);
+    onMonthChange?.(newMonth); // 부모 컴포넌트에 월 변경 알림
   };
   
   const calendarDays = generateCalendarGrid();

@@ -36,28 +36,25 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
   const [isApiCalling, setIsApiCalling] = useState(false);
   const { userSchool } = useUserSchool();
 
-  // 장원 통계 데이터 가져오기
+  // 장원 통계 데이터 가져오기 - 직접 DB 조회 방식으로 단순화
   const fetchChampionStats = useCallback(async () => {
     if (!userSchool?.school_code) {
-      console.log('❌ API 호출 차단: userSchool 정보 없음');
+      console.log('❌ userSchool 정보 없음');
       return;
     }
     
     if (isApiCalling) {
-      console.log('❌ API 호출 차단: 이미 호출 중');
+      console.log('❌ 이미 호출 중');
       return;
     }
     
-    console.log('🔄 장원 통계 API 호출 시작:', { school: userSchool.school_code });
+    console.log('🔄 장원 히스토리 조회 시작');
     setIsApiCalling(true);
     setLoading(true);
     
     try {
       const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        console.log('❌ 세션 정보 없음');
-        return;
-      }
+      if (!session.data.session) return;
 
       // 관람 모드일 때는 관람 대상 사용자의 학교 정보를 가져와야 함
       let targetSchoolInfo = userSchool;
@@ -77,132 +74,84 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         }
       }
 
-      const stats: ChampionStats[] = [];
       // 관람 모드일 때는 관람 대상 사용자의 ID 사용
       const userId = viewingUserId || session.data.session.user.id;
       
-      // 주별 통계 (1-4주) API 호출
-      const weeks = [1, 2, 3, 4];
-      const weeklyPromises = weeks.map(async (week) => {
-        try {
-          const params = new URLSearchParams({
-            user_id: userId, // 수정: session에서 가져온 userId 사용
-            school_code: targetSchoolInfo.school_code,
-            grade: targetSchoolInfo.grade?.toString() || '1',
-            year: currentMonth.getFullYear().toString(),
-            month: (currentMonth.getMonth() + 1).toString(),
-            week_number: week.toString(),
-            period_type: 'weekly'
-          })
+      // 1. champion_criteria에서 월/주차 정보 가져오기
+      const { data: criteriaData } = await supabase
+        .from('champion_criteria')
+        .select('*')
+        .eq('school_code', targetSchoolInfo.school_code)
+        .eq('year', currentMonth.getFullYear())
+        .eq('month', currentMonth.getMonth() + 1)
+        .single();
 
-          const url = `/api/champion/records?${params.toString()}`
-          console.log(`🔍 주 ${week} API 요청:`, url)
+      // 2. user_champion_records에서 나의 장원 기록 가져오기
+      const { data: myRecords } = await supabase
+        .from('user_champion_records')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('school_code', targetSchoolInfo.school_code)
+        .eq('grade', targetSchoolInfo.grade)
+        .eq('year', currentMonth.getFullYear())
+        .eq('month', currentMonth.getMonth() + 1)
+        .single();
 
-          const response = await fetch(url)
-          if (!response.ok) {
-            console.warn(`주 ${week} API 응답 실패:`, response.status)
-            return {
-              week,
-              is_champion: false,
-              total_meal_days: 0,
-              correct_count: 0
-            }
-          }
+      // 3. school_champions에서 집계 데이터 가져오기 (추후 구현)
+      
+      // 4. 주차별 데이터 생성 - criteriaData에 있는 모든 주차 표시
+      const stats: ChampionStats[] = [];
+      const targetMonth = currentMonth.getMonth() + 1; // 1-12
+      
+      for (let week = 1; week <= 5; week++) {
+        // criteriaData에서 해당 주차 토요일 날짜가 있는지 확인
+        const weekSaturdayField = `week_${week}_saturday` as keyof typeof criteriaData;
+        const saturdayDateStr = criteriaData?.[weekSaturdayField] as string;
+        
+        // 토요일 날짜가 있으면 해당 주차 표시
+        if (saturdayDateStr) {
+          // criteriaData에서 해당 주차 급식일수 확인
+          const weekDaysField = `week_${week}_days` as keyof typeof criteriaData;
+          const weekDays = criteriaData?.[weekDaysField] as number || 0;
           
-          const result = await response.json()
-          console.log(`🔍 주 ${week} API 응답:`, result)
+          // myRecords에서 해당 주차 장원 여부 확인  
+          const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
+          const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
           
-          // 안전한 데이터 접근
-          const data = result?.data || {}
-          return {
-            week,
-            is_champion: Boolean(data?.is_champion) || false,
-            total_meal_days: Number(data?.total_meal_days) || 0,
-            correct_count: Number(data?.correct_count) || 0
-          }
-        } catch (error) {
-          console.warn(`주 ${week} 통계 조회 예외:`, error)
-          return { week, is_champion: false, error: true }
+          stats.push({
+            period_type: 'weekly',
+            period_label: `${targetMonth}월 ${week}주`,
+            my_record: isWeekChampion ? '주장원' : '도전!',
+            me_count: isWeekChampion ? 1 : 0,
+            class_count: 0, // TODO: school_champions에서 가져오기
+            grade_count: 0, // TODO: school_champions에서 가져오기  
+            school_count: 0, // TODO: school_champions에서 가져오기
+            total_meal_days: weekDays,
+            total_students: 0
+          });
         }
-      })
-
-      // 월별 통계 API 호출
-      const monthlyPromise = (async () => {
-        // 월별 통계 API 호출
-        const monthlyParams = new URLSearchParams({
-          user_id: userId, // 수정: session에서 가져온 userId 사용
-          school_code: targetSchoolInfo.school_code,
-          grade: targetSchoolInfo.grade?.toString() || '1',
-          year: currentMonth.getFullYear().toString(),
-          month: (currentMonth.getMonth() + 1).toString(),
-          period_type: 'monthly'
-        })
-
-        const monthlyUrl = `/api/champion/records?${monthlyParams.toString()}`
-        console.log('🔍 월별 API 요청:', monthlyUrl)
-
-        let monthlyData = { is_champion: false, total_meal_days: 0, correct_count: 0 }
-        try {
-          const response = await fetch(monthlyUrl)
-          if (!response.ok) {
-            console.warn('월별 API 응답 실패:', response.status)
-            return monthlyData
-          }
-          
-          const result = await response.json()
-          console.log('🔍 월별 API 응답:', result)
-          
-          // 안전한 데이터 접근
-          const monthlyResult = result?.data || {}
-          return {
-            is_champion: Boolean(monthlyResult?.is_champion) || false,
-            total_meal_days: Number(monthlyResult?.total_meal_days) || 0,
-            correct_count: Number(monthlyResult?.correct_count) || 0
-          }
-        } catch (error) {
-          console.warn('월별 통계 조회 예외:', error)
-          return { is_champion: false, error: true }
-        }
-      })()
-
-      // 모든 요청 병렬 처리
-      const [weeklyResults, monthlyResult] = await Promise.all([
-        Promise.all(weeklyPromises),
-        monthlyPromise
-      ])
-
-      console.log('📊 주별 통계 결과:', weeklyResults)
-      console.log('📊 월별 통계 결과:', monthlyResult)
-
-      // 주별 통계 데이터 가공
-      const weeklyStats = weeklyResults.map((result) => {
-        return {
-          period_type: 'weekly' as const,
-          period_label: `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월 ${result.week}주`,
-          my_record: result.is_champion ? '주장원' : 'pass',
-          me_count: result.is_champion ? 1 : 0,
-          class_count: 0, // TODO: API에서 반별 통계 추가 필요
-          grade_count: 0, // TODO: API에서 학년별 통계 추가 필요
-          school_count: 0, // TODO: API에서 학교별 통계 추가 필요
-          total_meal_days: result.total_meal_days || 0,
-          total_students: 0 // TODO: 추가 필요
-        }
-      })
-
-      // 월별 통계 데이터 가공
-      const monthlyStats: ChampionStats = {
-        period_type: 'monthly',
-        period_label: `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월`,
-        my_record: monthlyResult.is_champion ? '월장원' : 'pass',
-        me_count: monthlyResult.is_champion ? 1 : 0,
-        class_count: 0, // TODO: API에서 반별 통계 추가 필요
-        grade_count: 0, // TODO: API에서 학년별 통계 추가 필요
-        school_count: 0, // TODO: API에서 학교별 통계 추가 필요
-        total_meal_days: monthlyResult.total_meal_days || 0,
-        total_students: 0 // TODO: 추가 필요
+      }
+      
+      // 5. 월별 데이터 추가
+      const monthDays = criteriaData?.month_total || 0;
+      const isMonthChampion = myRecords?.month_champion || false;
+      
+      if (monthDays > 0) {
+        stats.push({
+          period_type: 'monthly',
+          period_label: `${currentMonth.getMonth() + 1}월`,
+          my_record: isMonthChampion ? '월장원' : '도전!',
+          me_count: isMonthChampion ? 1 : 0,
+          class_count: 0, // TODO: school_champions에서 가져오기
+          grade_count: 0, // TODO: school_champions에서 가져오기
+          school_count: 0, // TODO: school_champions에서 가져오기
+          total_meal_days: monthDays,
+          total_students: 0
+        });
       }
 
-      setChampionStats([...weeklyStats, monthlyStats])
+      console.log('📊 장원 히스토리 결과:', stats);
+      setChampionStats(stats);
       
     } catch (error) {
       console.error('장원 통계 조회 오류:', error);
@@ -210,9 +159,9 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
     } finally {
       setIsApiCalling(false);
       setLoading(false);
-      console.log('✅ 장원 통계 API 호출 완료');
+      console.log('✅ 장원 통계 조회 완료');
     }
-  }, [currentMonth.getFullYear(), currentMonth.getMonth(), userSchool?.school_code]);
+  }, [currentMonth.getFullYear(), currentMonth.getMonth(), userSchool?.school_code, viewingUserId]);
 
   // 데이터 로드 - 무한 루프 방지를 위한 최적화된 의존성 배열
   useEffect(() => {

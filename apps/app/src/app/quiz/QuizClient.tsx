@@ -64,18 +64,27 @@ export default function QuizClient() {
   // State management
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { userSchool, loading: userLoading, error: userError } = useUserSchool();
+  const schoolMode = useSchoolMode(userSchool);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
   const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(2025, 5, 1));
+  const [noMenuMessage, setNoMenuMessage] = useState<string>('');
+  const [noMenu, setNoMenu] = useState<boolean>(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
-  const [noMenu, setNoMenu] = useState<boolean>(false);
-  const [noMenuMessage, setNoMenuMessage] = useState<string>('');
-  
+
   // 관람 모드 상태
   const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
@@ -85,13 +94,6 @@ export default function QuizClient() {
     grade?: number;
     class?: number;
   } | null>(null);
-  
-  const { userSchool, loading: userLoading, error: userError } = useUserSchool();
-  const schoolMode = useSchoolMode(userSchool);
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   
   // Handle URL parameters (date and viewer_invite)
   useEffect(() => {
@@ -1123,6 +1125,11 @@ export default function QuizClient() {
             // 캘린더 새로고침이 필요할 때 호출되는 콜백
             console.log('🔄 캘린더 새로고침 콜백 호출됨');
           }}
+          onMonthChange={(month) => {
+            // 캘린더 월 변경 시 히스토리 월도 동시 업데이트
+            console.log('📅 캘린더 월 변경 감지:', month);
+            setCalendarMonth(month);
+          }}
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
         
@@ -1132,15 +1139,15 @@ export default function QuizClient() {
             userId={userSchool.user_id || ''}
             schoolName={userSchool.school_name}
             userNickname={userSchool.nickname}
-            userGrade={userSchool.grade}
-            userClass={userSchool.class}
+            userGrade={typeof userSchool.grade === 'string' ? parseInt(userSchool.grade) : userSchool.grade}
+            userClass={typeof userSchool.class === 'string' ? parseInt(userSchool.class) : userSchool.class}
             className="mt-6 mb-6"
           />
         )}
         
         {/* 장원 히스토리 - 무한 루프 수정 완료 */}
         <ChampionHistory 
-          currentMonth={new Date()} 
+          currentMonth={calendarMonth} 
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
       </div>
