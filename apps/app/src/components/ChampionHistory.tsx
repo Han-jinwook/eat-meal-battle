@@ -36,7 +36,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
   const [isApiCalling, setIsApiCalling] = useState(false);
   const { userSchool } = useUserSchool();
 
-  // 장원 통계 데이터 가져오기 - 직접 DB 조회 방식으로 단순화
+  // 장원 통계 데이터 가져오기 - quiz_champions 테이블의 day_N 필드를 활용하는 최적화 방식으로 변경
   const fetchChampionStats = useCallback(async () => {
     if (!userSchool?.school_code) {
       console.log('❌ userSchool 정보 없음');
@@ -86,7 +86,24 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         .eq('month', currentMonth.getMonth() + 1)
         .single();
 
-      // 2. user_champion_records에서 나의 장원 기록 가져오기
+      // 2. quiz_champions 테이블에서 일별 퀴즈 결과와 통계를 한번에 가져오기 (성능 최적화)
+      const { data: quizStats } = await supabase
+        .from('quiz_champions')
+        .select(`
+          *,
+          day_1, day_2, day_3, day_4, day_5, day_6, day_7, day_8, day_9, day_10,
+          day_11, day_12, day_13, day_14, day_15, day_16, day_17, day_18, day_19, day_20,
+          day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31,
+          week_1_correct, week_1_total, week_2_correct, week_2_total, 
+          week_3_correct, week_3_total, week_4_correct, week_4_total, 
+          week_5_correct, week_5_total, month_correct, total_count
+        `)
+        .eq('user_id', userId)
+        .eq('year', currentMonth.getFullYear())
+        .eq('month', currentMonth.getMonth() + 1)
+        .single();
+
+      // 3. user_champion_records에서 장원 기록 가져오기
       const { data: myRecords } = await supabase
         .from('user_champion_records')
         .select('*')
@@ -97,7 +114,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         .eq('month', currentMonth.getMonth() + 1)
         .single();
 
-      // 3. school_champions에서 집계 데이터 가져오기
+      // 4. school_champions에서 집계 데이터 가져오기 - 간소화
       const { data: schoolStats } = await supabase
         .from('school_champions')
         .select('*')
@@ -105,7 +122,10 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         .eq('year', currentMonth.getFullYear())
         .eq('month', currentMonth.getMonth() + 1);
       
-      // 4. 주차별 데이터 생성 - criteriaData에 있는 모든 주차 표시
+      console.log('퀴즈 통계 데이터:', quizStats);
+      console.log('장원 기록:', myRecords);
+      
+      // 5. 주차별 데이터 생성 - quiz_champions에서 바로 주차별 정답 수 활용
       const stats: ChampionStats[] = [];
       const targetMonth = currentMonth.getMonth() + 1; // 1-12
       
@@ -124,7 +144,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
           const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
           
-          // school_champions에서 집계 데이터 계산
+          // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
+          const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
+          const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
+          const weekCorrect = quizStats?.[weekCorrectField] as number || 0;
+          const weekTotal = quizStats?.[weekTotalField] as number || 0;
+          
+          // school_champions에서 집계 데이터 계산 (간소화)
           const classCount = schoolStats?.filter(s => 
             s.week === week && 
             s.grade === targetSchoolInfo.grade && 
@@ -140,11 +166,17 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             s.week === week
           ).length || 0;
           
+          // 퀴즈 정답률을 바탕으로 my_record 상태 결정
+          let myRecord = '도전!';
+          if (isWeekChampion || (weekTotal > 0 && weekCorrect === weekTotal)) {
+            myRecord = '주장원';
+          }
+          
           stats.push({
             period_type: 'weekly',
             period_label: `${targetMonth}월 ${week}주`,
-            my_record: isWeekChampion ? '주장원' : '도전!',
-            me_count: isWeekChampion ? 1 : 0,
+            my_record: myRecord,
+            me_count: weekCorrect,
             class_count: classCount,
             grade_count: gradeCount,  
             school_count: schoolCount,
@@ -154,12 +186,14 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         }
       }
       
-      // 5. 월별 데이터 추가
+      // 6. 월별 데이터 추가 - quiz_champions에서 바로 월별 정답 수 활용
       const monthDays = criteriaData?.month_total || 0;
       const isMonthChampion = myRecords?.month_champion || false;
+      const monthCorrect = quizStats?.month_correct || 0;
+      const monthTotal = quizStats?.total_count || 0;
       
       if (monthDays > 0) {
-        // 월간 집계 데이터 찾기 (week가 null인 데이터)
+        // 월간 집계 데이터 찾기 (간소화)
         const monthlyClassStats = schoolStats?.find(s => 
           s.week === null && 
           s.grade === targetSchoolInfo.grade && 
@@ -176,11 +210,17 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           s.class === null
         );
         
+        // 월간 통계를 바탕으로 my_record 상태 결정
+        let myMonthRecord = '도전!';
+        if (isMonthChampion || (monthTotal > 0 && monthCorrect === monthTotal)) {
+          myMonthRecord = '월장원';
+        }
+        
         stats.push({
           period_type: 'monthly',
           period_label: `${currentMonth.getMonth() + 1}월`,
-          my_record: isMonthChampion ? '월장원' : '도전!',
-          me_count: isMonthChampion ? 1 : 0,
+          my_record: myMonthRecord,
+          me_count: monthCorrect,
           class_count: monthlyClassStats?.champion_us || 0,
           grade_count: monthlyGradeStats?.champion_us || 0,
           school_count: monthlySchoolStats?.champion_us || 0,
