@@ -843,9 +843,9 @@ export default function QuizClient() {
               <p className="text-red-600 mb-4">{error}</p>
               <button
                 onClick={handleManualQuizGenerate}
-                disabled={generatingQuiz}
+                disabled={generatingQuiz || isViewingMode}
                 className={`px-4 py-2 rounded-lg font-medium ${
-                  generatingQuiz
+                  generatingQuiz || isViewingMode
                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
@@ -1053,9 +1053,9 @@ export default function QuizClient() {
                                 // 기본 상태: 신고 가능
                                 <button
                                   onClick={handleReportQuiz}
-                                  disabled={reportingQuiz}
+                                  disabled={reportingQuiz || isViewingMode}
                                   className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200 ${
-                                    reportingQuiz 
+                                    reportingQuiz || isViewingMode
                                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                       : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
                                   }`}
@@ -1104,7 +1104,12 @@ export default function QuizClient() {
                   <p className="text-gray-600 mb-4">퀴즈가 아직 없네요. AI로 퀴즈 만들고 먼저 풀어보세요!</p>
                   <button
                     onClick={handleManualQuizGenerate}
-                    className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"
+                    disabled={isViewingMode}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      isViewingMode
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                   >
                     학년별 맞춤 AI퀴즈 생성하기
                   </button>
