@@ -24,6 +24,19 @@ interface WeeklyTrophy {
   total_available: number;
 }
 
+interface CalendarDay {
+  day: number;
+  dateStr: string;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+  hasQuiz: boolean;
+  isCorrect: boolean;
+  isHoliday: boolean;
+  hasMeal: boolean;
+  weekLabel?: string;
+}
+
 interface QuizChallengeCalendarProps {
   currentQuizDate?: string;
   onDateSelect?: (date: string) => void;
@@ -489,6 +502,24 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       fetchPreviousMonthStats(prevYear, prevMonth);
     }
   }, [currentMonth, userSchool]);
+
+  // viewingUserId 변경 시 데이터 새로고침
+  useEffect(() => {
+    if (userSchool) {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      console.log('👀 관람 모드 변경 감지:', { viewingUserId, year, month: month + 1 });
+      
+      // 관람 모드 변경 시 모든 데이터 새로고침
+      fetchCalendarData(year, month);
+      fetchMonthlyStats(year, month);
+      
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevYear = month === 0 ? year - 1 : year;
+      fetchPreviousMonthStats(prevYear, prevMonth);
+    }
+  }, [viewingUserId, userSchool, currentMonth]);
 
   // 캘린더 그리드 생성
   const generateCalendarGrid = () => {
