@@ -1242,29 +1242,26 @@ export default function MealImageUploader({
                 </span>
               ) : (
                 <span className="flex items-center">
-                  <svg className="w-8 h-8 mr-3" viewBox="0 0 24 24">
+                  <svg className="w-12 h-10 mr-1" viewBox="0 0 36 32">
                     {/* 로봇 머리 */}
-                    <rect x="6" y="4" width="12" height="8" rx="2" fill="#06B6D4"/>
+                    <rect x="8" y="6" width="20" height="12" rx="3" fill="#06B6D4"/>
                     {/* 로봇 눈 */}
-                    <circle cx="9" cy="7" r="1.2" fill="#000"/>
-                    <circle cx="15" cy="7" r="1.2" fill="#000"/>
+                    <circle cx="14" cy="11" r="1.5" fill="#000"/>
+                    <circle cx="22" cy="11" r="1.5" fill="#000"/>
                     {/* 로봇 입 */}
-                    <rect x="10" y="9.5" width="4" height="1" rx="0.5" fill="#000"/>
-                    {/* 로봇 몸체 */}
-                    <rect x="7" y="12" width="10" height="6" rx="1" fill="#06B6D4"/>
-                    {/* 로봇 팔 */}
-                    <rect x="4" y="13" width="2" height="4" rx="1" fill="#06B6D4"/>
-                    <rect x="18" y="13" width="2" height="4" rx="1" fill="#06B6D4"/>
-                    {/* 로봇 다리 */}
-                    <rect x="9" y="18" width="2" height="3" rx="1" fill="#06B6D4"/>
-                    <rect x="13" y="18" width="2" height="3" rx="1" fill="#06B6D4"/>
+                    <rect x="16" y="14" width="4" height="1.5" rx="0.75" fill="#000"/>
                     {/* 안테나 */}
-                    <line x1="12" y1="4" x2="12" y2="2" stroke="#06B6D4" strokeWidth="1.5"/>
-                    <circle cx="12" cy="2" r="1.2" fill="#10B981"/>
-                    {/* 몸체 장식 */}
-                    <rect x="10" y="14" width="4" height="1" rx="0.5" fill="#000"/>
-                    <rect x="9" y="16" width="2" height="1" rx="0.5" fill="#000"/>
-                    <rect x="13" y="16" width="2" height="1" rx="0.5" fill="#000"/>
+                    <line x1="18" y1="6" x2="18" y2="3" stroke="#06B6D4" strokeWidth="2"/>
+                    <circle cx="18" cy="3" r="1.5" fill="#10B981"/>
+                    {/* 귀 */}
+                    <rect x="5" y="9" width="3" height="6" rx="1.5" fill="#06B6D4"/>
+                    <rect x="28" y="9" width="3" height="6" rx="1.5" fill="#06B6D4"/>
+                    {/* 가슴 */}
+                    <rect x="10" y="18" width="16" height="12" rx="2" fill="#06B6D4"/>
+                    {/* 가슴 장식 */}
+                    <rect x="14" y="22" width="8" height="1.5" rx="0.75" fill="#000"/>
+                    <rect x="12" y="25" width="4" height="1.5" rx="0.75" fill="#000"/>
+                    <rect x="20" y="25" width="4" height="1.5" rx="0.75" fill="#000"/>
                   </svg>
                   업로드 및 AI 검증
                 </span>
