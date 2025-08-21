@@ -1119,7 +1119,12 @@ export default function QuizClient() {
           currentQuizDate={selectedDate}
           onDateSelect={(date) => {
             setSelectedDate(date);
-            router.push(`/quiz?date=${date}`);
+            // 구독 모드일 때는 viewing 파라미터 유지
+            if (isViewingMode && viewingUserId) {
+              router.push(`/quiz?viewing=${viewingUserId}&date=${date}`);
+            } else {
+              router.push(`/quiz?date=${date}`);
+            }
           }}
           onRefreshNeeded={() => {
             // 캘린더 새로고침이 필요할 때 호출되는 콜백
