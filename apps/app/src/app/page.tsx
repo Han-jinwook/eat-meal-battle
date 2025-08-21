@@ -146,7 +146,8 @@ export default function Home() {
   const handleInviteLink = async (schoolCode: string) => {
     try {
       if (!user) {
-        console.log('사용자가 로그인되지 않음');
+        console.log('사용자가 로그인되지 않음 - 관심학교 등록 모달 열기');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -167,24 +168,27 @@ export default function Home() {
       const { data: userInfo } = userResult;
       const { data: schoolInfo } = schoolResult;
 
-      // 학생 사용자인데 학교 등록이 안 된 경우만 프로필 페이지로 안내
-      if (userInfo?.is_student && !schoolInfo) {
-        alert('학교 등록이 필요합니다. 프로필에서 학교를 등록해주세요.');
-        router.push('/profile');
+      // 학교 등록이 안 된 경우 (학생/비학생 구분 없이) 관심학교 등록 모달 열기
+      if (!schoolInfo) {
+        console.log('학교 등록이 안 된 사용자 - 관심학교 등록 모달 열기');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
-      // 학생이 아닌 사용자(학부모 등)인데 학교 등록이 안 된 경우 안내
-      if (!userInfo?.is_student && !schoolInfo) {
-        alert('급식 기능은 학교 등록이 필요합니다.');
+      // 학교 등록이 되어 있지만 다른 학교 코드인 경우 관심학교 등록 모달 열기
+      if (schoolInfo && schoolInfo.school_code !== schoolCode) {
+        console.log('다른 학교 사용자 - 관심학교 등록 모달 열기');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
-      // 학교 등록이 완료된 경우 정상적으로 급식 페이지 표시
-      console.log('초대링크 처리 완료 - 학교 등록 확인됨');
+      // 같은 학교인 경우 정상적으로 급식 페이지 표시
+      console.log('같은 학교 사용자 - 정상 표시');
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
+      // 오류 발생 시에도 관심학교 등록 모달 열기
+      setIsSchoolSearchOpen(true);
     }
   };
 
