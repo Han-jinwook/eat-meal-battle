@@ -185,8 +185,8 @@ export default function Home() {
           return;
         }
         
-        // 같은 학교인 경우 정상 표시
-        console.log('학생 유저 - 같은 학교, 정상 표시');
+        // 같은 학교인 경우 정상 표시 (관심학교 등록 모달 열지 않음)
+        console.log('학생 유저 - 같은 학교, 정상 급식 페이지 표시');
         return;
       }
 
@@ -436,6 +436,12 @@ export default function Home() {
     // 최대 10개 제한 확인
     if (interestSchools.length >= 10) {
       alert('최대 10개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+
+    // 학생 유저의 경우 자기 학교와 중복 확인 추가
+    if (user.db_profile?.is_student && userSchool?.school_code === schoolData.SD_SCHUL_CODE) {
+      alert('자신의 학교는 관심학교로 등록할 수 없습니다.');
       return;
     }
 

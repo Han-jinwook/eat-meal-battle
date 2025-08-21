@@ -56,7 +56,7 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
         provider = 'kakao';
         options.queryParams = {
           prompt: 'consent', // 강제로 동의 화면 표시
-          scope: 'profile_nickname,profile_image,account_email,birthday'
+          scope: 'profile_nickname,profile_image,account_email,birthyear'
         };
       } else {
         setError('지원하지 않는 로그인 제공자입니다.');
@@ -123,7 +123,7 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
           </div>
           
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 text-center">
-            학교 설정을 위해 {userProvider === 'google' ? 'Google' : '카카오'}에서 생년월일 정보 제공에 추가 동의가 필요합니다.
+            학교 설정을 위해 {userProvider === 'google' ? 'Google' : '카카오'}에서 생년 정보 제공에 추가 동의가 필요합니다.
           </p>
           
           <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
@@ -133,7 +133,7 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
               </svg>
               <div className="text-xs text-blue-700 dark:text-blue-300">
                 <p className="font-medium mb-1">안전한 정보 처리</p>
-                <p>• 생년월일 정보는 학생 인증 목적으로만 사용됩니다</p>
+                <p>• 생년 정보는 학생 인증 목적으로만 사용됩니다</p>
                 <p>• 제공된 정보는 안전하게 암호화되어 보관됩니다</p>
               </div>
             </div>
