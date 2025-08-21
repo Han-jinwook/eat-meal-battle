@@ -1254,30 +1254,26 @@ export default function MealImageUploader({
                     <line x1="98" y1="42" x2="98" y2="64" stroke="#12DED0" strokeWidth="10" strokeLinecap="round"/>
                     <circle cx="98" cy="32" r="10" fill="#12DED0"/>
 
-                    {/* 몸체(둥근 사각형) - 가로 확장 */}
-                    <rect x="5" y="64" width="210" height="120" rx="28" fill="url(#botBody)"/>
+                    {/* 몸체(둥근 사각형) - 머리 크기로 복원 */}
+                    <rect x="18" y="64" width="180" height="120" rx="28" fill="url(#botBody)"/>
 
-                    {/* 오른쪽 이어(둥근 버튼) - 위치 조정 */}
-                    <circle cx="223" cy="124" r="15" fill="#12DED0"/>
-                    <circle cx="223" cy="124" r="7" fill="#0DE0D2"/>
+                    {/* 오른쪽 이어(둥근 버튼) */}
+                    <circle cx="206" cy="124" r="15" fill="#12DED0"/>
+                    <circle cx="206" cy="124" r="7" fill="#0DE0D2"/>
 
-                    {/* 왼쪽 이어(둥근 버튼) - 대칭 추가 */}
-                    <circle cx="37" cy="124" r="15" fill="#12DED0"/>
-                    <circle cx="37" cy="124" r="7" fill="#0DE0D2"/>
+                    {/* 얼굴 패널 - 원래 크기로 복원 */}
+                    <rect x="44" y="86" width="128" height="76" rx="20" fill="#0B1A1F"/>
 
-                    {/* 얼굴 패널 - 가로 확장 */}
-                    <rect x="35" y="86" width="150" height="76" rx="20" fill="#0B1A1F"/>
+                    {/* 눈 - 원래 위치로 복원 */}
+                    <circle cx="78" cy="118" r="7" fill="#A7FFF4"/>
+                    <circle cx="138" cy="118" r="7" fill="#A7FFF4"/>
 
-                    {/* 눈 - 위치 조정 */}
-                    <circle cx="85" cy="118" r="7" fill="#A7FFF4"/>
-                    <circle cx="155" cy="118" r="7" fill="#A7FFF4"/>
+                    {/* 입(스마일) - 원래 위치로 복원 */}
+                    <path d="M90 132 Q108 148 126 132" fill="none" stroke="#A7FFF4" strokeWidth="7" strokeLinecap="round"/>
 
-                    {/* 입(스마일) - 위치 조정 */}
-                    <path d="M100 132 Q120 148 140 132" fill="none" stroke="#A7FFF4" strokeWidth="7" strokeLinecap="round"/>
-
-                    {/* 하단 베이스/목 - 가로 확장 및 세로 확장 */}
-                    <rect x="85" y="170" width="90" height="15" rx="7" fill="#12DED0"/>
-                    <rect x="0" y="188" width="200" height="32" rx="16" fill="#0DE0D2"/>
+                    {/* 하단 베이스/목 - 가슴을 머리보다 더 길게 */}
+                    <rect x="76" y="170" width="64" height="30" rx="7" fill="#12DED0"/>
+                    <rect x="0" y="188" width="220" height="64" rx="16" fill="#0DE0D2"/>
                   </svg>
                   업로드 및 AI 검증
                 </span>
