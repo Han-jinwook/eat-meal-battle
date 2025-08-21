@@ -685,7 +685,55 @@ OAuth 로그인 → 동의 거부 →
 - `src/components/BirthConsentModal.tsx`: 추가동의 팝업 컴포넌트
 - 기존 로그인 시스템: OAuth 확장으로 안전하게 개선
 
+---
+
+## 🎂 OAuth 생년월일 처리 최종 정리 (2025-08-21)
+
+### 핵심 변경사항
+- **카카오**: `birthyear` → `birthday` 스코프로 변경하여 정확한 생년월일 수신
+- **구글**: 기존 `birthdate` 유지 (이미 정확한 생년월일)
+- **나이 계산**: 두 제공자 모두 동일한 정확도로 만나이 계산
+
+### OAuth 스코프 설정 (최종)
+```typescript
+// 카카오 OAuth - 정확한 생년월일
+scope: 'profile_nickname,profile_image,account_email,birthday'
+
+// 구글 OAuth - 기존 유지
+scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read'
+```
+
+### 카카오 생년월일 처리 로직 (신규)
+```typescript
+// 우선순위 1: 생년월일 전체 (birthday + birthyear)
+if (kakaoUserInfo?.kakao_account?.birthday && kakaoUserInfo?.kakao_account?.birthyear) {
+  const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
+  const kakaoBirthday = kakaoUserInfo.kakao_account.birthday; // MMDD 형식
+  const month = kakaoBirthday.substring(0, 2);
+  const day = kakaoBirthday.substring(2, 4);
+  birthDate = `${kakaoYear}-${month}-${day}`;
+}
+// 우선순위 2: 생년만 (폴백)
+else if (kakaoUserInfo?.kakao_account?.birthyear) {
+  birthDate = `${kakaoYear}-01-01`;
+}
+```
+
+### 실전 출시 시 이점
+- **공정한 학생 인증**: 6-19세 경계선에서 로그인 방법과 관계없이 동일한 결과
+- **정확한 나이 계산**: 19세 경계 케이스 해결 (2004년 12월생 고3 학생 등)
+- **일관된 사용자 경험**: 구글/카카오 로그인 결과 동일
+
+### 탈퇴 시스템 연동
+- **생일 확인 불필요**: 정확한 생년월일 보유로 복잡한 생일 확인 로직 제거
+- **데이터 일관성**: `birth_date` 필드 기반 동일한 처리
+- **iOS Safari 문제**: OAuth 연결 해제 오류 해결 완료
+
+### 완료된 파일
+- `src/components/BirthConsentModal.tsx`: birthday 스코프 + 안내 메시지 수정
+- `src/app/auth/callback/route.ts`: 카카오 생년월일 처리 로직 추가
+
 ### 다음 단계
-1. birth_date_consent 컬럼 추가 (SQL)
-2. 카카오 개발자 콘솔에서 birthday 권한 활성화
-3. 프로필에서 수동 설정 기능 추가 (선택적)
+1. 카카오 개발자 콘솔에서 birthday 권한 활성화
+2. 실제 테스트를 통한 생년월일 수신 확인
+3. 실전 출시 시 나이 범위 6-19세로 조정

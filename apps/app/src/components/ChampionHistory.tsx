@@ -184,7 +184,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const schoolTotal = allGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
         // 퀴즈 정답률을 바탕으로 my_record 상태 결정
-        let myRecord = '🥊'; // 도전 이모지
+        let myRecord = '✊'; // 도전 이모지
         if (isWeekChampion || (weekTotal > 0 && weekCorrect === weekTotal)) {
           myRecord = '🏆'; // 트로피 이모지
         }
@@ -227,7 +227,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const monthlySchoolTotal = allMonthlyGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
         // 월간 통계를 바탕으로 my_record 상태 결정
-        let myMonthRecord = '🥊'; // 도전 이모지
+        let myMonthRecord = '✊'; // 도전 이모지
         if (isMonthChampion || (monthTotal > 0 && monthCorrect === monthTotal)) {
           myMonthRecord = '🏆'; // 트로피 이모지
         }
@@ -322,8 +322,18 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                   {stat.my_record === '🏆' && (
                     <span className="text-yellow-600 font-bold">🏆 {stat.period_type === 'weekly' ? '주장원' : '월장원'}</span>
                   )}
-                  {stat.my_record === '🥊' && (
-                    <span className="text-indigo-500">🥊 도전</span>
+                  {stat.my_record === '✊' && (
+                    <span className="text-indigo-500 flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                        <path d="M18 11.5V9a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v1.4"/>
+                        <path d="M14 10V8a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+                        <path d="M10 9.9V8a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+                        <path d="M6 12a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v0a2 2 0 0 0-2-2"/>
+                        <path d="M18 12v4"/>
+                        <path d="M6 12v4"/>
+                      </svg>
+                      도전
+                    </span>
                   )}
                 </td>
                 <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
