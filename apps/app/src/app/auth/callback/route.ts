@@ -113,11 +113,18 @@ export async function GET(request: NextRequest) {
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
         
-        // 카카오에서 생년 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
-        if (kakaoUserInfo?.kakao_account?.birthyear) {
+        // 카카오에서 생년월일 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
+        if (kakaoUserInfo?.kakao_account?.birthday && kakaoUserInfo?.kakao_account?.birthyear) {
+          const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
+          const kakaoBirthday = kakaoUserInfo.kakao_account.birthday; // MMDD 형식
+          const month = kakaoBirthday.substring(0, 2);
+          const day = kakaoBirthday.substring(2, 4);
+          birthDate = `${kakaoYear}-${month}-${day}`;
+          console.info('✅ 카카오 API에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
+        } else if (kakaoUserInfo?.kakao_account?.birthyear) {
           const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
-          console.info('✅ 카카오 API에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+          console.info('✅ 카카오 API에서 생년만 받음:', { year: kakaoYear, formatted: birthDate });
         } else if (rawProviderData?.birthyear) {
           const kakaoYear = rawProviderData.birthyear;
           birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
