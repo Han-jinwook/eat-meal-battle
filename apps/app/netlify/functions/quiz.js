@@ -397,6 +397,51 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
         };
       } else {
         console.log('[quiz] 장원 기록 생성 성공:', insertResult);
+        
+        // 🆕 퀴즈 첫 제출 시 user_champion_records 기본 레코드 생성
+        try {
+          console.log('[quiz] user_champion_records 기본 레코드 생성 시작:', { userId, calendarMonth, calendarYear });
+          
+          // 사용자 학교 정보 조회
+          const { data: userSchool, error: userSchoolError } = await supabaseAdmin
+            .from('school_infos')
+            .select('school_code, grade')
+            .eq('user_id', userId)
+            .single();
+          
+          if (userSchoolError || !userSchool) {
+            console.log('[quiz] 사용자 학교 정보 조회 실패, user_champion_records 생성 건너뜀:', userSchoolError);
+          } else {
+            // user_champion_records 기본 레코드 생성
+            const championRecordData = {
+              user_id: userId,
+              school_code: userSchool.school_code,
+              grade: userSchool.grade,
+              year: calendarYear,
+              month: calendarMonth,
+              week_1_champion: false,
+              week_2_champion: false,
+              week_3_champion: false,
+              week_4_champion: false,
+              week_5_champion: false,
+              month_champion: false,
+              created_at: new Date().toISOString()
+            };
+            
+            const { data: championResult, error: championError } = await supabaseAdmin
+              .from('user_champion_records')
+              .insert([championRecordData])
+              .select();
+            
+            if (championError) {
+              console.log('[quiz] user_champion_records 생성 실패 (무시하고 계속):', championError);
+            } else {
+              console.log('[quiz] user_champion_records 기본 레코드 생성 성공:', championResult);
+            }
+          }
+        } catch (championRecordError) {
+          console.log('[quiz] user_champion_records 생성 중 예외 (무시하고 계속):', championRecordError);
+        }
       }
     }
     
