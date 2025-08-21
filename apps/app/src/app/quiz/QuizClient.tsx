@@ -917,11 +917,7 @@ export default function QuizClient() {
               {/* 제출 버튼 또는 결과 */}
               <div>
                 {!submitted ? (
-                  isViewingMode ? (
-                    <div className="w-full py-3 px-4 rounded-lg font-medium bg-purple-100 text-purple-700 text-center border-2 border-purple-200">
-                      👀 관람 모드에서는 답변을 제출할 수 없습니다
-                    </div>
-                  ) : (
+                  !isViewingMode ? (
                     <button
                       disabled={selectedOption === null || submitting}
                       className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
@@ -940,7 +936,7 @@ export default function QuizClient() {
                         '정답 제출'
                       )}
                     </button>
-                  )
+                  ) : null
                 ) : (
                   <div>
                     <div className="text-center">
