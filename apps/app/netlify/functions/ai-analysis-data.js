@@ -34,7 +34,7 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       .eq('school_code', schoolCode)
       .eq('battle_year', year)
       .eq('battle_month', month)
-      .maybeSingle();
+      .single();
 
     if (mealError && mealError.code !== 'PGRST116') {
       throw mealError;
