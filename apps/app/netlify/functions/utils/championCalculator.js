@@ -297,7 +297,7 @@ class ChampionCalculator {
   }
 
   /**
-   * school_champions 테이블 자동 업데이트
+   * school_champions 테이블 자동 업데이트 - 증분 업데이트
    */
   async updateSchoolChampions(userId, year, month, weekNumber = null) {
     try {
@@ -321,43 +321,7 @@ class ChampionCalculator {
         return false;
       }
       
-      // 2. 해당 학교/학년/반의 장원 수 집계
-      let whereClause = {
-        school_code,
-        grade,
-        year,
-        month
-      };
-      
-      let championField;
-      if (weekNumber !== null) {
-        championField = `week_${weekNumber}_champion`;
-      } else {
-        championField = 'month_champion';
-      }
-      
-      // user_champion_records와 school_infos 조인하여 해당 반의 장원 수 계산
-      const { data: championData, error: championError } = await this.supabase
-        .from('user_champion_records')
-        .select(`
-          *,
-          school_infos!inner(class_number)
-        `)
-        .eq('school_code', school_code)
-        .eq('grade', grade)
-        .eq('year', year)
-        .eq('month', month)
-        .eq(championField, true)
-        .eq('school_infos.class_number', class_number);
-        
-      if (championError) {
-        console.error('Error counting champions:', championError);
-        return false;
-      }
-      
-      const championCount = championData?.length || 0;
-      
-      // 3. school_champions 테이블에서 기존 데이터 조회
+      // 2. 기존 school_champions 데이터 조회
       const { data: existingData, error: existingError } = await this.supabase
         .from('school_champions')
         .select('*')
@@ -368,37 +332,41 @@ class ChampionCalculator {
         .eq('week_number', weekNumber)
         .single();
         
-      // 4. 업데이트할 데이터 준비
+      // 3. 업데이트할 데이터 준비 - 해당 반만 +1, 학년 총계도 +1
       const classField = `class_${class_number}`;
-      let updatePayload = {};
-      updatePayload[classField] = championCount;
-      
-      // 학년 총합 계산
-      let gradeTotal = championCount;
-      if (existingData) {
-        // 기존 데이터가 있으면 다른 반들의 합계 계산
-        for (let i = 1; i <= 15; i++) {
-          if (i !== class_number) {
-            const fieldName = `class_${i}`;
-            gradeTotal += (existingData[fieldName] || 0);
-          }
-        }
-      }
-      updatePayload.grade_total = gradeTotal;
-      
-      // 5. UPSERT 수행
-      const upsertData = {
+      let updateData = {
         school_code,
         grade,
         year,
         month,
-        week_number: weekNumber,
-        ...updatePayload
+        week_number: weekNumber
       };
       
+      if (existingData) {
+        // 기존 데이터가 있으면 해당 반과 학년 총계만 +1
+        updateData[classField] = (existingData[classField] || 0) + 1;
+        updateData.grade_total = (existingData.grade_total || 0) + 1;
+        
+        // 다른 반들은 기존 값 유지
+        for (let i = 1; i <= 15; i++) {
+          if (i !== class_number) {
+            const fieldName = `class_${i}`;
+            updateData[fieldName] = existingData[fieldName] || 0;
+          }
+        }
+      } else {
+        // 새 데이터면 해당 반만 1, 나머지는 0으로 초기화
+        updateData.grade_total = 1;
+        for (let i = 1; i <= 15; i++) {
+          const fieldName = `class_${i}`;
+          updateData[fieldName] = (i === class_number) ? 1 : 0;
+        }
+      }
+      
+      // 4. UPSERT 수행
       const { error: upsertError } = await this.supabase
         .from('school_champions')
-        .upsert(upsertData, {
+        .upsert(updateData, {
           onConflict: 'school_code,year,month,week_number,grade'
         });
         
@@ -407,7 +375,7 @@ class ChampionCalculator {
         return false;
       }
       
-      console.log(`Successfully updated school champions for ${school_code}, grade ${grade}, class ${class_number}, ${year}-${month}, week ${weekNumber}`);
+      console.log(`Successfully updated school champions for ${school_code}, grade ${grade}, class ${class_number}, ${year}-${month}, week ${weekNumber}: +1`);
       return true;
       
     } catch (err) {
