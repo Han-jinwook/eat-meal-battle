@@ -1213,7 +1213,7 @@ export default function MealImageUploader({
               className={`px-4 py-2 rounded-md text-white ${
                 uploading || verifying || !preview || !isButtonReady || !canUploadPhoto
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
+                  : 'bg-gradient-to-r from-[#6A00FF] via-[#3F55FF] to-[#00D1FF] hover:from-[#5800D6] hover:via-[#3546D9] hover:to-[#00B8E6]'
               }`}
             >
               {uploading ? (
@@ -1242,38 +1242,44 @@ export default function MealImageUploader({
                 </span>
               ) : (
                 <span className="flex items-center">
-                  <svg className="w-12 h-10 mr-1" viewBox="0 0 260 220" role="img" aria-label="Upload bot">
+                  <svg className="w-28 h-12 mr-2" viewBox="0 0 240 120" role="img" aria-label="업로드 및 AI 검증 버튼">
                     <defs>
-                      <linearGradient id="botBody" x1="0" x2="1" y1="0" y2="0">
-                        <stop offset="0%" stopColor="#12DED0"/>
-                        <stop offset="100%" stopColor="#0DE0D2"/>
+                      <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#6A00FF"/>
+                        <stop offset="50%" stopColor="#3F55FF"/>
+                        <stop offset="100%" stopColor="#00D1FF"/>
                       </linearGradient>
                     </defs>
-
-                    {/* 안테나 */}
-                    <line x1="98" y1="42" x2="98" y2="64" stroke="#12DED0" strokeWidth="10" strokeLinecap="round"/>
-                    <circle cx="98" cy="32" r="10" fill="#12DED0"/>
-
-                    {/* 몸체(둥근 사각형) - 머리 크기로 복원 */}
-                    <rect x="18" y="64" width="180" height="120" rx="28" fill="url(#botBody)"/>
-
-                    {/* 오른쪽 이어(둥근 버튼) */}
-                    <circle cx="206" cy="124" r="15" fill="#12DED0"/>
-                    <circle cx="206" cy="124" r="7" fill="#0DE0D2"/>
-
-                    {/* 얼굴 패널 - 원래 크기로 복원 */}
-                    <rect x="44" y="86" width="128" height="76" rx="20" fill="#0B1A1F"/>
-
-                    {/* 눈 - 원래 위치로 복원 */}
-                    <circle cx="78" cy="118" r="7" fill="#A7FFF4"/>
-                    <circle cx="138" cy="118" r="7" fill="#A7FFF4"/>
-
-                    {/* 입(스마일) - 원래 위치로 복원 */}
-                    <path d="M90 132 Q108 148 126 132" fill="none" stroke="#A7FFF4" strokeWidth="7" strokeLinecap="round"/>
-
-                    {/* 하단 베이스/목 - 가슴을 머리보다 더 길게 */}
-                    <rect x="76" y="170" width="64" height="30" rx="7" fill="#12DED0"/>
-                    <rect x="0" y="188" width="220" height="64" rx="16" fill="#0DE0D2"/>
+                    
+                    {/* Robot icon - scaled and positioned */}
+                    <g transform="translate(20,60) scale(0.4)">
+                      {/* Antenna */}
+                      <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                      <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                      
+                      {/* Head outer */}
+                      <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                      
+                      {/* Side ears */}
+                      <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                      <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                      
+                      {/* Face window */}
+                      <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                      
+                      {/* Eyes */}
+                      <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                      <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                      
+                      {/* Smile */}
+                      <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                      
+                      {/* Neck */}
+                      <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                      
+                      {/* Base */}
+                      <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                    </g>
                   </svg>
                   업로드 및 AI 검증
                 </span>
