@@ -124,6 +124,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       
       console.log('퀴즈 통계 데이터:', quizStats);
       console.log('장원 기록:', myRecords);
+      console.log('🏫 school_champions 조회 결과:', {
+        school_code: targetSchoolInfo.school_code,
+        year: currentMonth.getFullYear(),
+        month: currentMonth.getMonth() + 1,
+        data: schoolStats,
+        count: schoolStats?.length || 0
+      });
       
       // 5. 주차별 데이터 생성 - quiz_champions에서 바로 주차별 정답 수 활용
       const stats: ChampionStats[] = [];
@@ -165,8 +172,9 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           s.grade === targetSchoolInfo.grade
         );
         
-        // 우리 반 장원수
-        const myClassCount = weekStats?.[`class_${targetSchoolInfo.class}`] || 0;
+        // 우리 반 장원수 (class 정보가 없으면 0으로 처리)
+        const myClassCount = (targetSchoolInfo.class && weekStats) ? 
+          (weekStats[`class_${targetSchoolInfo.class}`] || 0) : 0;
         
         // 우리 학년 장원수  
         const myGradeCount = weekStats?.grade_total || 0;
@@ -207,8 +215,9 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           s.grade === targetSchoolInfo.grade
         );
         
-        // 우리 반 월장원수
-        const monthlyClassCount = monthlyStats?.[`class_${targetSchoolInfo.class}`] || 0;
+        // 우리 반 월장원수 (class 정보가 없으면 0으로 처리)
+        const monthlyClassCount = (targetSchoolInfo.class && monthlyStats) ? 
+          (monthlyStats[`class_${targetSchoolInfo.class}`] || 0) : 0;
         
         // 우리 학년 월장원수  
         const monthlyGradeCount = monthlyStats?.grade_total || 0;
@@ -310,14 +319,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                   {stat.period_label.replace(`${currentMonth.getFullYear()}년 `, '')}
                 </td>
                 <td className="border border-gray-300 px-3 py-2 text-sm text-center">
-                  {stat.my_record === '주장원' && (
-                    <span className="text-yellow-600 font-bold">🏆 주장원</span>
+                  {stat.my_record === '🏆' && (
+                    <span className="text-yellow-600 font-bold">🏆 {stat.period_type === 'weekly' ? '주장원' : '월장원'}</span>
                   )}
-                  {stat.my_record === '월장원' && (
-                    <span className="text-purple-600 font-bold">👑 월장원</span>
-                  )}
-                  {stat.my_record === 'pass' && (
-                    <span className="text-indigo-500">💪 도전</span>
+                  {stat.my_record === '🥊' && (
+                    <span className="text-indigo-500">🥊 도전</span>
                   )}
                 </td>
                 <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
