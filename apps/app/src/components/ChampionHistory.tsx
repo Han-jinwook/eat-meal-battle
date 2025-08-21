@@ -320,7 +320,29 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                 </td>
                 <td className="border border-gray-300 px-3 py-2 text-sm text-center">
                   {stat.my_record === '🏆' && (
-                    <span className="text-yellow-600 font-bold">🏆 {stat.period_type === 'weekly' ? '주장원' : '월장원'}</span>
+                    <span className="text-yellow-600 font-bold flex items-center justify-center">
+                      {stat.period_type === 'weekly' ? (
+                        // 주장원 - 기본 학사모
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-1">
+                          <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
+                          <path d="M12 15L21 11L12 7L3 11L12 15Z" fill="#6B7280" stroke="#000" strokeWidth="1"/>
+                          <circle cx="21" cy="16" r="1.5" fill="#000"/>
+                          <path d="M21 17.5L21 20" stroke="#000" strokeWidth="1"/>
+                        </svg>
+                      ) : (
+                        // 월장원 - 장식 있는 학사모
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mr-1">
+                          <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
+                          <path d="M12 15L21 11L12 7L3 11L12 15Z" fill="#6B7280" stroke="#000" strokeWidth="1"/>
+                          <circle cx="21" cy="16" r="1.5" fill="#DC2626"/>
+                          <path d="M21 17.5L21 20" stroke="#DC2626" strokeWidth="1.5"/>
+                          {/* 장식 */}
+                          <path d="M12 7L12 3L10 4L12 5L14 4L12 3Z" fill="#F59E0B" stroke="#000" strokeWidth="0.5"/>
+                          <path d="M9 5L11 6L13 5L15 6L13 7L11 6L9 7L11 6Z" fill="#F59E0B" stroke="#000" strokeWidth="0.5"/>
+                        </svg>
+                      )}
+                      {stat.period_type === 'weekly' ? '주장원' : '월장원'}
+                    </span>
                   )}
                   {stat.my_record === '✊' && (
                     <span className="text-indigo-500 flex items-center justify-center">

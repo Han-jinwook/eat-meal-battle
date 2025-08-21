@@ -672,7 +672,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           {/* 월장원 트로피 공간 */}
           <div className="w-8 h-8 flex items-center justify-center">
             {championCriteria?.month_total > 0 && monthlyStats.correct === championCriteria.month_total && (
-              <span className="text-2xl">🏆</span>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
+                <path d="M12 15L21 11L12 7L3 11L12 15Z" fill="#6B7280" stroke="#000" strokeWidth="1"/>
+                <circle cx="21" cy="16" r="1.5" fill="#DC2626"/>
+                <path d="M21 17.5L21 20" stroke="#DC2626" strokeWidth="1.5"/>
+                {/* 장식 */}
+                <path d="M12 7L12 3L10 4L12 5L14 4L12 3Z" fill="#F59E0B" stroke="#000" strokeWidth="0.5"/>
+                <path d="M9 5L11 6L13 5L15 6L13 7L11 6L9 7L11 6Z" fill="#F59E0B" stroke="#000" strokeWidth="0.5"/>
+              </svg>
             )}
           </div>
           
@@ -737,7 +745,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               >
                 {/* 트로피 표시 - 해당 주차의 트로피 정보가 있는 경우만 표시 */}
                 {weeklyTrophy && weeklyTrophy.earned && (
-                  <span className="text-2xl" title={`${weekNumber}주차 장원`}>🏆</span>
+                  <div title={`${weekNumber}주차 장원`}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
+                      <path d="M12 15L21 11L12 7L3 11L12 15Z" fill="#6B7280" stroke="#000" strokeWidth="1"/>
+                      <circle cx="21" cy="16" r="1.5" fill="#000"/>
+                      <path d="M21 17.5L21 20" stroke="#000" strokeWidth="1"/>
+                    </svg>
+                  </div>
                 )}
               </div>
             );
