@@ -361,10 +361,29 @@ export default function BattlePage() {
       console.log('📝 생성된 프롬프트 길이:', aiPrompt.length, '자');
       console.log('📱 선택된 AI 앱:', selectedApp.id, selectedApp.name);
       
-      // 클립보드에 프롬프트 복사 (백업용)
+      // 클립보드 권한 확인 및 복사 (개선된 버전)
       let clipboardSuccess = false;
+      let permissionDenied = false;
+      
       try {
-        if (navigator.clipboard && window.isSecureContext) {
+        // 1단계: 클립보드 권한 상태 확인
+        if (navigator.permissions) {
+          try {
+            const permission = await navigator.permissions.query({name: 'clipboard-write' as PermissionName});
+            console.log('📋 클립보드 권한 상태:', permission.state);
+            
+            if (permission.state === 'denied') {
+              permissionDenied = true;
+              console.warn('⚠️ 클립보드 권한이 거부되어 있습니다');
+            }
+          } catch (permError) {
+            console.warn('⚠️ 클립보드 권한 확인 실패:', permError);
+            // 권한 확인 실패 시에도 클립보드 시도는 계속 진행
+          }
+        }
+        
+        // 2단계: 클립보드 API 시도
+        if (navigator.clipboard && window.isSecureContext && !permissionDenied) {
           await navigator.clipboard.writeText(aiPrompt);
           clipboardSuccess = true;
           console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
@@ -385,6 +404,59 @@ export default function BattlePage() {
       } catch (error) {
         console.warn('⚠️ 클립보드 복사 실패:', error);
         clipboardSuccess = false;
+        
+        // 권한 거부 에러인지 확인
+        if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
+          permissionDenied = true;
+          console.warn('🚫 클립보드 권한이 거부되었습니다');
+        }
+      }
+      
+      // 3단계: 권한 거부 시 간단한 설정 안내
+      if (permissionDenied && !clipboardSuccess) {
+        const permissionModal = document.createElement('div');
+        permissionModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        permissionModal.innerHTML = `
+          <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-start gap-3 mb-4">
+              <span class="text-3xl">🔒</span>
+              <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">클립보드 권한이 필요합니다</h3>
+                <p class="text-sm text-gray-600">
+                  AI 분석을 위해 프롬프트를 클립보드에 복사해야 합니다.
+                </p>
+              </div>
+            </div>
+            
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <div class="text-sm text-blue-800">
+                <div class="font-medium mb-2">📋 권한 허용 방법:</div>
+                <ol class="list-decimal list-inside space-y-1">
+                  <li>브라우저 주소창 옆의 <strong>🔒 자물쇠 아이콘</strong> 클릭</li>
+                  <li><strong>"클립보드"</strong> 또는 <strong>"Clipboard"</strong> 찾기</li>
+                  <li><strong>"허용"</strong> 또는 <strong>"Allow"</strong> 선택</li>
+                  <li>아래 버튼으로 새로고침 후 다시 시도</li>
+                </ol>
+              </div>
+            </div>
+            
+            <div class="flex gap-2">
+              <button 
+                onclick="window.location.reload()"
+                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium"
+              >
+                권한 설정 후 새로고침
+              </button>
+              <button 
+                onclick="this.closest('.fixed').remove()"
+                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(permissionModal);
       }
       
       // 스마트 자동 전송: GET 파라미터 시도 후 클립보드 폴백

@@ -803,3 +803,84 @@ try {
 - **구현일**: 2025-08-21
 - **수정 파일**: `apps/app/netlify/functions/quiz.js`
 - **테스트 대상**: 7월 퀴즈 첫 제출 시 🥊 이모지 표시 확인
+
+---
+
+## 🏆 school_champions 테이블 집계 로직 개선 (2025-08-21)
+
+### 📋 문제 상황
+- 기존 SQL 집계에서 반별 데이터가 누락되어 UI에서 반별 통계가 0으로 표시
+- `school_infos` 테이블의 `class_number` 필드를 활용하지 못함
+
+### 🛠️ 해결 방안
+
+#### 1. 완전 집계 SQL 작성
+**반별 집계 포함한 완전한 school_champions 데이터 생성:**
+```sql
+-- 기존 데이터 삭제
+DELETE FROM school_champions;
+
+-- 반별 집계 포함 완전 집계
+INSERT INTO school_champions (
+  school_code, grade, year, month, week_number, grade_total,
+  class_1, class_2, class_3, class_4, class_5, class_6, class_7, class_8, class_9, class_10,
+  class_11, class_12, class_13, class_14, class_15
+)
+SELECT 
+  ucr.school_code, ucr.grade, ucr.year, ucr.month,
+  week_num as week_number, COUNT(*) as grade_total,
+  COUNT(CASE WHEN si.class_number = 1 THEN 1 END) as class_1,
+  COUNT(CASE WHEN si.class_number = 2 THEN 1 END) as class_2,
+  -- ... (class_3 ~ class_15 동일 패턴)
+FROM user_champion_records ucr
+JOIN school_infos si ON ucr.user_id = si.user_id
+CROSS JOIN (VALUES (1), (2), (3), (4), (5)) AS weeks(week_num)
+WHERE (주차별 장원 조건)
+GROUP BY ucr.school_code, ucr.grade, ucr.year, ucr.month, week_num
+UNION ALL
+-- 월별 집계 (동일한 패턴으로 month_champion = true 조건)
+```
+
+#### 2. championCalculator.js 자동 집계 함수 개선
+**파일**: `apps/app/netlify/functions/utils/championCalculator.js`
+**함수**: `updateSchoolChampions()` - 증분 업데이트 방식으로 최적화
+
+**기존 문제**: 전체 학년 데이터를 매번 재조회하여 서버 부하 증가
+
+**개선된 로직**:
+```javascript
+// 기존 school_champions 레코드만 조회 (1개)
+const { data: existingData } = await supabase
+  .from('school_champions')
+  .select('*')
+  .eq('school_code', school_code)
+  .eq('grade', grade)
+  .eq('year', year)
+  .eq('month', month)
+  .eq('week_number', weekNumber)
+  .single();
+
+// 해당 반만 +1, 학년 총계도 +1
+if (existingData) {
+  updateData[`class_${class_number}`] = (existingData[`class_${class_number}`] || 0) + 1;
+  updateData.grade_total = (existingData.grade_total || 0) + 1;
+  // 다른 반들은 기존 값 유지
+} else {
+  // 새 데이터면 해당 반만 1, 나머지는 0으로 초기화
+}
+```
+
+### 🎯 성능 개선 효과
+- **기존**: 전체 학년 데이터 조회 → 서버 부하 증가
+- **개선**: 기존 1개 레코드만 조회 → 최소한의 리소스 사용
+- **증분 업데이트**: 해당 반과 학년 총계만 효율적으로 업데이트
+
+### 📊 집계 정확성 확보
+- **학년별 총계**: `grade_total` 필드에 정확한 장원 수 집계
+- **반별 집계**: `class_1` ~ `class_15` 필드에 각 반별 장원 수 집계
+- **주차별/월별**: 주차별 장원과 월장원 모두 정확히 구분하여 집계
+
+### 🔧 핵심 변경사항
+1. **SQL 집계**: `school_infos.class_number` 활용한 반별 집계 추가
+2. **자동 집계**: 퀴즈 정답 제출 시 증분 업데이트로 효율성 확보
+3. **데이터 정확성**: 학년 총계와 반별 집계 모두 정확히 계산
