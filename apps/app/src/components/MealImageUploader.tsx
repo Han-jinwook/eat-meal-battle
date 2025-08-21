@@ -1242,26 +1242,38 @@ export default function MealImageUploader({
                 </span>
               ) : (
                 <span className="flex items-center">
-                  <svg className="w-12 h-10 mr-1" viewBox="0 0 36 32">
-                    {/* 로봇 머리 */}
-                    <rect x="8" y="6" width="20" height="12" rx="3" fill="#06B6D4"/>
-                    {/* 로봇 눈 */}
-                    <circle cx="14" cy="11" r="1.5" fill="#000"/>
-                    <circle cx="22" cy="11" r="1.5" fill="#000"/>
-                    {/* 로봇 입 */}
-                    <rect x="16" y="14" width="4" height="1.5" rx="0.75" fill="#000"/>
+                  <svg className="w-12 h-10 mr-1" viewBox="0 0 260 220" role="img" aria-label="Upload bot">
+                    <defs>
+                      <linearGradient id="botBody" x1="0" x2="1" y1="0" y2="0">
+                        <stop offset="0%" stopColor="#12DED0"/>
+                        <stop offset="100%" stopColor="#0DE0D2"/>
+                      </linearGradient>
+                    </defs>
+
                     {/* 안테나 */}
-                    <line x1="18" y1="6" x2="18" y2="3" stroke="#06B6D4" strokeWidth="2"/>
-                    <circle cx="18" cy="3" r="1.5" fill="#10B981"/>
-                    {/* 귀 */}
-                    <rect x="5" y="9" width="3" height="6" rx="1.5" fill="#06B6D4"/>
-                    <rect x="28" y="9" width="3" height="6" rx="1.5" fill="#06B6D4"/>
-                    {/* 가슴 */}
-                    <rect x="10" y="18" width="16" height="12" rx="2" fill="#06B6D4"/>
-                    {/* 가슴 장식 */}
-                    <rect x="14" y="22" width="8" height="1.5" rx="0.75" fill="#000"/>
-                    <rect x="12" y="25" width="4" height="1.5" rx="0.75" fill="#000"/>
-                    <rect x="20" y="25" width="4" height="1.5" rx="0.75" fill="#000"/>
+                    <line x1="98" y1="42" x2="98" y2="64" stroke="#12DED0" strokeWidth="10" strokeLinecap="round"/>
+                    <circle cx="98" cy="32" r="10" fill="#12DED0"/>
+
+                    {/* 몸체(둥근 사각형) */}
+                    <rect x="18" y="64" width="180" height="120" rx="28" fill="url(#botBody)"/>
+
+                    {/* 오른쪽 이어(둥근 버튼) */}
+                    <circle cx="206" cy="124" r="15" fill="#12DED0"/>
+                    <circle cx="206" cy="124" r="7" fill="#0DE0D2"/>
+
+                    {/* 얼굴 패널 */}
+                    <rect x="44" y="86" width="128" height="76" rx="20" fill="#0B1A1F"/>
+
+                    {/* 눈 */}
+                    <circle cx="78" cy="118" r="7" fill="#A7FFF4"/>
+                    <circle cx="138" cy="118" r="7" fill="#A7FFF4"/>
+
+                    {/* 입(스마일) */}
+                    <path d="M90 132 Q108 148 126 132" fill="none" stroke="#A7FFF4" strokeWidth="7" strokeLinecap="round"/>
+
+                    {/* 하단 베이스/목 */}
+                    <rect x="76" y="170" width="64" height="12" rx="6" fill="#12DED0"/>
+                    <rect x="10" y="188" width="140" height="24" rx="12" fill="#0DE0D2"/>
                   </svg>
                   업로드 및 AI 검증
                 </span>
