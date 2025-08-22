@@ -1105,56 +1105,56 @@ export default function QuizClient() {
                                         duration: 2000,
                                       });
                                     }}
-                                    className="p-0 relative overflow-hidden opacity-60 cursor-not-allowed"
+                                    className="p-0 relative overflow-hidden hover:opacity-90 cursor-not-allowed"
                                   >
                                     <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="오답신고 완료">
                                       <defs>
-                                        <linearGradient id="reportDisabledGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                          <stop offset="0%" stopColor="#9CA3AF"/>
-                                          <stop offset="50%" stopColor="#6B7280"/>
-                                          <stop offset="100%" stopColor="#4B5563"/>
+                                        <linearGradient id="reportCompletedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                          <stop offset="0%" stopColor="#6A00FF"/>
+                                          <stop offset="50%" stopColor="#3F55FF"/>
+                                          <stop offset="100%" stopColor="#00D1FF"/>
                                         </linearGradient>
-                                        <filter id="reportDisabledShadow" x="-20%" y="-20%" width="140%" height="160%">
-                                          <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#0A1B2B" floodOpacity="0.1"/>
+                                        <filter id="reportCompletedShadow" x="-20%" y="-20%" width="140%" height="160%">
+                                          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0A1B2B" floodOpacity="0.18"/>
                                         </filter>
                                       </defs>
                                       
                                       {/* Button shape */}
-                                      <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportDisabledGrad)" filter="url(#reportDisabledShadow)"/>
+                                      <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportCompletedGrad)" filter="url(#reportCompletedShadow)"/>
                                       
-                                      {/* Robot icon - grayed out */}
+                                      {/* Robot icon */}
                                       <g id="robot" transform="translate(20,25) scale(0.25)">
                                         {/* Antenna */}
-                                        <circle cx="-10" cy="-58" r="8" fill="#9CA3AF"/>
-                                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#9CA3AF"/>
+                                        <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
                                         
                                         {/* Head outer */}
-                                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#9CA3AF"/>
+                                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
                                         
                                         {/* Side ears */}
-                                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#9CA3AF"/>
-                                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#9CA3AF"/>
+                                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
                                         
                                         {/* Face window */}
-                                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#374151"/>
+                                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
                                         
                                         {/* Eyes */}
-                                        <circle cx="-32" cy="4" r="7" fill="#6B7280"/>
-                                        <circle cx="8" cy="4" r="7" fill="#6B7280"/>
+                                        <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                                        <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
                                         
-                                        {/* Sad expression */}
-                                        <path d="M -36 28 Q -26 16 -16 28" fill="none" stroke="#6B7280" strokeWidth="4" strokeLinecap="round"/>
+                                        {/* Smile */}
+                                        <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
                                         
                                         {/* Neck */}
-                                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#6B7280"/>
+                                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
                                         
                                         {/* Base */}
-                                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#9CA3AF"/>
+                                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
                                       </g>
                                       
                                       {/* Text */}
-                                      <text x="100" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                                        fontWeight="600" fontSize="14" fill="#9CA3AF" textAnchor="middle">AI에게 오답신고</text>
+                                      <text x="45" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                        fontWeight="600" fontSize="12" fill="#FFFFFF">AI에게 오답신고 완료</text>
                                     </svg>
                                   </button>
                                 </div>

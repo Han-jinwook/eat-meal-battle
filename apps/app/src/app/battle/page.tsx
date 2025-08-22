@@ -1484,9 +1484,9 @@ export default function BattlePage() {
                 </g>
                 
                 {/* Text - centered */}
-                <text x="200" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                <text x="200" y="28" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
                   fontWeight="700" fontSize="16" fill="#FFFFFF" textAnchor="middle">AI 분석</text>
-                <text x="200" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                <text x="200" y="44" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
                   fontWeight="400" fontSize="12" fill="#FFFFFF" opacity="0.9" textAnchor="middle">
                   {viewMode === 'daily' 
                     ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
