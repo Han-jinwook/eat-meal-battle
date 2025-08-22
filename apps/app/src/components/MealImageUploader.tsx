@@ -1376,24 +1376,66 @@ export default function MealImageUploader({
           <div className="flex justify-end space-x-2">
             <button
                 onClick={handleAiImageGeneration}
-                className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 flex items-center transition-colors duration-200"
+                className="p-0 relative overflow-hidden hover:opacity-90"
                 title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : ''}
               >
                 {imageStatus === 'generating' ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <span className="flex items-center">
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
+                      <defs>
+                        <linearGradient id="aiGenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="aiGenShadow" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#aiGenGrad)" filter="url(#aiGenShadow)"/>
+                      
+                      {/* Loading spinner */}
+                      <g transform="translate(25,30)">
+                        <circle cx="0" cy="0" r="8" fill="none" stroke="#1EE6D6" strokeWidth="2" strokeLinecap="round">
+                          <animate attributeName="stroke-dasharray" values="0 50;25 25;0 50" dur="1.5s" repeatCount="indefinite"/>
+                          <animateTransform attributeName="transform" type="rotate" values="0;360" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">AI 이미지 생성 중...</text>
                     </svg>
-                    AI 이미지 생성 중...
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <span className="flex items-center">
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
+                      <defs>
+                        <linearGradient id="aiGenGradStatic" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="aiGenShadowStatic" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#aiGenGradStatic)" filter="url(#aiGenShadowStatic)"/>
+                      
+                      {/* Lightning icon */}
+                      <g transform="translate(25,30) scale(0.8)">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="#1EE6D6" stroke="none"/>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">AI 이미지 생성</text>
                     </svg>
-                    AI 이미지 생성
-                  </>
+                  </span>
                 )}
               </button>
           </div>
