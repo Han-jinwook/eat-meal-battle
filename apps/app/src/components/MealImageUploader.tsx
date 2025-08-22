@@ -1212,7 +1212,7 @@ export default function MealImageUploader({
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="400" height="60" viewBox="0 0 400 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1225,7 +1225,7 @@ export default function MealImageUploader({
                       </defs>
                       
                       {/* Button shape */}
-                      <rect x="3" y="3" rx="12" ry="12" width="394" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
                       
                       {/* Robot icon */}
                       <g id="robot" transform="translate(25,30) scale(0.3)">
