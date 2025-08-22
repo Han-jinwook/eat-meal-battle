@@ -1180,10 +1180,16 @@ export default function MealImageUploader({
               </button>
               
               <button
-                disabled={uploading || verifying || !preview || !isButtonReady || !canUploadPhoto}
                 onClick={() => {
                   if (!canUploadPhoto) {
                     setError('내 학교에서만 사진을 업로드할 수 있습니다.');
+                    return;
+                  }
+                  if (!preview) {
+                    toast('파일선택부터 하세요!');
+                    return;
+                  }
+                  if (uploading || verifying || !isButtonReady) {
                     return;
                   }
                   console.log('업로드 버튼 클릭, 상태:', {
@@ -1194,7 +1200,7 @@ export default function MealImageUploader({
                   });
                   handleUpload();
                 }}
-                className={`p-0 relative overflow-hidden ${uploading || verifying || !preview || !isButtonReady || !canUploadPhoto ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                className="p-0 relative overflow-hidden hover:opacity-90"
               >
                 {uploading ? (
                   <span className="flex items-center">
