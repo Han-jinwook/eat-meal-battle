@@ -860,15 +860,37 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
           .single();
           
         if (championRecord) {
-          // month_correct +1, day_N을 'O'로 변경
+          // 퀴즈 날짜로부터 주차 계산 (1-5주차)
+          const quizDate = new Date(quiz.meal_date);
+          const dayOfMonth = quizDate.getDate();
+          let weekOfMonth;
+          if (dayOfMonth <= 7) weekOfMonth = 1;
+          else if (dayOfMonth <= 14) weekOfMonth = 2;
+          else if (dayOfMonth <= 21) weekOfMonth = 3;
+          else if (dayOfMonth <= 28) weekOfMonth = 4;
+          else weekOfMonth = 5;
+          
+          const weekField = `week_${weekOfMonth}_correct`;
+          
+          // 현재 week_n_correct 값 조회
+          const { data: currentWeekData } = await supabaseAdmin
+            .from('quiz_champions')
+            .select(weekField)
+            .eq('id', championRecord.id)
+            .single();
+          
+          const currentWeekCount = currentWeekData ? (currentWeekData[weekField] || 0) : 0;
+          
+          // month_correct +1, day_N='O', week_n_correct +1
           await supabaseAdmin
             .from('quiz_champions')
             .update({
               month_correct: championRecord.month_correct + 1,
-              [dayField]: 'O'
+              [dayField]: 'O',
+              [weekField]: currentWeekCount + 1
             })
             .eq('id', championRecord.id);
-          console.log(`[quiz] 사용자 ${result.user_id} quiz_champions 업데이트 완료: month_correct +1, ${dayField}='O'`);
+          console.log(`[quiz] 사용자 ${result.user_id} quiz_champions 업데이트 완료: month_correct +1, ${dayField}='O', ${weekField} +1`);
           
           // 사용자 학교 정보 조회
           const { data: userSchool } = await supabaseAdmin
