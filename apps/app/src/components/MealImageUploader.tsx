@@ -1155,18 +1155,116 @@ export default function MealImageUploader({
               className="hidden"
               disabled={!canUploadImage}
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!canUploadImage || !canUploadPhoto}
-              className={`inline-block px-4 py-2 rounded-lg transition-colors ${
-                canUploadImage && canUploadPhoto
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
-            >
-              파일 선택
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!canUploadImage || !canUploadPhoto}
+                className={`inline-block px-4 py-2 rounded-lg transition-colors ${
+                  canUploadImage && canUploadPhoto
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
+              >
+                파일 선택
+              </button>
+              
+              <button
+                disabled={uploading || verifying || !preview || !isButtonReady || !canUploadPhoto}
+                onClick={() => {
+                  if (!canUploadPhoto) {
+                    setError('내 학교에서만 사진을 업로드할 수 있습니다.');
+                    return;
+                  }
+                  console.log('업로드 버튼 클릭, 상태:', {
+                    uploading,
+                    verifying,
+                    preview: !!preview,
+                    isDisabled: uploading || verifying || !preview
+                  });
+                  handleUpload();
+                }}
+                className={`p-0 relative overflow-hidden ${uploading || verifying || !preview || !isButtonReady || !canUploadPhoto ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+              >
+                {uploading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    AI 분석 중...
+                  </span>
+                ) : verifying ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    AI 분석 중...
+                  </span>
+                ) : !isButtonReady && preview ? (
+                  <span className="flex items-center">
+                    <svg className="animate-pulse -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    AI 분석 준비 중...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg className="mr-2" width="800" height="220" viewBox="0 0 800 220" role="img" aria-label="업로드 및 AI 검증 버튼">
+                      <defs>
+                        <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="12" y="12" rx="40" ry="40" width="776" height="196" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      
+                      {/* Robot icon */}
+                      <g id="robot" transform="translate(80,100) scale(1)">
+                        {/* Antenna */}
+                        <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                        
+                        {/* Head outer */}
+                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                        
+                        {/* Side ears */}
+                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                        
+                        {/* Face window */}
+                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                        
+                        {/* Eyes */}
+                        <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                        <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                        
+                        {/* Smile */}
+                        <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                        
+                        {/* Neck */}
+                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                        
+                        {/* Base */}
+                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="220" y="124.0" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="76" fill="#FFFFFF">업로드 및 AI 검증</text>
+                    </svg>
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {preview && (
@@ -1195,102 +1293,6 @@ export default function MealImageUploader({
           )}
 
           <div className="flex justify-end space-x-2">
-            <button
-              disabled={uploading || verifying || !preview || !isButtonReady || !canUploadPhoto}
-              onClick={() => {
-                if (!canUploadPhoto) {
-                  setError('내 학교에서만 사진을 업로드할 수 있습니다.');
-                  return;
-                }
-                console.log('업로드 버튼 클릭, 상태:', {
-                  uploading,
-                  verifying,
-                  preview: !!preview,
-                  isDisabled: uploading || verifying || !preview
-                });
-                handleUpload();
-              }}
-              className={`p-0 relative overflow-hidden ${uploading || verifying || !preview || !isButtonReady || !canUploadPhoto ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
-            >
-              {uploading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  AI 분석 중...
-                </span>
-              ) : verifying ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  AI 분석 중...
-                </span>
-              ) : !isButtonReady && preview ? (
-                <span className="flex items-center">
-                  <svg className="animate-pulse -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  AI 분석 준비 중...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <svg className="mr-2" width="1200" height="220" viewBox="0 0 1200 220" role="img" aria-label="업로드 및 AI 검증 버튼">
-                    <defs>
-                      <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#6A00FF"/>
-                        <stop offset="50%" stopColor="#3F55FF"/>
-                        <stop offset="100%" stopColor="#00D1FF"/>
-                      </linearGradient>
-                      <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%">
-                        <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
-                      </filter>
-                    </defs>
-                    
-                    {/* Button shape */}
-                    <rect x="12" y="12" rx="40" ry="40" width="1176" height="196" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
-                    
-                    {/* Robot icon */}
-                    <g id="robot" transform="translate(80,100) scale(1)">
-                      {/* Antenna */}
-                      <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
-                      <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
-                      
-                      {/* Head outer */}
-                      <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
-                      
-                      {/* Side ears */}
-                      <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
-                      <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
-                      
-                      {/* Face window */}
-                      <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
-                      
-                      {/* Eyes */}
-                      <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
-                      <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
-                      
-                      {/* Smile */}
-                      <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
-                      
-                      {/* Neck */}
-                      <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
-                      
-                      {/* Base */}
-                      <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
-                    </g>
-                    
-                    {/* Text */}
-                    <text x="300" y="124.0" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                      fontWeight="700" fontSize="76" fill="#FFFFFF">업로드 및 AI 검증</text>
-                  </svg>
-                </span>
-              )}
-            </button>
-            
             <button
                 onClick={handleAiImageGeneration}
                 disabled={!showAiGenButton || imageStatus === 'generating' || !canUseAI}
