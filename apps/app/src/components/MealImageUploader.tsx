@@ -7,6 +7,7 @@ import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import useUserSchool from '@/hooks/useUserSchool';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
+import { toast } from 'react-hot-toast';
 
 interface MealImageUploaderProps {
   schoolCode: string;
@@ -398,6 +399,15 @@ export default function MealImageUploader({
   const handleAiImageGeneration = async () => {
     try {
       console.log('AI 이미지 생성 버튼 클릭!');
+      
+      // 파일 선택 여부 확인 - 토스트 메시지로 안내
+      if (!fileInputRef.current?.files?.[0]) {
+        toast.error('파일선택부터 하세요!', {
+          duration: 2000,
+          position: 'top-center',
+        });
+        return;
+      }
       
       // 권한 확인
       if (!canUseAI) {
@@ -1360,8 +1370,7 @@ export default function MealImageUploader({
           <div className="flex justify-end space-x-2">
             <button
                 onClick={handleAiImageGeneration}
-                disabled={!showAiGenButton || imageStatus === 'generating' || !canUseAI}
-                className={`px-4 py-2 rounded-md text-white ${!showAiGenButton || imageStatus === 'generating' || !canUseAI ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} flex items-center`}
+                className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 flex items-center transition-colors duration-200"
                 title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : ''}
               >
                 {imageStatus === 'generating' ? (
