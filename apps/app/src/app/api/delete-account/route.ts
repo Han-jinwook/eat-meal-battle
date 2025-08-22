@@ -111,32 +111,27 @@ export async function POST(request: NextRequest) {
     // 3단계: 하이브리드 탈퇴 처리 - 통계 데이터 익명화 보존
     console.log('3단계: 하이브리드 탈퇴 처리 시작...')
     
-    // 익명 사용자 레코드 생성 (없으면 생성)
+    // 기존 익명 사용자 레코드 사용 (이미 생성되어 있음)
     const anonymousUserId = '00000000-0000-0000-0000-000000000000'
-    const { data: existingAnonymous } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', anonymousUserId)
-      .single()
+    console.log('기존 익명 사용자 레코드 사용:', anonymousUserId)
     
-    if (!existingAnonymous) {
-      await supabaseAdmin.from('users').insert({
-        id: anonymousUserId,
-        nickname: '탈퇴한 사용자',
-        email: 'deleted@anonymous.com',
-        profile_image: 'https://via.placeholder.com/100x100/cccccc/666666?text=DEL',
-        provider: 'email',
-        provider_id: 'anonymous_user',
-        user_type: 'student', // 'anonymous' 대신 허용되는 값 사용
-        is_student: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      console.log('익명 사용자 레코드 생성 완료')
-    }
+    // === 개인정보 완전 삭제 ===
+    console.log('개인정보 완전 삭제 시작...')
     
-    // === 통계 데이터 익명화 처리 (DEV_NOTES_설정.txt 3단계) ===
+    // 개인정보 관련 데이터 완전 삭제
+    await supabaseAdmin.from('comment_likes').delete().eq('user_id', user_id)
+    console.log('댓글 좋아요 완전 삭제 완료')
     
+    await supabaseAdmin.from('notification_recipients').delete().eq('recipient_id', user_id)
+    console.log('알림 수신자 완전 삭제 완료')
+    
+    await supabaseAdmin.from('interest_schools').delete().eq('user_id', user_id)
+    console.log('관심학교 완전 삭제 완료')
+    
+    await supabaseAdmin.from('school_infos').delete().eq('user_id', user_id)
+    console.log('학교정보 완전 삭제 완료')
+    
+    // === 통계 데이터 익명화 처리 ===
     console.log('통계 데이터 익명화 시작...')
     
     // 댓글/답글 익명화 ("탈퇴한 사용자"로 표시)
@@ -156,20 +151,16 @@ export async function POST(request: NextRequest) {
       .eq('uploaded_by', user_id)
     console.log('급식 이미지 익명화 완료')
     
-    // === 통계 무결성 보존 데이터 (DEV_NOTES_설정.txt 4단계) ===
-    
+    // === 통계 무결성 보존 데이터 (익명화하지 않고 보존) ===
     console.log('통계 무결성 보존 데이터 유지...')
     
-    // 별점 데이터 보존 (통계 왜곡 방지)
-    // meal_ratings, menu_item_ratings는 삭제하지 않음
+    // 별점 데이터 보존 (통계 왜곡 방지) - 익명화하지 않음
     console.log('별점 데이터 보존 (통계 무결성 유지)')
     
-    // 퀴즈 결과 보존 (서비스 통계)
-    // quiz_results는 삭제하지 않음
+    // 퀴즈 결과 보존 (서비스 통계) - 익명화하지 않음  
     console.log('퀴즈 데이터 보존 (서비스 통계)')
     
-    // 알림 보존 (시스템 로그)
-    // notifications는 삭제하지 않음
+    // 알림 시스템 데이터 보존 - 익명화하지 않음
     console.log('알림 데이터 보존 (시스템 로그)')
     
     // 마지막으로 사용자 기본 정보 삭제

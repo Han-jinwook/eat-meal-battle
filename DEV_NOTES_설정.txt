@@ -194,11 +194,20 @@ if (deleteAuthError) {
 **해결 방안:**
 - ProfileModal.tsx: iOS 90초, 기타 60초로 타임아웃 연장
 - profile/page.tsx: iOS 90초, 기타 60초로 타임아웃 연장
-- 회원 탈퇴 API 자체는 이미 iOS 특화 재시도 로직 포함
+- 회원 탈퇴 API를 익명화에서 완전 삭제 방식으로 변경하여 외래키 제약 해결
 
 **수정 파일:**
 - `apps/app/src/components/ProfileModal.tsx` (라인 114)
 - `apps/app/src/app/profile/page.tsx` (라인 163)
+- `apps/app/src/app/api/delete-account/route.ts` (라인 111-175)
+
+**근본 원인 해결:**
+- Auth 삭제 실패는 외래키 제약 조건 때문이었음
+- 기존 익명화 방식을 개선하여 통계 데이터 보존과 Auth 삭제 성공을 동시에 달성
+- 개인정보: 완전 삭제 (comment_likes, notification_recipients, interest_schools, school_infos)
+- 통계 데이터: 익명화 보존 (comments, meal_images는 익명 사용자로 연결)
+- 서비스 통계: 보존 (meal_ratings, quiz_results, notifications는 그대로 유지)
+- 익명 사용자 레코드 생성 로직 개선으로 외래키 참조 문제 해결
 
 ### 문제 해결 기록 (2025-08-13)
 
