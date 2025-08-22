@@ -1155,11 +1155,11 @@ export default function MealImageUploader({
               className="hidden"
               disabled={!canUploadImage}
             />
-            <div className="flex space-x-2">
+            <div className="flex space-x-3 items-center">
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!canUploadImage || !canUploadPhoto}
-                className={`inline-block px-4 py-2 rounded-lg transition-colors ${
+                className={`px-6 py-3 rounded-lg text-sm font-medium transition-colors ${
                   canUploadImage && canUploadPhoto
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1212,7 +1212,7 @@ export default function MealImageUploader({
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="800" height="220" viewBox="0 0 800 220" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="mr-2" width="400" height="60" viewBox="0 0 400 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1225,10 +1225,10 @@ export default function MealImageUploader({
                       </defs>
                       
                       {/* Button shape */}
-                      <rect x="12" y="12" rx="40" ry="40" width="776" height="196" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      <rect x="3" y="3" rx="12" ry="12" width="394" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
                       
                       {/* Robot icon */}
-                      <g id="robot" transform="translate(80,100) scale(1)">
+                      <g id="robot" transform="translate(25,30) scale(0.3)">
                         {/* Antenna */}
                         <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
                         <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
@@ -1258,8 +1258,8 @@ export default function MealImageUploader({
                       </g>
                       
                       {/* Text */}
-                      <text x="220" y="124.0" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                        fontWeight="700" fontSize="76" fill="#FFFFFF">업로드 및 AI 검증</text>
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">업로드 및 AI 검증</text>
                     </svg>
                   </span>
                 )}
