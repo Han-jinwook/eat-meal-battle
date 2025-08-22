@@ -1154,7 +1154,7 @@ export default function QuizClient() {
                                       
                                       {/* Text */}
                                       <text x="45" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                                        fontWeight="600" fontSize="12" fill="#FFFFFF">AI에게 오답신고 완료</text>
+                                        fontWeight="600" fontSize="12" fill="#FFFFFF" textAnchor="start">AI에게 오답신고 완료</text>
                                     </svg>
                                   </button>
                                 </div>
