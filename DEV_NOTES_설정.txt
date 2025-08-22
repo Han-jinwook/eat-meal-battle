@@ -317,7 +317,7 @@ DELETE FROM users WHERE id = '{USER_ID}';
 
 ---
 
-## 🔄 TODO
+## TODO
 
 ### 알림 시스템
 - [ ] 리얼타임 알림 테스트 및 디버깅
