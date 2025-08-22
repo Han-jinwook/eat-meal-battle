@@ -98,11 +98,11 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           </svg>
           <div className="text-center">
             <div className="font-bold text-sm">
-              {isSharing ? '공유 중...' : '급식평가 함께하기'}
+              {isSharing ? '공유 중...' : (isBattlePage ? '급식배틀 공유하기' : '급식평가 함께하기')}
             </div>
             <div className="text-xs opacity-90">
               {isBattlePage 
-                ? (activeTab === 'menu' ? '메뉴배틀 결과' : '급식배틀 결과')
+                ? '우리학교 메뉴배틀 결과 & 학교간 배틀 결과'
                 : '친구 선후배와 힘모아 별점투표'
               }
             </div>
