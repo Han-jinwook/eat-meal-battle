@@ -1158,7 +1158,7 @@ export default function MealImageUploader({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={!canUploadImage || !canUploadPhoto}
-              className={`w-full px-4 py-2 rounded-lg transition-colors ${
+              className={`inline-block px-4 py-2 rounded-lg transition-colors ${
                 canUploadImage && canUploadPhoto
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
