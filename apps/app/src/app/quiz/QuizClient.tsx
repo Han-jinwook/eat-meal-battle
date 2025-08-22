@@ -1096,16 +1096,17 @@ export default function QuizClient() {
                                       )}
                                     </div>
                                   </div>
-                                  <button
-                                    onClick={async () => {
-                                      // 토스트 메시지 표시 (react-hot-toast 사용)
-                                      const toast = (await import('react-hot-toast')).default;
-                                      toast('이미 오답신고 되었습니다', {
-                                        icon: '⚠️',
-                                        duration: 2000,
-                                      });
-                                    }}
-                                    className="p-0 relative overflow-hidden hover:opacity-90 cursor-not-allowed"
+                                  <div className="flex justify-start">
+                                    <button
+                                      onClick={async () => {
+                                        // 토스트 메시지 표시 (react-hot-toast 사용)
+                                        const toast = (await import('react-hot-toast')).default;
+                                        toast('이미 오답신고 되었습니다', {
+                                          icon: '⚠️',
+                                          duration: 2000,
+                                        });
+                                      }}
+                                      className="p-0 relative overflow-hidden hover:opacity-90 cursor-not-allowed"
                                   >
                                     <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="오답신고 완료">
                                       <defs>
@@ -1153,10 +1154,11 @@ export default function QuizClient() {
                                       </g>
                                       
                                       {/* Text */}
-                                      <text x="45" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                                        fontWeight="600" fontSize="12" fill="#FFFFFF" textAnchor="start">AI에게 오답신고 완료</text>
+                                      <text x="100" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                        fontWeight="600" fontSize="12" fill="#FFFFFF" textAnchor="middle">AI에게 오답신고 완료</text>
                                     </svg>
-                                  </button>
+                                    </button>
+                                  </div>
                                 </div>
                               ) : quiz.report_status === 'pending' ? (
                                 // 검증 중: 버튼 비활성화 + 대기 메시지
