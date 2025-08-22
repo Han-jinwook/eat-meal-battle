@@ -1426,9 +1426,34 @@ export default function MealImageUploader({
                       {/* Button shape */}
                       <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#aiGenGradStatic)" filter="url(#aiGenShadowStatic)"/>
                       
-                      {/* Lightning icon */}
-                      <g transform="translate(25,30) scale(0.8)">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" fill="#1EE6D6" stroke="none"/>
+                      {/* Robot icon */}
+                      <g id="robot" transform="translate(25,30) scale(0.3)">
+                        {/* Antenna */}
+                        <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                        
+                        {/* Head outer */}
+                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                        
+                        {/* Side ears */}
+                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                        
+                        {/* Face window */}
+                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                        
+                        {/* Eyes */}
+                        <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                        <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                        
+                        {/* Smile */}
+                        <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                        
+                        {/* Neck */}
+                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                        
+                        {/* Base */}
+                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
                       </g>
                       
                       {/* Text */}

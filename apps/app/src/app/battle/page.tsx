@@ -1436,22 +1436,64 @@ export default function BattlePage() {
             {/* AI 분석 버튼 */}
             <button
               onClick={() => setIsAIAnalysisOpen(true)}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 shadow-lg min-h-[60px]"
+              className="flex-1 p-0 relative overflow-hidden hover:opacity-90"
             >
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <div className="text-center">
-                  <div className="font-bold text-sm">AI 분석</div>
-                  <div className="text-xs opacity-90">
-                    {viewMode === 'daily' 
-                      ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
-                      : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
-                    } 리포트
-                  </div>
-                </div>
-              </div>
+              <svg width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 분석 버튼">
+                <defs>
+                  <linearGradient id="battleAiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#6A00FF"/>
+                    <stop offset="50%" stopColor="#3F55FF"/>
+                    <stop offset="100%" stopColor="#00D1FF"/>
+                  </linearGradient>
+                  <filter id="battleAiShadow" x="-20%" y="-20%" width="140%" height="160%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                  </filter>
+                </defs>
+                
+                {/* Button shape */}
+                <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#battleAiGrad)" filter="url(#battleAiShadow)"/>
+                
+                {/* Robot icon */}
+                <g id="robot" transform="translate(25,30) scale(0.3)">
+                  {/* Antenna */}
+                  <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                  <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                  
+                  {/* Head outer */}
+                  <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                  
+                  {/* Side ears */}
+                  <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                  <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                  
+                  {/* Face window */}
+                  <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                  
+                  {/* Eyes */}
+                  <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                  <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                  
+                  {/* Smile */}
+                  <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                  
+                  {/* Neck */}
+                  <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                  
+                  {/* Base */}
+                  <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                </g>
+                
+                {/* Text */}
+                <text x="60" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="700" fontSize="16" fill="#FFFFFF">AI 분석</text>
+                <text x="60" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="400" fontSize="12" fill="#FFFFFF" opacity="0.9">
+                  {viewMode === 'daily' 
+                    ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
+                    : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
+                  } 리포트
+                </text>
+              </svg>
             </button>
             
             {/* 공유 버튼 */}
