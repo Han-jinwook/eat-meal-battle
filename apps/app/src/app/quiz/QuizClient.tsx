@@ -921,9 +921,9 @@ export default function QuizClient() {
                     </g>
                     
                     {/* Text */}
-                    <text x="140" y="24" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                    <text x="140" y="22" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
                       fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">학년별 맞춤</text>
-                    <text x="140" y="40" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                    <text x="140" y="42" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
                       fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">AI퀴즈 생성하기</text>
                   </svg>
                 )}
@@ -1097,11 +1097,65 @@ export default function QuizClient() {
                                     </div>
                                   </div>
                                   <button
-                                    disabled
-                                    className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+                                    onClick={async () => {
+                                      // 토스트 메시지 표시 (react-hot-toast 사용)
+                                      const toast = (await import('react-hot-toast')).default;
+                                      toast('이미 오답신고 되었습니다', {
+                                        icon: '⚠️',
+                                        duration: 2000,
+                                      });
+                                    }}
+                                    className="p-0 relative overflow-hidden opacity-60 cursor-not-allowed"
                                   >
-                                    <span>🚨</span>
-                                    <span>오답신고</span>
+                                    <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="오답신고 완료">
+                                      <defs>
+                                        <linearGradient id="reportDisabledGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                          <stop offset="0%" stopColor="#9CA3AF"/>
+                                          <stop offset="50%" stopColor="#6B7280"/>
+                                          <stop offset="100%" stopColor="#4B5563"/>
+                                        </linearGradient>
+                                        <filter id="reportDisabledShadow" x="-20%" y="-20%" width="140%" height="160%">
+                                          <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#0A1B2B" floodOpacity="0.1"/>
+                                        </filter>
+                                      </defs>
+                                      
+                                      {/* Button shape */}
+                                      <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportDisabledGrad)" filter="url(#reportDisabledShadow)"/>
+                                      
+                                      {/* Robot icon - grayed out */}
+                                      <g id="robot" transform="translate(20,25) scale(0.25)">
+                                        {/* Antenna */}
+                                        <circle cx="-10" cy="-58" r="8" fill="#9CA3AF"/>
+                                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#9CA3AF"/>
+                                        
+                                        {/* Head outer */}
+                                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#9CA3AF"/>
+                                        
+                                        {/* Side ears */}
+                                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#9CA3AF"/>
+                                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#9CA3AF"/>
+                                        
+                                        {/* Face window */}
+                                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#374151"/>
+                                        
+                                        {/* Eyes */}
+                                        <circle cx="-32" cy="4" r="7" fill="#6B7280"/>
+                                        <circle cx="8" cy="4" r="7" fill="#6B7280"/>
+                                        
+                                        {/* Sad expression */}
+                                        <path d="M -36 28 Q -26 16 -16 28" fill="none" stroke="#6B7280" strokeWidth="4" strokeLinecap="round"/>
+                                        
+                                        {/* Neck */}
+                                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#6B7280"/>
+                                        
+                                        {/* Base */}
+                                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#9CA3AF"/>
+                                      </g>
+                                      
+                                      {/* Text */}
+                                      <text x="100" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                        fontWeight="600" fontSize="14" fill="#9CA3AF" textAnchor="middle">AI에게 오답신고</text>
+                                    </svg>
                                   </button>
                                 </div>
                               ) : quiz.report_status === 'pending' ? (
@@ -1298,10 +1352,10 @@ export default function QuizClient() {
                       </g>
                       
                       {/* Text */}
-                      <text x="60" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                        fontWeight="700" fontSize="14" fill="#FFFFFF">학년별 맞춤</text>
-                      <text x="60" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                        fontWeight="700" fontSize="14" fill="#FFFFFF">AI퀴즈 생성하기</text>
+                      <text x="140" y="22" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">학년별 맞춤</text>
+                      <text x="140" y="42" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">AI퀴즈 생성하기</text>
                     </svg>
                   </button>
                 </>
