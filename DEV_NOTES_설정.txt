@@ -183,6 +183,23 @@ if (deleteAuthError) {
 }
 ```
 
+### 문제 해결 기록 (2025-08-22)
+
+#### iPhone 회원 탈퇴 타임아웃 문제 해결
+**문제:**
+- iPhone에서 회원 탈퇴 시 "요청 시간이 초과되었습니다" 오류 발생
+- ProfileModal.tsx: 45초, profile/page.tsx: 30초 타임아웃으로 설정되어 있었음
+- 회원 탈퇴 API는 복잡한 데이터 정리 과정으로 인해 더 긴 시간 소요
+
+**해결 방안:**
+- ProfileModal.tsx: iOS 90초, 기타 60초로 타임아웃 연장
+- profile/page.tsx: iOS 90초, 기타 60초로 타임아웃 연장
+- 회원 탈퇴 API 자체는 이미 iOS 특화 재시도 로직 포함
+
+**수정 파일:**
+- `apps/app/src/components/ProfileModal.tsx` (라인 114)
+- `apps/app/src/app/profile/page.tsx` (라인 163)
+
 ### 문제 해결 기록 (2025-08-13)
 
 #### 발견된 문제점들

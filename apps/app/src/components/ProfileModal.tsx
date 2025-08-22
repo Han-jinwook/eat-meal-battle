@@ -111,7 +111,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
       // iOS Safari에서 더 긴 타임아웃 설정 (iOS는 네트워크 요청이 더 느림)
       const controller = new AbortController();
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const timeoutDuration = isIOS ? 45000 : 30000; // iOS: 45초, 기타: 30초
+      const timeoutDuration = isIOS ? 90000 : 60000; // iOS: 90초, 기타: 60초
       const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
       
       const response = await fetch('/api/delete-account', {

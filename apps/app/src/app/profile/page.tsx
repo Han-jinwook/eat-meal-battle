@@ -160,7 +160,7 @@ export default function Profile() {
       console.log('회원 탈퇴 API 호출')
       
       // iOS에서 더 긴 타임아웃 설정
-      const timeoutMs = isIOS ? 30000 : 15000; // iOS: 30초, 기타: 15초
+      const timeoutMs = isIOS ? 90000 : 60000; // iOS: 90초, 기타: 60초
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
