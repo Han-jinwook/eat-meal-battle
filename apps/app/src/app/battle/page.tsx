@@ -1438,7 +1438,7 @@ export default function BattlePage() {
               onClick={() => setIsAIAnalysisOpen(true)}
               className="flex-1 p-0 relative overflow-hidden hover:opacity-90"
             >
-              <svg width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 분석 버튼">
+              <svg width="100%" height="60" viewBox="0 0 400 60" role="img" aria-label="AI 분석 버튼">
                 <defs>
                   <linearGradient id="battleAiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#6A00FF"/>
@@ -1451,10 +1451,10 @@ export default function BattlePage() {
                 </defs>
                 
                 {/* Button shape */}
-                <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#battleAiGrad)" filter="url(#battleAiShadow)"/>
+                <rect x="3" y="3" rx="12" ry="12" width="394" height="54" fill="url(#battleAiGrad)" filter="url(#battleAiShadow)"/>
                 
                 {/* Robot icon */}
-                <g id="robot" transform="translate(25,30) scale(0.3)">
+                <g id="robot" transform="translate(35,30) scale(0.3)">
                   {/* Antenna */}
                   <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
                   <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
@@ -1483,11 +1483,11 @@ export default function BattlePage() {
                   <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
                 </g>
                 
-                {/* Text */}
-                <text x="60" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                  fontWeight="700" fontSize="16" fill="#FFFFFF">AI 분석</text>
-                <text x="60" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                  fontWeight="400" fontSize="12" fill="#FFFFFF" opacity="0.9">
+                {/* Text - centered */}
+                <text x="200" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="700" fontSize="16" fill="#FFFFFF" textAnchor="middle">AI 분석</text>
+                <text x="200" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="400" fontSize="12" fill="#FFFFFF" opacity="0.9" textAnchor="middle">
                   {viewMode === 'daily' 
                     ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
                     : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
