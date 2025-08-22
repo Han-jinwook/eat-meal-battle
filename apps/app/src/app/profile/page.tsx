@@ -358,19 +358,6 @@ export default function Profile() {
               </div>
             </div>
             
-            {/* 친구에게 공유하기 버튼 */}
-            <div className="px-4 mb-3">
-              <button
-                onClick={handleShareApp}
-                disabled={isSharing}
-                className={`w-full px-4 py-4 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium shadow-md ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                </svg>
-                {isSharing ? '공유 중...' : '친구에게 공유하기'}
-              </button>
-            </div>
             
             <div className="text-sm text-gray-500 mb-3">
               {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
@@ -458,6 +445,20 @@ export default function Profile() {
             className="rounded-md bg-red-600 px-4 py-2 text-white text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
             {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
+          </button>
+        </div>
+
+        {/* 친구에게 공유하기 버튼 */}
+        <div className="px-4 mb-3 mt-8">
+          <button
+            onClick={handleShareApp}
+            disabled={isSharing}
+            className={`w-full px-4 py-4 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium shadow-md ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+            {isSharing ? '공유 중...' : '친구에게 공유하기'}
           </button>
         </div>
         {deletingAccount && (
