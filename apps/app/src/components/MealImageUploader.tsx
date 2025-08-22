@@ -400,15 +400,6 @@ export default function MealImageUploader({
     try {
       console.log('AI 이미지 생성 버튼 클릭!');
       
-      // 파일 선택 여부 확인 - 토스트 메시지로 안내
-      if (!fileInputRef.current?.files?.[0]) {
-        toast.error('파일선택부터 하세요!', {
-          duration: 2000,
-          position: 'top-center',
-        });
-        return;
-      }
-      
       // 권한 확인
       if (!canUseAI) {
         setError('내 학교에서만 AI 기능을 사용할 수 있습니다.');
