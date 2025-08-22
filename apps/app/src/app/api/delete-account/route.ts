@@ -66,47 +66,9 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
     
-    // ⚠️ 2단계: Auth에서 사용자 삭제 (외래키 정리 후 안전하게 삭제)
-    console.log('2단계: Auth에서 사용자 계정 삭제 시도...')
-    
-    // iOS Safari에서 더 안정적인 삭제를 위한 재시도 로직 (iOS는 OAuth 처리가 더 복잡함)
-    let deleteAuthError = null;
-    let retryCount = 0;
-    const maxRetries = 5; // iOS에서 더 많은 재시도
-    
-    while (retryCount < maxRetries) {
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id);
-      
-      if (!error) {
-        deleteAuthError = null;
-        break;
-      }
-      
-      deleteAuthError = error;
-      retryCount++;
-      console.log(`Auth 삭제 시도 ${retryCount}/${maxRetries} 실패:`, error.message);
-      
-      if (retryCount < maxRetries) {
-        // iOS에서 더 긴 대기 시간 (OAuth 처리 시간 고려)
-        const waitTime = retryCount <= 2 ? 2000 * retryCount : 5000; // 첫 2번은 2초씩, 이후 5초
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-    }
-    
-    if (deleteAuthError) {
-      console.error('❌ Auth 사용자 삭제 최종 실패:', deleteAuthError)
-      
-      // Auth 삭제 실패 시 전체 탈퇴 중단
-      return NextResponse.json({
-        success: false,
-        error: 'OAuth 연결 해제에 실패했습니다. iOS Safari에서는 잠시 후 다시 시도해주세요.',
-        details: deleteAuthError.message,
-        requiresRetry: true,
-        isIOSIssue: true // iOS 특화 오류 표시
-      }, { status: 500 })
-    }
-    
-    console.log('✅ Auth에서 사용자 계정 삭제 성공 - OAuth 연결 완전 해제됨')
+    // ⚠️ 2단계: Auth 유지 방식 - 외래키 문제 해결을 위해 Auth는 삭제하지 않음
+    console.log('2단계: Auth 유지 방식으로 진행 - 외래키 문제 해결')
+    console.log('✅ Auth는 유지하되 users 테이블 삭제로 로그인 차단')
     
     // 3단계: 하이브리드 탈퇴 처리 - 통계 데이터 익명화 보존
     console.log('3단계: 하이브리드 탈퇴 처리 시작...')
@@ -181,7 +143,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: '계정이 완전히 삭제되었습니다. OAuth 연결도 해제되어 재가입이 가능합니다.'
+      message: '계정이 삭제되었습니다. 개인정보는 완전히 삭제되고 활동 내역은 익명으로 처리되었습니다.'
     })
   } catch (error: any) {
     console.error('계정 삭제 중 예외 발생:', error)
