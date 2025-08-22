@@ -1188,27 +1188,92 @@ export default function MealImageUploader({
               >
                 {uploading ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                      <defs>
+                        <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      
+                      {/* Loading spinner */}
+                      <g transform="translate(25,30)">
+                        <circle cx="0" cy="0" r="8" fill="none" stroke="#1EE6D6" strokeWidth="2" strokeLinecap="round">
+                          <animate attributeName="stroke-dasharray" values="0 50;25 25;0 50" dur="1.5s" repeatCount="indefinite"/>
+                          <animateTransform attributeName="transform" type="rotate" values="0;360" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">AI 분석 중...</text>
                     </svg>
-                    AI 분석 중...
                   </span>
                 ) : verifying ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                      <defs>
+                        <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      
+                      {/* Loading spinner */}
+                      <g transform="translate(25,30)">
+                        <circle cx="0" cy="0" r="8" fill="none" stroke="#1EE6D6" strokeWidth="2" strokeLinecap="round">
+                          <animate attributeName="stroke-dasharray" values="0 50;25 25;0 50" dur="1.5s" repeatCount="indefinite"/>
+                          <animateTransform attributeName="transform" type="rotate" values="0;360" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">AI 분석 중...</text>
                     </svg>
-                    AI 분석 중...
                   </span>
                 ) : !isButtonReady && preview ? (
                   <span className="flex items-center">
-                    <svg className="animate-pulse -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                      <defs>
+                        <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#6A00FF"/>
+                          <stop offset="50%" stopColor="#3F55FF"/>
+                          <stop offset="100%" stopColor="#00D1FF"/>
+                        </linearGradient>
+                        <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%">
+                          <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                        </filter>
+                      </defs>
+                      
+                      {/* Button shape */}
+                      <rect x="3" y="3" rx="12" ry="12" width="274" height="54" fill="url(#cyberGrad)" filter="url(#softShadow)"/>
+                      
+                      {/* Pulse animation */}
+                      <g transform="translate(25,30)">
+                        <circle cx="0" cy="0" r="6" fill="#1EE6D6">
+                          <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                      </g>
+                      
+                      {/* Text */}
+                      <text x="60" y="38" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                        fontWeight="700" fontSize="20" fill="#FFFFFF">AI 분석 준비 중...</text>
                     </svg>
-                    AI 분석 준비 중...
                   </span>
                 ) : (
                   <span className="flex items-center">
