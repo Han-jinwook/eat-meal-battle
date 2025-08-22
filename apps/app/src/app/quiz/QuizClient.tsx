@@ -921,10 +921,10 @@ export default function QuizClient() {
                     </g>
                     
                     {/* Text */}
-                    <text x="60" y="32" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                      fontWeight="700" fontSize="14" fill="#FFFFFF">학년별 맞춤</text>
-                    <text x="60" y="46" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
-                      fontWeight="700" fontSize="14" fill="#FFFFFF">AI퀴즈 생성하기</text>
+                    <text x="140" y="24" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                      fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">학년별 맞춤</text>
+                    <text x="140" y="40" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                      fontWeight="700" fontSize="12" fill="#FFFFFF" textAnchor="middle">AI퀴즈 생성하기</text>
                   </svg>
                 )}
               </button>
@@ -1126,14 +1126,87 @@ export default function QuizClient() {
                                 <button
                                   onClick={handleReportQuiz}
                                   disabled={reportingQuiz || isViewingMode}
-                                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200 ${
-                                    reportingQuiz || isViewingMode
-                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                      : 'bg-orange-100 hover:bg-orange-200 text-orange-700'
-                                  }`}
+                                  className="p-0 relative overflow-hidden hover:opacity-90"
                                 >
-                                  <span>{reportingQuiz ? '⏳' : '🚨'}</span>
-                                  <span>{reportingQuiz ? '신고 처리중...' : '오답신고'}</span>
+                                  {reportingQuiz ? (
+                                    <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="오답신고 처리중">
+                                      <defs>
+                                        <linearGradient id="reportProcessingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                          <stop offset="0%" stopColor="#6A00FF"/>
+                                          <stop offset="50%" stopColor="#3F55FF"/>
+                                          <stop offset="100%" stopColor="#00D1FF"/>
+                                        </linearGradient>
+                                        <filter id="reportProcessingShadow" x="-20%" y="-20%" width="140%" height="160%">
+                                          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                                        </filter>
+                                      </defs>
+                                      
+                                      {/* Button shape */}
+                                      <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportProcessingGrad)" filter="url(#reportProcessingShadow)"/>
+                                      
+                                      {/* Loading spinner */}
+                                      <g transform="translate(20,25)">
+                                        <circle cx="0" cy="0" r="6" fill="none" stroke="#1EE6D6" strokeWidth="2" strokeLinecap="round">
+                                          <animate attributeName="stroke-dasharray" values="0 40;20 20;0 40" dur="1.5s" repeatCount="indefinite"/>
+                                          <animateTransform attributeName="transform" type="rotate" values="0;360" dur="1.5s" repeatCount="indefinite"/>
+                                        </circle>
+                                      </g>
+                                      
+                                      {/* Text */}
+                                      <text x="40" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                        fontWeight="600" fontSize="14" fill="#FFFFFF">신고 처리중...</text>
+                                    </svg>
+                                  ) : (
+                                    <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="AI에게 오답신고">
+                                      <defs>
+                                        <linearGradient id="reportGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                          <stop offset="0%" stopColor="#6A00FF"/>
+                                          <stop offset="50%" stopColor="#3F55FF"/>
+                                          <stop offset="100%" stopColor="#00D1FF"/>
+                                        </linearGradient>
+                                        <filter id="reportShadow" x="-20%" y="-20%" width="140%" height="160%">
+                                          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                                        </filter>
+                                      </defs>
+                                      
+                                      {/* Button shape */}
+                                      <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportGrad)" filter="url(#reportShadow)"/>
+                                      
+                                      {/* Robot icon */}
+                                      <g id="robot" transform="translate(20,25) scale(0.25)">
+                                        {/* Antenna */}
+                                        <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                                        <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                                        
+                                        {/* Head outer */}
+                                        <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                                        
+                                        {/* Side ears */}
+                                        <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                                        <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                                        
+                                        {/* Face window */}
+                                        <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                                        
+                                        {/* Eyes */}
+                                        <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                                        <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                                        
+                                        {/* Smile */}
+                                        <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                                        
+                                        {/* Neck */}
+                                        <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                                        
+                                        {/* Base */}
+                                        <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                                      </g>
+                                      
+                                      {/* Text */}
+                                      <text x="100" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                        fontWeight="600" fontSize="14" fill="#FFFFFF" textAnchor="middle">AI에게 오답신고</text>
+                                    </svg>
+                                  )}
                                 </button>
                               )}
                             </div>
