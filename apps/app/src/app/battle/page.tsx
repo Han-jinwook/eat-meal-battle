@@ -919,27 +919,47 @@ export default function BattlePage() {
 
       {/* 2개 섹션 탭 UI */}
       <div className="mb-6">
-        <div className="flex gap-2 mb-6">
-          <button
+        <div className="flex gap-6 mb-6">
+          <div
             onClick={() => setActiveTab('menu')}
-            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+            className={`flex-1 cursor-pointer transition-all duration-200 ${
               activeTab === 'menu'
-                ? 'bg-red-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-white pl-4 py-3 rounded-r-lg'
+                : 'border-l-4 border-gray-200 bg-gradient-to-r from-gray-50 to-white pl-4 py-3 rounded-r-lg hover:border-red-300 hover:from-red-25'
             }`}
           >
-            메뉴 배틀
-          </button>
-          <button
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🍽️</span>
+              <div>
+                <h3 className={`font-bold text-lg ${activeTab === 'menu' ? 'text-red-700' : 'text-gray-700'}`}>
+                  메뉴 배틀
+                </h3>
+                <p className={`text-sm ${activeTab === 'menu' ? 'text-red-600' : 'text-gray-500'}`}>
+                  오늘의 인기 메뉴 순위
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
             onClick={() => setActiveTab('meal')}
-            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+            className={`flex-1 cursor-pointer transition-all duration-200 ${
               activeTab === 'meal'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-white pl-4 py-3 rounded-r-lg'
+                : 'border-l-4 border-gray-200 bg-gradient-to-r from-gray-50 to-white pl-4 py-3 rounded-r-lg hover:border-blue-300 hover:from-blue-25'
             }`}
           >
-            급식 배틀
-          </button>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏆</span>
+              <div>
+                <h3 className={`font-bold text-lg ${activeTab === 'meal' ? 'text-blue-700' : 'text-gray-700'}`}>
+                  급식 배틀
+                </h3>
+                <p className={`text-sm ${activeTab === 'meal' ? 'text-blue-600' : 'text-gray-500'}`}>
+                  학교간 급식 순위 경쟁
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 네비게이션 컨트롤들 - 한 줄 배치 (모바일에서도) */}
