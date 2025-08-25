@@ -1015,7 +1015,7 @@ export default function QuizClient() {
               {/* 모달 내용 */}
               <div className="flex-1 p-6 overflow-y-auto">
                 {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
-{{ ... }}
+                <DateNavigator 
                   selectedDate={selectedDate}
                   onDateChange={handleDateChange}
                 />
