@@ -985,19 +985,81 @@ export default function QuizClient() {
               
               {/* 모달 내용 */}
               <div className="flex-1 p-6 overflow-y-auto">
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🧩</div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">모든 퀴즈 목록</h3>
-                  <p className="text-gray-600 mb-8">
-                    학교별 급식 퀴즈를 모두 풀어보세요!
-                  </p>
-                  
-                  {/* 퀴즈 목록이 여기에 들어갈 예정 */}
-                  <div className="bg-gray-50 rounded-lg p-8">
-                    <p className="text-gray-500">
-                      퀴즈 목록 기능을 구현 중입니다...
-                    </p>
-                  </div>
+                {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
+                <DateNavigator 
+                  selectedDate={selectedDate}
+                  onDateChange={handleDateChange}
+                />
+                
+                {/* 퀴즈 콘텐츠 */}
+                <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
+                  {loading ? (
+                    <div className="text-center py-10">
+                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
+                      <p className="mt-4 text-gray-600">퀴즈를 불러오는 중...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-10">
+                      <p className="text-red-600 mb-4">{error}</p>
+                      <QuizGenerateButton
+                        isGenerating={generatingQuiz}
+                        onClick={handleManualQuizGenerate}
+                        disabled={isViewingMode}
+                      />
+                      <p className="text-sm text-gray-500 mt-4">
+                        또는 다른 날짜를 선택해보세요.
+                      </p>
+                    </div>
+                  ) : quiz ? (
+                    <div className="quiz-container">
+                      {/* 퀴즈 문제 */}
+                      <div className="mb-6">
+                        <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">오늘의 퀴즈</h3>
+                        <p className="text-gray-700 dark:text-gray-200">{quiz.question}</p>
+                      </div>
+                      
+                      {/* 퀴즈 옵션 및 제출 버튼 */}
+                      <QuizOptionsSection
+                        quiz={quiz}
+                        selectedOption={selectedOption}
+                        submitted={submitted}
+                        submitting={submitting}
+                        isViewingMode={isViewingMode}
+                        mealImageUrl={mealImageUrl}
+                        onOptionSelect={setSelectedOption}
+                        onSubmitAnswer={submitAnswer}
+                      />
+                      
+                      {/* 퀴즈 결과 */}
+                      {submitted && (
+                        <QuizResultSection
+                          quiz={quiz}
+                          isViewingMode={isViewingMode}
+                          reportingQuiz={reportingQuiz}
+                          mealImageUrl={mealImageUrl}
+                          onReportQuiz={handleReportQuiz}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      {noMenu ? (
+                        <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
+                          <div className="text-5xl mb-2">🏫</div>
+                          <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
+                          <p className="text-amber-600">{noMenuMessage}</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="text-6xl mb-4">🧩</div>
+                          <h3 className="text-2xl font-bold text-gray-800 mb-4">퀴즈가 없습니다</h3>
+                          <p className="text-gray-600 mb-8">
+                            선택한 날짜에 퀴즈가 없습니다. 다른 날짜를 선택해보세요!
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
