@@ -971,11 +971,18 @@ export default function QuizClient() {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
               {/* 모달 헤더 */}
-              <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-800">모든 퀴즈 풀어보기</h2>
+              <div className="relative p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+                <div className="text-center">
+                  <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                    ✨ 모든 퀴즈 풀어보기 ✨
+                  </h2>
+                  <p className="text-sm text-gray-600 font-medium">
+                    다양한 날짜의 급식 퀴즈를 자유롭게 도전해보세요!
+                  </p>
+                </div>
                 <button
                   onClick={() => setIsAllQuizModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-white/50 transition-all duration-200"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
