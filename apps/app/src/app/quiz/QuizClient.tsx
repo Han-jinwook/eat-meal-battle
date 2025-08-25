@@ -864,9 +864,11 @@ export default function QuizClient() {
               {/* 퀴즈 보기 */}
               <div className="space-y-3 mb-6">
                 {quiz.options.map((option, index) => {
-                  let optionClass = "border rounded-lg p-4 transition-colors cursor-pointer ";
+                  let optionClass = "border rounded-lg p-4 transition-colors ";
                   
                   if (submitted && quiz.correct_answer !== undefined) {
+                    // 퀴즈 완료 후에는 커서를 기본 화살표로
+                    optionClass += "cursor-default ";
                     if (index + 1 === quiz.correct_answer) {
                       optionClass += "bg-green-50 border-green-300";
                     } else if (index + 1 === selectedOption) {
@@ -875,6 +877,8 @@ export default function QuizClient() {
                       optionClass += "border-gray-200";
                     }
                   } else {
+                    // 퀴즈 풀이 중에는 클릭 가능한 커서
+                    optionClass += "cursor-pointer ";
                     optionClass += selectedOption === index + 1
                       ? "bg-blue-50 border-blue-300"
                       : "hover:bg-gray-50 border-gray-200";
