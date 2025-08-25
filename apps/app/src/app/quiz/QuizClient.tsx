@@ -28,6 +28,7 @@ type Quiz = {
   explanation?: string;
   meal_date: string;
   meal_id?: string;
+  meal_image_url?: string; // 급식이미지 URL
   user_answer?: {
     selected_option?: number;
     is_correct?: boolean;
@@ -75,6 +76,7 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
+  const [mealImageUrl, setMealImageUrl] = useState<string | null>(null);
 
   // 관람 모드 상태
   const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
@@ -397,6 +399,11 @@ export default function QuizClient() {
       } else {
         setQuiz(data.quiz);
         
+        // 급식 이미지 로드
+        if (data.quiz?.meal_id) {
+          fetchMealImage(data.quiz.meal_id);
+        }
+        
         // 서버에서 반환하는 답변 상태 정보 처리
         if (data.alreadyAnswered && data.selectedOption !== undefined) {
           setSelectedOption(Number(data.selectedOption));
@@ -425,6 +432,30 @@ export default function QuizClient() {
       if (!generatingQuiz) {
         setLoading(false);
       }
+    }
+  };
+
+  // 급식 이미지 로드 함수
+  const fetchMealImage = async (mealId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select('image_url')
+        .eq('meal_id', mealId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        setMealImageUrl(null);
+        return;
+      }
+
+      setMealImageUrl(data.image_url);
+    } catch (err) {
+      console.error('급식 이미지 로드 오류:', err);
+      setMealImageUrl(null);
     }
   };
 
@@ -799,6 +830,7 @@ export default function QuizClient() {
                 submitted={submitted}
                 submitting={submitting}
                 isViewingMode={isViewingMode}
+                mealImageUrl={mealImageUrl}
                 onOptionSelect={setSelectedOption}
                 onSubmitAnswer={submitAnswer}
               />
@@ -809,6 +841,7 @@ export default function QuizClient() {
                   quiz={quiz}
                   isViewingMode={isViewingMode}
                   reportingQuiz={reportingQuiz}
+                  mealImageUrl={mealImageUrl}
                   onReportQuiz={handleReportQuiz}
                 />
               )}

@@ -11,6 +11,7 @@ interface Quiz {
   explanation?: string;
   meal_date: string;
   meal_id?: string;
+  meal_image_url?: string;
   user_answer?: {
     selected_option?: number;
     is_correct?: boolean;
@@ -29,6 +30,7 @@ interface QuizResultSectionProps {
   quiz: Quiz;
   isViewingMode: boolean;
   reportingQuiz: boolean;
+  mealImageUrl: string | null;
   onReportQuiz: () => void;
 }
 
@@ -36,6 +38,7 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
   quiz,
   isViewingMode,
   reportingQuiz,
+  mealImageUrl,
   onReportQuiz
 }) => {
   return (
@@ -43,13 +46,24 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
       <div className="text-center">
         {/* 결과 메시지 */}
         {quiz.user_answer && quiz.user_answer.is_correct !== undefined && (
-          <p className="text-lg font-semibold mb-2">
-            {quiz.user_answer.is_correct ? (
-              <span className="text-green-600">정답입니다! 🎉</span>
-            ) : (
-              <span className="text-red-600">틀렸습니다. 다음에 다시 도전해보세요!</span>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <p className="text-lg font-semibold">
+              {quiz.user_answer.is_correct ? (
+                <span className="text-green-600">정답입니다! 🎉</span>
+              ) : (
+                <span className="text-red-600">틀렸습니다. 다음에 다시 도전해보세요!</span>
+              )}
+            </p>
+            
+            {/* 급식이미지 */}
+            {mealImageUrl && (
+              <img 
+                src={mealImageUrl}
+                alt="급식 이미지"
+                className="w-5 h-5 object-cover rounded border border-gray-200"
+              />
             )}
-          </p>
+          </div>
         )}
         
         {/* 설명 */}

@@ -10,6 +10,7 @@ interface Quiz {
   explanation?: string;
   meal_date: string;
   meal_id?: string;
+  meal_image_url?: string;
   user_answer?: {
     selected_option?: number;
     is_correct?: boolean;
@@ -30,6 +31,7 @@ interface QuizOptionsSectionProps {
   submitted: boolean;
   submitting: boolean;
   isViewingMode: boolean;
+  mealImageUrl: string | null;
   onOptionSelect: (optionIndex: number) => void;
   onSubmitAnswer: () => void;
 }
@@ -40,6 +42,7 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
   submitted,
   submitting,
   isViewingMode,
+  mealImageUrl,
   onOptionSelect,
   onSubmitAnswer
 }) => {
@@ -101,24 +104,35 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
       
       {/* 제출 버튼 */}
       {!submitted && !isViewingMode && (
-        <button
-          disabled={selectedOption === null || submitting}
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-            selectedOption === null || submitting
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-          onClick={onSubmitAnswer}
-        >
-          {submitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>정답제출 & AI채점 중</span>
-            </div>
-          ) : (
-            '정답 제출'
+        <div className="flex items-center gap-3">
+          <button
+            disabled={selectedOption === null || submitting}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+              selectedOption === null || submitting
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+            onClick={onSubmitAnswer}
+          >
+            {submitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>정답제출 & AI채점 중</span>
+              </div>
+            ) : (
+              '정답 제출'
+            )}
+          </button>
+          
+          {/* 급식이미지 */}
+          {mealImageUrl && (
+            <img 
+              src={mealImageUrl}
+              alt="급식 이미지"
+              className="w-5 h-5 object-cover rounded border border-gray-200"
+            />
           )}
-        </button>
+        </div>
       )}
     </>
   );
