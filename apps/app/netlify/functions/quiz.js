@@ -139,6 +139,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
         correct_answer: shouldShowAnswer ? quiz.correct_answer : undefined,
         explanation: shouldShowAnswer ? quiz.explanation : undefined,
         meal_date: quiz.meal_date,
+        meal_id: quiz.meal_id,
         report_status: quiz.report_status || 'none',
         ai_verification: quiz.quiz_reports?.[0]?.ai_verification_result || null,
         menu_items: quiz.meal_menus?.menu_items || []
@@ -156,6 +157,7 @@ async function processQuiz(userId, quiz, canShowAnswer) {
       question: quiz.question,
       options: quiz.options,
       meal_date: quiz.meal_date,
+      meal_id: quiz.meal_id,
       report_status: quiz.report_status || 'none',
       ai_verification: quiz.quiz_reports?.[0]?.ai_verification_result || null,
       menu_items: quiz.meal_menus?.menu_items || []
