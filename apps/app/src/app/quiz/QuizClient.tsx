@@ -401,7 +401,11 @@ export default function QuizClient() {
         
         // 급식 이미지 로드
         if (data.quiz?.meal_id) {
+          console.log('🍽️ 퀴즈에서 meal_id 발견:', data.quiz.meal_id);
           fetchMealImage(data.quiz.meal_id);
+        } else {
+          console.log('🍽️ 퀴즈에 meal_id가 없음:', data.quiz);
+          setMealImageUrl(null);
         }
         
         // 서버에서 반환하는 답변 상태 정보 처리
@@ -437,22 +441,41 @@ export default function QuizClient() {
 
   // 급식 이미지 로드 함수
   const fetchMealImage = async (mealId: string) => {
+    console.log('🍽️ 급식이미지 로드 시작:', mealId);
     try {
+      // 먼저 해당 meal_id로 이미지가 있는지 확인
+      const { data: allImages, error: allError } = await supabase
+        .from('meal_images')
+        .select('*')
+        .eq('meal_id', mealId);
+
+      console.log('🍽️ 해당 meal_id의 모든 이미지:', { allImages, allError });
+
+      // 승인된 이미지만 조회
       const { data, error } = await supabase
         .from('meal_images')
         .select('image_url')
         .eq('meal_id', mealId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (error || !data) {
+      console.log('🍽️ 승인된 급식이미지 쿼리 결과:', { data, error, count: data?.length });
+
+      if (error) {
+        console.error('🍽️ 급식이미지 쿼리 에러:', error);
         setMealImageUrl(null);
         return;
       }
 
-      setMealImageUrl(data.image_url);
+      if (!data || data.length === 0) {
+        console.log('🍽️ 승인된 급식이미지 없음');
+        setMealImageUrl(null);
+        return;
+      }
+
+      console.log('🍽️ 급식이미지 로드 성공:', data[0].image_url);
+      setMealImageUrl(data[0].image_url);
     } catch (err) {
       console.error('급식 이미지 로드 오류:', err);
       setMealImageUrl(null);
