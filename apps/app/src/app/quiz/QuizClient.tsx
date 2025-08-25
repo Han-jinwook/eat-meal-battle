@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import ChampionHistory from '@/components/ChampionHistory';
 import QuizGenerateButton from '@/components/QuizGenerateButton';
 import QuizResultSection from '@/components/QuizResultSection';
+import QuizOptionsSection from '@/components/QuizOptionsSection';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import QuizShareButton from '@/components/QuizShareButton';
 import QuizDropdown from '@/components/QuizDropdown';
@@ -861,92 +862,26 @@ export default function QuizClient() {
                 <p className="text-gray-700 dark:text-gray-200">{quiz.question}</p>
               </div>
               
-              {/* 퀴즈 보기 */}
-              <div className="space-y-3 mb-6">
-                {quiz.options.map((option, index) => {
-                  let optionClass = "border rounded-lg p-4 transition-colors ";
-                  
-                  if (submitted && quiz.correct_answer !== undefined) {
-                    // 퀴즈 완료 후에는 커서를 기본 화살표로
-                    optionClass += "cursor-default ";
-                    if (index + 1 === quiz.correct_answer) {
-                      optionClass += "bg-green-50 border-green-300";
-                    } else if (index + 1 === selectedOption) {
-                      optionClass += "bg-red-50 border-red-300";
-                    } else {
-                      optionClass += "border-gray-200";
-                    }
-                  } else {
-                    // 퀴즈 풀이 중에는 클릭 가능한 커서
-                    optionClass += "cursor-pointer ";
-                    optionClass += selectedOption === index + 1
-                      ? "bg-blue-50 border-blue-300"
-                      : "hover:bg-gray-50 border-gray-200";
-                  }
-                  
-                  return (
-                    <div
-                      key={index}
-                      className={optionClass}
-                      onClick={() => {
-                        if (!submitted && !isViewingMode) {
-                          setSelectedOption(index + 1);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-800 dark:text-gray-900 text-sm font-medium mr-3">
-                          {index + 1}
-                        </span>
-                        <span className="dark:text-gray-100">{option}</span>
-                        
-                        {submitted && quiz.correct_answer !== undefined && (
-                          <div className="ml-auto">
-                            {index + 1 === quiz.correct_answer ? (
-                              <span className="text-green-500">✓</span>
-                            ) : index + 1 === selectedOption ? (
-                              <span className="text-red-500">✗</span>
-                            ) : null}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* 퀴즈 옵션 및 제출 버튼 */}
+              <QuizOptionsSection
+                quiz={quiz}
+                selectedOption={selectedOption}
+                submitted={submitted}
+                submitting={submitting}
+                isViewingMode={isViewingMode}
+                onOptionSelect={setSelectedOption}
+                onSubmitAnswer={submitAnswer}
+              />
               
-              {/* 제출 버튼 또는 결과 */}
-              <div>
-                {!submitted ? (
-                  !isViewingMode ? (
-                    <button
-                      disabled={selectedOption === null || submitting}
-                      className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                        selectedOption === null || submitting
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                      onClick={submitAnswer}
-                    >
-                      {submitting ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>정답제출 & AI채점 중</span>
-                        </div>
-                      ) : (
-                        '정답 제출'
-                      )}
-                    </button>
-                  ) : null
-                ) : (
-                  <QuizResultSection
-                    quiz={quiz}
-                    isViewingMode={isViewingMode}
-                    reportingQuiz={reportingQuiz}
-                    onReportQuiz={handleReportQuiz}
-                  />
-                )}
-              </div>
+              {/* 퀴즈 결과 */}
+              {submitted && (
+                <QuizResultSection
+                  quiz={quiz}
+                  isViewingMode={isViewingMode}
+                  reportingQuiz={reportingQuiz}
+                  onReportQuiz={handleReportQuiz}
+                />
+              )}
             </div>
           ) : (
             <div className="text-center py-10">
