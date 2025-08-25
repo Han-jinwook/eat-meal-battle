@@ -117,19 +117,15 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
           <button
             onClick={onSubmitAnswer}
             disabled={selectedOption === null || submitting}
-            className="w-24 h-24 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium border-2 border-blue-700 shadow-sm flex flex-col items-center justify-center text-sm leading-tight"
+            className="w-24 h-24 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center"
           >
             {submitting ? (
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs">정답제출</span>
-                <span className="text-xs">AI채점 중</span>
+                <span>AI채점 중</span>
               </div>
             ) : (
-              <>
-                <span>정답</span>
-                <span>제출</span>
-              </>
+              "정답 제출"
             )}
           </button>
         </div>
