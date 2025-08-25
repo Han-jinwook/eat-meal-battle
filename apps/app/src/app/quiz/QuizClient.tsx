@@ -76,6 +76,9 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
+  
+  // 모든 퀴즈 모달 상태 관리
+  const [isAllQuizModalOpen, setIsAllQuizModalOpen] = useState<boolean>(false);
   const [mealImageUrl, setMealImageUrl] = useState<string | null>(null);
 
   // 관람 모드 상태
@@ -813,11 +816,23 @@ export default function QuizClient() {
           viewingUserInfo={viewingUserInfo}
         />
 
-        {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
-        <DateNavigator 
-          selectedDate={selectedDate}
-          onDateChange={handleDateChange}
-        />
+        {/* 날짜 선택 및 퀴즈 버튼 영역 */}
+        <div className="flex items-center justify-between mb-4">
+          {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
+          <DateNavigator 
+            selectedDate={selectedDate}
+            onDateChange={handleDateChange}
+          />
+          
+          {/* 모든 퀴즈 풀어보기 버튼 */}
+          <button
+            onClick={() => setIsAllQuizModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+          >
+            <span>🧩</span>
+            <span>모든 퀴즈 풀어보기</span>
+          </button>
+        </div>
 
         {/* 퀴즈 콘텐츠 */}
         <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
@@ -950,6 +965,44 @@ export default function QuizClient() {
           currentMonth={calendarMonth} 
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
+        
+        {/* 모든 퀴즈 모달 */}
+        {isAllQuizModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
+              {/* 모달 헤더 */}
+              <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-800">모든 퀴즈 풀어보기</h2>
+                <button
+                  onClick={() => setIsAllQuizModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* 모달 내용 */}
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🧩</div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">모든 퀴즈 목록</h3>
+                  <p className="text-gray-600 mb-8">
+                    학교별 급식 퀴즈를 모두 풀어보세요!
+                  </p>
+                  
+                  {/* 퀴즈 목록이 여기에 들어갈 예정 */}
+                  <div className="bg-gray-50 rounded-lg p-8">
+                    <p className="text-gray-500">
+                      퀴즈 목록 기능을 구현 중입니다...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
