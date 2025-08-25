@@ -104,34 +104,34 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
       
       {/* 제출 버튼 */}
       {!submitted && !isViewingMode && (
-        <div className="flex items-center gap-3">
-          <button
-            disabled={selectedOption === null || submitting}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-              selectedOption === null || submitting
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-            onClick={onSubmitAnswer}
-          >
-            {submitting ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>정답제출 & AI채점 중</span>
-              </div>
-            ) : (
-              '정답 제출'
-            )}
-          </button>
-          
-          {/* 급식이미지 */}
+        <div className="flex items-center gap-4 justify-center">
+          {/* 급식이미지 - 왼쪽에 크게 배치 */}
           {mealImageUrl && (
             <img 
               src={mealImageUrl}
               alt="급식 이미지"
-              className="w-5 h-5 object-cover rounded border border-gray-200"
+              className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300 shadow-sm flex-shrink-0"
             />
           )}
+          
+          <button
+            onClick={onSubmitAnswer}
+            disabled={selectedOption === null || submitting}
+            className="w-24 h-24 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium border-2 border-blue-700 shadow-sm flex flex-col items-center justify-center text-sm leading-tight"
+          >
+            {submitting ? (
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs">정답제출</span>
+                <span className="text-xs">AI채점 중</span>
+              </div>
+            ) : (
+              <>
+                <span>정답</span>
+                <span>제출</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </>

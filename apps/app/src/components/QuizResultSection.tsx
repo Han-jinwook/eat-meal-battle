@@ -46,7 +46,16 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
       <div className="text-center">
         {/* 결과 메시지 */}
         {quiz.user_answer && quiz.user_answer.is_correct !== undefined && (
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex items-center gap-4">
+            {/* 급식이미지 - 왼쪽에 크게 배치 */}
+            {mealImageUrl && (
+              <img 
+                src={mealImageUrl}
+                alt="급식 이미지"
+                className="w-24 h-24 object-cover rounded-lg border-2 border-gray-300 shadow-sm flex-shrink-0"
+              />
+            )}
+            
             <p className="text-lg font-semibold">
               {quiz.user_answer.is_correct ? (
                 <span className="text-green-600">정답입니다! 🎉</span>
@@ -54,15 +63,6 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
                 <span className="text-red-600">틀렸습니다. 다음에 다시 도전해보세요!</span>
               )}
             </p>
-            
-            {/* 급식이미지 */}
-            {mealImageUrl && (
-              <img 
-                src={mealImageUrl}
-                alt="급식 이미지"
-                className="w-5 h-5 object-cover rounded border border-gray-200"
-              />
-            )}
           </div>
         )}
         
