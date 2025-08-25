@@ -46,7 +46,7 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
       <div className="text-center">
         {/* 결과 메시지 */}
         {quiz.user_answer && quiz.user_answer.is_correct !== undefined && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 justify-center">
             {/* 급식이미지 - 왼쪽에 크게 배치 */}
             {mealImageUrl && (
               <img 
