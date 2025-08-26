@@ -181,7 +181,7 @@ export default function AllQuizModal({
         },
         body: JSON.stringify({
           quiz_id: quiz.id,
-          selected_option: selectedOption
+          selected_option: Number(selectedOption)
         })
       });
 
