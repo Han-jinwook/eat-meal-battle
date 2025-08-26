@@ -59,6 +59,7 @@ export default function AllQuizModal({
   const [noMenu, setNoMenu] = useState(false);
   const [noMenuMessage, setNoMenuMessage] = useState('');
   const [mealImageUrl, setMealImageUrl] = useState<string>('');
+  const supabase = createClient();
 
   // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
   const handleSchoolChange = async (direction: 'prev' | 'next') => {
@@ -119,11 +120,42 @@ export default function AllQuizModal({
       const data = await response.json();
       setQuiz(data.quiz);
       setMealImageUrl(data.mealImageUrl || '');
+      
+      // 급식 이미지 로드
+      if (data.quiz?.meal_id) {
+        console.log('🍽️ AllQuizModal 퀴즈에서 meal_id 발견:', data.quiz.meal_id);
+        await fetchMealImage(data.quiz.meal_id);
+      } else {
+        console.log('🍽️ AllQuizModal 퀴즈에 meal_id가 없음:', data.quiz);
+        setMealImageUrl('');
+      }
     } catch (err) {
       console.error('퀴즈 로드 에러:', err);
       setError('퀴즈를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 급식 이미지 로드 함수
+  const fetchMealImage = async (mealId: string) => {
+    console.log('🍽️ AllQuizModal 급식이미지 로드 시작:', mealId);
+    try {
+      const { data, error } = await supabase
+        .from('meal_images')
+        .select('image_url')
+        .eq('meal_id', mealId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error || !data || data.length === 0) {
+        setMealImageUrl('');
+        return;
+      }
+      setMealImageUrl(data[0].image_url);
+    } catch (err) {
+      console.error('AllQuizModal 급식 이미지 로드 오류:', err);
+      setMealImageUrl('');
     }
   };
 
@@ -141,19 +173,32 @@ export default function AllQuizModal({
         return;
       }
 
-      const response = await fetch('/.netlify/functions/quiz', {
+      const response = await fetch('/.netlify/functions/quiz/answer', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          quizId: quiz.id,
-          selectedOption: selectedOption
+          quiz_id: quiz.id,
+          selected_option: selectedOption
         })
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('AllQuizModal 정답제출 결과:', result);
+        
+        // 퀴즈 객체에 결과 정보 추가
+        if (quiz && result.is_correct !== undefined) {
+          setQuiz({
+            ...quiz,
+            user_selected_option: selectedOption,
+            is_correct: result.is_correct,
+            user_answer_time: result.answer_time || 0
+          });
+        }
+        
         setSubmitted(true);
       } else {
         const errorData = await response.json();
