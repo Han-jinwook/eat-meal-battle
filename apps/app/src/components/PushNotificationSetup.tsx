@@ -115,12 +115,14 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
 
   // 알림 권한 요청
   const requestNotificationPermission = async () => {
-    // iOS Safari 체크
+    // iOS Safari 체크 - 이제 IOSChromePrompt에서 처리하므로 여기서는 단순화
     const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     
     if (!('Notification' in window)) {
       if (isIOSSafari) {
-        alert('iOS Safari에서는 푸시 알림이 제한됩니다. Chrome 앱을 사용해주세요.');
+        // iOS Safari는 이미 IOSChromePrompt에서 처리됨
+        setNotificationStatus('denied');
+        return;
       } else {
         alert('이 브라우저는 알림을 지원하지 않습니다.');
       }
@@ -186,26 +188,15 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   // 권한이 거부된 경우
   if (notificationStatus === 'denied') {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">
-              알림 권한이 차단되었습니다
-            </h3>
-            <div className="mt-2 text-sm text-red-700">
-              <p>브라우저 설정에서 알림을 허용해주세요:</p>
-              <ol className="mt-1 list-decimal list-inside">
-                <li>주소창 왼쪽의 자물쇠 아이콘 클릭</li>
-                <li>"알림" 설정을 "허용"으로 변경</li>
-                <li>페이지 새로고침</li>
-              </ol>
-            </div>
-          </div>
+      <div className="bg-white rounded-lg p-6 max-w-md mx-auto shadow-lg">
+        <div className="text-center mb-4">
+          <div className="text-4xl mb-2">🔔</div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            퀴즈 알림 설정
+          </h3>
+          <p className="text-sm text-gray-600">
+            새로운 퀴즈가 올라오면 알림을 받아보세요!
+          </p>
         </div>
       </div>
     );
@@ -214,32 +205,6 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   // 설정 UI 표시 여부 토글
   if (!showSetup) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 7H4l5-5v5zm6 10V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2z" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-blue-800">
-                푸시 알림을 받아보세요! 📱
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                급식 평가, 퀴즈, 배틀 알림을 실시간으로 받을 수 있습니다.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowSetup(true)}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
-          >
-            설정하기
-          </button>
-        </div>
-      </div>
-    );
   }
 
   // 알림 권한 요청 UI
