@@ -161,7 +161,11 @@ export default function AllQuizModal({
 
   // 퀴즈 제출 함수
   const submitAnswer = async () => {
-    if (selectedOption === null || !quiz) return;
+    console.log('🎯 submitAnswer 호출됨:', { selectedOption, quiz: !!quiz, submitting });
+    if (selectedOption === null || !quiz) {
+      console.log('❌ 제출 조건 미충족:', { selectedOption, hasQuiz: !!quiz });
+      return;
+    }
     
     setSubmitting(true);
     try {

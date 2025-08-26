@@ -338,10 +338,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     
     if (championError) {
       console.error('[quiz] quiz_champions 조회 오류:', championError);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'quiz_champions 조회 실패' })
-      };
+      return { error: 'quiz_champions 조회 실패' };
     }
     
     if (champion && champion.length > 0) {
@@ -366,10 +363,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     
       if (updateError) {
         console.error('[quiz] 장원 기록 업데이트 실패:', updateError);
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ error: '장원 기록 업데이트 실패' })
-        };
+        return { error: '장원 기록 업데이트 실패' };
       } else {
         console.log('[quiz] 장원 기록 업데이트 성공:', updateResult);
       }
@@ -395,10 +389,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     
       if (insertError) {
         console.error('[quiz] 장원 기록 생성 실패:', insertError);
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ error: '장원 기록 생성 실패' })
-        };
+        return { error: '장원 기록 생성 실패' };
       } else {
         console.log('[quiz] 장원 기록 생성 성공:', insertResult);
         
@@ -1206,6 +1197,13 @@ exports.handler = async function(event, context) {
           body: JSON.stringify({ error: '퀴즈 답안 제출 중 오류가 발생했습니다.', details: error.message })
         };
       }
+      
+      // 디버깅 로그 - 최종 결과 확인
+      console.log('[quiz] 최종 결과 반환:', {
+        hasError: !!result.error,
+        statusCode: result.error ? 400 : 200,
+        result
+      });
       
       return {
         statusCode: result.error ? 400 : 200,

@@ -77,6 +77,7 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
               className={optionClass}
               onClick={() => {
                 if (!submitted && !isViewingMode) {
+                  console.log('🎯 옵션 선택됨:', { optionIndex: index + 1, submitted, isViewingMode });
                   onOptionSelect(index + 1);
                 }
               }}
@@ -115,7 +116,10 @@ const QuizOptionsSection: React.FC<QuizOptionsSectionProps> = ({
           )}
           
           <button
-            onClick={onSubmitAnswer}
+            onClick={() => {
+              console.log('🔘 정답제출 버튼 클릭됨:', { selectedOption, submitting, disabled: selectedOption === null || submitting });
+              onSubmitAnswer();
+            }}
             disabled={selectedOption === null || submitting}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
           >
