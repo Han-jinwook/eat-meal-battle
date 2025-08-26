@@ -173,11 +173,14 @@ export default function AllQuizModal({
         return;
       }
 
+      console.log('🔑 토큰 전송:', session.access_token?.substring(0, 20) + '...');
+      
       const response = await fetch('/.netlify/functions/quiz/answer', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           quiz_id: quiz.id,
