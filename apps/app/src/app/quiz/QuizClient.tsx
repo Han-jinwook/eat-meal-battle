@@ -114,6 +114,9 @@ export default function QuizClient() {
   const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
     console.log('🏫 학교 변경 시작:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
+    // 강제로 상태 업데이트 트리거
+    setUniversalSchoolName(prev => prev);
+    
     try {
       // 현재 학교 종류에 맞는 학교들을 DB에서 조회
       const { data: schoolInfos, error } = await supabase
@@ -122,7 +125,7 @@ export default function QuizClient() {
         .ilike('school_name', `%${universalSchoolType}%`)
         .order('school_name');
       
-      console.log('🏫 DB 조회 결과:', { error, schoolCount: schoolInfos?.length });
+      console.log('🏫 DB 조회 결과:', { error, schoolCount: schoolInfos?.length, schools: schoolInfos?.map(s => s.school_name) });
       
       if (error) {
         console.error('학교 목록 조회 오류:', error);
@@ -139,37 +142,62 @@ export default function QuizClient() {
         school.school_name === universalSchoolName
       );
       
-      console.log('🏫 현재 인덱스:', { currentIndex, totalSchools: schoolInfos.length });
+      console.log('🏫 현재 인덱스:', { 
+        currentIndex, 
+        totalSchools: schoolInfos.length, 
+        currentSchoolName: universalSchoolName,
+        foundSchool: schoolInfos[currentIndex]?.school_name
+      });
       
       let nextIndex;
       if (direction === 'next') {
         // 현재 학교를 찾지 못했거나 마지막 학교인 경우 첫 번째로
         if (currentIndex === -1) {
           nextIndex = 0;
+          console.log('🏫 학교를 찾지 못함, 첫 번째로 이동');
         } else if (currentIndex >= schoolInfos.length - 1) {
           nextIndex = 0; // 마지막에서 첫 번째로 롤링
+          console.log('🏫 마지막 학교에서 첫 번째로 롤링');
         } else {
           nextIndex = currentIndex + 1;
+          console.log('🏫 다음 학교로 이동');
         }
       } else {
         // 현재 학교를 찾지 못했거나 첫 번째 학교인 경우 마지막으로
         if (currentIndex === -1) {
           nextIndex = schoolInfos.length - 1;
+          console.log('🏫 학교를 찾지 못함, 마지막으로 이동');
         } else if (currentIndex <= 0) {
           nextIndex = schoolInfos.length - 1; // 첫 번째에서 마지막으로 롤링
+          console.log('🏫 첫 번째 학교에서 마지막으로 롤링');
         } else {
           nextIndex = currentIndex - 1;
+          console.log('🏫 이전 학교로 이동');
         }
       }
       
-      console.log('🏫 다음 인덱스 계산:', { nextIndex });
+      console.log('🏫 다음 인덱스 계산:', { nextIndex, direction });
       
       const nextSchool = schoolInfos[nextIndex];
       console.log('🏫 다음 학교:', nextSchool);
       
       if (nextSchool) {
+        console.log('🏫 상태 업데이트 시작:', {
+          from: universalSchoolName,
+          to: nextSchool.school_name
+        });
+        
+        // 상태 업데이트를 강제로 실행
         setUniversalSchoolName(nextSchool.school_name);
         setUniversalSchoolCode(nextSchool.school_code);
+        
+        // 상태 업데이트 후 확인
+        setTimeout(() => {
+          console.log('🏫 상태 업데이트 확인:', {
+            newSchoolName: nextSchool.school_name,
+            newSchoolCode: nextSchool.school_code
+          });
+        }, 100);
         
         console.log('🏫 학교 변경 완료:', {
           direction,
