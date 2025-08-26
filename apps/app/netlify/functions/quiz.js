@@ -959,26 +959,42 @@ exports.handler = async function(event, context) {
   // 토큰에서 사용자 ID 추출
   let userId;
   try {
-    const authHeader = event.headers.authorization || '';
+    const authHeader = event.headers.authorization || event.headers.Authorization || '';
+    
+    if (!authHeader) {
+      console.log('❌ Authorization 헤더가 없습니다');
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: '인증 토큰이 필요합니다.' })
+      };
+    }
+    
     const token = authHeader.replace('Bearer ', '');
+    console.log('🔑 토큰 추출 완료:', token.substring(0, 20) + '...');
     
     // JWT 토큰 검증 (Supabase 서비스 역할 키 사용)
     const { data: { user }, error } = await supabaseClient.auth.getUser(token);
     
+    console.log('👤 사용자 인증 결과:', { user: user?.id, error: error?.message });
+    
     if (error || !user) {
+      console.log('❌ 인증 실패:', error);
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: '인증되지 않은 요청입니다.' })
+        body: JSON.stringify({ error: '인증되지 않은 요청입니다.', details: error?.message })
       };
     }
     
     userId = user.id;
+    console.log('✅ 사용자 인증 성공:', userId);
   } catch (error) {
+    console.log('❌ 인증 처리 중 오류:', error);
     return {
       statusCode: 401,
       headers,
-      body: JSON.stringify({ error: '인증 처리 중 오류가 발생했습니다.' })
+      body: JSON.stringify({ error: '인증 처리 중 오류가 발생했습니다.', details: error.message })
     };
   }
 
