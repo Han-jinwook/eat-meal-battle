@@ -112,7 +112,7 @@ export default function QuizClient() {
   };
 
   const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🏫 학교 변경:', direction);
+    console.log('🏫 학교 변경 시작:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
     try {
       // 현재 학교 종류에 맞는 학교들을 DB에서 조회
@@ -121,6 +121,8 @@ export default function QuizClient() {
         .select('school_name, school_code')
         .ilike('school_name', `%${universalSchoolType}%`)
         .order('school_name');
+      
+      console.log('🏫 DB 조회 결과:', { error, schoolCount: schoolInfos?.length });
       
       if (error) {
         console.error('학교 목록 조회 오류:', error);
@@ -137,28 +139,50 @@ export default function QuizClient() {
         school.school_name === universalSchoolName
       );
       
+      console.log('🏫 현재 인덱스:', { currentIndex, totalSchools: schoolInfos.length });
+      
       let nextIndex;
       if (direction === 'next') {
         // 현재 학교를 찾지 못했거나 마지막 학교인 경우 첫 번째로
-        nextIndex = (currentIndex === -1 || currentIndex >= schoolInfos.length - 1) ? 0 : currentIndex + 1;
+        if (currentIndex === -1) {
+          nextIndex = 0;
+        } else if (currentIndex >= schoolInfos.length - 1) {
+          nextIndex = 0; // 마지막에서 첫 번째로 롤링
+        } else {
+          nextIndex = currentIndex + 1;
+        }
       } else {
         // 현재 학교를 찾지 못했거나 첫 번째 학교인 경우 마지막으로
-        nextIndex = (currentIndex === -1 || currentIndex <= 0) ? schoolInfos.length - 1 : currentIndex - 1;
+        if (currentIndex === -1) {
+          nextIndex = schoolInfos.length - 1;
+        } else if (currentIndex <= 0) {
+          nextIndex = schoolInfos.length - 1; // 첫 번째에서 마지막으로 롤링
+        } else {
+          nextIndex = currentIndex - 1;
+        }
       }
       
-      const nextSchool = schoolInfos[nextIndex];
-      setUniversalSchoolName(nextSchool.school_name);
-      setUniversalSchoolCode(nextSchool.school_code);
+      console.log('🏫 다음 인덱스 계산:', { nextIndex });
       
-      console.log('🏫 학교 변경 완료:', {
-        direction,
-        from: universalSchoolName,
-        to: nextSchool.school_name,
-        schoolCode: nextSchool.school_code,
-        currentIndex,
-        nextIndex,
-        totalSchools: schoolInfos.length
-      });
+      const nextSchool = schoolInfos[nextIndex];
+      console.log('🏫 다음 학교:', nextSchool);
+      
+      if (nextSchool) {
+        setUniversalSchoolName(nextSchool.school_name);
+        setUniversalSchoolCode(nextSchool.school_code);
+        
+        console.log('🏫 학교 변경 완료:', {
+          direction,
+          from: universalSchoolName,
+          to: nextSchool.school_name,
+          schoolCode: nextSchool.school_code,
+          currentIndex,
+          nextIndex,
+          totalSchools: schoolInfos.length
+        });
+      } else {
+        console.error('🏫 다음 학교를 찾을 수 없음:', { nextIndex, schoolInfos });
+      }
       
     } catch (err) {
       console.error('학교 변경 중 오류:', err);
