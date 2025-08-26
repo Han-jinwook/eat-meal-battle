@@ -884,3 +884,102 @@ if (existingData) {
 1. **SQL 집계**: `school_infos.class_number` 활용한 반별 집계 추가
 2. **자동 집계**: 퀴즈 정답 제출 시 증분 업데이트로 효율성 확보
 3. **데이터 정확성**: 학년 총계와 반별 집계 모두 정확히 계산
+
+---
+
+## 🔧 AllQuizModal 컴포넌트 분리 및 오른쪽 화살표 버그 수정 (2025-08-26)
+
+### 📋 문제 상황
+- 사용자가 퀴즈 페이지의 "모든퀴즈풀기" 모달에서 오른쪽 학교명 화살표가 작동하지 않는 문제 신고
+- AllQuizModal이 별도 컴포넌트로 분리되어 있었으나 초기 분석에서 놓침
+- QuizClient.tsx에서 잘못된 위치에 handleUniversalSchoolChange 함수 수정 작업 반복
+
+### 🛠️ 해결 과정
+
+#### 1. 컴포넌트 구조 파악
+- **AllQuizModal**: 별도 컴포넌트 파일 (`/app/quiz/AllQuizModal.tsx`)
+- **QuizClient**: 메인 퀴즈 페이지 (`/app/quiz/QuizClient.tsx`)
+- **SchoolGradeSelector**: 공통 컴포넌트 (`/components/SchoolGradeSelector.tsx`)
+
+#### 2. 함수 호출 체인 정리
+```
+SchoolGradeSelector (오른쪽 화살표 클릭)
+    ↓ onSchoolChange('next')
+AllQuizModal.handleSchoolChange (내부 핸들러)
+    ↓ onUniversalSchoolChange(direction)
+QuizClient.handleUniversalSchoolChange (부모 핸들러)
+    ↓ 상태 업데이트
+```
+
+#### 3. 코드 수정 내용
+
+**QuizClient.tsx 정리:**
+```typescript
+const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
+  console.log('🏫 학교 변경 요청:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+  
+  try {
+    const { data: schoolInfos, error } = await supabase
+      .from('school_infos')
+      .select('school_name, school_code')
+      .ilike('school_name', `%${universalSchoolType}%`)
+      .order('school_name');
+      
+    if (error || !schoolInfos || schoolInfos.length === 0) {
+      console.error('학교 목록 조회 실패:', error);
+      return;
+    }
+    
+    const currentIndex = schoolInfos.findIndex(school => 
+      school.school_name === universalSchoolName
+    );
+    
+    let nextIndex;
+    if (direction === 'next') {
+      nextIndex = currentIndex >= schoolInfos.length - 1 ? 0 : currentIndex + 1;
+    } else {
+      nextIndex = currentIndex <= 0 ? schoolInfos.length - 1 : currentIndex - 1;
+    }
+    
+    const nextSchool = schoolInfos[nextIndex];
+    
+    // 상태 업데이트
+    setUniversalSchoolName(nextSchool.school_name);
+    setUniversalSchoolCode(nextSchool.school_code);
+    
+  } catch (err) {
+    console.error('학교 변경 중 오류:', err);
+  }
+};
+```
+
+**AllQuizModal.tsx 추가:**
+```typescript
+// 학교 변경 핸들러 - AllQuizModal 내부에서 처리
+const handleSchoolChange = async (direction: 'prev' | 'next') => {
+  console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+  
+  // 부모 컴포넌트의 핸들러 호출
+  onUniversalSchoolChange(direction);
+};
+
+// SchoolGradeSelector 연결
+<SchoolGradeSelector
+  schoolName={universalSchoolName}
+  grade={universalGrade}
+  schoolType={universalSchoolType}
+  onGradeChange={onUniversalGradeChange}
+  onSchoolChange={handleSchoolChange}  // 내부 핸들러 사용
+/>
+```
+
+### 🎯 수정 결과
+- ✅ 불필요한 디버깅 코드 제거 및 함수 간소화
+- ✅ AllQuizModal 내부에 올바른 핸들러 추가
+- ✅ 컴포넌트 간 함수 호출 체인 정상화
+- ✅ 오른쪽 화살표 버튼 정상 작동
+
+### 📝 교훈
+- 컴포넌트 구조를 정확히 파악한 후 수정 작업 진행 필요
+- 별도 컴포넌트로 분리된 경우 해당 컴포넌트 내부 로직도 함께 수정
+- 함수 호출 체인을 명확히 이해하고 각 단계별로 올바른 핸들러 연결

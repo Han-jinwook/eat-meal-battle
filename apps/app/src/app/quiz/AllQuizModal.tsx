@@ -64,7 +64,11 @@ export default function AllQuizModal({
     console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
     // 부모 컴포넌트의 핸들러 호출
-    onUniversalSchoolChange(direction);
+    await onUniversalSchoolChange(direction);
+    
+    // 학교 변경 후 퀴즈 다시 로드
+    console.log('🔄 학교 변경 후 퀴즈 재로드 시작');
+    await loadQuiz();
   };
 
   // 퀴즈 로드 함수

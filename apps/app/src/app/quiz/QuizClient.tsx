@@ -112,7 +112,7 @@ export default function QuizClient() {
   };
 
   const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🏫 학교 변경 요청:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+    console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
     try {
       const { data: schoolInfos, error } = await supabase
@@ -122,13 +122,17 @@ export default function QuizClient() {
         .order('school_name');
         
       if (error || !schoolInfos || schoolInfos.length === 0) {
-        console.error('학교 목록 조회 실패:', error);
+        console.error('❌ 학교 목록 조회 실패:', error);
         return;
       }
+      
+      console.log('📋 조회된 학교 목록:', schoolInfos.map(s => s.school_name));
       
       const currentIndex = schoolInfos.findIndex(school => 
         school.school_name === universalSchoolName
       );
+      
+      console.log('📍 현재 학교 인덱스:', currentIndex, '/', schoolInfos.length);
       
       let nextIndex;
       if (direction === 'next') {
@@ -138,13 +142,20 @@ export default function QuizClient() {
       }
       
       const nextSchool = schoolInfos[nextIndex];
+      console.log('➡️ 다음 학교:', nextSchool.school_name, '(인덱스:', nextIndex, ')');
       
       // 상태 업데이트
       setUniversalSchoolName(nextSchool.school_name);
       setUniversalSchoolCode(nextSchool.school_code);
       
+      // 강제 리렌더링을 위한 상태 초기화
+      setQuiz(null);
+      setError('');
+      
+      console.log('✅ 학교 변경 완료:', nextSchool.school_name);
+      
     } catch (err) {
-      console.error('학교 변경 중 오류:', err);
+      console.error('💥 학교 변경 중 오류:', err);
     }
   };
 
