@@ -157,7 +157,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const weekDays = criteriaData?.[weekDaysField] as number || 0;
         
         // myRecords에서 해당 주차 장원 여부 확인  
-        const weekChampionField = `week_${week}_cham` as keyof typeof myRecords;
+        const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
         const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
         
         // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
@@ -204,7 +204,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       
       // 6. 월별 데이터 추가 - quiz_champions에서 바로 월별 정답 수 활용
       const monthDays = criteriaData?.month_total || 0;
-      const isMonthChampion = myRecords?.month_champ || false;
+      const isMonthChampion = myRecords?.month_champion || false;
       const monthCorrect = quizStats?.month_correct || 0;
       const monthTotal = quizStats?.total_count || 0;
       
