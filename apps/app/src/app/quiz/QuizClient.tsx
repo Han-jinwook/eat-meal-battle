@@ -159,7 +159,7 @@ export default function QuizClient() {
     }
   };
 
-  // 만능 선택기 초기값 설정 - userSchool 기반
+  // 만능 선택기 초기값 설정 - 내 학교/학년으로 설정
   useEffect(() => {
     if (userSchool && !userLoading) {
       setUniversalSchoolName(userSchool.school_name || '');
@@ -178,12 +178,10 @@ export default function QuizClient() {
         setSelectedSchoolLevel('high');
       }
       
-      console.log('🎯 만능 선택기 초기값 설정:', {
+      console.log('🎯 AllQuizModal 초기값 - 내 학교/학년으로 설정:', {
         schoolName: userSchool.school_name,
         schoolCode: userSchool.school_code,
-        grade: userSchool.grade,
-        schoolType: userSchool.school_name?.includes('초등학교') ? '초등학교' : 
-                   userSchool.school_name?.includes('중학교') ? '중학교' : '고등학교'
+        grade: userSchool.grade
       });
     }
   }, [userSchool, userLoading]);

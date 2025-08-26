@@ -143,37 +143,6 @@ export default function AllQuizModal({
     }
   };
 
-  // 퀴즈 수동 생성 함수
-  const handleManualQuizGenerate = async () => {
-    if (!universalSchoolName || !universalGrade) return;
-    
-    setGeneratingQuiz(true);
-    try {
-      const dateStr = selectedDate;
-      const response = await fetch('/api/quiz/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: dateStr,
-          schoolName: universalSchoolName,
-          grade: universalGrade,
-          schoolType: universalSchoolType
-        })
-      });
-
-      if (response.ok) {
-        await loadQuiz();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || '퀴즈 생성에 실패했습니다.');
-      }
-    } catch (err) {
-      console.error('퀴즈 생성 에러:', err);
-      setError('퀴즈 생성에 실패했습니다.');
-    } finally {
-      setGeneratingQuiz(false);
-    }
-  };
 
   // 퀴즈 신고 함수
   const handleReportQuiz = async (reason: string) => {
@@ -290,14 +259,11 @@ export default function AllQuizModal({
               </div>
             ) : error ? (
               <div className="text-center py-10">
-                <p className="text-red-600 mb-4">{error}</p>
-                <QuizGenerateButton
-                  isGenerating={generatingQuiz}
-                  onClick={handleManualQuizGenerate}
-                  disabled={false}
-                />
-                <p className="text-sm text-gray-500 mt-4">
-                  또는 다른 날짜를 선택해보세요.
+                <div className="text-6xl mb-4">❌</div>
+                <h3 className="text-xl font-bold text-red-600 mb-4">퀴즈를 불러올 수 없습니다</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <p className="text-sm text-gray-500">
+                  다른 날짜나 학교를 선택해보세요.
                 </p>
               </div>
             ) : quiz ? (
@@ -320,16 +286,34 @@ export default function AllQuizModal({
                   onSubmitAnswer={submitAnswer}
                 />
                 
-                {/* 퀴즈 결과 */}
+                {/* 퀴즈 결과 - 단순하게 정답/해설만 표시 */}
                 {submitted && (
-                  <QuizResultSection
-                    quiz={quiz}
-                    isViewingMode={false}
-                    reportingQuiz={reportingQuiz}
-                    mealImageUrl={mealImageUrl}
-                    onReportQuiz={() => handleReportQuiz('inappropriate')}
-                    isAllQuizModal={true}
-                  />
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    {/* 정답 여부 */}
+                    <div className="text-center mb-4">
+                      {selectedOption === quiz.correct_answer ? (
+                        <div className="text-green-600 text-xl font-bold">
+                          🎉 정답입니다!
+                        </div>
+                      ) : (
+                        <div className="text-red-600 text-xl font-bold">
+                          ❌ 틀렸습니다
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-600 mt-2">
+                        정답: {quiz.options[quiz.correct_answer]}
+                      </p>
+                    </div>
+                    
+                    {/* 해설 */}
+                    {quiz.explanation && (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium text-blue-700 mb-2">💡 해설</p>
+                        <p className="text-gray-700">{quiz.explanation}</p>
+                      </div>
+                    )}
+                    
+                  </div>
                 )}
               </div>
             ) : (
@@ -345,7 +329,8 @@ export default function AllQuizModal({
                     <div className="text-6xl mb-4">🧩</div>
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">퀴즈가 없습니다</h3>
                     <p className="text-gray-600 mb-8">
-                      선택한 날짜에 퀴즈가 없습니다. 다른 날짜를 선택해보세요!
+                      선택한 날짜/학교/학년에 퀴즈가 없습니다.<br/>
+                      다른 날짜, 학교, 학년을 선택해보세요!
                     </p>
                   </div>
                 )}
