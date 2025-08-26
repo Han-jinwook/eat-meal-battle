@@ -204,7 +204,7 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
 
   // 설정 UI 표시 여부 토글
   if (!showSetup) {
-    return (
+    return null;
   }
 
   // 알림 권한 요청 UI
