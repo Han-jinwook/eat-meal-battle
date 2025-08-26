@@ -81,21 +81,127 @@ export default function QuizClient() {
   const [selectedSchoolLevel, setSelectedSchoolLevel] = useState<'elementary' | 'middle' | 'high'>('elementary');
   const [mealImageUrl, setMealImageUrl] = useState<string | null>(null);
   
-  // 만능 선택기 상태
-  const [universalSchoolName, setUniversalSchoolName] = useState<string>('강남초등학교');
+  // 만능 선택기 상태 - userSchool 기반 초기값 설정
+  const [universalSchoolName, setUniversalSchoolName] = useState<string>('');
   const [universalGrade, setUniversalGrade] = useState<number>(1);
   const [universalSchoolType, setUniversalSchoolType] = useState<'초등학교' | '중학교' | '고등학교'>('초등학교');
+  const [universalSchoolCode, setUniversalSchoolCode] = useState<string>('');
 
   // 만능 선택기 핸들러 함수들
   const handleUniversalGradeChange = (grade: number) => {
-    setUniversalGrade(grade);
-    console.log('🎯 학년 변경:', grade);
+    // 학교 종류별 학년 범위 확인
+    let minGrade = 1;
+    let maxGrade = 6;
+    
+    if (universalSchoolType === '중학교') {
+      minGrade = 1;
+      maxGrade = 3;
+    } else if (universalSchoolType === '고등학교') {
+      minGrade = 1;
+      maxGrade = 3;
+    }
+    
+    // 범위 내에서만 변경 허용
+    if (grade >= minGrade && grade <= maxGrade) {
+      setUniversalGrade(grade);
+      console.log('🎯 학년 변경:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위)`);
+    } else {
+      console.log('🚫 학년 변경 불가:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위 초과)`);
+    }
   };
 
-  const handleUniversalSchoolChange = (direction: 'prev' | 'next') => {
+  const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
     console.log('🏫 학교 변경:', direction);
-    // TODO: DB에서 다음/이전 학교 조회 후 업데이트
+    
+    try {
+      // 현재 학교 종류에 맞는 학교들을 DB에서 조회
+      const { data: schoolInfos, error } = await supabase
+        .from('school_infos')
+        .select('school_name, school_code')
+        .ilike('school_name', `%${universalSchoolType}%`)
+        .order('school_name');
+      
+      if (error) {
+        console.error('학교 목록 조회 오류:', error);
+        return;
+      }
+      
+      if (!schoolInfos || schoolInfos.length === 0) {
+        console.log('해당 학교 종류의 학교가 없습니다:', universalSchoolType);
+        return;
+      }
+      
+      // 현재 학교의 인덱스 찾기
+      const currentIndex = schoolInfos.findIndex(school => 
+        school.school_name === universalSchoolName
+      );
+      
+      let nextIndex;
+      if (direction === 'next') {
+        nextIndex = currentIndex < schoolInfos.length - 1 ? currentIndex + 1 : 0; // 마지막이면 처음으로
+      } else {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : schoolInfos.length - 1; // 첫번째면 마지막으로
+      }
+      
+      const nextSchool = schoolInfos[nextIndex];
+      setUniversalSchoolName(nextSchool.school_name);
+      setUniversalSchoolCode(nextSchool.school_code);
+      
+      console.log('🏫 학교 변경 완료:', {
+        direction,
+        from: universalSchoolName,
+        to: nextSchool.school_name,
+        schoolCode: nextSchool.school_code,
+        currentIndex,
+        nextIndex,
+        totalSchools: schoolInfos.length
+      });
+      
+    } catch (err) {
+      console.error('학교 변경 중 오류:', err);
+    }
   };
+
+  // 만능 선택기 초기값 설정 - userSchool 기반
+  useEffect(() => {
+    if (userSchool && !userLoading) {
+      setUniversalSchoolName(userSchool.school_name || '');
+      setUniversalSchoolCode(userSchool.school_code || '');
+      setUniversalGrade(typeof userSchool.grade === 'number' ? userSchool.grade : parseInt(String(userSchool.grade)) || 1);
+      
+      // 학교 종류 결정
+      if (userSchool.school_name?.includes('초등학교')) {
+        setUniversalSchoolType('초등학교');
+        setSelectedSchoolLevel('elementary');
+      } else if (userSchool.school_name?.includes('중학교')) {
+        setUniversalSchoolType('중학교');
+        setSelectedSchoolLevel('middle');
+      } else if (userSchool.school_name?.includes('고등학교')) {
+        setUniversalSchoolType('고등학교');
+        setSelectedSchoolLevel('high');
+      }
+      
+      console.log('🎯 만능 선택기 초기값 설정:', {
+        schoolName: userSchool.school_name,
+        schoolCode: userSchool.school_code,
+        grade: userSchool.grade,
+        schoolType: userSchool.school_name?.includes('초등학교') ? '초등학교' : 
+                   userSchool.school_name?.includes('중학교') ? '중학교' : '고등학교'
+      });
+    }
+  }, [userSchool, userLoading]);
+
+  // 모든 퀴즈 모달에서 만능 선택기 값 변경 시 퀴즈 로드
+  useEffect(() => {
+    if (isAllQuizModalOpen && universalSchoolCode && universalGrade && selectedDate) {
+      console.log('🔄 만능 선택기 값 변경 감지, 모든 퀴즈 로드:', {
+        schoolCode: universalSchoolCode,
+        grade: universalGrade,
+        date: selectedDate
+      });
+      fetchAllQuiz();
+    }
+  }, [isAllQuizModalOpen, universalSchoolCode, universalGrade, selectedDate]);
 
   // 관람 모드 상태
   const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
@@ -462,15 +568,6 @@ export default function QuizClient() {
   const fetchMealImage = async (mealId: string) => {
     console.log('🍽️ 급식이미지 로드 시작:', mealId);
     try {
-      // 먼저 해당 meal_id로 이미지가 있는지 확인
-      const { data: allImages, error: allError } = await supabase
-        .from('meal_images')
-        .select('*')
-        .eq('meal_id', mealId);
-
-      console.log('🍽️ 해당 meal_id의 모든 이미지:', { allImages, allError });
-
-      // 승인된 이미지만 조회
       const { data, error } = await supabase
         .from('meal_images')
         .select('image_url')
@@ -478,26 +575,80 @@ export default function QuizClient() {
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
         .limit(1);
-
-      console.log('🍽️ 승인된 급식이미지 쿼리 결과:', { data, error, count: data?.length });
-
-      if (error) {
-        console.error('🍽️ 급식이미지 쿼리 에러:', error);
+      if (error || !data || data.length === 0) {
         setMealImageUrl(null);
         return;
       }
-
-      if (!data || data.length === 0) {
-        console.log('🍽️ 승인된 급식이미지 없음');
-        setMealImageUrl(null);
-        return;
-      }
-
-      console.log('🍽️ 급식이미지 로드 성공:', data[0].image_url);
       setMealImageUrl(data[0].image_url);
     } catch (err) {
       console.error('급식 이미지 로드 오류:', err);
       setMealImageUrl(null);
+    }
+  };
+
+  // 모든 퀴즈 로드 함수
+  const fetchAllQuiz = async () => {
+    if (!universalSchoolCode || !universalGrade || !selectedDate) {
+      console.log('🚫 모든 퀴즈 로드 조건 미충족:', { universalSchoolCode, universalGrade, selectedDate });
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setQuiz(null);
+    setSelectedOption(null);
+    setSubmitted(false);
+    setMealImageUrl(null);
+
+    try {
+      console.log('🔍 모든 퀴즈 로드 시작:', { 
+        school_code: universalSchoolCode, 
+        grade: universalGrade, 
+        date: selectedDate 
+      });
+
+      // 인증 토큰 가져오기
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        setError('로그인이 필요합니다.');
+        setLoading(false);
+        return;
+      }
+
+      // 모든 퀴즈 API 호출
+      const response = await fetch(`/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${selectedDate}&limit=1`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.data.session.access_token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        if (data.quizzes && data.quizzes.length > 0) {
+          const loadedQuiz = data.quizzes[0];
+          setQuiz(loadedQuiz);
+          
+          // 급식 이미지 로드
+          if (loadedQuiz.meal_id) {
+            await fetchMealImage(loadedQuiz.meal_id);
+          }
+          
+          console.log('✅ 모든 퀴즈 로드 성공:', loadedQuiz.id);
+        } else {
+          setError('해당 조건의 퀴즈가 없습니다.');
+          console.log('📭 퀴즈 없음:', { school_code: universalSchoolCode, grade: universalGrade, date: selectedDate });
+        }
+      } else {
+        setError(data.error || '퀴즈 로드에 실패했습니다.');
+        console.error('❌ 모든 퀴즈 로드 실패:', data);
+      }
+    } catch (err) {
+      console.error('모든 퀴즈 로드 오류:', err);
+      setError('퀴즈 로드 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -566,7 +717,8 @@ export default function QuizClient() {
         quiz: quiz,
         quiz_id: quiz?.id,
         selectedOption: selectedOption,
-        quiz_exists: !!quiz
+        quiz_exists: !!quiz,
+        isAllQuizModal: isAllQuizModalOpen
       });
       
       // 인증 토큰 가져오기
@@ -589,7 +741,10 @@ export default function QuizClient() {
       console.log('📤 전송할 데이터:', requestData);
       console.log('📤 JSON 문자열:', JSON.stringify(requestData));
 
-      const response = await fetch('/.netlify/functions/quiz/answer', {
+      // 모든 퀴즈 모달에서는 새로운 API 사용
+      const apiUrl = isAllQuizModalOpen ? '/api/all-quiz' : '/.netlify/functions/quiz/answer';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -787,37 +942,6 @@ export default function QuizClient() {
       }
     }
   }, [selectedDate, userSchool, userLoading, isViewingMode, viewingUserInfo]);
-
-  // 관심학교 모드일 때 접근 차단 (학생/비학생 구분 없이)
-  if (schoolMode.selectedInterestSchool) {
-    return (
-      <>
-        {/* @ts-ignore - Next.js styled-jsx 타입 오류 무시 */}
-        <style jsx>{styles}</style>
-        
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-8 text-center">
-            <div className="text-amber-600 text-5xl mb-4">⚠️</div>
-            <h2 className="text-xl font-semibold text-amber-800 mb-3">
-              주의: 개인 기록과 성취 관리를 위한 퀴즈 페이지는<br />
-              내 학교에서만 이용 가능합니다!
-            </h2>
-            <p className="text-amber-700 mb-4 leading-relaxed">
-              현재 <strong>{schoolMode.selectedInterestSchool.school_name}</strong> 관심학교 모드입니다.
-            </p>
-            <button
-              onClick={() => {
-                window.history.back(); // 직전 페이지로 돌아가기
-              }}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              직전으로 돌아가기
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
