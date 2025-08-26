@@ -17,6 +17,7 @@ import SchoolGradeSelector from '@/components/SchoolGradeSelector';
 import QuizShareButton from '@/components/QuizShareButton';
 import QuizDropdown from '@/components/QuizDropdown';
 import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
+import AllQuizModal from './AllQuizModal';
 
 
 // Quiz type definition
@@ -856,7 +857,7 @@ export default function QuizClient() {
   };
 
   // Date change handler
-  const handleDateChange = (date: string | null | undefined) => {
+  const handleDateChange = (date: string) => {
     if (date && typeof date === 'string') {
       setSelectedDate(date);
       
@@ -1108,149 +1109,19 @@ export default function QuizClient() {
         />
         
         {/* 모든 퀴즈 모달 */}
-        {isAllQuizModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
-              {/* 모달 헤더 */}
-              <div className="relative p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
-                <div className="text-center">
-                  <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-                    ✨ 모든 퀴즈 풀어보기 ✨
-                  </h2>
-                  <p className="text-sm text-gray-600 font-medium">
-                    다양한 날짜의 급식 퀴즈를 자유롭게 도전해보세요!
-                  </p>
-                </div>
-                
-                
-                <button
-                  onClick={() => setIsAllQuizModalOpen(false)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-white/50 transition-all duration-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* 모달 내용 */}
-              <div className="flex-1 p-6 overflow-y-auto">
-                {/* 날짜 선택기, 학교학년 선택기, 학급 선택 드롭다운 - 2줄 레이아웃 */}
-                <div className="mb-6">
-                  {/* 첫 번째 줄: 날짜 선택기 */}
-                  <div className="flex justify-center mb-4">
-                    <DateNavigator 
-                      selectedDate={selectedDate}
-                      onDateChange={handleDateChange}
-                    />
-                  </div>
-                  
-                  {/* 두 번째 줄: 학교학년 선택기 + 학급 선택 드롭다운 */}
-                  <div className="flex items-center justify-center gap-4">
-                    {/* 학교학년 선택기 */}
-                    <SchoolGradeSelector
-                      schoolName={universalSchoolName}
-                      grade={universalGrade}
-                      schoolType={universalSchoolType}
-                      onGradeChange={handleUniversalGradeChange}
-                      onSchoolChange={handleUniversalSchoolChange}
-                    />
-                    
-                    {/* 학급 선택 드롭다운 */}
-                    <div className="relative">
-                      <select
-                        value={selectedSchoolLevel}
-                        onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
-                        className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
-                      >
-                        <option value="elementary">초등학교</option>
-                        <option value="middle">중학교</option>
-                        <option value="high">고등학교</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* 퀴즈 콘텐츠 */}
-                <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-                  {loading ? (
-                    <div className="text-center py-10">
-                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
-                      <p className="mt-4 text-gray-600">퀴즈를 불러오는 중...</p>
-                    </div>
-                  ) : error ? (
-                    <div className="text-center py-10">
-                      <p className="text-red-600 mb-4">{error}</p>
-                      <QuizGenerateButton
-                        isGenerating={generatingQuiz}
-                        onClick={handleManualQuizGenerate}
-                        disabled={isViewingMode}
-                      />
-                      <p className="text-sm text-gray-500 mt-4">
-                        또는 다른 날짜를 선택해보세요.
-                      </p>
-                    </div>
-                  ) : quiz ? (
-                    <div className="quiz-container">
-                      {/* 퀴즈 문제 */}
-                      <div className="mb-6">
-                        <h3 className="text-xl font-semibold mb-2 dark:text-gray-100">오늘의 퀴즈</h3>
-                        <p className="text-gray-700 dark:text-gray-200">{quiz.question}</p>
-                      </div>
-                      
-                      {/* 퀴즈 옵션 및 제출 버튼 */}
-                      <QuizOptionsSection
-                        quiz={quiz}
-                        selectedOption={selectedOption}
-                        submitted={submitted}
-                        submitting={submitting}
-                        isViewingMode={isViewingMode}
-                        mealImageUrl={mealImageUrl}
-                        onOptionSelect={setSelectedOption}
-                        onSubmitAnswer={submitAnswer}
-                      />
-                      
-                      {/* 퀴즈 결과 */}
-                      {submitted && (
-                        <QuizResultSection
-                          quiz={quiz}
-                          isViewingMode={isViewingMode}
-                          reportingQuiz={reportingQuiz}
-                          mealImageUrl={mealImageUrl}
-                          onReportQuiz={handleReportQuiz}
-                          isAllQuizModal={true}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10">
-                      {noMenu ? (
-                        <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
-                          <div className="text-5xl mb-2">🏫</div>
-                          <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
-                          <p className="text-amber-600">{noMenuMessage}</p>
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="text-6xl mb-4">🧩</div>
-                          <h3 className="text-2xl font-bold text-gray-800 mb-4">퀴즈가 없습니다</h3>
-                          <p className="text-gray-600 mb-8">
-                            선택한 날짜에 퀴즈가 없습니다. 다른 날짜를 선택해보세요!
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <AllQuizModal
+          isOpen={isAllQuizModalOpen}
+          onClose={() => setIsAllQuizModalOpen(false)}
+          selectedDate={selectedDate}
+          onDateChange={handleDateChange}
+          universalSchoolName={universalSchoolName}
+          universalGrade={universalGrade}
+          universalSchoolType={universalSchoolType}
+          onUniversalGradeChange={handleUniversalGradeChange}
+          onUniversalSchoolChange={handleUniversalSchoolChange}
+          selectedSchoolLevel={selectedSchoolLevel}
+          setSelectedSchoolLevel={setSelectedSchoolLevel}
+        />
       </div>
     </>
   );
