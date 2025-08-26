@@ -139,9 +139,11 @@ export default function QuizClient() {
       
       let nextIndex;
       if (direction === 'next') {
-        nextIndex = currentIndex < schoolInfos.length - 1 ? currentIndex + 1 : 0; // 마지막이면 처음으로
+        // 현재 학교를 찾지 못했거나 마지막 학교인 경우 첫 번째로
+        nextIndex = (currentIndex === -1 || currentIndex >= schoolInfos.length - 1) ? 0 : currentIndex + 1;
       } else {
-        nextIndex = currentIndex > 0 ? currentIndex - 1 : schoolInfos.length - 1; // 첫번째면 마지막으로
+        // 현재 학교를 찾지 못했거나 첫 번째 학교인 경우 마지막으로
+        nextIndex = (currentIndex === -1 || currentIndex <= 0) ? schoolInfos.length - 1 : currentIndex - 1;
       }
       
       const nextSchool = schoolInfos[nextIndex];

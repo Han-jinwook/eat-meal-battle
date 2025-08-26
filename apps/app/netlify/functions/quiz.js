@@ -188,8 +188,10 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     // 중복방지는 프론트엔드에서 처리 (UI 차단)
     
     // 정답 확인 (0-based index)
-    const isCorrect = selectedOption === quiz.correct_answer;
-    console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isCorrect });
+    // 오출제 확정된 문제는 모든 답변을 정답으로 처리
+    const isVerifiedIncorrect = quiz.report_status === 'verified_incorrect';
+    const isCorrect = isVerifiedIncorrect ? true : (selectedOption === quiz.correct_answer);
+    console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isVerifiedIncorrect, isCorrect });
     
     // 답변 저장 데이터 준비
     const insertData = {
