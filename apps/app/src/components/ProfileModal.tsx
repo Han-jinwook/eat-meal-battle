@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import BirthConsentModal from './BirthConsentModal';
+import PushNotificationSetup from './PushNotificationSetup';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -244,6 +245,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 <div className="text-xs text-yellow-700 bg-yellow-50 rounded p-2">학교 정보가 아직 없습니다.</div>
               )}
             </div>
+
+            {/* 푸시 알림 설정 */}
+            {schoolInfo && <PushNotificationSetup />}
 
             {/* 계정 관리 */}
             <div className="space-y-2">

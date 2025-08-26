@@ -763,3 +763,155 @@ else if (kakaoUserInfo?.kakao_account?.birthyear) {
 1. 카카오 개발자 콘솔에서 birthday 권한 활성화
 2. 실제 테스트를 통한 생년월일 수신 확인
 3. 실전 출시 시 나이 범위 6-19세로 조정
+
+```
+```
+
+### 완료된 파일
+- `src/components/BirthConsentModal.tsx`: birthday 스코프 + 안내 메시지 수정
+- `src/app/auth/callback/route.ts`: 카카오 생년월일 처리 로직 추가
+
+### 다음 단계
+1. 카카오 개발자 콘솔에서 birthday 권한 활성화
+2. 실제 테스트를 통한 생년월일 수신 확인
+3. 실전 출시 시 나이 범위 6-19세로 조정
+
+---
+
+## 📱 PWA 푸시 알림 시스템 구현 완료 (2025-08-26)
+
+### 핵심 구조
+- **Firebase Admin SDK**: 서버 사이드 푸시 발송
+- **FCM 토큰 관리**: Supabase `user_fcm_tokens` 테이블
+- **권한 요청**: `PushNotificationSetup.tsx` 컴포넌트
+- **발송 API**: `/api/notifications/send-push`
+
+### 구현된 컴포넌트
+
+#### 1. 푸시 알림 설정 UI (`PushNotificationSetup.tsx`)
+- 사용자 친화적인 단계별 권한 요청
+- 권한 상태별 다른 UI (허용/거부/대기)
+- FCM 토큰 자동 획득 및 DB 저장
+- 디바이스 타입 감지 (web/android/ios)
+
+#### 2. 서버 사이드 발송 API (`/api/notifications/send-push`)
+- Firebase Admin SDK 기반 푸시 발송
+- 다양한 타겟팅 옵션:
+  - 특정 사용자들 (`targetUsers`)
+  - 특정 학교 (`schoolCode`)
+  - 특정 학년 (`grade`)
+- 무효한 토큰 자동 비활성화
+- 발송 결과 통계 제공
+
+#### 3. 유틸리티 라이브러리 (`pushNotifications.ts`)
+```typescript
+// 급식 메뉴 알림
+sendMealNotification(schoolCode, mealDate, mealType)
+
+// 퀴즈 챔피언 알림
+sendQuizChampionNotification(userId, period, rank)
+
+// 배틀 초대 알림
+sendBattleInviteNotification(targetUserId, inviterName)
+
+// 공지사항 알림
+sendAnnouncementNotification(title, body, schoolCode)
+```
+
+### 데이터베이스 구조
+
+#### user_fcm_tokens 테이블
+```sql
+CREATE TABLE user_fcm_tokens (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  token TEXT NOT NULL,
+  device_type TEXT DEFAULT 'web' CHECK (device_type IN ('web', 'android', 'ios')),
+  device_info JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT true,
+  last_used_at TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Firebase 환경변수 (이미 설정 완료)
+```
+NEXT_PUBLIC_FIREBASE_API_KEY
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+NEXT_PUBLIC_FIREBASE_PROJECT_ID
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+NEXT_PUBLIC_FIREBASE_APP_ID
+NEXT_PUBLIC_FIREBASE_VAPID_KEY
+FIREBASE_ADMIN_PROJECT_ID
+FIREBASE_ADMIN_CLIENT_EMAIL
+FIREBASE_ADMIN_PRIVATE_KEY
+```
+
+### 푸시 알림 플로우
+1. **권한 요청**: 사용자가 알림 허용 버튼 클릭
+2. **토큰 획득**: Firebase에서 FCM 토큰 생성
+3. **토큰 저장**: Supabase에 토큰 저장 (중복 방지)
+4. **알림 발송**: 서버에서 Firebase Admin SDK로 푸시 발송
+5. **토큰 관리**: 무효한 토큰 자동 비활성화
+
+### 알림 타입별 활용 예시
+
+#### 급식 관련
+- 새로운 급식 메뉴 등록
+- 급식 이미지 승인 완료
+- 인기 급식 메뉴 추천
+
+#### 퀴즈/배틀 관련
+- 주간/월간 챔피언 결과
+- 배틀 초대 및 결과
+- 새로운 퀴즈 출제
+
+#### 커뮤니티 관련
+- 댓글/답글 알림
+- 좋아요 알림
+- 중요 공지사항
+
+### 보안 및 성능
+
+#### RLS 정책
+- 사용자는 자신의 토큰만 조회/수정 가능
+- 서비스 역할은 모든 토큰 접근 가능 (푸시 발송용)
+
+#### 토큰 관리
+- 중복 토큰 방지 (UNIQUE 제약조건)
+- 무효한 토큰 자동 비활성화
+- 마지막 사용 시간 추적
+
+#### 성능 최적화
+- 배치 발송으로 여러 사용자에게 동시 전송
+- 실패한 토큰 자동 정리
+- 인덱스 최적화로 빠른 토큰 조회
+
+### 테스트 및 모니터링
+
+#### 테스트 컴포넌트 (`PushNotificationTest.tsx`)
+- 개발자용 푸시 알림 테스트 도구
+- 실시간 발송 결과 확인
+- 성공/실패 통계 표시
+
+#### 모니터링 포인트
+- FCM 토큰 등록 성공률
+- 푸시 알림 발송 성공률
+- 무효한 토큰 비율
+- 사용자별 알림 수신 설정
+
+### 향후 확장 계획
+- 알림 카테고리별 설정 (급식/퀴즈/배틀 개별 on/off)
+- 알림 시간대 설정 (야간 알림 차단)
+- 푸시 알림 통계 대시보드
+- A/B 테스트를 위한 알림 메시지 최적화
+
+### 완료된 파일 목록
+- `src/components/PushNotificationSetup.tsx` - 권한 요청 UI
+- `src/app/api/notifications/send-push/route.ts` - 발송 API
+- `src/lib/pushNotifications.ts` - 유틸리티 함수
+- `src/components/PushNotificationTest.tsx` - 테스트 컴포넌트
+- `src/app/page.tsx` - 메인 페이지 통합
+- Supabase: `user_fcm_tokens` 테이블 생성 완료

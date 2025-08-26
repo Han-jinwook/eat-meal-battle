@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { extractBattleRegion } from '@/utils/addressParser';
+import PushNotificationSetup from '@/components/PushNotificationSetup';
 
 // 학교 검색 결과 타입 정의
 interface School {
@@ -34,6 +35,7 @@ export default function SchoolSearchPage() {
   const [user, setUser] = useState<any>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showNotificationSetup, setShowNotificationSetup] = useState(false);
   
   // 로그인된 사용자 정보 가져오기
   useEffect(() => {
@@ -221,10 +223,10 @@ export default function SchoolSearchPage() {
       setSaveSuccess(true);
       setSaveLoading(false);
 
-      // 메인 페이지로 리다이렉트
+      // 알림 권한 요청 단계로 이동
       setTimeout(() => {
-        router.push('/');
-      }, 2000);
+        setShowNotificationSetup(true);
+      }, 1500);
     } catch (err: any) {
       console.error('학교 정보 저장 오류:', err);
       setError(err.message || '학교 정보 저장 중 오류가 발생했습니다');
@@ -357,6 +359,36 @@ export default function SchoolSearchPage() {
               {error}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 알림 권한 설정 단계 */}
+      {showNotificationSetup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              🔔 알림 설정
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              급식 메뉴, 퀴즈 결과, 배틀 초대 등의 알림을 받으시겠습니까?
+            </p>
+            
+            <PushNotificationSetup 
+              onTokenReceived={() => {
+                // 토큰 등록 완료 후 메인 페이지로 이동
+                setTimeout(() => {
+                  router.push('/');
+                }, 1000);
+              }}
+            />
+            
+            <button
+              onClick={() => router.push('/')}
+              className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded font-medium"
+            >
+              나중에 설정하기
+            </button>
+          </div>
         </div>
       )}
     </div>

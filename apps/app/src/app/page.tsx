@@ -1143,6 +1143,7 @@ export default function Home() {
       />
       
       
+      
       {/* PWA 설치 프롬프트 */}
       <PWAInstallPrompt />
     </div>
