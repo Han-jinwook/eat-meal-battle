@@ -183,9 +183,10 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const allGradeStats = schoolStats?.filter(s => s.week_number === week) || [];
         const schoolTotal = allGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
-        // 퀴즈 정답률을 바탕으로 my_record 상태 결정
+        // 퀴즈 정답률을 바탕으로 my_record 상태 결정 - 실제 데이터 기반으로 판정
         let myRecord = '✊'; // 도전 이모지
-        if (isWeekChampion || (weekTotal > 0 && weekCorrect === weekTotal)) {
+        
+        if (isWeekChampion) {
           myRecord = '🏆'; // 트로피 이모지
         }
         
@@ -226,9 +227,10 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const allMonthlyGradeStats = schoolStats?.filter(s => s.week_number === null) || [];
         const monthlySchoolTotal = allMonthlyGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
-        // 월간 통계를 바탕으로 my_record 상태 결정
+        // 월간 통계를 바탕으로 my_record 상태 결정 - 실제 데이터 기반으로 판정
         let myMonthRecord = '✊'; // 도전 이모지
-        if (isMonthChampion || (monthTotal > 0 && monthCorrect === monthTotal)) {
+        
+        if (isMonthChampion) {
           myMonthRecord = '🏆'; // 트로피 이모지
         }
         
