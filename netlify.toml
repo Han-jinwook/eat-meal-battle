@@ -66,9 +66,3 @@
   to = "/.netlify/functions/quiz"
   status = 200
   force = true
-
-[[redirects]]
-  from = "/api/quiz/*"
-  to = "/.netlify/functions/quiz"
-  status = 200
-  force = true

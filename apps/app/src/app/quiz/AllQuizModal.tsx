@@ -95,7 +95,7 @@ export default function AllQuizModal({
       }
 
       const dateStr = selectedDate;
-      const response = await fetch(`/api/quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
+      const response = await fetch(`/.netlify/functions/quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -141,7 +141,7 @@ export default function AllQuizModal({
         return;
       }
 
-      const response = await fetch('/api/quiz/submit', {
+      const response = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ export default function AllQuizModal({
     
     setReportingQuiz(true);
     try {
-      const response = await fetch('/api/quiz/report', {
+      const response = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
