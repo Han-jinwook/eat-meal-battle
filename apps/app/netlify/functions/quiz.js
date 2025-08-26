@@ -973,9 +973,8 @@ exports.handler = async function(event, context) {
     const token = authHeader.replace('Bearer ', '');
     console.log('🔑 토큰 추출 완료:', token.substring(0, 20) + '...');
     
-    // JWT 토큰 검증 (일반 클라이언트 사용)
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error } = await supabaseAuth.auth.getUser(token);
+    // JWT 토큰 검증 (Supabase 서비스 역할 키 사용)
+    const { data: { user }, error } = await supabaseClient.auth.getUser(token);
     
     console.log('👤 사용자 인증 결과:', { user: user?.id, error: error?.message });
     
