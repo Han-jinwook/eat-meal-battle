@@ -129,14 +129,30 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
 
     setIsLoading(true);
     try {
+      // Android Chrome에서 사용자 제스처 확인
+      const isAndroid = /Android/.test(navigator.userAgent);
+      
+      if (isAndroid) {
+        console.log('Android 기기에서 알림 권한 요청 중...');
+        // 약간의 지연을 두고 권한 요청 (사용자 제스처 컨텍스트 유지)
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       const permission = await Notification.requestPermission();
+      console.log('알림 권한 결과:', permission);
       setNotificationStatus(permission);
       
       if (permission === 'granted') {
         await handleGetToken();
+      } else if (permission === 'denied') {
+        console.log('알림 권한이 거부되었습니다. 브라우저 설정에서 수동으로 허용해주세요.');
       }
     } catch (error) {
       console.error('알림 권한 요청 실패:', error);
+      // Android에서 권한 요청 실패 시 추가 안내
+      if (/Android/.test(navigator.userAgent)) {
+        alert('알림 권한 요청에 실패했습니다. 브라우저 설정 > 사이트 설정 > 알림에서 수동으로 허용해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -280,9 +296,14 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
             나중에
           </button>
           <button
-            onClick={requestNotificationPermission}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              requestNotificationPermission();
+            }}
             disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg transition-colors touch-manipulation"
+            style={{ touchAction: 'manipulation' }}
           >
             {isLoading ? '설정 중...' : '알림 허용하기'}
           </button>
