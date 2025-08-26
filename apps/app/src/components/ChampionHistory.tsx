@@ -94,9 +94,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
           day_1, day_2, day_3, day_4, day_5, day_6, day_7, day_8, day_9, day_10,
           day_11, day_12, day_13, day_14, day_15, day_16, day_17, day_18, day_19, day_20,
           day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31,
-          week_1_correct, week_1_total, week_2_correct, week_2_total, 
-          week_3_correct, week_3_total, week_4_correct, week_4_total, 
-          week_5_correct, week_5_total, month_correct, total_count
+          week_1_correct, week_2_correct, week_3_correct, week_4_correct, week_5_correct, 
+          month_correct, total_count
         `)
         .eq('user_id', userId)
         .eq('year', currentMonth.getFullYear())
@@ -160,11 +159,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
         const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
         
-        // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
+        // quiz_champions에서 해당 주차의 정답 수 사용
         const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
-        const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
         const weekCorrect = quizStats?.[weekCorrectField] as number || 0;
-        const weekTotal = quizStats?.[weekTotalField] as number || 0;
+        // 총 문제 수는 criteriaData에서 가져옴
+        const weekTotal = criteriaData?.[`week_${week}_days` as keyof typeof criteriaData] as number || 0;
         
         // school_champions에서 집계 데이터 계산 - 새로운 구조 사용
         const weekStats = schoolStats?.find(s => 

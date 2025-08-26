@@ -227,8 +227,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           day_1, day_2, day_3, day_4, day_5, day_6, day_7, day_8, day_9, day_10,
           day_11, day_12, day_13, day_14, day_15, day_16, day_17, day_18, day_19, day_20,
           day_21, day_22, day_23, day_24, day_25, day_26, day_27, day_28, day_29, day_30, day_31,
-          week_1_correct, week_1_total, week_2_correct, week_2_total, week_3_correct, week_3_total,
-          week_4_correct, week_4_total, week_5_correct, week_5_total, month_correct, total_count
+          week_1_correct, week_2_correct, week_3_correct, week_4_correct, week_5_correct, 
+          month_correct, total_count
         `)
         .eq('user_id', targetUserId)
         .eq('year', year)

@@ -1,0 +1,77 @@
+-- quiz_champions 테이블에 누락된 컬럼들 추가
+-- 주차별 총 문제 수 컬럼들이 누락되어 SELECT 쿼리가 실패하는 문제 해결
+
+-- 주차별 총 문제 수 컬럼 추가 (week_1_total ~ week_5_total)
+ALTER TABLE quiz_champions 
+ADD COLUMN IF NOT EXISTS week_1_total INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_2_total INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_3_total INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_4_total INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_5_total INTEGER DEFAULT 0;
+
+-- 일별 퀴즈 결과 컬럼 추가 (day_1 ~ day_31)
+-- 각 일별 컬럼은 퀴즈 결과를 JSON 형태로 저장 (예: "correct", "incorrect", "no_quiz")
+ALTER TABLE quiz_champions 
+ADD COLUMN IF NOT EXISTS day_1 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_2 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_3 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_4 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_5 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_6 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_7 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_8 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_9 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_10 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_11 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_12 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_13 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_14 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_15 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_16 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_17 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_18 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_19 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_20 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_21 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_22 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_23 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_24 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_25 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_26 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_27 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_28 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_29 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_30 TEXT DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS day_31 TEXT DEFAULT NULL;
+
+-- 주차별 정답 수 컬럼 추가 (이미 존재할 수 있지만 안전하게 추가)
+ALTER TABLE quiz_champions 
+ADD COLUMN IF NOT EXISTS week_1_correct INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_2_correct INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_3_correct INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_4_correct INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS week_5_correct INTEGER DEFAULT 0;
+
+-- 월별 정답 수 컬럼 추가 (이미 존재할 수 있지만 안전하게 추가)
+ALTER TABLE quiz_champions 
+ADD COLUMN IF NOT EXISTS month_correct INTEGER DEFAULT 0;
+
+-- 인덱스 추가 (성능 최적화)
+CREATE INDEX IF NOT EXISTS idx_quiz_champions_user_year_month ON quiz_champions(user_id, year, month);
+CREATE INDEX IF NOT EXISTS idx_quiz_champions_school_grade_year_month ON quiz_champions(school_code, grade, year, month);
+
+-- 코멘트 추가
+COMMENT ON COLUMN quiz_champions.week_1_total IS '1주차 총 문제 수';
+COMMENT ON COLUMN quiz_champions.week_2_total IS '2주차 총 문제 수';
+COMMENT ON COLUMN quiz_champions.week_3_total IS '3주차 총 문제 수';
+COMMENT ON COLUMN quiz_champions.week_4_total IS '4주차 총 문제 수';
+COMMENT ON COLUMN quiz_champions.week_5_total IS '5주차 총 문제 수';
+
+COMMENT ON COLUMN quiz_champions.day_1 IS '1일 퀴즈 결과 (correct/incorrect/no_quiz)';
+COMMENT ON COLUMN quiz_champions.day_2 IS '2일 퀴즈 결과 (correct/incorrect/no_quiz)';
+-- ... (나머지 일별 컬럼들도 동일한 패턴)
+
+-- 마이그레이션 완료 로그
+INSERT INTO migration_log (migration_name, executed_at) 
+VALUES ('add_missing_quiz_champions_columns', NOW())
+ON CONFLICT (migration_name) DO NOTHING;

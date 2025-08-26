@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase';
 import DateNavigator from '@/components/DateNavigator';
 import SchoolGradeSelector from '@/components/SchoolGradeSelector';
 import QuizOptionsSection from '@/components/QuizOptionsSection';
@@ -85,8 +86,20 @@ export default function AllQuizModal({
     setMealImageUrl('');
 
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        setError('로그인이 필요합니다.');
+        return;
+      }
+
       const dateStr = selectedDate;
-      const response = await fetch(`/api/quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`);
+      const response = await fetch(`/api/quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -120,9 +133,20 @@ export default function AllQuizModal({
     
     setSubmitting(true);
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        setError('로그인이 필요합니다.');
+        return;
+      }
+
       const response = await fetch('/api/quiz/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           quizId: quiz.id,
           selectedOption: selectedOption
@@ -259,9 +283,8 @@ export default function AllQuizModal({
               </div>
             ) : error ? (
               <div className="text-center py-10">
-                <div className="text-6xl mb-4">❌</div>
-                <h3 className="text-xl font-bold text-red-600 mb-4">퀴즈를 불러올 수 없습니다</h3>
-                <p className="text-gray-600 mb-4">{error}</p>
+                <div className="text-6xl mb-4">🍽️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">급식퀴즈가 없습니다!</h3>
                 <p className="text-sm text-gray-500">
                   다른 날짜나 학교를 선택해보세요.
                 </p>
