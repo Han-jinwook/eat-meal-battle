@@ -8,14 +8,14 @@ import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 // ChampionCalendar 컴포넌트가 존재하지 않아 주석 처리
 import ChampionHistory from '@/components/ChampionHistory';
-import QuizGenerateButton from '@/components/QuizGenerateButton';
-import QuizResultSection from '@/components/QuizResultSection';
+import DateNavigator from '@/components/DateNavigator';
 import QuizOptionsSection from '@/components/QuizOptionsSection';
+import QuizResultSection from '@/components/QuizResultSection';
 import SchoolInfoHeader from '@/components/SchoolInfoHeader';
-import { useSchoolMode } from '@/hooks/useSchoolMode';
+import QuizGenerateButton from '@/components/QuizGenerateButton';
+import UniversalSelector from '@/components/UniversalSelector';
 import QuizShareButton from '@/components/QuizShareButton';
 import QuizDropdown from '@/components/QuizDropdown';
-import DateNavigator from '@/components/DateNavigator';
 import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
 
 
@@ -57,7 +57,6 @@ export default function QuizClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userSchool, loading: userLoading, error: userError } = useUserSchool();
-  const schoolMode = useSchoolMode(userSchool);
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -81,6 +80,22 @@ export default function QuizClient() {
   const [isAllQuizModalOpen, setIsAllQuizModalOpen] = useState(false);
   const [selectedSchoolLevel, setSelectedSchoolLevel] = useState<'elementary' | 'middle' | 'high'>('elementary');
   const [mealImageUrl, setMealImageUrl] = useState<string | null>(null);
+  
+  // 만능 선택기 상태
+  const [universalSchoolName, setUniversalSchoolName] = useState<string>('강남초등학교');
+  const [universalGrade, setUniversalGrade] = useState<number>(1);
+  const [universalSchoolType, setUniversalSchoolType] = useState<'초등학교' | '중학교' | '고등학교'>('초등학교');
+
+  // 만능 선택기 핸들러 함수들
+  const handleUniversalGradeChange = (grade: number) => {
+    setUniversalGrade(grade);
+    console.log('🎯 학년 변경:', grade);
+  };
+
+  const handleUniversalSchoolChange = (direction: 'prev' | 'next') => {
+    console.log('🏫 학교 변경:', direction);
+    // TODO: DB에서 다음/이전 학교 조회 후 업데이트
+  };
 
   // 관람 모드 상태
   const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
@@ -995,12 +1010,21 @@ export default function QuizClient() {
               
               {/* 모달 내용 */}
               <div className="flex-1 p-6 overflow-y-auto">
-                {/* 날짜 선택기와 학급 선택 드롭다운 */}
-                <div className="flex items-center justify-between mb-6">
+                {/* 날짜 선택기, 만능 선택기, 학급 선택 드롭다운 */}
+                <div className="flex items-center justify-between gap-4 mb-6">
                   {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
                   <DateNavigator 
                     selectedDate={selectedDate}
                     onDateChange={handleDateChange}
+                  />
+                  
+                  {/* 만능 선택기 */}
+                  <UniversalSelector
+                    schoolName={universalSchoolName}
+                    grade={universalGrade}
+                    schoolType={universalSchoolType}
+                    onGradeChange={handleUniversalGradeChange}
+                    onSchoolChange={handleUniversalSchoolChange}
                   />
                   
                   {/* 학급 선택 드롭다운 */}
@@ -1008,11 +1032,11 @@ export default function QuizClient() {
                     <select
                       value={selectedSchoolLevel}
                       onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
-                      className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
+                      className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
                     >
-                      <option value="elementary">🏫 초등학교</option>
-                      <option value="middle">🎓 중학교</option>
-                      <option value="high">📚 고등학교</option>
+                      <option value="elementary">초등학교</option>
+                      <option value="middle">중학교</option>
+                      <option value="high">고등학교</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
