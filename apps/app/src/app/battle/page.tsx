@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import useUserSchool from '@/hooks/useUserSchool';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import DateNavigator from '@/components/DateNavigator';
@@ -28,6 +29,7 @@ const getSchoolCharacterImage = (schoolType: string): string => {
 
 export default function BattlePage() {
   const supabase = createClient();
+  const router = useRouter();
   
   // 사용자/학교 정보 훅
   const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
@@ -57,6 +59,20 @@ export default function BattlePage() {
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
+
+  // 비회원 로그인 리다이렉트 처리
+  useEffect(() => {
+    if (!userLoading && !user) {
+      console.log('🔒 비회원 접근 감지, 로그인 페이지로 리다이렉트');
+      
+      // 현재 URL을 returnUrl로 저장
+      const currentUrl = window.location.href;
+      const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
+      
+      router.push(loginUrl);
+      return;
+    }
+  }, [user, userLoading, router]);
 
   // URL의 date 파라미터를 상태에 반영 (초기 1회)
   useEffect(() => {
@@ -1228,7 +1244,16 @@ export default function BattlePage() {
                 
                 {/* 테이블 내용 - 실제 데이터 */}
                 <div className={`divide-y divide-red-100 ${viewMode === 'monthly' ? 'max-h-96 overflow-y-auto' : ''}`}>
-                  {battleLoading ? (
+                  {userLoading || (!userLoading && !user) ? (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600">
+                          {userLoading ? '사용자 정보를 불러오는 중...' : '로그인 페이지로 이동 중...'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : battleLoading ? (
                     <div className="p-8 text-center text-red-400">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
                       <p>데이터를 불러오는 중...</p>

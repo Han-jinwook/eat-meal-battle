@@ -313,7 +313,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       // 최대 6주차까지 처리
       for (let week = 1; week <= 6; week++) {
         // 장원 여부 확인
-        const weekChampionField = `week_${week}_champion` as keyof typeof championData;
+        const weekChampionField = `week_${week}_cham` as keyof typeof championData;
         const isChampion = championData ? !!championData[weekChampionField] : false;
         
         // DB에서 가져온 주차별 정답 수와 총 퀴즈 수
@@ -334,7 +334,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       setWeeklyTrophies(trophies);
       
       // 5. 월간 트로피 설정
-      setMonthlyTrophy(championData ? !!championData.month_champion : false);
+      setMonthlyTrophy(championData ? !!championData.month_champ : false);
       
     } catch (error) {
       console.error('데이터 조회 오류:', error);
