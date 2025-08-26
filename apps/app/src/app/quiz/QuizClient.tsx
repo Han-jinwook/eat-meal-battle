@@ -982,25 +982,6 @@ export default function QuizClient() {
                   </p>
                 </div>
                 
-                {/* 학급 선택 드롭다운 */}
-                <div className="absolute top-4 left-4">
-                  <div className="relative">
-                    <select
-                      value={selectedSchoolLevel}
-                      onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
-                      className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                    >
-                      <option value="elementary"> 초등학교</option>
-                      <option value="middle"> 중학교</option>
-                      <option value="high"> 고등학교</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
                 
                 <button
                   onClick={() => setIsAllQuizModalOpen(false)}
@@ -1014,11 +995,32 @@ export default function QuizClient() {
               
               {/* 모달 내용 */}
               <div className="flex-1 p-6 overflow-y-auto">
-                {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
-                <DateNavigator 
-                  selectedDate={selectedDate}
-                  onDateChange={handleDateChange}
-                />
+                {/* 날짜 선택기와 학급 선택 드롭다운 */}
+                <div className="flex items-center justify-between mb-6">
+                  {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
+                  <DateNavigator 
+                    selectedDate={selectedDate}
+                    onDateChange={handleDateChange}
+                  />
+                  
+                  {/* 학급 선택 드롭다운 */}
+                  <div className="relative">
+                    <select
+                      value={selectedSchoolLevel}
+                      onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
+                      className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
+                    >
+                      <option value="elementary">🏫 초등학교</option>
+                      <option value="middle">🎓 중학교</option>
+                      <option value="high">📚 고등학교</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* 퀴즈 콘텐츠 */}
                 <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
