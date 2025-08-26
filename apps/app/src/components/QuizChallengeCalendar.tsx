@@ -456,8 +456,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         .from('quiz_champions')
         .select('*') // 모든 필드 조회하여 주차별 정답 수 합산
         .eq('user_id', session.data.session.user.id)
-        // school_code 컬럼이 존재하지 않으므로 제거
-        .eq('grade', userSchool.grade)
         .eq('year', year)
         .eq('month', displayMonth)
         .single();

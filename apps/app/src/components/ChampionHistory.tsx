@@ -157,7 +157,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const weekDays = criteriaData?.[weekDaysField] as number || 0;
         
         // myRecords에서 해당 주차 장원 여부 확인  
-        const weekChampionField = `week_${week}_champion` as keyof typeof myRecords;
+        const weekChampionField = `week_${week}_cham` as keyof typeof myRecords;
         const isWeekChampion = myRecords?.[weekChampionField] as boolean || false;
         
         // quiz_champions에서 해당 주차의 정답 수와 총 문제 수 바로 사용
@@ -173,8 +173,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         );
         
         // 우리 반 장원수 (class 정보가 없으면 0으로 처리)
-        const myClassCount = (targetSchoolInfo.class && weekStats) ? 
-          (weekStats[`class_${targetSchoolInfo.class}`] || 0) : 0;
+        const myClassCount = (targetSchoolInfo.class_number && weekStats) ? 
+          (weekStats[`class_${targetSchoolInfo.class_number}`] || 0) : 0;
         
         // 우리 학년 장원수  
         const myGradeCount = weekStats?.grade_total || 0;
@@ -204,7 +204,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       
       // 6. 월별 데이터 추가 - quiz_champions에서 바로 월별 정답 수 활용
       const monthDays = criteriaData?.month_total || 0;
-      const isMonthChampion = myRecords?.month_champion || false;
+      const isMonthChampion = myRecords?.month_champ || false;
       const monthCorrect = quizStats?.month_correct || 0;
       const monthTotal = quizStats?.total_count || 0;
       
@@ -216,8 +216,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         );
         
         // 우리 반 월장원수 (class 정보가 없으면 0으로 처리)
-        const monthlyClassCount = (targetSchoolInfo.class && monthlyStats) ? 
-          (monthlyStats[`class_${targetSchoolInfo.class}`] || 0) : 0;
+        const monthlyClassCount = (targetSchoolInfo.class_number && monthlyStats) ? 
+          (monthlyStats[`class_${targetSchoolInfo.class_number}`] || 0) : 0;
         
         // 우리 학년 월장원수  
         const monthlyGradeCount = monthlyStats?.grade_total || 0;

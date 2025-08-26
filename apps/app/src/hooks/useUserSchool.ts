@@ -10,7 +10,8 @@ interface SchoolInfo {
   region?: string;
   school_type?: string; // 학교 유형 (초등학교/중학교/고등학교)
   grade?: string | number; // 학년
-  class?: string | number; // 반
+  class?: string | number; // 반 (기존 필드)
+  class_number?: string | number; // 실제 DB 필드
   nickname?: string; // 사용자 별명
   created_at: string;
 }

@@ -253,9 +253,9 @@ export class ChampionCalculator {
       let updateData: any = {}
 
       if (periodType === 'weekly' && weekNumber) {
-        updateData[`week_${weekNumber}_champion`] = true
+        updateData[`week_${weekNumber}_cham`] = true
       } else if (periodType === 'monthly') {
-        updateData['month_champion'] = true
+        updateData['month_champ'] = true
       }
 
       if (existingData) {
@@ -277,12 +277,12 @@ export class ChampionCalculator {
           grade: grade,
           year: year,
           month: month,
-          week_1_champion: false,
-          week_2_champion: false,
-          week_3_champion: false,
-          week_4_champion: false,
-          week_5_champion: false,
-          month_champion: false,
+          week_1_cham: false,
+          week_2_cham: false,
+          week_3_cham: false,
+          week_4_cham: false,
+          week_5_cham: false,
+          month_champ: false,
           ...updateData
         }
 
