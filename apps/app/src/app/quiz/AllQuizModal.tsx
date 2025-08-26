@@ -166,27 +166,50 @@ export default function AllQuizModal({
     setSubmitting(true);
     try {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      let { data: { session } } = await supabase.auth.getSession();
+      
+      // 세션이 없으면 토큰 새로고침 시도
+      if (!session?.access_token) {
+        console.log('🔄 세션이 없어서 토큰 새로고침 시도');
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        session = refreshData.session;
+      }
       
       if (!session?.access_token) {
-        setError('로그인이 필요합니다.');
+        setError('로그인이 필요합니다. 페이지를 새로고침해주세요.');
         return;
       }
 
       console.log('🔑 토큰 전송:', session.access_token?.substring(0, 20) + '...');
       
-      const response = await fetch('/.netlify/functions/quiz/answer', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          quiz_id: quiz.id,
-          selected_option: Number(selectedOption)
-        })
-      });
+      const makeRequest = async (token) => {
+        return await fetch('/.netlify/functions/quiz/answer', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            quiz_id: quiz.id,
+            selected_option: Number(selectedOption)
+          })
+        });
+      };
+
+      let response = await makeRequest(session.access_token);
+
+      // 401 오류 시 토큰 새로고침 후 재시도
+      if (response.status === 401) {
+        console.log('🔄 401 오류로 토큰 새로고침 후 재시도');
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        
+        if (refreshData.session?.access_token) {
+          response = await makeRequest(refreshData.session.access_token);
+        } else {
+          setError('로그인이 만료되었습니다. 페이지를 새로고침해주세요.');
+          return;
+        }
+      }
 
       if (response.ok) {
         const result = await response.json();
