@@ -121,6 +121,17 @@ export default function AllQuizModal({
       setQuiz(data.quiz);
       setMealImageUrl(data.mealImageUrl || '');
       
+      // 이미 제출된 답안이 있는지 확인
+      if (data.quiz?.user_selected_option !== undefined) {
+        setSelectedOption(data.quiz.user_selected_option);
+        setSubmitted(true);
+        console.log('✅ 이미 제출된 퀴즈:', { selectedOption: data.quiz.user_selected_option, isCorrect: data.quiz.is_correct });
+      } else {
+        setSelectedOption(null);
+        setSubmitted(false);
+        console.log('📝 새로운 퀴즈 - 답안 제출 가능');
+      }
+      
       // 급식 이미지 로드
       if (data.quiz?.meal_id) {
         console.log('🍽️ AllQuizModal 퀴즈에서 meal_id 발견:', data.quiz.meal_id);
