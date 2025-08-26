@@ -13,7 +13,7 @@ import QuizOptionsSection from '@/components/QuizOptionsSection';
 import QuizResultSection from '@/components/QuizResultSection';
 import SchoolInfoHeader from '@/components/SchoolInfoHeader';
 import QuizGenerateButton from '@/components/QuizGenerateButton';
-import UniversalSelector from '@/components/UniversalSelector';
+import SchoolGradeSelector from '@/components/SchoolGradeSelector';
 import QuizShareButton from '@/components/QuizShareButton';
 import QuizDropdown from '@/components/QuizDropdown';
 import QuizChallengeCalendar from '@/components/QuizChallengeCalendar';
@@ -1134,38 +1134,43 @@ export default function QuizClient() {
               
               {/* 모달 내용 */}
               <div className="flex-1 p-6 overflow-y-auto">
-                {/* 날짜 선택기, 만능 선택기, 학급 선택 드롭다운 */}
-                <div className="flex items-center justify-between gap-4 mb-6">
-                  {/* 날짜 선택 - DateNavigator 컴포넌트 사용 (모든 퀴즈 버튼 제외) */}
-                  <DateNavigator 
-                    selectedDate={selectedDate}
-                    onDateChange={handleDateChange}
-                  />
+                {/* 날짜 선택기, 학교학년 선택기, 학급 선택 드롭다운 - 2줄 레이아웃 */}
+                <div className="mb-6">
+                  {/* 첫 번째 줄: 날짜 선택기 */}
+                  <div className="flex justify-center mb-4">
+                    <DateNavigator 
+                      selectedDate={selectedDate}
+                      onDateChange={handleDateChange}
+                    />
+                  </div>
                   
-                  {/* 만능 선택기 */}
-                  <UniversalSelector
-                    schoolName={universalSchoolName}
-                    grade={universalGrade}
-                    schoolType={universalSchoolType}
-                    onGradeChange={handleUniversalGradeChange}
-                    onSchoolChange={handleUniversalSchoolChange}
-                  />
-                  
-                  {/* 학급 선택 드롭다운 */}
-                  <div className="relative">
-                    <select
-                      value={selectedSchoolLevel}
-                      onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
-                      className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
-                    >
-                      <option value="elementary">초등학교</option>
-                      <option value="middle">중학교</option>
-                      <option value="high">고등학교</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                  {/* 두 번째 줄: 학교학년 선택기 + 학급 선택 드롭다운 */}
+                  <div className="flex items-center justify-center gap-4">
+                    {/* 학교학년 선택기 */}
+                    <SchoolGradeSelector
+                      schoolName={universalSchoolName}
+                      grade={universalGrade}
+                      schoolType={universalSchoolType}
+                      onGradeChange={handleUniversalGradeChange}
+                      onSchoolChange={handleUniversalSchoolChange}
+                    />
+                    
+                    {/* 학급 선택 드롭다운 */}
+                    <div className="relative">
+                      <select
+                        value={selectedSchoolLevel}
+                        onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
+                        className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
+                      >
+                        <option value="elementary">초등학교</option>
+                        <option value="middle">중학교</option>
+                        <option value="high">고등학교</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>

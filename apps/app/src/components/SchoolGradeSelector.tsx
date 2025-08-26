@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-interface UniversalSelectorProps {
+interface SchoolGradeSelectorProps {
   schoolName: string;
   grade: number;
   schoolType: '초등학교' | '중학교' | '고등학교';
@@ -10,13 +10,13 @@ interface UniversalSelectorProps {
   onSchoolChange: (direction: 'prev' | 'next') => void;
 }
 
-export default function UniversalSelector({
+const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
   schoolName,
   grade,
   schoolType,
   onGradeChange,
   onSchoolChange
-}: UniversalSelectorProps) {
+}) => {
   // 학교명에서 '등학교' 제거하여 모바일 최적화
   const getShortSchoolName = (name: string) => {
     return name.replace(/등학교$/, '');
@@ -116,3 +116,5 @@ export default function UniversalSelector({
     </div>
   );
 }
+
+export default SchoolGradeSelector;
