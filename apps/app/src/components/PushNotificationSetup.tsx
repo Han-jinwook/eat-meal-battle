@@ -115,8 +115,15 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
 
   // 알림 권한 요청
   const requestNotificationPermission = async () => {
+    // iOS Safari 체크
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    
     if (!('Notification' in window)) {
-      alert('이 브라우저는 알림을 지원하지 않습니다.');
+      if (isIOSSafari) {
+        alert('iOS Safari에서는 푸시 알림이 제한됩니다. Chrome 앱을 사용해주세요.');
+      } else {
+        alert('이 브라우저는 알림을 지원하지 않습니다.');
+      }
       return;
     }
 
@@ -236,6 +243,25 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
         <p className="text-sm text-gray-600 mb-4">
           중요한 알림을 놓치지 마세요! 다음과 같은 알림을 받을 수 있습니다:
         </p>
+        
+        {/* iOS Safari 경고 메시지 */}
+        {/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <div className="flex items-start">
+              <svg className="h-5 w-5 text-amber-400 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  iOS Safari 사용자 안내
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Safari에서는 푸시 알림이 제한됩니다. Chrome 앱 사용을 권장합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="text-left bg-gray-50 rounded-lg p-3 mb-4">
           <ul className="text-sm text-gray-700 space-y-1">

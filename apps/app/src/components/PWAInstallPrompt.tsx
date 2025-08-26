@@ -19,7 +19,10 @@ export default function PWAInstallPrompt() {
       return;
     }
 
-    // beforeinstallprompt 이벤트 리스너
+    // iOS Safari 체크
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    
+    // beforeinstallprompt 이벤트 리스너 (Android Chrome 등)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -43,7 +46,17 @@ export default function PWAInstallPrompt() {
       const oneDayInMs = 24 * 60 * 60 * 1000;
       if (Date.now() - dismissedTime < oneDayInMs) {
         setShowInstallPrompt(false);
+        return;
       }
+    }
+
+    // iOS Safari의 경우 수동으로 프롬프트 표시 (3초 후)
+    if (isIOSSafari) {
+      const timer = setTimeout(() => {
+        setShowInstallPrompt(true);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -53,20 +66,26 @@ export default function PWAInstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const choiceResult = await deferredPrompt.userChoice;
-    
-    if (choiceResult.outcome === 'accepted') {
-      console.log('사용자가 PWA 설치를 수락했습니다');
-    } else {
-      console.log('사용자가 PWA 설치를 거부했습니다');
+    if (deferredPrompt) {
+      // Android Chrome 등의 경우
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      
+      if (choiceResult.outcome === 'accepted') {
+        console.log('사용자가 PWA 설치를 수락했습니다');
+      } else {
+        console.log('사용자가 PWA 설치를 거부했습니다');
+        localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+      }
+      
+      setDeferredPrompt(null);
+      setShowInstallPrompt(false);
+    } else if (isIOSSafari) {
+      // iOS Safari의 경우 수동 안내
+      alert('홈 화면에 추가하려면:\n1. 하단의 공유 버튼(📤) 터치\n2. "홈 화면에 추가" 선택\n3. "추가" 버튼 터치');
+      setShowInstallPrompt(false);
       localStorage.setItem('pwa-install-dismissed', Date.now().toString());
     }
-    
-    setDeferredPrompt(null);
-    setShowInstallPrompt(false);
   };
 
   const handleDismiss = () => {
@@ -74,8 +93,16 @@ export default function PWAInstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
+  // iOS Safari 감지
+  const isIOSSafari = typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  
   // 이미 설치되었거나 설치 프롬프트를 보여주지 않는 경우
-  if (isInstalled || !showInstallPrompt || !deferredPrompt) {
+  if (isInstalled || !showInstallPrompt) {
+    return null;
+  }
+  
+  // Android Chrome 등에서 beforeinstallprompt가 없으면 숨김
+  if (!isIOSSafari && !deferredPrompt) {
     return null;
   }
 
@@ -92,10 +119,13 @@ export default function PWAInstallPrompt() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
-              앱으로 설치하기
+              {isIOSSafari ? '홈 화면에 추가하기' : '앱으로 설치하기'}
             </p>
             <p className="text-sm text-gray-500">
-              홈 화면에 급식배틀을 추가하여 더 빠르게 접속하세요!
+              {isIOSSafari 
+                ? '홈 화면에 뭐먹지를 추가하여 앱처럼 사용하세요!' 
+                : '홈 화면에 뭐먹지를 추가하여 더 빠르게 접속하세요!'
+              }
             </p>
           </div>
           <button
@@ -112,7 +142,7 @@ export default function PWAInstallPrompt() {
             onClick={handleInstallClick}
             className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            설치하기
+{isIOSSafari ? '방법 보기' : '설치하기'}
           </button>
           <button
             onClick={handleDismiss}
