@@ -1021,6 +1021,7 @@ export default function QuizClient() {
                   reportingQuiz={reportingQuiz}
                   mealImageUrl={mealImageUrl}
                   onReportQuiz={handleReportQuiz}
+                  isAllQuizModal={false}
                 />
               )}
             </div>
@@ -1222,6 +1223,7 @@ export default function QuizClient() {
                           reportingQuiz={reportingQuiz}
                           mealImageUrl={mealImageUrl}
                           onReportQuiz={handleReportQuiz}
+                          isAllQuizModal={true}
                         />
                       )}
                     </div>
