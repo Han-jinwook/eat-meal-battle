@@ -902,9 +902,21 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
             .single();
             
           if (userSchool) {
-            // 월장원 체크 실행
+            // 주장원 및 월장원 체크 실행
             const { championCalculator } = require('./utils/championCalculator');
             const calculator = new championCalculator.constructor(supabaseAdmin);
+            
+            // 주장원 체크 (누락되었던 부분)
+            await calculator.checkWeeklyChampion(
+              result.user_id,
+              userSchool.school_code,
+              userSchool.grade,
+              year,
+              month,
+              weekOfMonth
+            );
+            
+            // 월장원 체크
             await calculator.checkMonthlyChampion(
               result.user_id,
               userSchool.school_code,
