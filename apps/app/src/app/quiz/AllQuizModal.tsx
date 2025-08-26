@@ -59,6 +59,14 @@ export default function AllQuizModal({
   const [noMenuMessage, setNoMenuMessage] = useState('');
   const [mealImageUrl, setMealImageUrl] = useState<string>('');
 
+  // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
+  const handleSchoolChange = async (direction: 'prev' | 'next') => {
+    console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+    
+    // 부모 컴포넌트의 핸들러 호출
+    onUniversalSchoolChange(direction);
+  };
+
   // 퀴즈 로드 함수
   const loadQuiz = async () => {
     if (!universalSchoolName || !universalGrade) return;
@@ -245,7 +253,7 @@ export default function AllQuizModal({
                   grade={universalGrade}
                   schoolType={universalSchoolType}
                   onGradeChange={onUniversalGradeChange}
-                  onSchoolChange={onUniversalSchoolChange}
+                  onSchoolChange={handleSchoolChange}
                 />
                 
                 {/* 학급 선택 드롭다운 */}
