@@ -60,35 +60,33 @@ export default function BattlePage() {
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
 
-  // 비회원 로그인 리다이렉트 처리 - 학교 정보 로딩 완료 대기
+  // 사용자 인증 상태 체크 - 배틀 페이지 접근 제어
   useEffect(() => {
-    // 로딩 상태 로그
-    console.log('🔍 권한 체크 상태:', { 
-      userLoading, 
-      user: !!user, 
-      userSchool: !!userSchool,
-      schoolMode: schoolMode.currentMode 
-    });
-    
-    // 사용자 정보 로딩이 완료되고 사용자가 없는 경우에만 리다이렉트
-    // 단, 사용자가 있다면 학교 정보 로딩 완료까지 대기
-    if (!userLoading) {
-      if (!user) {
-        console.log('🔒 비회원 접근 감지, 로그인 페이지로 리다이렉트');
-        
-        // 현재 URL을 returnUrl로 저장
-        const currentUrl = window.location.href;
-        const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
-        
-        router.push(loginUrl);
-        return;
-      } else {
-        console.log('✅ 로그인된 사용자 확인됨, 배틀 페이지 접근 허용');
-      }
-    } else {
-      console.log('⏳ 사용자 정보 로딩 중...');
+    // SSR 환경에서는 아무것도 하지 않음
+    if (typeof window === 'undefined') {
+      return;
     }
-  }, [user, userLoading, userSchool, schoolMode.currentMode, router]);
+    
+    // 초기 로딩 상태에서는 대기
+    if (userLoading) {
+      return;
+    }
+    
+    // 에러가 있는 경우에도 대기 (일시적 네트워크 오류 등)
+    if (userError) {
+      return;
+    }
+    
+    // 로딩이 완료되고 에러가 없는데 사용자가 없으면 로그인 필요
+    if (!user) {
+      const currentUrl = window.location.href;
+      const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
+      router.replace(loginUrl);
+      return;
+    }
+    
+    // 사용자가 있으면 배틀 페이지 접근 허용
+  }, [user, userLoading, userError, router]);
 
   // URL의 date 파라미터를 상태에 반영 (초기 1회)
   useEffect(() => {
@@ -766,6 +764,18 @@ export default function BattlePage() {
       loadBattleData();
     }
   }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
+
+  // 로딩 상태 표시
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">배틀 페이지를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">

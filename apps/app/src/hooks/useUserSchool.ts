@@ -31,7 +31,7 @@ export default function useUserSchool(): UseUserSchoolReturn {
   const supabase = createClient();
   const [user, setUser] = useState<any>(null);
   const [userSchool, setUserSchool] = useState<SchoolInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // 초기값을 true로 설정
   const [error, setError] = useState('');
   const [refreshFlag, setRefreshFlag] = useState(0);
 
