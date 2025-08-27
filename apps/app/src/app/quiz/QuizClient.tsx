@@ -1105,7 +1105,13 @@ export default function QuizClient() {
         {/* 모든 퀴즈 모달 */}
         <AllQuizModal
           isOpen={isAllQuizModalOpen}
-          onClose={() => setIsAllQuizModalOpen(false)}
+          onClose={() => {
+            setIsAllQuizModalOpen(false);
+            // 모달 닫을 때 메인페이지 퀴즈 상태 새로고침
+            if (selectedDate && userSchool && !userLoading) {
+              fetchQuiz();
+            }
+          }}
           selectedDate={selectedDate}
           onDateChange={handleDateChange}
           universalSchoolName={universalSchoolName}
