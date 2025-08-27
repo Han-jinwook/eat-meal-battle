@@ -7,6 +7,7 @@ import SchoolGradeSelector from '@/components/SchoolGradeSelector';
 import QuizOptionsSection from '@/components/QuizOptionsSection';
 import QuizResultSection from '@/components/QuizResultSection';
 import QuizGenerateButton from '@/components/QuizGenerateButton';
+import QuizPerformanceCalendar from '@/components/QuizPerformanceCalendar';
 
 interface Quiz {
   id: string;
@@ -182,13 +183,13 @@ export default function AllQuizModal({
   const fetchMealImage = async (mealId: string) => {
     console.log('🍽️ AllQuizModal 급식이미지 로드 시작:', mealId);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('meal_images')
         .select('image_url')
         .eq('meal_id', mealId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
-        .limit(1) as any;
+        .limit(1) as any);
       if (error || !data || data.length === 0) {
         setMealImageUrl('');
         return;
@@ -584,6 +585,15 @@ export default function AllQuizModal({
                 )}
               </div>
             )}
+          </div>
+          
+          {/* 유저 실적 달력 UI */}
+          <div className="mt-8 bg-white rounded-lg shadow-sm p-6 border-t border-gray-100">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">📊 나의 퀴즈 실적</h3>
+              <p className="text-sm text-gray-600">일별 퀴즈 도전 기록을 확인해보세요</p>
+            </div>
+            <QuizPerformanceCalendar />
           </div>
         </div>
       </div>
