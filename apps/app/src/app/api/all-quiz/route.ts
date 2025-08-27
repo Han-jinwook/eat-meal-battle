@@ -29,10 +29,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '유효하지 않은 토큰입니다.' }, { status: 401 });
     }
 
-    // 퀴즈 조회 쿼리 구성 (meal_id 포함)
+    // 퀴즈 조회 쿼리 구성 (quiz_reports 테이블과 조인)
     let query = supabase
       .from('meal_quizzes')
-      .select('*, meal_id')
+      .select(`
+        *,
+        quiz_reports(
+          ai_verification_result,
+          status
+        )
+      `)
       .order('created_at', { ascending: false });
 
     // 필터 적용
