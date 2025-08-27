@@ -144,18 +144,33 @@ export default function AllQuizModal({
         return;
       }
       
-      // quiz_reports 데이터 구조 처리 - 스키마에 맞는 필드명 사용
+      // quiz_reports 데이터 구조 처리 - meal_quizzes.report_status 우선 사용
       console.log('🔍 AllQuizModal 원본 퀴즈 데이터:', quizData);
       console.log('🔍 AllQuizModal quiz_reports 데이터:', quizData.quiz_reports);
+      console.log('🔍 AllQuizModal meal_quizzes.report_status:', quizData.report_status);
+      
+      // meal_quizzes.report_status가 있으면 그것을 우선 사용, 없으면 quiz_reports에서 매핑
+      let finalReportStatus = quizData.report_status || 'none';
+      
+      // meal_quizzes.report_status가 없거나 'none'이고 quiz_reports가 있으면 매핑 시도
+      if ((!finalReportStatus || finalReportStatus === 'none') && quizData.quiz_reports?.[0]) {
+        const quizReportStatus = quizData.quiz_reports[0].status;
+        if (quizReportStatus === 'processed' && quizData.quiz_reports[0].ai_verification_result) {
+          const aiResult = quizData.quiz_reports[0].ai_verification_result;
+          finalReportStatus = aiResult.isCorrect ? 'verified_correct' : 'verified_incorrect';
+        } else {
+          finalReportStatus = quizReportStatus || 'none';
+        }
+      }
       
       const processedQuizData = {
         ...quizData,
-        report_status: quizData.quiz_reports?.[0]?.status || 'none',
+        report_status: finalReportStatus,
         ai_verification: quizData.quiz_reports?.[0]?.ai_verification_result || null
       };
       
       console.log('🔍 AllQuizModal 처리된 퀴즈 데이터:', processedQuizData);
-      console.log('🔍 AllQuizModal report_status:', processedQuizData.report_status);
+      console.log('🔍 AllQuizModal final report_status:', processedQuizData.report_status);
       
       setQuiz(processedQuizData);
       setMealImageUrl('');
