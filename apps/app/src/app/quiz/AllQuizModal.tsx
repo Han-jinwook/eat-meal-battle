@@ -119,8 +119,9 @@ export default function AllQuizModal({
 
       const data = await response.json();
       
-      // all-quiz API는 퀴즈 배열을 반환하므로 첫 번째 퀴즈 선택
-      const quizData = Array.isArray(data) && data.length > 0 ? data[0] : data.quiz;
+      // all-quiz API는 { quizzes: [...] } 형태로 반환
+      const quizzes = data.quizzes || [];
+      const quizData = quizzes.length > 0 ? quizzes[0] : null;
       
       if (!quizData) {
         setError('퀴즈 데이터를 찾을 수 없습니다.');
@@ -128,7 +129,7 @@ export default function AllQuizModal({
       }
       
       setQuiz(quizData);
-      setMealImageUrl(data.mealImageUrl || '');
+      setMealImageUrl('');
       
       // 이미 제출된 답안이 있는지 확인 (all-quiz API는 user_answer 필드 사용)
       if (quizData.user_answer) {
@@ -142,11 +143,11 @@ export default function AllQuizModal({
       }
       
       // 급식 이미지 로드
-      if (data.quiz?.meal_id) {
-        console.log('🍽️ AllQuizModal 퀴즈에서 meal_id 발견:', data.quiz.meal_id);
-        await fetchMealImage(data.quiz.meal_id);
+      if (quizData?.meal_id) {
+        console.log('🍽️ AllQuizModal 퀴즈에서 meal_id 발견:', quizData.meal_id);
+        await fetchMealImage(quizData.meal_id);
       } else {
-        console.log('🍽️ AllQuizModal 퀴즈에 meal_id가 없음:', data.quiz);
+        console.log('🍽️ AllQuizModal 퀴즈에 meal_id가 없음:', quizData);
         setMealImageUrl('');
       }
     } catch (err) {
