@@ -27,14 +27,16 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
   try {
     console.log(`📊 월간 급식 분석 시작: ${schoolCode}, ${year}-${month}`);
 
-    // 1. 해당 학교의 월간 급식 배틀 데이터 조회
-    const { data: mySchoolMealData, error: mealError } = await supabase
+    // 1. 해당 학교의 월간 급식 배틀 데이터 조회 (여러 사용자 고려)
+    const { data: mySchoolMealDataArray, error: mealError } = await supabase
       .from('meal_battle_monthly')
       .select('*')
       .eq('school_code', schoolCode)
       .eq('battle_year', year)
-      .eq('battle_month', month)
-      .single();
+      .eq('battle_month', month);
+
+    // 여러 행이 있을 경우 첫 번째 행 사용 (학교별로 동일한 데이터여야 함)
+    const mySchoolMealData = mySchoolMealDataArray && mySchoolMealDataArray.length > 0 ? mySchoolMealDataArray[0] : null;
 
     if (mealError && mealError.code !== 'PGRST116') {
       throw mealError;
@@ -66,14 +68,20 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
 
     if (menuItemsError) throw menuItemsError;
 
-    // 3. 학교 정보 조회
-    const { data: schoolInfo, error: schoolError } = await supabase
+    // 3. 학교 정보 조회 (여러 사용자 고려)
+    const { data: schoolInfoArray, error: schoolError } = await supabase
       .from('school_infos')
       .select('school_name, region')
-      .eq('school_code', schoolCode)
-      .single();
+      .eq('school_code', schoolCode);
+
+    // 여러 행이 있을 경우 첫 번째 행 사용 (학교 정보는 동일해야 함)
+    const schoolInfo = schoolInfoArray && schoolInfoArray.length > 0 ? schoolInfoArray[0] : null;
 
     if (schoolError) throw schoolError;
+    
+    if (!schoolInfo) {
+      throw new Error('학교 정보를 찾을 수 없습니다.');
+    }
 
     // 4. 전국 해당 월 급식 배틀 데이터 조회 (순위 계산용)
     const { data: nationalMealData, error: nationalError } = await supabase
