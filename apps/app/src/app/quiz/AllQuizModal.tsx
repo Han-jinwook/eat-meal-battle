@@ -144,12 +144,18 @@ export default function AllQuizModal({
         return;
       }
       
-      // quiz_reports 데이터 구조 처리
+      // quiz_reports 데이터 구조 처리 - 스키마에 맞는 필드명 사용
+      console.log('🔍 AllQuizModal 원본 퀴즈 데이터:', quizData);
+      console.log('🔍 AllQuizModal quiz_reports 데이터:', quizData.quiz_reports);
+      
       const processedQuizData = {
         ...quizData,
         report_status: quizData.quiz_reports?.[0]?.status || 'none',
         ai_verification: quizData.quiz_reports?.[0]?.ai_verification_result || null
       };
+      
+      console.log('🔍 AllQuizModal 처리된 퀴즈 데이터:', processedQuizData);
+      console.log('🔍 AllQuizModal report_status:', processedQuizData.report_status);
       
       setQuiz(processedQuizData);
       setMealImageUrl('');
