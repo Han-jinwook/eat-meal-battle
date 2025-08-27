@@ -13,7 +13,7 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   const [notificationStatus, setNotificationStatus] = useState<'default' | 'granted' | 'denied'>('default');
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
+  const [showSetup, setShowSetup] = useState(true);
   const { userSchool, loading: userLoading } = useUserSchool();
   const supabase = createClient();
 
@@ -202,8 +202,8 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
     );
   }
 
-  // 설정 UI 표시 여부 토글
-  if (!showSetup) {
+  // 권한이 기본 상태(default)일 때만 설정 UI 표시
+  if (notificationStatus !== 'default' || !showSetup) {
     return null;
   }
 
