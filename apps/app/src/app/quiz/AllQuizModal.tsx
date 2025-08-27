@@ -96,7 +96,7 @@ export default function AllQuizModal({
       }
 
       const dateStr = selectedDate;
-      const response = await fetch(`/.netlify/functions/quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
+      const response = await fetch(`/api/all-quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -118,14 +118,23 @@ export default function AllQuizModal({
       }
 
       const data = await response.json();
-      setQuiz(data.quiz);
+      
+      // all-quiz API는 퀴즈 배열을 반환하므로 첫 번째 퀴즈 선택
+      const quizData = Array.isArray(data) && data.length > 0 ? data[0] : data.quiz;
+      
+      if (!quizData) {
+        setError('퀴즈 데이터를 찾을 수 없습니다.');
+        return;
+      }
+      
+      setQuiz(quizData);
       setMealImageUrl(data.mealImageUrl || '');
       
-      // 이미 제출된 답안이 있는지 확인
-      if (data.quiz?.user_selected_option !== undefined) {
-        setSelectedOption(data.quiz.user_selected_option);
+      // 이미 제출된 답안이 있는지 확인 (all-quiz API는 user_answer 필드 사용)
+      if (quizData.user_answer) {
+        setSelectedOption(quizData.user_answer.selected_option);
         setSubmitted(true);
-        console.log('✅ 이미 제출된 퀴즈:', { selectedOption: data.quiz.user_selected_option, isCorrect: data.quiz.is_correct });
+        console.log('✅ 이미 제출된 퀴즈:', { selectedOption: quizData.user_answer.selected_option, isCorrect: quizData.user_answer.is_correct });
       } else {
         setSelectedOption(null);
         setSubmitted(false);
@@ -207,7 +216,7 @@ export default function AllQuizModal({
         // 디버깅용 로그
         console.log('📤 퀴즈 답안 제출 요청 본문:', requestBody);
         
-        return await fetch('/.netlify/functions/quiz/answer', {
+        return await fetch('/api/all-quiz', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
