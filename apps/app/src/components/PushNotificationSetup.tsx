@@ -33,7 +33,7 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   useEffect(() => {
     if (fcmToken) {
       const unsubscribe = onMessageListener().then((payload: any) => {
-        console.log('포그라운드 메시지 수신:', payload);
+        // 포그라운드 메시지 수신
         // 여기서 인앱 알림 표시 로직 추가 가능
         if (payload.notification) {
           // 브라우저 알림 표시
@@ -90,7 +90,7 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
         if (error) {
           console.error('FCM 토큰 저장 실패:', error);
         } else {
-          console.log('FCM 토큰이 성공적으로 저장되었습니다.');
+          // FCM 토큰이 성공적으로 저장됨
         }
       }
     } catch (error) {
@@ -135,19 +135,19 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
       const isAndroid = /Android/.test(navigator.userAgent);
       
       if (isAndroid) {
-        console.log('Android 기기에서 알림 권한 요청 중...');
+        // Android 기기에서 알림 권한 요청
         // 약간의 지연을 두고 권한 요청 (사용자 제스처 컨텍스트 유지)
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       const permission = await Notification.requestPermission();
-      console.log('알림 권한 결과:', permission);
+      // 알림 권한 결과 확인
       setNotificationStatus(permission);
       
       if (permission === 'granted') {
         await handleGetToken();
       } else if (permission === 'denied') {
-        console.log('알림 권한이 거부되었습니다. 브라우저 설정에서 수동으로 허용해주세요.');
+        // 알림 권한이 거부됨 - 브라우저 설정에서 수동 허용 필요
       }
     } catch (error) {
       console.error('알림 권한 요청 실패:', error);

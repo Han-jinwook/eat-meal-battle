@@ -32,13 +32,6 @@ export default function MealImageUploader({
   const canUploadPhoto = schoolMode.canPerformAction('canUploadPhoto');
   const canUseAI = schoolMode.canPerformAction('canUseAI');
   
-  console.log('📷 MealImageUploader 권한 체크:', {
-    canUploadPhoto,
-    canUseAI,
-    currentMode: schoolMode.currentMode,
-    isStudentMode: schoolMode.isStudentMode,
-    selectedSchool: schoolMode.selectedInterestSchool?.school_name
-  });
   
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);

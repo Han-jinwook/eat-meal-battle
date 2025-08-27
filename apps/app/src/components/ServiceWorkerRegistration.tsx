@@ -15,25 +15,25 @@ export default function ServiceWorkerRegistration() {
       wb.register();
       
       wb.addEventListener('installed', (event) => {
-        console.log('Service Worker가 설치되었습니다');
+        // Service Worker 설치 완료
       });
 
       wb.addEventListener('controlling', (event) => {
-        console.log('Service Worker가 제어를 시작했습니다');
+        // Service Worker 제어 시작
       });
 
       wb.addEventListener('activated', (event) => {
-        console.log('Service Worker가 활성화되었습니다');
+        // Service Worker 활성화 완료
       });
     } else if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       // Fallback for manual service worker registration
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker 등록 성공:', registration);
+          // Service Worker 등록 성공
         })
         .catch((error) => {
-          console.log('Service Worker 등록 실패:', error);
+          // Service Worker 등록 실패
         });
     }
   }, []);

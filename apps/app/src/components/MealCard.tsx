@@ -78,13 +78,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   const schoolMode = useSchoolMode(userSchool);
   const canRate = schoolMode.canPerformAction('canRate');
   
-  console.log('⭐ MenuItemWithRating 권한 체크:', {
-    canRate,
-    currentMode: schoolMode.currentMode,
-    isStudentMode: schoolMode.isStudentMode,
-    selectedSchool: schoolMode.selectedInterestSchool?.school_name,
-    permissions: schoolMode.permissions
-  });
   
   // 컴포넌트 마운트 시 사용자 정보 가져오기
   useEffect(() => {
@@ -371,6 +364,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     try {
       // 로그인 확인
       if (!user) {
+        console.error('❌ 사용자 로그인 상태가 아닙니다');
         alert('별점을 남기려면 로그인해주세요!');
         return;
       }

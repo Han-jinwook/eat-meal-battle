@@ -90,17 +90,8 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   
   // 사용자 학교 존재 여부
   const hasMySchool = useMemo(() => {
-    console.log('🏫 hasMySchool 계산:', {
-      userSchool,
-      school_code: userSchool?.school_code,
-      school_name: userSchool?.school_name,
-      hasSchoolCode: !!(userSchool?.school_code),
-      hasSchoolName: !!(userSchool?.school_name),
-      결과: !!(userSchool?.school_code && userSchool?.school_name)
-    });
     // school_code가 있으면 학교 정보가 있다고 판단 (school_name은 optional)
     const hasSchool = !!(userSchool?.school_code);
-    console.log('🏫 hasMySchool 최종 결과:', hasSchool);
     return hasSchool;
   }, [userSchool]);
   
@@ -127,18 +118,6 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
     // 비학생 또는 관심학교 모드: 관심학교가 설정되어 있으면 읽기 권한 허용
     const hasReadPermissions = !!(selectedInterestSchool || hasMySchool);
     
-    console.log('🔐 권한 계산:', {
-      currentMode,
-      isStudentMode,
-      isVisitorMode,
-      hasMySchool,
-      selectedInterestSchool: selectedInterestSchool?.school_name,
-      hasFullPermissions,
-      hasReadPermissions,
-      '학생권한근거': `!selectedInterestSchool(${!selectedInterestSchool}) && hasMySchool(${hasMySchool})`,
-      '읽기권한근거': `selectedInterestSchool(${!!selectedInterestSchool}) || hasMySchool(${hasMySchool})`
-    });
-    
     const calculatedPermissions = {
       canComment: hasFullPermissions,
       canRate: hasFullPermissions,
@@ -148,8 +127,6 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
       canParticipateInBattle: hasFullPermissions,
       canViewMeals: hasReadPermissions, // 급식 조회 권한 추가
     };
-    
-    console.log('📋 최종 권한 결과:', calculatedPermissions);
 
     return calculatedPermissions;
   }, [selectedInterestSchool, hasMySchool, currentMode]);
@@ -177,13 +154,11 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   
   // 관심학교 선택 함수
   const selectInterestSchool = useCallback((school: InterestSchoolInfo) => {
-    console.log('관심학교 선택:', school.school_name);
     setSelectedInterestSchool(school);
   }, []);
   
   // 내 학교로 돌아가기 함수
   const returnToMySchool = useCallback(() => {
-    console.log('내 학교로 복귀');
     setSelectedInterestSchool(null);
   }, []);
   
