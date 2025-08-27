@@ -19,7 +19,20 @@ interface Quiz {
   school_name: string;
   grade: number;
   school_type: 'elementary' | 'middle' | 'high';
-  report_status?: 'none' | 'pending' | 'verified_incorrect' | 'rejected' | string;
+  report_status?: 'none' | 'pending' | 'verified_incorrect' | 'verified_correct' | string;
+  ai_verification?: any;
+  quiz_reports?: Array<{
+    status: string;
+    ai_verification_result: any;
+  }>;
+  user_answer?: {
+    selected_option: number;
+    is_correct: boolean;
+    attempted_at: string;
+  };
+  user_selected_option?: number;
+  is_correct?: boolean;
+  user_answer_time?: string;
 }
 
 interface AllQuizModalProps {
@@ -128,7 +141,14 @@ export default function AllQuizModal({
         return;
       }
       
-      setQuiz(quizData);
+      // quiz_reports 데이터 구조 처리
+      const processedQuizData = {
+        ...quizData,
+        report_status: quizData.quiz_reports?.[0]?.status || 'none',
+        ai_verification: quizData.quiz_reports?.[0]?.ai_verification_result || null
+      };
+      
+      setQuiz(processedQuizData);
       setMealImageUrl('');
       
       // 이미 제출된 답안이 있는지 확인 (all-quiz API는 user_answer 필드 사용)
@@ -168,7 +188,7 @@ export default function AllQuizModal({
         .eq('meal_id', mealId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(1) as any;
       if (error || !data || data.length === 0) {
         setMealImageUrl('');
         return;
@@ -196,7 +216,7 @@ export default function AllQuizModal({
       // 세션이 없으면 토큰 새로고침 시도
       if (!session?.access_token) {
         console.log('🔄 세션이 없어서 토큰 새로고침 시도');
-        const { data: refreshData } = await supabase.auth.refreshSession();
+        const { data: refreshData } = await (supabase.auth as any).refreshSession();
         session = refreshData.session;
       }
       
@@ -232,7 +252,7 @@ export default function AllQuizModal({
       // 401 오류 시 토큰 새로고침 후 재시도
       if (response.status === 401) {
         console.log('🔄 401 오류로 토큰 새로고침 후 재시도');
-        const { data: refreshData } = await supabase.auth.refreshSession();
+        const { data: refreshData } = await (supabase.auth as any).refreshSession();
         
         if (refreshData.session?.access_token) {
           response = await makeRequest(refreshData.session.access_token);
@@ -264,24 +284,14 @@ export default function AllQuizModal({
         
         // 퀴즈 객체에 결과 정보 추가
         if (quiz) {
-          const updatedQuiz = {
+          const updatedQuiz: Quiz = {
             ...quiz,
-            user_selected_option: selectedOption
+            user_selected_option: selectedOption,
+            is_correct: result.isCorrect !== undefined ? result.isCorrect : result.is_correct,
+            user_answer_time: result.answer_time
           };
           
-          // result에서 사용 가능한 필드 확인 후 적용
-          if (result.isCorrect !== undefined) {
-            updatedQuiz.is_correct = result.isCorrect;
-          } else if (result.is_correct !== undefined) {
-            updatedQuiz.is_correct = result.is_correct;
-          }
-          
-          if (result.answer_time) {
-            updatedQuiz.user_answer_time = result.answer_time;
-          }
-          
-          // 타입 어설션을 사용하여 타입 에러 방지
-          setQuiz(updatedQuiz as any);
+          setQuiz(updatedQuiz);
           console.log('업데이트된 퀴즈 객체:', updatedQuiz);
         }
         
@@ -406,7 +416,7 @@ export default function AllQuizModal({
                 
                 {/* 퀴즈 옵션 및 제출 버튼 */}
                 <QuizOptionsSection
-                  quiz={quiz}
+                  quiz={quiz as any}
                   selectedOption={selectedOption}
                   submitted={submitted}
                   submitting={submitting}
