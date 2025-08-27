@@ -77,13 +77,10 @@ export default function AllQuizModal({
 
   // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
   const handleSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
-    
     // 부모 컴포넌트의 핸들러 호출
     await onUniversalSchoolChange(direction);
     
     // 학교 변경 후 퀴즈 다시 로드
-    console.log('🔄 학교 변경 후 퀴즈 재로드 시작');
     await loadQuiz();
   };
 
@@ -156,19 +153,15 @@ export default function AllQuizModal({
       if (quizData.user_answer) {
         setSelectedOption(quizData.user_answer.selected_option);
         setSubmitted(true);
-        console.log('✅ 이미 제출된 퀴즈:', { selectedOption: quizData.user_answer.selected_option, isCorrect: quizData.user_answer.is_correct });
       } else {
         setSelectedOption(null);
         setSubmitted(false);
-        console.log('📝 새로운 퀴즈 - 답안 제출 가능');
       }
       
       // 급식 이미지 로드
       if (quizData?.meal_id) {
-        console.log('🍽️ AllQuizModal 퀴즈에서 meal_id 발견:', quizData.meal_id);
         await fetchMealImage(quizData.meal_id);
       } else {
-        console.log('🍽️ AllQuizModal 퀴즈에 meal_id가 없음:', quizData);
         setMealImageUrl('');
       }
     } catch (err) {
@@ -181,7 +174,6 @@ export default function AllQuizModal({
 
   // 급식 이미지 로드 함수
   const fetchMealImage = async (mealId: string) => {
-    console.log('🍽️ AllQuizModal 급식이미지 로드 시작:', mealId);
     try {
       const { data, error } = await (supabase
         .from('meal_images')
@@ -203,9 +195,7 @@ export default function AllQuizModal({
 
   // 퀴즈 제출 함수
   const submitAnswer = async () => {
-    console.log('🎯 submitAnswer 호출됨:', { selectedOption, quiz: !!quiz, submitting });
     if (selectedOption === null || !quiz) {
-      console.log('❌ 제출 조건 미충족:', { selectedOption, hasQuiz: !!quiz });
       return;
     }
     
@@ -216,7 +206,6 @@ export default function AllQuizModal({
       
       // 세션이 없으면 토큰 새로고침 시도
       if (!session?.access_token) {
-        console.log('🔄 세션이 없어서 토큰 새로고침 시도');
         const { data: refreshData } = await (supabase.auth as any).refreshSession();
         session = refreshData.session;
       }
@@ -226,17 +215,12 @@ export default function AllQuizModal({
         return;
       }
 
-      console.log('🔑 토큰 전송:', session.access_token?.substring(0, 20) + '...');
-      
       const makeRequest = async (token) => {
         // 요청 본문 객체 생성
         const requestBody = {
           quiz_id: quiz.id,
           selected_option: Number(selectedOption)
         };
-
-        // 디버깅용 로그
-        console.log('📤 퀴즈 답안 제출 요청 본문:', requestBody);
         
         return await fetch('/api/all-quiz', {
           method: 'POST',
@@ -252,7 +236,6 @@ export default function AllQuizModal({
 
       // 401 오류 시 토큰 새로고침 후 재시도
       if (response.status === 401) {
-        console.log('🔄 401 오류로 토큰 새로고침 후 재시도');
         const { data: refreshData } = await (supabase.auth as any).refreshSession();
         
         if (refreshData.session?.access_token) {
@@ -263,17 +246,12 @@ export default function AllQuizModal({
         }
       }
 
-      console.log(`응답 상태: ${response.status} ${response.statusText}`);
-      console.log('응답 헤더:', Object.fromEntries(response.headers.entries()));
-      
       const responseText = await response.text();
-      console.log('응답 원본 텍스트:', responseText);
       
       // 텍스트를 JSON으로 파싱 시도
       let result;
       try {
         result = responseText ? JSON.parse(responseText) : {};
-        console.log('파싱된 응답:', result);
       } catch (parseError) {
         console.error('JSON 파싱 에러:', parseError);
         setError('응답 데이터를 처리할 수 없습니다.');
@@ -281,8 +259,6 @@ export default function AllQuizModal({
       }
       
       if (response.ok) {
-        console.log('AllQuizModal 정답제출 성공:', result);
-        
         // 퀴즈 객체에 결과 정보 추가
         if (quiz) {
           const updatedQuiz: Quiz = {
@@ -293,7 +269,6 @@ export default function AllQuizModal({
           };
           
           setQuiz(updatedQuiz);
-          console.log('업데이트된 퀴즈 객체:', updatedQuiz);
         }
         
         setSubmitted(true);
