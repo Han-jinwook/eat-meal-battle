@@ -115,18 +115,22 @@ export default function QuizClient() {
     console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
     try {
+      console.log('🔍 DB 조회 시작...');
+      
       const { data: schoolInfos, error } = await supabase
         .from('school_infos')
         .select('school_name, school_code')
         .ilike('school_name', `%${universalSchoolType}%`)
         .order('school_name');
         
+      console.log('🔍 DB 조회 완료:', { error, dataLength: schoolInfos?.length });
+        
       if (error || !schoolInfos || schoolInfos.length === 0) {
         console.error('❌ 학교 목록 조회 실패:', error);
         return;
       }
       
-      console.log('📋 조회된 학교 목록:', schoolInfos.map(s => s.school_name));
+      console.log('📋 조회된 학교 목록:', schoolInfos.length, '개');
       
       const currentIndex = schoolInfos.findIndex(school => 
         school.school_name === universalSchoolName
@@ -145,6 +149,7 @@ export default function QuizClient() {
       console.log('➡️ 다음 학교:', nextSchool.school_name, '(인덱스:', nextIndex, ')');
       
       // 상태 업데이트
+      console.log('🔄 상태 업데이트 시작...');
       setUniversalSchoolName(nextSchool.school_name);
       setUniversalSchoolCode(nextSchool.school_code);
       
@@ -1115,6 +1120,7 @@ export default function QuizClient() {
           selectedDate={selectedDate}
           onDateChange={handleDateChange}
           universalSchoolName={universalSchoolName}
+          universalSchoolCode={universalSchoolCode}
           universalGrade={universalGrade}
           universalSchoolType={universalSchoolType}
           onUniversalGradeChange={handleUniversalGradeChange}

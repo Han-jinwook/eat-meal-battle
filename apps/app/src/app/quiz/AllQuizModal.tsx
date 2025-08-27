@@ -42,6 +42,7 @@ interface AllQuizModalProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   universalSchoolName: string;
+  universalSchoolCode: string;
   universalGrade: number;
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
@@ -56,12 +57,13 @@ export default function AllQuizModal({
   selectedDate,
   onDateChange,
   universalSchoolName,
+  universalSchoolCode,
   universalGrade,
   universalSchoolType,
   onUniversalGradeChange,
   onUniversalSchoolChange,
   selectedSchoolLevel,
-  setSelectedSchoolLevel
+  setSelectedSchoolLevel,
 }: AllQuizModalProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,16 +79,34 @@ export default function AllQuizModal({
 
   // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
   const handleSchoolChange = async (direction: 'prev' | 'next') => {
+<<<<<<< HEAD
     // 부모 컴포넌트의 핸들러 호출
     await onUniversalSchoolChange(direction);
     
     // 학교 변경 후 퀴즈 다시 로드
     await loadQuiz();
+=======
+    console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+    console.log('🔥 AllQuizModal onUniversalSchoolChange 함수 타입:', typeof onUniversalSchoolChange);
+    
+    try {
+      // 부모 컴포넌트의 핸들러 호출
+      console.log('🔥 AllQuizModal 부모 함수 호출 시작');
+      await onUniversalSchoolChange(direction);
+      console.log('🔥 AllQuizModal 부모 함수 호출 완료');
+      
+      // 학교 변경 후 퀴즈 다시 로드
+      console.log('🔄 학교 변경 후 퀴즈 재로드 시작');
+      await loadQuiz();
+    } catch (error) {
+      console.error('💥 AllQuizModal 학교 변경 중 오류:', error);
+    }
+>>>>>>> bfea840586d3e0d519bf4d96c929231f80195850
   };
 
   // 퀴즈 로드 함수
   const loadQuiz = async () => {
-    if (!universalSchoolName || !universalGrade) return;
+    if (!universalSchoolCode || !universalGrade) return;
     
     setLoading(true);
     setError(null);
@@ -107,7 +127,7 @@ export default function AllQuizModal({
       }
 
       const dateStr = selectedDate;
-      const response = await fetch(`/api/all-quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
+      const response = await fetch(`/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${dateStr}&limit=1`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -139,12 +159,33 @@ export default function AllQuizModal({
         return;
       }
       
-      // quiz_reports 데이터 구조 처리
+      // quiz_reports 데이터 구조 처리 - meal_quizzes.report_status 우선 사용
+      console.log('🔍 AllQuizModal 원본 퀴즈 데이터:', quizData);
+      console.log('🔍 AllQuizModal quiz_reports 데이터:', quizData.quiz_reports);
+      console.log('🔍 AllQuizModal meal_quizzes.report_status:', quizData.report_status);
+      
+      // meal_quizzes.report_status가 있으면 그것을 우선 사용, 없으면 quiz_reports에서 매핑
+      let finalReportStatus = quizData.report_status || 'none';
+      
+      // meal_quizzes.report_status가 없거나 'none'이고 quiz_reports가 있으면 매핑 시도
+      if ((!finalReportStatus || finalReportStatus === 'none') && quizData.quiz_reports?.[0]) {
+        const quizReportStatus = quizData.quiz_reports[0].status;
+        if (quizReportStatus === 'processed' && quizData.quiz_reports[0].ai_verification_result) {
+          const aiResult = quizData.quiz_reports[0].ai_verification_result;
+          finalReportStatus = aiResult.isCorrect ? 'verified_correct' : 'verified_incorrect';
+        } else {
+          finalReportStatus = quizReportStatus || 'none';
+        }
+      }
+      
       const processedQuizData = {
         ...quizData,
-        report_status: quizData.quiz_reports?.[0]?.status || 'none',
+        report_status: finalReportStatus,
         ai_verification: quizData.quiz_reports?.[0]?.ai_verification_result || null
       };
+      
+      console.log('🔍 AllQuizModal 처리된 퀴즈 데이터:', processedQuizData);
+      console.log('🔍 AllQuizModal final report_status:', processedQuizData.report_status);
       
       setQuiz(processedQuizData);
       setMealImageUrl('');
@@ -290,10 +331,10 @@ export default function AllQuizModal({
 
   // 날짜나 학교 정보 변경 시 퀴즈 다시 로드
   useEffect(() => {
-    if (isOpen && universalSchoolName && universalGrade) {
+    if (isOpen && universalSchoolCode && universalGrade) {
       loadQuiz();
     }
-  }, [isOpen, selectedDate, universalSchoolName, universalGrade, universalSchoolType]);
+  }, [isOpen, selectedDate, universalSchoolCode, universalGrade]);
 
   if (!isOpen) return null;
 
