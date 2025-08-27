@@ -115,24 +115,87 @@ export default function QuizClient() {
     console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     
     try {
+      // 학교 타입별로 더 정확한 필터링 적용
+      let schoolTypeFilter = '';
+      if (universalSchoolType === '초등학교') {
+        schoolTypeFilter = '초등학교';
+      } else if (universalSchoolType === '중학교') {
+        schoolTypeFilter = '중학교';
+      } else if (universalSchoolType === '고등학교') {
+        schoolTypeFilter = '고등학교';
+      }
+      
+      console.log('🔍 학교 타입 필터:', schoolTypeFilter);
+      
       const { data: schoolInfos, error } = await supabase
         .from('school_infos')
         .select('school_name, school_code')
-        .ilike('school_name', `%${universalSchoolType}%`)
+        .ilike('school_name', `%${schoolTypeFilter}%`)
         .order('school_name');
         
-      if (error || !schoolInfos || schoolInfos.length === 0) {
-        console.error('❌ 학교 목록 조회 실패:', error);
+      if (error) {
+        console.error('❌ 학교 목록 조회 DB 오류:', error);
         return;
       }
       
-      console.log('📋 조회된 학교 목록:', schoolInfos.map(s => s.school_name));
+      if (!schoolInfos || schoolInfos.length === 0) {
+        console.error('❌ 해당 타입의 학교가 없습니다:', schoolTypeFilter);
+        // 모든 학교로 다시 시도
+        const { data: allSchools, error: allError } = await supabase
+          .from('school_infos')
+          .select('school_name, school_code')
+          .order('school_name');
+          
+        if (allError || !allSchools || allSchools.length === 0) {
+          console.error('❌ 전체 학교 목록도 조회 실패:', allError);
+          return;
+        }
+        
+        console.log('📋 전체 학교로 대체 조회:', allSchools.length, '개');
+        const currentIndex = allSchools.findIndex(school => 
+          school.school_name === universalSchoolName
+        );
+        
+        let nextIndex;
+        if (direction === 'next') {
+          nextIndex = currentIndex >= allSchools.length - 1 ? 0 : currentIndex + 1;
+        } else {
+          nextIndex = currentIndex <= 0 ? allSchools.length - 1 : currentIndex - 1;
+        }
+        
+        const nextSchool = allSchools[nextIndex];
+        console.log('➡️ 다음 학교 (전체):', nextSchool.school_name);
+        
+        // 상태 업데이트
+        setUniversalSchoolName(nextSchool.school_name);
+        setUniversalSchoolCode(nextSchool.school_code);
+        
+        // 강제 리렌더링을 위한 상태 초기화
+        setQuiz(null);
+        setError('');
+        
+        console.log('✅ 학교 변경 완료 (전체):', nextSchool.school_name);
+        return;
+      }
+      
+      console.log('📋 조회된 학교 목록:', schoolInfos.length, '개 -', schoolInfos.map(s => s.school_name).slice(0, 5));
       
       const currentIndex = schoolInfos.findIndex(school => 
         school.school_name === universalSchoolName
       );
       
       console.log('📍 현재 학교 인덱스:', currentIndex, '/', schoolInfos.length);
+      
+      if (currentIndex === -1) {
+        console.warn('⚠️ 현재 학교를 목록에서 찾을 수 없음. 첫 번째 학교로 이동');
+        const firstSchool = schoolInfos[0];
+        setUniversalSchoolName(firstSchool.school_name);
+        setUniversalSchoolCode(firstSchool.school_code);
+        setQuiz(null);
+        setError('');
+        console.log('✅ 첫 번째 학교로 이동:', firstSchool.school_name);
+        return;
+      }
       
       let nextIndex;
       if (direction === 'next') {
@@ -156,6 +219,7 @@ export default function QuizClient() {
       
     } catch (err) {
       console.error('💥 학교 변경 중 오류:', err);
+      console.error('💥 오류 상세:', err.message, err.stack);
     }
   };
 
