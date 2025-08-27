@@ -56,12 +56,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '퀴즈 조회에 실패했습니다.' }, { status: 500 });
     }
 
-    console.log('✅ 퀴즈 조회 성공:', quizzes?.length, '개');
+    // 각 퀴즈에 대한 사용자 답변 정보 조회
+    const quizzesWithUserAnswers = await Promise.all(
+      (quizzes || []).map(async (quiz) => {
+        // 사용자의 기존 답변 조회
+        const { data: userAnswer } = await supabase
+          .from('all_quiz_attempts')
+          .select('selected_option, is_correct, attempted_at')
+          .eq('user_id', user.id)
+          .eq('quiz_id', quiz.id)
+          .single();
+
+        return {
+          ...quiz,
+          user_answer: userAnswer || null
+        };
+      })
+    );
+
+    console.log('✅ 퀴즈 조회 성공:', quizzesWithUserAnswers?.length, '개');
 
     return NextResponse.json({ 
       success: true, 
-      quizzes: quizzes || [],
-      count: quizzes?.length || 0
+      quizzes: quizzesWithUserAnswers || [],
+      count: quizzesWithUserAnswers?.length || 0
     });
 
   } catch (err) {
