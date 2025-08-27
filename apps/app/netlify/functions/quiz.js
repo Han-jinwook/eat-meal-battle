@@ -112,9 +112,9 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
 
 // 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)
 async function processQuiz(userId, quiz, canShowAnswer) {
-  // 이미 풀었는지 확인 - all_quiz_attempts 테이블을 사용
+  // 이미 풀었는지 확인 - quiz_results 테이블을 사용
   const { data: existing, error: existingError } = await supabaseClient
-    .from('all_quiz_attempts')
+    .from('quiz_results')
     .select('id, is_correct, selected_option')
     .eq('user_id', userId)
     .eq('quiz_id', quiz.id)
@@ -207,10 +207,10 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     };
     console.log('[quiz] 저장할 데이터:', insertData);
     
-    // 답변 저장 - 테이블명 변경 (quiz_results → all_quiz_attempts)
-    console.log('[quiz] all_quiz_attempts 테이블에 저장 시도...');
+    // 답변 저장 - quiz_results 테이블 사용
+    console.log('[quiz] quiz_results 테이블에 저장 시도...');
     const { data: result, error: saveError } = await supabaseAdmin
-      .from('all_quiz_attempts')
+      .from('quiz_results')
       .insert(insertData)
       .select()
       .single();
