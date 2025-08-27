@@ -198,16 +198,22 @@ export default function AllQuizModal({
       console.log('🔑 토큰 전송:', session.access_token?.substring(0, 20) + '...');
       
       const makeRequest = async (token) => {
+        // 요청 본문 객체 생성
+        const requestBody = {
+          quiz_id: quiz.id,
+          selected_option: Number(selectedOption)
+        };
+
+        // 디버깅용 로그
+        console.log('📤 퀴즈 답안 제출 요청 본문:', requestBody);
+        
         return await fetch('/.netlify/functions/quiz/answer', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            quiz_id: quiz.id,
-            selected_option: Number(selectedOption)
-          })
+          body: JSON.stringify(requestBody)
         });
       };
 
@@ -226,24 +232,54 @@ export default function AllQuizModal({
         }
       }
 
+      console.log(`응답 상태: ${response.status} ${response.statusText}`);
+      console.log('응답 헤더:', Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      console.log('응답 원본 텍스트:', responseText);
+      
+      // 텍스트를 JSON으로 파싱 시도
+      let result;
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+        console.log('파싱된 응답:', result);
+      } catch (parseError) {
+        console.error('JSON 파싱 에러:', parseError);
+        setError('응답 데이터를 처리할 수 없습니다.');
+        return;
+      }
+      
       if (response.ok) {
-        const result = await response.json();
-        console.log('AllQuizModal 정답제출 결과:', result);
+        console.log('AllQuizModal 정답제출 성공:', result);
         
         // 퀴즈 객체에 결과 정보 추가
-        if (quiz && result.is_correct !== undefined) {
-          setQuiz({
+        if (quiz) {
+          const updatedQuiz = {
             ...quiz,
-            user_selected_option: selectedOption,
-            is_correct: result.is_correct,
-            user_answer_time: result.answer_time || 0
-          });
+            user_selected_option: selectedOption
+          };
+          
+          // result에서 사용 가능한 필드 확인 후 적용
+          if (result.isCorrect !== undefined) {
+            updatedQuiz.is_correct = result.isCorrect;
+          } else if (result.is_correct !== undefined) {
+            updatedQuiz.is_correct = result.is_correct;
+          }
+          
+          if (result.answer_time) {
+            updatedQuiz.user_answer_time = result.answer_time;
+          }
+          
+          // 타입 어설션을 사용하여 타입 에러 방지
+          setQuiz(updatedQuiz as any);
+          console.log('업데이트된 퀴즈 객체:', updatedQuiz);
         }
         
         setSubmitted(true);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || '답안 제출에 실패했습니다.');
+        console.error('답안 제출 실패:', { status: response.status, result });
+        const errorMessage = result.error || result.message || '답안 제출에 실패했습니다.';
+        setError(`[${response.status}] ${errorMessage}`);
       }
     } catch (err) {
       console.error('답안 제출 에러:', err);

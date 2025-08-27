@@ -112,9 +112,9 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
 
 // 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)
 async function processQuiz(userId, quiz, canShowAnswer) {
-  // 이미 풀었는지 확인
+  // 이미 풀었는지 확인 - all_quiz_attempts 테이블을 사용
   const { data: existing, error: existingError } = await supabaseClient
-    .from('quiz_results')
+    .from('all_quiz_attempts')
     .select('id, is_correct, selected_option')
     .eq('user_id', userId)
     .eq('quiz_id', quiz.id)
@@ -193,20 +193,24 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
     const isCorrect = isVerifiedIncorrect ? true : (selectedOption === quiz.correct_answer);
     console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isVerifiedIncorrect, isCorrect });
     
-    // 답변 저장 데이터 준비
+    // 답변 저장 데이터 준비 - all_quiz_attempts 테이블 스키마에 맞게 구성
     const insertData = {
       user_id: userId,
       quiz_id: quizId,
-      selected_option: selectedOption,
+      selected_option: parseInt(selectedOption), // DB에는 int4 타입으로 정의됨
       is_correct: isCorrect,
-      created_at: new Date().toISOString()
+      answer_time: null, // 필요시 클라이언트에서 받아와서 설정
+      attempted_at: new Date().toISOString(),
+      // 학교 코드와 학년 정보 추가 - 퀴즈 데이터에서 가져옴
+      school_code: quiz.school_code || null,
+      grade: quiz.grade || null
     };
     console.log('[quiz] 저장할 데이터:', insertData);
     
-    // 답변 저장
-    console.log('[quiz] quiz_results 테이블에 저장 시도...');
+    // 답변 저장 - 테이블명 변경 (quiz_results → all_quiz_attempts)
+    console.log('[quiz] all_quiz_attempts 테이블에 저장 시도...');
     const { data: result, error: saveError } = await supabaseAdmin
-      .from('quiz_results')
+      .from('all_quiz_attempts')
       .insert(insertData)
       .select()
       .single();
@@ -792,9 +796,9 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
   console.log('[quiz] compensateAllUsersForIncorrectQuiz 시작:', quizId);
   
   try {
-    // 해당 퀴즈를 푼 모든 사용자 조회
+    // 해당 퀴즈를 푼 모든 사용자 조회 - all_quiz_attempts 테이블 사용
     const { data: quizResults, error: resultsError } = await supabaseAdmin
-      .from('quiz_results')
+      .from('all_quiz_attempts')
       .select('*')
       .eq('quiz_id', quizId);
       
@@ -810,9 +814,9 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
     
     console.log(`[quiz] ${quizResults.length}명의 사용자 결과를 정답으로 변경`);
     
-    // 모든 결과를 정답으로 업데이트
+    // 모든 결과를 정답으로 업데이트 - all_quiz_attempts 테이블 사용
     const { error: updateError } = await supabaseAdmin
-      .from('quiz_results')
+      .from('all_quiz_attempts')
       .update({ is_correct: true })
       .eq('quiz_id', quizId);
       
