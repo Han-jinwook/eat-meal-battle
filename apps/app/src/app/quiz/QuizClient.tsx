@@ -1115,6 +1115,7 @@ export default function QuizClient() {
           selectedDate={selectedDate}
           onDateChange={handleDateChange}
           universalSchoolName={universalSchoolName}
+          universalSchoolCode={universalSchoolCode}
           universalGrade={universalGrade}
           universalSchoolType={universalSchoolType}
           onUniversalGradeChange={handleUniversalGradeChange}

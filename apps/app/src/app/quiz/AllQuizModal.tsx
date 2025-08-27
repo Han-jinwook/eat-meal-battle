@@ -42,6 +42,7 @@ interface AllQuizModalProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   universalSchoolName: string;
+  universalSchoolCode: string;
   universalGrade: number;
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
@@ -56,12 +57,13 @@ export default function AllQuizModal({
   selectedDate,
   onDateChange,
   universalSchoolName,
+  universalSchoolCode,
   universalGrade,
   universalSchoolType,
   onUniversalGradeChange,
   onUniversalSchoolChange,
   selectedSchoolLevel,
-  setSelectedSchoolLevel
+  setSelectedSchoolLevel,
 }: AllQuizModalProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,7 +91,7 @@ export default function AllQuizModal({
 
   // 퀴즈 로드 함수
   const loadQuiz = async () => {
-    if (!universalSchoolName || !universalGrade) return;
+    if (!universalSchoolCode || !universalGrade) return;
     
     setLoading(true);
     setError(null);
@@ -110,7 +112,7 @@ export default function AllQuizModal({
       }
 
       const dateStr = selectedDate;
-      const response = await fetch(`/api/all-quiz?date=${dateStr}&schoolName=${encodeURIComponent(universalSchoolName)}&grade=${universalGrade}&schoolType=${universalSchoolType}`, {
+      const response = await fetch(`/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${dateStr}&limit=1`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -315,10 +317,10 @@ export default function AllQuizModal({
 
   // 날짜나 학교 정보 변경 시 퀴즈 다시 로드
   useEffect(() => {
-    if (isOpen && universalSchoolName && universalGrade) {
+    if (isOpen && universalSchoolCode && universalGrade) {
       loadQuiz();
     }
-  }, [isOpen, selectedDate, universalSchoolName, universalGrade, universalSchoolType]);
+  }, [isOpen, selectedDate, universalSchoolCode, universalGrade]);
 
   if (!isOpen) return null;
 
