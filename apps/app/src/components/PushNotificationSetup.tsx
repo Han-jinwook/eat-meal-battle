@@ -17,19 +17,32 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   const { userSchool, loading: userLoading } = useUserSchool();
   const supabase = createClient();
 
-  // 초기 알림 권한 상태 확인
+  // 초기 알림 권한 상태 확인 및 실시간 업데이트
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationStatus(Notification.permission);
-      
-      // 이미 권한이 있다면 토큰 가져오기 시도하고 UI 숨김
-      if (Notification.permission === 'granted') {
-        handleGetToken();
-        setShowSetup(false);
-      } else if (Notification.permission === 'denied') {
-        setShowSetup(false);
+    const checkPermissionStatus = () => {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        const currentPermission = Notification.permission;
+        setNotificationStatus(currentPermission);
+        
+        // 권한 상태에 따라 UI 제어
+        if (currentPermission === 'granted') {
+          handleGetToken();
+          setShowSetup(false);
+        } else if (currentPermission === 'denied') {
+          setShowSetup(false);
+        } else if (currentPermission === 'default') {
+          setShowSetup(true);
+        }
       }
-    }
+    };
+
+    // 초기 체크
+    checkPermissionStatus();
+
+    // 권한 상태 변경 감지를 위한 인터벌 (브라우저에서 권한 변경 이벤트가 없어서)
+    const interval = setInterval(checkPermissionStatus, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // 포그라운드 메시지 리스너 설정
