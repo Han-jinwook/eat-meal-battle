@@ -737,7 +737,7 @@ export default function QuizClient() {
       console.log('📤 JSON 문자열:', JSON.stringify(requestData));
 
       // 모든 퀴즈 모달에서는 새로운 API 사용
-      const apiUrl = isAllQuizModalOpen ? '/api/all-quiz' : '/api/quiz/answer';
+      const apiUrl = isAllQuizModalOpen ? '/api/all-quiz' : '/.netlify/functions/quiz/answer';
       
       const response = await fetch(apiUrl, {
         method: 'POST',

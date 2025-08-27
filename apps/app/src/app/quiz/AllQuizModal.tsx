@@ -198,7 +198,7 @@ export default function AllQuizModal({
       console.log('🔑 토큰 전송:', session.access_token?.substring(0, 20) + '...');
       
       const makeRequest = async (token) => {
-        return await fetch('/api/quiz/answer', {
+        return await fetch('/.netlify/functions/quiz/answer', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
