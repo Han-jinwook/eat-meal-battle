@@ -22,9 +22,12 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setNotificationStatus(Notification.permission);
       
-      // 이미 권한이 있다면 토큰 가져오기 시도
+      // 이미 권한이 있다면 토큰 가져오기 시도하고 UI 숨김
       if (Notification.permission === 'granted') {
         handleGetToken();
+        setShowSetup(false);
+      } else if (Notification.permission === 'denied') {
+        setShowSetup(false);
       }
     }
   }, []);
@@ -146,8 +149,10 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
       
       if (permission === 'granted') {
         await handleGetToken();
+        setShowSetup(false); // 권한 허용 후 UI 숨김
       } else if (permission === 'denied') {
         // 알림 권한이 거부됨 - 브라우저 설정에서 수동 허용 필요
+        setShowSetup(false); // 권한 거부 후 UI 숨김
       }
     } catch (error) {
       console.error('알림 권한 요청 실패:', error);
