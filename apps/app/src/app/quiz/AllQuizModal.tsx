@@ -19,6 +19,7 @@ interface Quiz {
   school_name: string;
   grade: number;
   school_type: 'elementary' | 'middle' | 'high';
+  report_status?: 'none' | 'pending' | 'verified_incorrect' | 'rejected' | string;
 }
 
 interface AllQuizModalProps {
@@ -55,7 +56,6 @@ export default function AllQuizModal({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
-  const [reportingQuiz, setReportingQuiz] = useState(false);
   const [noMenu, setNoMenu] = useState(false);
   const [noMenuMessage, setNoMenuMessage] = useState('');
   const [mealImageUrl, setMealImageUrl] = useState<string>('');
@@ -254,32 +254,7 @@ export default function AllQuizModal({
   };
 
 
-  // 퀴즈 신고 함수
-  const handleReportQuiz = async (reason: string) => {
-    if (!quiz) return;
-    
-    setReportingQuiz(true);
-    try {
-      const response = await fetch('/.netlify/functions/quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quizId: quiz.id,
-          reason: reason
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.message || '신고 처리에 실패했습니다.');
-      }
-    } catch (err) {
-      console.error('퀴즈 신고 에러:', err);
-      setError('신고 처리에 실패했습니다.');
-    } finally {
-      setReportingQuiz(false);
-    }
-  };
+  // 오답신고 관련 함수 제거됨
 
   // 날짜나 학교 정보 변경 시 퀴즈 다시 로드
   useEffect(() => {
@@ -419,6 +394,22 @@ export default function AllQuizModal({
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm font-medium text-blue-700 mb-2">💡 해설</p>
                         <p className="text-gray-700">{quiz.explanation}</p>
+                      </div>
+                    )}
+                    
+                    {/* 오답신고 결과가 있을 경우 표시 */}
+                    {(quiz as any).report_status && (quiz as any).report_status !== 'none' && (
+                      <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+                        <p className="text-sm font-medium text-amber-700 mb-2">📢 신고 결과</p>
+                        <p className="text-gray-700">
+                          {(quiz as any).report_status === 'verified_incorrect' ? 
+                            '오출제가 확인되어 모든 답변을 정답으로 처리합니다.' : 
+                            (quiz as any).report_status === 'pending' ? 
+                            '신고가 접수되어 검토 중입니다.' : 
+                            (quiz as any).report_status === 'rejected' ? 
+                            '신고가 검토되었으나 기각되었습니다.' : 
+                            '신고 처리 중입니다.'}
+                        </p>
                       </div>
                     )}
                     
