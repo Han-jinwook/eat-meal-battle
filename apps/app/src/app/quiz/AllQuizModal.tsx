@@ -416,49 +416,141 @@ export default function AllQuizModal({
                   onSubmitAnswer={submitAnswer}
                 />
                 
-                {/* 퀴즈 결과 - 단순하게 정답/해설만 표시 */}
+                {/* 퀴즈 결과 - 메인 퀴즈 페이지와 동일한 스타일 */}
                 {submitted && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    {/* 정답 여부 */}
-                    <div className="text-center mb-4">
+                  <div className="text-center">
+                    {/* 결과 메시지 */}
+                    <p className="text-lg font-semibold mb-2">
                       {selectedOption === quiz.correct_answer ? (
-                        <div className="text-green-600 text-xl font-bold">
-                          🎉 정답입니다!
-                        </div>
+                        <span className="text-green-600">정답입니다! 🎉</span>
                       ) : (
-                        <div className="text-red-600 text-xl font-bold">
-                          ❌ 틀렸습니다
-                        </div>
+                        <span className="text-red-600">틀렸습니다. 다음에 다시 도전해보세요!</span>
                       )}
-                      <p className="text-sm text-gray-600 mt-2">
-                        정답: {quiz.options[quiz.correct_answer]}
-                      </p>
-                    </div>
+                    </p>
                     
                     {/* 해설 */}
                     {quiz.explanation && (
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm font-medium text-blue-700 mb-2">💡 해설</p>
-                        <p className="text-gray-700">{quiz.explanation}</p>
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
+                        <p className="text-gray-600">{quiz.explanation}</p>
+                        
+                        {/* 오답신고 결과 표시 - 메인 페이지와 동일한 UI */}
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {quiz.report_status === 'verified_incorrect' ? (
+                            // 오답 확정: 전원 정답 처리 안내 + AI 검증 결과 표시
+                            <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <span className="text-green-600 text-sm">✅</span>
+                              <div className="flex-1">
+                                <p className="text-sm text-green-700 font-medium mb-1">
+                                  출제에 오류가 있어서 전원 맞춘걸로 처리합니다.
+                                </p>
+                                {(quiz as any).ai_verification && (
+                                  <details className="text-xs text-green-600">
+                                    <summary className="cursor-pointer hover:text-green-800 py-2 px-1 -mx-1 rounded">
+                                      AI 출제 검증 결과 보기
+                                    </summary>
+                                    <div className="mt-2 p-2 bg-white rounded border cursor-pointer">
+                                      <p className="text-xs text-gray-600 mb-1">
+                                        AI 검증 신뢰도: {Math.round(((quiz as any).ai_verification.confidence || 0) * 100)}%
+                                      </p>
+                                      <p className="text-sm">{(quiz as any).ai_verification.reasoning}</p>
+                                    </div>
+                                  </details>
+                                )}
+                              </div>
+                            </div>
+                          ) : quiz.report_status === 'verified_correct' ? (
+                            // 정답 확정: 신고 기각 안내 + AI 검증 결과 표시 + 완료 버튼
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <span className="text-blue-600 text-sm">ℹ️</span>
+                                <div className="flex-1">
+                                  <p className="text-sm text-blue-700 font-medium mb-1">
+                                    신고가 있었지만 출제 내용이 적절함이 확인되었습니다!
+                                  </p>
+                                  {(quiz as any).ai_verification && (
+                                    <details className="text-xs text-blue-600">
+                                      <summary className="cursor-pointer hover:text-blue-800 py-2 px-1 -mx-1 rounded">
+                                        AI 출제 검증 결과 보기
+                                      </summary>
+                                      <div className="mt-2 p-2 bg-white rounded border cursor-pointer">
+                                        <p className="text-xs text-gray-600 mb-1">
+                                          AI 검증 신뢰도: {Math.round(((quiz as any).ai_verification.confidence || 0) * 100)}%
+                                        </p>
+                                        <p className="text-sm">{(quiz as any).ai_verification.reasoning}</p>
+                                      </div>
+                                    </details>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex justify-start">
+                                <button
+                                  className="p-0 relative overflow-hidden hover:opacity-90 cursor-not-allowed"
+                                >
+                                  <svg width="200" height="50" viewBox="0 0 200 50" role="img" aria-label="오답신고 완료">
+                                    <defs>
+                                      <linearGradient id="reportCompletedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stopColor="#6A00FF"/>
+                                        <stop offset="50%" stopColor="#3F55FF"/>
+                                        <stop offset="100%" stopColor="#00D1FF"/>
+                                      </linearGradient>
+                                      <filter id="reportCompletedShadow" x="-20%" y="-20%" width="140%" height="160%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                                      </filter>
+                                    </defs>
+                                    
+                                    {/* Button shape */}
+                                    <rect x="2" y="2" rx="10" ry="10" width="196" height="46" fill="url(#reportCompletedGrad)" filter="url(#reportCompletedShadow)"/>
+                                    
+                                    {/* Robot icon */}
+                                    <g id="robot" transform="translate(20,25) scale(0.25)">
+                                      {/* Antenna */}
+                                      <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                                      <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                                      
+                                      {/* Head outer */}
+                                      <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                                      
+                                      {/* Side ears */}
+                                      <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                                      <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                                      
+                                      {/* Face window */}
+                                      <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                                      
+                                      {/* Eyes */}
+                                      <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                                      <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                                      
+                                      {/* Smile */}
+                                      <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                                      
+                                      {/* Neck */}
+                                      <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                                      
+                                      {/* Base */}
+                                      <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                                    </g>
+                                    
+                                    {/* Text */}
+                                    <text x="100" y="30" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                                      fontWeight="600" fontSize="12" fill="#FFFFFF" textAnchor="middle">AI에게 오답신고 완료</text>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ) : quiz.report_status === 'pending' ? (
+                            // 검증 중: 대기 메시지
+                            <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <span className="text-yellow-600 text-sm">⏳</span>
+                              <p className="text-sm text-yellow-700 font-medium">
+                                오답 가능성이 있다고 신고 접수중입니다.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     )}
-                    
-                    {/* 오답신고 결과가 있을 경우 표시 */}
-                    {(quiz as any).report_status && (quiz as any).report_status !== 'none' && (
-                      <div className="mt-4 p-3 bg-amber-50 rounded-lg">
-                        <p className="text-sm font-medium text-amber-700 mb-2">📢 신고 결과</p>
-                        <p className="text-gray-700">
-                          {(quiz as any).report_status === 'verified_incorrect' ? 
-                            '오출제가 확인되어 모든 답변을 정답으로 처리합니다.' : 
-                            (quiz as any).report_status === 'pending' ? 
-                            '신고가 접수되어 검토 중입니다.' : 
-                            (quiz as any).report_status === 'rejected' ? 
-                            '신고가 검토되었으나 기각되었습니다.' : 
-                            '신고 처리 중입니다.'}
-                        </p>
-                      </div>
-                    )}
-                    
                   </div>
                 )}
               </div>
