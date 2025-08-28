@@ -587,9 +587,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
     }
     
-    // 디버깅: 주차별 토요일 매핑 확인
-    console.log('📅 주차별 토요일 매핑:', weekSaturdays);
-    
     // 7주 * 7일 = 49일 (5주차가 다음 달로 넘어가는 경우 대응)
     for (let i = 0; i < 49; i++) {
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -597,11 +594,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       // 주차 레이블 확인 - champion_criteria 테이블의 토요일 날짜와 비교
       let weekLabel = weekSaturdays[dateStr] || undefined;
-      
-      // 디버깅: 주차 레이블 매칭 확인
-      if (weekLabel) {
-        console.log(`📍 주차 레이블 매칭: ${dateStr} → ${weekLabel}`);
-      }
       
       days.push({
         day: currentDate.getDate(),

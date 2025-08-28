@@ -88,19 +88,27 @@ export default function BattlePage() {
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
 
-  // URL의 date 파라미터를 상태에 반영 (초기 1회)
+  // URL의 date와 school_code 파라미터를 상태에 반영 (초기 1회)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const params = new URLSearchParams(window.location.search);
       const dateParam = params.get('date');
+      const schoolCodeParam = params.get('school_code');
+      
       if (dateParam) {
         setSelectedDate(dateParam);
       }
+      
+      // school_code 파라미터가 있으면 해당 학교를 관심학교로 설정
+      if (schoolCodeParam && user) {
+        console.log('🔗 URL에서 school_code 파라미터 감지:', schoolCodeParam);
+        handleUrlSchoolCode(schoolCodeParam);
+      }
     } catch (err) {
-      console.error('날짜 파라미터 파싱 오류:', err);
+      console.error('URL 파라미터 파싱 오류:', err);
     }
-  }, []);
+  }, [user]); // user 의존성 추가
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -266,11 +274,48 @@ export default function BattlePage() {
     setIsSchoolSearchOpen(true);
   };
 
+  // URL school_code 파라미터 처리 함수
+  const handleUrlSchoolCode = async (schoolCode: string) => {
+    try {
+      console.log('🔍 URL school_code로 학교 정보 조회 시작:', schoolCode);
+      
+      // 학교 정보 조회 API 호출
+      const response = await fetch(`/api/school-info?school_code=${schoolCode}`);
+      if (!response.ok) {
+        console.error('❌ 학교 정보 조회 실패:', response.status);
+        return;
+      }
+      
+      const schoolData = await response.json();
+      console.log('✅ 학교 정보 조회 성공:', schoolData);
+      
+      if (schoolData.success && schoolData.data) {
+        // 임시 관심학교 객체 생성 (실제 DB 저장 없이)
+        const tempInterestSchool = {
+          id: `temp_${schoolCode}`,
+          school_name: schoolData.data.school_name,
+          school_code: schoolCode,
+          office_code: schoolData.data.office_code || '',
+          user_id: user?.id || '',
+          created_at: new Date().toISOString()
+        };
+        
+        console.log('🏫 임시 관심학교 설정:', tempInterestSchool);
+        
+        // 학교 모드에서 해당 학교 선택
+        schoolMode.selectInterestSchool(tempInterestSchool);
+      }
+    } catch (error) {
+      console.error('❌ URL school_code 처리 오류:', error);
+    }
+  };
+
   // 배틀 계산 트리거 함수 (Plan A)
   const triggerBattleCalculation = async (schoolCode: string, viewMode: 'daily' | 'monthly', selectedDate: string, selectedMonth: string) => {
     try {
       console.log('🔄 배틀 계산 트리거 시작:', { schoolCode, viewMode, selectedDate, selectedMonth });
       
+      // ...
       if (viewMode === 'daily') {
         // 일별 메뉴 배틀 계산
         console.log('📅 일별 메뉴 배틀 계산 시작...');
