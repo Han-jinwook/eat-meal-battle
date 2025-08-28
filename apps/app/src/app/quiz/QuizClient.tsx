@@ -112,40 +112,53 @@ export default function QuizClient() {
   };
 
   const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
+    console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType, date: selectedDate });
     
     try {
-      console.log('🔍 DB 조회 시작...');
+      console.log('🔍 해당 날짜에 퀴즈가 있는 학교만 조회 시작...');
       
-      const { data: schoolInfos, error } = await supabase
-        .from('school_infos')
-        .select('school_name, school_code')
-        .ilike('school_name', `%${universalSchoolType}%`)
-        .order('school_name');
+      // 해당 날짜 + 학교종류에 퀴즈가 있는 학교만 조회
+      const { data: quizSchools, error } = await supabase
+        .from('meal_quizzes')
+        .select(`
+          school_code,
+          school_infos!inner(school_name, school_code)
+        `)
+        .eq('meal_date', selectedDate)
+        .ilike('school_infos.school_name', `%${universalSchoolType}%`)
+        .order('school_infos.school_name');
         
-      console.log('🔍 DB 조회 완료:', { error, dataLength: schoolInfos?.length });
+      console.log('🔍 퀴즈 있는 학교 조회 완료:', { error, dataLength: quizSchools?.length });
         
-      if (error || !schoolInfos || schoolInfos.length === 0) {
-        console.error('❌ 학교 목록 조회 실패:', error);
+      if (error || !quizSchools || quizSchools.length === 0) {
+        console.error('❌ 해당 날짜에 퀴즈가 있는 학교가 없습니다:', { date: selectedDate, schoolType: universalSchoolType });
         return;
       }
       
-      console.log('📋 조회된 학교 목록:', schoolInfos.length, '개');
+      // 중복 학교 제거 (같은 학교코드가 여러 학년에 있을 수 있음)
+      const uniqueSchools = quizSchools.filter((quiz, index, arr) => 
+        arr.findIndex(q => q.school_code === quiz.school_code) === index
+      ).map(quiz => ({
+        school_name: quiz.school_infos?.school_name,
+        school_code: quiz.school_code
+      }));
       
-      const currentIndex = schoolInfos.findIndex(school => 
+      console.log('📋 퀴즈 있는 학교 목록:', uniqueSchools.length, '개 -', uniqueSchools.map(s => s.school_name));
+      
+      const currentIndex = uniqueSchools.findIndex(school => 
         school.school_name === universalSchoolName && school.school_code === universalSchoolCode
       );
       
-      console.log('📍 현재 학교 인덱스:', currentIndex, '/', schoolInfos.length);
+      console.log('📍 현재 학교 인덱스:', currentIndex, '/', uniqueSchools.length);
       
       let nextIndex;
       if (direction === 'next') {
-        nextIndex = currentIndex >= schoolInfos.length - 1 ? 0 : currentIndex + 1;
+        nextIndex = currentIndex >= uniqueSchools.length - 1 ? 0 : currentIndex + 1;
       } else {
-        nextIndex = currentIndex <= 0 ? schoolInfos.length - 1 : currentIndex - 1;
+        nextIndex = currentIndex <= 0 ? uniqueSchools.length - 1 : currentIndex - 1;
       }
       
-      const nextSchool = schoolInfos[nextIndex];
+      const nextSchool = uniqueSchools[nextIndex];
       console.log('➡️ 다음 학교:', nextSchool.school_name, '(인덱스:', nextIndex, ')');
       
       // 상태 업데이트
