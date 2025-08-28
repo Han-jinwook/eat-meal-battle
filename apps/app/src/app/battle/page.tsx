@@ -58,6 +58,7 @@ export default function BattlePage() {
   const [activeTab, setActiveTab] = useState<'menu' | 'meal'>('menu');
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
   const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
+  const [selectedRegion, setSelectedRegion] = useState<string>(''); // 지역 선택 (기본값: 사용자 지역, '전국' 옵션 포함)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
 
   // 사용자 인증 상태 체크 - 배틀 페이지 접근 제어
@@ -87,6 +88,13 @@ export default function BattlePage() {
     
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
+
+  // 사용자 학교 정보가 로드되면 기본 지역 설정
+  useEffect(() => {
+    if (userSchool?.region && !selectedRegion) {
+      setSelectedRegion(userSchool.region);
+    }
+  }, [userSchool, selectedRegion]);
 
   // URL의 date와 school_code 파라미터를 상태에 반영 (초기 1회)
   useEffect(() => {
@@ -743,7 +751,7 @@ export default function BattlePage() {
         type: viewMode,
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
         ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
-        ...(currentSchool.region && { region: currentSchool.region }) // 지역 기반 필터링
+        ...(selectedRegion !== '전국' && selectedRegion && { region: selectedRegion }) // 지역 기반 필터링 ('전국' 선택 시 제외)
       });
       
       // 탭에 따라 다른 API 호출
@@ -1390,11 +1398,34 @@ export default function BattlePage() {
             <div>
               {/* 지역 및 학교 유형 선택 */}
               <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
-                {/* 지역 정보 - 왼쪽 정렬 */}
+                {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
-                  <span className="text-blue-700 font-medium">
-                    {userSchool?.region || '로딩 중...'}
-                  </span>
+                  <div className="flex gap-2">
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
+                      <button
+                        onClick={() => setSelectedRegion(userSchool.region)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === userSchool.region
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                        }`}
+                      >
+                        {userSchool.region}
+                      </button>
+                    )}
+                    {/* 전국 버튼 */}
+                    <button
+                      onClick={() => setSelectedRegion('전국')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedRegion === '전국'
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      전국
+                    </button>
+                  </div>
                 </div>
 
                 {/* 학교 유형 선택 - 한 줄 배치 */}
