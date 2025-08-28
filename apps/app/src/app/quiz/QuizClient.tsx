@@ -117,39 +117,78 @@ export default function QuizClient() {
     try {
       console.log('🔍 해당 날짜에 퀴즈가 있는 학교만 조회 시작...');
       
-      // 해당 날짜 + 학교종류에 퀴즈가 있는 학교만 조회
-      const { data: quizSchools, error } = await supabase
+      // school_infos는 사용자별 테이블이므로 학교 마스터 정보를 가져올 수 없음
+      // 대신 현재 사용자의 학교 정보를 기반으로 같은 종류의 학교들을 찾아야 함
+      
+      // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
+      const { data: allQuizData, error: quizError } = await supabase
         .from('meal_quizzes')
-        .select(`
-          school_code,
-          school_infos!inner(school_name, school_code)
-        `)
-        .eq('meal_date', selectedDate)
-        .ilike('school_infos.school_name', `%${universalSchoolType}%`)
-        .order('school_infos.school_name');
+        .select('school_code')
+        .eq('meal_date', selectedDate);
         
-      console.log('🔍 퀴즈 있는 학교 조회 완료:', { error, dataLength: quizSchools?.length });
+      if (quizError) {
+        console.error('❌ 퀴즈 데이터 조회 오류:', quizError);
+        return;
+      }
+      
+      if (!allQuizData || allQuizData.length === 0) {
+        console.error('❌ 해당 날짜에 퀴즈가 없습니다:', selectedDate);
+        return;
+      }
+      
+      const allSchoolCodes = [...new Set(allQuizData.map(q => q.school_code))];
+      console.log('🔍 해당 날짜 모든 학교코드들:', allSchoolCodes);
+      
+      // 2단계: 각 사용자의 school_infos에서 해당 학교종류의 학교들만 필터링
+      const { data: schoolInfos, error } = await supabase
+        .from('school_infos')
+        .select('school_name, school_code')
+        .in('school_code', allSchoolCodes)
+        .ilike('school_name', `%${universalSchoolType}%`);
         
-      if (error || !quizSchools || quizSchools.length === 0) {
+      if (error) {
+        console.error('❌ 학교 정보 조회 오류:', error);
+        return;
+      }
+      
+      // 중복 제거 (여러 사용자가 같은 학교에 있을 수 있음)
+      const uniqueSchoolMap = new Map();
+      schoolInfos?.forEach(school => {
+        if (!uniqueSchoolMap.has(school.school_code)) {
+          uniqueSchoolMap.set(school.school_code, school);
+        }
+      });
+      
+      const quizSchools = Array.from(uniqueSchoolMap.values()).sort((a, b) => 
+        a.school_name.localeCompare(b.school_name)
+      );
+        
+      console.log('🔍 퀴즈 있는 학교 조회 완료:', { error: error?.message || error, dataLength: quizSchools?.length });
+        
+      if (error) {
+        console.error('❌ DB 쿼리 오류:', error);
+        return;
+      }
+      
+      if (!quizSchools || quizSchools.length === 0) {
         console.error('❌ 해당 날짜에 퀴즈가 있는 학교가 없습니다:', { date: selectedDate, schoolType: universalSchoolType });
         return;
       }
       
-      // 중복 학교 제거 (같은 학교코드가 여러 학년에 있을 수 있음)
-      const uniqueSchools = quizSchools.filter((quiz, index, arr) => 
-        arr.findIndex(q => q.school_code === quiz.school_code) === index
-      ).map(quiz => ({
-        school_name: quiz.school_infos?.school_name,
-        school_code: quiz.school_code
-      }));
+      // 학교 정보를 그대로 사용 (이미 중복 제거됨)
+      const uniqueSchools = quizSchools;
       
-      console.log('📋 퀴즈 있는 학교 목록:', uniqueSchools.length, '개 -', uniqueSchools.map(s => s.school_name));
+      console.log('📋 퀴즈 있는 학교 목록:', uniqueSchools.length, '개');
+      uniqueSchools.forEach((school, idx) => {
+        console.log(`  ${idx}: ${school.school_name} (${school.school_code})`);
+      });
       
       const currentIndex = uniqueSchools.findIndex(school => 
         school.school_name === universalSchoolName && school.school_code === universalSchoolCode
       );
       
       console.log('📍 현재 학교 인덱스:', currentIndex, '/', uniqueSchools.length);
+      console.log('📍 현재 학교 정보:', { name: universalSchoolName, code: universalSchoolCode });
       
       let nextIndex;
       if (direction === 'next') {
@@ -159,7 +198,12 @@ export default function QuizClient() {
       }
       
       const nextSchool = uniqueSchools[nextIndex];
-      console.log('➡️ 다음 학교:', nextSchool.school_name, '(인덱스:', nextIndex, ')');
+      console.log('➡️ 다음 학교:', nextSchool?.school_name, '(인덱스:', nextIndex, ')');
+      
+      if (!nextSchool) {
+        console.error('❌ 다음 학교를 찾을 수 없습니다!');
+        return;
+      }
       
       // 상태 업데이트
       console.log('🔄 상태 업데이트 시작...');
