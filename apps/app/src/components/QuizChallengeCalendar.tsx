@@ -318,12 +318,13 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         const weekChampionField = `week_${week}_champion` as keyof typeof championData;
         const isChampion = championData ? !!championData[weekChampionField] : false;
         
-        // DB에서 가져온 주차별 정답 수와 총 퀴즈 수
+        // DB에서 가져온 주차별 정답 수
         const weekCorrectField = `week_${week}_correct` as keyof typeof quizStats;
-        const weekTotalField = `week_${week}_total` as keyof typeof quizStats;
-        
         const correctCount = quizStats && typeof quizStats[weekCorrectField] === 'number' ? quizStats[weekCorrectField] as number : 0;
-        const totalCount = quizStats && typeof quizStats[weekTotalField] === 'number' ? quizStats[weekTotalField] as number : 0;
+        
+        // 총 퀴즈 수는 champion_criteria의 week_X_days 사용
+        const weekDaysField = `week_${week}_days` as keyof typeof weekCriteria;
+        const totalCount = weekCriteria && typeof weekCriteria[weekDaysField] === 'number' ? weekCriteria[weekDaysField] as number : 0;
         
         trophies.push({
           week: week,
