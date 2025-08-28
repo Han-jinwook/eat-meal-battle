@@ -205,14 +205,18 @@ export default function QuizClient() {
         return;
       }
       
-      // 상태 업데이트
+      // 상태 업데이트 - 퀴즈를 먼저 초기화하여 깜빡임 방지
       console.log('🔄 상태 업데이트 시작...');
-      setUniversalSchoolName(nextSchool.school_name);
-      setUniversalSchoolCode(nextSchool.school_code);
       
-      // 강제 리렌더링을 위한 상태 초기화
+      // 1. 먼저 퀴즈 상태 초기화 (깜빡임 방지)
       setQuiz(null);
       setError('');
+      setSelectedOption(null);
+      setSubmitted(false);
+      
+      // 2. 그 다음 학교 정보 업데이트
+      setUniversalSchoolName(nextSchool.school_name);
+      setUniversalSchoolCode(nextSchool.school_code);
       
       console.log('✅ 학교 변경 완료:', nextSchool.school_name);
       
