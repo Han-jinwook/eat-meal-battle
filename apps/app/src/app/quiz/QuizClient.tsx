@@ -133,7 +133,7 @@ export default function QuizClient() {
       console.log('📋 조회된 학교 목록:', schoolInfos.length, '개');
       
       const currentIndex = schoolInfos.findIndex(school => 
-        school.school_name === universalSchoolName
+        school.school_name === universalSchoolName && school.school_code === universalSchoolCode
       );
       
       console.log('📍 현재 학교 인덱스:', currentIndex, '/', schoolInfos.length);

@@ -102,11 +102,7 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
 
       {/* 오른쪽 화살표 - 다음 학교 */}
       <button
-        onClick={() => {
-          console.log('🎯 SchoolGradeSelector 오른쪽 화살표 클릭됨!');
-          console.log('🎯 onSchoolChange 함수 타입:', typeof onSchoolChange);
-          onSchoolChange('next');
-        }}
+        onClick={() => onSchoolChange('next')}
         className="text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded p-1 transition-colors"
         title="다음 학교"
       >
