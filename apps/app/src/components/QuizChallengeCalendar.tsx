@@ -585,8 +585,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
     }
     
-    // 6주 * 7일 = 42일
-    for (let i = 0; i < 42; i++) {
+    // 7주 * 7일 = 49일 (5주차가 다음 달로 넘어가는 경우 대응)
+    for (let i = 0; i < 49; i++) {
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
       const quizResult = quizResults.find(r => r.date === dateStr);
       
@@ -757,17 +757,23 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             let weekNumber = null;
             let weeklyTrophy = null;
             
-            // 토요일이 있고 해당 월의 토요일이면 그 주차 정보 가져오기
-            if (saturdayDay && saturdayDay.isCurrentMonth && saturdayDay.weekLabel) {
-              // 주차 레이블에서 번호 추출 ("7월1주차" -> 1)
-              const labelMatch = saturdayDay.weekLabel.match(/([0-9])주차/);
-              if (labelMatch && labelMatch[1]) {
-                weekNumber = parseInt(labelMatch[1]);
-                // 주차 번호에 맞는 트로피 찾기 (1부터 시작하므로 -1)
-                weeklyTrophy = weeklyTrophies[weekNumber - 1];
+            // 토요일이 있고 주차 레이블이 있으면 주차 정보 가져오기
+            if (saturdayDay && saturdayDay.weekLabel) {
+              // 주차 레이블에서 월과 주차 번호 추출 ("6월5주차" -> 월:6, 주차:5)
+              const labelMatch = saturdayDay.weekLabel.match(/([0-9]+)월([0-9])주차/);
+              if (labelMatch && labelMatch[1] && labelMatch[2]) {
+                const weekMonth = parseInt(labelMatch[1]);
+                const currentDisplayMonth = currentMonth.getMonth() + 1;
                 
-                // 디버깅
-                console.log(`트로피 열 ${weekIndex}: 토요일=${saturdayDay.dateStr}, 주차=${weekNumber}, 트로피=`, weeklyTrophy);
+                // 현재 월의 주차만 트로피 표시 (토요일이 다음 달이어도 주차 레이블이 현재 월이면 표시)
+                if (weekMonth === currentDisplayMonth) {
+                  weekNumber = parseInt(labelMatch[2]);
+                  // 주차 번호에 맞는 트로피 찾기 (1부터 시작하므로 -1)
+                  weeklyTrophy = weeklyTrophies[weekNumber - 1];
+                  
+                  // 디버깅
+                  console.log(`트로피 열 ${weekIndex}: 토요일=${saturdayDay.dateStr}, 주차=${weekNumber}, 월=${weekMonth}, 트로피=`, weeklyTrophy);
+                }
               }
             }
             
