@@ -94,12 +94,9 @@ export default function AllQuizModal({
       await onUniversalSchoolChange(direction);
       console.log('🔥 AllQuizModal 부모 함수 호출 완료');
       
-      // 상태 업데이트가 완료될 때까지 잠시 대기
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 학교 변경 후 퀴즈 다시 로드
-      console.log('🔄 학교 변경 후 퀴즈 재로드 시작');
-      await loadQuiz();
+      // useEffect에서 자동으로 퀴즈를 로드하므로 여기서는 수동 로드하지 않음
+      // 중복 로드 방지를 위해 loadQuiz 호출 제거
+      console.log('🔄 학교 변경 완료, useEffect에서 자동으로 퀴즈 로드됨');
     } catch (error) {
       console.error('💥 AllQuizModal 학교 변경 중 오류:', error);
       setLoading(false);
