@@ -336,14 +336,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       setWeeklyTrophies(trophies);
       
-      // 디버깅: weeklyTrophies 배열 상태 확인
-      console.log('🏆 weeklyTrophies 배열 생성 완료:', trophies.map(t => ({
-        week: t.week,
-        earned: t.earned,
-        correct: t.total_correct,
-        available: t.total_available
-      })));
-      
       // 5. 월간 트로피 설정
       setMonthlyTrophy(championData ? !!championData.month_champion : false);
       
@@ -588,10 +580,15 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         const saturdayDate = championCriteria[fieldName] as string | null;
         
         if (saturdayDate) {
+          // 주차 레이블은 항상 현재 캘린더 표시 월 기준으로 생성
+          // (5주차 토요일이 다음 달이어도 "6월5주차"로 표시)
           weekSaturdays[saturdayDate] = `${month + 1}월${week}주차`;
         }
       }
     }
+    
+    // 디버깅: 주차별 토요일 매핑 확인
+    console.log('📅 주차별 토요일 매핑:', weekSaturdays);
     
     // 7주 * 7일 = 49일 (5주차가 다음 달로 넘어가는 경우 대응)
     for (let i = 0; i < 49; i++) {
@@ -600,6 +597,11 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       
       // 주차 레이블 확인 - champion_criteria 테이블의 토요일 날짜와 비교
       let weekLabel = weekSaturdays[dateStr] || undefined;
+      
+      // 디버깅: 주차 레이블 매칭 확인
+      if (weekLabel) {
+        console.log(`📍 주차 레이블 매칭: ${dateStr} → ${weekLabel}`);
+      }
       
       days.push({
         day: currentDate.getDate(),
@@ -930,7 +932,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               )}
               
               {/* 주차 레이블 표시 (토요일) - PC에서만 표시 */}
-              {day.weekLabel && day.isCurrentMonth && (
+              {day.weekLabel && (
                 <span className="hidden lg:block absolute bottom-0.5 right-0.5 text-[10px] font-medium bg-gray-100/80 px-1 py-0.5 rounded-sm text-gray-500 shadow-sm max-w-[calc(100%-4px)] truncate">
                   {day.weekLabel}
                 </span>
