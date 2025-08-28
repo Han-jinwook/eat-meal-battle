@@ -5,9 +5,10 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
-import useUserSchool from '@/hooks/useUserSchool';
-import { useSchoolMode } from '@/hooks/useSchoolMode';
-import { toast } from 'react-hot-toast';
+import { useUserSchool } from '../hooks/useUserSchool';
+import { useSchoolMode } from '../hooks/useSchoolMode';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface MealImageUploaderProps {
   schoolCode: string;
@@ -45,8 +46,64 @@ export default function MealImageUploader({
   const [showAiGenButton, setShowAiGenButton] = useState(false); // 기본값은 비활성화
   const [canUploadImage, setCanUploadImage] = useState(false); // 파일선택 버튼 활성화 조건
   const [mealId, setMealId] = useState<string | null>(null); // 급식 ID 상태 추가
+  const [isReporting, setIsReporting] = useState(false); // 신고 진행 상태
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // 등록오류 신고 핸들러
+  const handleReportError = async () => {
+    if (isReporting || !uploadedImage || !userId) return;
+    
+    setIsReporting(true);
+    toast('오류 신고접수중입니다', {
+      icon: '📝',
+      duration: 3000,
+    });
+    
+    try {
+      // 사용자 인증 토큰 가져오기
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('인증이 필요합니다.');
+      }
+
+      // API 엔드포인트 호출
+      const response = await fetch('/.netlify/functions/report-meal-image-error', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          imageId: uploadedImage.id,
+          imageUrl: uploadedImage.image_url,
+          reporterId: userId,
+          schoolCode,
+          mealDate,
+          mealType,
+          uploaderNickname: uploadedImage.uploader_nickname,
+          reportReason: '등록오류'
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '신고 처리 중 오류가 발생했습니다.');
+      }
+
+      console.log('신고 접수 완료:', result.reportId);
+      toast.success('신고가 접수되었습니다', {
+        duration: 3000,
+      });
+      
+    } catch (error) {
+      console.error('신고 처리 오류:', error);
+      toast.error(error.message || '신고 처리 중 오류가 발생했습니다');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   // 이미지 리사이징 함수
   const resizeImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -1123,14 +1180,31 @@ export default function MealImageUploader({
                 </div>
               )}
               
-              {uploadedImage.status !== 'approved' && (
-                <button
-                  onClick={handleDeleteImage}
-                  className="mt-2 text-sm text-red-600 hover:text-red-800"
-                >
-                  삭제
-                </button>
-              )}
+              <div className="flex gap-2 mt-2">
+                {uploadedImage.status !== 'approved' && (
+                  <button
+                    onClick={handleDeleteImage}
+                    className="text-sm text-red-600 hover:text-red-800"
+                  >
+                    삭제
+                  </button>
+                )}
+                
+                {/* 등록오류 신고 버튼 - 승인된 이미지에만 표시 */}
+                {uploadedImage.status === 'approved' && (
+                  <button
+                    onClick={handleReportError}
+                    disabled={isReporting}
+                    className={`text-sm ${
+                      isReporting 
+                        ? 'text-gray-400 cursor-not-allowed' 
+                        : 'text-orange-600 hover:text-orange-800'
+                    }`}
+                  >
+                    {isReporting ? '등록오류 신고접수중' : '등록오류 신고'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
