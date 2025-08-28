@@ -312,8 +312,8 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       // 4. 주간 트로피 정보 설정 (DB 기반)
       const trophies: WeeklyTrophy[] = [];
       
-      // 최대 6주차까지 처리
-      for (let week = 1; week <= 6; week++) {
+      // 최대 5주차까지 처리 (DB 스키마에 맞춤)
+      for (let week = 1; week <= 5; week++) {
         // 장원 여부 확인
         const weekChampionField = `week_${week}_champion` as keyof typeof championData;
         const isChampion = championData ? !!championData[weekChampionField] : false;
@@ -335,6 +335,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
       
       setWeeklyTrophies(trophies);
+      
+      // 디버깅: weeklyTrophies 배열 상태 확인
+      console.log('🏆 weeklyTrophies 배열 생성 완료:', trophies.map(t => ({
+        week: t.week,
+        earned: t.earned,
+        correct: t.total_correct,
+        available: t.total_available
+      })));
       
       // 5. 월간 트로피 설정
       setMonthlyTrophy(championData ? !!championData.month_champion : false);
