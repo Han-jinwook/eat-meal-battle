@@ -1262,6 +1262,56 @@ export default function BattlePage() {
         }`}>
           {activeTab === 'menu' ? (
             <div>
+              {/* 지역 및 학교 유형 선택 */}
+              <div className="bg-white rounded-lg p-4 mb-6 border border-red-200">
+                {/* 지역 선택 버튼 - 왼쪽 정렬 */}
+                <div className="text-left mb-4 ml-3">
+                  <div className="flex gap-2">
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
+                      <button
+                        onClick={() => setSelectedRegion(userSchool.region)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === userSchool.region
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {userSchool.region}
+                      </button>
+                    )}
+                    {/* 전국 버튼 */}
+                    <button
+                      onClick={() => setSelectedRegion('전국')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedRegion === '전국'
+                          ? 'bg-red-500 text-white shadow-sm'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                      }`}
+                    >
+                      전국
+                    </button>
+                  </div>
+                </div>
+
+                {/* 학교 유형 선택 - 한 줄 배치 */}
+                <div className="flex gap-2 justify-center">
+                  {['초등학교', '중학교', '고등학교'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedSchoolType(type)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                          ? 'bg-red-500 text-white shadow-sm'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* 일간 베스트 메뉴 도표 */}
               <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
                 {/* 도표 제목 */}
