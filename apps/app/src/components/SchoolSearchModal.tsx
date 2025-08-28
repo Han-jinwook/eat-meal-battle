@@ -155,7 +155,7 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
         <div className="text-sm text-gray-600 dark:text-gray-400">
           <p>• 학교명을 입력하고 검색 버튼을 클릭하세요</p>
           <p>• 검색 결과에서 원하는 학교를 클릭하면 관심학교로 등록됩니다</p>
-          <p>• 최대 3개의 관심학교를 등록할 수 있습니다</p>
+          <p>• 최대 10개의 관심학교를 등록할 수 있습니다</p>
         </div>
       </div>
     </div>
