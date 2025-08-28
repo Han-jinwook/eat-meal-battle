@@ -193,38 +193,39 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
     const isCorrect = isVerifiedIncorrect ? true : (selectedOption === quiz.correct_answer);
     console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isVerifiedIncorrect, isCorrect });
     
-    // 답변 저장 데이터 준비 - quiz_results 테이블 스키마에 맞게 구성
-    const insertData = {
+    // 답변 저장 데이터 준비 - 메인 퀴즈는 quiz_results만 사용
+    const quizResultsData = {
       user_id: userId,
       quiz_id: quizId,
-      selected_option: parseInt(selectedOption), // DB에는 int4 타입으로 정의됨
+      selected_option: parseInt(selectedOption),
       is_correct: isCorrect
-      // created_at은 DB에서 자동으로 now()로 설정됨
     };
-    console.log('[quiz] 저장할 데이터:', insertData);
     
-    // 답변 저장 - quiz_results 테이블 사용
+    // ⚠️ allQuizAttemptsData 제거됨 - 메인 퀴즈에서는 quiz_results만 사용
+    
+    console.log('[quiz] 저장할 데이터:', { quizResultsData });
+    
+    // 답변 저장 - quiz_results 테이블 (메인 퀴즈용)
     console.log('[quiz] quiz_results 테이블에 저장 시도...');
     const { data: result, error: saveError } = await supabaseAdmin
       .from('quiz_results')
-      .insert(insertData)
+      .insert(quizResultsData)
       .select()
       .single();
       
+    // ⚠️ 경고: 메인 퀴즈 페이지에서는 all_quiz_attempts 테이블 사용 금지!
+    // all_quiz_attempts는 오직 AllQuizModal(모든 퀴즈 모달)에서만 사용해야 함
+    // 메인 퀴즈는 quiz_results 테이블만 사용하여 중복 방지 및 데이터 일관성 유지
+    
     console.log('[quiz] 저장 결과:', { result, saveError });
     if (saveError) {
-      console.error('[quiz] 저장 실패 상세:', {
+      console.log('[quiz] quiz_results 저장 실패 상세:', {
         code: saveError.code,
         message: saveError.message,
         details: saveError.details,
-        hint: saveError.hint,
-        insertData: insertData
+        hint: saveError.hint
       });
-      return { 
-        error: '답변 저장에 실패했습니다.',
-        details: saveError.message,
-        code: saveError.code
-      };
+      return { error: '답변 저장에 실패했습니다.' };
     }
     
     // 퀴즈 날짜 기반으로 월, 연도, 주차, 일별 계산
@@ -799,14 +800,13 @@ async function verifyQuizWithAI(quiz) {
   }
 }
 
-// 오답 확정 시 모든 사용자 정답 처리 함수
 async function compensateAllUsersForIncorrectQuiz(quizId) {
   console.log('[quiz] compensateAllUsersForIncorrectQuiz 시작:', quizId);
   
   try {
-    // 해당 퀴즈를 푼 모든 사용자 조회 - all_quiz_attempts 테이블 사용
+    // 해당 퀴즈를 푼 모든 사용자 조회 - quiz_results 테이블 사용 (메인 퀴즈만)
     const { data: quizResults, error: resultsError } = await supabaseAdmin
-      .from('all_quiz_attempts')
+      .from('quiz_results')
       .select('*')
       .eq('quiz_id', quizId);
       
@@ -822,14 +822,15 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
     
     console.log(`[quiz] ${quizResults.length}명의 사용자 결과를 정답으로 변경`);
     
-    // 모든 결과를 정답으로 업데이트 - all_quiz_attempts 테이블 사용
+    // ⚠️ 경고: 메인 퀴즈에서는 quiz_results만 업데이트!
+    // all_quiz_attempts는 AllQuizModal에서만 사용하므로 여기서 업데이트하지 않음
     const { error: updateError } = await supabaseAdmin
-      .from('all_quiz_attempts')
+      .from('quiz_results')
       .update({ is_correct: true })
       .eq('quiz_id', quizId);
       
     if (updateError) {
-      console.error('[quiz] 퀴즈 결과 업데이트 실패:', updateError);
+      console.error('[quiz] quiz_results 업데이트 실패:', updateError);
       return;
     }
     
