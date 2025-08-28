@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
-import { useUserSchool } from '../hooks/useUserSchool';
-import { useSchoolMode } from '../hooks/useSchoolMode';
+import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
