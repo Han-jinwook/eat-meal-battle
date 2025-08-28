@@ -193,17 +193,13 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
     const isCorrect = isVerifiedIncorrect ? true : (selectedOption === quiz.correct_answer);
     console.log('[quiz] 정답 확인:', { selectedOption, correctAnswer: quiz.correct_answer, isVerifiedIncorrect, isCorrect });
     
-    // 답변 저장 데이터 준비 - all_quiz_attempts 테이블 스키마에 맞게 구성
+    // 답변 저장 데이터 준비 - quiz_results 테이블 스키마에 맞게 구성
     const insertData = {
       user_id: userId,
       quiz_id: quizId,
       selected_option: parseInt(selectedOption), // DB에는 int4 타입으로 정의됨
-      is_correct: isCorrect,
-      answer_time: answerTime ? new Date(answerTime * 1000).toISOString() : null, // Unix timestamp를 ISO string으로 변환
-      attempted_at: new Date().toISOString(),
-      // 학교 코드와 학년 정보 추가 - 퀴즈 데이터에서 가져옴
-      school_code: quiz.school_code || null,
-      grade: quiz.grade || null
+      is_correct: isCorrect
+      // created_at은 DB에서 자동으로 now()로 설정됨
     };
     console.log('[quiz] 저장할 데이터:', insertData);
     
@@ -217,13 +213,18 @@ async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
       
     console.log('[quiz] 저장 결과:', { result, saveError });
     if (saveError) {
-      console.log('[quiz] 저장 실패 상세:', {
+      console.error('[quiz] 저장 실패 상세:', {
         code: saveError.code,
         message: saveError.message,
         details: saveError.details,
-        hint: saveError.hint
+        hint: saveError.hint,
+        insertData: insertData
       });
-      return { error: '답변 저장에 실패했습니다.' };
+      return { 
+        error: '답변 저장에 실패했습니다.',
+        details: saveError.message,
+        code: saveError.code
+      };
     }
     
     // 퀴즈 날짜 기반으로 월, 연도, 주차, 일별 계산
