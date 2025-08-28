@@ -66,6 +66,7 @@ function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
 - 정답은 확실하고 검증 가능한 사실 사용
 - 오답 선택지는 명백히 틀린 내용으로 구성
 - 역사적 사실, 과학적 원리는 교과서 수준의 정확한 내용 사용
+- 퀴즈 정답풀이(explanation)에 출처가 있는 내용은 반드시 출처를 명시해야 함
 
 **창의성 요구사항:**
 - 급식 메뉴에서 시작하되, 다양한 교과 영역(수학, 과학, 역사, 지리, 문학, 예술 등)으로 자유롭게 확장

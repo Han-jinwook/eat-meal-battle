@@ -728,7 +728,7 @@ async function verifyQuizWithAI(quiz) {
 {
   "isCorrect": true/false,
   "confidence": 0.0-1.0,
-  "reasoning": "출제 내용에 대한 종합적 검증 결과를 학생들이 이해하기 쉽게 설명"
+  "reasoning": "출제 내용에 대한 종합적 검증 결과를 해당 학년 학생들이 이해하기 쉽게 설명"
 }
 `;
 
