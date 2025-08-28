@@ -598,7 +598,7 @@ export default function AllQuizModal({
           {/* 유저 실적 달력 UI */}
           <div className="mt-8 bg-white rounded-lg shadow-sm p-6 border-t border-gray-100">
             <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">📊 나의 퀴즈 실적</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">🎯 나의 랜덤퀴즈 챌린지</h3>
               <p className="text-sm text-gray-600">일별 퀴즈 도전 기록을 확인해보세요</p>
             </div>
             <QuizPerformanceCalendar />

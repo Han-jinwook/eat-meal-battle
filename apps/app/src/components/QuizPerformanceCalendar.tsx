@@ -149,23 +149,32 @@ export default function QuizPerformanceCalendar() {
             <div
               key={index}
               className={`
-                aspect-square flex flex-col items-center justify-center text-xs border rounded
-                ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'}
+                aspect-square flex flex-col items-start justify-between text-xs border rounded p-1 relative
+                ${day.isCurrentMonth 
+                  ? hasStats 
+                    ? 'bg-gradient-to-br from-purple-100 to-pink-100 border-purple-300 shadow-sm' 
+                    : 'bg-white border-gray-300 shadow-sm'
+                  : 'bg-gray-50 text-gray-300 border-gray-100'
+                }
                 ${isToday ? 'ring-2 ring-blue-400 bg-blue-50' : ''}
-                ${hasStats ? 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200' : 'border-gray-200'}
+                transition-all duration-200 hover:shadow-md
               `}
             >
-              <div className={`font-medium ${
+              {/* 날짜 - 왼쪽 위 */}
+              <div className={`font-semibold text-sm ${
                 index % 7 === 0 ? 'text-red-500' : 
                 index % 7 === 6 ? 'text-blue-500' : 
-                day.isCurrentMonth ? 'text-gray-700' : 'text-gray-400'
+                day.isCurrentMonth ? 'text-gray-800' : 'text-gray-300'
               }`}>
                 {day.date.getDate()}
               </div>
               
+              {/* 실적 - 오른쪽 아래 */}
               {hasStats && day.stats && (
-                <div className="text-xs font-medium text-purple-600 mt-1">
-                  {day.stats.correct_answers}/{day.stats.total_attempts}
+                <div className="absolute bottom-1 right-1 bg-white rounded-full px-1.5 py-0.5 shadow-sm border border-purple-200">
+                  <div className="text-xs font-bold text-purple-700">
+                    {day.stats.correct_answers}/{day.stats.total_attempts}
+                  </div>
                 </div>
               )}
             </div>
