@@ -702,10 +702,17 @@ async function verifyQuizWithAI(quiz) {
   console.log('[quiz] verifyQuizWithAI 시작:', quiz.id);
   
   try {
+    // 학교 종류와 학년 정보 추출
+    const schoolType = quiz.school_code ? (quiz.school_code.startsWith('E') ? '초등학교' : 
+                                         quiz.school_code.startsWith('M') ? '중학교' : 
+                                         quiz.school_code.startsWith('H') ? '고등학교' : '학교') : '학교';
+    const gradeInfo = quiz.grade ? `${schoolType} ${quiz.grade}학년` : '해당 학년';
+    
     const prompt = `
 다음 퀴즈의 출제 내용을 종합적으로 검증해주세요.
 
 퀴즈 정보:
+- 대상: ${gradeInfo}
 - 문제: ${quiz.question}
 - 선택지: ${JSON.stringify(quiz.options)}
 - 정답: ${quiz.correct_answer}번 (${quiz.options[quiz.correct_answer - 1]})
@@ -720,15 +727,15 @@ async function verifyQuizWithAI(quiz) {
 6. 교육적 가치: 학생들에게 올바른 지식을 전달하는가?
 
 중요 고려사항:
-- 이 퀴즈는 초등학교~고등학교 학생들을 대상으로 한 학년별 맞춤 퀴즈입니다
-- 해당 학년 수준에 맞는 내용과 난이도로 검증해주세요
+- 이 퀴즈는 ${gradeInfo} 학생들을 대상으로 한 맞춤 퀴즈입니다
+- ${gradeInfo} 수준에 맞는 내용과 난이도로 검증해주세요
 - 신뢰도는 보수적으로 평가하여 과도한 확신을 피해주세요
 
 다음 JSON 형식으로 응답해주세요:
 {
   "isCorrect": true/false,
   "confidence": 0.0-1.0,
-  "reasoning": "출제 내용에 대한 종합적 검증 결과를 해당 학년 학생들이 이해하기 쉽게 설명"
+  "reasoning": "출제 내용에 대한 종합적 검증 결과를 ${gradeInfo} 학생들이 이해하기 쉽게 설명"
 }
 `;
 
