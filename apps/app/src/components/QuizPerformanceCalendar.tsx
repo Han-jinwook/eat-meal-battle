@@ -16,6 +16,17 @@ export default function QuizPerformanceCalendar() {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
+  // 퀴즈 완료 이벤트 리스너
+  useEffect(() => {
+    const handleQuizCompleted = () => {
+      // 현재 달력 데이터 새로고침
+      loadCalendarData(currentDate.getFullYear(), currentDate.getMonth() + 1);
+    };
+
+    window.addEventListener('quizCompleted', handleQuizCompleted);
+    return () => window.removeEventListener('quizCompleted', handleQuizCompleted);
+  }, [currentDate]);
+
   // 달력 데이터 로드
   const loadCalendarData = async (year: number, month: number) => {
     setLoading(true);

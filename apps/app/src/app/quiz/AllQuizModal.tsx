@@ -312,6 +312,9 @@ export default function AllQuizModal({
         }
         
         setSubmitted(true);
+        
+        // 퀴즈 성공 후 달력 데이터 새로고침을 위해 이벤트 발생
+        window.dispatchEvent(new CustomEvent('quizCompleted'));
       } else {
         console.error('답안 제출 실패:', { status: response.status, result });
         const errorMessage = result.error || result.message || '답안 제출에 실패했습니다.';
