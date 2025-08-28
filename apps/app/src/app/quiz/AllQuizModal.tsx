@@ -79,13 +79,6 @@ export default function AllQuizModal({
 
   // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
   const handleSchoolChange = async (direction: 'prev' | 'next') => {
-<<<<<<< HEAD
-    // 부모 컴포넌트의 핸들러 호출
-    await onUniversalSchoolChange(direction);
-    
-    // 학교 변경 후 퀴즈 다시 로드
-    await loadQuiz();
-=======
     console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
     console.log('🔥 AllQuizModal onUniversalSchoolChange 함수 타입:', typeof onUniversalSchoolChange);
     
@@ -101,7 +94,6 @@ export default function AllQuizModal({
     } catch (error) {
       console.error('💥 AllQuizModal 학교 변경 중 오류:', error);
     }
->>>>>>> bfea840586d3e0d519bf4d96c929231f80195850
   };
 
   // 퀴즈 로드 함수
