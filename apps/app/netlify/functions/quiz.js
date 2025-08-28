@@ -167,8 +167,8 @@ async function processQuiz(userId, quiz, canShowAnswer) {
 }
 
 // 퀴즈 답변 제출 함수
-async function submitQuizAnswer(userId, quizId, selectedOption) {
-  console.log('[quiz] submitQuizAnswer 시작:', { userId, quizId, selectedOption });
+async function submitQuizAnswer(userId, quizId, selectedOption, answerTime) {
+  console.log('[quiz] submitQuizAnswer 시작:', { userId, quizId, selectedOption, answerTime });
   
   try {
     // 퀴즈 정보 조회
@@ -199,7 +199,7 @@ async function submitQuizAnswer(userId, quizId, selectedOption) {
       quiz_id: quizId,
       selected_option: parseInt(selectedOption), // DB에는 int4 타입으로 정의됨
       is_correct: isCorrect,
-      answer_time: null, // 필요시 클라이언트에서 받아와서 설정
+      answer_time: answerTime ? new Date(answerTime * 1000).toISOString() : null, // Unix timestamp를 ISO string으로 변환
       attempted_at: new Date().toISOString(),
       // 학교 코드와 학년 정보 추가 - 퀴즈 데이터에서 가져옴
       school_code: quiz.school_code || null,
@@ -1161,7 +1161,7 @@ exports.handler = async function(event, context) {
         userId
       });
       
-      const { quiz_id, selected_option } = body;
+      const { quiz_id, selected_option, answer_time } = body;
       
       // 디버깅 로그 - 파싱된 파라미터 확인
       console.log('[quiz] 파싱된 파라미터:', {
@@ -1185,12 +1185,12 @@ exports.handler = async function(event, context) {
       }
       
       console.log('[quiz] submitQuizAnswer 호출 전 - 파라미터 검증 완료');
-      console.log('[quiz] 함수 호출 파라미터:', { userId, quiz_id, selected_option });
+      console.log('[quiz] 함수 호출 파라미터:', { userId, quiz_id, selected_option, answer_time });
       
       let result;
       try {
         console.log('[quiz] submitQuizAnswer 함수 호출 시작...');
-        result = await submitQuizAnswer(userId, quiz_id, selected_option);
+        result = await submitQuizAnswer(userId, quiz_id, selected_option, answer_time);
         console.log('[quiz] submitQuizAnswer 함수 호출 완료, 결과:', result);
       } catch (error) {
         console.error('[quiz] submitQuizAnswer 함수 호출 중 예외 발생:', error);
