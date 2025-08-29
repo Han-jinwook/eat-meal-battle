@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, createContext, useContext } from 'react';
+import { useState, useMemo, useCallback, createContext, useContext, useEffect } from 'react';
+import { createClient } from '@/lib/supabase';
 
 // 사용자 모드 타입 정의
 export type UserMode = 'student' | 'visitor';
@@ -67,9 +68,82 @@ const SchoolModeContext = createContext<SchoolModeContextType | null>(null);
 // Context Provider 컴포넌트
 export function SchoolModeProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [selectedInterestSchool, setSelectedInterestSchool] = useState<InterestSchoolInfo | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const supabase = createClient();
+  
+  // 사용자 로그인 시 마지막 선택한 관심학교 복원
+  useEffect(() => {
+    const restoreLastSelectedSchool = async () => {
+      try {
+        // 현재 로그인한 사용자 확인
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          setIsInitialized(true);
+          return;
+        }
+
+        // localStorage에서 마지막 선택한 관심학교 ID 조회
+        const lastSelectedSchoolId = localStorage.getItem(`last_selected_school_${session.user.id}`);
+        if (!lastSelectedSchoolId) {
+          setIsInitialized(true);
+          return;
+        }
+
+        // DB에서 해당 관심학교 정보 조회
+        const { data: school, error } = await supabase
+          .from('interest_schools')
+          .select('*')
+          .eq('id', lastSelectedSchoolId)
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!error && school) {
+          console.log('관심학교 상태 복원:', school.school_name);
+          setSelectedInterestSchool({
+            id: school.id,
+            school_name: school.school_name,
+            school_code: school.school_code,
+            office_code: school.office_code,
+            created_at: school.created_at
+          });
+        }
+      } catch (error) {
+        console.error('관심학교 상태 복원 오류:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    if (!isInitialized) {
+      restoreLastSelectedSchool();
+    }
+  }, [isInitialized]);
+
+  // 관심학교 선택 시 localStorage에 저장
+  const handleSetSelectedInterestSchool = useCallback(async (school: InterestSchoolInfo | null) => {
+    setSelectedInterestSchool(school);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        if (school) {
+          localStorage.setItem(`last_selected_school_${session.user.id}`, school.id);
+          console.log('관심학교 선택 저장:', school.school_name);
+        } else {
+          localStorage.removeItem(`last_selected_school_${session.user.id}`);
+          console.log('관심학교 선택 해제');
+        }
+      }
+    } catch (error) {
+      console.error('관심학교 선택 저장 오류:', error);
+    }
+  }, []);
   
   return (
-    <SchoolModeContext.Provider value={{ selectedInterestSchool, setSelectedInterestSchool }}>
+    <SchoolModeContext.Provider value={{ 
+      selectedInterestSchool, 
+      setSelectedInterestSchool: handleSetSelectedInterestSchool 
+    }}>
       {children}
     </SchoolModeContext.Provider>
   );
