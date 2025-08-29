@@ -23,7 +23,7 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
   const isMounted = useRef<boolean>(true);
   
   // 배틀 계산 디바운싱을 위한 ref
-  const battleCalculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const battleCalculationTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -101,39 +101,67 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
       }
       
       if (mealData) {
-        // 배틀 계산 트리거 (디바운싱 적용)
-        // 기존 타이머가 있으면 취소
-        if (battleCalculationTimeoutRef.current) {
-          clearTimeout(battleCalculationTimeoutRef.current);
+        // 배틀 계산 트리거 (날짜별 독립 디바운싱 적용)
+        const mealDate = mealData.meal_date;
+        const schoolCode = mealData.school_code;
+        const date = new Date(mealDate);
+        const yearMonth = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        
+        // 일별 배틀 계산 디바운싱
+        const dailyKey = `daily-${mealDate}`;
+        if (battleCalculationTimeoutRef.current.has(dailyKey)) {
+          clearTimeout(battleCalculationTimeoutRef.current.get(dailyKey)!);
         }
         
-        // 2초 후에 배틀 계산 실행 (중복 방지)
-        battleCalculationTimeoutRef.current = setTimeout(async () => {
+        // 월별 배틀 계산 디바운싱
+        const monthlyKey = `monthly-${yearMonth}`;
+        if (battleCalculationTimeoutRef.current.has(monthlyKey)) {
+          clearTimeout(battleCalculationTimeoutRef.current.get(monthlyKey)!);
+        }
+        
+        // 일별 배틀 계산 (2초 디바운싱)
+        const dailyTimeout = setTimeout(async () => {
           try {
-            const mealDate = mealData.meal_date;
-            const schoolCode = mealData.school_code;
-            
-            console.log('🏆 배틀 계산 시작 (meal_rating_stats 트리거):', { mealDate, schoolCode });
-            
-            const date = new Date(mealDate);
+            console.log('🏆 일별 배틀 계산 시작:', { mealDate, schoolCode });
             
             // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
             await calculateDailyMenuBattle(mealDate, schoolCode);
             console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
             
-            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
-            console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
-            
-            // 급식 배틀 계산 (학교 간 경쟁) - schoolCode 제거하여 모든 학교 대상 계산
+            // 급식 배틀 계산 (학교 간 경쟁)
             await calculateDailyMealBattle(mealDate);
             console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
             
-            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1);
-            console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+            // 완료 후 타이머 제거
+            battleCalculationTimeoutRef.current.delete(dailyKey);
           } catch (battleError) {
-            console.error('⚠️ 배틀 계산 중 오류:', battleError);
+            console.error('⚠️ 일별 배틀 계산 중 오류:', battleError);
+            battleCalculationTimeoutRef.current.delete(dailyKey);
           }
-        }, 2000); // 2초 디바운싱
+        }, 2000);
+        
+        // 월별 배틀 계산 (2초 디바운싱)
+        const monthlyTimeout = setTimeout(async () => {
+          try {
+            console.log('🏆 월별 배틀 계산 시작:', { yearMonth, schoolCode });
+            
+            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+            console.log(`✅ 월별 메뉴 배틀 계산 완료: ${yearMonth}`);
+            
+            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1);
+            console.log(`✅ 월별 급식 배틀 계산 완료: ${yearMonth}`);
+            
+            // 완료 후 타이머 제거
+            battleCalculationTimeoutRef.current.delete(monthlyKey);
+          } catch (battleError) {
+            console.error('⚠️ 월별 배틀 계산 중 오류:', battleError);
+            battleCalculationTimeoutRef.current.delete(monthlyKey);
+          }
+        }, 2000);
+        
+        // 타이머 저장
+        battleCalculationTimeoutRef.current.set(dailyKey, dailyTimeout);
+        battleCalculationTimeoutRef.current.set(monthlyKey, monthlyTimeout);
       }
     } catch (error) {
       console.error('⚠️ 배틀 계산 트리거 중 오류:', error);
