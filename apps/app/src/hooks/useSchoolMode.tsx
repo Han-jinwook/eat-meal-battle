@@ -37,6 +37,7 @@ export interface UseSchoolModeReturn {
   hasMySchool: boolean;
   isStudentMode: boolean;
   isVisitorMode: boolean;
+  isInitialized: boolean; // 초기화 완료 상태
   
   // 권한 정보
   permissions: Permissions;
@@ -61,6 +62,7 @@ export interface UseSchoolModeReturn {
 interface SchoolModeContextType {
   selectedInterestSchool: InterestSchoolInfo | null;
   setSelectedInterestSchool: (school: InterestSchoolInfo | null) => void;
+  isInitialized: boolean;
 }
 
 const SchoolModeContext = createContext<SchoolModeContextType | null>(null);
@@ -142,7 +144,8 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
   return (
     <SchoolModeContext.Provider value={{ 
       selectedInterestSchool, 
-      setSelectedInterestSchool: handleSetSelectedInterestSchool 
+      setSelectedInterestSchool: handleSetSelectedInterestSchool,
+      isInitialized
     }}>
       {children}
     </SchoolModeContext.Provider>
@@ -160,7 +163,7 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
   if (!context) {
     throw new Error('useSchoolMode must be used within SchoolModeProvider');
   }
-  const { selectedInterestSchool, setSelectedInterestSchool } = context;
+  const { selectedInterestSchool, setSelectedInterestSchool, isInitialized } = context;
   
   // 사용자 학교 존재 여부
   const hasMySchool = useMemo(() => {
@@ -264,6 +267,7 @@ export function useSchoolMode(userSchool: any): UseSchoolModeReturn {
     hasMySchool,
     isStudentMode,
     isVisitorMode,
+    isInitialized,
     
     // 권한 정보
     permissions,

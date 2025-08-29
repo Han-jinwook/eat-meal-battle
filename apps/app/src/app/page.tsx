@@ -372,14 +372,14 @@ export default function Home() {
 
   // 비학생 사용자 자동 관심학교 설정 모달 열기
   useEffect(() => {
-    // 사용자 정보와 학교 모드가 로드된 후에만 실행
-    if (!userLoading && user && schoolMode.hasMySchool !== null) {
+    // 사용자 정보와 학교 모드가 완전히 로드되고 초기화된 후에만 실행
+    if (!userLoading && user && schoolMode.hasMySchool !== null && schoolMode.isInitialized) {
       console.log('🔍 비학생 모달 체크:', {
         hasMySchool: schoolMode.hasMySchool,
         selectedInterestSchool: schoolMode.selectedInterestSchool?.school_name,
         isStudent: user.db_profile?.is_student,
         userMetadata: user.user_metadata?.is_student,
-        userProfile: user
+        isInitialized: schoolMode.isInitialized
       });
       
       // 비학생이고 내 학교가 없고 관심학교도 선택되지 않았으면 관심학교 설정 모달 자동 열기
@@ -388,7 +388,7 @@ export default function Home() {
         setIsSchoolSearchOpen(true);
       }
     }
-  }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool]);
+  }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized]);
 
   // 관심학교 드롭다운 토글 함수
   const handleDropdownToggle = () => {
@@ -1010,8 +1010,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* 급식 정보 표시 - 사용자가 로그인했고 학교 정보가 있을 때만 표시 */}
-        {!isLoading && !pageLoading && !userLoading && user && schoolMode.currentSchoolInfo && (
+        {/* 급식 정보 표시 - 사용자가 로그인했을 때 표시 (학교 정보 없어도 기본 화면 제공) */}
+        {!isLoading && !pageLoading && !userLoading && user && (
           <>
             {meals.length > 0 ? (
               <div className="space-y-8">
@@ -1110,20 +1110,39 @@ export default function Home() {
                 </div>
 
                 <h3 className="text-lg font-medium text-center mb-2 text-gray-900 dark:text-white">
-                  {userSchool?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
+                  {schoolMode.currentSchoolInfo?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
                 </h3>
 
                 <div className="bg-gray-50 p-4 rounded-md text-center">
-                  <p className="text-gray-700 dark:text-white font-medium">
-                    {(error || pageError || userError) || '해당 날짜의 급식 정보가 없습니다.'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
-                    다른 날짜를 선택해보세요.
-                  </p>
-                  {dataSource && (
-                    <p className="text-xs text-gray-500 dark:text-gray-300 mt-4">
-                      데이터 소스: <span className="font-medium">{dataSource}</span>
-                    </p>
+                  {!schoolMode.currentSchoolInfo ? (
+                    <>
+                      <p className="text-gray-700 dark:text-white font-medium">
+                        급식 정보를 보려면 관심학교를 선택해주세요.
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
+                        우측 상단의 '관심학교' 버튼을 클릭하여 학교를 등록하세요.
+                      </p>
+                      <button
+                        onClick={() => setIsSchoolSearchOpen(true)}
+                        className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                      >
+                        관심학교 등록하기
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-700 dark:text-white font-medium">
+                        {(error || pageError || userError) || '해당 날짜의 급식 정보가 없습니다.'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
+                        다른 날짜를 선택해보세요.
+                      </p>
+                      {dataSource && (
+                        <p className="text-xs text-gray-500 dark:text-gray-300 mt-4">
+                          데이터 소스: <span className="font-medium">{dataSource}</span>
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
