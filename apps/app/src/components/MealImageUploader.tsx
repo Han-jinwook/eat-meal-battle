@@ -466,10 +466,28 @@ export default function MealImageUploader({
           (payload) => {
             console.log('이미지 실시간 업데이트 수신:', payload);
             
-            // 새로운 이미지가 승인되었거나 상태가 변경된 경우에만 업데이트
-            if (payload.new && (payload.new.status === 'approved' || 
+            // 해당 학교의 이미지 변경사항만 처리
+            const isRelevantToCurrentSchool = 
+              (payload.old && payload.old.school_code === schoolCode) ||
+              (payload.new && payload.new.school_code === schoolCode);
+            
+            if (!isRelevantToCurrentSchool) {
+              console.log('다른 학교 이미지 변경사항, 무시');
+              return;
+            }
+            
+            // 이미지 변경사항 처리
+            if (payload.eventType === 'DELETE') {
+              // 이미지가 삭제된 경우 (관리자가 사진삭제한 경우)
+              console.log('현재 학교 이미지 삭제 감지, 이미지 상태 초기화');
+              setUploadedImage(null);
+              setImageStatus('none');
+              setHasReported(false);
+              // 페이지 새로고침으로 모든 상태 초기화
+              window.location.reload();
+            } else if (payload.new && (payload.new.status === 'approved' || 
                 (payload.old && payload.old.status !== 'approved' && payload.new.status === 'approved'))) {
-              console.log('승인된 이미지 변경 감지, 이미지 다시 가져오기');
+              console.log('현재 학교 승인된 이미지 변경 감지, 이미지 다시 가져오기');
               fetchApprovedImage();
             }
           }

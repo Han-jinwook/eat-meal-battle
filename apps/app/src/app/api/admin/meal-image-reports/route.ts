@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
                 .split(/(?=[가-힣]+[^\s가-힣]*(?:\([^)]*\))?(?:\s|$))/) // 한글로 시작하는 메뉴 항목 기준으로 분리
                 .filter(item => item.trim().length > 0)
                 .map(item => item.trim())
-                .join(' | '); // 파이프 구분자로 연결
+                .join(' / '); // 슬래시 구분자로 연결
             } catch (formatError) {
               console.error('메뉴 포맷팅 오류:', formatError);
               formattedMenuItems = mealInfo.menu_items; // 원본 그대로 사용
