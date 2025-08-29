@@ -80,16 +80,21 @@ export async function GET(request: NextRequest) {
           let formattedMenuItems = '메뉴 조회 실패';
           if (mealInfo?.menu_items) {
             try {
-              // 기존 메뉴 문자열을 적절한 구분자로 분리
-              formattedMenuItems = mealInfo.menu_items
+              const menuText = mealInfo.menu_items.toString();
+              console.log('원본 메뉴 텍스트:', menuText);
+              
+              // 더 간단한 방식으로 메뉴 분리
+              formattedMenuItems = menuText
                 .replace(/\s+/g, ' ') // 여러 공백을 하나로
-                .split(/(?=[가-힣]+[^\s가-힣]*(?:\([^)]*\))?(?:\s|$))/) // 한글로 시작하는 메뉴 항목 기준으로 분리
-                .filter(item => item.trim().length > 0)
-                .map(item => item.trim())
-                .join(' / '); // 슬래시 구분자로 연결
+                .replace(/([가-힣]+)/g, ' / $1') // 한글 앞에 구분자 추가
+                .replace(/^\/\s*/, '') // 맨 앞의 / 제거
+                .replace(/\s+\/\s+/g, ' / ') // 구분자 정리
+                .trim();
+              
+              console.log('포맷된 메뉴 텍스트:', formattedMenuItems);
             } catch (formatError) {
               console.error('메뉴 포맷팅 오류:', formatError);
-              formattedMenuItems = mealInfo.menu_items; // 원본 그대로 사용
+              formattedMenuItems = mealInfo.menu_items.toString(); // 원본 그대로 사용
             }
           }
 

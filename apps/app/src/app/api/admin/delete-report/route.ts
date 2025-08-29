@@ -22,23 +22,28 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 신고 삭제
+    // 신고 상태를 'dismissed'로 업데이트 (삭제하지 않고 보존)
     const { error } = await supabaseAdmin
       .from('meal_image_reports')
-      .delete()
+      .update({
+        status: 'dismissed',
+        admin_notes: '관리자에 의해 기각됨',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: 'admin'
+      })
       .eq('id', reportId);
 
     if (error) {
-      console.error('신고 삭제 오류:', error);
+      console.error('신고 상태 업데이트 오류:', error);
       return NextResponse.json(
-        { error: '신고 삭제 중 오류가 발생했습니다.' },
+        { error: '신고 처리 중 오류가 발생했습니다.' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ 
       success: true,
-      message: '신고가 삭제되었습니다.' 
+      message: '신고가 기각 처리되었습니다.' 
     });
 
   } catch (error) {
