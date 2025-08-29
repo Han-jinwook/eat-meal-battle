@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
       (quizzes || []).map(async (quiz) => {
         // 사용자의 기존 답변 조회
         const { data: userAnswer } = await supabase
-          .from('all_quiz_attempts')
-          .select('selected_option, is_correct, attempted_at')
+          .from('quiz_results')
+          .select('selected_option, is_correct, created_at')
           .eq('user_id', targetUserId)
           .eq('quiz_id', quiz.id)
           .single();

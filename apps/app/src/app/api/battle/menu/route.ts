@@ -13,13 +13,17 @@ export async function GET(request: NextRequest) {
     const schoolCode = searchParams.get('schoolCode');
     const type = searchParams.get('type') as 'daily' | 'monthly';
     const month = searchParams.get('month');
+    const region = searchParams.get('region'); // 지역 필터
+    const schoolType = searchParams.get('schoolType'); // 학교 유형 필터
 
-    console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month });
+    console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month, region, schoolType });
     console.log('📋 요청 파라미터 상세:', {
       schoolCode: schoolCode,
       type: type,
       date: date,
       month: month,
+      region: region,
+      schoolType: schoolType,
       url: request.url
     });
 
@@ -44,37 +48,71 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // DB에서 저장된 배틀 데이터만 조회
+    // 전국 데이터 조회 여부 결정
+    const isNationalView = !region || region === '전국';
+    
+    // DB에서 저장된 배틀 데이터 조회 (전국 또는 지역별)
     let query;
     if (type === 'daily') {
-      // 일별 배틀 데이터 조회 - 명확한 필터링
+      // 일별 배틀 데이터 조회
       console.log('📅 일별 배틀 데이터 조회 시작:', {
         table: 'menu_battle_daily',
         battle_date: date,
-        school_code: schoolCode,
-        dateType: typeof date
+        school_code: isNationalView ? 'ALL' : schoolCode,
+        region: region,
+        schoolType: schoolType,
+        isNationalView: isNationalView
       });
       
-      query = supabase
-        .from('menu_battle_daily')
-        .select(`
-          menu_item_id,
-          battle_date,
-          school_code,
-          final_avg_rating,
-          final_rating_count,
-          daily_rank
-        `)
-        .eq('school_code', schoolCode)
-        .eq('battle_date', date)
-        .order('daily_rank', { ascending: true });
-        
-      console.log('🔍 일별 쿼리 필터 조건:', {
-        school_code: schoolCode,
-        battle_date: date
-      });
+      if (isNationalView) {
+        // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
+        query = supabase
+          .from('menu_battle_daily')
+          .select(`
+            menu_item_id,
+            battle_date,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            daily_rank
+          `)
+          .eq('battle_date', date);
+          
+        // 학교 유형 필터링이 있으면 추가
+        if (schoolType) {
+          // school_infos 테이블과 조인하여 학교 유형 필터링
+          query = supabase
+            .from('menu_battle_daily')
+            .select(`
+              menu_item_id,
+              battle_date,
+              school_code,
+              final_avg_rating,
+              final_rating_count,
+              daily_rank,
+              school_infos!inner(school_type)
+            `)
+            .eq('battle_date', date)
+            .ilike('school_infos.school_type', `%${schoolType}%`);
+        }
+      } else {
+        // 특정 학교 데이터
+        query = supabase
+          .from('menu_battle_daily')
+          .select(`
+            menu_item_id,
+            battle_date,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            daily_rank
+          `)
+          .eq('school_code', schoolCode)
+          .eq('battle_date', date)
+          .order('daily_rank', { ascending: true });
+      }
     } else {
-      // 월별 배틀 데이터 조회 - 명확한 필터링
+      // 월별 배틀 데이터 조회
       const [year, monthNum] = month.split('-');
       const battleYear = parseInt(year);
       const battleMonth = parseInt(monthNum);
@@ -83,31 +121,64 @@ export async function GET(request: NextRequest) {
         table: 'menu_battle_monthly',
         battle_year: battleYear,
         battle_month: battleMonth,
-        school_code: schoolCode,
-        originalMonth: month
+        school_code: isNationalView ? 'ALL' : schoolCode,
+        region: region,
+        schoolType: schoolType,
+        isNationalView: isNationalView
       });
       
-      query = supabase
-        .from('menu_battle_monthly')
-        .select(`
-          menu_item_id,
-          battle_year,
-          battle_month,
-          school_code,
-          final_avg_rating,
-          final_rating_count,
-          monthly_rank
-        `)
-        .eq('school_code', schoolCode)
-        .eq('battle_year', battleYear)
-        .eq('battle_month', battleMonth)
-        .order('monthly_rank', { ascending: true });
-        
-      console.log('🔍 월별 쿼리 필터 조건:', {
-        school_code: schoolCode,
-        battle_year: battleYear,
-        battle_month: battleMonth
-      });
+      if (isNationalView) {
+        // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
+        query = supabase
+          .from('menu_battle_monthly')
+          .select(`
+            menu_item_id,
+            battle_year,
+            battle_month,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            monthly_rank
+          `)
+          .eq('battle_year', battleYear)
+          .eq('battle_month', battleMonth);
+          
+        // 학교 유형 필터링이 있으면 추가
+        if (schoolType) {
+          query = supabase
+            .from('menu_battle_monthly')
+            .select(`
+              menu_item_id,
+              battle_year,
+              battle_month,
+              school_code,
+              final_avg_rating,
+              final_rating_count,
+              monthly_rank,
+              school_infos!inner(school_type)
+            `)
+            .eq('battle_year', battleYear)
+            .eq('battle_month', battleMonth)
+            .ilike('school_infos.school_type', `%${schoolType}%`);
+        }
+      } else {
+        // 특정 학교 데이터
+        query = supabase
+          .from('menu_battle_monthly')
+          .select(`
+            menu_item_id,
+            battle_year,
+            battle_month,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            monthly_rank
+          `)
+          .eq('school_code', schoolCode)
+          .eq('battle_year', battleYear)
+          .eq('battle_month', battleMonth)
+          .order('monthly_rank', { ascending: true });
+      }
     }
 
     console.log('🔍 DB 쿼리 실행 중...');
@@ -183,8 +254,59 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // 전국 데이터인 경우 메뉴별로 집계
+    let processedData = data;
+    if (isNationalView) {
+      console.log('🌍 전국 데이터 집계 시작...');
+      
+      // 메뉴 아이템별로 그룹화하고 평균 계산
+      const menuGroups: Record<string, {
+        menu_item_id: string;
+        ratings: number[];
+        total_count: number;
+      }> = {};
+      
+      data.forEach(item => {
+        const menuId = item.menu_item_id;
+        if (!menuGroups[menuId]) {
+          menuGroups[menuId] = {
+            menu_item_id: menuId,
+            ratings: [],
+            total_count: 0
+          };
+        }
+        menuGroups[menuId].ratings.push(item.final_avg_rating);
+        menuGroups[menuId].total_count += item.final_rating_count;
+      });
+      
+      // 전국 평균 계산 및 순위 매기기
+      processedData = Object.values(menuGroups).map(group => {
+        const avgRating = group.ratings.reduce((sum, rating) => sum + rating, 0) / group.ratings.length;
+        return {
+          menu_item_id: group.menu_item_id,
+          final_avg_rating: avgRating,
+          final_rating_count: group.total_count,
+          battle_date: type === 'daily' ? date : null,
+          battle_year: type === 'monthly' ? parseInt(month!.split('-')[0]) : null,
+          battle_month: type === 'monthly' ? parseInt(month!.split('-')[1]) : null
+        };
+      });
+      
+      // 평점 기준으로 정렬하고 순위 부여
+      processedData.sort((a, b) => b.final_avg_rating - a.final_avg_rating);
+      processedData.forEach((item, index) => {
+        if (type === 'daily') {
+          item.daily_rank = index + 1;
+        } else {
+          item.monthly_rank = index + 1;
+        }
+      });
+      
+      console.log('✅ 전국 데이터 집계 완료:', processedData.length, '개 메뉴');
+    }
+    
     // 메뉴 아이템 이름 및 급식 날짜 조회
-    const menuItemIds = data.map(item => item.menu_item_id);
+    const menuItemIds = processedData.map(item => item.menu_item_id);
     const { data: menuItems, error: menuItemsError } = await supabase
       .from('meal_menu_items')
       .select(`
@@ -209,12 +331,12 @@ export async function GET(request: NextRequest) {
     menuItems?.forEach(item => {
       menuItemMap[item.id] = {
         item_name: item.item_name,
-        meal_date: item.meal_menus?.meal_date || null
+        meal_date: Array.isArray(item.meal_menus) ? item.meal_menus[0]?.meal_date : item.meal_menus?.meal_date || null
       };
     });
     
     // 배틀 결과와 메뉴 아이템 정보 합치기
-    const battleResults = data?.map(item => {
+    const battleResults = processedData?.map(item => {
       const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
       return {
         menu_item_id: item.menu_item_id,

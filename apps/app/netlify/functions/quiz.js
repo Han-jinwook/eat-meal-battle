@@ -23,7 +23,7 @@ const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
-async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
+async function getUserQuiz(userId, schoolCode, grade, requestedDate, viewingUserId = null) {
   // 유저 학교 정보 확인
   if (!schoolCode || !grade) {
     const { data: userSchool, error: userSchoolError } = await supabaseClient
@@ -107,16 +107,19 @@ async function getUserQuiz(userId, schoolCode, grade, requestedDate) {
   }
   
   // 해당 날짜 퀴즈 찾았음
-  return await processQuiz(userId, dateQuiz, canShowAnswer);
+  return await processQuiz(userId, dateQuiz, canShowAnswer, viewingUserId);
 }
 
-// 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제한)
-async function processQuiz(userId, quiz, canShowAnswer) {
+// 퀴즈 처리 함수 (정답 확인 시간에 따라 정보 제limit)
+async function processQuiz(userId, quiz, canShowAnswer, viewingUserId = null) {
+  // 관람 모드일 때는 관람 대상 사용자의 답변을 확인
+  const targetUserId = viewingUserId || userId;
+  
   // 이미 풀었는지 확인 - quiz_results 테이블을 사용
   const { data: existing, error: existingError } = await supabaseClient
     .from('quiz_results')
     .select('id, is_correct, selected_option')
-    .eq('user_id', userId)
+    .eq('user_id', targetUserId)
     .eq('quiz_id', quiz.id)
     .limit(1);
 
@@ -1014,7 +1017,7 @@ exports.handler = async function(event, context) {
 
     // GET /quiz - 사용자의 오늘 퀴즈 가져오기
     if (method === 'GET' && (!pathSegments.length || pathSegments[0] === '')) {
-      const result = await getUserQuiz(userId, params.school_code, params.grade, params.date);
+      const result = await getUserQuiz(userId, params.school_code, params.grade, params.date, params.viewing_user_id);
       
       return {
         statusCode: result.error ? 404 : 200,

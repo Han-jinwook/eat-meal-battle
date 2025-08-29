@@ -11,7 +11,7 @@ interface DailyStats {
 }
 
 export default function QuizPerformanceCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 7, 1)); // 8월로 설정
+  const [currentDate, setCurrentDate] = useState(new Date()); // 현재 날짜로 설정
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
@@ -153,7 +153,9 @@ export default function QuizPerformanceCalendar() {
       {/* 달력 그리드 */}
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((day, index) => {
-          const isToday = day.dateStr === new Date().toISOString().split('T')[0];
+          const today = new Date();
+          const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+          const isToday = day.dateStr === todayStr;
           const hasStats = day.stats && day.stats.total_attempts > 0;
           
           return (
