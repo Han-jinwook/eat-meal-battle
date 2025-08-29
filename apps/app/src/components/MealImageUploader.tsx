@@ -407,11 +407,47 @@ export default function MealImageUploader({
     }
   }, [mealDate, schoolCode, supabase]);
 
+  // 기존 신고 상태 확인
+  const checkExistingReport = useCallback(async () => {
+    if (!uploadedImage?.id || !userId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const response = await fetch('/.netlify/functions/check-existing-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          imageId: uploadedImage.id,
+          reporterId: userId
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok && result.hasReport) {
+        setHasReported(true);
+      }
+    } catch (error) {
+      console.error('기존 신고 확인 오류:', error);
+    }
+  }, [uploadedImage?.id, userId, supabase]);
+
   // 컴포넌트 마운트 시 승인된 이미지 자동 로드
   useEffect(() => {
     fetchApprovedImage();
   }, [fetchApprovedImage]);
-  
+
+  // 이미지 로드 후 기존 신고 상태 확인
+  useEffect(() => {
+    if (uploadedImage && userId) {
+      checkExistingReport();
+    }
+  }, [uploadedImage, userId, checkExistingReport]);
+
   // 실시간 이미지 업데이트를 위한 Supabase 구독 설정
   useEffect(() => {
     if (!schoolCode) return;

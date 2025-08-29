@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'resolved' | 'dismissed'>('all');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -63,6 +64,24 @@ export default function AdminPage() {
     }
   };
 
+  const deleteReport = async (reportId: string) => {
+    try {
+      const response = await fetch('/api/admin/delete-report', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reportId })
+      });
+
+      if (response.ok) {
+        fetchReports(); // 데이터 새로고침
+      }
+    } catch (error) {
+      console.error('신고 삭제 오류:', error);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
   }, [filter]);
@@ -93,18 +112,6 @@ export default function AdminPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">관리자 페이지</h1>
           
-          {/* 네비게이션 메뉴 */}
-          <div className="flex space-x-4 mb-6">
-            <Link 
-              href="/admin/ai-performance"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-            >
-              AI 성능 분석
-            </Link>
-            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md">
-              급식 이미지 신고 관리
-            </button>
-          </div>
         </div>
 
         {/* 급식 이미지 신고 관리 섹션 */}
@@ -168,7 +175,8 @@ export default function AdminPage() {
                         <img
                           src={report.image_url}
                           alt="신고된 이미지"
-                          className="h-16 w-16 object-cover rounded-md"
+                          className="h-16 w-16 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setSelectedImage(report.image_url)}
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -200,13 +208,13 @@ export default function AdminPage() {
                                 검토중
                               </button>
                               <button
-                                onClick={() => updateReportStatus(report.id, 'resolved', '문제 해결됨')}
-                                className="text-green-600 hover:text-green-800"
+                                onClick={() => deleteReport(report.id)}
+                                className="text-red-600 hover:text-red-800"
                               >
-                                해결
+                                삭제
                               </button>
                               <button
-                                onClick={() => updateReportStatus(report.id, 'dismissed', '신고 내용이 부적절함')}
+                                onClick={() => updateReportStatus(report.id, 'dismissed', '부적절한 신고로 판단됨')}
                                 className="text-gray-600 hover:text-gray-800"
                               >
                                 기각
@@ -216,27 +224,19 @@ export default function AdminPage() {
                           {report.status === 'reviewed' && (
                             <>
                               <button
-                                onClick={() => updateReportStatus(report.id, 'resolved', '문제 해결됨')}
-                                className="text-green-600 hover:text-green-800"
+                                onClick={() => deleteReport(report.id)}
+                                className="text-red-600 hover:text-red-800"
                               >
-                                해결
+                                삭제
                               </button>
                               <button
-                                onClick={() => updateReportStatus(report.id, 'dismissed', '신고 내용이 부적절함')}
+                                onClick={() => updateReportStatus(report.id, 'dismissed', '부적절한 신고로 판단됨')}
                                 className="text-gray-600 hover:text-gray-800"
                               >
                                 기각
                               </button>
                             </>
                           )}
-                          <a
-                            href={report.image_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800"
-                          >
-                            이미지 보기
-                          </a>
                         </div>
                       </td>
                     </tr>
@@ -246,6 +246,23 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* 이미지 팝업 모달 */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+            onClick={() => setSelectedImage(null)}
+          >
+            <div className="max-w-4xl max-h-full p-4">
+              <img
+                src={selectedImage}
+                alt="확대된 이미지"
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
