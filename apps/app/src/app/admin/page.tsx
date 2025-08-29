@@ -265,32 +265,27 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* 이미지 팝업 모달 - 이미지 위치에서 팝업 */}
+        {/* 이미지 팝업 모달 - 기존 화면 위에 오버레이 */}
         {selectedImage && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-start pl-8 z-50"
-            onClick={() => setSelectedImage(null)}
+            className="fixed top-20 left-20 bg-white rounded-lg shadow-2xl border-2 border-gray-300 p-3 z-50"
+            style={{ width: '400px', height: '400px' }}
           >
-            <div 
-              className="bg-white rounded-lg shadow-2xl border-2 border-gray-300 p-3"
-              style={{ width: '320px', height: '320px' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">이미지 확대</span>
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              <img
-                src={selectedImage}
-                alt="확대된 이미지"
-                className="w-72 h-72 object-cover rounded-lg"
-              />
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">이미지 확대</span>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                ×
+              </button>
             </div>
+            <img
+              src={selectedImage}
+              alt="확대된 이미지"
+              className="w-full h-full object-cover rounded-lg"
+              style={{ width: '360px', height: '360px' }}
+            />
           </div>
         )}
       </div>

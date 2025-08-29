@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
             console.error('학교명 조회 오류:', schoolError);
           }
 
-          // 메뉴명 조회
+          // 메뉴명 조회 - meal_menus 테이블에서 조회
           console.log('메뉴 조회 조건:', {
             school_code: report.school_code,
             meal_date: report.meal_date,
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
           });
 
           const { data: mealInfo, error: mealError } = await supabaseAdmin
-            .from('meals')
+            .from('meal_menus')
             .select('menu_items')
             .eq('school_code', report.school_code)
             .eq('meal_date', report.meal_date)
