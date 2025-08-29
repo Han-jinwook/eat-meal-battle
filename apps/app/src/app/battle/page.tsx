@@ -1589,13 +1589,17 @@ export default function BattlePage() {
                         
                         // 점수와 평가 수 필드 결정
                         let ratingField = 'avg_rating';
-                        if (activeTab === 'meal' && viewMode === 'monthly') {
-                          ratingField = 'final_avg_rating';
-                        }
-                          
                         let countField = 'rating_count';
-                        if (activeTab === 'meal' && viewMode === 'monthly') {
-                          countField = 'final_rating_count';
+                        
+                        if (activeTab === 'meal') {
+                          if (viewMode === 'monthly') {
+                            ratingField = 'final_avg_rating';
+                            countField = 'final_rating_count';
+                          } else {
+                            // 일별 급식배틀도 동일한 필드명 사용
+                            ratingField = 'avg_rating';
+                            countField = 'rating_count';
+                          }
                         }
                           
                         return (
