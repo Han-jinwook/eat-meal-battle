@@ -73,25 +73,39 @@ export async function GET(request: NextRequest) {
             console.error('메뉴 조회 오류:', mealError);
           }
 
+          console.log('조회된 학교 정보:', schoolInfo);
           console.log('조회된 메뉴 정보:', mealInfo);
 
           // 메뉴 항목들을 구분자로 분리하여 가독성 개선
           let formattedMenuItems = '메뉴 조회 실패';
           if (mealInfo?.menu_items) {
-            // 기존 메뉴 문자열을 적절한 구분자로 분리
-            formattedMenuItems = mealInfo.menu_items
-              .replace(/\s+/g, ' ') // 여러 공백을 하나로
-              .split(/(?=[가-힣]+[^\s가-힣]*(?:\([^)]*\))?(?:\s|$))/) // 한글로 시작하는 메뉴 항목 기준으로 분리
-              .filter(item => item.trim().length > 0)
-              .map(item => item.trim())
-              .join(' | '); // 파이프 구분자로 연결
+            try {
+              // 기존 메뉴 문자열을 적절한 구분자로 분리
+              formattedMenuItems = mealInfo.menu_items
+                .replace(/\s+/g, ' ') // 여러 공백을 하나로
+                .split(/(?=[가-힣]+[^\s가-힣]*(?:\([^)]*\))?(?:\s|$))/) // 한글로 시작하는 메뉴 항목 기준으로 분리
+                .filter(item => item.trim().length > 0)
+                .map(item => item.trim())
+                .join(' | '); // 파이프 구분자로 연결
+            } catch (formatError) {
+              console.error('메뉴 포맷팅 오류:', formatError);
+              formattedMenuItems = mealInfo.menu_items; // 원본 그대로 사용
+            }
           }
 
-          return {
+          const result = {
             ...report,
-            school_name: schoolInfo?.school_name || '알 수 없음',
+            school_name: schoolInfo?.school_name || '학교명 조회 실패',
             menu_items: formattedMenuItems
           };
+
+          console.log('최종 결과:', {
+            school_code: report.school_code,
+            school_name: result.school_name,
+            menu_items: result.menu_items
+          });
+
+          return result;
         } catch (err) {
           console.error('추가 정보 조회 오류:', err);
           return {
