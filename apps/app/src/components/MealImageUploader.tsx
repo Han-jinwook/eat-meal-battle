@@ -1199,7 +1199,7 @@ export default function MealImageUploader({
                     disabled={isReporting || hasReported}
                     className={`mt-2 px-3 py-1 text-xs border rounded-md disabled:cursor-not-allowed ${
                       hasReported 
-                        ? 'bg-gray-100 text-gray-500 border-gray-300' 
+                        ? 'bg-blue-50 text-blue-700 border-blue-200' 
                         : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                     } ${(isReporting || hasReported) ? 'opacity-50' : ''}`}
                   >
