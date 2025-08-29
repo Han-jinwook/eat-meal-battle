@@ -124,11 +124,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
             await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
             console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
             
-            // 급식 배틀 계산 (학교 간 경쟁)
-            await calculateDailyMealBattle(mealDate, schoolCode);
+            // 급식 배틀 계산 (학교 간 경쟁) - schoolCode 제거하여 모든 학교 대상 계산
+            await calculateDailyMealBattle(mealDate);
             console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
             
-            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1);
             console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
           } catch (battleError) {
             console.error('⚠️ 배틀 계산 중 오류:', battleError);

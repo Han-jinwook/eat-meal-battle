@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       console.log(`🎆 지역 기반 급식 배틀 조회: ${date} (지역: ${region || '전체'}, 학교유형: ${schoolType || '전체'})`);
 
       const result = await query;
-      const data = result.data;
+      let data = result.data;
       const error = result.error;
 
       console.log('✅ DB 쿼리 결과:', { 
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         console.log('⚠️ 일별 급식 배틀 데이터가 없습니다');
         return NextResponse.json({
           data: [],
-          message: '해당 조건에 맞는 일별 급식 배틀 데이터가 없습니다'
+          message: '해당 조건에 맞는 일별 급식 배틀 데이터가 없습니다. 급식 평점이 입력되면 자동으로 배틀 데이터가 생성됩니다.'
         });
       }
       
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
       console.log(`🎆 지역 기반 월별 급식 배틀 조회: ${year}-${monthNum} (지역: ${region || '전체'}, 학교유형: ${schoolType || '전체'})`);
 
       const result = await query;
-      const data = result.data;
+      let data = result.data;
       const error = result.error;
 
       console.log('✅ DB 쿼리 결과:', { 
@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
         console.log('⚠️ 월별 급식 배틀 데이터가 없습니다');
         return NextResponse.json({
           data: [],
-          message: '해당 조건에 맞는 월별 급식 배틀 데이터가 없습니다'
+          message: '해당 조건에 맞는 월별 급식 배틀 데이터가 없습니다. 급식 평점이 입력되면 자동으로 배틀 데이터가 생성됩니다.'
         });
       }
       

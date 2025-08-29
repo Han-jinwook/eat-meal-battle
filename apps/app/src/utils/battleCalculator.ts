@@ -885,10 +885,18 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     
     if (insertError) {
       console.error('❌ 급식 배틀 결과 저장 실패:', insertError);
+      console.error('🔍 저장 시도한 데이터:', resultsToInsert?.slice(0, 3));
+      console.error('📊 저장 실패 상세 정보:', { 
+        날짜: date, 
+        총학교수: allResults.length,
+        저장시도수: resultsToInsert.length 
+      });
       return { success: false, error: insertError };
     }
     
     console.log(`✅ 급식 배틀 데이터 저장 성공: ${insertedData?.length || 0}개`);
+    console.log(`🔍 저장된 데이터 상세:`, insertedData?.slice(0, 3)); // 처음 3개만 로그
+    console.log(`📊 전체 결과 요약: 총 ${allResults.length}개 학교, 날짜: ${date}`);
     
     return {
       success: true,
