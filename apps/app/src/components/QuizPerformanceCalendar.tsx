@@ -37,13 +37,17 @@ export default function QuizPerformanceCalendar() {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
       
-      const { data, error } = await (supabase
+      // 로컬 시간대 기준으로 날짜 문자열 생성
+      const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+      const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+      
+      const { data, error } = await supabase
         .from('all_quiz_daily_stats')
         .select('date, total_attempts, correct_answers, accuracy_rate')
         .eq('user_id', session.user.id)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0])
-        .order('date', { ascending: true }) as any);
+        .gte('date', startDateStr)
+        .lte('date', endDateStr)
+        .order('date', { ascending: true });
 
       if (error) {
         console.error('달력 데이터 로드 오류:', error);
@@ -85,7 +89,8 @@ export default function QuizPerformanceCalendar() {
     const current = new Date(startDate);
     
     for (let i = 0; i < 42; i++) {
-      const dateStr = current.toISOString().split('T')[0];
+      // 로컬 시간대 기준으로 날짜 문자열 생성
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
       const isCurrentMonth = current.getMonth() === month;
       const dayStats = dailyStats.find(stat => stat.date === dateStr);
       

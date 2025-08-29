@@ -78,9 +78,31 @@ export async function GET(request: NextRequest) {
           `)
           .eq('battle_date', date);
           
-        // 학교 유형 필터링이 있으면 추가
+        // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
         if (schoolType) {
-          // school_infos 테이블과 조인하여 학교 유형 필터링
+          // 1단계: 해당 학교 유형의 학교 코드들 조회
+          const { data: schools, error: schoolError } = await supabase
+            .from('school_infos')
+            .select('school_code')
+            .ilike('school_type', `%${schoolType}%`);
+            
+          if (schoolError) {
+            console.error('학교 정보 조회 오류:', schoolError);
+            return NextResponse.json(
+              { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          const schoolCodes = schools?.map(s => s.school_code) || [];
+          if (schoolCodes.length === 0) {
+            return NextResponse.json({
+              success: true,
+              data: []
+            });
+          }
+          
+          // 2단계: 해당 학교들의 배틀 데이터 조회
           query = supabase
             .from('menu_battle_daily')
             .select(`
@@ -89,11 +111,10 @@ export async function GET(request: NextRequest) {
               school_code,
               final_avg_rating,
               final_rating_count,
-              daily_rank,
-              school_infos!inner(school_type)
+              daily_rank
             `)
             .eq('battle_date', date)
-            .ilike('school_infos.school_type', `%${schoolType}%`);
+            .in('school_code', schoolCodes);
         }
       } else {
         // 특정 학교 데이터
@@ -143,8 +164,31 @@ export async function GET(request: NextRequest) {
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth);
           
-        // 학교 유형 필터링이 있으면 추가
+        // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
         if (schoolType) {
+          // 1단계: 해당 학교 유형의 학교 코드들 조회
+          const { data: schools, error: schoolError } = await supabase
+            .from('school_infos')
+            .select('school_code')
+            .ilike('school_type', `%${schoolType}%`);
+            
+          if (schoolError) {
+            console.error('학교 정보 조회 오류:', schoolError);
+            return NextResponse.json(
+              { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          const schoolCodes = schools?.map(s => s.school_code) || [];
+          if (schoolCodes.length === 0) {
+            return NextResponse.json({
+              success: true,
+              data: []
+            });
+          }
+          
+          // 2단계: 해당 학교들의 배틀 데이터 조회
           query = supabase
             .from('menu_battle_monthly')
             .select(`
@@ -154,12 +198,11 @@ export async function GET(request: NextRequest) {
               school_code,
               final_avg_rating,
               final_rating_count,
-              monthly_rank,
-              school_infos!inner(school_type)
+              monthly_rank
             `)
             .eq('battle_year', battleYear)
             .eq('battle_month', battleMonth)
-            .ilike('school_infos.school_type', `%${schoolType}%`);
+            .in('school_code', schoolCodes);
         }
       } else {
         // 특정 학교 데이터
