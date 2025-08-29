@@ -382,13 +382,37 @@ export default function Home() {
         isInitialized: schoolMode.isInitialized
       });
       
-      // 비학생이고 내 학교가 없고 관심학교도 선택되지 않았으면 관심학교 설정 모달 자동 열기
-      if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && user.db_profile?.is_student === false) {
+      // 비학생이고 내 학교가 없는 경우에만 관심학교 설정 모달 자동 열기
+      // 기존 관심학교가 있으면 모달을 열지 않음
+      if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && user.db_profile?.is_student === false && interestSchools.length === 0) {
         console.log('🎯 비학생 관심학교 설정 모달 자동 열기');
         setIsSchoolSearchOpen(true);
       }
     }
-  }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized]);
+  }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
+
+  // 초기 로드 시 관심학교 데이터 가져오기
+  useEffect(() => {
+    if (user && !userLoading) {
+      fetchInterestSchools();
+    }
+  }, [user, userLoading]);
+
+  // 관심학교 데이터가 로드된 후 첫 번째 학교 자동 선택
+  useEffect(() => {
+    if (!userLoading && user && interestSchools.length > 0 && !schoolMode.hasMySchool && !schoolMode.selectedInterestSchool) {
+      const firstSchool = interestSchools[0];
+      console.log('첫 번째 관심학교 자동 선택:', firstSchool.school_name);
+      
+      schoolMode.selectInterestSchool({
+        id: firstSchool.id,
+        school_name: firstSchool.school_name,
+        school_code: firstSchool.school_code,
+        office_code: firstSchool.office_code,
+        created_at: firstSchool.created_at
+      });
+    }
+  }, [interestSchools, userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool]);
 
   // 관심학교 드롭다운 토글 함수
   const handleDropdownToggle = () => {
