@@ -34,24 +34,8 @@ CREATE POLICY "Users can view their own reports" ON meal_image_reports
 CREATE POLICY "Users can create reports" ON meal_image_reports
   FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 
--- 관리자는 모든 신고 조회/수정 가능 (추후 관리자 권한 시스템 구현 시 수정)
-CREATE POLICY "Admins can view all reports" ON meal_image_reports
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can update reports" ON meal_image_reports
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
-    )
-  );
+-- 관리자 정책은 추후 관리자 권한 시스템 구현 시 추가
+-- 현재는 사용자 본인 신고만 조회/생성 가능
 
 -- 테이블에 대한 코멘트 추가
 COMMENT ON TABLE meal_image_reports IS '급식 이미지 등록오류 신고 테이블';

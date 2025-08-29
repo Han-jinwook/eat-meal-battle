@@ -119,7 +119,16 @@ exports.handler = async (event, context) => {
       .select('id')
       .eq('image_id', imageId)
       .eq('reporter_id', reporterId)
-      .single();
+      .maybeSingle(); // single() 대신 maybeSingle() 사용
+
+    if (duplicateError) {
+      console.error('중복 신고 확인 오류:', duplicateError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: '중복 신고 확인 중 오류가 발생했습니다.' }),
+      };
+    }
 
     if (existingReport) {
       return {

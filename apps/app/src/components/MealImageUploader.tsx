@@ -1190,8 +1190,8 @@ export default function MealImageUploader({
                   </button>
                 )}
                 
-                {/* 등록오류 신고 버튼 - 승인된 이미지에만 표시 */}
-                {uploadedImage.status === 'approved' && (
+                {/* 등록오류 신고 버튼 - 승인된 사용자 업로드 이미지에만 표시 (AI 생성 이미지 제외) */}
+                {uploadedImage.status === 'approved' && uploadedImage.source === 'user' && (
                   <button
                     onClick={handleReportError}
                     disabled={isReporting}
