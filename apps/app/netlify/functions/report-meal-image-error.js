@@ -114,15 +114,15 @@ exports.handler = async (event, context) => {
     }
 
     // 중복 신고 확인 (같은 사용자가 같은 이미지를 이미 신고했는지)
-    const { data: existingReport, error: duplicateError } = await supabaseAdmin
+    const { data: existingUserReport, error: userDuplicateError } = await supabaseAdmin
       .from('meal_image_reports')
       .select('id')
       .eq('image_id', imageId)
       .eq('reporter_id', reporterId)
-      .maybeSingle(); // single() 대신 maybeSingle() 사용
+      .maybeSingle();
 
-    if (duplicateError) {
-      console.error('중복 신고 확인 오류:', duplicateError);
+    if (userDuplicateError) {
+      console.error('사용자 중복 신고 확인 오류:', userDuplicateError);
       return {
         statusCode: 500,
         headers,
@@ -130,12 +130,56 @@ exports.handler = async (event, context) => {
       };
     }
 
-    if (existingReport) {
+    if (existingUserReport) {
       return {
         statusCode: 409,
         headers,
         body: JSON.stringify({ error: '이미 신고한 이미지입니다.' }),
       };
+    }
+
+    // 해당 이미지에 대한 기존 신고 확인 (다른 사용자의 신고 포함)
+    const { data: existingImageReports, error: imageReportError } = await supabaseAdmin
+      .from('meal_image_reports')
+      .select('id, status, reporter_id')
+      .eq('image_id', imageId)
+      .in('status', ['pending', 'reviewed', 'resolved']);
+
+    if (imageReportError) {
+      console.error('이미지 신고 확인 오류:', imageReportError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: '기존 신고 확인 중 오류가 발생했습니다.' }),
+      };
+    }
+
+    // 이미 처리 중이거나 해결된 신고가 있는 경우
+    if (existingImageReports && existingImageReports.length > 0) {
+      const activeReport = existingImageReports.find(report => 
+        report.status === 'pending' || report.status === 'reviewed' || report.status === 'resolved'
+      );
+      
+      if (activeReport) {
+        let statusMessage = '';
+        switch (activeReport.status) {
+          case 'pending':
+            statusMessage = '이미 다른 사용자가 신고한 이미지입니다. 관리자 검토를 기다리고 있습니다.';
+            break;
+          case 'reviewed':
+            statusMessage = '이미 신고되어 관리자가 검토 중인 이미지입니다.';
+            break;
+          case 'resolved':
+            statusMessage = '이미 신고되어 처리 완료된 이미지입니다.';
+            break;
+        }
+        
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({ error: statusMessage }),
+        };
+      }
     }
 
     // 신고 데이터 저장

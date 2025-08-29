@@ -68,19 +68,26 @@ export default function AdminPage() {
 
   const deleteReport = async (reportId: string) => {
     try {
-      const response = await fetch('/api/admin/delete-report', {
+      // 해당 신고의 이미지 ID를 찾아서 meal_images에서 삭제
+      const report = reports.find(r => r.id === reportId);
+      if (!report) return;
+
+      const response = await fetch('/api/admin/delete-meal-image', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ reportId })
+        body: JSON.stringify({ 
+          imageId: report.image_id,
+          reportId: reportId
+        })
       });
 
       if (response.ok) {
         fetchReports(); // 데이터 새로고침
       }
     } catch (error) {
-      console.error('신고 삭제 오류:', error);
+      console.error('이미지 삭제 오류:', error);
     }
   };
 
@@ -229,7 +236,7 @@ export default function AdminPage() {
                                 onClick={() => deleteReport(report.id)}
                                 className="text-red-600 hover:text-red-800"
                               >
-                                삭제
+                                사진삭제
                               </button>
                               <button
                                 onClick={() => updateReportStatus(report.id, 'dismissed', '부적절한 신고로 판단됨')}
@@ -245,7 +252,7 @@ export default function AdminPage() {
                                 onClick={() => deleteReport(report.id)}
                                 className="text-red-600 hover:text-red-800"
                               >
-                                삭제
+                                사진삭제
                               </button>
                               <button
                                 onClick={() => updateReportStatus(report.id, 'dismissed', '부적절한 신고로 판단됨')}

@@ -75,10 +75,22 @@ export async function GET(request: NextRequest) {
 
           console.log('조회된 메뉴 정보:', mealInfo);
 
+          // 메뉴 항목들을 구분자로 분리하여 가독성 개선
+          let formattedMenuItems = '메뉴 조회 실패';
+          if (mealInfo?.menu_items) {
+            // 기존 메뉴 문자열을 적절한 구분자로 분리
+            formattedMenuItems = mealInfo.menu_items
+              .replace(/\s+/g, ' ') // 여러 공백을 하나로
+              .split(/(?=[가-힣]+[^\s가-힣]*(?:\([^)]*\))?(?:\s|$))/) // 한글로 시작하는 메뉴 항목 기준으로 분리
+              .filter(item => item.trim().length > 0)
+              .map(item => item.trim())
+              .join(' | '); // 파이프 구분자로 연결
+          }
+
           return {
             ...report,
             school_name: schoolInfo?.school_name || '알 수 없음',
-            menu_items: mealInfo?.menu_items || '메뉴 조회 실패'
+            menu_items: formattedMenuItems
           };
         } catch (err) {
           console.error('추가 정보 조회 오류:', err);
