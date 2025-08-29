@@ -42,27 +42,43 @@ export async function GET(request: NextRequest) {
       (reports || []).map(async (report) => {
         try {
           // 학교명 조회
-          const { data: schoolInfo } = await supabaseAdmin
+          const { data: schoolInfo, error: schoolError } = await supabaseAdmin
             .from('school_infos')
             .select('school_name')
             .eq('school_code', report.school_code)
             .limit(1)
-            .single();
+            .maybeSingle();
+
+          if (schoolError) {
+            console.error('학교명 조회 오류:', schoolError);
+          }
 
           // 메뉴명 조회
-          const { data: mealInfo } = await supabaseAdmin
+          console.log('메뉴 조회 조건:', {
+            school_code: report.school_code,
+            meal_date: report.meal_date,
+            meal_type: report.meal_type
+          });
+
+          const { data: mealInfo, error: mealError } = await supabaseAdmin
             .from('meals')
             .select('menu_items')
             .eq('school_code', report.school_code)
             .eq('meal_date', report.meal_date)
             .eq('meal_type', report.meal_type)
             .limit(1)
-            .single();
+            .maybeSingle();
+
+          if (mealError) {
+            console.error('메뉴 조회 오류:', mealError);
+          }
+
+          console.log('조회된 메뉴 정보:', mealInfo);
 
           return {
             ...report,
             school_name: schoolInfo?.school_name || '알 수 없음',
-            menu_items: mealInfo?.menu_items || '메뉴 정보 없음'
+            menu_items: mealInfo?.menu_items || '메뉴 조회 실패'
           };
         } catch (err) {
           console.error('추가 정보 조회 오류:', err);

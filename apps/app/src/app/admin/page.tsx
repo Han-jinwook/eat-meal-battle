@@ -265,18 +265,30 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* 이미지 팝업 모달 */}
+        {/* 이미지 팝업 모달 - 이미지 위치에서 팝업 */}
         {selectedImage && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-start pl-8 z-50"
             onClick={() => setSelectedImage(null)}
           >
-            <div className="p-4">
+            <div 
+              className="bg-white rounded-lg shadow-2xl border-2 border-gray-300 p-3"
+              style={{ width: '320px', height: '320px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">이미지 확대</span>
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
               <img
                 src={selectedImage}
                 alt="확대된 이미지"
-                className="w-48 h-48 object-cover rounded-lg"
-                onClick={(e) => e.stopPropagation()}
+                className="w-72 h-72 object-cover rounded-lg"
               />
             </div>
           </div>
