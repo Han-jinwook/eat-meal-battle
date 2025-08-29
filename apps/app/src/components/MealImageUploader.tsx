@@ -47,6 +47,7 @@ export default function MealImageUploader({
   const [canUploadImage, setCanUploadImage] = useState(false); // 파일선택 버튼 활성화 조건
   const [mealId, setMealId] = useState<string | null>(null); // 급식 ID 상태 추가
   const [isReporting, setIsReporting] = useState(false); // 신고 진행 상태
+  const [hasReported, setHasReported] = useState(false); // 신고 완료 상태
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 등록오류 신고 핸들러
@@ -95,6 +96,7 @@ export default function MealImageUploader({
       toast.success('신고가 접수되었습니다', {
         duration: 3000,
       });
+      setHasReported(true); // 신고 완료 상태로 변경
       
     } catch (error) {
       console.error('신고 처리 오류:', error);
@@ -1194,14 +1196,19 @@ export default function MealImageUploader({
                 {uploadedImage.status === 'approved' && uploadedImage.source === 'user' && (
                   <button
                     onClick={handleReportError}
-                    disabled={isReporting}
-                    className={`text-sm ${
-                      isReporting 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-orange-600 hover:text-orange-800'
-                    }`}
+                    disabled={isReporting || hasReported}
+                    className={`mt-2 px-3 py-1 text-xs border rounded-md disabled:cursor-not-allowed ${
+                      hasReported 
+                        ? 'bg-gray-100 text-gray-500 border-gray-300' 
+                        : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                    } ${(isReporting || hasReported) ? 'opacity-50' : ''}`}
                   >
-                    {isReporting ? '등록오류 신고접수중' : '등록오류 신고'}
+                    {hasReported 
+                      ? '등록오류 신고로 검토중에 있습니다' 
+                      : isReporting 
+                        ? '등록오류 신고접수중' 
+                        : '등록오류 신고'
+                    }
                   </button>
                 )}
               </div>
