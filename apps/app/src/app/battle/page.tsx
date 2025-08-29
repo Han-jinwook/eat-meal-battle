@@ -816,7 +816,7 @@ export default function BattlePage() {
       });
       loadBattleData();
     }
-  }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType]);
+  }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType, selectedRegion]);
 
   // 로딩 상태 표시
   if (userLoading) {
