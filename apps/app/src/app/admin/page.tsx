@@ -18,6 +18,8 @@ interface ReportData {
   created_at: string;
   reviewed_at: string;
   reviewed_by: string;
+  school_name: string;
+  menu_items: string;
 }
 
 export default function AdminPage() {
@@ -158,7 +160,13 @@ export default function AdminPage() {
                       신고 정보
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      학교명
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       급식 정보
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      메뉴명
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       상태
@@ -182,14 +190,24 @@ export default function AdminPage() {
                       <td className="px-4 py-4">
                         <div className="text-sm">
                           <p className="font-medium text-gray-900">업로더: {report.uploader_nickname}</p>
-                          <p className="text-gray-500">신고 사유: {report.report_reason}</p>
                           <p className="text-gray-500">신고일: {new Date(report.created_at).toLocaleDateString()}</p>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm">
-                          <p className="font-medium text-gray-900">{report.school_code}</p>
-                          <p className="text-gray-500">{report.meal_date} {report.meal_type}</p>
+                          <p className="font-medium text-gray-900">{report.school_name}</p>
+                          <p className="text-gray-500">코드: {report.school_code}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm">
+                          <p className="font-medium text-gray-900">{report.meal_date}</p>
+                          <p className="text-gray-500">{report.meal_type}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm max-w-xs">
+                          <p className="text-gray-900 break-words">{report.menu_items}</p>
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -253,11 +271,11 @@ export default function AdminPage() {
             className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
             onClick={() => setSelectedImage(null)}
           >
-            <div className="max-w-4xl max-h-full p-4">
+            <div className="p-4">
               <img
                 src={selectedImage}
                 alt="확대된 이미지"
-                className="max-w-full max-h-full object-contain rounded-lg"
+                className="w-48 h-48 object-cover rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>

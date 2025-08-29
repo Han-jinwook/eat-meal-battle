@@ -37,7 +37,45 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ reports });
+    // 각 신고에 대해 학교명과 메뉴명 정보 추가
+    const enrichedReports = await Promise.all(
+      (reports || []).map(async (report) => {
+        try {
+          // 학교명 조회
+          const { data: schoolInfo } = await supabaseAdmin
+            .from('school_infos')
+            .select('school_name')
+            .eq('school_code', report.school_code)
+            .limit(1)
+            .single();
+
+          // 메뉴명 조회
+          const { data: mealInfo } = await supabaseAdmin
+            .from('meals')
+            .select('menu_items')
+            .eq('school_code', report.school_code)
+            .eq('meal_date', report.meal_date)
+            .eq('meal_type', report.meal_type)
+            .limit(1)
+            .single();
+
+          return {
+            ...report,
+            school_name: schoolInfo?.school_name || '알 수 없음',
+            menu_items: mealInfo?.menu_items || '메뉴 정보 없음'
+          };
+        } catch (err) {
+          console.error('추가 정보 조회 오류:', err);
+          return {
+            ...report,
+            school_name: '알 수 없음',
+            menu_items: '메뉴 정보 없음'
+          };
+        }
+      })
+    );
+
+    return NextResponse.json({ reports: enrichedReports });
 
   } catch (error) {
     console.error('API 오류:', error);
