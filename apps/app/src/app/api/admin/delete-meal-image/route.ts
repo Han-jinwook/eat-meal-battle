@@ -22,7 +22,22 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 1. meal_images에서 이미지 삭제
+    // 신고 정보 조회 (급식페이지 새로고침을 위한 정보 수집)
+    const { data: reportInfo, error: reportFetchError } = await supabaseAdmin
+      .from('meal_image_reports')
+      .select('school_code, meal_date, meal_type')
+      .eq('id', reportId)
+      .single();
+
+    if (reportFetchError || !reportInfo) {
+      console.error('신고 정보 조회 오류:', reportFetchError);
+      return NextResponse.json(
+        { error: '신고 정보를 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    // 1. meal_images에서만 이미지 삭제 (신고 레코드는 영구 보존)
     const { error: imageDeleteError } = await supabaseAdmin
       .from('meal_images')
       .delete()
@@ -36,14 +51,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 2. 신고 상태를 'resolved'로 업데이트하고 관리자 노트 추가
+    // 2. 신고 상태를 'resolved'로 업데이트 (레코드는 삭제하지 않고 영구 보존)
     const { error: reportUpdateError } = await supabaseAdmin
       .from('meal_image_reports')
       .update({
         status: 'resolved',
         admin_notes: '부적절한 이미지로 판단되어 삭제 처리됨',
         reviewed_at: new Date().toISOString(),
-        reviewed_by: 'admin' // 실제로는 관리자 ID를 사용
+        reviewed_by: 'admin'
       })
       .eq('id', reportId);
 
@@ -55,9 +70,36 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // 3. 급식페이지 새로고침 신호 전송
+    try {
+      const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/.netlify/functions/refresh-meal-page`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          school_code: reportInfo.school_code,
+          meal_date: reportInfo.meal_date,
+          meal_type: reportInfo.meal_type
+        })
+      });
+
+      if (!refreshResponse.ok) {
+        console.error('급식페이지 새로고침 신호 전송 실패');
+      }
+    } catch (refreshError) {
+      console.error('급식페이지 새로고침 오류:', refreshError);
+      // 새로고침 실패해도 메인 작업은 성공으로 처리
+    }
+
     return NextResponse.json({ 
       success: true, 
-      message: '이미지가 삭제되고 신고가 해결 처리되었습니다.' 
+      message: '이미지가 삭제되고 신고가 해결 처리되었습니다.',
+      mealInfo: {
+        school_code: reportInfo.school_code,
+        meal_date: reportInfo.meal_date,
+        meal_type: reportInfo.meal_type
+      }
     });
 
   } catch (error) {
