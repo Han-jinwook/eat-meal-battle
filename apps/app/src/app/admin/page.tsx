@@ -27,6 +27,12 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'resolved' | 'dismissed'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // 3초 후 자동 사라짐
+  };
 
   const fetchReports = async () => {
     setLoading(true);
@@ -84,10 +90,17 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        fetchReports(); // 데이터 새로고침
+        // 토스트 메시지 표시
+        showToast('급식 이미지가 성공적으로 삭제되었습니다.', 'success');
+        
+        // 신고 상태를 "해결됨"으로 변경
+        await updateReportStatus(reportId, 'resolved', '부적절한 이미지로 판단되어 삭제 처리됨');
+      } else {
+        showToast('이미지 삭제에 실패했습니다.', 'error');
       }
     } catch (error) {
       console.error('이미지 삭제 오류:', error);
+      showToast('이미지 삭제 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -293,6 +306,15 @@ export default function AdminPage() {
               className="w-full h-full object-cover rounded-lg"
               style={{ width: '360px', height: '360px' }}
             />
+          </div>
+        )}
+
+        {/* 토스트 메시지 */}
+        {toast && (
+          <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium ${
+            toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          }`}>
+            {toast.message}
           </div>
         )}
       </div>

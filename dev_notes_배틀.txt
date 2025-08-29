@@ -520,6 +520,51 @@ console.log(`🌍 모든 학교 대상 급식 배틀 조회: ${date}`);
 
 ---
 
+# 🚨 409 Conflict 오류 해결 (2025-08-29)
+
+## 📋 문제점
+- `menu_battle_monthly` 테이블에서 409 Conflict 오류 발생
+- POST 요청 시 중복 키 또는 제약 조건 위반으로 인한 삽입 실패
+- 동일한 `menu_item_id`가 여러 날짜에 나타날 때 중복 데이터 생성
+
+## 🔍 원인 분석
+- `calculateMonthlyMenuBattleTest` 함수에서 월별 메뉴 아이템 조회 시
+- 같은 메뉴 아이템이 한 달 내 여러 날짜에 등장하면 중복 항목 생성
+- `(menu_item_id, battle_year, battle_month, school_code)` 조합이 중복되어 제약 조건 위반
+
+## 🛠️ 해결 방법
+1. **중복 제거 로직 추가**: 동일한 `menu_item_id + school_code` 조합에서 평점이 높은 항목만 유지
+2. **삽입 전 중복 검사**: 추가 안전장치로 중복 키 검사 로직 구현
+3. **상세 오류 로깅**: 409 오류 발생 시 구체적인 오류 정보 출력
+
+### 수정된 파일
+- `apps/app/src/utils/battleCalculator.ts`
+  - `calculateMonthlyMenuBattleTest()` 함수 중복 제거 로직 추가
+  - `calculateMonthlyMenuBattleProduction()` 함수 동일 로직 적용
+  - 삽입 전 중복 키 검사 및 상세 오류 로깅 추가
+
+### 적용된 로직
+```typescript
+// 중복 제거: 동일한 menu_item_id가 여러 날짜에 나타날 경우 평점이 높은 것만 유지
+const deduplicatedItems = menuItems.reduce((acc, item) => {
+  const key = `${item.id}_${item.meal_menus.school_code}`;
+  const existing = acc[key];
+  
+  if (!existing || item.menu_item_rating_stats.avg_rating > existing.menu_item_rating_stats.avg_rating) {
+    acc[key] = item;
+  }
+  
+  return acc;
+}, {} as Record<string, any>);
+```
+
+## 📊 결과
+- 409 Conflict 오류 방지
+- 월별 배틀 데이터 정상 삽입 보장
+- 중복 데이터로 인한 제약 조건 위반 해결
+
+---
+
 # 🌍 급식 배틀 지역 기반 필터링 완료 (2025-07-29)
 
 ## 📋 구현 목표

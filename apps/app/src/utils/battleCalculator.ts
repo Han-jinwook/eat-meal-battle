@@ -460,7 +460,19 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   }
   
   // 2. 학교별로 그룹화하여 순위 계산 (각 menu_item_id는 개별 경쟁자)
-  const schoolGroups = menuItems.reduce((acc, item) => {
+  // 중복 제거: 동일한 menu_item_id가 여러 날짜에 나타날 경우 평점이 높은 것만 유지
+  const deduplicatedItems = menuItems.reduce((acc, item) => {
+    const key = `${item.id}_${item.meal_menus.school_code}`;
+    const existing = acc[key];
+    
+    if (!existing || item.menu_item_rating_stats.avg_rating > existing.menu_item_rating_stats.avg_rating) {
+      acc[key] = item;
+    }
+    
+    return acc;
+  }, {} as Record<string, any>);
+  
+  const schoolGroups = Object.values(deduplicatedItems).reduce((acc, item) => {
     const school = item.meal_menus.school_code;
     if (!acc[school]) acc[school] = [];
     acc[school].push(item);
@@ -543,6 +555,23 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
       }));
       
       console.log(`📝 월별 배틀 데이터 삽입 시도:`, insertData[0]);
+      console.log(`🔍 중복 검사: 총 ${insertData.length}개 항목`);
+      
+      // 중복 키 검사 (추가 안전장치)
+      const duplicateCheck = new Set();
+      const duplicates = [];
+      for (const item of insertData) {
+        const key = `${item.menu_item_id}_${item.battle_year}_${item.battle_month}_${item.school_code}`;
+        if (duplicateCheck.has(key)) {
+          duplicates.push(key);
+        }
+        duplicateCheck.add(key);
+      }
+      
+      if (duplicates.length > 0) {
+        console.error('❌ 중복 키 발견:', duplicates);
+        return { success: false, error: `중복 키 발견: ${duplicates.join(', ')}` };
+      }
       
       // 새 데이터 저장
       const { data: insertedData, error: insertError } = await supabase
@@ -552,6 +581,13 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
       
       if (insertError) {
         console.error('❌ 월별 테스트 모드 DB 저장 실패:', insertError);
+        console.error('❌ 오류 세부사항:', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
+        });
+        console.error('❌ 삽입 시도한 데이터 샘플:', insertData.slice(0, 3));
         return { success: false, error: insertError };
       }
       
@@ -654,8 +690,20 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
     
     console.log(`✅ 평가된 메뉴 아이템 ${menuItemsWithStats.length}개 필터링됨`);
     
-    // 2. 학교별로 그룹화
-    const schoolGroups = menuItemsWithStats.reduce((acc, item) => {
+    // 2. 중복 제거 후 학교별로 그룹화
+    // 동일한 menu_item_id가 여러 날짜에 나타날 경우 평점이 높은 것만 유지
+    const deduplicatedItems = menuItemsWithStats.reduce((acc, item) => {
+      const key = `${item.id}_${item.meal_menus.school_code}`;
+      const existing = acc[key];
+      
+      if (!existing || item.avg_rating > existing.avg_rating) {
+        acc[key] = item;
+      }
+      
+      return acc;
+    }, {} as Record<string, any>);
+    
+    const schoolGroups = Object.values(deduplicatedItems).reduce((acc, item) => {
       const school = item.meal_menus.school_code;
       if (!acc[school]) acc[school] = [];
       acc[school].push(item);
