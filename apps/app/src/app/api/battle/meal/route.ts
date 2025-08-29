@@ -49,9 +49,11 @@ export async function GET(request: NextRequest) {
         .from('school_infos')
         .select('school_code, school_name, region, school_type');
       
-      if (region) {
+      if (region && region !== '전국') {
         schoolQuery = schoolQuery.eq('region', region);
         console.log(`🌍 지역 기반 필터링: ${region}`);
+      } else if (region === '전국') {
+        console.log(`🌍 전국 데이터 조회 모드`);
       }
       
       if (schoolType) {
@@ -184,9 +186,11 @@ export async function GET(request: NextRequest) {
         .from('school_infos')
         .select('school_code, school_name, region, school_type');
       
-      if (region) {
+      if (region && region !== '전국') {
         schoolQuery = schoolQuery.eq('region', region);
         console.log(`🌍 지역 기반 필터링: ${region}`);
+      } else if (region === '전국') {
+        console.log(`🌍 전국 데이터 조회 모드`);
       }
       
       if (schoolType) {
