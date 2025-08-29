@@ -751,7 +751,7 @@ export default function BattlePage() {
         type: viewMode,
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
         ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
-        ...(selectedRegion !== '전국' && selectedRegion && { region: selectedRegion }) // 지역 기반 필터링 ('전국' 선택 시 제외)
+        ...(selectedRegion && { region: selectedRegion }) // 지역 기반 필터링 (전국 포함)
       });
       
       // 탭에 따라 다른 API 호출
