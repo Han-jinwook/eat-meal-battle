@@ -665,7 +665,9 @@ export default function QuizClient() {
       console.log('🔍 모든 퀴즈 로드 시작:', { 
         school_code: universalSchoolCode, 
         grade: universalGrade, 
-        date: selectedDate 
+        date: selectedDate,
+        isViewingMode: isViewingMode,
+        viewingUserId: viewingUserId
       });
 
       // 인증 토큰 가져오기
@@ -676,8 +678,14 @@ export default function QuizClient() {
         return;
       }
 
+      // 관람 모드일 때는 관람 대상 사용자의 퀴즈 답변 상태를 확인하기 위해 viewing_user_id 추가
+      let apiUrl = `/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${selectedDate}&limit=1`;
+      if (isViewingMode && viewingUserId) {
+        apiUrl += `&viewing_user_id=${viewingUserId}`;
+      }
+
       // 모든 퀴즈 API 호출
-      const response = await fetch(`/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${selectedDate}&limit=1`, {
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.data.session.access_token}`

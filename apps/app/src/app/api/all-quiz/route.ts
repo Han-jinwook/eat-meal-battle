@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
     const grade = searchParams.get('grade');
     const date = searchParams.get('date');
     const limit = parseInt(searchParams.get('limit') || '10');
+    const viewing_user_id = searchParams.get('viewing_user_id'); // 관람 모드 사용자 ID
 
-    console.log('🔍 모든 퀴즈 조회 요청:', { school_code, grade, date, limit });
+    console.log('🔍 모든 퀴즈 조회 요청:', { school_code, grade, date, limit, viewing_user_id });
 
     // 인증 확인
     const authHeader = request.headers.get('authorization');
@@ -63,13 +64,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 각 퀴즈에 대한 사용자 답변 정보 조회
+    // 관람 모드일 때는 관람 대상 사용자의 답변을 조회, 아니면 현재 사용자의 답변 조회
+    const targetUserId = viewing_user_id || user.id;
+    
     const quizzesWithUserAnswers = await Promise.all(
       (quizzes || []).map(async (quiz) => {
         // 사용자의 기존 답변 조회
         const { data: userAnswer } = await supabase
           .from('all_quiz_attempts')
           .select('selected_option, is_correct, attempted_at')
-          .eq('user_id', user.id)
+          .eq('user_id', targetUserId)
           .eq('quiz_id', quiz.id)
           .single();
 

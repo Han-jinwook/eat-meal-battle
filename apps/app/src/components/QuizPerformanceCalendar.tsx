@@ -11,7 +11,7 @@ interface DailyStats {
 }
 
 export default function QuizPerformanceCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 7, 1)); // 8월로 설정
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
