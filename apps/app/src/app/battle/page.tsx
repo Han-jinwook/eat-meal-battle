@@ -751,8 +751,13 @@ export default function BattlePage() {
         type: viewMode,
         ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
         ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
-        ...(selectedRegion && { region: selectedRegion }) // 지역 기반 필터링 (전국 포함)
+        ...(selectedRegion && selectedRegion !== '우리학교' && { region: selectedRegion }) // 우리학교가 아닐 때만 지역 필터링
       });
+      
+      // 우리학교 선택 시 학교별 필터링 추가
+      if (selectedRegion === '우리학교') {
+        params.append('schoolOnly', 'true');
+      }
       
       // 탭에 따라 다른 API 호출
       const apiEndpoint = activeTab === 'menu' ? '/api/battle/menu' : '/api/battle/meal';
@@ -1267,6 +1272,19 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
+                    {/* 우리학교 버튼 */}
+                    {userSchool?.school_code && (
+                      <button
+                        onClick={() => setSelectedRegion('우리학교')}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === '우리학교'
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        우리학교
+                      </button>
+                    )}
                     {/* 사용자 지역 버튼 */}
                     {userSchool?.region && (
                       <button

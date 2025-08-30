@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
     const region = searchParams.get('region'); // 지역 필터
     const schoolType = searchParams.get('schoolType'); // 학교 유형 필터
+    const schoolOnly = searchParams.get('schoolOnly'); // 우리학교만 필터
 
-    console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month, region, schoolType });
+    console.log('🔍 배틀 API 호출:', { schoolCode, type, date, month, region, schoolType, schoolOnly });
     console.log('📋 요청 파라미터 상세:', {
       schoolCode: schoolCode,
       type: type,
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
 
     // 전국 데이터 조회 여부 결정
     const isNationalView = !region || region === '전국';
+    const isSchoolOnlyView = schoolOnly === 'true';
     
     // DB에서 저장된 배틀 데이터 조회 (전국 또는 지역별)
     let query;
@@ -64,7 +66,22 @@ export async function GET(request: NextRequest) {
         isNationalView: isNationalView
       });
       
-      if (isNationalView) {
+      if (isSchoolOnlyView) {
+        // 우리학교만 데이터: 해당 학교의 메뉴별 배틀 데이터만 조회
+        query = supabase
+          .from('menu_battle_daily')
+          .select(`
+            menu_item_id,
+            battle_date,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            daily_rank
+          `)
+          .eq('school_code', schoolCode)
+          .eq('battle_date', date)
+          .order('daily_rank', { ascending: true });
+      } else if (isNationalView) {
         // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
         query = supabase
           .from('menu_battle_daily')
@@ -148,7 +165,24 @@ export async function GET(request: NextRequest) {
         isNationalView: isNationalView
       });
       
-      if (isNationalView) {
+      if (isSchoolOnlyView) {
+        // 우리학교만 데이터: 해당 학교의 메뉴별 배틀 데이터만 조회
+        query = supabase
+          .from('menu_battle_monthly')
+          .select(`
+            menu_item_id,
+            battle_year,
+            battle_month,
+            school_code,
+            final_avg_rating,
+            final_rating_count,
+            monthly_rank
+          `)
+          .eq('school_code', schoolCode)
+          .eq('battle_year', battleYear)
+          .eq('battle_month', battleMonth)
+          .order('monthly_rank', { ascending: true });
+      } else if (isNationalView) {
         // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
         query = supabase
           .from('menu_battle_monthly')
@@ -297,9 +331,9 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // 전국 데이터인 경우 메뉴별로 집계
+    // 전국 데이터인 경우 메뉴별로 집계 (우리학교 모드는 제외)
     let processedData = data;
-    if (isNationalView) {
+    if (isNationalView && !isSchoolOnlyView) {
       console.log('🌍 전국 데이터 집계 시작...');
       
       // 메뉴 아이템별로 그룹화하고 평균 계산
