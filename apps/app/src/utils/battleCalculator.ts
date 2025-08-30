@@ -138,7 +138,18 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
     });
   }
   
-  // 5. 전국 등수 계산
+  // 5. 학교 정보 조회 (지역별 순위 계산용)
+  const { data: schoolInfos, error: schoolError } = await supabase
+    .from('school_infos')
+    .select('school_code, region')
+    .in('school_code', [...new Set(battleResults.map(r => r.school_code))]);
+    
+  if (schoolError) {
+    console.error('학교 정보 조회 실패:', schoolError);
+    return { success: false, error: schoolError };
+  }
+  
+  // 6. 전국 등수 계산
   const battleResultsWithNationalRank = battleResults
     .sort((a, b) => {
       if (b.final_avg_rating !== a.final_avg_rating) {
@@ -150,33 +161,65 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
       ...result,
       national_rank: index + 1
     }));
-  
-  console.log(`📊 생성된 배틀 결과 개수: ${battleResultsWithNationalRank.length}개`);
-  
-  // 6. 기존 데이터 삭제 후 새 데이터 삽입
-  const { error: deleteError } = await supabase
-    .from('menu_battle_daily')
-    .delete()
-    .eq('battle_date', date);
     
-  if (deleteError) {
-    console.error('기존 배틀 데이터 삭제 실패:', deleteError);
-    return { success: false, error: deleteError };
+  // 7. 지역별 순위 계산
+  const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.region;
+    return acc;
+  }, {} as Record<string, string>) || {};
+  
+  // 지역별로 그룹화
+  const regionGroups = battleResultsWithNationalRank.reduce((acc, result) => {
+    const region = schoolRegionMap[result.school_code];
+    if (region) {
+      if (!acc[region]) acc[region] = [];
+      acc[region].push(result);
+    }
+    return acc;
+  }, {} as Record<string, typeof battleResultsWithNationalRank>);
+  
+  // 각 지역별로 순위 계산
+  const finalResults = [...battleResultsWithNationalRank];
+  for (const [region, regionResults] of Object.entries(regionGroups)) {
+    const sortedRegionResults = regionResults.sort((a, b) => {
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      return b.final_rating_count - a.final_rating_count;
+    });
+    
+    sortedRegionResults.forEach((result, index) => {
+      const finalIndex = finalResults.findIndex(r => 
+        r.menu_item_id === result.menu_item_id && 
+        r.school_code === result.school_code
+      );
+      if (finalIndex !== -1) {
+        finalResults[finalIndex] = {
+          ...finalResults[finalIndex],
+          region_rank: index + 1
+        };
+      }
+    });
   }
   
-  if (battleResultsWithNationalRank.length > 0) {
-    const { error: insertError } = await supabase
+  console.log(`📊 생성된 배틀 결과 개수: ${finalResults.length}개`);
+  
+  // 8. 배틀 데이터 UPSERT (INSERT ON CONFLICT UPDATE)
+  if (finalResults.length > 0) {
+    const { error: upsertError } = await supabase
       .from('menu_battle_daily')
-      .insert(battleResultsWithNationalRank);
+      .upsert(finalResults, {
+        onConflict: 'menu_item_id,battle_date,school_code'
+      });
       
-    if (insertError) {
-      console.error('배틀 데이터 삽입 실패:', insertError);
-      return { success: false, error: insertError };
+    if (upsertError) {
+      console.error('배틀 데이터 UPSERT 실패:', upsertError);
+      return { success: false, error: upsertError };
     }
   }
   
   console.log(`✅ 일별 메뉴 배틀 계산 완료: ${date}`);
-  return { success: true, data: battleResultsWithNationalRank };
+  return { success: true, data: finalResults };
 }
 
 /**
@@ -286,7 +329,18 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
     result.monthly_rank = index + 1;
   });
   
-  // 6. 전국 등수 계산
+  // 6. 학교 정보 조회 (지역별 순위 계산용)
+  const { data: schoolInfos, error: schoolError } = await supabase
+    .from('school_infos')
+    .select('school_code, region')
+    .in('school_code', [...new Set(monthlyResults.map(r => r.school_code))]);
+    
+  if (schoolError) {
+    console.error('학교 정보 조회 실패:', schoolError);
+    return { success: false, error: schoolError };
+  }
+  
+  // 7. 전국 등수 계산
   const monthlyResultsWithNationalRank = monthlyResults
     .sort((a, b) => {
       if (b.final_avg_rating !== a.final_avg_rating) {
@@ -298,34 +352,64 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
       ...result,
       national_rank: index + 1
     }));
-  
-  console.log(`📊 생성된 월별 배틀 결과 개수: ${monthlyResultsWithNationalRank.length}개`);
-  
-  // 7. 기존 데이터 삭제 후 새 데이터 삽입
-  const { error: deleteError } = await supabase
-    .from('menu_battle_monthly')
-    .delete()
-    .eq('battle_year', currentYear)
-    .eq('battle_month', currentMonth);
     
-  if (deleteError) {
-    console.error('기존 월별 배틀 데이터 삭제 실패:', deleteError);
-    return { success: false, error: deleteError };
+  // 8. 지역별 순위 계산
+  const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.region;
+    return acc;
+  }, {} as Record<string, string>) || {};
+  
+  // 지역별로 그룹화
+  const regionGroups = monthlyResultsWithNationalRank.reduce((acc, result) => {
+    const region = schoolRegionMap[result.school_code];
+    if (region) {
+      if (!acc[region]) acc[region] = [];
+      acc[region].push(result);
+    }
+    return acc;
+  }, {} as Record<string, typeof monthlyResultsWithNationalRank>);
+  
+  // 각 지역별로 순위 계산
+  const finalMonthlyResults = [...monthlyResultsWithNationalRank];
+  for (const [region, regionResults] of Object.entries(regionGroups)) {
+    const sortedRegionResults = regionResults.sort((a, b) => {
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      return b.final_rating_count - a.final_rating_count;
+    });
+    
+    sortedRegionResults.forEach((result, index) => {
+      const finalIndex = finalMonthlyResults.findIndex(r => 
+        r.school_code === result.school_code
+      );
+      if (finalIndex !== -1) {
+        finalMonthlyResults[finalIndex] = {
+          ...finalMonthlyResults[finalIndex],
+          region_rank: index + 1
+        };
+      }
+    });
   }
   
-  if (monthlyResultsWithNationalRank.length > 0) {
-    const { error: insertError } = await supabase
+  console.log(`📊 생성된 월별 배틀 결과 개수: ${finalMonthlyResults.length}개`);
+  
+  // 9. 배틀 데이터 UPSERT (INSERT ON CONFLICT UPDATE)
+  if (finalMonthlyResults.length > 0) {
+    const { error: upsertError } = await supabase
       .from('menu_battle_monthly')
-      .insert(monthlyResultsWithNationalRank);
+      .upsert(finalMonthlyResults, {
+        onConflict: 'menu_item_id,battle_year,battle_month,school_code'
+      });
       
-    if (insertError) {
-      console.error('월별 배틀 데이터 삽입 실패:', insertError);
-      return { success: false, error: insertError };
+    if (upsertError) {
+      console.error('월별 배틀 데이터 UPSERT 실패:', upsertError);
+      return { success: false, error: upsertError };
     }
   }
   
   console.log(`✅ 월별 메뉴 배틀 계산 완료: ${currentYear}-${currentMonth}`);
-  return { success: true, data: monthlyResultsWithNationalRank };
+  return { success: true, data: finalMonthlyResults };
 }
 
 /**
