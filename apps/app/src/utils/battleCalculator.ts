@@ -175,13 +175,31 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
     });
   }
   
-  // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
-  console.log(`📊 배틀 결과 계산 완료: ${battleResults.length}개 항목`);
+  // 4. 전국 등수 계산 (모든 학교 통합)
+  console.log(`🌍 메뉴 배틀 전국 등수 계산 시작 - 총 ${battleResults.length}개 메뉴`);
   
-  if (battleResults.length > 0) {
+  const battleResultsWithNationalRank = battleResults
+    .sort((a, b) => {
+      // 평균 평점 내림차순, 평점 개수 내림차순
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      return b.final_rating_count - a.final_rating_count;
+    })
+    .map((result, index) => ({
+      ...result,
+      national_rank: index + 1
+    }));
+  
+  console.log(`🏆 메뉴 배틀 전국 등수 계산 완료 - 1등: ${battleResultsWithNationalRank[0]?.menu_item_id} (${battleResultsWithNationalRank[0]?.final_avg_rating}점)`);
+  
+  // 5. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
+  console.log(`📊 배틀 결과 계산 완료: ${battleResultsWithNationalRank.length}개 항목`);
+  
+  if (battleResultsWithNationalRank.length > 0) {
     // 로깅: 저장할 배틀 결과
-    console.log(`🔍 일별 배틀 저장 시도: ${battleResults.length}개 항목, 날짜: ${date}`);
-    console.log(`🔄 첫번째 항목 예시:`, battleResults[0]);
+    console.log(`🔍 일별 배틀 저장 시도: ${battleResultsWithNationalRank.length}개 항목, 날짜: ${date}`);
+    console.log(`🔄 첫번째 항목 예시:`, battleResultsWithNationalRank[0]);
     
     // 기존 데이터 삭제 (해당 날짜)
     await supabase
@@ -203,13 +221,14 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
       }
       
       // 삽입할 데이터 구조 로깅
-      const insertData = battleResults.map(result => ({
+      const insertData = battleResultsWithNationalRank.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_date: result.battle_date,
         school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
-        daily_rank: result.daily_rank
+        daily_rank: result.daily_rank,
+        national_rank: result.national_rank
       }));
       
       console.log(`📝 일별 배틀 데이터 삽입 시도:`, insertData[0]);
@@ -236,9 +255,9 @@ export async function calculateDailyMenuBattleTest(targetDate?: string, schoolCo
   
   return { 
     success: true, 
-    data: battleResults,
+    data: battleResultsWithNationalRank,
     mode: 'TEST',
-    message: '테스트 모드: 실시간 계산 후 DB 저장 완료'
+    message: '테스트 모드: 실시간 계산 후 DB 저장 완료 (지역별 + 전국 등수)'
   };
 }
 
@@ -315,8 +334,26 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
     console.log('📝 첫 번째 배틀 결과 예시:', battleResults[0]);
   }
   
-  // 4. 실전 모드에서는 DB에 실제 저장 (트랜잭션 처리 개선)
-  if (battleResults.length > 0) {
+  // 4. 전국 등수 계산 (모든 학교 통합)
+  console.log(`🌍 메뉴 배틀 전국 등수 계산 시작 - 총 ${battleResults.length}개 메뉴`);
+  
+  const battleResultsWithNationalRank = battleResults
+    .sort((a, b) => {
+      // 평균 평점 내림차순, 평점 개수 내림차순
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      return b.final_rating_count - a.final_rating_count;
+    })
+    .map((result, index) => ({
+      ...result,
+      national_rank: index + 1
+    }));
+  
+  console.log(`🏆 메뉴 배틀 전국 등수 계산 완료 - 1등: ${battleResultsWithNationalRank[0]?.menu_item_id} (${battleResultsWithNationalRank[0]?.final_avg_rating}점)`);
+  
+  // 5. 실전 모드에서는 DB에 실제 저장 (트랜잭션 처리 개선)
+  if (battleResultsWithNationalRank.length > 0) {
     try {
       console.log(`🔄 날짜별 배틀 데이터 처리 시작 - 날짜: ${date}`);
       
@@ -324,8 +361,8 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
       // 기존 방식: delete → insert (두 단계, 실패 위험)
       // 새 방식: upsert (한 번에 처리, 안전)
       
-      console.log(`📥 일별 배틀 데이터 ${battleResults.length}개 upsert 시작`);
-      console.log(`🔍 첫 번째 데이터 예시:`, battleResults[0]);
+      console.log(`📥 일별 배틀 데이터 ${battleResultsWithNationalRank.length}개 upsert 시작`);
+      console.log(`🔍 첫 번째 데이터 예시:`, battleResultsWithNationalRank[0]);
       
       // 기존 데이터 삭제 (안전하게 처리)
       const { error: deleteError } = await supabase
@@ -352,7 +389,7 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
         
         const { data, error: insertError } = await supabase
           .from('menu_battle_daily')
-          .insert(battleResults)
+          .insert(battleResultsWithNationalRank)
           .select();
         
         if (!insertError) {
@@ -391,9 +428,9 @@ async function calculateDailyMenuBattleProduction(targetDate?: string, schoolCod
   
   return { 
     success: true, 
-    data: battleResults,
+    data: battleResultsWithNationalRank,
     mode: 'PRODUCTION',
-    message: `일별 배틀 결과 DB 저장 완료: ${battleResults.length}개`
+    message: `일별 배틀 결과 DB 저장 완료: ${battleResultsWithNationalRank.length}개 (지역별 + 전국 등수)`
   };
 }
 
@@ -522,12 +559,30 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
     });
   }
   
-  // 4. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
-  if (monthlyResults.length > 0) {
+  // 4. 전국 등수 계산 (모든 학교 통합)
+  console.log(`🌍 월별 메뉴 배틀 전국 등수 계산 시작 - 총 ${monthlyResults.length}개 메뉴`);
+  
+  const monthlyResultsWithNationalRank = monthlyResults
+    .sort((a, b) => {
+      // 평균 평점 내림차순, 평점 개수 내림차순
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      return b.final_rating_count - a.final_rating_count;
+    })
+    .map((result, index) => ({
+      ...result,
+      national_rank: index + 1
+    }));
+  
+  console.log(`🏆 월별 메뉴 배틀 전국 등수 계산 완료 - 1등: ${monthlyResultsWithNationalRank[0]?.menu_item_id} (${monthlyResultsWithNationalRank[0]?.final_avg_rating}점)`);
+  
+  // 5. 🔥 테스트 모드: 계산 후 즉시 DB에 저장
+  if (monthlyResultsWithNationalRank.length > 0) {
     // 로깅: 저장할 배틀 결과
-    console.log(`🔍 월별 배틀 저장 시도: ${monthlyResults.length}개 항목, 년/월: ${year}/${month}`);
-    console.log(`🔄 첫번째 항목 예시:`, monthlyResults[0]);
-    console.log(`📊 배틀 필드 확인: 년=${year}, 월=${month}, menu_item_id=${monthlyResults[0].menu_item_id}`);
+    console.log(`🔍 월별 배틀 저장 시도: ${monthlyResultsWithNationalRank.length}개 항목, 년/월: ${year}/${month}`);
+    console.log(`🔄 첫번째 항목 예시:`, monthlyResultsWithNationalRank[0]);
+    console.log(`📊 배틀 필드 확인: 년=${year}, 월=${month}, menu_item_id=${monthlyResultsWithNationalRank[0].menu_item_id}`);
     
     try {
       // 기존 데이터 삭제 후 신규 저장
@@ -544,14 +599,15 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
       }
       
       // 삽입할 데이터 구조 로깅
-      const insertData = monthlyResults.map(result => ({
+      const insertData = monthlyResultsWithNationalRank.map(result => ({
         menu_item_id: result.menu_item_id,
         battle_year: result.battle_year,
         battle_month: result.battle_month,
         school_code: result.school_code,
         final_avg_rating: result.final_avg_rating,
         final_rating_count: result.final_rating_count,
-        monthly_rank: result.monthly_rank
+        monthly_rank: result.monthly_rank,
+        national_rank: result.national_rank
       }));
       
       console.log(`📝 월별 배틀 데이터 삽입 시도:`, insertData[0]);
@@ -603,9 +659,9 @@ export async function calculateMonthlyMenuBattleTest(targetYear?: number, target
   
   return { 
     success: true, 
-    data: monthlyResults,
+    data: monthlyResultsWithNationalRank,
     mode: 'TEST',
-    message: `테스트 모드: 실시간 월별 계산 후 DB 저장 완료 (${year}년 ${month}월)`
+    message: `테스트 모드: 실시간 월별 계산 후 DB 저장 완료 (${year}년 ${month}월, 지역별 + 전국 등수)`
   };
 }
 
@@ -734,8 +790,26 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
       console.log('📝 첫 번째 월별 배틀 결과 예시:', monthlyResults[0]);
     }
     
-    // 4. DB에 저장
-    if (monthlyResults.length > 0) {
+    // 4. 전국 등수 계산 (모든 학교 통합)
+    console.log(`🌍 월별 메뉴 배틀 전국 등수 계산 시작 - 총 ${monthlyResults.length}개 메뉴`);
+    
+    const monthlyResultsWithNationalRank = monthlyResults
+      .sort((a, b) => {
+        // 평균 평점 내림차순, 평점 개수 내림차순
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      })
+      .map((result, index) => ({
+        ...result,
+        national_rank: index + 1
+      }));
+    
+    console.log(`🏆 월별 메뉴 배틀 전국 등수 계산 완료 - 1등: ${monthlyResultsWithNationalRank[0]?.menu_item_id} (${monthlyResultsWithNationalRank[0]?.final_avg_rating}점)`);
+    
+    // 5. DB에 저장
+    if (monthlyResultsWithNationalRank.length > 0) {
       try {
         console.log(`🔄 월별 배틀 데이터 처리 시작 - ${targetYear}년 ${targetMonth}월`);
         
@@ -753,12 +827,12 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
         }
         
         // 삽입할 데이터 로깅
-        console.log(`📥 월별 배틀 데이터 ${monthlyResults.length}개 삽입 시작`);
+        console.log(`📥 월별 배틀 데이터 ${monthlyResultsWithNationalRank.length}개 삽입 시작`);
         
         // 새 데이터 삽입
         const { data: insertedData, error: insertError } = await supabase
           .from('menu_battle_monthly')
-          .insert(monthlyResults)
+          .insert(monthlyResultsWithNationalRank)
           .select();
         
         if (insertError) {
@@ -777,9 +851,9 @@ async function calculateMonthlyMenuBattleProduction(year?: number, month?: numbe
     
     return { 
       success: true, 
-      data: monthlyResults,
+      data: monthlyResultsWithNationalRank,
       mode: 'PRODUCTION',
-      message: `월별 배틀 결과 DB 저장 완료: ${monthlyResults.length}개`
+      message: `월별 배틀 결과 DB 저장 완료: ${monthlyResultsWithNationalRank.length}개 (지역별 + 전국 등수)`
     };
   } catch (err) {
     console.error('❌ 월별 배틀 계산 중 예상치 못한 오류:', err);
@@ -901,7 +975,25 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     
     console.log(`🏆 급식 배틀 순위 계산 완료: 총 ${allResults.length}개 학교, ${Object.keys(schoolTypeGroups).length}개 학교 유형`);
     
-    // 4. 기존 데이터 삭제 후 새 데이터 삽입
+    // 4. 전국 등수 계산 (모든 학교 타입 통합)
+    console.log(`🌍 전국 등수 계산 시작 - 총 ${allResults.length}개 학교`);
+    
+    const allResultsWithNationalRank = allResults
+      .sort((a, b) => {
+        // 평균 평점 내림차순, 평점 개수 내림차순
+        if (b.avg_rating !== a.avg_rating) {
+          return b.avg_rating - a.avg_rating;
+        }
+        return b.rating_count - a.rating_count;
+      })
+      .map((result, index) => ({
+        ...result,
+        national_rank: index + 1
+      }));
+    
+    console.log(`🏆 전국 등수 계산 완료 - 1등: ${allResultsWithNationalRank[0]?.school_code} (${allResultsWithNationalRank[0]?.avg_rating}점)`);
+    
+    // 5. 기존 데이터 삭제 후 새 데이터 삽입
     const deleteQuery = supabase
       .from('meal_battle_daily')
       .delete()
@@ -917,13 +1009,14 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
       console.log(`✅ 기존 급식 배틀 데이터 삭제 성공 - ${date}`);
     }
     
-    // 5. 새 데이터 삽입 (school_type 필드 제거하고 저장)
-    const resultsToInsert = allResults.map(({ school_type, ...result }) => ({
+    // 6. 새 데이터 삽입 (school_type 필드 제거하고 저장)
+    const resultsToInsert = allResultsWithNationalRank.map(({ school_type, ...result }) => ({
       school_code: result.school_code,
       battle_date: result.battle_date,
       avg_rating: result.avg_rating,
       rating_count: result.rating_count,
-      daily_rank: result.daily_rank
+      daily_rank: result.daily_rank,
+      national_rank: result.national_rank
     }));
     
     const { data: insertedData, error: insertError } = await supabase
@@ -948,8 +1041,8 @@ export async function calculateDailyMealBattle(targetDate?: string, schoolCode?:
     
     return {
       success: true,
-      data: allResults,
-      message: `급식 배틀 결과 저장 완료: ${allResults.length}개 학교`
+      data: allResultsWithNationalRank,
+      message: `급식 배틀 결과 저장 완료: ${allResultsWithNationalRank.length}개 학교 (지역별 + 전국 등수)`
     };
     
   } catch (err) {
@@ -1100,7 +1193,25 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
     
     console.log(`🏆 월별 급식 배틀 순위 계산 완료: 총 ${allResults.length}개 학교, ${Object.keys(schoolTypeGroups).length}개 학교 유형`);
     
-    // 5. 기존 데이터 삭제 후 새 데이터 삽입
+    // 5. 전국 등수 계산 (모든 학교 타입 통합)
+    console.log(`🌍 월별 전국 등수 계산 시작 - 총 ${allResults.length}개 학교`);
+    
+    const allResultsWithNationalRank = allResults
+      .sort((a, b) => {
+        // 평균 평점 내림차순, 평점 개수 내림차순
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      })
+      .map((result, index) => ({
+        ...result,
+        national_rank: index + 1
+      }));
+    
+    console.log(`🏆 월별 전국 등수 계산 완료 - 1등: ${allResultsWithNationalRank[0]?.school_code} (${allResultsWithNationalRank[0]?.final_avg_rating}점)`);
+    
+    // 6. 기존 데이터 삭제 후 새 데이터 삽입
     let deleteQuery = supabase
       .from('meal_battle_monthly')
       .delete()
@@ -1117,8 +1228,8 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
       console.log(`✅ 기존 월별 급식 배틀 데이터 삭제 성공 - ${targetYear}년 ${targetMonth}월`);
     }
     
-    // 6. 새 데이터 삽입 (school_type 필드 제거하고 저장)
-    const resultsToInsert = allResults.map(({ school_type, ...result }) => result);
+    // 7. 새 데이터 삽입 (school_type 필드 제거하고 저장)
+    const resultsToInsert = allResultsWithNationalRank.map(({ school_type, ...result }) => result);
     
     const { data: insertedData, error: insertError } = await supabase
       .from('meal_battle_monthly')
@@ -1134,8 +1245,8 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
     
     return {
       success: true,
-      data: allResults,
-      message: `월별 급식 배틀 결과 저장 완료: ${allResults.length}개 학교`
+      data: allResultsWithNationalRank,
+      message: `월별 급식 배틀 결과 저장 완료: ${allResultsWithNationalRank.length}개 학교 (지역별 + 전국 등수)`
     };
     
   } catch (err) {
