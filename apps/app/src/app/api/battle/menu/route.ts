@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
           .eq('battle_date', date)
           .order('daily_rank', { ascending: true });
       } else if (isNationalView) {
-        // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
+        // 전국 데이터: national_rank 기준으로 조회
         query = supabase
           .from('menu_battle_daily')
           .select(`
@@ -91,9 +91,12 @@ export async function GET(request: NextRequest) {
             school_code,
             final_avg_rating,
             final_rating_count,
-            daily_rank
+            daily_rank,
+            national_rank
           `)
-          .eq('battle_date', date);
+          .eq('battle_date', date)
+          .not('national_rank', 'is', null)
+          .order('national_rank', { ascending: true });
           
         // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
         if (schoolType) {
@@ -128,13 +131,16 @@ export async function GET(request: NextRequest) {
               school_code,
               final_avg_rating,
               final_rating_count,
-              daily_rank
+              daily_rank,
+              national_rank
             `)
             .eq('battle_date', date)
-            .in('school_code', schoolCodes);
+            .in('school_code', schoolCodes)
+            .not('national_rank', 'is', null)
+            .order('national_rank', { ascending: true });
         }
       } else {
-        // 특정 학교 데이터
+        // 지역별 데이터: region_rank 기준으로 조회
         query = supabase
           .from('menu_battle_daily')
           .select(`
@@ -143,11 +149,77 @@ export async function GET(request: NextRequest) {
             school_code,
             final_avg_rating,
             final_rating_count,
-            daily_rank
+            daily_rank,
+            region_rank
           `)
-          .eq('school_code', schoolCode)
           .eq('battle_date', date)
-          .order('daily_rank', { ascending: true });
+          .not('region_rank', 'is', null)
+          .order('region_rank', { ascending: true });
+          
+        // 지역 필터링을 위해 학교 정보와 조인
+        const { data: regionSchools, error: regionError } = await supabase
+          .from('school_infos')
+          .select('school_code')
+          .eq('region', region);
+          
+        if (regionError) {
+          console.error('지역 학교 조회 오류:', regionError);
+          return NextResponse.json(
+            { error: `지역 학교 정보를 조회하는데 실패했습니다: ${regionError.message}` },
+            { status: 500 }
+          );
+        }
+        
+        const regionSchoolCodes = regionSchools?.map(s => s.school_code) || [];
+        if (regionSchoolCodes.length === 0) {
+          return NextResponse.json({
+            success: true,
+            data: []
+          });
+        }
+        
+        query = query.in('school_code', regionSchoolCodes);
+        
+        // 학교 유형 필터링
+        if (schoolType) {
+          const { data: typeSchools, error: typeError } = await supabase
+            .from('school_infos')
+            .select('school_code')
+            .eq('region', region)
+            .ilike('school_type', `%${schoolType}%`);
+            
+          if (typeError) {
+            console.error('학교 유형 필터링 오류:', typeError);
+            return NextResponse.json(
+              { error: `학교 유형 필터링에 실패했습니다: ${typeError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          const typeSchoolCodes = typeSchools?.map(s => s.school_code) || [];
+          if (typeSchoolCodes.length === 0) {
+            return NextResponse.json({
+              success: true,
+              data: []
+            });
+          }
+          
+          query = supabase
+            .from('menu_battle_daily')
+            .select(`
+              menu_item_id,
+              battle_date,
+              school_code,
+              final_avg_rating,
+              final_rating_count,
+              daily_rank,
+              region_rank
+            `)
+            .eq('battle_date', date)
+            .in('school_code', typeSchoolCodes)
+            .not('region_rank', 'is', null)
+            .order('region_rank', { ascending: true });
+        }
       }
     } else {
       // 월별 배틀 데이터 조회
@@ -183,7 +255,7 @@ export async function GET(request: NextRequest) {
           .eq('battle_month', battleMonth)
           .order('monthly_rank', { ascending: true });
       } else if (isNationalView) {
-        // 전국 데이터: 모든 학교의 데이터를 조회하고 메뉴별로 집계
+        // 전국 데이터: national_rank 기준으로 조회
         query = supabase
           .from('menu_battle_monthly')
           .select(`
@@ -193,10 +265,13 @@ export async function GET(request: NextRequest) {
             school_code,
             final_avg_rating,
             final_rating_count,
-            monthly_rank
+            monthly_rank,
+            national_rank
           `)
           .eq('battle_year', battleYear)
-          .eq('battle_month', battleMonth);
+          .eq('battle_month', battleMonth)
+          .not('national_rank', 'is', null)
+          .order('national_rank', { ascending: true });
           
         // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
         if (schoolType) {
@@ -232,14 +307,17 @@ export async function GET(request: NextRequest) {
               school_code,
               final_avg_rating,
               final_rating_count,
-              monthly_rank
+              monthly_rank,
+              national_rank
             `)
             .eq('battle_year', battleYear)
             .eq('battle_month', battleMonth)
-            .in('school_code', schoolCodes);
+            .in('school_code', schoolCodes)
+            .not('national_rank', 'is', null)
+            .order('national_rank', { ascending: true });
         }
       } else {
-        // 특정 학교 데이터
+        // 지역별 데이터: region_rank 기준으로 조회
         query = supabase
           .from('menu_battle_monthly')
           .select(`
@@ -249,12 +327,80 @@ export async function GET(request: NextRequest) {
             school_code,
             final_avg_rating,
             final_rating_count,
-            monthly_rank
+            monthly_rank,
+            region_rank
           `)
-          .eq('school_code', schoolCode)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
-          .order('monthly_rank', { ascending: true });
+          .not('region_rank', 'is', null)
+          .order('region_rank', { ascending: true });
+          
+        // 지역 필터링을 위해 학교 정보와 조인
+        const { data: regionSchools, error: regionError } = await supabase
+          .from('school_infos')
+          .select('school_code')
+          .eq('region', region);
+          
+        if (regionError) {
+          console.error('지역 학교 조회 오류:', regionError);
+          return NextResponse.json(
+            { error: `지역 학교 정보를 조회하는데 실패했습니다: ${regionError.message}` },
+            { status: 500 }
+          );
+        }
+        
+        const regionSchoolCodes = regionSchools?.map(s => s.school_code) || [];
+        if (regionSchoolCodes.length === 0) {
+          return NextResponse.json({
+            success: true,
+            data: []
+          });
+        }
+        
+        query = query.in('school_code', regionSchoolCodes);
+        
+        // 학교 유형 필터링
+        if (schoolType) {
+          const { data: typeSchools, error: typeError } = await supabase
+            .from('school_infos')
+            .select('school_code')
+            .eq('region', region)
+            .ilike('school_type', `%${schoolType}%`);
+            
+          if (typeError) {
+            console.error('학교 유형 필터링 오류:', typeError);
+            return NextResponse.json(
+              { error: `학교 유형 필터링에 실패했습니다: ${typeError.message}` },
+              { status: 500 }
+            );
+          }
+          
+          const typeSchoolCodes = typeSchools?.map(s => s.school_code) || [];
+          if (typeSchoolCodes.length === 0) {
+            return NextResponse.json({
+              success: true,
+              data: []
+            });
+          }
+          
+          query = supabase
+            .from('menu_battle_monthly')
+            .select(`
+              menu_item_id,
+              battle_year,
+              battle_month,
+              school_code,
+              final_avg_rating,
+              final_rating_count,
+              monthly_rank,
+              region_rank
+            `)
+            .eq('battle_year', battleYear)
+            .eq('battle_month', battleMonth)
+            .in('school_code', typeSchoolCodes)
+            .not('region_rank', 'is', null)
+            .order('region_rank', { ascending: true });
+        }
       }
     }
 
