@@ -1379,9 +1379,10 @@ export default function BattlePage() {
                 {/* 테이블 헤더 */}
                 <div className="bg-red-50 border-b border-red-200">
                   <div className={`grid gap-4 px-4 py-3 text-sm font-medium text-red-700 ${
-                    viewMode === 'monthly' ? 'grid-cols-5' : 'grid-cols-4'
+                    viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                   }`}>
                     <div className="text-center">순위</div>
+                    <div className="text-center">학교명</div>
                     {viewMode === 'monthly' && <div className="text-center">급식날짜</div>}
                     <div className="text-center">메뉴명</div>
                     <div className="text-center">점수</div>
@@ -1426,10 +1427,13 @@ export default function BattlePage() {
                       .slice(0, viewMode === 'monthly' ? 20 : battleData.length)
                       .map((item, index) => (
                       <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
-                        viewMode === 'monthly' ? 'grid-cols-5' : 'grid-cols-4'
+                        viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
                           {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank : item.monthly_rank) : battleData.length - index}
+                        </div>
+                        <div className="text-center text-gray-700 text-sm font-medium">
+                          {item.school_name || '-'}
                         </div>
                         {viewMode === 'monthly' && (
                           <div className="text-center text-gray-600 text-sm">
