@@ -544,31 +544,50 @@ export async function GET(request: NextRequest) {
         menu_item_id: string;
         ratings: number[];
         total_count: number;
+        school_names: string[];
+        school_codes: string[];
       }> = {};
       
-      data.forEach(item => {
+      data.forEach((item: any) => {
         const menuId = item.menu_item_id;
         if (!menuGroups[menuId]) {
           menuGroups[menuId] = {
             menu_item_id: menuId,
             ratings: [],
-            total_count: 0
+            total_count: 0,
+            school_names: [],
+            school_codes: []
           };
         }
         menuGroups[menuId].ratings.push(item.final_avg_rating);
         menuGroups[menuId].total_count += item.final_rating_count;
+        
+        // 학교 정보 수집 (중복 제거)
+        if (item.school_name && !menuGroups[menuId].school_names.includes(item.school_name)) {
+          menuGroups[menuId].school_names.push(item.school_name);
+        }
+        if (item.school_code && !menuGroups[menuId].school_codes.includes(item.school_code)) {
+          menuGroups[menuId].school_codes.push(item.school_code);
+        }
       });
       
       // 전국 평균 계산 및 순위 매기기
       processedData = Object.values(menuGroups).map(group => {
         const avgRating = group.ratings.reduce((sum, rating) => sum + rating, 0) / group.ratings.length;
+        
+        // 최고 평점을 받은 학교명 선택 (첫 번째 학교)
+        const topSchoolName = group.school_names.length > 0 ? group.school_names[0] : '전국 평균';
+        const topSchoolCode = group.school_codes.length > 0 ? group.school_codes[0] : '';
+        
         return {
           menu_item_id: group.menu_item_id,
           final_avg_rating: avgRating,
           final_rating_count: group.total_count,
           battle_date: type === 'daily' ? date : null,
           battle_year: type === 'monthly' ? parseInt(month!.split('-')[0]) : null,
-          battle_month: type === 'monthly' ? parseInt(month!.split('-')[1]) : null
+          battle_month: type === 'monthly' ? parseInt(month!.split('-')[1]) : null,
+          school_name: topSchoolName,
+          school_code: topSchoolCode
         };
       });
       
@@ -583,6 +602,7 @@ export async function GET(request: NextRequest) {
       });
       
       console.log('✅ 전국 데이터 집계 완료:', processedData.length, '개 메뉴');
+      console.log('🏫 전국 모드 학교명 샘플:', processedData.slice(0, 2).map(item => ({ menu_item_id: item.menu_item_id, school_name: item.school_name })));
     }
     
     // 메뉴 아이템 이름 및 급식 날짜 조회

@@ -25,7 +25,7 @@ interface ReportData {
 export default function AdminPage() {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed' | 'resolved' | 'dismissed'>('all');
+  const [filter, setFilter] = useState<'all' | 'reviewed' | 'resolved' | 'dismissed'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -143,7 +143,7 @@ export default function AdminPage() {
             
             {/* 필터 버튼 */}
             <div className="flex space-x-2">
-              {['all', 'pending', 'reviewed', 'resolved', 'dismissed'].map((status) => (
+              {['all', 'reviewed', 'resolved', 'dismissed'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilter(status as any)}
