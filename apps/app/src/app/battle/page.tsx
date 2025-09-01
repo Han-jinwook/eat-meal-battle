@@ -1430,7 +1430,7 @@ export default function BattlePage() {
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
-                          {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank : item.monthly_rank) : battleData.length - index}
+                          {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank || (index + 1) : item.monthly_rank || (index + 1)) : battleData.length - index}
                         </div>
                         <div className="text-center text-gray-700 text-sm font-medium">
                           {item.school_name || '-'}

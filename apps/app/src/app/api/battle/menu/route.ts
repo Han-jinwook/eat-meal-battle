@@ -644,7 +644,8 @@ export async function GET(request: NextRequest) {
         meal_date: menuInfo.meal_date,
         final_avg_rating: item.final_avg_rating,
         final_rating_count: item.final_rating_count,
-        daily_rank: item.daily_rank || item.monthly_rank,
+        daily_rank: item.daily_rank,
+        monthly_rank: item.monthly_rank,
         school_name: item.school_name || '알 수 없음',
         school_code: item.school_code
       };
