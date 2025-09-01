@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
             final_avg_rating,
             final_rating_count,
             daily_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('school_code', schoolCode)
           .eq('battle_date', date)
@@ -94,78 +94,18 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             daily_rank,
             national_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('battle_date', date)
           .not('national_rank', 'is', null)
           .order('national_rank', { ascending: true });
           
-        // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
+        // 학교 유형 필터링이 있으면 school_name에서 직접 필터링
         if (schoolType) {
-          // 1단계: 해당 학교 유형의 학교 코드들 조회
-          const { data: schools, error: schoolError } = await supabase
-            .from('school_infos')
-            .select('school_code')
-            .ilike('school_type', `%${schoolType}%`);
-            
-          if (schoolError) {
-            console.error('학교 정보 조회 오류:', schoolError);
-            return NextResponse.json(
-              { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
-              { status: 500 }
-            );
-          }
-          
-          const schoolCodes = schools?.map(s => s.school_code) || [];
-          if (schoolCodes.length === 0) {
-            return NextResponse.json({
-              success: true,
-              data: []
-            });
-          }
-          
-          // 2단계: 해당 학교들의 배틀 데이터 조회
-          query = supabase
-            .from('menu_battle_daily')
-            .select(`
-              menu_item_id,
-              battle_date,
-              school_code,
-              final_avg_rating,
-              final_rating_count,
-              daily_rank,
-              national_rank,
-              school_infos(school_name)
-            `)
-            .eq('battle_date', date)
-            .in('school_code', schoolCodes)
-            .not('national_rank', 'is', null)
-            .order('national_rank', { ascending: true });
+          query = query.ilike('school_name', `%${schoolType}%`);
         }
       } else {
-        // 지역별 데이터: 먼저 지역 학교 조회 후 region_rank 기준으로 정렬
-        const { data: regionSchools, error: regionError } = await supabase
-          .from('school_infos')
-          .select('school_code')
-          .eq('region', region);
-          
-        if (regionError) {
-          console.error('지역 학교 조회 오류:', regionError);
-          return NextResponse.json(
-            { error: `지역 학교 정보를 조회하는데 실패했습니다: ${regionError.message}` },
-            { status: 500 }
-          );
-        }
-        
-        const regionSchoolCodes = regionSchools?.map(s => s.school_code) || [];
-        if (regionSchoolCodes.length === 0) {
-          return NextResponse.json({
-            success: true,
-            data: []
-          });
-        }
-        
-        // 지역 학교들의 배틀 데이터를 region_rank 순으로 조회
+        // 지역별 데이터: school_name에서 직접 지역 필터링
         query = supabase
           .from('menu_battle_daily')
           .select(`
@@ -176,53 +116,15 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             daily_rank,
             region_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('battle_date', date)
-          .in('school_code', regionSchoolCodes)
           .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
-        
+          
         // 학교 유형 필터링
         if (schoolType) {
-          const { data: typeSchools, error: typeError } = await supabase
-            .from('school_infos')
-            .select('school_code')
-            .eq('region', region)
-            .ilike('school_type', `%${schoolType}%`);
-            
-          if (typeError) {
-            console.error('학교 유형 필터링 오류:', typeError);
-            return NextResponse.json(
-              { error: `학교 유형 필터링에 실패했습니다: ${typeError.message}` },
-              { status: 500 }
-            );
-          }
-          
-          const typeSchoolCodes = typeSchools?.map(s => s.school_code) || [];
-          if (typeSchoolCodes.length === 0) {
-            return NextResponse.json({
-              success: true,
-              data: []
-            });
-          }
-          
-          query = supabase
-            .from('menu_battle_daily')
-            .select(`
-              menu_item_id,
-              battle_date,
-              school_code,
-              final_avg_rating,
-              final_rating_count,
-              daily_rank,
-              region_rank,
-              school_infos(school_name)
-            `)
-            .eq('battle_date', date)
-            .in('school_code', typeSchoolCodes)
-            .not('region_rank', 'is', null)
-            .order('region_rank', { ascending: true });
+          query = query.ilike('school_name', `%${schoolType}%`);
         }
       }
     } else {
@@ -253,7 +155,7 @@ export async function GET(request: NextRequest) {
             final_avg_rating,
             final_rating_count,
             monthly_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('school_code', schoolCode)
           .eq('battle_year', battleYear)
@@ -272,81 +174,19 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             monthly_rank,
             national_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
           .not('national_rank', 'is', null)
           .order('national_rank', { ascending: true });
           
-        // 학교 유형 필터링이 있으면 2단계 쿼리로 처리
+        // 학교 유형 필터링이 있으면 school_name에서 직접 필터링
         if (schoolType) {
-          // 1단계: 해당 학교 유형의 학교 코드들 조회
-          const { data: schools, error: schoolError } = await supabase
-            .from('school_infos')
-            .select('school_code')
-            .ilike('school_type', `%${schoolType}%`);
-            
-          if (schoolError) {
-            console.error('학교 정보 조회 오류:', schoolError);
-            return NextResponse.json(
-              { error: `학교 정보를 조회하는데 실패했습니다: ${schoolError.message}` },
-              { status: 500 }
-            );
-          }
-          
-          const schoolCodes = schools?.map(s => s.school_code) || [];
-          if (schoolCodes.length === 0) {
-            return NextResponse.json({
-              success: true,
-              data: []
-            });
-          }
-          
-          // 2단계: 해당 학교들의 배틀 데이터 조회
-          query = supabase
-            .from('menu_battle_monthly')
-            .select(`
-              menu_item_id,
-              battle_year,
-              battle_month,
-              school_code,
-              final_avg_rating,
-              final_rating_count,
-              monthly_rank,
-              national_rank,
-              school_infos(school_name)
-            `)
-            .eq('battle_year', battleYear)
-            .eq('battle_month', battleMonth)
-            .in('school_code', schoolCodes)
-            .not('national_rank', 'is', null)
-            .order('national_rank', { ascending: true });
+          query = query.ilike('school_name', `%${schoolType}%`);
         }
       } else {
-        // 지역별 데이터: 먼저 지역 학교 조회 후 region_rank 기준으로 정렬
-        const { data: regionSchools, error: regionError } = await supabase
-          .from('school_infos')
-          .select('school_code')
-          .eq('region', region);
-          
-        if (regionError) {
-          console.error('지역 학교 조회 오류:', regionError);
-          return NextResponse.json(
-            { error: `지역 학교 정보를 조회하는데 실패했습니다: ${regionError.message}` },
-            { status: 500 }
-          );
-        }
-        
-        const regionSchoolCodes = regionSchools?.map(s => s.school_code) || [];
-        if (regionSchoolCodes.length === 0) {
-          return NextResponse.json({
-            success: true,
-            data: []
-          });
-        }
-        
-        // 지역 학교들의 배틀 데이터를 region_rank 순으로 조회
+        // 지역별 데이터: school_name에서 직접 지역 필터링
         query = supabase
           .from('menu_battle_monthly')
           .select(`
@@ -358,72 +198,16 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             monthly_rank,
             region_rank,
-            school_infos(school_name)
+            school_name
           `)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
-          .in('school_code', regionSchoolCodes)
           .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
           
-        console.log('🌍 지역 필터 적용:', {
-          region,
-          regionSchoolCodes: regionSchoolCodes.length,
-          battleYear,
-          battleMonth
-        });
-        
         // 학교 유형 필터링
         if (schoolType) {
-          const { data: typeSchools, error: typeError } = await supabase
-            .from('school_infos')
-            .select('school_code')
-            .eq('region', region)
-            .ilike('school_type', `%${schoolType}%`);
-            
-          if (typeError) {
-            console.error('학교 유형 필터링 오류:', typeError);
-            return NextResponse.json(
-              { error: `학교 유형 필터링에 실패했습니다: ${typeError.message}` },
-              { status: 500 }
-            );
-          }
-          
-          const typeSchoolCodes = typeSchools?.map(s => s.school_code) || [];
-          if (typeSchoolCodes.length === 0) {
-            return NextResponse.json({
-              success: true,
-              data: []
-            });
-          }
-          
-          // 지역별 학교 유형 필터링된 배틀 데이터를 region_rank 순으로 조회
-          query = supabase
-            .from('menu_battle_monthly')
-            .select(`
-              menu_item_id,
-              battle_year,
-              battle_month,
-              school_code,
-              final_avg_rating,
-              final_rating_count,
-              monthly_rank,
-              region_rank,
-              school_infos(school_name)
-            `)
-            .eq('battle_year', battleYear)
-            .eq('battle_month', battleMonth)
-            .in('school_code', typeSchoolCodes)
-            .not('region_rank', 'is', null)
-            .order('region_rank', { ascending: true });
-            
-          console.log('🏫 지역+학교유형 필터 적용:', {
-            region,
-            schoolType,
-            typeSchoolCodes: typeSchoolCodes.length,
-            battleYear,
-            battleMonth
-          });
+          query = query.ilike('school_name', `%${schoolType}%`);
         }
       }
     }
@@ -447,28 +231,8 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // JOIN으로 가져온 school_infos 데이터를 평면화
-    if (data && data.length > 0) {
-      console.log('🏫 학교명 데이터 평면화 시작:', data[0]);
-      
-      data.forEach((item: any) => {
-        if (item.school_infos) {
-          // Supabase JOIN 결과는 객체 또는 배열일 수 있음
-          if (Array.isArray(item.school_infos) && item.school_infos.length > 0) {
-            item.school_name = item.school_infos[0].school_name;
-          } else if (typeof item.school_infos === 'object' && item.school_infos.school_name) {
-            item.school_name = item.school_infos.school_name;
-          } else {
-            item.school_name = '알 수 없음';
-          }
-          delete item.school_infos;
-        } else {
-          item.school_name = '알 수 없음';
-        }
-      });
-      
-      console.log('✅ 학교명 평면화 완료:', data[0]);
-    }
+    // school_name 컬럼을 직접 사용하므로 평면화 불필요
+    console.log('✅ school_name 컬럼 직접 사용 - 조인 없음');
     
     // 긴급 디버깅: 월별 쿼리 결과 상세 로깅
     if (type === 'monthly') {
