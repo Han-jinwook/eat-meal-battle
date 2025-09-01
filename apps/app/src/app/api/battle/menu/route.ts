@@ -419,7 +419,8 @@ export async function GET(request: NextRequest) {
       error: error,
       dataLength: data?.length || 0,
       sampleData: data?.slice(0, 2),
-      queryParams: { date, month, schoolCode, region, schoolType, schoolOnly }
+      queryParams: { date, month, schoolCode, region, schoolType, schoolOnly },
+      rawDataStructure: data?.[0] ? Object.keys(data[0]) : []
     });
     
     if (error) {
@@ -430,18 +431,27 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // 학교명 정보는 이제 JOIN으로 가져오므로 별도 처리 불필요
+    // JOIN으로 가져온 school_infos 데이터를 평면화
     if (data && data.length > 0) {
-      // JOIN으로 가져온 school_infos 데이터를 평면화
-      data.forEach(item => {
-        if (item.school_infos && item.school_infos.length > 0) {
-          item.school_name = item.school_infos[0].school_name;
+      console.log('🏫 학교명 데이터 평면화 시작:', data[0]);
+      
+      data.forEach((item: any) => {
+        if (item.school_infos) {
+          // Supabase JOIN 결과는 객체 또는 배열일 수 있음
+          if (Array.isArray(item.school_infos) && item.school_infos.length > 0) {
+            item.school_name = item.school_infos[0].school_name;
+          } else if (typeof item.school_infos === 'object' && item.school_infos.school_name) {
+            item.school_name = item.school_infos.school_name;
+          } else {
+            item.school_name = '알 수 없음';
+          }
+          delete item.school_infos;
         } else {
           item.school_name = '알 수 없음';
         }
-        // school_infos 객체 제거 (불필요한 중첩 구조 제거)
-        delete item.school_infos;
       });
+      
+      console.log('✅ 학교명 평면화 완료:', data[0]);
     }
     
     // 긴급 디버깅: 월별 쿼리 결과 상세 로깅
@@ -606,18 +616,28 @@ export async function GET(request: NextRequest) {
     });
     
     // 배틀 결과와 메뉴 아이템 정보 합치기
-    const battleResults = processedData?.map(item => {
+    const battleResults = processedData?.map((item: any) => {
       const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
-      return {
+      const result = {
         menu_item_id: item.menu_item_id,
         item_name: menuInfo.item_name,
         meal_date: menuInfo.meal_date,
         final_avg_rating: item.final_avg_rating,
         final_rating_count: item.final_rating_count,
         daily_rank: item.daily_rank || item.monthly_rank,
-        school_name: item.school_name
+        school_name: item.school_name || '알 수 없음',
+        school_code: item.school_code
       };
+      
+      console.log('🔍 배틀 결과 변환:', {
+        original: { menu_item_id: item.menu_item_id, school_name: item.school_name },
+        transformed: { menu_item_id: result.menu_item_id, school_name: result.school_name }
+      });
+      
+      return result;
     }) || [];
+    
+    console.log('📋 최종 배틀 결과:', battleResults.slice(0, 2));
 
     return NextResponse.json({
       success: true,
