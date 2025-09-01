@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { extractBattleRegion } from '@/utils/addressParser';
-import PushNotificationSetup from '@/components/PushNotificationSetup';
+// import PushNotificationSetup from '@/components/PushNotificationSetup'; // 푸시 알림 비활성화
 
 // 학교 검색 결과 타입 정의
 interface School {
@@ -373,14 +373,25 @@ export default function SchoolSearchPage() {
               급식 메뉴, 퀴즈 결과, 배틀 초대 등의 알림을 받으시겠습니까?
             </p>
             
-            <PushNotificationSetup 
+            {/* 푸시 알림 설정 - 비활성화됨 */}
+            {/* <PushNotificationSetup 
               onTokenReceived={() => {
                 // 토큰 등록 완료 후 메인 페이지로 이동
                 setTimeout(() => {
                   router.push('/');
                 }, 1000);
               }}
-            />
+            /> */}
+            
+            {/* 알림 설정 완료 후 바로 메인 페이지로 이동 */}
+            <div className="text-center">
+              <button
+                onClick={() => router.push('/')}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                시작하기
+              </button>
+            </div>
             
             <button
               onClick={() => router.push('/')}

@@ -1,4 +1,7 @@
-// 푸시 알림을 위한 Firebase 메시징 서비스 워커
+// 푸시 알림을 위한 Firebase 메시징 서비스 워커 - 비활성화됨
+// 푸시 알림 기능이 비활성화되어 더 이상 백그라운드 알림을 처리하지 않습니다.
+
+/*
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
@@ -29,3 +32,4 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+*/

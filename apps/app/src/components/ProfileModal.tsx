@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import BirthConsentModal from './BirthConsentModal';
-import PushNotificationSetup from './PushNotificationSetup';
+// import PushNotificationSetup from './PushNotificationSetup'; // 푸시 알림 비활성화
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -246,8 +246,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               )}
             </div>
 
-            {/* 푸시 알림 설정 */}
-            {schoolInfo && <PushNotificationSetup />}
+            {/* 푸시 알림 설정 - 비활성화됨 */}
+            {/* {schoolInfo && <PushNotificationSetup />} */}
 
             {/* 계정 관리 */}
             <div className="space-y-2">
