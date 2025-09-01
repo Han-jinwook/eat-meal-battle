@@ -415,6 +415,13 @@ export async function GET(request: NextRequest) {
     console.log('🔍 DB 쿼리 실행 중...');
     const { data, error } = await query;
     
+    console.log('📊 쿼리 결과 디버깅:', {
+      error: error,
+      dataLength: data?.length || 0,
+      sampleData: data?.slice(0, 2),
+      queryParams: { date, month, schoolCode, region, schoolType, schoolOnly }
+    });
+    
     if (error) {
       console.error('배틀 데이터 조회 오류:', error);
       return NextResponse.json(
@@ -501,6 +508,16 @@ export async function GET(request: NextRequest) {
     }
     
     if (!data || data.length === 0) {
+      console.log('⚠️ 배틀 데이터가 비어있음 - 직접 테이블 확인');
+      
+      // 디버깅: 테이블에 실제 데이터가 있는지 확인
+      const debugQuery = await supabase
+        .from(type === 'daily' ? 'menu_battle_daily' : 'menu_battle_monthly')
+        .select('*')
+        .limit(5);
+      
+      console.log('🔍 테이블 직접 조회 결과:', debugQuery);
+      
       return NextResponse.json({
         success: true,
         data: []
@@ -580,8 +597,8 @@ export async function GET(request: NextRequest) {
     }
     
     // 데이터 변환 - 메뉴 아이템 정보와 급식 날짜 조합
-    const menuItemMap = {};
-    menuItems?.forEach(item => {
+    const menuItemMap: Record<string, { item_name: string; meal_date: string | null }> = {};
+    menuItems?.forEach((item: any) => {
       menuItemMap[item.id] = {
         item_name: item.item_name,
         meal_date: Array.isArray(item.meal_menus) ? item.meal_menus[0]?.meal_date : item.meal_menus?.meal_date || null
@@ -597,8 +614,8 @@ export async function GET(request: NextRequest) {
         meal_date: menuInfo.meal_date,
         final_avg_rating: item.final_avg_rating,
         final_rating_count: item.final_rating_count,
-        daily_rank: item.daily_rank,
-        monthly_rank: item.monthly_rank
+        daily_rank: item.daily_rank || item.monthly_rank,
+        school_name: item.school_name
       };
     }) || [];
 
