@@ -279,39 +279,20 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
     return { success: true, data: [] };
   }
   
-  // 3. 학교별로 그룹화하여 월별 평균 계산
-  const schoolGroups = menuItems.reduce((acc, item) => {
-    const school = item.meal_menus.school_code;
-    if (!acc[school]) acc[school] = [];
-    acc[school].push(item);
-    return acc;
-  }, {} as Record<string, any[]>);
-  
+  // 3. 메뉴 아이템별로 월별 집계 계산
   const monthlyResults: MonthlyBattleResult[] = [];
-  
-  // 4. 각 학교별로 월별 순위 계산
-  for (const [school, items] of Object.entries(schoolGroups)) {
-    const itemsWithRatings = items.map(item => {
-      const rating = menuRatings.find(r => r.menu_item_id === item.id);
-      return {
-        ...item,
-        avg_rating: rating?.avg_rating || 0,
-        rating_count: rating?.rating_count || 0
-      };
-    });
-    
-    // 학교별 월별 평균 계산
-    const totalRating = itemsWithRatings.reduce((sum, item) => sum + (item.avg_rating * item.rating_count), 0);
-    const totalCount = itemsWithRatings.reduce((sum, item) => sum + item.rating_count, 0);
-    
-    if (totalCount > 0) {
+
+  // 4. 각 메뉴 아이템별로 월별 순위 계산
+  for (const item of menuItems) {
+    const rating = menuRatings.find(r => r.menu_item_id === item.id);
+    if (rating && rating.rating_count > 0) {
       monthlyResults.push({
-        menu_item_id: school, // 월별은 학교 단위로 계산
+        menu_item_id: item.id,
         battle_year: currentYear,
         battle_month: currentMonth,
-        school_code: school,
-        final_avg_rating: Number((totalRating / totalCount).toFixed(1)),
-        final_rating_count: totalCount,
+        school_code: item.meal_menus.school_code,
+        final_avg_rating: Number(rating.avg_rating),
+        final_rating_count: rating.rating_count,
         monthly_rank: 0 // 임시값, 나중에 계산
       });
     }
@@ -381,6 +362,7 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
     
     sortedRegionResults.forEach((result, index) => {
       const finalIndex = finalMonthlyResults.findIndex(r => 
+        r.menu_item_id === result.menu_item_id && 
         r.school_code === result.school_code
       );
       if (finalIndex !== -1) {
