@@ -34,6 +34,26 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3000); // 3초 후 자동 사라짐
   };
 
+  const cleanupOldReports = async () => {
+    try {
+      const response = await fetch('/api/admin/cleanup-old-reports', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(`${data.deletedCount}개의 처리완료 신고가 정리되었습니다.`, 'success');
+        fetchReports(); // 데이터 새로고침
+      } else {
+        showToast('신고 정리에 실패했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('신고 정리 오류:', error);
+      showToast('신고 정리 중 오류가 발생했습니다.', 'error');
+    }
+  };
+
   const fetchReports = async () => {
     setLoading(true);
     try {
@@ -141,21 +161,31 @@ export default function AdminPage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-gray-800">급식 이미지 신고 관리</h2>
             
-            {/* 필터 버튼 */}
-            <div className="flex space-x-2">
-              {['all', 'reviewed', 'resolved', 'dismissed'].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setFilter(status as any)}
-                  className={`px-3 py-1 text-sm rounded-md ${
-                    filter === status
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {status === 'all' ? '전체' : getStatusText(status)}
-                </button>
-              ))}
+            <div className="flex items-center space-x-4">
+              {/* 정리 버튼 */}
+              <button
+                onClick={cleanupOldReports}
+                className="px-4 py-2 bg-orange-500 text-white text-sm rounded-md hover:bg-orange-600 transition-colors"
+              >
+                7일 이후 처리완료 정리
+              </button>
+              
+              {/* 필터 버튼 */}
+              <div className="flex space-x-2">
+                {['all', 'reviewed', 'resolved', 'dismissed'].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilter(status as any)}
+                    className={`px-3 py-1 text-sm rounded-md ${
+                      filter === status
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {status === 'all' ? '전체' : getStatusText(status)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

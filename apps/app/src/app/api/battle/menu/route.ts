@@ -365,6 +365,13 @@ export async function GET(request: NextRequest) {
           .in('school_code', regionSchoolCodes)
           .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
+          
+        console.log('🌍 지역 필터 적용:', {
+          region,
+          regionSchoolCodes: regionSchoolCodes.length,
+          battleYear,
+          battleMonth
+        });
         
         // 학교 유형 필터링
         if (schoolType) {
@@ -390,6 +397,7 @@ export async function GET(request: NextRequest) {
             });
           }
           
+          // 지역별 학교 유형 필터링된 배틀 데이터를 region_rank 순으로 조회
           query = supabase
             .from('menu_battle_monthly')
             .select(`
@@ -408,6 +416,14 @@ export async function GET(request: NextRequest) {
             .in('school_code', typeSchoolCodes)
             .not('region_rank', 'is', null)
             .order('region_rank', { ascending: true });
+            
+          console.log('🏫 지역+학교유형 필터 적용:', {
+            region,
+            schoolType,
+            typeSchoolCodes: typeSchoolCodes.length,
+            battleYear,
+            battleMonth
+          });
         }
       }
     }
@@ -501,7 +517,20 @@ export async function GET(request: NextRequest) {
         console.log(`     battle_month: ${item.battle_month}`);
         console.log(`     final_avg_rating: ${item.final_avg_rating}`);
         console.log(`     monthly_rank: ${item.monthly_rank}`);
+        console.log(`     region_rank: ${item.region_rank}`);
+        console.log(`     school_code: ${item.school_code}`);
       });
+      
+      // 지역 모드 순위 정렬 확인
+      if (region && region !== '전국') {
+        console.log('🌍 지역 모드 순위 정렬 확인:', {
+          region,
+          isRegionSorted: data.every((item, index) => 
+            index === 0 || (data[index - 1].region_rank || 999) <= (item.region_rank || 999)
+          ),
+          regionRanks: data.map(item => item.region_rank).slice(0, 10)
+        });
+      }
     }
     
     // 필터링 검증: 실제 반환된 데이터의 날짜 확인
@@ -646,6 +675,7 @@ export async function GET(request: NextRequest) {
         final_rating_count: item.final_rating_count,
         daily_rank: item.daily_rank,
         monthly_rank: item.monthly_rank,
+        region_rank: item.region_rank,
         school_name: item.school_name || '알 수 없음',
         school_code: item.school_code
       };
