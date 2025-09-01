@@ -456,45 +456,140 @@ export default function BattlePage() {
       console.log('📝 생성된 프롬프트 길이:', aiPrompt.length, '자');
       console.log('📱 선택된 AI 앱:', selectedApp.id, selectedApp.name);
       
-      // 클립보드 권한 확인 및 복사 (개선된 버전)
+      // 클립보드 권한 확인 및 복사 (iOS Safari 최적화 버전)
       let clipboardSuccess = false;
       let permissionDenied = false;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      console.log('📱 디바이스 정보:', { isIOS, isSafari, userAgent: navigator.userAgent });
       
       try {
-        // 1단계: 클립보드 권한 상태 확인
-        if (navigator.permissions) {
-          try {
-            const permission = await navigator.permissions.query({name: 'clipboard-write' as PermissionName});
-            console.log('📋 클립보드 권한 상태:', permission.state);
-            
-            if (permission.state === 'denied') {
-              permissionDenied = true;
-              console.warn('⚠️ 클립보드 권한이 거부되어 있습니다');
-            }
-          } catch (permError) {
-            console.warn('⚠️ 클립보드 권한 확인 실패:', permError);
-            // 권한 확인 실패 시에도 클립보드 시도는 계속 진행
-          }
-        }
-        
-        // 2단계: 클립보드 API 시도
-        if (navigator.clipboard && window.isSecureContext && !permissionDenied) {
-          await navigator.clipboard.writeText(aiPrompt);
-          clipboardSuccess = true;
-          console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
-        } else {
-          // 폴백: textarea 사용
+        // iOS Safari 전용 처리
+        if (isIOS && isSafari) {
+          console.log('🍎 iOS Safari 감지 - 전용 클립보드 로직 사용');
+          
+          // iOS Safari에서는 사용자 제스처 컨텍스트에서만 클립보드 접근 가능
+          // 먼저 textarea 방식 시도 (iOS에서 더 안정적)
           const textArea = document.createElement('textarea');
           textArea.value = aiPrompt;
           textArea.style.position = 'fixed';
-          textArea.style.left = '-999999px';
-          textArea.style.top = '-999999px';
+          textArea.style.left = '50%';
+          textArea.style.top = '50%';
+          textArea.style.transform = 'translate(-50%, -50%)';
+          textArea.style.width = '300px';
+          textArea.style.height = '200px';
+          textArea.style.zIndex = '9999';
+          textArea.style.backgroundColor = 'white';
+          textArea.style.border = '2px solid #007AFF';
+          textArea.style.borderRadius = '8px';
+          textArea.style.padding = '10px';
+          textArea.style.fontSize = '16px'; // iOS에서 줌 방지
+          textArea.readOnly = true;
+          
           document.body.appendChild(textArea);
           textArea.focus();
           textArea.select();
-          clipboardSuccess = document.execCommand('copy');
-          document.body.removeChild(textArea);
-          console.log(clipboardSuccess ? '✅ 폴백 방식으로 클립보드 복사 성공' : '❌ 클립보드 복사 실패');
+          textArea.setSelectionRange(0, aiPrompt.length);
+          
+          // iOS Safari에서 execCommand 시도
+          try {
+            clipboardSuccess = document.execCommand('copy');
+            console.log(clipboardSuccess ? '✅ iOS execCommand 복사 성공' : '❌ iOS execCommand 복사 실패');
+          } catch (execError) {
+            console.warn('⚠️ iOS execCommand 실패:', execError);
+            clipboardSuccess = false;
+          }
+          
+          // textarea를 잠시 보여준 후 제거 (사용자가 수동 복사할 수 있도록)
+          if (!clipboardSuccess) {
+            // 수동 복사 안내 오버레이 추가
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            overlay.innerHTML = `
+              <div class="bg-white rounded-lg max-w-md w-full p-6 text-center">
+                <div class="text-3xl mb-4">📋</div>
+                <h3 class="text-lg font-bold text-gray-900 mb-4">프롬프트 복사</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                  아래 텍스트를 길게 눌러서 전체 선택 후 복사해주세요
+                </p>
+                <button 
+                  onclick="this.closest('.fixed').remove()"
+                  class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded font-medium"
+                >
+                  확인
+                </button>
+              </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            // 3초 후 자동으로 textarea 제거하지 않고 사용자가 직접 복사할 수 있도록 유지
+            setTimeout(() => {
+              if (document.body.contains(textArea)) {
+                textArea.style.opacity = '0.8';
+              }
+            }, 3000);
+            
+            // 오버레이 클릭 시 textarea도 함께 제거
+            overlay.addEventListener('click', (e) => {
+              if (e.target === overlay || e.target.closest('button')) {
+                if (document.body.contains(textArea)) {
+                  document.body.removeChild(textArea);
+                }
+                if (document.body.contains(overlay)) {
+                  document.body.removeChild(overlay);
+                }
+              }
+            });
+            
+            clipboardSuccess = true; // 수동 복사 기회를 제공했으므로 성공으로 처리
+          } else {
+            // 자동 복사 성공 시 textarea 제거
+            setTimeout(() => {
+              if (document.body.contains(textArea)) {
+                document.body.removeChild(textArea);
+              }
+            }, 500);
+          }
+          
+        } else {
+          // 안드로이드 및 기타 브라우저 처리 (기존 로직)
+          console.log('🤖 안드로이드/기타 브라우저 - 기본 클립보드 로직 사용');
+          
+          // 1단계: 클립보드 권한 상태 확인
+          if (navigator.permissions) {
+            try {
+              const permission = await navigator.permissions.query({name: 'clipboard-write' as PermissionName});
+              console.log('📋 클립보드 권한 상태:', permission.state);
+              
+              if (permission.state === 'denied') {
+                permissionDenied = true;
+                console.warn('⚠️ 클립보드 권한이 거부되어 있습니다');
+              }
+            } catch (permError) {
+              console.warn('⚠️ 클립보드 권한 확인 실패:', permError);
+            }
+          }
+          
+          // 2단계: 클립보드 API 시도
+          if (navigator.clipboard && window.isSecureContext && !permissionDenied) {
+            await navigator.clipboard.writeText(aiPrompt);
+            clipboardSuccess = true;
+            console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
+          } else {
+            // 폴백: textarea 사용
+            const textArea = document.createElement('textarea');
+            textArea.value = aiPrompt;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            clipboardSuccess = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            console.log(clipboardSuccess ? '✅ 폴백 방식으로 클립보드 복사 성공' : '❌ 클립보드 복사 실패');
+          }
         }
       } catch (error) {
         console.warn('⚠️ 클립보드 복사 실패:', error);
