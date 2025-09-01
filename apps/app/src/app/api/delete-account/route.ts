@@ -114,11 +114,14 @@ export async function POST(request: NextRequest) {
       .eq('uploaded_by', user_id)
     console.log('급식 이미지 익명화 완료')
     
-    // === 통계 무결성 보존 데이터 (익명화하지 않고 보존) ===
-    console.log('통계 무결성 보존 데이터 유지...')
+    // === 통계 무결성 보존 데이터 (익명화 처리) ===
+    console.log('통계 무결성 보존 데이터 익명화 시작...')
     
-    // 별점 데이터 보존 (통계 왜곡 방지) - 익명화하지 않음
-    console.log('별점 데이터 보존 (통계 무결성 유지)')
+    // 별점 데이터 익명화 (통계 왜곡 방지)
+    await supabaseAdmin.from('menu_item_ratings')
+      .update({ user_id: anonymousUserId })
+      .eq('user_id', user_id)
+    console.log('별점 데이터 익명화 완료')
     
     // 퀴즈 결과 보존 (서비스 통계) - 익명화하지 않음  
     console.log('퀴즈 데이터 보존 (서비스 통계)')

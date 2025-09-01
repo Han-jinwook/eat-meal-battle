@@ -188,7 +188,7 @@ export default function SchoolSearchPage() {
 
         if (updateError) throw updateError;
       } else {
-        // 없으면 새로 추가
+        // 없으면 새로 추가 (같은 school_code여도 문제없음)
         const { error: insertError } = await supabase
           .from('school_infos')
           .insert([schoolData]);
