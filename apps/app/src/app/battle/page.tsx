@@ -61,6 +61,32 @@ export default function BattlePage() {
   const [selectedRegion, setSelectedRegion] = useState<string>(''); // 지역 선택 (기본값: 사용자 지역, '전국' 옵션 포함)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
 
+  // URL의 date와 school_code 파라미터를 상태에 반영 (로그인 체크보다 먼저 실행)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dateParam = params.get('date');
+      const schoolCodeParam = params.get('school_code');
+      
+      console.log('🔗 URL 파라미터 확인:', { dateParam, schoolCodeParam });
+      
+      if (dateParam) {
+        setSelectedDate(dateParam);
+        console.log('📅 URL에서 날짜 설정:', dateParam);
+      }
+      
+      // school_code는 로그인 후 처리하기 위해 임시 저장
+      if (schoolCodeParam) {
+        console.log('🏫 URL에서 school_code 감지, 로그인 후 처리 예정:', schoolCodeParam);
+        // sessionStorage에 임시 저장
+        sessionStorage.setItem('pending_school_code', schoolCodeParam);
+      }
+    } catch (err) {
+      console.error('URL 파라미터 파싱 오류:', err);
+    }
+  }, []); // 의존성 제거하여 즉시 실행
+
   // 사용자 인증 상태 체크 - 배틀 페이지 접근 제어
   useEffect(() => {
     // SSR 환경에서는 아무것도 하지 않음
@@ -86,6 +112,14 @@ export default function BattlePage() {
       return;
     }
     
+    // 로그인 완료 후 pending school_code 처리
+    const pendingSchoolCode = sessionStorage.getItem('pending_school_code');
+    if (pendingSchoolCode && user) {
+      console.log('🔗 로그인 완료, pending school_code 처리:', pendingSchoolCode);
+      handleUrlSchoolCode(pendingSchoolCode);
+      sessionStorage.removeItem('pending_school_code');
+    }
+    
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
 
@@ -95,28 +129,6 @@ export default function BattlePage() {
       setSelectedRegion(userSchool.region);
     }
   }, [userSchool, selectedRegion]);
-
-  // URL의 date와 school_code 파라미터를 상태에 반영 (초기 1회)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const dateParam = params.get('date');
-      const schoolCodeParam = params.get('school_code');
-      
-      if (dateParam) {
-        setSelectedDate(dateParam);
-      }
-      
-      // school_code 파라미터가 있으면 해당 학교를 관심학교로 설정
-      if (schoolCodeParam && user) {
-        console.log('🔗 URL에서 school_code 파라미터 감지:', schoolCodeParam);
-        handleUrlSchoolCode(schoolCodeParam);
-      }
-    } catch (err) {
-      console.error('URL 파라미터 파싱 오류:', err);
-    }
-  }, [user]); // user 의존성 추가
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
