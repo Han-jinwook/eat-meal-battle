@@ -84,7 +84,6 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
         school_code: item.meal_menus.school_code,
         school_name: schoolInfo.school_name || '',
         region: schoolInfo.region || '',
-        item_name: item.item_name,
         final_avg_rating: item.menu_item_rating_stats.avg_rating,
         final_rating_count: item.menu_item_rating_stats.rating_count,
         daily_rank: index + 1
@@ -228,7 +227,6 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
       school_code: item.school_code,
       school_name: item.school_name,
       region: item.region,
-      item_name: item.item_name,
       final_avg_rating: item.final_avg_rating,
       final_rating_count: item.total_count,
       monthly_rank: index + 1
