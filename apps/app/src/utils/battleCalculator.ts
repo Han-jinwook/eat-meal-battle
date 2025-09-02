@@ -11,6 +11,8 @@ interface MenuBattleResult {
   final_rating_count: number;
   daily_rank: number;
   national_rank?: number;
+  region_rank?: number;
+  school_name?: string;
 }
 
 interface MonthlyBattleResult {
@@ -22,6 +24,8 @@ interface MonthlyBattleResult {
   final_rating_count: number;
   monthly_rank: number;
   national_rank?: number;
+  region_rank?: number;
+  school_name?: string;
 }
 
 interface MealBattleResult {
@@ -31,6 +35,7 @@ interface MealBattleResult {
   rating_count: number;
   daily_rank: number;
   national_rank?: number;
+  school_name?: string;
 }
 
 interface MealMonthlyBattleResult {
@@ -41,6 +46,7 @@ interface MealMonthlyBattleResult {
   final_rating_count: number;
   monthly_rank: number;
   national_rank?: number;
+  school_name?: string;
 }
 
 /**
@@ -138,10 +144,10 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
     });
   }
   
-  // 5. 학교 정보 조회 (지역별 순위 계산용)
+  // 5. 학교 정보 조회 (지역별 순위 계산용 + school_name 필드 추가)
   const { data: schoolInfos, error: schoolError } = await supabase
     .from('school_infos')
-    .select('school_code, region')
+    .select('school_code, region, school_name')
     .in('school_code', [...new Set(battleResults.map(r => r.school_code))]);
     
   if (schoolError) {
@@ -162,9 +168,14 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
       national_rank: index + 1
     }));
     
-  // 7. 지역별 순위 계산
+  // 7. 지역별 순위 계산 및 학교명 매핑
   const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
     acc[school.school_code] = school.region;
+    return acc;
+  }, {} as Record<string, string>) || {};
+  
+  const schoolNameMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.school_name;
     return acc;
   }, {} as Record<string, string>) || {};
   
@@ -178,7 +189,7 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
     return acc;
   }, {} as Record<string, typeof battleResultsWithNationalRank>);
   
-  // 각 지역별로 순위 계산
+  // 각 지역별로 순위 계산 및 school_name 매핑
   const finalResults = [...battleResultsWithNationalRank];
   for (const [region, regionResults] of Object.entries(regionGroups)) {
     const sortedRegionResults = regionResults.sort((a, b) => {
@@ -196,7 +207,8 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
       if (finalIndex !== -1) {
         finalResults[finalIndex] = {
           ...finalResults[finalIndex],
-          region_rank: index + 1
+          region_rank: index + 1,
+          school_name: schoolNameMap[result.school_code] || null
         };
       }
     });
@@ -298,7 +310,23 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
     }
   }
   
-  // 5. 월별 순위 계산
+  // 4. 학교 정보 조회 (school_name 및 지역별 순위 계산용)
+  const { data: schoolInfos, error: schoolError } = await supabase
+    .from('school_infos')
+    .select('school_code, school_name, region')
+    .in('school_code', [...new Set(monthlyResults.map(r => r.school_code))]);
+    
+  if (schoolError) {
+    console.error('학교 정보 조회 실패:', schoolError);
+    return { success: false, error: schoolError };
+  }
+  
+  const schoolNameMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.school_name;
+    return acc;
+  }, {} as Record<string, string>) || {};
+
+  // 5. 월별 순위 계산 및 school_name 추가
   monthlyResults.sort((a, b) => {
     if (b.final_avg_rating !== a.final_avg_rating) {
       return b.final_avg_rating - a.final_avg_rating;
@@ -308,18 +336,8 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
   
   monthlyResults.forEach((result, index) => {
     result.monthly_rank = index + 1;
+    (result as any).school_name = schoolNameMap[result.school_code] || null;
   });
-  
-  // 6. 학교 정보 조회 (지역별 순위 계산용)
-  const { data: schoolInfos, error: schoolError } = await supabase
-    .from('school_infos')
-    .select('school_code, region')
-    .in('school_code', [...new Set(monthlyResults.map(r => r.school_code))]);
-    
-  if (schoolError) {
-    console.error('학교 정보 조회 실패:', schoolError);
-    return { success: false, error: schoolError };
-  }
   
   // 7. 전국 등수 계산
   const monthlyResultsWithNationalRank = monthlyResults
@@ -334,7 +352,7 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
       national_rank: index + 1
     }));
     
-  // 8. 지역별 순위 계산
+  // 8. 지역별 순위 계산용 region 매핑
   const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
     acc[school.school_code] = school.region;
     return acc;
@@ -368,7 +386,8 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
       if (finalIndex !== -1) {
         finalMonthlyResults[finalIndex] = {
           ...finalMonthlyResults[finalIndex],
-          region_rank: index + 1
+          region_rank: index + 1,
+          school_name: schoolNameMap[result.school_code] || null
         };
       }
     });
@@ -435,14 +454,31 @@ export async function calculateDailyMealBattle(targetDate?: string, supabaseClie
     return b.rating_count - a.rating_count;
   });
   
-  // 3. 순위 매기기
+  // 3. 학교 정보 조회 (school_name 필드 추가용)
+  const { data: schoolInfos, error: schoolError } = await supabase
+    .from('school_infos')
+    .select('school_code, school_name')
+    .in('school_code', [...new Set(sortedStats.map(s => s.school_code))]);
+    
+  if (schoolError) {
+    console.error('학교 정보 조회 실패:', schoolError);
+    return { success: false, error: schoolError };
+  }
+  
+  const schoolNameMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.school_name;
+    return acc;
+  }, {} as Record<string, string>) || {};
+
+  // 4. 순위 매기기 (school_name 포함)
   const battleResults: MealBattleResult[] = sortedStats.map((stat, index) => ({
     school_code: stat.school_code,
     battle_date: date,
     avg_rating: Number(stat.avg_rating),
     rating_count: stat.rating_count,
     daily_rank: index + 1,
-    national_rank: index + 1 // 급식 배틀은 전국 단위이므로 동일
+    national_rank: index + 1, // 급식 배틀은 전국 단위이므로 동일
+    school_name: schoolNameMap[stat.school_code] || null
   }));
   
   console.log(`📊 생성된 급식 배틀 결과 개수: ${battleResults.length}개`);
@@ -519,7 +555,23 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   
   const monthlyResults: MealMonthlyBattleResult[] = [];
   
-  // 3. 각 학교별로 월별 평균 계산
+  // 3. 학교 정보 조회 (school_name 필드 추가용)
+  const { data: schoolInfos, error: schoolError } = await supabase
+    .from('school_infos')
+    .select('school_code, school_name')
+    .in('school_code', [...new Set(mealStats.map(s => s.school_code))]);
+    
+  if (schoolError) {
+    console.error('학교 정보 조회 실패:', schoolError);
+    return { success: false, error: schoolError };
+  }
+  
+  const schoolNameMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.school_name;
+    return acc;
+  }, {} as Record<string, string>) || {};
+
+  // 4. 각 학교별로 월별 평균 계산
   for (const [schoolCode, stats] of Object.entries(schoolGroups)) {
     const totalRating = stats.reduce((sum, stat) => sum + (stat.avg_rating * stat.rating_count), 0);
     const totalCount = stats.reduce((sum, stat) => sum + stat.rating_count, 0);
@@ -531,12 +583,13 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
         battle_month: currentMonth,
         final_avg_rating: Number((totalRating / totalCount).toFixed(2)),
         final_rating_count: totalCount,
-        monthly_rank: 0 // 임시값, 나중에 계산
+        monthly_rank: 0, // 임시값, 나중에 계산
+        school_name: schoolNameMap[schoolCode] || null
       });
     }
   }
   
-  // 4. 월별 순위 계산
+  // 5. 월별 순위 계산
   monthlyResults.sort((a, b) => {
     if (b.final_avg_rating !== a.final_avg_rating) {
       return b.final_avg_rating - a.final_avg_rating;
@@ -551,7 +604,7 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   
   console.log(`📊 생성된 월별 급식 배틀 결과 개수: ${monthlyResults.length}개`);
   
-  // 5. 기존 데이터 삭제 후 새 데이터 삽입
+  // 6. 기존 데이터 삭제 후 새 데이터 삽입
   const { error: deleteError } = await supabase
     .from('meal_battle_monthly')
     .delete()
