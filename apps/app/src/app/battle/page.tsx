@@ -674,23 +674,10 @@ export default function BattlePage() {
         throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
       }
       
-      // Plan A: 데이터가 없으면 자동 집계 계산
+      // 데이터가 없으면 빈 배열로 설정 (자동 집계 제거)
       if (!result.data || result.data.length === 0) {
-        console.log('🔄 배틀 데이터가 없어 자동 집계 계산 시작...');
-        await triggerBattleCalculation(currentSchool.school_code, viewMode, selectedDate, selectedMonth);
-        
-        // 집계 후 다시 조회
-        console.log('🔄 집계 후 데이터 재조회...');
-        const retryResponse = await fetch(apiUrl);
-        const retryResult = await retryResponse.json();
-        
-        if (retryResponse.ok && retryResult.data) {
-          setBattleData(retryResult.data);
-          console.log('✅ 자동 집계 후 데이터 조회 성공:', retryResult.data.length);
-        } else {
-          setBattleData([]);
-          console.log('⚠️ 자동 집계 후에도 데이터 없음');
-        }
+        console.log('⚠️ 배틀 데이터가 없음 - 빈 상태로 표시');
+        setBattleData([]);
       } else {
         setBattleData(result.data);
       }
