@@ -1312,7 +1312,12 @@ export default function BattlePage() {
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
-                          {sortOrder === 'asc' ? (viewMode === 'daily' ? item.daily_rank || (index + 1) : item.monthly_rank || item.region_rank || (index + 1)) : battleData.length - index}
+                          {sortOrder === 'asc' ? (
+                            // 지역 선택 시 region_rank 우선 표시
+                            selectedRegion && selectedRegion !== '전국' && selectedRegion !== '우리학교' 
+                              ? item.region_rank || (index + 1)
+                              : (viewMode === 'daily' ? item.daily_rank || (index + 1) : item.monthly_rank || (index + 1))
+                          ) : battleData.length - index}
                         </div>
                         <div className="text-center text-gray-700 text-sm font-medium">
                           {item.school_name || '-'}
