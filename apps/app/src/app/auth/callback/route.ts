@@ -7,7 +7,21 @@ export async function GET(request: NextRequest) {
   console.info('🚀 OAuth 콜백 라우트 시작')
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const error_code = requestUrl.searchParams.get('error_code')
+  const error_description = requestUrl.searchParams.get('error_description')
   let redirectUrl = '/'
+
+  // OAuth 오류 처리
+  if (error_code) {
+    console.error('❌ OAuth 오류 발생:', { error_code, error_description })
+    
+    if (error_code === 'flow_state_not_found') {
+      console.error('🔄 Flow state not found - OAuth 세션이 만료되었거나 손실됨')
+      return NextResponse.redirect(new URL('/login?error=session_expired', request.url))
+    }
+    
+    return NextResponse.redirect(new URL('/login?error=oauth_error', request.url))
+  }
 
   try {
     if (code) {
@@ -87,11 +101,17 @@ export async function GET(request: NextRequest) {
         );
         console.info('🔍 birth/age/year 관련 키들:', birthKeys);
         
+        // Provider 확인
+        const provider = data.session.user.app_metadata?.provider;
+        console.info('🔍 Provider 확인:', provider);
+        
         // 카카오 사용자 정보 API 직접 호출 (생년 정보 획득)
         let kakaoUserInfo = null;
-        if (data.session.provider_token) {
+        if (provider === 'kakao' && data.session.provider_token) {
           try {
             console.info('🔍 카카오 사용자 정보 API 호출 시작...');
+            console.info('🔍 사용할 토큰:', data.session.provider_token?.substring(0, 20) + '...');
+            
             const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
               headers: {
                 'Authorization': `Bearer ${data.session.provider_token}`,
@@ -103,20 +123,22 @@ export async function GET(request: NextRequest) {
               kakaoUserInfo = await kakaoResponse.json();
               console.info('✅ 카카오 사용자 정보 API 응답:', JSON.stringify(kakaoUserInfo, null, 2));
             } else {
-              console.error('❌ 카카오 사용자 정보 API 오류:', kakaoResponse.status, kakaoResponse.statusText);
+              const errorText = await kakaoResponse.text();
+              console.error('❌ 카카오 사용자 정보 API 오류:', {
+                status: kakaoResponse.status,
+                statusText: kakaoResponse.statusText,
+                errorBody: errorText
+              });
             }
           } catch (apiError) {
             console.error('❌ 카카오 API 호출 실패:', apiError);
           }
-        } else {
+        } else if (provider === 'kakao') {
           console.info('⚠️ provider_token이 없어서 카카오 API 호출 불가');
         }
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
-        const provider = data.session.user.app_metadata?.provider;
-        
-        console.info('🔍 Provider 확인:', provider);
         
         if (provider === 'kakao') {
           // 카카오에서 생년월일 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
@@ -137,25 +159,46 @@ export async function GET(request: NextRequest) {
             console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
           }
         } else if (provider === 'google') {
-          // 구글에서 생년월일 정보 추출 (여러 가능한 필드명 확인)
+          console.info('🔍 구글 OAuth 생일 데이터 디버깅 시작');
+          console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
+          console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
+          
+          // 모든 birth 관련 키 검색
+          const allKeys = [
+            ...Object.keys(rawProviderData || {}),
+            ...Object.keys(userMetadata || {})
+          ];
+          const birthRelatedKeys = allKeys.filter(key => 
+            key.toLowerCase().includes('birth') || 
+            key.toLowerCase().includes('date') ||
+            key.toLowerCase().includes('age') ||
+            key.toLowerCase().includes('year')
+          );
+          console.info('🔍 구글 birth/date/age/year 관련 키들:', birthRelatedKeys);
+          
           const possibleBirthFields = [
             rawProviderData?.birthdate,
             rawProviderData?.birthday, 
+            rawProviderData?.date_of_birth,
+            rawProviderData?.birth_date,
             userMetadata?.birthdate,
             userMetadata?.birthday,
-            userMetadata?.birth_date
+            userMetadata?.birth_date,
+            userMetadata?.date_of_birth
           ];
+          
+          console.info('🔍 구글 생일 필드 후보들:', possibleBirthFields);
           
           for (const field of possibleBirthFields) {
             if (field) {
               birthDate = field;
-              console.info('✅ 구글에서 생년월일 정보 받음:', { field, birthdate: birthDate });
+              console.info('✅ 구글에서 생일 데이터 발견:', { field, birthDate });
               break;
             }
           }
           
           if (!birthDate) {
-            console.info('❌ 구글에서 생년월일 정보를 찾을 수 없음');
+            console.warn('⚠️ 구글 OAuth에서 생일 데이터를 찾을 수 없음');
             console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
             console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
           }
