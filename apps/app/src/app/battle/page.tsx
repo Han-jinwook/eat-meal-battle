@@ -386,68 +386,59 @@ export default function BattlePage() {
       }, 4000);
     };
 
-    // AI 앱 전송 함수 - 3중 보장 방식
+    // AI 앱 전송 함수 - 딥링크 + 클립보드 방식
     const sendToAIApp = async (appUrl: string, appName: string, prompt: string, deepLink: string, isIOS: boolean, clipboardReady: boolean) => {
-      console.log(`🎯 ${appName} 전송 시작 (iOS: ${isIOS}, 클립보드: ${clipboardReady})`);
+      console.log(`🎯 ${appName} 전송 시작 (클립보드: ${clipboardReady})`);
       
       try {
-        // 1순위: iOS Share API (가장 강력한 자동 전송)
-        if (isIOS && navigator.share) {
-          console.log(`📱 iOS Share API 시도: ${appName}`);
-          try {
-            await navigator.share({
-              title: `AI 급식분석 - ${appName}`,
-              text: prompt
-            });
-            showToast(`🚀 ${appName} 자동 전송!`, 'iOS 공유로 전송됨', 'green');
-            return;
-          } catch (shareError) {
-            console.warn('iOS Share API 실패, 딥링크로 폴백:', shareError);
-          }
-        }
-        
-        // 2순위: 딥링크 직접 전송 (중간 길이 텍스트)
-        if (deepLink && prompt.length < 2000) {
-          console.log(`🔗 딥링크 시도: ${appName}`);
+        // 1순위: 딥링크 직접 전송 (바로 앱 열기)
+        if (deepLink) {
+          console.log(`🔗 딥링크로 ${appName} 앱 열기`);
           try {
             const encodedPrompt = encodeURIComponent(prompt);
             window.location.href = `${deepLink}?text=${encodedPrompt}`;
             
-            // 딥링크 성공 토스트
-            showToast(`🚀 ${appName} 딥링크 전송!`, '앱으로 자동 이동됨', 'green');
-            
             // 딥링크 실패 대비 웹 폴백 (1.5초 후)
             setTimeout(() => {
               window.open(appUrl, '_blank');
-              if (clipboardReady) {
-                showToast(`📋 ${appName} 웹 폴백`, '클립보드에서 붙여넣기 하세요', 'blue');
-              }
             }, 1500);
             return;
           } catch (deepLinkError) {
-            console.warn('딥링크 실패, GET 파라미터로 폴백:', deepLinkError);
+            console.warn('딥링크 실패, 웹으로 폴백:', deepLinkError);
           }
         }
         
-        // 3순위: GET 파라미터 (짧은 텍스트)
+        // 2순위: GET 파라미터 (짧은 텍스트)
         if (prompt.length < 1000) {
           console.log(`✅ GET 파라미터 방식: ${appName}`);
           try {
             const encodedPrompt = encodeURIComponent(prompt);
             window.open(`${appUrl}?q=${encodedPrompt}`, '_blank');
-            showToast(`🚀 ${appName} 자동 전송!`, 'URL 파라미터로 전송됨', 'green');
             return;
           } catch (getError) {
             console.warn('GET 파라미터 실패, 클립보드로 폴백:', getError);
           }
         }
         
-        // 4순위: 클립보드 + 앱 열기 (최종 폴백)
+        // 3순위: 클립보드 + 앱 열기 (최종 폴백)
         window.open(appUrl, '_blank');
-        const message = clipboardReady 
-          ? `클립보드에서 붙여넣기 하세요` 
-          : `수동으로 분석 요청해주세요`;
-        showToast(`📋 ${appName} 열림!`, message, clipboardReady ? 'blue' : 'orange');
+        
+        // iOS 클립보드 실패 대비: 텍스트 선택 가능한 모달 표시
+        if (!clipboardReady && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+          const modal = document.createElement('div');
+          modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+          `;
+          modal.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
+              <h3 style="margin: 0 0 15px 0; color: #333;">📋 텍스트를 복사하세요</h3>
+              <textarea readonly style="width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: none;">${prompt}</textarea>
+              <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 15px; padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 6px; font-size: 16px;">닫기</button>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
         
       } catch (error) {
         console.warn(`❌ ${appName} 전송 실패:`, error);
