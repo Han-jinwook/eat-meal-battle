@@ -450,36 +450,29 @@ export default function MealImageUploader({
 
   // 실시간 이미지 업데이트를 위한 Supabase 구독 설정
   useEffect(() => {
-    if (!schoolCode) return;
+    const currentMealId = mealId || mealMenuData?.id;
+    if (!currentMealId) return;
     
-    console.log('실시간 이미지 구독 설정:', schoolCode);
+    console.log('실시간 이미지 구독 설정:', currentMealId);
     
-    // meal_images 테이블의 변경사항 감지
+    // 특정 meal_id의 meal_images 변경사항만 구독 (데이터베이스 레벨 필터링)
     const channel = supabase
-      .channel(`meal-images-${schoolCode}`)
+      .channel(`meal-images-${currentMealId}`)
       .on('postgres_changes', 
           { 
             event: '*', 
             schema: 'public', 
-            table: 'meal_images'
+            table: 'meal_images',
+            filter: `meal_id=eq.${currentMealId}`
           }, 
           (payload) => {
             console.log('이미지 실시간 업데이트 수신:', payload);
-            
-            // 해당 학교의 이미지 변경사항만 처리
-            const isRelevantToCurrentSchool = 
-              (payload.old && payload.old.school_code === schoolCode) ||
-              (payload.new && payload.new.school_code === schoolCode);
-            
-            if (!isRelevantToCurrentSchool) {
-              console.log('다른 학교 이미지 변경사항, 무시');
-              return;
-            }
+            console.log('meal_id:', currentMealId, '의 이미지 변경사항 감지');
             
             // 이미지 변경사항 처리
             if (payload.eventType === 'DELETE') {
               // 이미지가 삭제된 경우 (관리자가 사진삭제한 경우)
-              console.log('현재 학교 이미지 삭제 감지, 이미지 상태 초기화');
+              console.log('이미지 삭제 감지, 이미지 상태 초기화');
               setUploadedImage(null);
               setImageStatus('none');
               setHasReported(false);
@@ -487,7 +480,7 @@ export default function MealImageUploader({
               window.location.reload();
             } else if (payload.new && (payload.new.status === 'approved' || 
                 (payload.old && payload.old.status !== 'approved' && payload.new.status === 'approved'))) {
-              console.log('현재 학교 승인된 이미지 변경 감지, 이미지 다시 가져오기');
+              console.log('승인된 이미지 변경 감지, 이미지 다시 가져오기');
               fetchApprovedImage();
             }
           }
@@ -496,10 +489,10 @@ export default function MealImageUploader({
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
-      console.log('이미지 실시간 구독 해제:', schoolCode);
+      console.log('이미지 실시간 구독 해제:', currentMealId);
       supabase.removeChannel(channel);
     };
-  }, [schoolCode, supabase, fetchApprovedImage]);
+  }, [mealId, mealMenuData?.id, supabase, fetchApprovedImage]);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
