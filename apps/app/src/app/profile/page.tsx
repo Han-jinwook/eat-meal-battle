@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import BirthConsentModal from '@/components/BirthConsentModal'
-import NotificationToggle from '@/components/NotificationToggle'
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
@@ -379,8 +378,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 푸시 알림 설정 */}
-        <NotificationToggle userId={user?.id || ''} />
 
         {/* 학교 정보 - 간결하게 표시 */}
         <div className="mb-8 border-t border-b py-4">

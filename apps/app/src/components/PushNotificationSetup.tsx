@@ -156,17 +156,9 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      const permission = await Notification.requestPermission();
-      // 알림 권한 결과 확인
-      setNotificationStatus(permission);
-      
-      if (permission === 'granted') {
-        await handleGetToken();
-        setShowSetup(false); // 권한 허용 후 UI 숨김
-      } else if (permission === 'denied') {
-        // 알림 권한이 거부됨 - 브라우저 설정에서 수동 허용 필요
-        setShowSetup(false); // 권한 거부 후 UI 숨김
-      }
+      // 알림 권한 요청 제거 - 기본 상태 유지
+      setNotificationStatus('default');
+      setShowSetup(false); // UI 숨김
     } catch (error) {
       console.error('알림 권한 요청 실패:', error);
       // Android에서 권한 요청 실패 시 추가 안내

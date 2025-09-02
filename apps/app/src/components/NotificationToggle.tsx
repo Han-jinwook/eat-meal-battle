@@ -97,30 +97,9 @@ export default function NotificationToggle({ userId }: NotificationToggleProps) 
         return;
       }
 
-      const permission = await Notification.requestPermission();
-      setNotificationStatus(permission);
-
-      if (permission === 'granted') {
-        setNotificationEnabled(true);
-        
-        // FCM 토큰 가져오기 및 저장
-        try {
-          const token = await fetchToken((token: string) => {
-            saveFCMToken(token);
-          });
-          
-          if (token) {
-            await saveFCMToken(token);
-          }
-        } catch (error) {
-          console.error('FCM 토큰 처리 실패:', error);
-        }
-      } else {
-        setNotificationEnabled(false);
-        if (permission === 'denied') {
-          alert('알림이 차단되었습니다. 브라우저 설정에서 알림을 허용해주세요.');
-        }
-      }
+      // 알림 권한 요청 제거 - 기본 상태만 토글
+      setNotificationEnabled(!notificationEnabled);
+      setNotificationStatus('default');
     } catch (error) {
       console.error('알림 권한 요청 실패:', error);
       alert('알림 설정 중 오류가 발생했습니다.');

@@ -68,29 +68,9 @@ export const fetchToken = async (setTokenFound: (token: string) => void) => {
       const firebaseApp = initializeFirebase();
       const messaging = getMessaging(firebaseApp);
       
-      // 권한 요청
-      const permission = await Notification.requestPermission();
-      
-      if (permission === 'granted') {
-        console.log('알림 권한이 허용되었습니다.');
-        
-        // Firebase의 VAPID 키 (Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징에서 확인)
-        const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-        
-        // 토큰 가져오기
-        const currentToken = await getToken(messaging, { vapidKey });
-        
-        if (currentToken) {
-          // 토큰을 서버에 저장하거나 처리
-          console.log('FCM 토큰:', currentToken);
-          setTokenFound(currentToken);
-          return currentToken;
-        } else {
-          console.log('FCM 토큰을 받을 수 없습니다. 알림 권한을 확인하세요.');
-        }
-      } else {
-        console.log('알림 권한이 거부되었습니다.');
-      }
+      // 알림 권한 요청 제거 - FCM 토큰 기능 비활성화
+      console.log('알림 권한 요청이 비활성화되었습니다.');
+      return null;
     }
   } catch (error) {
     console.error('FCM 토큰 검색 중 오류 발생:', error);
