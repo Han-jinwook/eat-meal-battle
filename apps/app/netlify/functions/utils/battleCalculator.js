@@ -5,10 +5,8 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-
-
 /**
- * 🏆 일별 메뉴 배틀 계산 및 저장
+ * 🏆 일별 메뉴 배틀 계산 및 저장 (메뉴 아이템별)
  */
 async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) {
   const supabase = supabaseClient || createClient(
@@ -20,7 +18,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
   console.log(`🏆 일별 메뉴 배틀 계산 시작: ${date}`);
   
   try {
-    // 해당 날짜의 메뉴 아이템들과 평점 정보 조회
+    // 해당 날짜의 메뉴 아이템들과 평점 정보 조회 (school_infos 조인 제거)
     let query = supabase
       .from('meal_menu_items')
       .select(`
@@ -33,11 +31,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
         meal_menus!meal_menu_items_meal_id_fkey!inner(
           id,
           school_code,
-          meal_date,
-          school_infos!meal_menus_school_code_fkey(
-            school_name,
-            region
-          )
+          meal_date
         )
       `)
       .eq('meal_menus.meal_date', date)
@@ -58,6 +52,21 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
       console.log('해당 날짜에 평가된 메뉴가 없습니다.');
       return { success: true, data: [] };
     }
+
+    // 학교 정보 별도 조회
+    const schoolCodes = [...new Set(menuItems.map(item => item.meal_menus.school_code))];
+    const { data: schoolInfos } = await supabase
+      .from('school_infos')
+      .select('school_code, school_name, region')
+      .in('school_code', schoolCodes);
+    
+    const schoolMap = {};
+    schoolInfos?.forEach(school => {
+      schoolMap[school.school_code] = {
+        school_name: school.school_name,
+        region: school.region
+      };
+    });
     
     // 평점 기준으로 정렬 (평점 높은 순, 평점 수 많은 순)
     const sortedItems = menuItems.sort((a, b) => {
@@ -67,17 +76,20 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
     });
     
     // 순위 계산 및 결과 생성
-    const results = sortedItems.map((item, index) => ({
-      menu_item_id: item.id,
-      battle_date: date,
-      school_code: item.meal_menus.school_code,
-      school_name: item.meal_menus.school_infos?.school_name || '',
-      region: item.meal_menus.school_infos?.region || '',
-      item_name: item.item_name,
-      final_avg_rating: item.menu_item_rating_stats.avg_rating,
-      final_rating_count: item.menu_item_rating_stats.rating_count,
-      daily_rank: index + 1
-    }));
+    const results = sortedItems.map((item, index) => {
+      const schoolInfo = schoolMap[item.meal_menus.school_code] || {};
+      return {
+        menu_item_id: item.id,
+        battle_date: date,
+        school_code: item.meal_menus.school_code,
+        school_name: schoolInfo.school_name || '',
+        region: schoolInfo.region || '',
+        item_name: item.item_name,
+        final_avg_rating: item.menu_item_rating_stats.avg_rating,
+        final_rating_count: item.menu_item_rating_stats.rating_count,
+        daily_rank: index + 1
+      };
+    });
     
     // DB에 결과 저장
     if (results.length > 0) {
@@ -88,7 +100,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
         });
         
       if (upsertError) {
-        console.error('일별 배틀 결과 저장 실패:', upsertError);
+        console.error('일별 메뉴 배틀 결과 저장 실패:', upsertError);
         return { success: false, error: upsertError };
       }
       
@@ -104,7 +116,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
 }
 
 /**
- * 🏆 월별 메뉴 배틀 계산 및 저장
+ * 🏆 월별 메뉴 배틀 계산 및 저장 (메뉴 아이템별)
  */
 async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, supabaseClient) {
   const supabase = supabaseClient || createClient(
@@ -118,9 +130,9 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
   console.log(`🏆 월별 메뉴 배틀 계산 시작: ${year}년 ${month}월`);
   
   try {
-    // 해당 월의 메뉴 아이템들과 평점 정보 조회
+    // 해당 월의 메뉴 아이템들과 평점 정보 조회 (school_infos 조인 제거)
     const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // 해당 월의 마지막 날
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
     
     let query = supabase
       .from('meal_menu_items')
@@ -134,11 +146,7 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
         meal_menus!meal_menu_items_meal_id_fkey!inner(
           id,
           school_code,
-          meal_date,
-          school_infos!meal_menus_school_code_fkey(
-            school_name,
-            region
-          )
+          meal_date
         )
       `)
       .gte('meal_menus.meal_date', startDate)
@@ -160,17 +168,33 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
       console.log(`${year}년 ${month}월에 평가된 메뉴가 없습니다.`);
       return { success: true, data: [] };
     }
+
+    // 학교 정보 별도 조회
+    const schoolCodes = [...new Set(menuItems.map(item => item.meal_menus.school_code))];
+    const { data: schoolInfos } = await supabase
+      .from('school_infos')
+      .select('school_code, school_name, region')
+      .in('school_code', schoolCodes);
+    
+    const schoolMap = {};
+    schoolInfos?.forEach(school => {
+      schoolMap[school.school_code] = {
+        school_name: school.school_name,
+        region: school.region
+      };
+    });
     
     // 메뉴 아이템별로 월간 집계
     const itemStats = {};
     menuItems.forEach(item => {
       const key = `${item.id}_${item.meal_menus.school_code}`;
       if (!itemStats[key]) {
+        const schoolInfo = schoolMap[item.meal_menus.school_code] || {};
         itemStats[key] = {
           menu_item_id: item.id,
           school_code: item.meal_menus.school_code,
-          school_name: item.meal_menus.school_infos?.school_name || '',
-          region: item.meal_menus.school_infos?.region || '',
+          school_name: schoolInfo.school_name || '',
+          region: schoolInfo.region || '',
           item_name: item.item_name,
           total_rating: 0,
           total_count: 0,
@@ -215,7 +239,7 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
       const { error: upsertError } = await supabase
         .from('menu_battle_monthly')
         .upsert(results, {
-          onConflict: 'menu_item_id,battle_year,battle_month'
+          onConflict: 'menu_item_id,battle_year,battle_month,school_code'
         });
         
       if (upsertError) {
