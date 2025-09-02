@@ -163,44 +163,93 @@ export async function GET(request: NextRequest) {
           console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
           console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
           
-          // 모든 birth 관련 키 검색
-          const allKeys = [
-            ...Object.keys(rawProviderData || {}),
-            ...Object.keys(userMetadata || {})
-          ];
-          const birthRelatedKeys = allKeys.filter(key => 
-            key.toLowerCase().includes('birth') || 
-            key.toLowerCase().includes('date') ||
-            key.toLowerCase().includes('age') ||
-            key.toLowerCase().includes('year')
-          );
-          console.info('🔍 구글 birth/date/age/year 관련 키들:', birthRelatedKeys);
-          
-          const possibleBirthFields = [
-            rawProviderData?.birthdate,
-            rawProviderData?.birthday, 
-            rawProviderData?.date_of_birth,
-            rawProviderData?.birth_date,
-            userMetadata?.birthdate,
-            userMetadata?.birthday,
-            userMetadata?.birth_date,
-            userMetadata?.date_of_birth
-          ];
-          
-          console.info('🔍 구글 생일 필드 후보들:', possibleBirthFields);
-          
-          for (const field of possibleBirthFields) {
-            if (field) {
-              birthDate = field;
-              console.info('✅ 구글에서 생일 데이터 발견:', { field, birthDate });
-              break;
+          // 구글 People API 직접 호출 시도
+          if (data.session.provider_token) {
+            try {
+              console.info('🔍 구글 People API 호출 시작...');
+              console.info('🔍 사용할 토큰:', data.session.provider_token?.substring(0, 20) + '...');
+              
+              const googleResponse = await fetch('https://people.googleapis.com/v1/people/me?personFields=birthdays', {
+                headers: {
+                  'Authorization': `Bearer ${data.session.provider_token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (googleResponse.ok) {
+                const googleUserInfo = await googleResponse.json();
+                console.info('✅ 구글 People API 응답:', JSON.stringify(googleUserInfo, null, 2));
+                
+                // 생일 데이터 추출
+                if (googleUserInfo?.birthdays && googleUserInfo.birthdays.length > 0) {
+                  for (const birthday of googleUserInfo.birthdays) {
+                    if (birthday?.date?.year && birthday?.date?.month && birthday?.date?.day) {
+                      const year = birthday.date.year;
+                      const month = String(birthday.date.month).padStart(2, '0');
+                      const day = String(birthday.date.day).padStart(2, '0');
+                      birthDate = `${year}-${month}-${day}`;
+                      console.info('✅ 구글 People API에서 생일 데이터 발견:', { year, month, day, formatted: birthDate });
+                      break;
+                    }
+                  }
+                }
+                
+                if (!birthDate) {
+                  console.warn('⚠️ 구글 People API 응답에 생일 데이터 없음');
+                }
+              } else {
+                const errorText = await googleResponse.text();
+                console.error('❌ 구글 People API 오류:', {
+                  status: googleResponse.status,
+                  statusText: googleResponse.statusText,
+                  errorBody: errorText
+                });
+              }
+            } catch (apiError) {
+              console.error('❌ 구글 People API 호출 실패:', apiError);
             }
+          } else {
+            console.info('⚠️ provider_token이 없어서 구글 People API 호출 불가');
           }
           
+          // 기존 방식도 시도 (fallback)
           if (!birthDate) {
-            console.warn('⚠️ 구글 OAuth에서 생일 데이터를 찾을 수 없음');
-            console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
-            console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
+            const allKeys = [
+              ...Object.keys(rawProviderData || {}),
+              ...Object.keys(userMetadata || {})
+            ];
+            const birthRelatedKeys = allKeys.filter(key => 
+              key.toLowerCase().includes('birth') || 
+              key.toLowerCase().includes('date') ||
+              key.toLowerCase().includes('age') ||
+              key.toLowerCase().includes('year')
+            );
+            console.info('🔍 구글 birth/date/age/year 관련 키들:', birthRelatedKeys);
+            
+            const possibleBirthFields = [
+              rawProviderData?.birthdate,
+              rawProviderData?.birthday, 
+              rawProviderData?.date_of_birth,
+              rawProviderData?.birth_date,
+              userMetadata?.birthdate,
+              userMetadata?.birthday,
+              userMetadata?.birth_date,
+              userMetadata?.date_of_birth
+            ];
+            
+            console.info('🔍 구글 생일 필드 후보들:', possibleBirthFields);
+            
+            for (const field of possibleBirthFields) {
+              if (field) {
+                birthDate = field;
+                console.info('✅ 구글에서 생일 데이터 발견:', { field, birthDate });
+                break;
+              }
+            }
+            
+            if (!birthDate) {
+              console.warn('⚠️ 구글 OAuth에서 생일 데이터를 찾을 수 없음');
+            }
           }
         }
         
