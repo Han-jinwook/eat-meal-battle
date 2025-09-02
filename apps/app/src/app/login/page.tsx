@@ -59,8 +59,18 @@ function LoginContent() {
       
       console.log('구글 로그인 시도 중...')
       
-      // 새로운 재시도 로직 사용 (세션 안정성 개선)
-      const { data, error } = await signInWithRetry('google');
+      // 구글 OAuth에 생일 정보 scope 추가
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+            scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
+          }
+        }
+      });
       
       if (error) {
         console.error('구글 로그인 오류:', error)
@@ -97,7 +107,7 @@ function LoginContent() {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
-            scope: 'profile_nickname,profile_image,account_email,birthyear',
+            scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
             prompt: 'consent',
           },
         },
