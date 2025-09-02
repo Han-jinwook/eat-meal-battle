@@ -450,24 +450,23 @@ export default function MealImageUploader({
 
   // 실시간 이미지 업데이트를 위한 Supabase 구독 설정
   useEffect(() => {
-    const currentMealId = mealId || mealMenuData?.id;
-    if (!currentMealId) return;
+    if (!mealId) return;
     
-    console.log('실시간 이미지 구독 설정:', currentMealId);
+    console.log('실시간 이미지 구독 설정:', mealId);
     
     // 특정 meal_id의 meal_images 변경사항만 구독 (데이터베이스 레벨 필터링)
     const channel = supabase
-      .channel(`meal-images-${currentMealId}`)
+      .channel(`meal-images-${mealId}`)
       .on('postgres_changes', 
           { 
             event: '*', 
             schema: 'public', 
             table: 'meal_images',
-            filter: `meal_id=eq.${currentMealId}`
+            filter: `meal_id=eq.${mealId}`
           }, 
           (payload) => {
             console.log('이미지 실시간 업데이트 수신:', payload);
-            console.log('meal_id:', currentMealId, '의 이미지 변경사항 감지');
+            console.log('meal_id:', mealId, '의 이미지 변경사항 감지');
             
             // 이미지 변경사항 처리
             if (payload.eventType === 'DELETE') {
@@ -489,10 +488,10 @@ export default function MealImageUploader({
     
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
-      console.log('이미지 실시간 구독 해제:', currentMealId);
+      console.log('이미지 실시간 구독 해제:', mealId);
       supabase.removeChannel(channel);
     };
-  }, [mealId, mealMenuData?.id, supabase, fetchApprovedImage]);
+  }, [mealId, supabase, fetchApprovedImage]);
 
   // AI 이미지 생성 처리 함수 (버튼용)
   const handleAiImageGeneration = async () => {
