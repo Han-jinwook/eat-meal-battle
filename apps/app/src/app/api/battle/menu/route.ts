@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
           query = query.ilike('school_name', `%${schoolType}%`);
         }
       } else {
-        // 지역별 데이터: school_name에서 직접 지역 필터링
+        // 지역별 데이터: region 필드로 직접 필터링
         query = supabase
           .from('menu_battle_daily')
           .select(`
@@ -116,9 +116,11 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             daily_rank,
             region_rank,
-            school_name
+            school_name,
+            region
           `)
           .eq('battle_date', date)
+          .eq('region', region)  // 지역 필터링 추가
           .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
           
@@ -186,7 +188,7 @@ export async function GET(request: NextRequest) {
           query = query.ilike('school_name', `%${schoolType}%`);
         }
       } else {
-        // 지역별 데이터: school_name에서 직접 지역 필터링
+        // 지역별 데이터: region 필드로 직접 필터링
         query = supabase
           .from('menu_battle_monthly')
           .select(`
@@ -198,10 +200,12 @@ export async function GET(request: NextRequest) {
             final_rating_count,
             monthly_rank,
             region_rank,
-            school_name
+            school_name,
+            region
           `)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
+          .eq('region', region)  // 지역 필터링 추가
           .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
           
