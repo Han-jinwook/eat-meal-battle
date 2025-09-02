@@ -72,9 +72,11 @@ export async function GET(request: NextRequest) {
         console.info('🔍 OAuth 콜백 실행됨 - 사용자 ID:', data.session.user.id);
         console.info('🔍 OAuth 디버깅 - User metadata:', JSON.stringify(userMetadata, null, 2));
         console.info('🔍 OAuth 디버깅 - Provider data:', rawProviderData);
+        console.info('🔍 OAuth 디버깅 - Provider:', data.session.user.app_metadata?.provider);
         console.info('🔍 OAuth 디버깅 - birthyear 확인:', rawProviderData?.birthyear);
         console.info('🔍 OAuth 디버깅 - birthday 확인:', rawProviderData?.birthday);
-        console.info('🔍 카카오 데이터 모든 키:', Object.keys(rawProviderData || {}));
+        console.info('🔍 OAuth 디버깅 - birthdate 확인:', rawProviderData?.birthdate);
+        console.info('🔍 모든 데이터 키:', Object.keys(rawProviderData || {}));
         
         // 추가 디버깅: 모든 필드 값 출력
         console.info('🔍 카카오 데이터 전체 값:', JSON.stringify(rawProviderData, null, 2));
@@ -112,28 +114,51 @@ export async function GET(request: NextRequest) {
         
         // 생년월일 정보가 있는 경우 처리
         let birthDate = null;
+        const provider = data.session.user.app_metadata?.provider;
         
-        // 카카오에서 생년월일 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
-        if (kakaoUserInfo?.kakao_account?.birthday && kakaoUserInfo?.kakao_account?.birthyear) {
-          const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
-          const kakaoBirthday = kakaoUserInfo.kakao_account.birthday; // MMDD 형식
-          const month = kakaoBirthday.substring(0, 2);
-          const day = kakaoBirthday.substring(2, 4);
-          birthDate = `${kakaoYear}-${month}-${day}`;
-          console.info('✅ 카카오 API에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
-        } else if (kakaoUserInfo?.kakao_account?.birthyear) {
-          const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
-          birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
-          console.info('✅ 카카오 API에서 생년만 받음:', { year: kakaoYear, formatted: birthDate });
-        } else if (rawProviderData?.birthyear) {
-          const kakaoYear = rawProviderData.birthyear;
-          birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
-          console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
-        }
-        // 구글에서 생년월일 정보 추출 (가능한 경우)
-        else if (rawProviderData?.birthdate) {
-          birthDate = rawProviderData.birthdate;
-          console.info('✅ 구글에서 생년월일 정보 받음:', { birthdate: birthDate });
+        console.info('🔍 Provider 확인:', provider);
+        
+        if (provider === 'kakao') {
+          // 카카오에서 생년월일 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
+          if (kakaoUserInfo?.kakao_account?.birthday && kakaoUserInfo?.kakao_account?.birthyear) {
+            const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
+            const kakaoBirthday = kakaoUserInfo.kakao_account.birthday; // MMDD 형식
+            const month = kakaoBirthday.substring(0, 2);
+            const day = kakaoBirthday.substring(2, 4);
+            birthDate = `${kakaoYear}-${month}-${day}`;
+            console.info('✅ 카카오 API에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
+          } else if (kakaoUserInfo?.kakao_account?.birthyear) {
+            const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
+            birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
+            console.info('✅ 카카오 API에서 생년만 받음:', { year: kakaoYear, formatted: birthDate });
+          } else if (rawProviderData?.birthyear) {
+            const kakaoYear = rawProviderData.birthyear;
+            birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
+            console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+          }
+        } else if (provider === 'google') {
+          // 구글에서 생년월일 정보 추출 (여러 가능한 필드명 확인)
+          const possibleBirthFields = [
+            rawProviderData?.birthdate,
+            rawProviderData?.birthday, 
+            userMetadata?.birthdate,
+            userMetadata?.birthday,
+            userMetadata?.birth_date
+          ];
+          
+          for (const field of possibleBirthFields) {
+            if (field) {
+              birthDate = field;
+              console.info('✅ 구글에서 생년월일 정보 받음:', { field, birthdate: birthDate });
+              break;
+            }
+          }
+          
+          if (!birthDate) {
+            console.info('❌ 구글에서 생년월일 정보를 찾을 수 없음');
+            console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
+            console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
+          }
         }
         
         // 생년월일이 있으면 나이 계산 및 학생 여부 판단
