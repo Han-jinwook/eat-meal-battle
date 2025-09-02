@@ -37,8 +37,8 @@ interface MealMonthlyBattleResult {
   school_code: string;
   battle_year: number;
   battle_month: number;
-  avg_rating: number;
-  rating_count: number;
+  final_avg_rating: number;
+  final_rating_count: number;
   monthly_rank: number;
   national_rank?: number;
 }
@@ -529,8 +529,8 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
         school_code: schoolCode,
         battle_year: currentYear,
         battle_month: currentMonth,
-        avg_rating: Number((totalRating / totalCount).toFixed(1)),
-        rating_count: totalCount,
+        final_avg_rating: Number((totalRating / totalCount).toFixed(2)),
+        final_rating_count: totalCount,
         monthly_rank: 0 // 임시값, 나중에 계산
       });
     }
@@ -538,10 +538,10 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   
   // 4. 월별 순위 계산
   monthlyResults.sort((a, b) => {
-    if (b.avg_rating !== a.avg_rating) {
-      return b.avg_rating - a.avg_rating;
+    if (b.final_avg_rating !== a.final_avg_rating) {
+      return b.final_avg_rating - a.final_avg_rating;
     }
-    return b.rating_count - a.rating_count;
+    return b.final_rating_count - a.final_rating_count;
   });
   
   monthlyResults.forEach((result, index) => {
