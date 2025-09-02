@@ -349,15 +349,113 @@ export default function BattlePage() {
         console.log('✅ 월별 메뉴 배틀 계산 완료');
       }
     } catch (error) {
-      console.error('❌ 배틀 계산 트리거 오류:', error);
-      throw error;
+      console.error('배틀 계산 트리거 오류:', error);
     }
   };
 
-  // AI 앱 선택 핸들러
+  // AI 앱 선택 핸들러 - 딥링크 + Share API + 클립보드 3중 보장 방식
   const handleAIAppSelection = async (selectedApp: any) => {
     console.log('🎯 AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
+    
+    // 토스트 메시지 표시 함수
+    const showToast = (title: string, message: string, color: string) => {
+      const toast = document.createElement('div');
+      const bgColor = color === 'green' ? '#10b981' : color === 'orange' ? '#f59e0b' : '#3b82f6';
+      toast.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: ${bgColor}; color: white; padding: 12px 20px; border-radius: 8px;
+        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-width: 300px;
+      `;
+      toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">${color === 'green' ? '🚀' : color === 'orange' ? '⚠️' : '📋'}</span>
+          <div>
+            <div style="font-weight: 600; margin-bottom: 2px;">${title}</div>
+            <div style="font-size: 12px; opacity: 0.9;">${message}</div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 4000);
+    };
+
+    // AI 앱 전송 함수 - 3중 보장 방식
+    const sendToAIApp = async (appUrl: string, appName: string, prompt: string, deepLink: string, isIOS: boolean, clipboardReady: boolean) => {
+      console.log(`🎯 ${appName} 전송 시작 (iOS: ${isIOS}, 클립보드: ${clipboardReady})`);
+      
+      try {
+        // 1순위: iOS Share API (가장 강력한 자동 전송)
+        if (isIOS && navigator.share) {
+          console.log(`📱 iOS Share API 시도: ${appName}`);
+          try {
+            await navigator.share({
+              title: `AI 급식분석 - ${appName}`,
+              text: prompt
+            });
+            showToast(`🚀 ${appName} 자동 전송!`, 'iOS 공유로 전송됨', 'green');
+            return;
+          } catch (shareError) {
+            console.warn('iOS Share API 실패, 딥링크로 폴백:', shareError);
+          }
+        }
+        
+        // 2순위: 딥링크 직접 전송 (중간 길이 텍스트)
+        if (deepLink && prompt.length < 2000) {
+          console.log(`🔗 딥링크 시도: ${appName}`);
+          try {
+            const encodedPrompt = encodeURIComponent(prompt);
+            window.location.href = `${deepLink}?text=${encodedPrompt}`;
+            
+            // 딥링크 성공 토스트
+            showToast(`🚀 ${appName} 딥링크 전송!`, '앱으로 자동 이동됨', 'green');
+            
+            // 딥링크 실패 대비 웹 폴백 (1.5초 후)
+            setTimeout(() => {
+              window.open(appUrl, '_blank');
+              if (clipboardReady) {
+                showToast(`📋 ${appName} 웹 폴백`, '클립보드에서 붙여넣기 하세요', 'blue');
+              }
+            }, 1500);
+            return;
+          } catch (deepLinkError) {
+            console.warn('딥링크 실패, GET 파라미터로 폴백:', deepLinkError);
+          }
+        }
+        
+        // 3순위: GET 파라미터 (짧은 텍스트)
+        if (prompt.length < 1000) {
+          console.log(`✅ GET 파라미터 방식: ${appName}`);
+          try {
+            const encodedPrompt = encodeURIComponent(prompt);
+            window.open(`${appUrl}?q=${encodedPrompt}`, '_blank');
+            showToast(`🚀 ${appName} 자동 전송!`, 'URL 파라미터로 전송됨', 'green');
+            return;
+          } catch (getError) {
+            console.warn('GET 파라미터 실패, 클립보드로 폴백:', getError);
+          }
+        }
+        
+        // 4순위: 클립보드 + 앱 열기 (최종 폴백)
+        window.open(appUrl, '_blank');
+        const message = clipboardReady 
+          ? `클립보드에서 붙여넣기 하세요` 
+          : `수동으로 분석 요청해주세요`;
+        showToast(`📋 ${appName} 열림!`, message, clipboardReady ? 'blue' : 'orange');
+        
+      } catch (error) {
+        console.warn(`❌ ${appName} 전송 실패:`, error);
+        // 최종 폴백: 그냥 앱 열기
+        window.open(appUrl, '_blank');
+        showToast(`📋 ${appName} 열림!`, '수동으로 분석 요청해주세요', 'orange');
+      }
+    };
     
     try {
       // 현재 학교 정보 확인
@@ -366,7 +464,7 @@ export default function BattlePage() {
       
       if (!currentSchool?.school_code) {
         console.error('❌ 학교 정보 없음');
-        alert('학교 정보가 없어 AI 분석을 진행할 수 없습니다.');
+        showToast('❌ 오류', '학교 정보가 없어 AI 분석을 진행할 수 없습니다', 'orange');
         return;
       }
 
@@ -378,7 +476,7 @@ export default function BattlePage() {
       console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
       console.log(`📅 분석 대상: viewMode=${viewMode}, selectedDate=${selectedDate}, selectedMonth=${selectedMonth}`);
       
-      // 로딩 상태 표시 (선택적)
+      // 로딩 상태 표시
       const loadingToast = document.createElement('div');
       loadingToast.innerHTML = '📊 급식 데이터 분석 중...';
       loadingToast.style.cssText = `
@@ -389,7 +487,7 @@ export default function BattlePage() {
       `;
       document.body.appendChild(loadingToast);
 
-      // 1단계: 월간 급식 데이터 집계
+      // 1단계: 급식 데이터 집계
       console.log('📡 1단계: 급식 데이터 집계 API 호출 시작...');
       const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`;
       console.log('🔗 API URL:', apiUrl);
@@ -406,12 +504,9 @@ export default function BattlePage() {
       const analysisData = await analysisResponse.json();
       console.log('✅ 급식 데이터 집계 완료:', analysisData);
       
-      // API 응답 구조 확인 (에러가 있으면 error 필드가 있음)
       if (analysisData.error) {
         throw new Error(analysisData.error || '데이터 집계 중 오류 발생');
       }
-
-      console.log('✅ 급식 데이터 집계 완료:', analysisData);
 
       // 2단계: AI 프롬프트 생성
       console.log('📝 2단계: AI 프롬프트 생성 API 호출 시작...');
@@ -419,408 +514,72 @@ export default function BattlePage() {
         analysis_data: analysisData,
         school_code: currentSchool.school_code
       };
-      console.log('📤 프롬프트 생성 요청 데이터:', promptPayload);
       
       const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(promptPayload)
       });
 
-      console.log('📝 프롬프트 API 응답 상태:', promptResponse.status, promptResponse.statusText);
-
       if (!promptResponse.ok) {
         const errorText = await promptResponse.text();
-        console.error('❌ 프롬프트 API 응답 오류:', errorText);
         throw new Error(`프롬프트 생성 실패: ${promptResponse.status} - ${errorText}`);
       }
 
       const promptData = await promptResponse.json();
-      console.log('📋 프롬프트 API 응답 데이터:', promptData);
-      
       if (!promptData.success) {
-        console.error('❌ 프롬프트 생성 실패:', promptData.error);
         throw new Error(promptData.error || '프롬프트 생성 중 오류 발생');
       }
 
-      console.log('✅ AI 프롬프트 생성 완료:', promptData.data.prompt_length, '자');
+      const aiPrompt = promptData.data.prompt;
+      console.log('✅ AI 프롬프트 생성 완료:', aiPrompt.length, '자');
 
       // 로딩 토스트 제거
-      document.body.removeChild(loadingToast);
+      if (document.body.contains(loadingToast)) {
+        document.body.removeChild(loadingToast);
+      }
 
-      // 3단계: AI 앱으로 프롬프트 전달 및 자동 전송
-      console.log('🚀 3단계: AI 앱으로 프롬프트 전달 시작...');
-      const aiPrompt = promptData.data.prompt;
-      console.log('📝 생성된 프롬프트 길이:', aiPrompt.length, '자');
-      console.log('📱 선택된 AI 앱:', selectedApp.id, selectedApp.name);
-      
-      // 클립보드 권한 확인 및 복사 (iOS Safari 최적화 버전)
-      let clipboardSuccess = false;
-      let permissionDenied = false;
+      // 3단계: 3중 보장 자동 전송
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       
-      console.log('📱 디바이스 정보:', { isIOS, isSafari, userAgent: navigator.userAgent });
-      
+      // 클립보드 복사 먼저 시도 (3중 보장의 핵심)
+      let clipboardSuccess = false;
       try {
-        // iOS Safari 전용 처리
-        if (isIOS && isSafari) {
-          console.log('🍎 iOS Safari 감지 - 전용 클립보드 로직 사용');
-          
-          // iOS Safari에서는 사용자 제스처 컨텍스트에서만 클립보드 접근 가능
-          // 먼저 textarea 방식 시도 (iOS에서 더 안정적)
-          const textArea = document.createElement('textarea');
-          textArea.value = aiPrompt;
-          textArea.style.position = 'fixed';
-          textArea.style.left = '50%';
-          textArea.style.top = '50%';
-          textArea.style.transform = 'translate(-50%, -50%)';
-          textArea.style.width = '300px';
-          textArea.style.height = '200px';
-          textArea.style.zIndex = '9999';
-          textArea.style.backgroundColor = 'white';
-          textArea.style.border = '2px solid #007AFF';
-          textArea.style.borderRadius = '8px';
-          textArea.style.padding = '10px';
-          textArea.style.fontSize = '16px'; // iOS에서 줌 방지
-          textArea.readOnly = true;
-          
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          textArea.setSelectionRange(0, aiPrompt.length);
-          
-          // iOS Safari에서 execCommand 시도
-          try {
-            clipboardSuccess = document.execCommand('copy');
-            console.log(clipboardSuccess ? '✅ iOS execCommand 복사 성공' : '❌ iOS execCommand 복사 실패');
-          } catch (execError) {
-            console.warn('⚠️ iOS execCommand 실패:', execError);
-            clipboardSuccess = false;
-          }
-          
-          // textarea를 잠시 보여준 후 제거 (사용자가 수동 복사할 수 있도록)
-          if (!clipboardSuccess) {
-            // 수동 복사 안내 오버레이 추가
-            const overlay = document.createElement('div');
-            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-            overlay.innerHTML = `
-              <div class="bg-white rounded-lg max-w-md w-full p-6 text-center">
-                <div class="text-3xl mb-4">📋</div>
-                <h3 class="text-lg font-bold text-gray-900 mb-4">프롬프트 복사</h3>
-                <p class="text-sm text-gray-600 mb-4">
-                  아래 텍스트를 길게 눌러서 전체 선택 후 복사해주세요
-                </p>
-                <button 
-                  onclick="this.closest('.fixed').remove()"
-                  class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded font-medium"
-                >
-                  확인
-                </button>
-              </div>
-            `;
-            document.body.appendChild(overlay);
-            
-            // 3초 후 자동으로 textarea 제거하지 않고 사용자가 직접 복사할 수 있도록 유지
-            setTimeout(() => {
-              if (document.body.contains(textArea)) {
-                textArea.style.opacity = '0.8';
-              }
-            }, 3000);
-            
-            // 오버레이 클릭 시 textarea도 함께 제거
-            overlay.addEventListener('click', (e) => {
-              if (e.target === overlay || e.target.closest('button')) {
-                if (document.body.contains(textArea)) {
-                  document.body.removeChild(textArea);
-                }
-                if (document.body.contains(overlay)) {
-                  document.body.removeChild(overlay);
-                }
-              }
-            });
-            
-            clipboardSuccess = true; // 수동 복사 기회를 제공했으므로 성공으로 처리
-          } else {
-            // 자동 복사 성공 시 textarea 제거
-            setTimeout(() => {
-              if (document.body.contains(textArea)) {
-                document.body.removeChild(textArea);
-              }
-            }, 500);
-          }
-          
-        } else {
-          // 안드로이드 및 기타 브라우저 처리 (기존 로직)
-          console.log('🤖 안드로이드/기타 브라우저 - 기본 클립보드 로직 사용');
-          
-          // 1단계: 클립보드 권한 상태 확인
-          if (navigator.permissions) {
-            try {
-              const permission = await navigator.permissions.query({name: 'clipboard-write' as PermissionName});
-              console.log('📋 클립보드 권한 상태:', permission.state);
-              
-              if (permission.state === 'denied') {
-                permissionDenied = true;
-                console.warn('⚠️ 클립보드 권한이 거부되어 있습니다');
-              }
-            } catch (permError) {
-              console.warn('⚠️ 클립보드 권한 확인 실패:', permError);
-            }
-          }
-          
-          // 2단계: 클립보드 API 시도
-          if (navigator.clipboard && window.isSecureContext && !permissionDenied) {
-            await navigator.clipboard.writeText(aiPrompt);
-            clipboardSuccess = true;
-            console.log('✅ 프롬프트가 클립보드에 복사되었습니다');
-          } else {
-            // 폴백: textarea 사용
-            const textArea = document.createElement('textarea');
-            textArea.value = aiPrompt;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            clipboardSuccess = document.execCommand('copy');
-            document.body.removeChild(textArea);
-            console.log(clipboardSuccess ? '✅ 폴백 방식으로 클립보드 복사 성공' : '❌ 클립보드 복사 실패');
-          }
-        }
+        await navigator.clipboard.writeText(aiPrompt);
+        clipboardSuccess = true;
+        console.log('✅ 클립보드 복사 성공');
       } catch (error) {
         console.warn('⚠️ 클립보드 복사 실패:', error);
-        clipboardSuccess = false;
-        
-        // 권한 거부 에러인지 확인
-        if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
-          permissionDenied = true;
-          console.warn('🚫 클립보드 권한이 거부되었습니다');
-        }
       }
-      
-      // 3단계: 권한 거부 시 간단한 설정 안내
-      if (permissionDenied && !clipboardSuccess) {
-        const permissionModal = document.createElement('div');
-        permissionModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-        permissionModal.innerHTML = `
-          <div class="bg-white rounded-lg max-w-md w-full p-6">
-            <div class="flex items-start gap-3 mb-4">
-              <span class="text-3xl">🔒</span>
-              <div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">클립보드 권한이 필요합니다</h3>
-                <p class="text-sm text-gray-600">
-                  AI 분석을 위해 프롬프트를 클립보드에 복사해야 합니다.
-                </p>
-              </div>
-            </div>
-            
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-              <div class="text-sm text-blue-800">
-                <div class="font-medium mb-2">📋 권한 허용 방법:</div>
-                <ol class="list-decimal list-inside space-y-1">
-                  <li>브라우저 주소창 옆의 <strong>🔒 자물쇠 아이콘</strong> 클릭</li>
-                  <li><strong>"클립보드"</strong> 또는 <strong>"Clipboard"</strong> 찾기</li>
-                  <li><strong>"허용"</strong> 또는 <strong>"Allow"</strong> 선택</li>
-                  <li>아래 버튼으로 새로고침 후 다시 시도</li>
-                </ol>
-              </div>
-            </div>
-            
-            <div class="flex gap-2">
-              <button 
-                onclick="window.location.reload()"
-                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-medium"
-              >
-                권한 설정 후 새로고침
-              </button>
-              <button 
-                onclick="this.closest('.fixed').remove()"
-                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(permissionModal);
-      }
-      
-      // 스마트 자동 전송: GET 파라미터 시도 후 클립보드 폴백
-      const sendPromptSmart = (appUrl: string, appName: string, prompt: string) => {
-        console.log(`🎯 ${appName} 프롬프트 전송 시도 시작...`);
-        console.log(`📏 프롬프트 길이: ${prompt.length}자 (임계값: 1000자)`);
-        
-        try {
-          // 1단계: 짧은 프롬프트면 GET 파라미터로 시도
-          if (prompt.length < 1000) {
-            console.log(`✅ 짧은 프롬프트 - GET 파라미터 방식 사용`);
-            const encodedPrompt = encodeURIComponent(prompt);
-            const urlWithPrompt = `${appUrl}?q=${encodedPrompt}`;
-            console.log(`🔗 생성된 URL: ${urlWithPrompt.substring(0, 100)}...`);
-            
-            window.open(urlWithPrompt, '_blank');
-            console.log(`🚀 ${appName} 창 열기 완료`);
-            
-            // 성공 토스트
-            showToast(`🚀 ${appName} 자동 전송!`, 'GET 파라미터로 프롬프트 전송됨', 'green');
-            return true;
-          } else {
-            // 2단계: 긴 프롬프트면 바로 클립보드 폴백
-            console.log(`⚠️ 긴 프롬프트 - 클립보드 폴백 사용`);
-            throw new Error('프롬프트가 너무 길어서 클립보드 사용');
-          }
-        } catch (error) {
-          console.warn(`❌ ${appName} 자동 전송 실패, 클립보드 폴백:`, error);
-          
-          // 폴백: 기본 페이지 열고 클립보드 사용
-          console.log(`🔄 ${appName} 기본 페이지로 폴백...`);
-          window.open(appUrl, '_blank');
-          const clipboardMsg = clipboardSuccess 
-            ? `프롬프트가 클립보드에 복사됨! ${appName}에서 Ctrl+V로 붙여넣기 하세요`
-            : `클립보드 복사에 실패했습니다. AI 분석을 다시 시도해 주세요`;
-          showToast(`📋 ${appName} 열림!`, clipboardMsg, clipboardSuccess ? 'blue' : 'orange');
-          return false;
-        }
-      };
 
-      // 토스트 메시지 표시 함수
-      const showToast = (title: string, message: string, color: string) => {
-        const toast = document.createElement('div');
-        const bgColor = color === 'green' ? 'bg-green-500' : color === 'orange' ? 'bg-orange-500' : 'bg-blue-500';
-        toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-sm`;
-        toast.innerHTML = `
-          <div class="flex items-center gap-2">
-            <span class="text-xl">${color === 'green' ? '🚀' : '📋'}</span>
-            <div>
-              <div class="font-semibold">${title}</div>
-              <div class="text-sm opacity-90">${message}</div>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-          if (document.body.contains(toast)) {
-            document.body.removeChild(toast);
-          }
-        }, 4000);
-      };
-
-      console.log('🔀 AI 앱별 처리 로직 시작...');
-      
+      // AI 앱별 최적화된 전송
       if (selectedApp.id === 'chatgpt') {
-        console.log('🤖 ChatGPT 선택됨');
-        console.log(`📏 프롬프트 길이: ${aiPrompt.length}자`);
-        sendPromptSmart('https://chat.openai.com', 'ChatGPT', aiPrompt);
-        
+        await sendToAIApp('https://chat.openai.com', 'ChatGPT', aiPrompt, 'chatgpt://', isIOS, clipboardSuccess);
       } else if (selectedApp.id === 'gemini') {
-        console.log('💎 Gemini 선택됨');
-        sendPromptSmart('https://gemini.google.com/app', 'Gemini', aiPrompt);
-        
+        await sendToAIApp('https://gemini.google.com/app', 'Gemini', aiPrompt, 'gemini://', isIOS, clipboardSuccess);
       } else if (selectedApp.id === 'claude') {
-        console.log('🧠 Claude 선택됨');
-        sendPromptSmart('https://claude.ai/chat', 'Claude', aiPrompt);
-        
+        await sendToAIApp('https://claude.ai/chat', 'Claude', aiPrompt, 'claude://', isIOS, clipboardSuccess);
       } else if (selectedApp.id === 'grok') {
-        console.log('🚀 Grok 선택됨');
-        sendPromptSmart('https://x.com/i/grok', 'Grok', aiPrompt);
+        await sendToAIApp('https://x.com/i/grok', 'Grok', aiPrompt, 'twitter://grok', isIOS, clipboardSuccess);
       } else {
-        console.log('📱 기타 AI 앱 선택됨:', selectedApp);
-        // 기본 처리: 딥링크 시도 후 웹 폴백
-        const encodedPrompt = encodeURIComponent(aiPrompt);
-        try {
-          console.log('🔗 딥링크 시도...');
-          const deepLinkUrl = `${selectedApp.deepLink}?text=${encodedPrompt}`;
-          console.log('🔗 딥링크 URL:', deepLinkUrl);
-          window.location.href = deepLinkUrl;
-          
-          // 2초 후 앱이 열리지 않으면 웹 버전으로 폴백
-          setTimeout(() => {
-            console.log('⏰ 딥링크 타임아웃, 웹 폴백 시도...');
-            window.open(`${selectedApp.webUrl}?q=${encodedPrompt}`, '_blank');
-          }, 2000);
-        } catch (deepLinkError) {
-          console.error('❌ 딥링크 실패:', deepLinkError);
-          console.log('🔄 웹 버전으로 직접 폴백...');
-          window.open(selectedApp.webUrl, '_blank');
-        }
+        await sendToAIApp(selectedApp.webUrl, selectedApp.name, aiPrompt, selectedApp.deepLink, isIOS, clipboardSuccess);
       }
-
-      // 클립보드 복사 완료 안내 메시지
-      const fallbackToast = document.createElement('div');
-      fallbackToast.innerHTML = `
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="font-size: 24px; margin-top: 2px;">📋</span>
-          <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 15px; margin-bottom: 8px;">
-              🎯 급식 분석 리포트 준비 완료!
-            </div>
-            <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
-              <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">📝 다음 단계:</div>
-              <div style="font-size: 12px; line-height: 1.4;">
-                1️⃣ ${selectedApp.name} 창에서 채팅창 클릭<br>
-                2️⃣ <strong style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">
-                  ${/Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? '길게 눌러서 붙여넣기' : 'Ctrl + V'}
-                </strong> 키로 붙여넣기<br>
-                3️⃣ Enter 키로 분석 시작!
-              </div>
-            </div>
-            <div style="font-size: 11px; opacity: 0.8; text-align: center;">
-              💡 ${Math.ceil(aiPrompt.length / 100) * 100}자의 상세한 분석 리포트가 클립보드에 복사되었습니다
-            </div>
-          </div>
-        </div>
-      `;
-      fallbackToast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 9999;
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: white; padding: 20px; border-radius: 16px;
-        font-size: 14px; font-weight: 500; box-shadow: 0 12px 35px rgba(0,0,0,0.2);
-        max-width: 380px; border: 1px solid rgba(255,255,255,0.25);
-        backdrop-filter: blur(10px);
-      `;
-      document.body.appendChild(fallbackToast);
-      
-      setTimeout(() => {
-        if (document.body.contains(fallbackToast)) {
-          document.body.removeChild(fallbackToast);
-        }
-      }, 10000);
 
     } catch (error) {
       console.error('❌ AI 분석 처리 오류:', error);
       
-      // 로딩 토스트 제거 (있다면)
-      const loadingToast = document.querySelector('div[style*="급식 데이터 분석 중"]');
-      if (loadingToast) {
-        document.body.removeChild(loadingToast);
-      }
+      // 로딩 토스트 제거
+      const loadingElements = document.querySelectorAll('div[style*="급식 데이터 분석 중"]');
+      loadingElements.forEach(el => el.remove());
       
-      // 에러 메시지 표시
-      const errorToast = document.createElement('div');
-      errorToast.innerHTML = `❌ 분석 중 오류 발생: ${error.message}`;
-      errorToast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 9999;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white; padding: 12px 20px; border-radius: 8px;
-        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      `;
-      document.body.appendChild(errorToast);
+      // 에러 토스트 표시
+      showToast('❌ 분석 실패', error instanceof Error ? error.message : '알 수 없는 오류', 'orange');
       
-      setTimeout(() => {
-        if (document.body.contains(errorToast)) {
-          document.body.removeChild(errorToast);
-        }
-      }, 5000);
-      
-      // 에러 발생 시에도 기본 웹 버전으로 폴백
+      // 에러 시에도 기본 웹 버전으로 폴백
       window.open(selectedApp.webUrl, '_blank');
     }
   };
+
 
   // 배틀 데이터 로딩 함수
   const loadBattleData = async () => {
