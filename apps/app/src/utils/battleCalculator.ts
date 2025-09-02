@@ -13,6 +13,7 @@ interface MenuBattleResult {
   national_rank?: number;
   region_rank?: number;
   school_name?: string;
+  region?: string;
 }
 
 interface MonthlyBattleResult {
@@ -26,6 +27,7 @@ interface MonthlyBattleResult {
   national_rank?: number;
   region_rank?: number;
   school_name?: string;
+  region?: string;
 }
 
 interface MealBattleResult {
@@ -36,6 +38,7 @@ interface MealBattleResult {
   daily_rank: number;
   national_rank?: number;
   school_name?: string;
+  region?: string;
 }
 
 interface MealMonthlyBattleResult {
@@ -47,6 +50,7 @@ interface MealMonthlyBattleResult {
   monthly_rank: number;
   national_rank?: number;
   school_name?: string;
+  region?: string;
 }
 
 /**
@@ -208,7 +212,8 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
         finalResults[finalIndex] = {
           ...finalResults[finalIndex],
           region_rank: index + 1,
-          school_name: schoolNameMap[result.school_code] || null
+          school_name: schoolNameMap[result.school_code] || null,
+          region: schoolRegionMap[result.school_code] || null
         };
       }
     });
@@ -387,7 +392,8 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
         finalMonthlyResults[finalIndex] = {
           ...finalMonthlyResults[finalIndex],
           region_rank: index + 1,
-          school_name: schoolNameMap[result.school_code] || null
+          school_name: schoolNameMap[result.school_code] || null,
+          region: schoolRegionMap[result.school_code] || null
         };
       }
     });
@@ -454,10 +460,10 @@ export async function calculateDailyMealBattle(targetDate?: string, supabaseClie
     return b.rating_count - a.rating_count;
   });
   
-  // 3. 학교 정보 조회 (school_name 필드 추가용)
+  // 3. 학교 정보 조회 (school_name 및 region 필드 추가용)
   const { data: schoolInfos, error: schoolError } = await supabase
     .from('school_infos')
-    .select('school_code, school_name')
+    .select('school_code, school_name, region')
     .in('school_code', [...new Set(sortedStats.map(s => s.school_code))]);
     
   if (schoolError) {
@@ -470,7 +476,12 @@ export async function calculateDailyMealBattle(targetDate?: string, supabaseClie
     return acc;
   }, {} as Record<string, string>) || {};
 
-  // 4. 순위 매기기 (school_name 포함)
+  const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.region;
+    return acc;
+  }, {} as Record<string, string>) || {};
+
+  // 4. 순위 매기기 (school_name 및 region 포함)
   const battleResults: MealBattleResult[] = sortedStats.map((stat, index) => ({
     school_code: stat.school_code,
     battle_date: date,
@@ -478,7 +489,8 @@ export async function calculateDailyMealBattle(targetDate?: string, supabaseClie
     rating_count: stat.rating_count,
     daily_rank: index + 1,
     national_rank: index + 1, // 급식 배틀은 전국 단위이므로 동일
-    school_name: schoolNameMap[stat.school_code] || null
+    school_name: schoolNameMap[stat.school_code] || null,
+    region: schoolRegionMap[stat.school_code] || null
   }));
   
   console.log(`📊 생성된 급식 배틀 결과 개수: ${battleResults.length}개`);
@@ -555,10 +567,10 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   
   const monthlyResults: MealMonthlyBattleResult[] = [];
   
-  // 3. 학교 정보 조회 (school_name 필드 추가용)
+  // 3. 학교 정보 조회 (school_name 및 region 필드 추가용)
   const { data: schoolInfos, error: schoolError } = await supabase
     .from('school_infos')
-    .select('school_code, school_name')
+    .select('school_code, school_name, region')
     .in('school_code', [...new Set(mealStats.map(s => s.school_code))]);
     
   if (schoolError) {
@@ -568,6 +580,11 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
   
   const schoolNameMap = schoolInfos?.reduce((acc, school) => {
     acc[school.school_code] = school.school_name;
+    return acc;
+  }, {} as Record<string, string>) || {};
+
+  const schoolRegionMap = schoolInfos?.reduce((acc, school) => {
+    acc[school.school_code] = school.region;
     return acc;
   }, {} as Record<string, string>) || {};
 
@@ -584,7 +601,8 @@ export async function calculateMonthlyMealBattle(year?: number, month?: number, 
         final_avg_rating: Number((totalRating / totalCount).toFixed(2)),
         final_rating_count: totalCount,
         monthly_rank: 0, // 임시값, 나중에 계산
-        school_name: schoolNameMap[schoolCode] || null
+        school_name: schoolNameMap[schoolCode] || null,
+        region: schoolRegionMap[schoolCode] || null
       });
     }
   }
