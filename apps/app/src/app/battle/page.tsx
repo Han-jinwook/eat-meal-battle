@@ -497,8 +497,16 @@ export default function BattlePage() {
         return;
       }
 
-      // 현재 날짜 정보 추출
-      const targetDate = viewMode === 'daily' ? new Date(selectedDate) : new Date(selectedMonth);
+      // 현재 활성화된 탭을 기준으로 날짜 정보 추출
+      // AI 분석은 월별 데이터만 처리하므로 현재 보고 있는 데이터의 월을 사용
+      let targetDate;
+      if (viewMode === 'monthly') {
+        // 월별 탭이 활성화된 경우 selectedMonth 사용
+        targetDate = new Date(selectedMonth);
+      } else {
+        // 일별 탭이 활성화된 경우 selectedDate의 월 사용
+        targetDate = new Date(selectedDate);
+      }
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
 
