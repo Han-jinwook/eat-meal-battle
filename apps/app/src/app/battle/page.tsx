@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareButton from '@/components/ShareButton';
 import AIAnalysisModal from '@/components/AIAnalysisModal';
+import IOSCopyModal from '@/components/IOSCopyModal';
 import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -48,6 +49,10 @@ export default function BattlePage() {
   
   // AI 분석 모달 상태 관리
   const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState<boolean>(false);
+  
+  // iOS 수동 복사 모달 상태 관리
+  const [isIOSCopyModalOpen, setIsIOSCopyModalOpen] = useState<boolean>(false);
+  const [iosCopyData, setIOSCopyData] = useState<{prompt: string, appName: string, appUrl: string} | null>(null);
   
   // 배틀 페이지는 읽기 전용이므로 권한 체크 불필요
   
@@ -353,7 +358,7 @@ export default function BattlePage() {
     }
   };
 
-  // AI 앱 선택 핸들러 (단순화된 버전)
+  // AI 앱 선택 핸들러 (iOS 대응 버전)
   const handleAIAppSelection = async (selectedApp: any) => {
     console.log('🎯 AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
@@ -412,19 +417,31 @@ export default function BattlePage() {
         throw new Error('프롬프트가 생성되지 않았습니다');
       }
 
-      // 3단계: 클립보드 복사 및 앱 열기
-      try {
-        await navigator.clipboard.writeText(generatedPrompt);
-        console.log('✅ 클립보드 복사 완료');
-      } catch (clipboardError) {
-        console.warn('⚠️ 클립보드 복사 실패:', clipboardError);
-      }
-
-      // AI 앱 열기
-      window.open(selectedApp.webUrl, '_blank');
+      // 3단계: iOS 감지 및 클립보드 처리
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
-      // 성공 메시지
-      alert('AI 분석 프롬프트가 클립보드에 복사되었습니다. AI 앱에서 붙여넣기(Ctrl+V)하세요.');
+      if (isIOS) {
+        // iOS: 수동 복사 모달 표시
+        setIOSCopyData({
+          prompt: generatedPrompt,
+          appName: selectedApp.name,
+          appUrl: selectedApp.webUrl
+        });
+        setIsIOSCopyModalOpen(true);
+      } else {
+        // 다른 플랫폼: 자동 복사 시도
+        try {
+          await navigator.clipboard.writeText(generatedPrompt);
+          console.log('✅ 클립보드 복사 완료');
+          alert('AI 분석 프롬프트가 클립보드에 복사되었습니다. AI 앱에서 붙여넣기(Ctrl+V)하세요.');
+        } catch (clipboardError) {
+          console.warn('⚠️ 클립보드 복사 실패:', clipboardError);
+          alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
+        }
+        
+        // AI 앱 열기
+        window.open(selectedApp.webUrl, '_blank');
+      }
 
     } catch (error) {
       console.error('❌ AI 분석 처리 오류:', error);
@@ -1466,6 +1483,20 @@ export default function BattlePage() {
         onClose={() => setIsAIAnalysisOpen(false)}
         onSelectApp={handleAIAppSelection}
       />
+
+      {/* iOS 수동 복사 모달 */}
+      {iosCopyData && (
+        <IOSCopyModal
+          isOpen={isIOSCopyModalOpen}
+          onClose={() => {
+            setIsIOSCopyModalOpen(false);
+            setIOSCopyData(null);
+          }}
+          prompt={iosCopyData.prompt}
+          appName={iosCopyData.appName}
+          appUrl={iosCopyData.appUrl}
+        />
+      )}
       </div>
     </div>
   );
