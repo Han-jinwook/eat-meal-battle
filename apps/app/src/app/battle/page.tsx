@@ -689,9 +689,16 @@ export default function BattlePage() {
     }
   };
 
-  // 데이터 로딩 useEffect
+  // 데이터 로딩 useEffect - 지역 설정 완료 후 로딩
   useEffect(() => {
     const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    
+    // 사용자 학교가 있지만 지역이 아직 설정되지 않은 경우 로딩 지연
+    if (userSchool?.region && !selectedRegion) {
+      console.log('⏳ 지역 설정 대기 중 - 배틀 데이터 로딩 지연');
+      return;
+    }
+    
     if (currentSchool?.school_code) {
       console.log('📣 배틀 데이터 로딩 트리거됨', { 
         currentSchool: currentSchool.school_name,
@@ -699,7 +706,8 @@ export default function BattlePage() {
         activeTab, 
         viewMode, 
         selectedDate, 
-        selectedMonth 
+        selectedMonth,
+        selectedRegion
       });
       loadBattleData();
     }
