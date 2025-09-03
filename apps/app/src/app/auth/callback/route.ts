@@ -288,8 +288,24 @@ export async function GET(request: NextRequest) {
               .update(updateData)
               .eq('id', data.session.user.id);
             
+            // 사용자 정보 업데이트 후 로그 남기기
+            console.info('✅ 사용자 정보 업데이트 후 로그 남기기');
+            const logData = {
+              user_id: data.session.user.id,
+              action: 'UPDATE_USER_INFO',
+              data: updateData
+            };
+            const { error: logError } = await supabase
+              .from('logs')
+              .insert([logData]);
+            if (logError) {
+              console.error('❌ 로그 남기기 오류:', logError);
+            } else {
+              console.info('✅ 로그 남기기 완료!');
+            }
+            
             if (updateError) {
-              console.error('❌ 사용자 정보 업데이트 오류:', updateError);
+              console.error('❌ 사용자 정보 업데이트 실패:', updateError);
             } else {
               console.info('✅ 사용자 정보 DB 업데이트 완료!');
             }
