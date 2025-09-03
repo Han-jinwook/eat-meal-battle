@@ -353,200 +353,43 @@ export default function BattlePage() {
     }
   };
 
-  // AI 앱 선택 핸들러 - 딥링크 + Share API + 클립보드 3중 보장 방식
+  // AI 앱 선택 핸들러 (단순화된 버전)
   const handleAIAppSelection = async (selectedApp: any) => {
     console.log('🎯 AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
     
-    // 토스트 메시지 표시 함수
-    const showToast = (title: string, message: string, color: string) => {
-      const toast = document.createElement('div');
-      const bgColor = color === 'green' ? '#10b981' : color === 'orange' ? '#f59e0b' : '#3b82f6';
-      toast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 9999;
-        background: ${bgColor}; color: white; padding: 12px 20px; border-radius: 8px;
-        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        max-width: 300px;
-      `;
-      toast.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 18px;">${color === 'green' ? '🚀' : color === 'orange' ? '⚠️' : '📋'}</span>
-          <div>
-            <div style="font-weight: 600; margin-bottom: 2px;">${title}</div>
-            <div style="font-size: 12px; opacity: 0.9;">${message}</div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 4000);
-    };
-
-    // AI 앱 전송 함수 - 스마트 딥링크 + 클립보드 방식
-    const sendToAIApp = async (appUrl: string, appName: string, prompt: string, deepLink: string, isIOS: boolean, clipboardReady: boolean) => {
-      console.log(`🎯 ${appName} 전송 시작 (클립보드: ${clipboardReady})`);
-      
-      try {
-        // 앱 설치 여부 감지를 위한 딥링크 시도
-        if (deepLink) {
-          console.log(`🔗 딥링크로 ${appName} 앱 열기 시도`);
-          
-          let appOpened = false;
-          const startTime = Date.now();
-          
-          // 페이지 숨김/포커스 이벤트로 앱 열림 감지
-          const handleVisibilityChange = () => {
-            if (document.hidden || Date.now() - startTime > 500) {
-              appOpened = true;
-              console.log(`✅ ${appName} 앱이 열린 것으로 감지됨`);
-            }
-          };
-          
-          const handleBlur = () => {
-            appOpened = true;
-            console.log(`✅ ${appName} 앱이 열린 것으로 감지됨 (blur)`);
-          };
-          
-          document.addEventListener('visibilitychange', handleVisibilityChange);
-          window.addEventListener('blur', handleBlur);
-          
-          try {
-            // 딥링크 실행
-            const encodedPrompt = encodeURIComponent(prompt);
-            window.location.href = `${deepLink}?text=${encodedPrompt}`;
-            
-            // 2초 후 앱 열림 여부 확인
-            setTimeout(() => {
-              document.removeEventListener('visibilitychange', handleVisibilityChange);
-              window.removeEventListener('blur', handleBlur);
-              
-              if (!appOpened) {
-                console.log(`❌ ${appName} 앱이 열리지 않음, 웹으로 폴백`);
-                // 앱이 없으면 웹 열기 + 클립보드
-                if (clipboardReady) {
-                  showToast(`📋 ${appName} 웹 열림`, '클립보드에서 붙여넣기하세요', 'blue');
-                }
-                window.open(appUrl, '_blank');
-                
-                // iOS 클립보드 실패 대비 모달
-                if (!clipboardReady && isIOS) {
-                  setTimeout(() => {
-                    const modal = document.createElement('div');
-                    modal.style.cssText = `
-                      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;
-                      background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
-                    `;
-                    modal.innerHTML = `
-                      <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-                        <h3 style="margin: 0 0 15px 0; color: #333;">📋 텍스트를 복사하세요</h3>
-                        <textarea readonly style="width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: none;">${prompt}</textarea>
-                        <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 15px; padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 6px; font-size: 16px;">닫기</button>
-                      </div>
-                    `;
-                    document.body.appendChild(modal);
-                  }, 1000);
-                }
-              } else {
-                console.log(`✅ ${appName} 앱 열림 성공`);
-                if (clipboardReady) {
-                  showToast(`🚀 ${appName} 앱 열림`, '자동으로 붙여넣기됩니다', 'green');
-                } else {
-                  showToast(`🚀 ${appName} 앱 열림`, '수동으로 붙여넣기해주세요', 'orange');
-                }
-              }
-            }, 2000);
-            
-            return;
-          } catch (deepLinkError) {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('blur', handleBlur);
-            console.warn('딥링크 실패, 웹으로 폴백:', deepLinkError);
-          }
-        }
-        
-        // 딥링크 없거나 실패 시: 바로 웹 열기
-        console.log(`🌐 ${appName} 웹 버전 열기`);
-        
-        // 웹은 자동 붙여넣기 불가능하므로 클립보드 + 안내만
-        window.open(appUrl, '_blank');
-        if (clipboardReady) {
-          showToast(`📋 ${appName} 웹 열림`, '클립보드에 복사됨 - Ctrl+V로 붙여넣기', 'blue');
-        } else {
-          showToast(`📋 ${appName} 웹 열림`, '수동으로 분석 요청해주세요', 'orange');
-        }
-        
-      } catch (error) {
-        console.warn(`❌ ${appName} 전송 실패:`, error);
-        window.open(appUrl, '_blank');
-        showToast(`📋 ${appName} 열림`, '수동으로 분석 요청해주세요', 'orange');
-      }
-    };
-    
     try {
       // 현재 학교 정보 확인
       const currentSchool = schoolMode.selectedInterestSchool || userSchool;
-      console.log('🏫 현재 학교 정보:', currentSchool);
       
       if (!currentSchool?.school_code) {
         console.error('❌ 학교 정보 없음');
-        showToast('❌ 오류', '학교 정보가 없어 AI 분석을 진행할 수 없습니다', 'orange');
+        alert('학교 정보가 없어 AI 분석을 진행할 수 없습니다.');
         return;
       }
 
-      // 현재 활성화된 탭을 기준으로 날짜 정보 추출
-      // AI 분석은 월별 데이터만 처리하므로 현재 보고 있는 데이터의 월을 사용
-      let targetDate;
-      if (viewMode === 'monthly') {
-        // 월별 탭이 활성화된 경우 selectedMonth 사용
-        targetDate = new Date(selectedMonth);
-      } else {
-        // 일별 탭이 활성화된 경우 selectedDate의 월 사용
-        targetDate = new Date(selectedDate);
-      }
+      // 현재 날짜 정보 추출
+      const targetDate = viewMode === 'daily' ? new Date(selectedDate) : new Date(selectedMonth);
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
 
       console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
-      console.log(`📅 분석 대상: viewMode=${viewMode}, selectedDate=${selectedDate}, selectedMonth=${selectedMonth}`);
       
-      // 로딩 상태 표시
-      const loadingToast = document.createElement('div');
-      loadingToast.innerHTML = '📊 급식 데이터 분석 중...';
-      loadingToast.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 9999;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white; padding: 12px 20px; border-radius: 8px;
-        font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      `;
-      document.body.appendChild(loadingToast);
-
       // 1단계: 급식 데이터 집계
-      console.log('📡 1단계: 급식 데이터 집계 API 호출 시작...');
       const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`;
-      console.log('🔗 API URL:', apiUrl);
-      
       const analysisResponse = await fetch(apiUrl);
-      console.log('📊 API 응답 상태:', analysisResponse.status, analysisResponse.statusText);
       
       if (!analysisResponse.ok) {
-        const errorText = await analysisResponse.text();
-        console.error('❌ API 응답 오류:', errorText);
-        throw new Error(`데이터 집계 실패: ${analysisResponse.status} - ${errorText}`);
+        throw new Error('데이터 집계 실패');
       }
       
       const analysisData = await analysisResponse.json();
-      console.log('✅ 급식 데이터 집계 완료:', analysisData);
       
       if (analysisData.error) {
-        throw new Error(analysisData.error || '데이터 집계 중 오류 발생');
+        throw new Error(analysisData.error);
       }
 
       // 2단계: AI 프롬프트 생성
-      console.log('📝 2단계: AI 프롬프트 생성 API 호출 시작...');
       const promptPayload = {
         analysis_data: analysisData,
         school_code: currentSchool.school_code
@@ -559,58 +402,33 @@ export default function BattlePage() {
       });
 
       if (!promptResponse.ok) {
-        const errorText = await promptResponse.text();
-        throw new Error(`프롬프트 생성 실패: ${promptResponse.status} - ${errorText}`);
+        throw new Error('프롬프트 생성 실패');
       }
 
       const promptData = await promptResponse.json();
-      if (!promptData.success) {
-        throw new Error(promptData.error || '프롬프트 생성 중 오류 발생');
+      const generatedPrompt = promptData.data?.prompt || promptData.prompt;
+
+      if (!generatedPrompt) {
+        throw new Error('프롬프트가 생성되지 않았습니다');
       }
 
-      const aiPrompt = promptData.data.prompt;
-      console.log('✅ AI 프롬프트 생성 완료:', aiPrompt.length, '자');
-
-      // 로딩 토스트 제거
-      if (document.body.contains(loadingToast)) {
-        document.body.removeChild(loadingToast);
-      }
-
-      // 3단계: 3중 보장 자동 전송
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
-      // 클립보드 복사 먼저 시도 (3중 보장의 핵심)
-      let clipboardSuccess = false;
+      // 3단계: 클립보드 복사 및 앱 열기
       try {
-        await navigator.clipboard.writeText(aiPrompt);
-        clipboardSuccess = true;
-        console.log('✅ 클립보드 복사 성공');
-      } catch (error) {
-        console.warn('⚠️ 클립보드 복사 실패:', error);
+        await navigator.clipboard.writeText(generatedPrompt);
+        console.log('✅ 클립보드 복사 완료');
+      } catch (clipboardError) {
+        console.warn('⚠️ 클립보드 복사 실패:', clipboardError);
       }
 
-      // AI 앱별 최적화된 전송
-      if (selectedApp.id === 'chatgpt') {
-        await sendToAIApp('https://chat.openai.com', 'ChatGPT', aiPrompt, 'chatgpt://', isIOS, clipboardSuccess);
-      } else if (selectedApp.id === 'gemini') {
-        await sendToAIApp('https://gemini.google.com/app', 'Gemini', aiPrompt, 'gemini://', isIOS, clipboardSuccess);
-      } else if (selectedApp.id === 'claude') {
-        await sendToAIApp('https://claude.ai/chat', 'Claude', aiPrompt, 'claude://', isIOS, clipboardSuccess);
-      } else if (selectedApp.id === 'grok') {
-        await sendToAIApp('https://x.com/i/grok', 'Grok', aiPrompt, 'twitter://grok', isIOS, clipboardSuccess);
-      } else {
-        await sendToAIApp(selectedApp.webUrl, selectedApp.name, aiPrompt, selectedApp.deepLink, isIOS, clipboardSuccess);
-      }
+      // AI 앱 열기
+      window.open(selectedApp.webUrl, '_blank');
+      
+      // 성공 메시지
+      alert('AI 분석 프롬프트가 클립보드에 복사되었습니다. AI 앱에서 붙여넣기(Ctrl+V)하세요.');
 
     } catch (error) {
       console.error('❌ AI 분석 처리 오류:', error);
-      
-      // 로딩 토스트 제거
-      const loadingElements = document.querySelectorAll('div[style*="급식 데이터 분석 중"]');
-      loadingElements.forEach(el => el.remove());
-      
-      // 에러 토스트 표시
-      showToast('❌ 분석 실패', error instanceof Error ? error.message : '알 수 없는 오류', 'orange');
+      alert(`AI 분석 중 오류가 발생했습니다: ${error.message}`);
       
       // 에러 시에도 기본 웹 버전으로 폴백
       window.open(selectedApp.webUrl, '_blank');
@@ -1646,17 +1464,7 @@ export default function BattlePage() {
       <AIAnalysisModal
         isOpen={isAIAnalysisOpen}
         onClose={() => setIsAIAnalysisOpen(false)}
-        schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
-        schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code || ''}
-        monthYear={viewMode === 'daily' 
-          ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
-          : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
-        }
-        isViewingMode={schoolMode.isViewingMode}
         onSelectApp={handleAIAppSelection}
-        prompt={""}
-        year={viewMode === 'daily' ? new Date(selectedDate).getFullYear() : new Date(selectedMonth).getFullYear()}
-        month={viewMode === 'daily' ? new Date(selectedDate).getMonth() + 1 : new Date(selectedMonth).getMonth() + 1}
       />
       </div>
     </div>
