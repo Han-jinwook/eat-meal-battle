@@ -194,7 +194,6 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
           school_code: item.meal_menus.school_code,
           school_name: schoolInfo.school_name || '',
           region: schoolInfo.region || '',
-          item_name: item.item_name,
           total_rating: 0,
           total_count: 0,
           appearances: 0
