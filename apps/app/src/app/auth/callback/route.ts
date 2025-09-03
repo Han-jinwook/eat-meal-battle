@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const error_code = requestUrl.searchParams.get('error_code')
   const error_description = requestUrl.searchParams.get('error_description')
+  
+  // 공유URL 파라미터 추출
+  const shareUrl = requestUrl.searchParams.get('next') || 
+                   requestUrl.searchParams.get('redirect_to') || 
+                   requestUrl.searchParams.get('return_to')
+  
   let redirectUrl = '/'
 
   // OAuth 오류 처리
@@ -317,8 +323,23 @@ export async function GET(request: NextRequest) {
           console.info('🔍 birthDate:', birthDate);
         }
         
-        // 정밀 로그인 플로우 구현
+        // 정밀 로그인 플로우 구현 - 공유URL 우선 처리
         console.info('🔍 정밀 로그인 플로우 시작 - 사용자 상태 분석');
+        
+        // 공유URL 분석 및 타학교 자동 관심학교 등록 처리
+        let shareUrlSchoolCode = null;
+        let shareUrlSchoolName = null;
+        let isOtherSchoolShare = false;
+        
+        if (shareUrl) {
+          try {
+            const shareUrlObj = new URL(shareUrl, request.url);
+            shareUrlSchoolCode = shareUrlObj.searchParams.get('school_code');
+            console.info('🔗 공유URL 분석:', { shareUrl, shareUrlSchoolCode });
+          } catch (e) {
+            console.warn('⚠️ 공유URL 파싱 오류:', e);
+          }
+        }
         
         // 1단계: 학교 정보 확인
         const { data: existingSchool, error: schoolCheckError } = await supabase
@@ -329,12 +350,56 @@ export async function GET(request: NextRequest) {
         
         if (schoolCheckError && schoolCheckError.code !== 'PGRST116') {
           console.error('❌ 학교 정보 조회 오류:', schoolCheckError);
-          redirectUrl = '/';
+          redirectUrl = shareUrl || '/';
         } else if (existingSchool) {
-          // 학교 정보 있음 → 해당 학교 급식페이지로
-          console.info('✅ 등록된 학교 정보 발견 → 홈페이지(해당 학교 급식)로 리다이렉트');
-          console.info(`📚 학교: ${existingSchool.school_name} (${existingSchool.school_code})`);
-          redirectUrl = '/';
+          // 학교 정보 있음 → 공유URL 타학교 여부 확인
+          console.info('✅ 등록된 학교 정보 발견');
+          console.info(`📚 내 학교: ${existingSchool.school_name} (${existingSchool.school_code})`);
+          
+          if (shareUrl && shareUrlSchoolCode && shareUrlSchoolCode !== existingSchool.school_code) {
+            // 타학교 공유URL → 관심학교 자동 등록
+            console.info('🏫 타학교 공유URL 감지 → 관심학교 자동 등록 시도');
+            isOtherSchoolShare = true;
+            
+            try {
+              // 공유URL의 학교 정보 조회
+              const { data: shareSchoolInfo } = await supabase
+                .from('school_infos')
+                .select('school_name')
+                .eq('school_code', shareUrlSchoolCode)
+                .limit(1)
+                .single();
+              
+              if (shareSchoolInfo) {
+                shareUrlSchoolName = shareSchoolInfo.school_name;
+                
+                // 관심학교 자동 등록 API 호출
+                const interestResponse = await fetch(new URL('/api/interest-schools', request.url), {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${data.session.access_token}`
+                  },
+                  body: JSON.stringify({
+                    school_code: shareUrlSchoolCode,
+                    school_name: shareUrlSchoolName
+                  })
+                });
+                
+                if (interestResponse.ok) {
+                  console.info(`✅ 타학교 관심학교 자동 등록 성공: ${shareUrlSchoolName}`);
+                } else if (interestResponse.status === 400) {
+                  console.info(`ℹ️ 이미 등록된 관심학교: ${shareUrlSchoolName}`);
+                } else {
+                  console.warn('⚠️ 관심학교 자동 등록 실패:', await interestResponse.text());
+                }
+              }
+            } catch (autoRegisterError) {
+              console.error('❌ 관심학교 자동 등록 오류:', autoRegisterError);
+            }
+          }
+          
+          redirectUrl = shareUrl || '/';
         } else {
           // 2단계: 학교 정보 없음 → 관심학교 확인
           console.info('🔍 학교 정보 없음 - 관심학교 등록 여부 확인');
@@ -348,16 +413,124 @@ export async function GET(request: NextRequest) {
           
           if (interestError) {
             console.error('❌ 관심학교 조회 오류:', interestError);
-            redirectUrl = '/';
+            // 관심학교 조회 오류 시에도 나이 확인 후 분기 처리
+            if (birthDate) {
+              const today = new Date();
+              const birth = new Date(birthDate);
+              let age = today.getFullYear() - birth.getFullYear();
+              const monthDiff = today.getMonth() - birth.getMonth();
+              
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+              }
+              
+              const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세
+              
+              if (isStudent) {
+                console.info('✅ 관심학교 조회 오류이지만 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
+                redirectUrl = shareUrl || '/school-search';
+              } else {
+                console.info('✅ 관심학교 조회 오류이지만 비학생 나이 확인 → 홈페이지로 리다이렉트');
+                redirectUrl = shareUrl || '/';
+              }
+            } else {
+              console.info('✅ 관심학교 조회 오류 및 생년월일 없음 → 홈페이지로 리다이렉트');
+              redirectUrl = shareUrl || '/';
+            }
           } else if (interestSchools && interestSchools.length > 0) {
-            // 관심학교 있음 → 첫번째 관심학교 급식페이지로
+            // 관심학교 있음 → 공유URL 타학교 자동 등록 후 리다이렉트
             const firstInterestSchool = interestSchools[0];
-            console.info('✅ 등록된 관심학교 발견 → 홈페이지(첫번째 관심학교 급식)로 리다이렉트');
+            console.info('✅ 등록된 관심학교 발견');
             console.info(`🏫 관심학교: ${firstInterestSchool.school_name} (${firstInterestSchool.school_code})`);
-            redirectUrl = '/';
+            
+            // 공유URL에 타학교가 있으면 자동 등록
+            if (shareUrl && shareUrlSchoolCode && shareUrlSchoolCode !== firstInterestSchool.school_code) {
+              console.info('🏫 타학교 공유URL 감지 → 관심학교 자동 등록 시도');
+              
+              try {
+                // 공유URL의 학교 정보 조회
+                const { data: shareSchoolInfo } = await supabase
+                  .from('school_infos')
+                  .select('school_name')
+                  .eq('school_code', shareUrlSchoolCode)
+                  .limit(1)
+                  .single();
+                
+                if (shareSchoolInfo) {
+                  shareUrlSchoolName = shareSchoolInfo.school_name;
+                  
+                  // 관심학교 자동 등록 API 호출
+                  const interestResponse = await fetch(new URL('/api/interest-schools', request.url), {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${data.session.access_token}`
+                    },
+                    body: JSON.stringify({
+                      school_code: shareUrlSchoolCode,
+                      school_name: shareUrlSchoolName
+                    })
+                  });
+                  
+                  if (interestResponse.ok) {
+                    console.info(`✅ 타학교 관심학교 자동 등록 성공: ${shareUrlSchoolName}`);
+                  } else if (interestResponse.status === 400) {
+                    console.info(`ℹ️ 이미 등록된 관심학교: ${shareUrlSchoolName}`);
+                  } else {
+                    console.warn('⚠️ 관심학교 자동 등록 실패:', await interestResponse.text());
+                  }
+                }
+              } catch (autoRegisterError) {
+                console.error('❌ 관심학교 자동 등록 오류:', autoRegisterError);
+              }
+            }
+            
+            redirectUrl = shareUrl || '/';
           } else {
             // 3단계: 관심학교도 없음 → 나이 확인 후 분기
             console.info('🔍 관심학교도 없음 - 나이 확인 후 분기 결정');
+            
+            // 공유URL에 학교코드가 있으면 자동 등록 시도
+            if (shareUrl && shareUrlSchoolCode) {
+              console.info('🏫 공유URL에 학교코드 발견 → 관심학교 자동 등록 시도');
+              
+              try {
+                // 공유URL의 학교 정보 조회
+                const { data: shareSchoolInfo } = await supabase
+                  .from('school_infos')
+                  .select('school_name')
+                  .eq('school_code', shareUrlSchoolCode)
+                  .limit(1)
+                  .single();
+                
+                if (shareSchoolInfo) {
+                  shareUrlSchoolName = shareSchoolInfo.school_name;
+                  
+                  // 관심학교 자동 등록 API 호출
+                  const interestResponse = await fetch(new URL('/api/interest-schools', request.url), {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${data.session.access_token}`
+                    },
+                    body: JSON.stringify({
+                      school_code: shareUrlSchoolCode,
+                      school_name: shareUrlSchoolName
+                    })
+                  });
+                  
+                  if (interestResponse.ok) {
+                    console.info(`✅ 공유URL 학교 관심학교 자동 등록 성공: ${shareUrlSchoolName}`);
+                  } else if (interestResponse.status === 400) {
+                    console.info(`ℹ️ 이미 등록된 관심학교: ${shareUrlSchoolName}`);
+                  } else {
+                    console.warn('⚠️ 관심학교 자동 등록 실패:', await interestResponse.text());
+                  }
+                }
+              } catch (autoRegisterError) {
+                console.error('❌ 관심학교 자동 등록 오류:', autoRegisterError);
+              }
+            }
             
             if (birthDate) {
               const today = new Date();
@@ -373,14 +546,14 @@ export async function GET(request: NextRequest) {
               
               if (isStudent) {
                 console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
-                redirectUrl = '/school-search';
+                redirectUrl = shareUrl || '/school-search';
               } else {
                 console.info('✅ 비학생 나이 확인 → 홈페이지(관심학교 안내)로 리다이렉트');
-                redirectUrl = '/';
+                redirectUrl = shareUrl || '/';
               }
             } else {
               console.info('✅ 생년월일 없음 → 홈페이지(관심학교 안내)로 리다이렉트');
-              redirectUrl = '/';
+              redirectUrl = shareUrl || '/';
             }
           }
         }
