@@ -88,8 +88,21 @@ const AIAnalysisModal = ({
       // 프롬프트를 외부 스코프에서 접근 가능하도록 저장
       (window as any).lastGeneratedPrompt = generatedPrompt;
       
-      // 2. 앱 감지 및 실행
+      // 2. 플랫폼 감지 및 실행 전략 결정
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+      const isMobile = isIOS || isAndroid;
+      const isDesktop = !isMobile;
+      
+      // PC 환경에서는 바로 웹 열기
+      if (isDesktop) {
+        console.log(`💻 PC 환경 감지 - ${app.name} 웹으로 직접 연결`);
+        window.open(app.webUrl, '_blank');
+        showToast(`📋 ${app.name} 웹 열림`, '클립보드에 복사됨 - Ctrl+V로 붙여넣기', 'blue');
+        return;
+      }
+      
+      // 모바일 환경에서만 딥링크 시도
       let appOpened = false;
       const startTime = Date.now();
       
@@ -109,7 +122,7 @@ const AIAnalysisModal = ({
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('blur', handleBlur);
       
-      // 3. 딥링크 시도
+      // 3. 딥링크 시도 (모바일만)
       if (app.deepLink) {
         try {
           const encodedPrompt = encodeURIComponent(generatedPrompt);
