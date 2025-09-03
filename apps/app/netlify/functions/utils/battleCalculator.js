@@ -92,15 +92,23 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
     
     // DB에 결과 저장
     if (results.length > 0) {
-      const { error: upsertError } = await supabase
+      // 기존 데이터 삭제 후 새로 삽입 (유니크 제약조건이 없는 경우)
+      const { error: deleteError } = await supabase
         .from('menu_battle_daily')
-        .upsert(results, {
-          onConflict: 'menu_item_id,battle_date'
-        });
+        .delete()
+        .eq('battle_date', date);
         
-      if (upsertError) {
-        console.error('일별 메뉴 배틀 결과 저장 실패:', upsertError);
-        return { success: false, error: upsertError };
+      if (deleteError) {
+        console.error('기존 일별 배틀 데이터 삭제 실패:', deleteError);
+      }
+      
+      const { error: insertError } = await supabase
+        .from('menu_battle_daily')
+        .insert(results);
+        
+      if (insertError) {
+        console.error('일별 메뉴 배틀 결과 저장 실패:', insertError);
+        return { success: false, error: insertError };
       }
       
       console.log(`✅ 일별 메뉴 배틀 결과 저장 완료: ${results.length}개 아이템`);
