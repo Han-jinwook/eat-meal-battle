@@ -170,7 +170,10 @@ export async function GET(request: NextRequest) {
             final_avg_rating,
             final_rating_count,
             monthly_rank,
-            school_name
+            national_rank,
+            region_rank,
+            school_name,
+            region
           `)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
