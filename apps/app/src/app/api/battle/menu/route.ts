@@ -68,6 +68,12 @@ export async function GET(request: NextRequest) {
       
       if (isSchoolOnlyView) {
         // 우리학교만 데이터: 해당 학교의 메뉴별 배틀 데이터만 조회
+        console.log('🏫 우리학교만 모드 - 필터링 조건:', {
+          school_code: schoolCode,
+          battle_date: date,
+          table: 'menu_battle_daily'
+        });
+        
         query = supabase
           .from('menu_battle_daily')
           .select(`
@@ -79,8 +85,8 @@ export async function GET(request: NextRequest) {
             daily_rank,
             school_name
           `)
-          .eq('school_code', schoolCode)
           .eq('battle_date', date)
+          .eq('school_code', schoolCode)
           .order('daily_rank', { ascending: true });
       } else if (isNationalView) {
         // 전국 데이터: national_rank 기준으로 조회
@@ -147,6 +153,13 @@ export async function GET(request: NextRequest) {
       
       if (isSchoolOnlyView) {
         // 우리학교만 데이터: 해당 학교의 메뉴별 배틀 데이터만 조회
+        console.log('🏫 우리학교만 모드 (월별) - 필터링 조건:', {
+          school_code: schoolCode,
+          battle_year: battleYear,
+          battle_month: battleMonth,
+          table: 'menu_battle_monthly'
+        });
+        
         query = supabase
           .from('menu_battle_monthly')
           .select(`
@@ -159,9 +172,9 @@ export async function GET(request: NextRequest) {
             monthly_rank,
             school_name
           `)
-          .eq('school_code', schoolCode)
           .eq('battle_year', battleYear)
           .eq('battle_month', battleMonth)
+          .eq('school_code', schoolCode)
           .order('monthly_rank', { ascending: true });
       } else if (isNationalView) {
         // 전국 데이터: national_rank 기준으로 조회
