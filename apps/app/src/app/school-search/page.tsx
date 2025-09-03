@@ -35,7 +35,6 @@ export default function SchoolSearchPage() {
   const [user, setUser] = useState<any>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showNotificationSetup, setShowNotificationSetup] = useState(false);
   
   // 로그인된 사용자 정보 가져오기
   useEffect(() => {
@@ -223,9 +222,9 @@ export default function SchoolSearchPage() {
       setSaveSuccess(true);
       setSaveLoading(false);
 
-      // 알림 권한 요청 단계로 이동
+      // 알림 설정 단계 건너뛰고 바로 홈으로 이동
       setTimeout(() => {
-        setShowNotificationSetup(true);
+        router.push('/');
       }, 1500);
     } catch (err: any) {
       console.error('학교 정보 저장 오류:', err);
@@ -362,46 +361,6 @@ export default function SchoolSearchPage() {
         </div>
       )}
 
-      {/* 알림 권한 설정 단계 */}
-      {showNotificationSetup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              🔔 알림 설정
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              급식 메뉴, 퀴즈 결과, 배틀 초대 등의 알림을 받으시겠습니까?
-            </p>
-            
-            {/* 푸시 알림 설정 - 비활성화됨 */}
-            {/* <PushNotificationSetup 
-              onTokenReceived={() => {
-                // 토큰 등록 완료 후 메인 페이지로 이동
-                setTimeout(() => {
-                  router.push('/');
-                }, 1000);
-              }}
-            /> */}
-            
-            {/* 알림 설정 완료 후 바로 메인 페이지로 이동 */}
-            <div className="text-center">
-              <button
-                onClick={() => router.push('/')}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
-                시작하기
-              </button>
-            </div>
-            
-            <button
-              onClick={() => router.push('/')}
-              className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded font-medium"
-            >
-              나중에 설정하기
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
