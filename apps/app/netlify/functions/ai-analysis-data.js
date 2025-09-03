@@ -99,40 +99,69 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
       }
     }
 
-    // 5. 결과 구성
+    // 5. 메뉴 성과 데이터 정리
+    const menuPerformanceData = mySchoolMenuData?.map(menu => {
+      const menuItem = menuItems.find(item => item.id === menu.menu_item_id);
+      const mealMenu = mealMenus.find(meal => meal.id === menuItem?.meal_id);
+      
+      const menuPerformance = {
+        menu_name: menuItem?.item_name || '메뉴명 없음',
+        meal_date: mealMenu?.meal_date || null,
+        meal_type: mealMenu?.meal_type || null,
+        avg_rating: menu.final_avg_rating || 0,
+        rating_count: menu.final_rating_count || 0,
+        rank: menu.monthly_rank || 0,
+        region_rank: menu.region_rank || null
+      };
+      
+      console.log(`🍜 메뉴 성과:`, {
+        menu_item_id: menu.menu_item_id,
+        menu_name: menuPerformance.menu_name,
+        avg_rating: menuPerformance.avg_rating,
+        rank: menuPerformance.rank
+      });
+      
+      return menuPerformance;
+    }) || [];
+
+    // 상위/하위 메뉴 분류
+    const sortedMenus = [...menuPerformanceData].sort((a, b) => b.avg_rating - a.avg_rating);
+    const topMenus = sortedMenus.slice(0, Math.min(5, sortedMenus.length));
+    const worstMenus = sortedMenus.slice(-3).reverse();
+
+    // 6. generate-ai-prompt.js와 호환되는 데이터 구조로 결과 구성
     const result = {
       school_info: {
-        school_name: mySchoolMealData?.school_name || '학교명 없음',
-        region: mySchoolMealData?.region || '지역 없음'
+        school_name: mySchoolMealData?.school_name || mySchoolMenuData?.[0]?.school_name || '학교명 없음',
+        region: mySchoolMealData?.region || mySchoolMenuData?.[0]?.region || '지역 없음',
+        period: `${year}년 ${month}월`
+      },
+      my_school_performance: {
+        avg_rating: mySchoolMealData?.final_avg_rating || 0,
+        rating_count: mySchoolMealData?.final_rating_count || 0
       },
       meal_performance: {
         avg_rating: mySchoolMealData?.final_avg_rating || 0,
         rating_count: mySchoolMealData?.final_rating_count || 0,
         rank: mySchoolMealData?.monthly_rank || 0
       },
-      menu_performance: mySchoolMenuData?.map(menu => {
-        const menuItem = menuItems.find(item => item.id === menu.menu_item_id);
-        const mealMenu = mealMenus.find(meal => meal.id === menuItem?.meal_id);
-        
-        const menuPerformance = {
-          menu_name: menuItem?.item_name || '메뉴명 없음',
-          meal_date: mealMenu?.meal_date || null,
-          meal_type: mealMenu?.meal_type || null,
-          avg_rating: menu.final_avg_rating || 0,
-          rating_count: menu.final_rating_count || 0,
-          rank: menu.monthly_rank || 0,
-          region_rank: menu.region_rank || null
-        };
-        
-        console.log(`🍜 메뉴 성과:`, {
-          menu_item_id: menu.menu_item_id,
-          menu_name: menuPerformance.menu_name,
-          avg_rating: menuPerformance.avg_rating,
-          rank: menuPerformance.rank
-        });
-        
-        return menuPerformance;
-      }) || [],
+      menu_performance: {
+        top_menus: topMenus,
+        worst_menus: worstMenus,
+        total_menus: menuPerformanceData.length,
+        better_than_national: topMenus.filter(menu => menu.avg_rating >= 4.0).length
+      },
+      national_comparison: {
+        my_national_rank: mySchoolMealData?.national_rank || 0,
+        total_schools: 1000, // 임시값 - 실제 전국 학교 수 조회 필요
+        national_average: 3.5, // 임시값 - 실제 전국 평균 조회 필요
+        my_percentile: mySchoolMealData?.national_rank ? Math.max(1, 100 - Math.round((mySchoolMealData.national_rank / 1000) * 100)) : 50
+      },
+      regional_comparison: {
+        my_regional_rank: mySchoolMealData?.region_rank || 0,
+        total_schools: 100, // 임시값 - 실제 지역 학교 수 조회 필요
+        regional_average: 3.4 // 임시값 - 실제 지역 평균 조회 필요
+      },
       analysis_period: `${year}년 ${month}월`
     };
     
