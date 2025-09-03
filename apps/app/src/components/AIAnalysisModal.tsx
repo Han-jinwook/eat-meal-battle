@@ -79,7 +79,7 @@ const AIAnalysisModal = ({
       }
       
       const promptData = await promptResponse.json();
-      const generatedPrompt = promptData.prompt;
+      const generatedPrompt = promptData.data?.prompt || promptData.prompt;
 
       // 2. 클립보드에 복사
       await navigator.clipboard.writeText(generatedPrompt);
