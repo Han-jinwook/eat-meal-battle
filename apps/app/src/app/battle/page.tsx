@@ -1639,6 +1639,7 @@ export default function BattlePage() {
         isOpen={isAIAnalysisOpen}
         onClose={() => setIsAIAnalysisOpen(false)}
         schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+        schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code || ''}
         monthYear={viewMode === 'daily' 
           ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
           : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`

@@ -18,6 +18,7 @@ interface AIAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
   schoolName: string;
+  schoolCode: string; // 학교코드 추가
   monthYear: string;
   isViewingMode: boolean;
   onSelectApp: (app: AIApp) => void;
@@ -28,6 +29,7 @@ const AIAnalysisModal = ({
   isOpen, 
   onClose, 
   schoolName, 
+  schoolCode,
   monthYear, 
   isViewingMode,
   onSelectApp,
@@ -49,7 +51,7 @@ const AIAnalysisModal = ({
       showToast('📊 급식 데이터 분석 중...', '잠시만 기다려주세요', 'blue');
 
       // 급식 데이터 집계
-      const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${schoolName}&year=${year}&month=${month}`;
+      const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${schoolCode}&year=${year}&month=${month}`;
       const analysisResponse = await fetch(apiUrl);
       
       if (!analysisResponse.ok) {
