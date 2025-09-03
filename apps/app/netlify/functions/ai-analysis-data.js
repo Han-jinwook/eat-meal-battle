@@ -52,21 +52,23 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
 
     if (menuError) throw menuError;
 
-    // 3. 메뉴 아이템 정보 별도 조회 (작동하는 패턴 사용)
+    // 3. 메뉴 아이템 정보 별도 조회 (외래키 조인 제거하고 단순 조회)
     const menuItemIds = mySchoolMenuData.map(item => item.menu_item_id);
     const { data: menuItems, error: menuItemsError } = await supabase
       .from('meal_menu_items')
-      .select(`
-        id, 
-        item_name,
-        meal_menus!meal_menu_items_meal_id_fkey(
-          meal_date,
-          meal_type
-        )
-      `)
+      .select('id, item_name, meal_id')
       .in('id', menuItemIds);
 
     if (menuItemsError) throw menuItemsError;
+
+    // 4. 메뉴 아이템에 연결된 급식 정보 별도 조회
+    const mealIds = menuItems?.map(item => item.meal_id).filter(Boolean) || [];
+    const { data: mealMenus, error: mealMenusError } = await supabase
+      .from('meal_menus')
+      .select('id, meal_date, meal_type')
+      .in('id', mealIds);
+
+    if (mealMenusError) throw mealMenusError;
 
     // 3. 학교 정보 조회 (여러 사용자 고려)
     const { data: schoolInfoArray, error: schoolError } = await supabase
@@ -140,10 +142,11 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.slice(0, 5)
           ?.map(menu => {
             const menuItem = menuItems?.find(item => item.id === menu.menu_item_id);
+            const mealMenu = mealMenus?.find(meal => meal.id === menuItem?.meal_id);
             return {
               menu_name: menuItem?.item_name || '메뉴명 없음',
-              meal_date: menuItem?.meal_menus?.meal_date || null,
-              meal_type: menuItem?.meal_menus?.meal_type || null,
+              meal_date: mealMenu?.meal_date || null,
+              meal_type: mealMenu?.meal_type || null,
               avg_rating: menu.final_avg_rating,
               rating_count: menu.final_rating_count,
               rank: menu.monthly_rank
@@ -154,10 +157,11 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
           ?.slice(0, 3)
           ?.map(menu => {
             const menuItem = menuItems?.find(item => item.id === menu.menu_item_id);
+            const mealMenu = mealMenus?.find(meal => meal.id === menuItem?.meal_id);
             return {
               menu_name: menuItem?.item_name || '메뉴명 없음',
-              meal_date: menuItem?.meal_menus?.meal_date || null,
-              meal_type: menuItem?.meal_menus?.meal_type || null,
+              meal_date: mealMenu?.meal_date || null,
+              meal_type: mealMenu?.meal_type || null,
               avg_rating: menu.final_avg_rating,
               rating_count: menu.final_rating_count,
               rank: menu.monthly_rank
