@@ -10,19 +10,8 @@ export default function IOSChromePrompt({ onDismiss }: IOSChromePromptProps) {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // iOS Safari 감지
-    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                       !(window as any).MSStream &&
-                       !navigator.userAgent.includes('CriOS'); // Chrome이 아닌 경우
-
-    if (isIOSSafari) {
-      // 이미 크롬 안내를 본 적이 있는지 확인
-      const hasSeenChromePrompt = localStorage.getItem('ios-chrome-prompt-seen');
-      
-      if (!hasSeenChromePrompt) {
-        setShowPrompt(true);
-      }
-    }
+    // iOS Chrome 프롬프트 완전 비활성화
+    setShowPrompt(false);
   }, []);
 
   const handleInstallChrome = () => {

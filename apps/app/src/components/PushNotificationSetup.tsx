@@ -17,32 +17,10 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
   const { userSchool, loading: userLoading } = useUserSchool();
   const supabase = createClient();
 
-  // 초기 알림 권한 상태 확인 및 실시간 업데이트
+  // 푸시알림 기능 완전 비활성화 - 권한 체크하지 않음
   useEffect(() => {
-    const checkPermissionStatus = () => {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        const currentPermission = Notification.permission;
-        setNotificationStatus(currentPermission);
-        
-        // 권한 상태에 따라 UI 제어
-        if (currentPermission === 'granted') {
-          handleGetToken();
-          setShowSetup(false);
-        } else if (currentPermission === 'denied') {
-          setShowSetup(false);
-        } else if (currentPermission === 'default') {
-          setShowSetup(true);
-        }
-      }
-    };
-
-    // 초기 체크
-    checkPermissionStatus();
-
-    // 권한 상태 변경 감지를 위한 인터벌 (브라우저에서 권한 변경 이벤트가 없어서)
-    const interval = setInterval(checkPermissionStatus, 1000);
-
-    return () => clearInterval(interval);
+    setNotificationStatus('default');
+    setShowSetup(false); // UI 항상 숨김
   }, []);
 
   // 포그라운드 메시지 리스너 설정
@@ -62,56 +40,16 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
     }
   }, [fcmToken]);
 
-  // FCM 토큰 가져오기 및 서버에 저장
+  // FCM 토큰 가져오기 - 비활성화
   const handleGetToken = async () => {
-    setIsLoading(true);
-    try {
-      const token = await fetchToken(setFcmToken);
-      if (token && userSchool?.user_id) {
-        // 토큰을 Supabase에 저장
-        await saveFCMToken(token, userSchool.user_id);
-        setNotificationStatus('granted');
-        onTokenReceived?.(token);
-      }
-    } catch (error) {
-      console.error('FCM 토큰 가져오기 실패:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // 푸시알림 기능 완전 제거 - 아무 동작하지 않음
+    setShowSetup(false);
   };
 
-  // FCM 토큰을 Supabase에 저장
+  // FCM 토큰을 Supabase에 저장 - 비활성화
   const saveFCMToken = async (token: string, userId: string) => {
-    try {
-      // 기존 토큰 확인
-      const { data: existingToken } = await supabase
-        .from('user_fcm_tokens')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('token', token)
-        .single();
-
-      if (!existingToken) {
-        // 새 토큰 저장
-        const { error } = await supabase
-          .from('user_fcm_tokens')
-          .insert({
-            user_id: userId,
-            token: token,
-            device_type: getMobileOperatingSystem(),
-            is_active: true,
-            created_at: new Date().toISOString()
-          });
-
-        if (error) {
-          console.error('FCM 토큰 저장 실패:', error);
-        } else {
-          // FCM 토큰이 성공적으로 저장됨
-        }
-      }
-    } catch (error) {
-      console.error('FCM 토큰 저장 중 오류:', error);
-    }
+    // 푸시알림 기능 완전 제거 - 아무 동작하지 않음
+    console.log('FCM 토큰 저장 비활성화됨');
   };
 
   // 디바이스 타입 감지
@@ -129,45 +67,10 @@ export default function PushNotificationSetup({ onTokenReceived }: PushNotificat
     return 'web';
   };
 
-  // 알림 권한 요청
+  // 알림 권한 요청 - 완전히 비활성화
   const requestNotificationPermission = async () => {
-    // iOS Safari 체크 - 이제 IOSChromePrompt에서 처리하므로 여기서는 단순화
-    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    
-    if (!('Notification' in window)) {
-      if (isIOSSafari) {
-        // iOS Safari는 이미 IOSChromePrompt에서 처리됨
-        setNotificationStatus('denied');
-        return;
-      } else {
-        alert('이 브라우저는 알림을 지원하지 않습니다.');
-      }
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Android Chrome에서 사용자 제스처 확인
-      const isAndroid = /Android/.test(navigator.userAgent);
-      
-      if (isAndroid) {
-        // Android 기기에서 알림 권한 요청
-        // 약간의 지연을 두고 권한 요청 (사용자 제스처 컨텍스트 유지)
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      
-      // 알림 권한 요청 제거 - 기본 상태 유지
-      setNotificationStatus('default');
-      setShowSetup(false); // UI 숨김
-    } catch (error) {
-      console.error('알림 권한 요청 실패:', error);
-      // Android에서 권한 요청 실패 시 추가 안내
-      if (/Android/.test(navigator.userAgent)) {
-        alert('알림 권한 요청에 실패했습니다. 브라우저 설정 > 사이트 설정 > 알림에서 수동으로 허용해주세요.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    // 푸시알림 기능 완전 제거 - 아무 동작하지 않음
+    setShowSetup(false); // UI만 숨김
   };
 
   // 로딩 중이거나 사용자 정보가 없으면 표시하지 않음

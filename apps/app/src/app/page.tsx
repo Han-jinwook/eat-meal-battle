@@ -16,7 +16,6 @@ import ShareButton from '@/components/ShareButton';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareModal from '@/components/ShareModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
-import IOSChromePrompt from '@/components/IOSChromePrompt';
 import ChromeRedirectHandler from '@/components/ChromeRedirectHandler';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import PublicDashboard from '@/components/PublicDashboard';
@@ -777,11 +776,6 @@ export default function Home() {
         </div>
       )}
       
-      {/* iOS Chrome 프롬프트 */}
-      <IOSChromePrompt />
-      
-      {/* Chrome 리다이렉트 핸들러 */}
-      <ChromeRedirectHandler />
       
       <div className="max-w-4xl mx-auto">
         {/* 학교 정보 표시 (현재 선택된 학교 기준) */}

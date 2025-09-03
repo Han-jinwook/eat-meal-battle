@@ -61,35 +61,16 @@ export const initializeFirebase = () => {
   return app;
 };
 
-// 메시징 인스턴스 가져오기
+// FCM 토큰 기능 완전 비활성화
 export const fetchToken = async (setTokenFound: (token: string) => void) => {
-  try {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      const firebaseApp = initializeFirebase();
-      const messaging = getMessaging(firebaseApp);
-      
-      // 알림 권한 요청 제거 - FCM 토큰 기능 비활성화
-      console.log('알림 권한 요청이 비활성화되었습니다.');
-      return null;
-    }
-  } catch (error) {
-    console.error('FCM 토큰 검색 중 오류 발생:', error);
-  }
-  
+  // 푸시알림 기능 완전 제거
   return null;
 };
 
-// 포그라운드 메시지 수신 처리
+// 포그라운드 메시지 수신 처리 - 비활성화
 export const onMessageListener = () => {
   return new Promise((resolve) => {
-    if (typeof window !== 'undefined') {
-      const firebaseApp = initializeFirebase();
-      const messaging = getMessaging(firebaseApp);
-      
-      onMessage(messaging, (payload) => {
-        console.log('메시지 수신:', payload);
-        resolve(payload);
-      });
-    }
+    // 푸시알림 기능 완전 제거
+    resolve(null);
   });
 };

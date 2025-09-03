@@ -14,12 +14,10 @@ export default function NotificationToggle({ userId }: NotificationToggleProps) 
   const [notificationStatus, setNotificationStatus] = useState<'default' | 'granted' | 'denied'>('default');
   const supabase = createClient();
 
-  // 초기 알림 권한 상태 확인
+  // 알림 기능 완전 비활성화
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationStatus(Notification.permission);
-      setNotificationEnabled(Notification.permission === 'granted');
-    }
+    setNotificationStatus('default');
+    setNotificationEnabled(false);
   }, []);
 
   // iOS Safari 감지
@@ -29,83 +27,16 @@ export default function NotificationToggle({ userId }: NotificationToggleProps) 
            !navigator.userAgent.includes('CriOS'); // Chrome이 아닌 경우
   };
 
-  // FCM 토큰 저장
+  // FCM 토큰 저장 - 비활성화
   const saveFCMToken = async (token: string) => {
-    try {
-      // 기존 토큰 확인
-      const { data: existingToken } = await supabase
-        .from('user_fcm_tokens')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('token', token)
-        .single();
-
-      if (!existingToken) {
-        // 새 토큰 저장
-        const { error } = await supabase
-          .from('user_fcm_tokens')
-          .insert({
-            user_id: userId,
-            token: token,
-            platform: 'web',
-            created_at: new Date().toISOString()
-          });
-
-        if (error) {
-          console.error('FCM 토큰 저장 실패:', error);
-        } else {
-          console.log('FCM 토큰 저장 성공');
-        }
-      }
-    } catch (error) {
-      console.error('FCM 토큰 저장 중 오류:', error);
-    }
+    // 푸시알림 기능 완전 제거 - 아무 동작하지 않음
+    console.log('FCM 토큰 저장 비활성화됨');
   };
 
-  // 토글 핸들러
+  // 토글 핸들러 - 완전 비활성화
   const handleToggle = async () => {
-    if (isLoading) return;
-
-    // iOS Safari인 경우 크롬 안내
-    if (isIOSSafari()) {
-      const shouldInstallChrome = confirm(
-        '🍽️ 급식 배틀 푸시 알림\n\n' +
-        '아이폰에선 Chrome에서 푸시알림이 가능합니다.\n\n' +
-        '크롬에서 앱 열기'
-      );
-
-      if (shouldInstallChrome) {
-        // 현재 URL 저장
-        localStorage.setItem('return-url-after-chrome', window.location.href);
-        // App Store로 이동
-        window.location.href = 'https://apps.apple.com/kr/app/google-chrome/id535886823';
-      }
-      return;
-    }
-
-    // 알림이 이미 허용된 경우 토글
-    if (notificationStatus === 'granted') {
-      setNotificationEnabled(!notificationEnabled);
-      return;
-    }
-
-    // 알림 권한 요청
-    setIsLoading(true);
-    try {
-      if (!('Notification' in window)) {
-        alert('이 브라우저는 알림을 지원하지 않습니다.');
-        return;
-      }
-
-      // 알림 권한 요청 제거 - 기본 상태만 토글
-      setNotificationEnabled(!notificationEnabled);
-      setNotificationStatus('default');
-    } catch (error) {
-      console.error('알림 권한 요청 실패:', error);
-      alert('알림 설정 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
+    // 푸시알림 기능 완전 제거 - 아무 동작하지 않음
+    return;
   };
 
   return (
