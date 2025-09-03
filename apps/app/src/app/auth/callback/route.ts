@@ -301,32 +301,72 @@ export async function GET(request: NextRequest) {
           console.info('🔍 birthDate:', birthDate);
         }
         
-        // 세션이 성공적으로 생성되었으면 사용자 상태에 따라 리디렉션
-        // 1. 학생 나이 (6-39세) + 생년월일 있음 → 학교설정 페이지
-        // 2. 비학생 나이 + 생년월일 있음 → 관심학교 안내 (홈페이지)
-        // 3. 생년월일 없음 → 관심학교 안내 (홈페이지)
-        if (birthDate) {
-          const today = new Date();
-          const birth = new Date(birthDate);
-          let age = today.getFullYear() - birth.getFullYear();
-          const monthDiff = today.getMonth() - birth.getMonth();
-          
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-            age--;
-          }
-          
-          const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세
-          
-          if (isStudent) {
-            console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
-            redirectUrl = '/school-search';
-          } else {
-            console.info('✅ 비학생 나이 확인 → 홈페이지(관심학교 안내)로 리다이렉트');
-            redirectUrl = '/';
-          }
-        } else {
-          console.info('✅ 생년월일 없음 → 홈페이지(관심학교 안내)로 리다이렉트');
+        // 정밀 로그인 플로우 구현
+        console.info('🔍 정밀 로그인 플로우 시작 - 사용자 상태 분석');
+        
+        // 1단계: 학교 정보 확인
+        const { data: existingSchool, error: schoolCheckError } = await supabase
+          .from('school_infos')
+          .select('id, school_code, school_name')
+          .eq('user_id', data.session.user.id)
+          .single();
+        
+        if (schoolCheckError && schoolCheckError.code !== 'PGRST116') {
+          console.error('❌ 학교 정보 조회 오류:', schoolCheckError);
           redirectUrl = '/';
+        } else if (existingSchool) {
+          // 학교 정보 있음 → 해당 학교 급식페이지로
+          console.info('✅ 등록된 학교 정보 발견 → 홈페이지(해당 학교 급식)로 리다이렉트');
+          console.info(`📚 학교: ${existingSchool.school_name} (${existingSchool.school_code})`);
+          redirectUrl = '/';
+        } else {
+          // 2단계: 학교 정보 없음 → 관심학교 확인
+          console.info('🔍 학교 정보 없음 - 관심학교 등록 여부 확인');
+          
+          const { data: interestSchools, error: interestError } = await supabase
+            .from('interest_schools')
+            .select('id, school_code, school_name')
+            .eq('user_id', data.session.user.id)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          
+          if (interestError) {
+            console.error('❌ 관심학교 조회 오류:', interestError);
+            redirectUrl = '/';
+          } else if (interestSchools && interestSchools.length > 0) {
+            // 관심학교 있음 → 첫번째 관심학교 급식페이지로
+            const firstInterestSchool = interestSchools[0];
+            console.info('✅ 등록된 관심학교 발견 → 홈페이지(첫번째 관심학교 급식)로 리다이렉트');
+            console.info(`🏫 관심학교: ${firstInterestSchool.school_name} (${firstInterestSchool.school_code})`);
+            redirectUrl = '/';
+          } else {
+            // 3단계: 관심학교도 없음 → 나이 확인 후 분기
+            console.info('🔍 관심학교도 없음 - 나이 확인 후 분기 결정');
+            
+            if (birthDate) {
+              const today = new Date();
+              const birth = new Date(birthDate);
+              let age = today.getFullYear() - birth.getFullYear();
+              const monthDiff = today.getMonth() - birth.getMonth();
+              
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+              }
+              
+              const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세
+              
+              if (isStudent) {
+                console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
+                redirectUrl = '/school-search';
+              } else {
+                console.info('✅ 비학생 나이 확인 → 홈페이지(관심학교 안내)로 리다이렉트');
+                redirectUrl = '/';
+              }
+            } else {
+              console.info('✅ 생년월일 없음 → 홈페이지(관심학교 안내)로 리다이렉트');
+              redirectUrl = '/';
+            }
+          }
         }
       }
     } else {
