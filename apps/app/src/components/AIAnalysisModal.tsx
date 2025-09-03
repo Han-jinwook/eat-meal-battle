@@ -63,7 +63,7 @@ const AIAnalysisModal = ({
       // AI 프롬프트 생성
       const promptPayload = {
         analysis_data: analysisData,
-        school_code: schoolName
+        school_code: schoolCode
       };
       
       const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
@@ -313,32 +313,22 @@ const AIAnalysisModal = ({
           {/* AI 앱 선택 - 통합 버튼 */}
           <div className="mb-6">
             <h4 className="font-medium text-gray-900 mb-3">AI 앱 선택</h4>
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {aiApps.map(app => (
                 <button
                   key={app.id}
                   onClick={() => handleDirectAIExecution(app)}
-                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 group"
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group flex flex-col items-center text-center"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 group-hover:scale-110 transition-transform flex items-center justify-center">
-                      <img 
-                        src={app.icon} 
-                        alt={`${app.name} 로고`}
-                        className="w-10 h-10 object-contain"
-                      />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-bold text-gray-800 group-hover:text-purple-700 text-lg mb-1">
-                        {app.name}
-                      </div>
-                      <div className="text-sm text-gray-600 group-hover:text-purple-600">
-                        📋 복사 + 🌐 웹열기 + 🚀 자동분석
-                      </div>
-                    </div>
-                    <div className="text-purple-500 group-hover:text-purple-700 text-2xl">
-                      →
-                    </div>
+                  <div className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform flex items-center justify-center">
+                    <img 
+                      src={app.icon} 
+                      alt={`${app.name} 로고`}
+                      className="w-10 h-10 object-contain"
+                    />
+                  </div>
+                  <div className="font-bold text-gray-800 group-hover:text-blue-700 text-sm">
+                    {app.name}
                   </div>
                 </button>
               ))}
