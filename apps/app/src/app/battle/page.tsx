@@ -1655,6 +1655,8 @@ export default function BattlePage() {
         isViewingMode={schoolMode.isViewingMode}
         onSelectApp={handleAIAppSelection}
         prompt={""}
+        year={viewMode === 'daily' ? new Date(selectedDate).getFullYear() : new Date(selectedMonth).getFullYear()}
+        month={viewMode === 'daily' ? new Date(selectedDate).getMonth() + 1 : new Date(selectedMonth).getMonth() + 1}
       />
       </div>
     </div>

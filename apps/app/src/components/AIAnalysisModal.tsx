@@ -23,6 +23,8 @@ interface AIAnalysisModalProps {
   isViewingMode: boolean;
   onSelectApp: (app: AIApp) => void;
   prompt: string; // AI 분석 프롬프트 추가
+  year: number; // 실제 분석에 사용할 연도
+  month: number; // 실제 분석에 사용할 월
 }
 
 const AIAnalysisModal = ({ 
@@ -33,7 +35,9 @@ const AIAnalysisModal = ({
   monthYear, 
   isViewingMode,
   onSelectApp,
-  prompt
+  prompt,
+  year,
+  month
 }: AIAnalysisModalProps) => {
   
   // AI 앱 직접 실행 함수
@@ -41,11 +45,9 @@ const AIAnalysisModal = ({
     onClose(); // 모달 먼저 닫기
     
     try {
-      // 1. 프롬프트 생성 (기존 handleAIAppSelection 로직 사용)
+      // 1. 프롬프트 생성 (전달받은 year, month 사용)
       const currentSchool = { school_name: schoolName };
-      const targetDate = new Date();
-      const year = targetDate.getFullYear();
-      const month = targetDate.getMonth() + 1;
+      console.log(`🚀 AI 분석 시작: ${schoolCode}, ${year}-${month} (모달에서 전달받은 날짜 사용)`);
 
       // 로딩 토스트
       showToast('📊 급식 데이터 분석 중...', '잠시만 기다려주세요', 'blue');
