@@ -44,10 +44,10 @@ async function analyzeMonthlyMealData(schoolCode, year, month) {
     const mySchoolMealData = mySchoolMealDataArray?.[0] || null;
     if (mealError && mealError.code !== 'PGRST116') throw mealError;
 
-    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회
+    // 2. 해당 학교의 월간 메뉴 배틀 데이터 조회 (region_rank 포함)
     const { data: mySchoolMenuData, error: menuError } = await supabase
       .from('menu_battle_monthly')
-      .select('*')
+      .select('menu_item_id, battle_year, battle_month, school_code, final_avg_rating, final_rating_count, monthly_rank, national_rank, region_rank, school_name, region')
       .eq('school_code', schoolCode)
       .eq('battle_year', year)
       .eq('battle_month', month);
