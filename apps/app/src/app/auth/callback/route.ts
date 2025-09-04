@@ -344,7 +344,7 @@ export async function GET(request: NextRequest) {
         // 1단계: 학교 정보 확인
         const { data: existingSchool, error: schoolCheckError } = await supabase
           .from('school_infos')
-          .select('id, school_code, school_name')
+          .select('school_code, school_name')
           .eq('user_id', data.session.user.id)
           .single();
         
