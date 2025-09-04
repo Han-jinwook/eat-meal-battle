@@ -193,9 +193,10 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
     return acc;
   }, {} as Record<string, typeof battleResultsWithNationalRank>);
   
-  // 각 지역별로 순위 계산 및 school_name 매핑
+  // 각 지역별로 독립적으로 순위 계산 및 school_name 매핑
   const finalResults = [...battleResultsWithNationalRank];
   for (const [region, regionResults] of Object.entries(regionGroups)) {
+    // 해당 지역의 메뉴들만 평점 순으로 정렬
     const sortedRegionResults = regionResults.sort((a, b) => {
       if (b.final_avg_rating !== a.final_avg_rating) {
         return b.final_avg_rating - a.final_avg_rating;
@@ -203,6 +204,7 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
       return b.final_rating_count - a.final_rating_count;
     });
     
+    // 해당 지역 내에서 1위부터 연속된 순위 부여
     sortedRegionResults.forEach((result, index) => {
       const finalIndex = finalResults.findIndex(r => 
         r.menu_item_id === result.menu_item_id && 
@@ -211,7 +213,7 @@ export async function calculateDailyMenuBattle(targetDate?: string, schoolCode?:
       if (finalIndex !== -1) {
         finalResults[finalIndex] = {
           ...finalResults[finalIndex],
-          region_rank: index + 1,
+          region_rank: index + 1, // 지역 내에서 1, 2, 3... 연속 순위
           school_name: schoolNameMap[result.school_code] || null,
           region: schoolRegionMap[result.school_code] || null
         };
@@ -373,9 +375,10 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
     return acc;
   }, {} as Record<string, typeof monthlyResultsWithNationalRank>);
   
-  // 각 지역별로 순위 계산
+  // 각 지역별로 독립적으로 순위 계산
   const finalMonthlyResults = [...monthlyResultsWithNationalRank];
   for (const [region, regionResults] of Object.entries(regionGroups)) {
+    // 해당 지역의 메뉴들만 평점 순으로 정렬
     const sortedRegionResults = regionResults.sort((a, b) => {
       if (b.final_avg_rating !== a.final_avg_rating) {
         return b.final_avg_rating - a.final_avg_rating;
@@ -383,6 +386,7 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
       return b.final_rating_count - a.final_rating_count;
     });
     
+    // 해당 지역 내에서 1위부터 연속된 순위 부여
     sortedRegionResults.forEach((result, index) => {
       const finalIndex = finalMonthlyResults.findIndex(r => 
         r.menu_item_id === result.menu_item_id && 
@@ -391,7 +395,7 @@ export async function calculateMonthlyMenuBattle(year?: number, month?: number, 
       if (finalIndex !== -1) {
         finalMonthlyResults[finalIndex] = {
           ...finalMonthlyResults[finalIndex],
-          region_rank: index + 1,
+          region_rank: index + 1, // 지역 내에서 1, 2, 3... 연속 순위
           school_name: schoolNameMap[result.school_code] || null,
           region: schoolRegionMap[result.school_code] || null
         };
