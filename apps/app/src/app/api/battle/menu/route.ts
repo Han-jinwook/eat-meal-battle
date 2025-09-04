@@ -384,7 +384,7 @@ export async function GET(request: NextRequest) {
         }
       });
       
-      // 전국 평균 계산 및 순위 매기기
+      // 전국 평균 계산
       processedData = Object.values(menuGroups).map(group => {
         const avgRating = group.ratings.reduce((sum, rating) => sum + rating, 0) / group.ratings.length;
         
@@ -402,16 +402,6 @@ export async function GET(request: NextRequest) {
           school_name: topSchoolName,
           school_code: topSchoolCode
         };
-      });
-      
-      // 평점 기준으로 정렬하고 순위 부여
-      processedData.sort((a, b) => b.final_avg_rating - a.final_avg_rating);
-      processedData.forEach((item, index) => {
-        if (type === 'daily') {
-          item.daily_rank = index + 1;
-        } else {
-          item.monthly_rank = index + 1;
-        }
       });
       
       console.log('✅ 전국 데이터 집계 완료:', processedData.length, '개 메뉴');
@@ -449,7 +439,7 @@ export async function GET(request: NextRequest) {
     });
     
     // 배틀 결과와 메뉴 아이템 정보 합치기
-    const battleResults = processedData?.map((item: any) => {
+    let battleResults = processedData?.map((item: any) => {
       const menuInfo = menuItemMap[item.menu_item_id] || { item_name: '알 수 없는 메뉴', meal_date: null };
       const result = {
         menu_item_id: item.menu_item_id,
@@ -471,6 +461,30 @@ export async function GET(request: NextRequest) {
       
       return result;
     }) || [];
+
+    // 메뉴명을 가져온 후 최종 정렬 및 순위 재조정 (메뉴배틀: 동점 시 메뉴명 가나다순)
+    battleResults.sort((a, b) => {
+      // 1차: 평점 내림차순
+      if (b.final_avg_rating !== a.final_avg_rating) {
+        return b.final_avg_rating - a.final_avg_rating;
+      }
+      // 2차: 동점 시 메뉴명 가나다순 (오름차순)
+      return (a.item_name || '').localeCompare(b.item_name || '', 'ko-KR');
+    });
+    
+    // 동점 처리를 위한 순위 재부여 (같은 점수면 같은 순위, 다음 순위는 건너뛰기)
+    let currentRank = 1;
+    battleResults.forEach((item, index) => {
+      if (index > 0 && battleResults[index - 1].final_avg_rating !== item.final_avg_rating) {
+        currentRank = index + 1;
+      }
+      
+      if (type === 'daily') {
+        item.daily_rank = currentRank;
+      } else {
+        item.monthly_rank = currentRank;
+      }
+    });
     
     console.log('📋 최종 배틀 결과:', battleResults.slice(0, 2));
 

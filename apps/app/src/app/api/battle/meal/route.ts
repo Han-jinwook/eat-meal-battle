@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
       }
       
       // 일별 데이터와 학교 정보 결합 + 공백 레코드 방지
-      const enrichedData = data
+      let enrichedData = data
         .map(battleItem => {
           const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
           return {
@@ -148,6 +148,25 @@ export async function GET(request: NextRequest) {
           return true;
         })
         .map(({ _hasSchoolInfo, ...item }) => item); // _hasSchoolInfo 필드 제거
+
+      // 급식배틀 정렬 및 순위 재조정 (동점 시 학교명 가나다순)
+      enrichedData.sort((a, b) => {
+        // 1차: 평점 내림차순
+        if (b.avg_rating !== a.avg_rating) {
+          return b.avg_rating - a.avg_rating;
+        }
+        // 2차: 동점 시 학교명 가나다순 (오름차순)
+        return (a.school_name || '').localeCompare(b.school_name || '', 'ko-KR');
+      });
+      
+      // 동점 처리를 위한 순위 재부여 (같은 점수면 같은 순위, 다음 순위는 건너뛰기)
+      let currentRank = 1;
+      enrichedData.forEach((item, index) => {
+        if (index > 0 && enrichedData[index - 1].avg_rating !== item.avg_rating) {
+          currentRank = index + 1;
+        }
+        item.daily_rank = currentRank;
+      });
 
       console.log('📤 일별 최종 응답 데이터:', {
         count: enrichedData.length,
@@ -266,7 +285,7 @@ export async function GET(request: NextRequest) {
       }
       
       // 월별 데이터와 학교 정보 결합 + 공백 레코드 방지
-      const enrichedData = data
+      let enrichedData = data
         .map(battleItem => {
           const schoolInfo = targetSchools?.find(school => school.school_code === battleItem.school_code);
           return {
@@ -285,6 +304,25 @@ export async function GET(request: NextRequest) {
           return true;
         })
         .map(({ _hasSchoolInfo, ...item }) => item); // _hasSchoolInfo 필드 제거
+
+      // 급식배틀 월별 정렬 및 순위 재조정 (동점 시 학교명 가나다순)
+      enrichedData.sort((a, b) => {
+        // 1차: 평점 내림차순
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        // 2차: 동점 시 학교명 가나다순 (오름차순)
+        return (a.school_name || '').localeCompare(b.school_name || '', 'ko-KR');
+      });
+      
+      // 동점 처리를 위한 순위 재부여 (같은 점수면 같은 순위, 다음 순위는 건너뛰기)
+      let currentRank = 1;
+      enrichedData.forEach((item, index) => {
+        if (index > 0 && enrichedData[index - 1].final_avg_rating !== item.final_avg_rating) {
+          currentRank = index + 1;
+        }
+        item.monthly_rank = currentRank;
+      });
 
       console.log('📤 월별 최종 응답 데이터:', {
         count: enrichedData.length,
