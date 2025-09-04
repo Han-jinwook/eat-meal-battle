@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { calculateDailyMenuBattle, calculateMonthlyMenuBattle, calculateDailyMealBattle, calculateMonthlyMealBattle } from '@/utils/battleCalculator';
+// 배틀 계산 함수들 import (Netlify Functions 버전 사용)
+const { calculateDailyMenuBattle, calculateMonthlyMenuBattle, calculateDailyMealBattle, calculateMonthlyMealBattle } = require('../../../../netlify/functions/utils/battleCalculator');
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -125,11 +126,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
             console.log('🏆 일별 배틀 계산 시작:', { mealDate, schoolCode });
             
             // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
-            await calculateDailyMenuBattle(mealDate, schoolCode);
+            await calculateDailyMenuBattle(mealDate, schoolCode, supabase);
             console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
             
             // 급식 배틀 계산 (학교 간 경쟁)
-            await calculateDailyMealBattle(mealDate);
+            await calculateDailyMealBattle(mealDate, null, supabase);
             console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
             
             // 완료 후 타이머 제거
@@ -145,10 +146,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           try {
             console.log('🏆 월별 배틀 계산 시작:', { yearMonth, schoolCode });
             
-            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode);
+            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, supabase);
             console.log(`✅ 월별 메뉴 배틀 계산 완료: ${yearMonth}`);
             
-            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1);
+            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, null, supabase);
             console.log(`✅ 월별 급식 배틀 계산 완료: ${yearMonth}`);
             
             // 완료 후 타이머 제거
