@@ -124,10 +124,10 @@ export default function BattlePage() {
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
 
-  // 사용자 학교 정보가 로드되면 기본 지역 설정
+  // 사용자 학교 정보가 로드되면 기본값을 '우리학교'로 설정
   useEffect(() => {
-    if (userSchool?.region && !selectedRegion) {
-      setSelectedRegion(userSchool.region);
+    if (userSchool?.school_code && !selectedRegion) {
+      setSelectedRegion('우리학교');
     }
   }, [userSchool, selectedRegion]);
   
