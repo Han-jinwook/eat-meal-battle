@@ -133,7 +133,7 @@ exports.handler = async (event, context) => {
 
       스타일: 실제 한국 학교 급식실 느낌, 자연광, 포토리얼리스틱`,
       n: 1,
-      size: "512x512",   // 1024→512로 축소하여 업로드 속도 향상 + 타임아웃 방지
+      size: "1024x1024",   // OpenAI API 지원 크기 (512x512 더이상 지원 안함)
       quality: "medium"    // medium 품질로 설정하여 속도 최적화
       // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
