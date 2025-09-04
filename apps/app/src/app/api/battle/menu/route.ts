@@ -483,6 +483,10 @@ export async function GET(request: NextRequest) {
         item.daily_rank = currentRank;
       } else {
         item.monthly_rank = currentRank;
+        // 지역 모드일 때는 region_rank도 업데이트
+        if (region && !schoolOnly) {
+          item.region_rank = currentRank;
+        }
       }
     });
     
