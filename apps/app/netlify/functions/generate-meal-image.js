@@ -133,8 +133,8 @@ exports.handler = async (event, context) => {
 
       스타일: 실제 한국 학교 급식실 느낌, 자연광, 포토리얼리스틱`,
       n: 1,
-      size: "1024x1024", // 픽셀 수 줄여서 처리 속도 향상 + 타임아웃 방지
-      quality: "medium"    // 품질 중간으로 설정하여 속도와 품질 균형 (low/medium/high/auto)
+      size: "512x512",   // 1024→512로 축소하여 업로드 속도 향상 + 타임아웃 방지
+      quality: "standard"  // standard 품질로 설정하여 속도 최적화
       // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
     
