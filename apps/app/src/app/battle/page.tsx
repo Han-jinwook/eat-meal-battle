@@ -1482,6 +1482,13 @@ export default function BattlePage() {
         isOpen={isAIAnalysisOpen}
         onClose={() => setIsAIAnalysisOpen(false)}
         onSelectApp={handleAIAppSelection}
+        schoolName={(schoolMode.selectedInterestSchool || userSchool)?.school_name || ''}
+        schoolCode={(schoolMode.selectedInterestSchool || userSchool)?.school_code || ''}
+        monthYear={viewMode === 'daily' ? selectedDate.substring(0, 7) : selectedMonth}
+        isViewingMode={!!schoolMode.selectedInterestSchool}
+        prompt=""
+        year={viewMode === 'daily' ? new Date(selectedDate).getFullYear() : new Date(selectedMonth).getFullYear()}
+        month={viewMode === 'daily' ? new Date(selectedDate).getMonth() + 1 : new Date(selectedMonth).getMonth() + 1}
       />
 
       {/* iOS 수동 복사 모달 */}
