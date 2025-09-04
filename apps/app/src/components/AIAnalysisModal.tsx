@@ -81,12 +81,12 @@ const AIAnalysisModal = ({
       const promptData = await promptResponse.json();
       const generatedPrompt = promptData.data?.prompt || promptData.prompt;
 
+      // 프롬프트를 먼저 저장 (클립보드 복사 실패해도 모달에서 사용 가능)
+      (window as any).lastGeneratedPrompt = generatedPrompt;
+
       // 2. 클립보드에 복사
       await navigator.clipboard.writeText(generatedPrompt);
       console.log('✅ 클립보드 복사 완료');
-      
-      // 프롬프트를 외부 스코프에서 접근 가능하도록 저장
-      (window as any).lastGeneratedPrompt = generatedPrompt;
       
       // 2. 플랫폼 감지 및 실행 전략 결정
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
