@@ -170,11 +170,14 @@ const AIAnalysisModal = ({
           `;
           modal.innerHTML = `
             <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-              <h3 style="margin: 0 0 15px 0; color: #333;">📋 텍스트를 복사하세요</h3>
-              <textarea readonly style="width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: none;">${(window as any).lastGeneratedPrompt || '프롬프트 생성 실패'}</textarea>
-              <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button onclick="window.open('${app.webUrl}', '_blank')" style="flex: 1; padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 6px; font-size: 16px;">${app.name} 웹 열기</button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #666; color: white; border: none; border-radius: 6px; font-size: 16px;">닫기</button>
+              <h3 style="margin: 0 0 15px 0; color: #333;">📋 iOS 수동 복사</h3>
+              <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; text-align: center;"><strong>텍스트를 터치해서 전체 선택 → 복사</strong><br/>그 다음 ${app.name}에서 붙여넣기하세요.</p>
+              <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; max-height: 160px; overflow-y: auto;">
+                <textarea readonly onclick="this.select(); this.setSelectionRange(0, this.value.length);" style="width: 100%; height: 120px; padding: 8px; border: none; background: transparent; font-size: 12px; resize: none; outline: none;">${(window as any).lastGeneratedPrompt || '프롬프트 생성 실패'}</textarea>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button onclick="window.open('${app.webUrl}', '_blank')" style="flex: 1; padding: 12px 20px; background: #007AFF; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500;">${app.name} 웹 열기</button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 12px 16px; background: #666; color: white; border: none; border-radius: 8px; font-size: 16px;">닫기</button>
               </div>
             </div>
           `;

@@ -10,7 +10,6 @@ import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareButton from '@/components/ShareButton';
 import AIAnalysisModal from '@/components/AIAnalysisModal';
-import IOSCopyModal from '@/components/IOSCopyModal';
 import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -50,9 +49,6 @@ export default function BattlePage() {
   // AI 분석 모달 상태 관리
   const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState<boolean>(false);
   
-  // iOS 수동 복사 모달 상태 관리
-  const [isIOSCopyModalOpen, setIsIOSCopyModalOpen] = useState<boolean>(false);
-  const [iosCopyData, setIOSCopyData] = useState<{prompt: string, appName: string, appUrl: string} | null>(null);
   
   // 배틀 페이지는 읽기 전용이므로 권한 체크 불필요
   
@@ -422,12 +418,7 @@ export default function BattlePage() {
       
       if (isIOS) {
         // iOS: 수동 복사 모달 표시
-        setIOSCopyData({
-          prompt: generatedPrompt,
-          appName: selectedApp.name,
-          appUrl: selectedApp.webUrl
-        });
-        setIsIOSCopyModalOpen(true);
+        // iOS는 AIAnalysisModal 내부에서 처리됨
       } else {
         // 다른 플랫폼: 자동 복사 시도
         try {
@@ -1491,19 +1482,6 @@ export default function BattlePage() {
         month={viewMode === 'daily' ? new Date(selectedDate).getMonth() + 1 : new Date(selectedMonth).getMonth() + 1}
       />
 
-      {/* iOS 수동 복사 모달 */}
-      {iosCopyData && (
-        <IOSCopyModal
-          isOpen={isIOSCopyModalOpen}
-          onClose={() => {
-            setIsIOSCopyModalOpen(false);
-            setIOSCopyData(null);
-          }}
-          prompt={iosCopyData.prompt}
-          appName={iosCopyData.appName}
-          appUrl={iosCopyData.appUrl}
-        />
-      )}
       </div>
     </div>
   );
