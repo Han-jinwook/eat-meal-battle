@@ -1195,6 +1195,42 @@ isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30); // 원래 로�
 
 ---
 
+=== 🔧 AI 이미지 생성 OpenAI API 최적화 (2025-09-04) ===
+
+## 주요 수정사항
+
+### 1️⃣ OpenAI 이미지 크기 파라미터 오류 수정
+- **문제**: `512x512` 크기가 더 이상 지원되지 않아 400 에러 발생
+- **해결**: `1024x1024` 크기로 변경
+- **파일**: `apps/app/netlify/functions/generate-meal-image.js`
+
+### 2️⃣ PNG → JPEG 압축 후처리 구현
+- **목적**: 용량 최적화 및 업로드 속도 향상
+- **구현**: Sharp 라이브러리 사용
+- **압축 설정**: 
+  - 품질: 85%
+  - 점진적 로딩: `progressive: true`
+- **성과**: 89% 용량 감소 (1.75MB → 189KB)
+
+### 3️⃣ 실시간 이미지 업데이트 수정
+- **문제**: AI 생성 이미지가 프론트엔드에 즉시 표시되지 않음
+- **원인**: `school_code` 기반 필터링이 `meal_images` 테이블과 맞지 않음
+- **해결**: `meal_id` 기반 필터링으로 변경
+- **파일**: `apps/app/src/components/MealImageUploader.tsx`
+
+### 4️⃣ AI 분석 API 파라미터 수정
+- **문제**: `schoolName` 대신 `schoolCode` 필요
+- **해결**: `AIAnalysisModal`에 `schoolCode` prop 추가
+- **파일**: `apps/app/src/components/AIAnalysisModal.tsx`, `apps/app/src/app/battle/page.tsx`
+
+## 성과 요약
+- ✅ AI 이미지 생성 API 오류 해결
+- ✅ 89% 용량 감소로 업로드 속도 향상
+- ✅ 실시간 이미지 표시 정상화
+- ✅ AI 분석 API 정상 작동
+
+---
+
 === 🔧 AI 이미지 생성 시 로그인 풀림 문제 해결 (2025-08-08) ===
 
 ## 문제 상황

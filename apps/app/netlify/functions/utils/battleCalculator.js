@@ -75,7 +75,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
       return b.menu_item_rating_stats.rating_count - a.menu_item_rating_stats.rating_count;
     });
     
-    // 순위 계산 및 결과 생성
+    // 전국 순위 계산 및 결과 생성
     const results = sortedItems.map((item, index) => {
       const schoolInfo = schoolMap[item.meal_menus.school_code] || {};
       return {
@@ -86,8 +86,38 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
         region: schoolInfo.region || '',
         final_avg_rating: item.menu_item_rating_stats.avg_rating,
         final_rating_count: item.menu_item_rating_stats.rating_count,
-        daily_rank: index + 1
+        daily_rank: index + 1,
+        national_rank: index + 1 // 전국 순위 추가
       };
+    });
+
+    // 지역별 순위 계산
+    const regionGroups = {};
+    results.forEach(result => {
+      if (result.region) {
+        if (!regionGroups[result.region]) regionGroups[result.region] = [];
+        regionGroups[result.region].push(result);
+      }
+    });
+
+    // 각 지역별로 순위 재계산
+    Object.keys(regionGroups).forEach(region => {
+      const regionItems = regionGroups[region].sort((a, b) => {
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      });
+      
+      regionItems.forEach((item, index) => {
+        const resultIndex = results.findIndex(r => 
+          r.menu_item_id === item.menu_item_id && 
+          r.school_code === item.school_code
+        );
+        if (resultIndex !== -1) {
+          results[resultIndex].region_rank = index + 1;
+        }
+      });
     });
     
     // DB에 결과 저장
@@ -226,7 +256,7 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
         return b.total_count - a.total_count;
       });
     
-    // 순위 계산 및 결과 생성
+    // 전국 순위 계산 및 결과 생성
     const results = monthlyResults.map((item, index) => ({
       menu_item_id: item.menu_item_id,
       battle_year: year,
@@ -236,8 +266,38 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
       region: item.region,
       final_avg_rating: item.final_avg_rating,
       final_rating_count: item.total_count,
-      monthly_rank: index + 1
+      monthly_rank: index + 1,
+      national_rank: index + 1 // 전국 순위 추가
     }));
+
+    // 지역별 순위 계산
+    const regionGroups = {};
+    results.forEach(result => {
+      if (result.region) {
+        if (!regionGroups[result.region]) regionGroups[result.region] = [];
+        regionGroups[result.region].push(result);
+      }
+    });
+
+    // 각 지역별로 순위 재계산
+    Object.keys(regionGroups).forEach(region => {
+      const regionItems = regionGroups[region].sort((a, b) => {
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      });
+      
+      regionItems.forEach((item, index) => {
+        const resultIndex = results.findIndex(r => 
+          r.menu_item_id === item.menu_item_id && 
+          r.school_code === item.school_code
+        );
+        if (resultIndex !== -1) {
+          results[resultIndex].region_rank = index + 1;
+        }
+      });
+    });
     
     // DB에 결과 저장
     if (results.length > 0) {
