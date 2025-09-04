@@ -17,7 +17,25 @@ export default function IOSCopyModal({ isOpen, onClose, prompt, appName, appUrl 
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(prompt);
+      // iOS에서 더 확실한 복사 방법 사용
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(prompt);
+        console.log('✅ Clipboard API로 복사 성공');
+      } else {
+        // Fallback: 텍스트 영역 생성해서 복사
+        const textArea = document.createElement('textarea');
+        textArea.value = prompt;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        console.log('✅ Fallback 방식으로 복사 성공');
+      }
+      
       setCopySuccess(true);
       setTimeout(() => {
         setCopySuccess(false);
@@ -26,8 +44,9 @@ export default function IOSCopyModal({ isOpen, onClose, prompt, appName, appUrl 
         window.open(appUrl, '_blank');
       }, 1500);
     } catch (error) {
-      console.error('클립보드 복사 실패:', error);
-      // 복사 실패 시에도 앱은 열어줌
+      console.error('❌ 클립보드 복사 실패:', error);
+      // 복사 실패 시 수동 복사 안내
+      alert('자동 복사에 실패했습니다. 텍스트를 수동으로 선택해서 복사해주세요.');
       onClose();
       window.open(appUrl, '_blank');
     }
@@ -42,27 +61,32 @@ export default function IOSCopyModal({ isOpen, onClose, prompt, appName, appUrl 
           </h3>
           
           <p className="text-sm text-gray-600 mb-4 text-center">
-            iOS는 보안상 자동 복사가 제한됩니다.<br/>
-            아래 버튼을 눌러 복사한 후 {appName}에서 붙여넣기하세요.
+            <strong>텍스트를 터치해서 전체 선택 → 복사</strong><br/>
+            그 다음 {appName}에서 붙여넣기하세요.
           </p>
 
           <div className="bg-gray-50 p-3 rounded-lg mb-4 max-h-40 overflow-y-auto">
-            <p className="text-xs text-gray-700 whitespace-pre-wrap">
-              {prompt.substring(0, 200)}...
-            </p>
+            <textarea 
+              readOnly
+              value={prompt}
+              className="w-full h-32 text-xs text-gray-700 bg-transparent border-none resize-none focus:outline-none"
+              onClick={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.select();
+                target.setSelectionRange(0, target.value.length);
+              }}
+            />
           </div>
 
           <div className="flex gap-3">
             <button
-              onClick={handleCopy}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-                copySuccess 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-              disabled={copySuccess}
+              onClick={() => {
+                onClose();
+                window.open(appUrl, '_blank');
+              }}
+              className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-blue-500 hover:bg-blue-600 text-white"
             >
-              {copySuccess ? '✅ 복사 완료!' : '📋 복사하기'}
+              {appName} 웹 열기
             </button>
             
             <button
