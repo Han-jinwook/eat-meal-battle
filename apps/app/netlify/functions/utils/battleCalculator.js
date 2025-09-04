@@ -324,7 +324,315 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
 }
 
 
+/**
+ * 🏆 일별 급식 배틀 계산 및 저장
+ */
+async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) {
+  const supabase = supabaseClient || createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  const date = targetDate || new Date().toISOString().split('T')[0];
+  
+  console.log(`🏆 일별 급식 배틀 계산 시작: ${date}`);
+  
+  try {
+    // 해당 날짜의 급식과 평점 정보 조회
+    let query = supabase
+      .from('meal_menus')
+      .select(`
+        id,
+        meal_date,
+        school_code,
+        meal_rating_stats!fk_meal_rating_stats_meal_id!inner(
+          avg_rating,
+          rating_count
+        )
+      `)
+      .eq('meal_date', date)
+      .gt('meal_rating_stats.rating_count', 0);
+      
+    if (schoolCode) {
+      query = query.eq('school_code', schoolCode);
+    }
+    
+    const { data: meals, error } = await query;
+    
+    if (error) {
+      console.error('급식 조회 실패:', error);
+      return { success: false, error };
+    }
+    
+    if (!meals || meals.length === 0) {
+      console.log('해당 날짜에 평가된 급식이 없습니다.');
+      return { success: true, data: [] };
+    }
+
+    // 학교 정보 별도 조회
+    const schoolCodes = [...new Set(meals.map(meal => meal.school_code))];
+    const { data: schoolInfos } = await supabase
+      .from('school_infos')
+      .select('school_code, school_name, region')
+      .in('school_code', schoolCodes);
+    
+    const schoolMap = {};
+    schoolInfos?.forEach(school => {
+      schoolMap[school.school_code] = {
+        school_name: school.school_name,
+        region: school.region
+      };
+    });
+    
+    // 평점 기준으로 정렬
+    const sortedMeals = meals.sort((a, b) => {
+      const ratingDiff = b.meal_rating_stats.avg_rating - a.meal_rating_stats.avg_rating;
+      if (Math.abs(ratingDiff) > 0.01) return ratingDiff;
+      return b.meal_rating_stats.rating_count - a.meal_rating_stats.rating_count;
+    });
+    
+    // 전국 순위 계산 및 결과 생성
+    const results = sortedMeals.map((meal, index) => {
+      const schoolInfo = schoolMap[meal.school_code] || {};
+      return {
+        meal_id: meal.id,
+        battle_date: date,
+        school_code: meal.school_code,
+        school_name: schoolInfo.school_name || '',
+        region: schoolInfo.region || '',
+        final_avg_rating: meal.meal_rating_stats.avg_rating,
+        final_rating_count: meal.meal_rating_stats.rating_count,
+        daily_rank: index + 1,
+        national_rank: index + 1
+      };
+    });
+
+    // 지역별 순위 계산
+    const regionGroups = {};
+    results.forEach(result => {
+      if (result.region) {
+        if (!regionGroups[result.region]) regionGroups[result.region] = [];
+        regionGroups[result.region].push(result);
+      }
+    });
+
+    // 각 지역별로 순위 재계산
+    Object.keys(regionGroups).forEach(region => {
+      const regionMeals = regionGroups[region].sort((a, b) => {
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      });
+      
+      regionMeals.forEach((meal, index) => {
+        const resultIndex = results.findIndex(r => 
+          r.meal_id === meal.meal_id && 
+          r.school_code === meal.school_code
+        );
+        if (resultIndex !== -1) {
+          results[resultIndex].region_rank = index + 1;
+        }
+      });
+    });
+    
+    // DB에 결과 저장
+    if (results.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('meal_battle_daily')
+        .delete()
+        .eq('battle_date', date);
+        
+      if (deleteError) {
+        console.error('기존 일별 급식배틀 데이터 삭제 실패:', deleteError);
+      }
+      
+      const { error: insertError } = await supabase
+        .from('meal_battle_daily')
+        .insert(results);
+        
+      if (insertError) {
+        console.error('일별 급식배틀 결과 저장 실패:', insertError);
+        return { success: false, error: insertError };
+      }
+      
+      console.log(`✅ 일별 급식배틀 결과 저장 완료: ${results.length}개 급식`);
+    }
+    
+    return { success: true, data: results };
+    
+  } catch (err) {
+    console.error('일별 급식배틀 계산 중 오류:', err);
+    return { success: false, error: err };
+  }
+}
+
+/**
+ * 🏆 월별 급식 배틀 계산 및 저장
+ */
+async function calculateMonthlyMealBattle(targetYear, targetMonth, schoolCode, supabaseClient) {
+  const supabase = supabaseClient || createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  
+  const year = targetYear || new Date().getFullYear();
+  const month = targetMonth || new Date().getMonth() + 1;
+  
+  console.log(`🏆 월별 급식 배틀 계산 시작: ${year}년 ${month}월`);
+  
+  try {
+    // 해당 월의 급식과 평점 정보 조회
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    
+    let query = supabase
+      .from('meal_menus')
+      .select(`
+        id,
+        meal_date,
+        school_code,
+        meal_rating_stats!fk_meal_rating_stats_meal_id!inner(
+          avg_rating,
+          rating_count
+        )
+      `)
+      .gte('meal_date', startDate)
+      .lte('meal_date', endDate)
+      .gt('meal_rating_stats.rating_count', 0);
+      
+    if (schoolCode) {
+      query = query.eq('school_code', schoolCode);
+    }
+    
+    const { data: meals, error } = await query;
+    
+    if (error) {
+      console.error('월별 급식 조회 실패:', error);
+      return { success: false, error };
+    }
+    
+    if (!meals || meals.length === 0) {
+      console.log(`${year}년 ${month}월에 평가된 급식이 없습니다.`);
+      return { success: true, data: [] };
+    }
+
+    // 학교 정보 별도 조회
+    const schoolCodes = [...new Set(meals.map(meal => meal.school_code))];
+    const { data: schoolInfos } = await supabase
+      .from('school_infos')
+      .select('school_code, school_name, region')
+      .in('school_code', schoolCodes);
+    
+    const schoolMap = {};
+    schoolInfos?.forEach(school => {
+      schoolMap[school.school_code] = {
+        school_name: school.school_name,
+        region: school.region
+      };
+    });
+    
+    // 학교별 월간 집계
+    const schoolStats = {};
+    meals.forEach(meal => {
+      const key = meal.school_code;
+      if (!schoolStats[key]) {
+        const schoolInfo = schoolMap[meal.school_code] || {};
+        schoolStats[key] = {
+          school_code: meal.school_code,
+          school_name: schoolInfo.school_name || '',
+          region: schoolInfo.region || '',
+          total_rating: 0,
+          total_count: 0,
+          meal_count: 0
+        };
+      }
+      
+      const stats = meal.meal_rating_stats;
+      schoolStats[key].total_rating += stats.avg_rating * stats.rating_count;
+      schoolStats[key].total_count += stats.rating_count;
+      schoolStats[key].meal_count += 1;
+    });
+    
+    // 월간 평균 계산 및 정렬
+    const monthlyResults = Object.values(schoolStats)
+      .map(school => ({
+        ...school,
+        final_avg_rating: school.total_count > 0 ? school.total_rating / school.total_count : 0
+      }))
+      .sort((a, b) => {
+        const ratingDiff = b.final_avg_rating - a.final_avg_rating;
+        if (Math.abs(ratingDiff) > 0.01) return ratingDiff;
+        return b.total_count - a.total_count;
+      });
+    
+    // 전국 순위 계산 및 결과 생성
+    const results = monthlyResults.map((school, index) => ({
+      school_code: school.school_code,
+      battle_year: year,
+      battle_month: month,
+      school_name: school.school_name,
+      region: school.region,
+      final_avg_rating: school.final_avg_rating,
+      final_rating_count: school.total_count,
+      monthly_rank: index + 1,
+      national_rank: index + 1
+    }));
+
+    // 지역별 순위 계산
+    const regionGroups = {};
+    results.forEach(result => {
+      if (result.region) {
+        if (!regionGroups[result.region]) regionGroups[result.region] = [];
+        regionGroups[result.region].push(result);
+      }
+    });
+
+    // 각 지역별로 순위 재계산
+    Object.keys(regionGroups).forEach(region => {
+      const regionSchools = regionGroups[region].sort((a, b) => {
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
+        }
+        return b.final_rating_count - a.final_rating_count;
+      });
+      
+      regionSchools.forEach((school, index) => {
+        const resultIndex = results.findIndex(r => 
+          r.school_code === school.school_code
+        );
+        if (resultIndex !== -1) {
+          results[resultIndex].region_rank = index + 1;
+        }
+      });
+    });
+    
+    // DB에 결과 저장
+    if (results.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('meal_battle_monthly')
+        .upsert(results, {
+          onConflict: 'school_code,battle_year,battle_month'
+        });
+        
+      if (upsertError) {
+        console.error('월별 급식배틀 결과 저장 실패:', upsertError);
+        return { success: false, error: upsertError };
+      }
+      
+      console.log(`✅ 월별 급식배틀 결과 저장 완료: ${results.length}개 학교`);
+    }
+    
+    return { success: true, data: results };
+    
+  } catch (err) {
+    console.error('월별 급식배틀 계산 중 오류:', err);
+    return { success: false, error: err };
+  }
+}
+
 module.exports = {
   calculateDailyMenuBattle,
-  calculateMonthlyMenuBattle
+  calculateMonthlyMenuBattle,
+  calculateDailyMealBattle,
+  calculateMonthlyMealBattle
 };
