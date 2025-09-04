@@ -3,6 +3,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { OpenAI } = require('openai');
+const sharp = require('sharp');
 
 // dotenv 사용 - 로컬 개발 환경용
 try {
@@ -168,16 +169,27 @@ exports.handler = async (event, context) => {
     }
     
     console.log(`[generate-meal-image] 이미지 데이터 길이=${imageData.length}`);
-    const base64Image = imageData; // 사용하는 변수명 유지
+    
+    // PNG → JPEG 압축 변환 (Sharp 사용)
+    console.log('[generate-meal-image] PNG → JPEG 압축 변환 중...');
+    const pngBuffer = Buffer.from(imageData, 'base64');
+    const jpegBuffer = await sharp(pngBuffer)
+      .jpeg({ 
+        quality: 85,  // 85% 품질로 압축
+        progressive: true  // 점진적 로딩 지원
+      })
+      .toBuffer();
+    
+    console.log(`[generate-meal-image] 압축 완료: ${pngBuffer.length} → ${jpegBuffer.length} bytes (${Math.round((1 - jpegBuffer.length/pngBuffer.length) * 100)}% 감소)`);
     
     // 파일명 생성 (JPEG 포맷)
     const fileName = `ai_generated_${meal_id}_${Date.now()}.jpg`;
     
-    // 이미지를 Supabase Storage에 업로드
+    // 압축된 JPEG 이미지를 Supabase Storage에 업로드
     console.log(`[generate-meal-image] Supabase Storage에 업로드 중: ${fileName}`);
     const { data: fileData, error: uploadError } = await supabaseAdmin.storage
       .from('meal-images')
-      .upload(fileName, Buffer.from(base64Image, 'base64'), {
+      .upload(fileName, jpegBuffer, {
         contentType: 'image/jpeg',
         upsert: true
       });
