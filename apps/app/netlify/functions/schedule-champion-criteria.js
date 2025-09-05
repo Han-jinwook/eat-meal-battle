@@ -50,10 +50,16 @@ exports.handler = async (event) => {
 
     console.log(`총 ${schools.length}개 학교 발견`)
 
-    // 현재 달 계산 (매월 말에 실행되어 해당 월 데이터 생성)
+    // 다음 달 계산 (매월 말에 실행되어 다음 월 데이터 생성)
     const now = new Date()
-    let currentMonth = now.getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 +1
+    let currentMonth = now.getMonth() + 2 // 다음 월: +1(0부터 시작) +1(다음월) = +2
     let currentYear = now.getFullYear()
+    
+    // 12월인 경우 다음 해 1월로 조정
+    if (currentMonth > 12) {
+      currentMonth = 1
+      currentYear += 1
+    }
 
     console.log(`${currentYear}년 ${currentMonth}월 급식 데이터 수집 시작`)
     

@@ -2,9 +2,10 @@ name: champion-criteria-scheduler
 
 on:
   schedule:
-    # 매월 30일 오전 6시 (한국 시간, UTC+9)
+    # 매월 마지막 날 오전 6시 (한국 시간, UTC+9)
     # UTC 기준으로는 전날 오후 9시
-    - cron: '0 21 30 * *'
+    # 28-31일 중 해당 월의 마지막 날에 실행
+    - cron: '0 21 28-31 * *'
   workflow_dispatch: {}
 
 jobs:
