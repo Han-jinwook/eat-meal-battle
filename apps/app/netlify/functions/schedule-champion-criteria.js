@@ -29,23 +29,31 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // 전체 champion_criteria 테이블 데이터 삭제
-    console.log('기존 champion_criteria 데이터 전체 삭제 중...')
-    const { error: deleteAllError } = await supabase
+    // URL 파라미터에서 월 지정 (없으면 현재 월)
+    const urlParams = new URLSearchParams(event.queryStringParameters || {})
+    const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : new Date().getMonth() + 1
+    const targetMonths = [targetMonth]
+    const currentYear = 2025
+
+    // 해당 월의 champion_criteria 데이터만 삭제
+    console.log(`기존 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 중...`)
+    const { error: deleteError } = await supabase
       .from('champion_criteria')
       .delete()
-      .neq('school_code', 'IMPOSSIBLE_CODE') // 모든 레코드 삭제용 조건
+      .eq('year', currentYear)
+      .eq('month', targetMonth)
     
-    if (deleteAllError) {
-      console.log(`전체 데이터 삭제 실패 (무시하고 계속): ${deleteAllError.message}`)
+    if (deleteError) {
+      console.log(`${targetMonth}월 데이터 삭제 실패 (무시하고 계속): ${deleteError.message}`)
     } else {
-      console.log('기존 champion_criteria 데이터 전체 삭제 완료')
+      console.log(`기존 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 완료`)
     }
 
-    // 모든 학교 조회
+    // 모든 학교 조회 (기존 2개 학교 제외)
     const { data: schools, error: schoolError } = await supabase
       .from('school_infos')
       .select('school_code, office_code')
+      .not('school_code', 'in', '("7310375","7132085")')
 
     if (schoolError) {
       throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
@@ -56,12 +64,7 @@ exports.handler = async (event) => {
     }
 
     console.log(`총 ${schools.length}개 학교 발견`)
-
-    // 실행할 월 목록 (6,7,8,9월 일괄 처리용 - 10월 제외)
-    const targetMonths = [6, 7, 8, 9]
-    const currentYear = 2025
-
-    console.log(`${currentYear}년 ${targetMonths.join(',')}월 급식 데이터 수집 시작`)
+    console.log(`${currentYear}년 ${targetMonth}월 급식 데이터 수집 시작`)
     
     // 결과 저장용 변수
     const results = {
