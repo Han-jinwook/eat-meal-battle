@@ -134,11 +134,9 @@ exports.handler = async (event) => {
       
       months = [currentMonth];
       
-      // 다음 월 추가 (12월이면 다음 해 1월로)
+      // 다음 월 추가 (연도 경계 처리)
       const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-      if (nextMonth !== 1) {
-        months.push(nextMonth);
-      }
+      months.push(nextMonth);
       
       console.log(`${year}년 ${months.join(', ')}월 급식 데이터 수집 시작 (현재 월 기준)`);
     } else {
@@ -156,42 +154,48 @@ exports.handler = async (event) => {
       
       console.log(`\n=== ${schoolCode} 학교 처리 시작 ===`);
       
-      for (const month of months) {
+      for (let i = 0; i < months.length; i++) {
+        const month = months[i];
+        // 연도 처리: 12월 다음이 1월이면 다음 연도
+        const currentYear = (i === 1 && month === 1 && months[0] === 12) ? year + 1 : year;
+        
         try {
+          console.log(`${schoolCode} 학교 ${currentYear}년 ${month}월 처리 중...`);
+          
           // NEIS API에서 급식 일수 조회 (해당 월 + 다음 달)
-          const currentMonthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, year, month);
+          const currentMonthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, currentYear, month);
           
           // 다음 달 첫 주 데이터도 조회 (주차 경계 처리용)
           const nextMonth = month === 12 ? 1 : month + 1;
-          const nextYear = month === 12 ? year + 1 : year;
+          const nextYear = month === 12 ? currentYear + 1 : currentYear;
           const nextMonthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, nextYear, nextMonth);
           
           if (currentMonthMealDays.length === 0) {
-            console.log(`${schoolCode} 학교의 ${year}년 ${month}월 급식 데이터가 없습니다.`);
+            console.log(`${schoolCode} 학교의 ${currentYear}년 ${month}월 급식 데이터가 없습니다.`);
             continue;
           }
           
           // 주차별 급식 일수 계산 (다음 달 데이터 포함)
           const allMealDays = [...currentMonthMealDays, ...nextMonthMealDays];
-          const weeklyMealDays = calculateWeeklyMealDays(allMealDays, year, month);
+          const weeklyMealDays = calculateWeeklyMealDays(allMealDays, currentYear, month);
           const monthlyTotal = currentMonthMealDays.length; // 해당 월만 카운트
           
           // 장원 조건 저장
-          await saveChampionCriteria(supabase, schoolCode, year, month, weeklyMealDays, monthlyTotal);
+          await saveChampionCriteria(supabase, schoolCode, currentYear, month, weeklyMealDays, monthlyTotal);
           
           results.push({
             school_code: schoolCode,
-            year,
+            year: currentYear,
             month,
             weekly_days: weeklyMealDays,
             monthly_total: monthlyTotal
           });
           
         } catch (error) {
-          console.error(`${schoolCode} 학교 ${year}년 ${month}월 처리 오류:`, error);
+          console.error(`${schoolCode} 학교 ${currentYear}년 ${month}월 처리 오류:`, error);
           results.push({
             school_code: schoolCode,
-            year,
+            year: currentYear,
             month,
             error: error.message
           });

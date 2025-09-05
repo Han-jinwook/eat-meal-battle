@@ -15,6 +15,10 @@ on:
         description: 'Target year (optional, defaults to current/next year)'
         required: false
         type: string
+      school_code:
+        description: 'Specific school code (optional, processes all schools if empty)'
+        required: false
+        type: string
 
 jobs:
   # 먼저 처리할 학교 목록을 가져오는 job
@@ -28,17 +32,24 @@ jobs:
         env:
           API_KEY: ${{ secrets.ADMIN_API_KEY }}
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+          SPECIFIC_SCHOOL: ${{ github.event.inputs.school_code || '' }}
         run: |
-          # DB에서 실제 학교 목록 가져오기 (모든 학교 포함)
-          response=$(curl -s "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}&get_schools=true")
-          echo "API Response: $response"
-          
-          # 응답에서 학교 코드 배열 추출
-          school_codes=$(echo "$response" | grep -o '"school_codes":\[[^]]*\]' | sed 's/"school_codes"://')
-          
-          if [ -z "$school_codes" ] || [ "$school_codes" = "[]" ]; then
-            echo "No school codes found, using fallback"
-            school_codes='["7361073"]'  # 최소 1개 학교 fallback
+          if [ -n "${SPECIFIC_SCHOOL}" ]; then
+            # 특정 학교만 처리
+            echo "Processing specific school: ${SPECIFIC_SCHOOL}"
+            school_codes='["'${SPECIFIC_SCHOOL}'"]'
+          else
+            # DB에서 실제 학교 목록 가져오기 (모든 학교 포함)
+            response=$(curl -s "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}&get_schools=true")
+            echo "API Response: $response"
+            
+            # 응답에서 학교 코드 배열 추출
+            school_codes=$(echo "$response" | grep -o '"school_codes":\[[^]]*\]' | sed 's/"school_codes"://')
+            
+            if [ -z "$school_codes" ] || [ "$school_codes" = "[]" ]; then
+              echo "No school codes found, using fallback"
+              school_codes='["7361073"]'  # 최소 1개 학교 fallback
+            fi
           fi
           
           echo "school_codes=${school_codes}" >> $GITHUB_OUTPUT

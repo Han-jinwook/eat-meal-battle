@@ -34,12 +34,43 @@ exports.handler = async (event) => {
     const schoolCode = urlParams.get('school_code')
     const getSchools = urlParams.get('get_schools') === 'true'
     
-    // 익월 계산 (정식 스케줄러용)
+    // 해당월 + 익월 계산 (정식 스케줄러용)
     const now = new Date()
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : nextMonth.getMonth() + 1
-    const currentYear = urlParams.get('year') ? parseInt(urlParams.get('year')) : nextMonth.getFullYear()
-    const targetMonths = [targetMonth]
+    
+    let targetMonths = []
+    let currentYear = now.getFullYear()
+    
+    if (urlParams.get('month') && urlParams.get('year')) {
+      // 수동 지정 시 해당 월만 처리 (디버깅/테스트용)
+      const targetMonth = parseInt(urlParams.get('month'))
+      currentYear = parseInt(urlParams.get('year'))
+      targetMonths = [targetMonth]
+    } else if (schoolCode) {
+      // 학교 등록 시 자동 트리거: 해당 학교만 당월+익월 2개월치 처리
+      const thisMonth = currentMonth.getMonth() + 1
+      const nextMonthNum = nextMonth.getMonth() + 1
+      const nextYear = nextMonth.getFullYear()
+      
+      // 익월이 다른 연도인 경우 (12월 → 1월)
+      if (nextYear !== currentYear) {
+        targetMonths = [
+          { month: thisMonth, year: currentYear },
+          { month: nextMonthNum, year: nextYear }
+        ]
+      } else {
+        // 같은 연도 내에서 2개월
+        targetMonths = [thisMonth, nextMonthNum]
+      }
+    } else {
+      // GitHub 자동 스케줄러 (매월 27일): 전체 학교 익월 1개월만 처리
+      const nextMonthNum = nextMonth.getMonth() + 1
+      const nextYear = nextMonth.getFullYear()
+      
+      targetMonths = [{ month: nextMonthNum, year: nextYear }]
+      currentYear = nextYear
+    }
 
     // 학교 목록만 반환하는 경우
     if (getSchools) {
@@ -111,7 +142,9 @@ exports.handler = async (event) => {
     }
 
     console.log(`총 ${schools.length}개 학교 발견`)
-    console.log(`${currentYear}년 ${targetMonth}월 급식 데이터 수집 시작`)
+    console.log(`${currentYear}년 ${Array.isArray(targetMonths) && typeof targetMonths[0] === 'object' ? 
+      targetMonths.map(m => `${m.year}년 ${m.month}월`).join(', ') : 
+      targetMonths.map(m => `${currentYear}년 ${m}월`).join(', ')} 급식 데이터 수집 시작`)
     
     // 결과 저장용 변수
     const results = {
@@ -137,43 +170,49 @@ exports.handler = async (event) => {
           continue; // 다음 학교로 이동
         }
         
-        // 각 월별로 처리
-        for (const targetMonth of targetMonths) {
+        // 각 월별로 처리 (연도별로 다를 수 있음)
+        for (const monthData of targetMonths) {
           try {
-            // NEIS API를 통해 급식 데이터 조회
-            const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, currentYear, targetMonth)
+            // 월/연도 정보 추출
+            const targetMonth = typeof monthData === 'object' ? monthData.month : monthData
+            const targetYear = typeof monthData === 'object' ? monthData.year : currentYear
             
-            // 주차별 급식 일수 계산
-            const weeklyMealDays = await calculateWeeklyMealDays(school.school_code, school.office_code, currentYear, targetMonth)
+            console.log(`[${school.school_code}] ${targetYear}년 ${targetMonth}월 처리 중...`)
+            
+            // NEIS API를 통해 급식 데이터 조회 (중식만)
+            const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, targetYear, targetMonth)
+            
+            // 주차별 급식 일수 계산 (중식만)
+            const weeklyMealDays = await calculateWeeklyMealDays(school.school_code, school.office_code, targetYear, targetMonth)
             
             // 주차별 토요일 계산
-            const weeklySaturdays = calculateWeeklySaturdays(currentYear, targetMonth)
+            const weeklySaturdays = calculateWeeklySaturdays(targetYear, targetMonth)
             
-            // 월별 총 급식일수는 해당월만 계산 (1일~말일)
+            // 월별 총 급식일수는 해당월만 계산 (1일~말일, 중식만)
             const monthlyTotal = mealDays.length
             
             await saveChampionCriteria(
               supabase,
               school.school_code,
-              currentYear,
+              targetYear,
               targetMonth,
               weeklyMealDays,
               monthlyTotal,
               weeklySaturdays
             )
             
-            console.log(`[${school.school_code}] ${currentYear}년 ${targetMonth}월 장원 조건 설정 완료`);
+            console.log(`[${school.school_code}] ${targetYear}년 ${targetMonth}월 장원 조건 설정 완료`);
             
             // 월별 API 호출 제한을 위한 지연 (NEIS API 안정성 확보)
             await new Promise(resolve => setTimeout(resolve, 1000));
           } catch (monthError) {
-            console.error(`[${school.school_code}] ${targetMonth}월 처리 중 오류:`, monthError);
+            console.error(`[${school.school_code}] ${targetYear}년 ${targetMonth}월 처리 중 오류:`, monthError);
             results.error++;
             results.details.push({
               school_code: school.school_code,
               status: 'error',
               month: targetMonth,
-              year: currentYear,
+              year: targetYear,
               message: monthError.message
             });
           }
