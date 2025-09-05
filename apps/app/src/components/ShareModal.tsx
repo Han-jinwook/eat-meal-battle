@@ -51,19 +51,43 @@ const ShareModal: React.FC<ShareModalProps> = ({
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (navigator.share && isMobile) {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        });
-        setShareMessage('공유가 완료되었습니다!');
-        return;
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl,
+          });
+          setShareMessage('공유가 완료되었습니다!');
+          return;
+        } catch (shareError: any) {
+          if (shareError.name !== 'AbortError') {
+            console.warn('네이티브 공유 실패, 클립보드 복사로 대체:', shareError);
+            // 네이티브 공유 실패 시 클립보드 복사로 fallback
+          } else {
+            return; // 사용자가 공유를 취소한 경우
+          }
+        }
       }
       
-      // PC에서는 클립보드에 제목, 텍스트, URL 모두 복사
+      // PC 또는 네이티브 공유 실패 시 클립보드 복사 (iOS Safari 호환성 개선)
       const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
-      await navigator.clipboard.writeText(fullShareContent);
-      setShareMessage('제목, 내용, URL이 모두 클립보드에 복사되었습니다!\n어디든 붙여넣기 하세요!');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(fullShareContent);
+        } else {
+          // iOS Safari에서 clipboard API가 없는 경우 fallback
+          const textArea = document.createElement('textarea');
+          textArea.value = fullShareContent;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        setShareMessage('제목, 내용, URL이 모두 클립보드에 복사되었습니다!\n어디든 붙여넣기 하세요!');
+      } catch (clipboardError) {
+        console.warn('클립보드 복사 실패:', clipboardError);
+        setShareMessage(`클립보드 복사에 실패했습니다. 다음 내용을 수동으로 복사해주세요:\n\n${fullShareContent}`);
+      }
     } catch (error) {
       console.error('공유 중 오류 발생:', error);
       setShareMessage('공유 중 문제가 발생했습니다.');

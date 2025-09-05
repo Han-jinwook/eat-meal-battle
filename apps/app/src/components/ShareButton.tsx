@@ -65,16 +65,52 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (navigator.share && isMobile) {
-        // 모바일: 바로 네이티브 공유
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
-        });
+        // 모바일: 바로 네이티브 공유 (iOS Safari 호환성 개선)
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl,
+          });
+        } catch (shareError: any) {
+          if (shareError.name !== 'AbortError') {
+            console.warn('네이티브 공유 실패, 클립보드 복사로 대체:', shareError);
+            // 네이티브 공유 실패 시 클립보드 복사로 fallback
+            const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(fullShareContent);
+            } else {
+              // iOS Safari에서 clipboard API가 없는 경우 fallback
+              const textArea = document.createElement('textarea');
+              textArea.value = fullShareContent;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+            }
+            setShowSuccessModal(true);
+          }
+        }
       } else {
-        // PC: 클립보드 복사 + 성공 모달
+        // PC: 클립보드 복사 + 성공 모달 (iOS Safari 호환성 개선)
         const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
-        await navigator.clipboard.writeText(fullShareContent);
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(fullShareContent);
+          } else {
+            // iOS Safari에서 clipboard API가 없는 경우 fallback
+            const textArea = document.createElement('textarea');
+            textArea.value = fullShareContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+          }
+        } catch (clipboardError) {
+          console.warn('클립보드 복사 실패:', clipboardError);
+          // 최종 fallback: 사용자에게 수동 복사 안내
+          alert(`다음 내용을 복사해주세요:\n\n${fullShareContent}`);
+        }
         setShowSuccessModal(true);
       }
     } catch (error) {

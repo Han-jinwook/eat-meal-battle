@@ -399,12 +399,58 @@ export default function QuizClient() {
     try {
       console.log('초대 링크 처리 시작:', token);
       
-      // 한글 지원 토큰 디코딩
-      const base64Decoded = atob(token);
-      const utf8Bytes = new Uint8Array([...base64Decoded].map(char => char.charCodeAt(0)));
-      const jsonString = new TextDecoder().decode(utf8Bytes);
-      const tokenData = JSON.parse(jsonString);
-      console.log('디코딩된 토큰:', tokenData);
+      // iOS Safari 호환성을 위한 안전한 토큰 디코딩
+      let tokenData;
+      try {
+        console.log('토큰 디코딩 시작, 토큰 길이:', token.length);
+        
+        // Base64 패딩 정규화 (iOS Safari에서 패딩 문제 발생 가능)
+        let normalizedToken = token;
+        while (normalizedToken.length % 4) {
+          normalizedToken += '=';
+        }
+        
+        // 먼저 기본 Base64 디코딩 시도
+        const base64Decoded = atob(normalizedToken);
+        console.log('Base64 디코딩 성공, 길이:', base64Decoded.length);
+        
+        // iOS Safari에서 TextDecoder가 없을 수 있으므로 fallback 제공
+        let jsonString;
+        if (typeof TextDecoder !== 'undefined') {
+          try {
+            const utf8Bytes = new Uint8Array([...base64Decoded].map(char => char.charCodeAt(0)));
+            jsonString = new TextDecoder('utf-8').decode(utf8Bytes);
+            console.log('TextDecoder 디코딩 성공');
+          } catch (textDecoderError) {
+            console.warn('TextDecoder 실패, fallback 사용:', textDecoderError);
+            jsonString = decodeURIComponent(escape(base64Decoded));
+          }
+        } else {
+          // TextDecoder가 없는 경우 직접 UTF-8 디코딩 (iOS Safari 호환)
+          console.log('TextDecoder 없음, fallback 사용');
+          try {
+            jsonString = decodeURIComponent(escape(base64Decoded));
+          } catch (fallbackError) {
+            console.warn('escape/unescape 실패, 직접 사용:', fallbackError);
+            // escape/unescape가 deprecated된 경우 최종 fallback
+            jsonString = base64Decoded;
+          }
+        }
+        
+        console.log('JSON 문자열 디코딩 완료, 길이:', jsonString.length);
+        tokenData = JSON.parse(jsonString);
+        console.log('토큰 파싱 성공:', tokenData);
+      } catch (decodeError) {
+        console.error('토큰 디코딩 상세 오류:', {
+          error: decodeError,
+          message: decodeError.message,
+          stack: decodeError.stack,
+          tokenLength: token.length,
+          tokenSample: token.substring(0, 50) + '...'
+        });
+        toast.error('초대 링크 형식이 올바르지 않습니다. 다시 시도해주세요.');
+        return;
+      }
       
       // 토큰 만료 확인
       if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
