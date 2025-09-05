@@ -57,8 +57,8 @@ exports.handler = async (event) => {
 
     console.log(`총 ${schools.length}개 학교 발견`)
 
-    // 실행할 월 목록 (6,7,8,9,10월 일괄 처리용)
-    const targetMonths = [6, 7, 8, 9, 10]
+    // 실행할 월 목록 (6,7,8,9월 일괄 처리용 - 10월 제외)
+    const targetMonths = [6, 7, 8, 9]
     const currentYear = 2025
 
     console.log(`${currentYear}년 ${targetMonths.join(',')}월 급식 데이터 수집 시작`)
@@ -114,8 +114,8 @@ exports.handler = async (event) => {
             
             console.log(`[${school.school_code}] ${currentYear}년 ${targetMonth}월 장원 조건 설정 완료`);
             
-            // 월별 API 호출 제한을 위한 지연
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // 월별 API 호출 제한을 위한 지연 (NEIS API 안정성 확보)
+            await new Promise(resolve => setTimeout(resolve, 1000));
           } catch (monthError) {
             console.error(`[${school.school_code}] ${targetMonth}월 처리 중 오류:`, monthError);
             results.error++;
@@ -147,8 +147,8 @@ exports.handler = async (event) => {
         });
       }
       
-      // API 호출 제한을 위한 지연
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 학교별 API 호출 제한을 위한 지연 (NEIS API 안정성 확보)
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
     
     return {
