@@ -21,21 +21,28 @@ exports.handler = async (event) => {
   }
 
   try {
-    console.log('다음 달 장원 조건 설정 시작...')
+    console.log('장원 조건 스케줄러 시작...')
     
-    // Supabase 환경 변수 확인
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Supabase 환경 변수가 설정되지 않았습니다');
-    }
-    
-    // Supabase 클라이언트 초기화
+    // Supabase 클라이언트 생성
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
-    console.log('Supabase 클라이언트 초기화 완료');
 
-    // 학교 목록 가져오기
+    // 전체 champion_criteria 테이블 데이터 삭제
+    console.log('기존 champion_criteria 데이터 전체 삭제 중...')
+    const { error: deleteAllError } = await supabase
+      .from('champion_criteria')
+      .delete()
+      .neq('school_code', 'IMPOSSIBLE_CODE') // 모든 레코드 삭제용 조건
+    
+    if (deleteAllError) {
+      console.log(`전체 데이터 삭제 실패 (무시하고 계속): ${deleteAllError.message}`)
+    } else {
+      console.log('기존 champion_criteria 데이터 전체 삭제 완료')
+    }
+
+    // 모든 학교 조회
     const { data: schools, error: schoolError } = await supabase
       .from('school_infos')
       .select('school_code, office_code')
@@ -52,7 +59,7 @@ exports.handler = async (event) => {
 
     // 실행할 월 목록 (6,7,8,9,10월 일괄 처리용)
     const targetMonths = [6, 7, 8, 9, 10]
-    const currentYear = 2024
+    const currentYear = 2025
 
     console.log(`${currentYear}년 ${targetMonths.join(',')}월 급식 데이터 수집 시작`)
     
@@ -288,7 +295,8 @@ async function saveChampionCriteria(
   weeklySaturdays
 ) {
   try {
-    const { error } = await supabase.from('champion_criteria').upsert({
+    // 새 데이터 삽입 (전체 삭제 후이므로 개별 삭제 불필요)
+    const { error } = await supabase.from('champion_criteria').insert({
       school_code: schoolCode,
       year,
       month,
@@ -305,8 +313,6 @@ async function saveChampionCriteria(
       week_4_saturday: weeklySaturdays?.week_4_saturday || null,
       week_5_saturday: weeklySaturdays?.week_5_saturday || null,
       created_at: new Date().toISOString()
-    }, {
-      onConflict: 'school_code,year,month'
     })
     
     if (error) {
