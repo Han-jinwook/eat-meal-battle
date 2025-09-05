@@ -236,40 +236,42 @@ function calculateWeeklySaturdays(year, month) {
   console.log(`${year}년 ${month}월 주차별 토요일 계산 시작...`)
   
   const weeklySaturdays = {}
+  
+  // 해당 월의 1일
   const firstDayOfMonth = new Date(year, month - 1, 1)
-  const lastDayOfMonth = new Date(year, month, 0)
   
-  // 해당 월의 모든 월요일을 찾아서 주차 결정
-  const mondays = []
+  // ISO 8601 첫 주의 월요일 찾기
+  const dayOfWeek = firstDayOfMonth.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
   
-  // 해당 월의 첫 번째 월요일부터 시작
-  let currentDate = new Date(firstDayOfMonth)
+  const firstMonday = new Date(firstDayOfMonth)
+  firstMonday.setDate(1 + daysToMonday)
   
-  // 첫 번째 월요일 찾기
-  while (currentDate.getDay() !== 1) { // 1 = 월요일
-    currentDate.setDate(currentDate.getDate() + 1)
-    if (currentDate.getMonth() !== month - 1) {
-      // 해당 월에 월요일이 없는 경우 (실제로는 불가능하지만 안전장치)
+  // 첫 주 토요일 계산 (월요일 + 5일)
+  let saturday = new Date(firstMonday)
+  saturday.setDate(firstMonday.getDate() + 5)
+  
+  // 최대 5주차까지 계산하되, 해당 월의 월요일만 포함
+  for (let week = 1; week <= 5; week++) {
+    // 해당 주차의 월요일이 해당 월 범위 내에 있는지 확인
+    const mondayOfWeek = new Date(saturday)
+    mondayOfWeek.setDate(saturday.getDate() - 5) // 토요일에서 5일 빼면 월요일
+    
+    if (mondayOfWeek.getMonth() === month - 1) {
+      // 토요일 날짜 포맷팅 (YYYY-MM-DD)
+      const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`
+      
+      // 결과에 저장
+      weeklySaturdays[`week_${week}_saturday`] = formattedDate
+    } else {
+      // 해당 월에 월요일이 없으면 종료
       break
     }
-  }
-  
-  // 해당 월의 모든 월요일 수집
-  while (currentDate.getMonth() === month - 1) {
-    mondays.push(new Date(currentDate))
-    currentDate.setDate(currentDate.getDate() + 7) // 다음 주 월요일
-  }
-  
-  // 각 월요일에 대해 토요일 계산
-  mondays.forEach((monday, index) => {
-    const saturday = new Date(monday)
-    saturday.setDate(monday.getDate() + 5) // 월요일 + 5일 = 토요일
     
-    const weekNumber = index + 1
-    const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`
-    
-    weeklySaturdays[`week_${weekNumber}_saturday`] = formattedDate
-  })
+    // 다음 주 토요일 (7일 후)
+    saturday = new Date(saturday)
+    saturday.setDate(saturday.getDate() + 7)
+  }
   
   console.log(`주차별 토요일 계산 완료:`, weeklySaturdays)
   return weeklySaturdays
