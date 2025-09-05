@@ -116,8 +116,15 @@ exports.handler = async (event, context) => {
     console.log('[generate-meal-image] OpenAI API 호출 중...');
     console.log('[generate-meal-image] 이미지 생성 API 호출 시도');
     
-    // images.generate API를 사용하여 이미지 생성 (OpenAI 클라이언트 자체 타임아웃 사용)
-    const imageResponse = await openai.images.generate({
+    // Promise.race로 이중 타임아웃 보호 (22초)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('OpenAI API 호출 타임아웃 (22초 초과) - 재시도해주세요'));
+      }, 22000);
+    });
+
+    // images.generate API를 사용하여 이미지 생성
+    const imageGenerationPromise = openai.images.generate({
       model: "gpt-image-1",
       prompt: `한국 학교 급식 스테인리스 식판 - 정확히 6개 칸만 있는 구조${structuredMenuString}
 
@@ -139,6 +146,9 @@ exports.handler = async (event, context) => {
       quality: "medium"    // medium 품질로 설정하여 속도 최적화
       // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
+
+    // 타임아웃과 이미지 생성 중 먼저 완료되는 것을 기다림
+    const imageResponse = await Promise.race([imageGenerationPromise, timeoutPromise]);
     
     const apiCallTime = Date.now() - startTime;
     console.log(`[generate-meal-image] 이미지 생성 API 호출 성공 (소요시간: ${apiCallTime}ms)`);
