@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
-import { calculateDailyMenuBattleTest, calculateMonthlyMenuBattleTest } from '@/utils/battleCalculator';
+// battleCalculator 제거됨
 import useUserSchool from '@/hooks/useUserSchool';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 

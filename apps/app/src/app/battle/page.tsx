@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareButton from '@/components/ShareButton';
 import AIAnalysisModal from '@/components/AIAnalysisModal';
-import { calculateDailyMenuBattle, calculateMonthlyMenuBattle } from '@/utils/battleCalculator';
+// battleCalculator 제거됨
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
 const getSchoolCharacterImage = (schoolType: string): string => {
@@ -338,16 +338,11 @@ export default function BattlePage() {
       
       // ...
       if (viewMode === 'daily') {
-        // 일별 메뉴 배틀 계산
-        console.log('📅 일별 메뉴 배틀 계산 시작...');
-        await calculateDailyMenuBattle(selectedDate, schoolCode);
-        console.log('✅ 일별 메뉴 배틀 계산 완료');
+        // 배틀 계산 기능 제거됨
+        console.log('배틀 계산 기능이 제거되었습니다.');
       } else {
-        // 월별 메뉴 배틀 계산
-        const [year, month] = selectedMonth.split('-');
-        console.log('📅 월별 메뉴 배틀 계산 시작...');
-        await calculateMonthlyMenuBattle(parseInt(year), parseInt(month), schoolCode);
-        console.log('✅ 월별 메뉴 배틀 계산 완료');
+        // 배틀 계산 기능 제거됨
+        console.log('배틀 계산 기능이 제거되었습니다.');
       }
     } catch (error) {
       console.error('배틀 계산 트리거 오류:', error);

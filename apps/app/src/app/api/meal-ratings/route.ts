@@ -81,8 +81,7 @@ async function updateMealAverageRating(mealId: string) {
   }
 }
 
-// 급식배틀 계산 함수들 import
-const { calculateDailyMealBattle, calculateMonthlyMealBattle } = require('../../../../netlify/functions/utils/battleCalculator');
+// 급식배틀 계산 함수들 제거됨
 
 /**
  * 급식 평점 저장 API (POST)
@@ -154,16 +153,8 @@ export async function POST(request: Request) {
         
         console.log(`📅 급식배틀 계산 대상: 날짜=${mealDate}, 학교=${schoolCode}`);
         
-        // 일별 급식배틀 계산
-        console.log('🔄 일별 급식배틀 계산 호출 시작...');
-        await calculateDailyMealBattle(mealDate, schoolCode, supabaseAdmin);
-        console.log(`✅ 일별 급식배틀 계산 완료: ${mealDate}`);
-        
-        // 월별 급식배틀 계산
-        console.log('🔄 월별 급식배틀 계산 호출 시작...');
-        const date = new Date(mealDate);
-        await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, supabaseAdmin);
-        console.log(`✅ 월별 급식배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+        // 급식배틀 계산 기능 제거됨
+        console.log('급식배틀 계산 기능이 제거되었습니다.');
       } else {
         console.log('❌ 급식 데이터 조회 실패 또는 데이터 없음');
       }
@@ -251,14 +242,8 @@ export async function DELETE(request: Request) {
         const mealDate = mealData.meal_date;
         const schoolCode = mealData.school_code;
         
-        // 일별 급식배틀 계산
-        await calculateDailyMealBattle(mealDate, schoolCode, supabaseAdmin);
-        console.log(`✅ 일별 급식배틀 계산 완료 (삭제): ${mealDate}`);
-        
-        // 월별 급식배틀 계산
-        const date = new Date(mealDate);
-        await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, supabaseAdmin);
-        console.log(`✅ 월별 급식배틀 계산 완료 (삭제): ${date.getFullYear()}-${date.getMonth() + 1}`);
+        // 급식배틀 계산 기능 제거됨
+        console.log('급식배틀 계산 기능이 제거되었습니다.');
       }
     } catch (battleError) {
       console.error('⚠️ 급식배틀 계산 중 오류 (평점 삭제는 성공):', battleError);

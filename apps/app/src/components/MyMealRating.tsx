@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-// 배틀 계산 함수들 import (Netlify Functions 버전 사용)
-const { calculateDailyMenuBattle, calculateMonthlyMenuBattle, calculateDailyMealBattle, calculateMonthlyMealBattle } = require('../../../../netlify/functions/utils/battleCalculator');
+// 배틀 계산 함수들 제거 - 더 이상 사용하지 않음
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -120,49 +119,10 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
           clearTimeout(battleCalculationTimeoutRef.current.get(monthlyKey)!);
         }
         
-        // 일별 배틀 계산 (2초 디바운싱)
-        const dailyTimeout = setTimeout(async () => {
-          try {
-            console.log('🏆 일별 배틀 계산 시작:', { mealDate, schoolCode });
-            
-            // 메뉴 배틀 계산 (메뉴 아이템 간 경쟁)
-            await calculateDailyMenuBattle(mealDate, schoolCode, supabase);
-            console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`);
-            
-            // 급식 배틀 계산 (학교 간 경쟁)
-            await calculateDailyMealBattle(mealDate, null, supabase);
-            console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`);
-            
-            // 완료 후 타이머 제거
-            battleCalculationTimeoutRef.current.delete(dailyKey);
-          } catch (battleError) {
-            console.error('⚠️ 일별 배틀 계산 중 오류:', battleError);
-            battleCalculationTimeoutRef.current.delete(dailyKey);
-          }
-        }, 2000);
+        // 배틀 계산 기능 제거됨
+        console.log('배틀 계산 기능이 제거되었습니다.');
         
-        // 월별 배틀 계산 (2초 디바운싱)
-        const monthlyTimeout = setTimeout(async () => {
-          try {
-            console.log('🏆 월별 배틀 계산 시작:', { yearMonth, schoolCode });
-            
-            await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, supabase);
-            console.log(`✅ 월별 메뉴 배틀 계산 완료: ${yearMonth}`);
-            
-            await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, null, supabase);
-            console.log(`✅ 월별 급식 배틀 계산 완료: ${yearMonth}`);
-            
-            // 완료 후 타이머 제거
-            battleCalculationTimeoutRef.current.delete(monthlyKey);
-          } catch (battleError) {
-            console.error('⚠️ 월별 배틀 계산 중 오류:', battleError);
-            battleCalculationTimeoutRef.current.delete(monthlyKey);
-          }
-        }, 2000);
-        
-        // 타이머 저장
-        battleCalculationTimeoutRef.current.set(dailyKey, dailyTimeout);
-        battleCalculationTimeoutRef.current.set(monthlyKey, monthlyTimeout);
+        // 배틀 계산 기능이 제거되어 더 이상 실행하지 않음
       }
     } catch (error) {
       console.error('⚠️ 배틀 계산 트리거 중 오류:', error);
