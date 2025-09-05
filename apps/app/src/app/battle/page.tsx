@@ -1143,7 +1143,6 @@ export default function BattlePage() {
                     </div>
                   ) : (
                     (sortOrder === 'asc' ? battleData : [...battleData].reverse())
-                      .slice(0, viewMode === 'monthly' ? 20 : battleData.length)
                       .map((item, index) => (
                       <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
@@ -1178,14 +1177,6 @@ export default function BattlePage() {
                         </div>
                       </div>
                     ))
-                  )}
-                  {/* 월별 집계에서 20개 이상일 때 더보기 안내 */}
-                  {viewMode === 'monthly' && battleData.length > 20 && (
-                    <div className="p-4 text-center text-red-400 bg-red-25 border-t border-red-100">
-                      <p className="text-sm">
-                        상위 20개 메뉴만 표시됩니다 (전체 {battleData.length}개)
-                      </p>
-                    </div>
                   )}
                 </div>
               </div>
