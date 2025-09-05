@@ -29,38 +29,58 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // URL 파라미터에서 월 지정 (없으면 현재 월)
+    // URL 파라미터에서 월과 학교코드 지정
     const urlParams = new URLSearchParams(event.queryStringParameters || {})
     const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : new Date().getMonth() + 1
+    const schoolCode = urlParams.get('school_code')
     const targetMonths = [targetMonth]
     const currentYear = 2025
 
-    // 해당 월의 champion_criteria 데이터만 삭제
-    console.log(`기존 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 중...`)
-    const { error: deleteError } = await supabase
-      .from('champion_criteria')
-      .delete()
-      .eq('year', currentYear)
-      .eq('month', targetMonth)
-    
-    if (deleteError) {
-      console.log(`${targetMonth}월 데이터 삭제 실패 (무시하고 계속): ${deleteError.message}`)
+    // 특정 학교만 조회 (school_code 파라미터가 있는 경우)
+    let schools = []
+    if (schoolCode) {
+      const { data: singleSchool, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code, office_code')
+        .eq('school_code', schoolCode)
+        .single()
+
+      if (schoolError) {
+        throw new Error(`학교 조회 실패: ${schoolError.message}`)
+      }
+      schools = [singleSchool]
     } else {
-      console.log(`기존 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 완료`)
+      // 모든 학교 조회 (기존 2개 학교 제외)
+      const { data: allSchools, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code, office_code')
+        .not('school_code', 'in', '("7310375","7132085")')
+
+      if (schoolError) {
+        throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
+      }
+      schools = allSchools || []
     }
 
-    // 모든 학교 조회 (기존 2개 학교 제외)
-    const { data: schools, error: schoolError } = await supabase
-      .from('school_infos')
-      .select('school_code, office_code')
-      .not('school_code', 'in', '("7310375","7132085")')
-
-    if (schoolError) {
-      throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
+    if (schools.length === 0) {
+      throw new Error('처리할 학교 정보가 없습니다');
     }
 
-    if (!schools || schools.length === 0) {
-      throw new Error('등록된 학교 정보가 없습니다');
+    // 해당 학교의 해당 월 데이터만 삭제
+    if (schoolCode) {
+      console.log(`기존 ${schoolCode} 학교의 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 중...`)
+      const { error: deleteError } = await supabase
+        .from('champion_criteria')
+        .delete()
+        .eq('year', currentYear)
+        .eq('month', targetMonth)
+        .eq('school_code', schoolCode)
+      
+      if (deleteError) {
+        console.log(`${schoolCode} 학교 ${targetMonth}월 데이터 삭제 실패 (무시하고 계속): ${deleteError.message}`)
+      } else {
+        console.log(`기존 ${schoolCode} 학교의 ${currentYear}년 ${targetMonth}월 champion_criteria 데이터 삭제 완료`)
+      }
     }
 
     console.log(`총 ${schools.length}개 학교 발견`)

@@ -5,18 +5,53 @@ on:
     # 매월 28일 오전 6시 (한국 시간, UTC+9)
     # UTC 기준으로는 전날 오후 9시
     - cron: '0 21 28 * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      month:
+        description: 'Target month (6-9)'
+        required: true
+        default: '6'
+        type: choice
+        options:
+          - '6'
+          - '7'
+          - '8'
+          - '9'
 
 jobs:
-  update-champion-criteria:
+  # 먼저 처리할 학교 목록을 가져오는 job
+  get-schools:
     runs-on: ubuntu-latest
+    outputs:
+      school_codes: ${{ steps.get-schools.outputs.school_codes }}
     steps:
-      - name: Call Champion Criteria Function
+      - name: Get School Codes
+        id: get-schools
+        run: |
+          # 기존 2개 학교 제외한 나머지 5개 학교 하드코딩
+          # 실제로는 API에서 가져올 수 있지만 안정성을 위해 하드코딩
+          echo 'school_codes=["7361063","7361073","7361083","7361093","7361103"]' >> $GITHUB_OUTPUT
+
+  # 각 학교별로 병렬 처리
+  process-schools:
+    needs: get-schools
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        school_code: ${{ fromJson(needs.get-schools.outputs.school_codes) }}
+      fail-fast: false  # 하나 실패해도 다른 학교는 계속 처리
+      max-parallel: 5   # 최대 5개 학교 동시 처리
+    
+    steps:
+      - name: Process School ${{ matrix.school_code }}
         env:
           API_KEY: ${{ secrets.ADMIN_API_KEY }}
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+          MONTH: ${{ github.event.inputs.month || '6' }}
         run: |
-          echo "Starting Champion Criteria API call"
-          echo "API_KEY length: ${#API_KEY}"
-          curl -v "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}" || true
-          echo "Champion Criteria API call completed"
+          echo "Processing school ${{ matrix.school_code }} for month ${MONTH}"
+          curl -v "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}&month=${MONTH}&school_code=${{ matrix.school_code }}" || true
+          echo "School ${{ matrix.school_code }} processing completed"
+          
+      - name: Wait between schools
+        run: sleep 10  # 학교간 10초 대기로 NEIS API 부하 분산
