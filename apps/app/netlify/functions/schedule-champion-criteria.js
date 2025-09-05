@@ -236,12 +236,18 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
     
     if (data.mealServiceDietInfo && data.mealServiceDietInfo[1] && data.mealServiceDietInfo[1].row) {
       const meals = data.mealServiceDietInfo[1].row
+      const uniqueDates = new Set()
       
       for (const meal of meals) {
-        const dateStr = meal.MLSV_YMD
-        const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
-        mealDays.push(formattedDate)
+        // '중식'만 카운트 (조식, 석식 제외)
+        if (meal.MMEAL_SC_NM === '중식') {
+          const dateStr = meal.MLSV_YMD
+          const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+          uniqueDates.add(formattedDate)
+        }
       }
+      
+      mealDays.push(...Array.from(uniqueDates))
     }
     
     console.log(`${schoolCode} 학교의 ${year}년 ${month}월 실제 급식일수: ${mealDays.length}일`)
