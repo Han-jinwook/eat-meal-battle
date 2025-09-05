@@ -25,12 +25,26 @@ jobs:
     outputs:
       school_codes: ${{ steps.get-schools.outputs.school_codes }}
     steps:
-      - name: Get School Codes
+      - name: Get School Codes from DB
         id: get-schools
+        env:
+          API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
         run: |
-          # 기존 2개 학교 제외한 나머지 5개 학교 하드코딩
-          # 실제로는 API에서 가져올 수 있지만 안정성을 위해 하드코딩
-          echo 'school_codes=["7361063","7361073","7361083","7361093","7361103"]' >> $GITHUB_OUTPUT
+          # DB에서 실제 학교 목록 가져오기 (모든 학교 포함)
+          response=$(curl -s "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}&get_schools=true")
+          echo "API Response: $response"
+          
+          # 응답에서 학교 코드 배열 추출
+          school_codes=$(echo "$response" | grep -o '"school_codes":\[[^]]*\]' | sed 's/"school_codes"://')
+          
+          if [ -z "$school_codes" ] || [ "$school_codes" = "[]" ]; then
+            echo "No school codes found, using fallback"
+            school_codes='["7361073"]'  # 최소 1개 학교 fallback
+          fi
+          
+          echo "school_codes=${school_codes}" >> $GITHUB_OUTPUT
+          echo "Found school codes: ${school_codes}"
 
   # 각 학교별로 병렬 처리
   process-schools:

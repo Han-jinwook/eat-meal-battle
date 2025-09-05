@@ -33,8 +33,32 @@ exports.handler = async (event) => {
     const urlParams = new URLSearchParams(event.queryStringParameters || {})
     const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : new Date().getMonth() + 1
     const schoolCode = urlParams.get('school_code')
+    const getSchools = urlParams.get('get_schools') === 'true'
     const targetMonths = [targetMonth]
     const currentYear = 2025
+
+    // 학교 목록만 반환하는 경우
+    if (getSchools) {
+      const { data: allSchools, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code')
+
+      if (schoolError) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: `학교 목록 조회 실패: ${schoolError.message}` })
+        }
+      }
+
+      const schoolCodes = (allSchools || []).map(school => school.school_code)
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          school_codes: schoolCodes,
+          total_schools: schoolCodes.length
+        })
+      }
+    }
 
     // 특정 학교만 조회 (school_code 파라미터가 있는 경우)
     let schools = []
@@ -50,11 +74,10 @@ exports.handler = async (event) => {
       }
       schools = [singleSchool]
     } else {
-      // 모든 학교 조회 (기존 2개 학교 제외)
+      // 모든 학교 조회
       const { data: allSchools, error: schoolError } = await supabase
         .from('school_infos')
         .select('school_code, office_code')
-        .not('school_code', 'in', '("7310375","7132085")')
 
       if (schoolError) {
         throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
