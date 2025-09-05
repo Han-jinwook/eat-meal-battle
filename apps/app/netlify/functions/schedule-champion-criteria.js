@@ -50,18 +50,11 @@ exports.handler = async (event) => {
 
     console.log(`총 ${schools.length}개 학교 발견`)
 
-    // 다음 달 계산 (매월 말에 실행되어 다음 월 데이터 생성)
-    const now = new Date()
-    let currentMonth = now.getMonth() + 2 // 다음 월: +1(0부터 시작) +1(다음월) = +2
-    let currentYear = now.getFullYear()
-    
-    // 12월인 경우 다음 해 1월로 조정
-    if (currentMonth > 12) {
-      currentMonth = 1
-      currentYear += 1
-    }
+    // 실행할 월 목록 (6,7,8,9,10월 일괄 처리용)
+    const targetMonths = [6, 7, 8, 9, 10]
+    const currentYear = 2024
 
-    console.log(`${currentYear}년 ${currentMonth}월 급식 데이터 수집 시작`)
+    console.log(`${currentYear}년 ${targetMonths.join(',')}월 급식 데이터 수집 시작`)
     
     // 결과 저장용 변수
     const results = {
@@ -87,39 +80,56 @@ exports.handler = async (event) => {
           continue; // 다음 학교로 이동
         }
         
-        // NEIS API를 통해 급식 데이터 조회
-        const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, currentYear, currentMonth)
-        
-        // 주차별 급식 일수 계산
-        const weeklyMealDays = calculateWeeklyMealDays(mealDays, currentYear, currentMonth)
-        
-        // 주차별 토요일 계산
-        const weeklySaturdays = calculateWeeklySaturdays(currentYear, currentMonth)
-        
-        // 학교별 급식 조건 저장 (학년 구분 없음)
-        const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
-        
-        await saveChampionCriteria(
-          supabase,
-          school.school_code,
-          currentYear,
-          currentMonth,
-          weeklyMealDays,
-          monthlyTotal,
-          weeklySaturdays
-        )
+        // 각 월별로 처리
+        for (const targetMonth of targetMonths) {
+          try {
+            // NEIS API를 통해 급식 데이터 조회
+            const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, currentYear, targetMonth)
+            
+            // 주차별 급식 일수 계산
+            const weeklyMealDays = calculateWeeklyMealDays(mealDays, currentYear, targetMonth)
+            
+            // 주차별 토요일 계산
+            const weeklySaturdays = calculateWeeklySaturdays(currentYear, targetMonth)
+            
+            // 학교별 급식 조건 저장 (학년 구분 없음)
+            const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
+            
+            await saveChampionCriteria(
+              supabase,
+              school.school_code,
+              currentYear,
+              targetMonth,
+              weeklyMealDays,
+              monthlyTotal,
+              weeklySaturdays
+            )
+            
+            console.log(`[${school.school_code}] ${currentYear}년 ${targetMonth}월 장원 조건 설정 완료`);
+            
+            // 월별 API 호출 제한을 위한 지연
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (monthError) {
+            console.error(`[${school.school_code}] ${targetMonth}월 처리 중 오류:`, monthError);
+            results.error++;
+            results.details.push({
+              school_code: school.school_code,
+              status: 'error',
+              month: targetMonth,
+              year: currentYear,
+              message: monthError.message
+            });
+          }
+        }
         
         results.success++;
         results.details.push({
           school_code: school.school_code,
           status: 'success',
-          month: currentMonth,
-          year: currentYear,
-          weekly: weeklyMealDays,
-          monthly: monthlyTotal
+          months: targetMonths,
+          year: currentYear
         });
         
-        console.log(`[${school.school_code}] ${currentYear}년 ${currentMonth}월 장원 조건 설정 완료`);
       } catch (schoolError) {
         console.error(`[${school.school_code}] 학교 처리 중 오류:`, schoolError);
         results.error++;
@@ -137,7 +147,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: `${results.success}개 학교의 ${currentYear}년 ${currentMonth}월 장원 조건 설정 완료 (오류: ${results.error}개)`,
+        message: `${results.success}개 학교의 ${currentYear}년 ${targetMonths.join(',')}월 장원 조건 설정 완료 (오류: ${results.error}개)`,
         results
       })
     }
@@ -225,35 +235,41 @@ function calculateWeeklyMealDays(mealDays, year, month) {
 function calculateWeeklySaturdays(year, month) {
   console.log(`${year}년 ${month}월 주차별 토요일 계산 시작...`)
   
-  // 각 주차별 토요일 날짜 저장
   const weeklySaturdays = {}
-  
-  // 해당 월의 1일
   const firstDayOfMonth = new Date(year, month - 1, 1)
+  const lastDayOfMonth = new Date(year, month, 0)
   
-  // ISO 8601 첫 주의 월요일 찾기
-  const dayOfWeek = firstDayOfMonth.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
-  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
+  // 해당 월의 모든 월요일을 찾아서 주차 결정
+  const mondays = []
   
-  const firstMonday = new Date(firstDayOfMonth)
-  firstMonday.setDate(1 + daysToMonday)
+  // 해당 월의 첫 번째 월요일부터 시작
+  let currentDate = new Date(firstDayOfMonth)
   
-  // 첫 주 토요일 계산 (월요일 + 5일)
-  let saturday = new Date(firstMonday)
-  saturday.setDate(firstMonday.getDate() + 5)
+  // 첫 번째 월요일 찾기
+  while (currentDate.getDay() !== 1) { // 1 = 월요일
+    currentDate.setDate(currentDate.getDate() + 1)
+    if (currentDate.getMonth() !== month - 1) {
+      // 해당 월에 월요일이 없는 경우 (실제로는 불가능하지만 안전장치)
+      break
+    }
+  }
   
-  // 최대 5주차까지 계산 (실제로는 월에 따라 4~5주)
-  for (let week = 1; week <= 5; week++) {
-    // 토요일 날짜 포맷팅 (YYYY-MM-DD)
+  // 해당 월의 모든 월요일 수집
+  while (currentDate.getMonth() === month - 1) {
+    mondays.push(new Date(currentDate))
+    currentDate.setDate(currentDate.getDate() + 7) // 다음 주 월요일
+  }
+  
+  // 각 월요일에 대해 토요일 계산
+  mondays.forEach((monday, index) => {
+    const saturday = new Date(monday)
+    saturday.setDate(monday.getDate() + 5) // 월요일 + 5일 = 토요일
+    
+    const weekNumber = index + 1
     const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`
     
-    // 결과에 저장
-    weeklySaturdays[`week_${week}_saturday`] = formattedDate
-    
-    // 다음 주 토요일 (7일 후)
-    saturday = new Date(saturday)
-    saturday.setDate(saturday.getDate() + 7)
-  }
+    weeklySaturdays[`week_${weekNumber}_saturday`] = formattedDate
+  })
   
   console.log(`주차별 토요일 계산 완료:`, weeklySaturdays)
   return weeklySaturdays
