@@ -12,7 +12,7 @@
   external_node_modules = ["@supabase/supabase-js", "jsonwebtoken", "sharp", "firebase-admin", "axios", "openai", "date-fns", "uuid", "canvas", "jimp", "node-fetch", "form-data", "mime-types", "lodash", "crypto-js", "buffer", "stream", "util", "path", "fs", "zlib", "querystring", "url", "http", "https", "events", "os", "child_process", "cluster", "net", "tls", "dgram", "dns", "readline", "repl", "vm", "assert", "constants", "punycode", "string_decoder", "timers", "tty", "v8", "worker_threads"]
 
 [functions.generate-meal-image]
-  timeout = 25
+  timeout = 30
 
 # 디버그를 위한 개별 함수 설정 (크기 모니터링)
 [functions.quiz]
