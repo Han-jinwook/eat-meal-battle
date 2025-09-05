@@ -13,8 +13,9 @@ try {
 }
 
 exports.handler = async (event, context) => {
-  // Netlify Functions 타임아웃을 50초로 설정
+  // Netlify Pro 플랜 26초 한계에 맞춰 타임아웃 설정
   context.callbackWaitsForEmptyEventLoop = false;
+  const startTime = Date.now();
   console.log('[generate-meal-image] 함수 시작');
   
   try {
@@ -112,11 +113,16 @@ exports.handler = async (event, context) => {
     
     // GPT-4o 이미지 생성 모델로 이미지 생성
     console.log('[generate-meal-image] OpenAI API 호출 중...');
-    // OpenAI 이미지 생성 API 호출
+    // OpenAI 이미지 생성 API 호출 (Pro 플랜 26초 한계 고려)
     console.log('[generate-meal-image] 이미지 생성 API 호출 시도');
     
+    // 타임아웃 래퍼 함수 - Pro 플랜 26초 한계에 맞춰 22초로 설정
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('OpenAI API 호출 타임아웃 (22초 초과)')), 22000);
+    });
+    
     // images.generate API를 사용하여 이미지 생성
-    const imageResponse = await openai.images.generate({
+    const imageGenerationPromise = openai.images.generate({
       model: "gpt-image-1",
       prompt: `한국 학교 급식 스테인리스 식판 - 정확히 6개 칸만 있는 구조${structuredMenuString}
 
@@ -139,7 +145,11 @@ exports.handler = async (event, context) => {
       // gpt-image-1 모델은 response_format, style 파라미터를 지원하지 않음
     });
     
-    console.log('[generate-meal-image] 이미지 생성 API 호출 성공');
+    // 타임아웃과 이미지 생성 중 먼저 완료되는 것을 기다림
+    const imageResponse = await Promise.race([imageGenerationPromise, timeoutPromise]);
+    
+    const apiCallTime = Date.now() - startTime;
+    console.log(`[generate-meal-image] 이미지 생성 API 호출 성공 (소요시간: ${apiCallTime}ms)`);
     
     // 이미지 데이터 추출
     if (!imageResponse || !imageResponse.data || imageResponse.data.length === 0) {
@@ -238,7 +248,8 @@ exports.handler = async (event, context) => {
       throw dbError;
     }
     
-    console.log(`[generate-meal-image] 성공: 이미지 ID ${imageRecord.id}`);
+    const totalTime = Date.now() - startTime;
+    console.log(`[generate-meal-image] 성공: 이미지 ID ${imageRecord.id} (총 소요시간: ${totalTime}ms)`);
     
     // 중요: 알림 관련 로직 제거
     // meal_images 테이블에 이미지 정보가 저장되면 트리거로 자동 알림 발송
@@ -252,7 +263,8 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({
         success: true,
-        image: imageRecord
+        image: imageRecord,
+        executionTime: totalTime
       })
     };
   } catch (error) {
