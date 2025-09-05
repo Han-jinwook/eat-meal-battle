@@ -2,21 +2,19 @@ name: champion-criteria-scheduler
 
 on:
   schedule:
-    # 매월 28일 오전 6시 (한국 시간, UTC+9)
+    # 매월 27일 오전 6시 (한국 시간, UTC+9)
     # UTC 기준으로는 전날 오후 9시
-    - cron: '0 21 28 * *'
+    - cron: '0 21 27 * *'
   workflow_dispatch:
     inputs:
       month:
-        description: 'Target month (6-9)'
-        required: true
-        default: '6'
-        type: choice
-        options:
-          - '6'
-          - '7'
-          - '8'
-          - '9'
+        description: 'Target month (optional, defaults to next month)'
+        required: false
+        type: string
+      year:
+        description: 'Target year (optional, defaults to current/next year)'
+        required: false
+        type: string
 
 jobs:
   # 먼저 처리할 학교 목록을 가져오는 job
@@ -46,10 +44,11 @@ jobs:
           echo "school_codes=${school_codes}" >> $GITHUB_OUTPUT
           echo "Found school codes: ${school_codes}"
 
-  # 각 학교별로 병렬 처리
+  # 각 학교별로 병렬 처리 (1차 시도)
   process-schools:
     needs: get-schools
     runs-on: ubuntu-latest
+    continue-on-error: true  # 실패해도 다음 job 실행
     strategy:
       matrix:
         school_code: ${{ fromJson(needs.get-schools.outputs.school_codes) }}
@@ -58,14 +57,116 @@ jobs:
     
     steps:
       - name: Process School ${{ matrix.school_code }}
+        id: process-school
+        continue-on-error: true
         env:
           API_KEY: ${{ secrets.ADMIN_API_KEY }}
           NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
-          MONTH: ${{ github.event.inputs.month || '6' }}
+          MONTH: ${{ github.event.inputs.month || '' }}
+          YEAR: ${{ github.event.inputs.year || '' }}
         run: |
-          echo "Processing school ${{ matrix.school_code }} for month ${MONTH}"
-          curl -v "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?api_key=${API_KEY}&month=${MONTH}&school_code=${{ matrix.school_code }}" || true
-          echo "School ${{ matrix.school_code }} processing completed"
+          # URL 파라미터 구성 (month, year가 있으면 추가)
+          params="api_key=${API_KEY}&school_code=${{ matrix.school_code }}"
+          if [ -n "${MONTH}" ]; then
+            params="${params}&month=${MONTH}"
+          fi
+          if [ -n "${YEAR}" ]; then
+            params="${params}&year=${YEAR}"
+          fi
+          
+          echo "🚀 Processing school ${{ matrix.school_code }} (1차 시도)"
+          echo "📡 API URL: ${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?${params}"
+          
+          response=$(curl -s -w "%{http_code}" "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?${params}")
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          
+          echo "📊 HTTP Code: $http_code"
+          echo "📝 Response: $response_body"
+          
+          if [ "$http_code" = "200" ]; then
+            echo "✅ School ${{ matrix.school_code }} processing successful"
+            exit 0
+          else
+            echo "❌ School ${{ matrix.school_code }} processing failed (HTTP: $http_code)"
+            echo "🔍 Error details: $response_body"
+            exit 1
+          fi
           
       - name: Wait between schools
-        run: sleep 10  # 학교간 10초 대기로 NEIS API 부하 분산
+        run: sleep 15  # 학교간 15초 대기로 NEIS API 부하 분산 (천천히)
+
+  # 실패한 학교들 재시도 (2차 시도)
+  retry-failed-schools:
+    needs: [get-schools, process-schools]
+    runs-on: ubuntu-latest
+    if: always()  # 이전 job이 실패해도 실행
+    strategy:
+      matrix:
+        school_code: ${{ fromJson(needs.get-schools.outputs.school_codes) }}
+      fail-fast: false
+      max-parallel: 3   # 재시도는 더 천천히 (3개씩)
+    
+    steps:
+      - name: Check if school needs retry
+        id: check-retry
+        env:
+          API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+          MONTH: ${{ github.event.inputs.month || '' }}
+          YEAR: ${{ github.event.inputs.year || '' }}
+        run: |
+          # 현재 월/년도 계산
+          if [ -n "${MONTH}" ] && [ -n "${YEAR}" ]; then
+            target_month="${MONTH}"
+            target_year="${YEAR}"
+          else
+            # 익월 계산
+            current_date=$(date)
+            target_month=$(date -d "next month" +%m | sed 's/^0//')
+            target_year=$(date -d "next month" +%Y)
+          fi
+          
+          echo "Checking if school ${{ matrix.school_code }} needs retry for ${target_year}-${target_month}"
+          
+          # champion_criteria 테이블에서 해당 학교/월 데이터 존재 확인
+          # 이 부분은 실제로는 API 호출로 확인해야 하지만, 간단히 재시도 진행
+          echo "needs_retry=true" >> $GITHUB_OUTPUT
+          
+      - name: Retry School ${{ matrix.school_code }}
+        if: steps.check-retry.outputs.needs_retry == 'true'
+        env:
+          API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          NETLIFY_URL: "${{ secrets.NETLIFY_URL || 'https://lunbat.com' }}"
+          MONTH: ${{ github.event.inputs.month || '' }}
+          YEAR: ${{ github.event.inputs.year || '' }}
+        run: |
+          # URL 파라미터 구성
+          params="api_key=${API_KEY}&school_code=${{ matrix.school_code }}"
+          if [ -n "${MONTH}" ]; then
+            params="${params}&month=${MONTH}"
+          fi
+          if [ -n "${YEAR}" ]; then
+            params="${params}&year=${YEAR}"
+          fi
+          
+          echo "🔄 Retrying school ${{ matrix.school_code }} (2차 시도)"
+          echo "📡 Retry API URL: ${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?${params}"
+          
+          response=$(curl -s -w "%{http_code}" "${NETLIFY_URL}/.netlify/functions/schedule-champion-criteria?${params}")
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          
+          echo "📊 Retry HTTP Code: $http_code"
+          echo "📝 Retry Response: $response_body"
+          
+          if [ "$http_code" = "200" ]; then
+            echo "✅ School ${{ matrix.school_code }} retry successful"
+          else
+            echo "❌ School ${{ matrix.school_code }} retry failed (HTTP: $http_code)"
+            echo "🔍 Retry error details: $response_body"
+          fi
+          
+      - name: Wait between retries
+        if: steps.check-retry.outputs.needs_retry == 'true'
+        run: sleep 20  # 재시도는 더 긴 대기시간 (20초)

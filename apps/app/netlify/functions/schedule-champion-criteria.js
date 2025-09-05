@@ -31,11 +31,15 @@ exports.handler = async (event) => {
 
     // URL 파라미터에서 월과 학교코드 지정
     const urlParams = new URLSearchParams(event.queryStringParameters || {})
-    const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : new Date().getMonth() + 1
     const schoolCode = urlParams.get('school_code')
     const getSchools = urlParams.get('get_schools') === 'true'
+    
+    // 익월 계산 (정식 스케줄러용)
+    const now = new Date()
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const targetMonth = urlParams.get('month') ? parseInt(urlParams.get('month')) : nextMonth.getMonth() + 1
+    const currentYear = urlParams.get('year') ? parseInt(urlParams.get('year')) : nextMonth.getFullYear()
     const targetMonths = [targetMonth]
-    const currentYear = 2025
 
     // 학교 목록만 반환하는 경우
     if (getSchools) {
@@ -399,8 +403,20 @@ async function saveChampionCriteria(
   weeklySaturdays
 ) {
   try {
-    // 새 데이터 삽입 (전체 삭제 후이므로 개별 삭제 불필요)
-    const { error } = await supabase.from('champion_criteria').insert({
+    // 기존 데이터가 있는지 확인
+    const { data: existing, error: selectError } = await supabase
+      .from('champion_criteria')
+      .select('id')
+      .eq('school_code', schoolCode)
+      .eq('year', year)
+      .eq('month', month)
+      .single()
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      throw new Error(`기존 데이터 조회 실패: ${selectError.message}`)
+    }
+
+    const championData = {
       school_code: schoolCode,
       year,
       month,
@@ -416,14 +432,32 @@ async function saveChampionCriteria(
       week_3_saturday: weeklySaturdays?.week_3_saturday || null,
       week_4_saturday: weeklySaturdays?.week_4_saturday || null,
       week_5_saturday: weeklySaturdays?.week_5_saturday || null,
-      created_at: new Date().toISOString()
-    })
+      updated_at: new Date().toISOString()
+    }
+
+    let error
+    if (existing) {
+      // 기존 데이터 업데이트
+      const result = await supabase
+        .from('champion_criteria')
+        .update(championData)
+        .eq('id', existing.id)
+      error = result.error
+      console.log(`${schoolCode} ${year}년 ${month}월 데이터 업데이트 완료`)
+    } else {
+      // 새 데이터 삽입
+      championData.created_at = new Date().toISOString()
+      const result = await supabase
+        .from('champion_criteria')
+        .insert(championData)
+      error = result.error
+      console.log(`${schoolCode} ${year}년 ${month}월 데이터 신규 생성 완료`)
+    }
     
     if (error) {
       throw new Error(`장원 조건 저장 실패: ${error.message}`)
     }
     
-    console.log(`${schoolCode} ${year}년 ${month}월 데이터 저장 완료`)
     return true
   } catch (err) {
     console.error('장원 조건 저장 예외:', err)
