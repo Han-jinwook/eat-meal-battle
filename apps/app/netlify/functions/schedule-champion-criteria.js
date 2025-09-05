@@ -94,13 +94,13 @@ exports.handler = async (event) => {
             const mealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, currentYear, targetMonth)
             
             // 주차별 급식 일수 계산
-            const weeklyMealDays = calculateWeeklyMealDays(mealDays, currentYear, targetMonth)
+            const weeklyMealDays = await calculateWeeklyMealDays(school.school_code, school.office_code, currentYear, targetMonth)
             
             // 주차별 토요일 계산
             const weeklySaturdays = calculateWeeklySaturdays(currentYear, targetMonth)
             
-            // 학교별 급식 조건 저장 (학년 구분 없음)
-            const monthlyTotal = Object.values(weeklyMealDays).reduce((sum, count) => sum + count, 0)
+            // 월별 총 급식일수는 해당월만 계산 (1일~말일)
+            const monthlyTotal = mealDays.length
             
             await saveChampionCriteria(
               supabase,
@@ -207,35 +207,87 @@ async function fetchMealDaysFromNEIS(schoolCode, officeCode, year, month) {
   }
 }
 
-// 주차별 급식 일수 계산
-function calculateWeeklyMealDays(mealDays, year, month) {
+// 주차별 급식 일수 계산 (월 경계 넘는 주차 포함)
+async function calculateWeeklyMealDays(schoolCode, officeCode, year, month) {
   const weeklyCount = {}
   
-  for (const dateStr of mealDays) {
-    const date = new Date(dateStr)
+  // 토요일 계산과 동일한 로직으로 주차별 기간 계산
+  const firstDayOfMonth = new Date(year, month - 1, 1)
+  const dayOfWeek = firstDayOfMonth.getDay()
+  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
+  
+  const firstMonday = new Date(firstDayOfMonth)
+  firstMonday.setDate(1 + daysToMonday)
+  
+  let saturday = new Date(firstMonday)
+  saturday.setDate(firstMonday.getDate() + 5)
+  
+  // 각 주차별로 급식일 조회
+  for (let week = 1; week <= 5; week++) {
+    const mondayOfWeek = new Date(saturday)
+    mondayOfWeek.setDate(saturday.getDate() - 5)
     
-    // ISO 주차 계산 (월요일 시작)
-    const firstDayOfMonth = new Date(year, month - 1, 1)
-    const dayOfWeek = firstDayOfMonth.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
-    const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
-    
-    const firstMonday = new Date(firstDayOfMonth)
-    firstMonday.setDate(1 + daysToMonday)
-    
-    const timeDiff = date.getTime() - firstMonday.getTime()
-    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-    const weekNumber = Math.floor(daysDiff / 7) + 1
-    
-    // 해당 날짜가 첫 번째 월요일보다 앞서면 0주차로 처리
-    if (daysDiff < 0) {
-      weeklyCount[0] = (weeklyCount[0] || 0) + 1
+    // 해당 주차의 월요일이 해당 월에 있는지 확인
+    if (mondayOfWeek.getMonth() === month - 1) {
+      // 주차 전체 기간 (월요일~일요일)
+      const weekStart = new Date(mondayOfWeek)
+      const weekEnd = new Date(mondayOfWeek)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      
+      // 주차 기간의 급식일 조회 (월 경계 넘어도 포함)
+      const weekMealDays = await fetchMealDaysForWeek(schoolCode, officeCode, weekStart, weekEnd)
+      weeklyCount[week] = weekMealDays.length
+      
+      console.log(`${week}주차 (${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}): ${weekMealDays.length}일`)
     } else {
-      // 주차별 카운트 증가
-      weeklyCount[weekNumber] = (weeklyCount[weekNumber] || 0) + 1
+      break
     }
+    
+    // 다음 주 토요일
+    saturday = new Date(saturday)
+    saturday.setDate(saturday.getDate() + 7)
   }
   
   return weeklyCount
+}
+
+// 특정 주차 기간의 급식일 조회
+async function fetchMealDaysForWeek(schoolCode, officeCode, weekStart, weekEnd) {
+  const mealDays = []
+  
+  // 주차가 여러 월에 걸쳐있을 수 있으므로 각 월별로 조회
+  const startMonth = weekStart.getMonth() + 1
+  const endMonth = weekEnd.getMonth() + 1
+  const startYear = weekStart.getFullYear()
+  const endYear = weekEnd.getFullYear()
+  
+  const monthsToCheck = []
+  
+  if (startYear === endYear && startMonth === endMonth) {
+    // 같은 월
+    monthsToCheck.push({ year: startYear, month: startMonth })
+  } else {
+    // 다른 월 (월 경계)
+    monthsToCheck.push({ year: startYear, month: startMonth })
+    if (endYear !== startYear || endMonth !== startMonth) {
+      monthsToCheck.push({ year: endYear, month: endMonth })
+    }
+  }
+  
+  // 각 월의 급식일 조회
+  for (const { year, month } of monthsToCheck) {
+    const monthMealDays = await fetchMealDaysFromNEIS(schoolCode, officeCode, year, month)
+    
+    // 주차 기간에 해당하는 급식일만 필터링
+    for (const dateStr of monthMealDays) {
+      const mealDate = new Date(dateStr)
+      if (mealDate >= weekStart && mealDate <= weekEnd) {
+        mealDays.push(dateStr)
+      }
+    }
+  }
+  
+  return mealDays
 }
 
 // 주차별 토요일 날짜 계산 (ISO 8601 기준)
