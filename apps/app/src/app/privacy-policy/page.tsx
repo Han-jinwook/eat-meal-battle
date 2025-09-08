@@ -2,11 +2,29 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyPage() {
+  const router = useRouter();
+
+  const handleClose = () => {
+    router.back();
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">개인정보 처리방침</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">개인정보 처리방침</h1>
+        <button
+          onClick={handleClose}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="닫기"
+        >
+          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
       
       <div className="space-y-6">
         <section>
@@ -118,10 +136,16 @@ export default function PrivacyPolicyPage() {
         </section>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 flex gap-4">
         <Link href="/" className="text-indigo-600 hover:text-indigo-800">
           홈으로 돌아가기
         </Link>
+        <button
+          onClick={handleClose}
+          className="text-gray-600 hover:text-gray-800"
+        >
+          닫기
+        </button>
       </div>
     </div>
   );
