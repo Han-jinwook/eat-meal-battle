@@ -1072,7 +1072,7 @@ export default function QuizClient() {
         />
 
         {/* 날짜 선택 및 퀴즈 버튼 영역 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
           {/* 날짜 선택 - DateNavigator 컴포넌트 사용 */}
           <DateNavigator 
             selectedDate={selectedDate}
@@ -1082,10 +1082,11 @@ export default function QuizClient() {
           {/* 모든 퀴즈 풀어보기 버튼 */}
           <button
             onClick={() => setIsAllQuizModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium whitespace-nowrap"
           >
             <span>🧩</span>
-            <span>모든 퀴즈 풀어보기</span>
+            <span className="hidden sm:inline">모든 퀴즈 풀어보기</span>
+            <span className="sm:hidden">퀴즈</span>
           </button>
         </div>
 
