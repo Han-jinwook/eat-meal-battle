@@ -35,7 +35,20 @@ export default function SchoolSearchPage() {
   const [user, setUser] = useState<any>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [shareSchoolCode, setShareSchoolCode] = useState<string | null>(null);
   
+  // URL 파라미터에서 공유 학교 코드 확인
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const shareCode = params.get('share_school_code');
+      if (shareCode) {
+        setShareSchoolCode(shareCode);
+        console.log('🔗 공유 학교 코드 감지:', shareCode);
+      }
+    }
+  }, []);
+
   // 로그인된 사용자 정보 가져오기
   useEffect(() => {
     const getUser = async () => {
@@ -126,6 +139,56 @@ export default function SchoolSearchPage() {
     setClassInfo((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 관심학교 자동 등록 함수
+  const attemptInterestSchoolRegistration = async (schoolCode: string) => {
+    try {
+      console.log('🔗 관심학교 자동 등록 시도:', schoolCode);
+      
+      // 학교 정보 조회
+      const schoolResponse = await fetch(`/.netlify/functions/schools?keyword=${schoolCode}&exact=true`);
+      if (!schoolResponse.ok) {
+        console.warn('학교 정보 조회 실패');
+        return;
+      }
+      
+      const schoolData = await schoolResponse.json();
+      const targetSchool = schoolData.schools?.find((s: any) => s.SD_SCHUL_CODE === schoolCode);
+      
+      if (!targetSchool) {
+        console.warn('대상 학교를 찾을 수 없음:', schoolCode);
+        return;
+      }
+      
+      // 관심학교 등록 API 호출
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.warn('인증 토큰이 없어 관심학교 등록 불가');
+        return;
+      }
+      
+      const registerResponse = await fetch('/api/interest-schools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          school_code: schoolCode,
+          school_name: targetSchool.SCHUL_NM
+        })
+      });
+      
+      if (registerResponse.ok) {
+        console.log('✅ 관심학교 자동 등록 성공:', targetSchool.SCHUL_NM);
+      } else {
+        const errorText = await registerResponse.text();
+        console.warn('관심학교 자동 등록 실패:', errorText);
+      }
+    } catch (error) {
+      console.warn('관심학교 자동 등록 중 오류:', error);
+    }
+  };
+
   // 정보 저장 및 다음 단계 이동
   const saveAndContinue = async () => {
     if (!user) {
@@ -178,22 +241,23 @@ export default function SchoolSearchPage() {
         updated_at: new Date().toISOString(),
       };
 
+      let saveError;
       if (schoolInfo) {
         // 기존 레코드가 있으면 업데이트
-        const { error: updateError } = await supabase
+        const updateResult = await supabase
           .from('school_infos')
           .update(schoolData)
           .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
+        saveError = updateResult.error;
       } else {
         // 없으면 새로 추가 (같은 school_code여도 문제없음)
-        const { error: insertError } = await supabase
+        const insertResult = await supabase
           .from('school_infos')
           .insert([schoolData]);
-
-        if (insertError) throw insertError;
+        saveError = insertResult.error;
       }
+
+      if (saveError) throw saveError;
 
       // 장원 조건 설정 (신규 등록 및 학교 변경 시)
       try {
@@ -231,6 +295,18 @@ export default function SchoolSearchPage() {
         }
       } catch (error) {
         console.warn('관심학교 상태 초기화 실패:', error);
+      }
+
+      // 공유 URL에서 온 학교 코드 처리
+      if (shareSchoolCode) {
+        if (shareSchoolCode === selectedSchool.SD_SCHUL_CODE) {
+          // 공유 URL 학교 = 등록한 학교 (같은 학교)
+          console.log('✅ 공유 URL 학교를 내 학교로 등록 완료 - 관심학교 등록 불필요');
+        } else {
+          // 공유 URL 학교 ≠ 등록한 학교 (다른 학교)
+          console.log('🔗 공유 학교 코드로 관심학교 자동 등록 시도:', shareSchoolCode);
+          await attemptInterestSchoolRegistration(shareSchoolCode);
+        }
       }
 
       // 알림 설정 단계 건너뛰고 바로 홈으로 이동

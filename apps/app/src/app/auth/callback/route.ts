@@ -428,7 +428,12 @@ export async function GET(request: NextRequest) {
               
               if (isStudent) {
                 console.info('✅ 관심학교 조회 오류이지만 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
-                redirectUrl = shareUrl || '/school-search';
+                // 공유URL이 있으면 school_code 파라미터를 포함하여 리다이렉트
+                if (shareUrl && shareUrlSchoolCode) {
+                  redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                } else {
+                  redirectUrl = '/school-search';
+                }
               } else {
                 console.info('✅ 관심학교 조회 오류이지만 비학생 나이 확인 → 홈페이지로 리다이렉트');
                 redirectUrl = shareUrl || '/';
@@ -546,7 +551,12 @@ export async function GET(request: NextRequest) {
               
               if (isStudent) {
                 console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
-                redirectUrl = shareUrl || '/school-search';
+                // 공유URL이 있으면 school_code 파라미터를 포함하여 리다이렉트
+                if (shareUrl && shareUrlSchoolCode) {
+                  redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                } else {
+                  redirectUrl = '/school-search';
+                }
               } else {
                 console.info('✅ 비학생 나이 확인 → 홈페이지(관심학교 안내)로 리다이렉트');
                 redirectUrl = shareUrl || '/';
