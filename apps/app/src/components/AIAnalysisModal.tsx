@@ -256,7 +256,7 @@ const AIAnalysisModal = ({
     { 
       id: 'grok', 
       name: '그록', 
-      icon: '/images/ai-logos/grok.png',
+      icon: '/images/ai-logos/Grok-logo.svg.png',
       deepLink: 'twitter://grok',
       webUrl: 'https://x.com/i/grok',
       storeUrl: {
