@@ -151,15 +151,15 @@ exports.handler = async function(event, context) {
           
           console.log('🔧 Admin 클라이언트 생성 완료');
           
-          // 일별 배틀 계산 (Admin 클라이언트 전달)
+          // 일별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
           console.log('🔄 일별 배틀 계산 호출 시작...');
-          await calculateDailyMenuBattle(mealDate, schoolCode, adminClient);
+          await calculateDailyMenuBattle(mealDate, null, adminClient);
           console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`);
           
-          // 월별 배틀 계산 (Admin 클라이언트 전달)
+          // 월별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
           console.log('🔄 월별 배틀 계산 호출 시작...');
           const date = new Date(mealDate);
-          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, adminClient);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, null, adminClient);
           console.log(`✅ 월별 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
         } else {
           console.log('❌ 메뉴 데이터 조회 실패 또는 데이터 없음');
@@ -260,13 +260,13 @@ exports.handler = async function(event, context) {
             }
           );
           
-          // 일별 배틀 계산
-          await calculateDailyMenuBattle(mealDate, schoolCode, adminClient);
+          // 일별 배틀 계산 - 모든 학교 데이터 처리
+          await calculateDailyMenuBattle(mealDate, null, adminClient);
           console.log(`✅ 일별 배틀 계산 완료 (삭제): ${mealDate}`);
           
-          // 월별 배틀 계산
+          // 월별 배틀 계산 - 모든 학교 데이터 처리
           const date = new Date(mealDate);
-          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, schoolCode, adminClient);
+          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, null, adminClient);
           console.log(`✅ 월별 배틀 계산 완료 (삭제): ${date.getFullYear()}-${date.getMonth() + 1}`);
         }
       } catch (battleError) {
