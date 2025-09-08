@@ -127,16 +127,16 @@ const ShareButton: React.FC<ShareButtonProps> = ({
         <button
           onClick={handleShare}
           disabled={isSharing}
-          className={`w-full px-4 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 shadow-lg flex items-center justify-center gap-2 min-h-[60px] ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 shadow-lg flex items-center justify-center gap-2 min-h-[60px] ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
           </svg>
-          <div className="text-center">
-            <div className="font-bold text-sm">
+          <div className="text-center flex-1 min-w-0">
+            <div className="font-bold text-xs sm:text-sm leading-tight">
               {isSharing ? '공유 중...' : (isBattlePage ? '급식배틀 공유하기' : '급식평가 함께하기')}
             </div>
-            <div className="text-xs opacity-90">
+            <div className="text-[10px] sm:text-xs opacity-90 leading-tight mt-0.5">
               {isBattlePage 
                 ? '우리학교 메뉴배틀 결과 & 학교간 배틀 결과'
                 : '친구 선후배와 힘모아 별점투표'
