@@ -94,10 +94,10 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
     // 지역별 순위 계산
     const regionGroups = {};
     results.forEach(result => {
-      if (result.region) {
-        if (!regionGroups[result.region]) regionGroups[result.region] = [];
-        regionGroups[result.region].push(result);
-      }
+      // region이 없는 경우 '기타' 지역으로 분류
+      const regionKey = result.region || '기타';
+      if (!regionGroups[regionKey]) regionGroups[regionKey] = [];
+      regionGroups[regionKey].push(result);
     });
 
     // 각 지역별로 순위 재계산
@@ -273,10 +273,10 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
     // 지역별 순위 계산
     const regionGroups = {};
     results.forEach(result => {
-      if (result.region) {
-        if (!regionGroups[result.region]) regionGroups[result.region] = [];
-        regionGroups[result.region].push(result);
-      }
+      // region이 없는 경우 '기타' 지역으로 분류
+      const regionKey = result.region || '기타';
+      if (!regionGroups[regionKey]) regionGroups[regionKey] = [];
+      regionGroups[regionKey].push(result);
     });
 
     // 각 지역별로 순위 재계산
@@ -409,10 +409,10 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     // 지역별 순위 계산
     const regionGroups = {};
     results.forEach(result => {
-      if (result.region) {
-        if (!regionGroups[result.region]) regionGroups[result.region] = [];
-        regionGroups[result.region].push(result);
-      }
+      // region이 없는 경우 '기타' 지역으로 분류
+      const regionKey = result.region || '기타';
+      if (!regionGroups[regionKey]) regionGroups[regionKey] = [];
+      regionGroups[regionKey].push(result);
     });
 
     // 각 지역별로 순위 재계산
@@ -581,10 +581,10 @@ async function calculateMonthlyMealBattle(targetYear, targetMonth, schoolCode, s
     // 지역별 순위 계산
     const regionGroups = {};
     results.forEach(result => {
-      if (result.region) {
-        if (!regionGroups[result.region]) regionGroups[result.region] = [];
-        regionGroups[result.region].push(result);
-      }
+      // region이 없는 경우 '기타' 지역으로 분류
+      const regionKey = result.region || '기타';
+      if (!regionGroups[regionKey]) regionGroups[regionKey] = [];
+      regionGroups[regionKey].push(result);
     });
 
     // 각 지역별로 순위 재계산

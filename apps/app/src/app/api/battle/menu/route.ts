@@ -127,7 +127,6 @@ export async function GET(request: NextRequest) {
           `)
           .eq('battle_date', date)
           .eq('region', region)  // 지역 필터링 추가
-          .not('region_rank', 'is', null)
           .order('region_rank', { ascending: true });
           
         // 학교 유형 필터링

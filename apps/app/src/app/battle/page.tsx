@@ -508,6 +508,19 @@ export default function BattlePage() {
         console.log('⚠️ 배틀 데이터가 없음 - 빈 상태로 표시');
         setBattleData([]);
       } else {
+        // 지역 모드 디버깅: region_rank 값 확인
+        if (selectedRegion && selectedRegion !== '전국' && selectedRegion !== '우리학교') {
+          console.log('🔍 지역 모드 데이터 확인:', {
+            selectedRegion,
+            dataCount: result.data.length,
+            sampleData: result.data.slice(0, 3).map(item => ({
+              school_name: item.school_name,
+              region_rank: item.region_rank,
+              daily_rank: item.daily_rank,
+              national_rank: item.national_rank
+            }))
+          });
+        }
         setBattleData(result.data);
       }
     } catch (error) {
@@ -1324,9 +1337,32 @@ export default function BattlePage() {
                           rankField = 'region_rank';
                         }
                         
+                        // 디버깅 로그 추가
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('🔍 정렬 디버깅:', {
+                            selectedRegion,
+                            rankField,
+                            itemA: { school_name: a.school_name, [rankField]: a[rankField] },
+                            itemB: { school_name: b.school_name, [rankField]: b[rankField] }
+                          });
+                        }
+                        
+                        // null/undefined 값 처리 - region_rank가 null인 경우 평점으로 정렬
+                        if (rankField === 'region_rank' && (!a[rankField] || !b[rankField])) {
+                          // region_rank가 null인 경우 평점으로 대체 정렬
+                          const aRating = a.final_avg_rating || 0;
+                          const bRating = b.final_avg_rating || 0;
+                          return sortOrder === 'asc' ? 
+                            aRating - bRating : 
+                            bRating - aRating;
+                        }
+                        
+                        const aRank = a[rankField] || 999999;
+                        const bRank = b[rankField] || 999999;
+                        
                         return sortOrder === 'asc' ? 
-                          a[rankField] - b[rankField] : 
-                          b[rankField] - a[rankField];
+                          aRank - bRank : 
+                          bRank - aRank;
                       })
                       .map((item, index) => {
                         // 순위 필드 결정 - 지역/전국 모드에 따른 순위 필드 선택
