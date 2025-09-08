@@ -153,8 +153,12 @@ exports.handler = async function(event, context) {
           
           // 일별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
           console.log('🔄 일별 배틀 계산 호출 시작...');
-          await calculateDailyMenuBattle(mealDate, null, adminClient);
-          console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`);
+          console.log(`📅 배틀 계산 대상 날짜: ${mealDate}`);
+          const dailyResult = await calculateDailyMenuBattle(mealDate, null, adminClient);
+          console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`, dailyResult?.success ? '성공' : '실패');
+          if (!dailyResult?.success) {
+            console.error('❌ 일별 배틀 계산 실패:', dailyResult?.error);
+          }
           
           // 월별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
           console.log('🔄 월별 배틀 계산 호출 시작...');
