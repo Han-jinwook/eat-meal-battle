@@ -1155,13 +1155,38 @@ export default function BattlePage() {
                       <p className="text-sm mt-2">메뉴에 별점을 매겨주세요!</p>
                     </div>
                   ) : (
-                    (sortOrder === 'asc' ? battleData : [...battleData].reverse())
+                    (() => {
+                      // 동률 처리를 위한 순위 계산
+                      const sortedData = sortOrder === 'asc' ? battleData : [...battleData].reverse();
+                      const dataWithRank = [];
+                      let currentRank = 1;
+                      
+                      for (let i = 0; i < sortedData.length; i++) {
+                        const item = sortedData[i];
+                        
+                        if (i > 0) {
+                          const prevItem = sortedData[i - 1];
+                          // 평점이 다르면 순위 업데이트 (현재 인덱스 + 1)
+                          if (item.final_avg_rating !== prevItem.final_avg_rating) {
+                            currentRank = i + 1;
+                          }
+                          // 평점이 같으면 currentRank 유지 (동률)
+                        }
+                        
+                        dataWithRank.push({
+                          ...item,
+                          displayRank: currentRank
+                        });
+                      }
+                      
+                      return dataWithRank;
+                    })()
                       .map((item, index) => (
                       <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
-                          {sortOrder === 'asc' ? (index + 1) : battleData.length - index}
+                          {item.displayRank}
                         </div>
                         <div className="text-center text-gray-700 text-sm font-medium">
                           {item.school_name || '-'}
@@ -1359,17 +1384,9 @@ export default function BattlePage() {
                           aRank - bRank : 
                           bRank - aRank;
                       })
-                      .map((item, index) => {
-                        // 순위 필드 결정 - 지역/전국 모드에 따른 순위 필드 선택
-                        let rankField;
-                        if (selectedRegion === '전국') {
-                          rankField = viewMode === 'daily' ? 'national_rank' : 'monthly_rank';
-                        } else if (selectedRegion === '우리학교') {
-                          rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
-                        } else {
-                          // 지역 모드
-                          rankField = 'region_rank';
-                        }
+                      .map((item, index, sortedArray) => {
+                        // 동률 처리를 위한 순위 계산
+                        let displayRank = 1;
                         
                         // 점수와 평가 수 필드 결정
                         let ratingField = 'avg_rating';
@@ -1385,6 +1402,25 @@ export default function BattlePage() {
                             countField = 'rating_count';
                           }
                         }
+                        
+                        // 동률 순위 계산
+                        if (index > 0) {
+                          let currentRank = 1;
+                          for (let i = 0; i < sortedArray.length; i++) {
+                            if (i > 0) {
+                              const prevItem = sortedArray[i - 1];
+                              const currentItem = sortedArray[i];
+                              // 평점이 다르면 순위 업데이트 (현재 인덱스 + 1)
+                              if (currentItem[ratingField] !== prevItem[ratingField]) {
+                                currentRank = i + 1;
+                              }
+                            }
+                            if (i === index) {
+                              displayRank = currentRank;
+                              break;
+                            }
+                          }
+                        }
                           
                         return (
                           <div 
@@ -1393,8 +1429,8 @@ export default function BattlePage() {
                           >
                             <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm">
                               <div className="text-center">
-                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${(index + 1) <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
-                                  {index + 1}
+                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${displayRank <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                                  {displayRank}
                                 </span>
                               </div>
                               <div className="text-center font-medium text-gray-800">
