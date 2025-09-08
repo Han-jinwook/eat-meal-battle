@@ -179,10 +179,10 @@ export default function Home() {
           return;
         }
         
-        // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 등록
+        // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 자동등록 시도
         if (schoolInfo.school_code !== schoolCode) {
-          console.log('학생 유저 - 다른 학교, 관심학교 등록');
-          setIsSchoolSearchOpen(true);
+          console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 자동등록 시도');
+          await attemptAutoRegisterInterestSchool(schoolCode);
           return;
         }
         
@@ -191,13 +191,76 @@ export default function Home() {
         return;
       }
 
-      // 일반 유저인 경우 → 바로 관심학교 등록
-      console.log('일반 유저 - 관심학교 등록');
-      setIsSchoolSearchOpen(true);
+      // 일반 유저인 경우 → 관심학교 자동등록 시도
+      console.log('🏫 일반 유저 - 타학교 공유링크 감지, 관심학교 자동등록 시도');
+      await attemptAutoRegisterInterestSchool(schoolCode);
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
       // 오류 발생 시 관심학교 등록 모달 열기
+      setIsSchoolSearchOpen(true);
+    }
+  };
+
+  // 관심학교 자동등록 시도 함수
+  const attemptAutoRegisterInterestSchool = async (schoolCode: string) => {
+    try {
+      console.log('🔍 관심학교 자동등록 시도:', schoolCode);
+      
+      // 1. 이미 등록된 관심학교인지 확인
+      const isDuplicate = interestSchools.some(
+        school => school.school_code === schoolCode
+      );
+      
+      if (isDuplicate) {
+        console.log('ℹ️ 이미 등록된 관심학교입니다');
+        return;
+      }
+
+      // 2. 해당 학교 정보 조회
+      const { data: shareSchoolInfo, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_name')
+        .eq('school_code', schoolCode)
+        .single();
+
+      if (schoolError || !shareSchoolInfo) {
+        console.warn('⚠️ 공유된 학교 정보를 찾을 수 없습니다. 수동 등록 모달 열기');
+        setIsSchoolSearchOpen(true);
+        return;
+      }
+
+      // 3. 관심학교 자동등록 API 호출
+      const response = await fetch('/api/interest-schools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          school_code: schoolCode,
+          school_name: shareSchoolInfo.school_name
+        })
+      });
+
+      if (response.ok) {
+        console.log('✅ 타학교 관심학교 자동등록 성공:', shareSchoolInfo.school_name);
+        
+        // 관심학교 목록 새로고침
+        await fetchInterestSchools();
+        
+        // 성공 알림
+        alert(`${shareSchoolInfo.school_name}이(가) 관심학교로 자동 등록되었습니다!`);
+        
+      } else if (response.status === 400) {
+        console.log('ℹ️ 이미 등록된 관심학교입니다');
+      } else {
+        console.warn('⚠️ 관심학교 자동등록 실패, 수동 등록 모달 열기');
+        setIsSchoolSearchOpen(true);
+      }
+      
+    } catch (autoRegisterError) {
+      console.error('❌ 관심학교 자동등록 오류:', autoRegisterError);
+      // 실패 시 수동 등록 모달 열기
       setIsSchoolSearchOpen(true);
     }
   };
