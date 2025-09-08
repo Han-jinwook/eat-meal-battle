@@ -853,18 +853,21 @@ export default function Home() {
       {schoolMode.isStudentMode ? (
         <>
           <span className="text-blue-700 text-base font-semibold">
-            {userSchool?.school_name}
+            <span className="hidden sm:inline">{userSchool?.school_name}</span>
+            <span className="sm:hidden">
+              {userSchool?.school_name?.replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+            </span>
           </span>
           
           {/* 학년/반 정보 */}
           {(userSchool?.grade || userSchool?.class) && (
-            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+            <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full whitespace-nowrap">
               {userSchool.grade ? `${userSchool.grade}학년` : ''}
               {userSchool.class ? ` ${userSchool.class}반` : ''}
             </span>
           )}
           
-          {/* 초중고 캐릭터 - 반 끝에서 1cm 떨어진 곳에 */}
+          {/* 초중고 캐릭터 - 모바일에서 숨김 */}
           {userSchool?.school_type && (
             <img 
               src={getSchoolCharacterImage(userSchool.school_type)}
@@ -879,15 +882,30 @@ export default function Home() {
     {/* 오른쪽: 관심학교 드롭다운 */}
     <div className="relative" ref={dropdownRef}>
       <button 
-        className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm flex-wrap sm:flex-nowrap"
         onClick={handleDropdownToggle}
       >
-        <span className="text-blue-600">🏠</span>
-        <span>
-          {schoolMode.isStudentMode 
-            ? '관심학교' 
-            : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
-          }
+        <span className="text-blue-600 hidden sm:inline">🏠</span>
+        <span className="whitespace-nowrap sm:whitespace-normal">
+          <span className="hidden sm:inline">
+            {schoolMode.isStudentMode 
+              ? '관심학교' 
+              : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
+            }
+          </span>
+          <span className="sm:hidden">
+            {schoolMode.isStudentMode 
+              ? '관심학교' 
+              : (
+                <>
+                  관심학교<br />
+                  <span className="text-xs text-gray-600">
+                    {schoolMode.getDisplaySchoolName()?.replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+                  </span>
+                </>
+              )
+            }
+          </span>
         </span>
         <svg 
           className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 

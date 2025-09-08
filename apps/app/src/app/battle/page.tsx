@@ -581,21 +581,24 @@ export default function BattlePage() {
           {schoolMode.isStudentMode ? (
             <>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
-                {userSchool?.school_name || '학교 정보 없음'}
+                <span className="hidden sm:inline">{userSchool?.school_name || '학교 정보 없음'}</span>
+                <span className="sm:hidden">
+                  {(userSchool?.school_name || '학교 정보 없음').replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+                </span>
               </span>
               {(userSchool?.grade || userSchool?.class) && (
-                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full whitespace-nowrap">
                   {userSchool.grade ? `${userSchool.grade}학년` : ''}
                   {userSchool.class ? ` ${userSchool.class}반` : ''}
                 </span>
               )}
               
-              {/* 초중고 캐릭터 - 반 끝에서 1cm 떨어진 곳에 */}
+              {/* 초중고 캐릭터 - 모바일에서 숨김 */}
               {userSchool?.school_type && (
                 <img 
                   src={getSchoolCharacterImage(userSchool.school_type)}
                   alt="학교 캐릭터"
-                  className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
+                  className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm hidden sm:block"
                 />
               )}
             </>
@@ -606,15 +609,30 @@ export default function BattlePage() {
         {user && (
           <div className="relative" ref={dropdownRef}>
             <button 
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm flex-wrap sm:flex-nowrap"
               onClick={handleDropdownToggle}
             >
-              <span className="text-blue-600">🏠</span>
-              <span>
-                {schoolMode.isStudentMode 
-                  ? '관심학교' 
-                  : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
-                }
+              <span className="text-blue-600 hidden sm:inline">🏠</span>
+              <span className="whitespace-nowrap sm:whitespace-normal">
+                <span className="hidden sm:inline">
+                  {schoolMode.isStudentMode 
+                    ? '관심학교' 
+                    : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
+                  }
+                </span>
+                <span className="sm:hidden">
+                  {schoolMode.isStudentMode 
+                    ? '관심학교' 
+                    : (
+                      <>
+                        관심학교<br />
+                        <span className="text-xs text-gray-600">
+                          {schoolMode.getDisplaySchoolName()?.replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+                        </span>
+                      </>
+                    )
+                  }
+                </span>
               </span>
               <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
