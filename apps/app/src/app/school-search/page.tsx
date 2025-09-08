@@ -222,6 +222,17 @@ export default function SchoolSearchPage() {
       setSaveSuccess(true);
       setSaveLoading(false);
 
+      // 내 학교 등록 완료 시 관심학교 선택 상태 초기화
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          localStorage.removeItem(`last_selected_school_${session.user.id}`);
+          console.log('✅ 내 학교 등록 완료 - 관심학교 선택 상태 초기화');
+        }
+      } catch (error) {
+        console.warn('관심학교 상태 초기화 실패:', error);
+      }
+
       // 알림 설정 단계 건너뛰고 바로 홈으로 이동
       setTimeout(() => {
         router.push('/');
