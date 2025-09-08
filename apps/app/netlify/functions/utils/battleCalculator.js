@@ -388,15 +388,14 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     const results = sortedMeals.map((meal, index) => {
       const schoolInfo = schoolMap[meal.school_code] || {};
       return {
-        meal_id: meal.id,
-        battle_date: date,
         school_code: meal.school_code,
-        school_name: schoolInfo.school_name || '',
-        region: schoolInfo.region || '',
-        final_avg_rating: meal.meal_rating_stats.avg_rating,
-        final_rating_count: meal.meal_rating_stats.rating_count,
+        battle_date: date,
+        avg_rating: meal.meal_rating_stats.avg_rating,
+        rating_count: meal.meal_rating_stats.rating_count,
         daily_rank: index + 1,
-        national_rank: index + 1
+        national_rank: index + 1,
+        school_name: schoolInfo.school_name || '',
+        region: schoolInfo.region || ''
       };
     });
 
@@ -412,19 +411,19 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     // 각 지역별로 순위 재계산
     Object.keys(regionGroups).forEach(region => {
       const regionMeals = regionGroups[region].sort((a, b) => {
-        if (b.final_avg_rating !== a.final_avg_rating) {
-          return b.final_avg_rating - a.final_avg_rating;
+        if (b.avg_rating !== a.avg_rating) {
+          return b.avg_rating - a.avg_rating;
         }
-        return b.final_rating_count - a.final_rating_count;
+        return b.rating_count - a.rating_count;
       });
       
       regionMeals.forEach((meal, index) => {
         const resultIndex = results.findIndex(r => 
-          r.meal_id === meal.meal_id && 
           r.school_code === meal.school_code
         );
         if (resultIndex !== -1) {
-          results[resultIndex].region_rank = index + 1;
+          // region_rank 필드는 DB 스키마에 없으므로 제거
+          // results[resultIndex].region_rank = index + 1;
         }
       });
     });
@@ -596,7 +595,8 @@ async function calculateMonthlyMealBattle(targetYear, targetMonth, schoolCode, s
           r.school_code === school.school_code
         );
         if (resultIndex !== -1) {
-          results[resultIndex].region_rank = index + 1;
+          // region_rank 필드는 DB 스키마에 없으므로 제거
+          // results[resultIndex].region_rank = index + 1;
         }
       });
     });
