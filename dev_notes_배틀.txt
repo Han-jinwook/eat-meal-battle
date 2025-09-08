@@ -800,6 +800,67 @@ console.log(`🌍 모든 학교 대상 월별 급식 배틀 데이터 삭제`);
 - **데이터 일관성**: 계산 함수와 API 조회 로직이 동일한 필터링 기준을 가져야 함
 - **전체 시스템 고려**: 개별 함수 수정이 전체 배틀 시스템에 미치는 영향 고려 필요
 
+# 🔧 메뉴 배틀 UPSERT 최적화 - 불필요한 복합 기본키 제거 (2025-09-08)
+
+## 📋 문제 상황
+- `menu_item_id`가 이미 특정 날짜/학교의 급식메뉴 아이템을 고유하게 식별함
+- 하지만 UPSERT에서 `(menu_item_id, battle_date, school_code)` 복합키를 사용하고 있었음
+- 이는 논리적으로 불필요하며 성능상 비효율적
+
+## 🔍 원인 분석
+### menu_item_id의 의미
+- `meal_menu_items.id`는 UUID로 전역적으로 고유함
+- 이미 `meal_id`를 통해 특정 날짜/학교의 급식과 연결됨
+- 따라서 `battle_date`, `school_code`를 추가로 기본키에 포함할 필요 없음
+
+### 기존 구조의 문제점
+```sql
+-- 불필요한 복합 기본키
+PRIMARY KEY (menu_item_id, battle_date, school_code)
+```
+
+## 🛠️ 해결 방법
+### UPSERT onConflict 수정
+**파일**: `apps/app/netlify/functions/utils/battleCalculator.js`
+
+#### 일별 메뉴 배틀 함수
+```javascript
+// 기존 (불필요한 복합키)
+.upsert(results, {
+  onConflict: 'menu_item_id,battle_date,school_code'
+});
+
+// 수정 (menu_item_id만 사용)
+.upsert(results, {
+  onConflict: 'menu_item_id'
+});
+```
+
+#### 월별 메뉴 배틀 함수
+```javascript
+// 기존 (불필요한 복합키)
+.upsert(results, {
+  onConflict: 'menu_item_id,battle_year,battle_month,school_code'
+});
+
+// 수정 (menu_item_id만 사용)
+.upsert(results, {
+  onConflict: 'menu_item_id'
+});
+```
+
+## 🎯 개선 결과
+✅ **논리적 정확성**: `menu_item_id`만으로 충분한 고유 식별
+✅ **성능 향상**: 불필요한 복합 인덱스 제거로 UPSERT 성능 개선
+✅ **중복 키 오류 방지**: 더 간단한 충돌 해결 로직
+✅ **코드 단순화**: onConflict 설정 간소화
+
+## 📝 핵심 교훈
+1. **데이터 모델링**: UUID 기본키의 고유성을 충분히 활용
+2. **불필요한 복잡성 제거**: 논리적으로 불필요한 복합키 사용 지양
+3. **성능 고려**: 간단한 기본키 구조가 더 효율적
+4. **일관성**: 일별/월별 배틀 함수 모두 동일한 로직 적용
+
 ---
 
 # 🔗 배틀 공유하기 링크 문제 해결 (2025-09-01)
