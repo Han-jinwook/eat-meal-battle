@@ -1161,12 +1161,7 @@ export default function BattlePage() {
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
-                          {sortOrder === 'asc' ? (
-                            // 지역 선택 시 region_rank 우선 표시
-                            selectedRegion && selectedRegion !== '전국' && selectedRegion !== '우리학교' 
-                              ? item.region_rank || (index + 1)
-                              : (viewMode === 'daily' ? item.daily_rank || (index + 1) : item.monthly_rank || (index + 1))
-                          ) : battleData.length - index}
+                          {sortOrder === 'asc' ? (index + 1) : battleData.length - index}
                         </div>
                         <div className="text-center text-gray-700 text-sm font-medium">
                           {item.school_name || '-'}
@@ -1398,8 +1393,8 @@ export default function BattlePage() {
                           >
                             <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm">
                               <div className="text-center">
-                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${item[rankField] <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
-                                  {item[rankField]}
+                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${(index + 1) <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                                  {index + 1}
                                 </span>
                               </div>
                               <div className="text-center font-medium text-gray-800">
