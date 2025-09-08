@@ -130,9 +130,7 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
     if (results.length > 0) {
       const { error: upsertError } = await supabase
         .from('menu_battle_daily')
-        .upsert(results, {
-          onConflict: 'menu_item_id'
-        });
+        .upsert(results);
         
       if (upsertError) {
         console.error('일별 메뉴 배틀 결과 저장 실패:', upsertError);
@@ -301,9 +299,7 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
     if (results.length > 0) {
       const { error: upsertError } = await supabase
         .from('menu_battle_monthly')
-        .upsert(results, {
-          onConflict: 'menu_item_id,battle_year,battle_month'
-        });
+        .upsert(results);
         
       if (upsertError) {
         console.error('월별 배틀 결과 저장 실패:', upsertError);
