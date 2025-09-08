@@ -62,7 +62,7 @@ export async function DELETE(request: NextRequest) {
         status: 'resolved',
         admin_notes: '부적절한 이미지로 판단되어 삭제 처리됨',
         reviewed_at: new Date().toISOString(),
-        reviewed_by: 'admin'
+        reviewed_by: null
       })
       .eq('id', reportId);
 
