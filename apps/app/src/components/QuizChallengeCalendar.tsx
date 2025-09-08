@@ -706,7 +706,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
           
           {/* 월장원 트로피 공간 */}
           <div className="w-8 h-8 flex items-center justify-center">
-            {championCriteria?.month_total > 0 && monthlyStats.correct === championCriteria.month_total && (
+            {monthlyTrophy && (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
                 <path d="M12 15L21 11L12 7L3 11L12 15Z" fill="#6B7280" stroke="#000" strokeWidth="1"/>
