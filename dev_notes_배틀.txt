@@ -820,6 +820,7 @@ PRIMARY KEY (menu_item_id, battle_date, school_code)
 ```
 
 ## 🛠️ 해결 방법
+
 ### UPSERT onConflict 수정
 **파일**: `apps/app/netlify/functions/utils/battleCalculator.js`
 
@@ -848,15 +849,6 @@ PRIMARY KEY (menu_item_id, battle_date, school_code)
   onConflict: 'menu_item_id'
 });
 ```
-
-## 🎯 개선 결과
-✅ **논리적 정확성**: `menu_item_id`만으로 충분한 고유 식별
-✅ **성능 향상**: 불필요한 복합 인덱스 제거로 UPSERT 성능 개선
-✅ **중복 키 오류 방지**: 더 간단한 충돌 해결 로직
-✅ **코드 단순화**: onConflict 설정 간소화
-
-## 📝 핵심 교훈
-1. **데이터 모델링**: UUID 기본키의 고유성을 충분히 활용
 2. **불필요한 복잡성 제거**: 논리적으로 불필요한 복합키 사용 지양
 3. **성능 고려**: 간단한 기본키 구조가 더 효율적
 4. **일관성**: 일별/월별 배틀 함수 모두 동일한 로직 적용

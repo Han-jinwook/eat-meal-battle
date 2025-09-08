@@ -57,10 +57,10 @@ async function calculateDailyMenuBattle(targetDate, schoolCode, supabaseClient) 
     }
     
     console.log(`📊 조회된 메뉴 아이템 수: ${menuItems.length}`);
-    console.log(`🏫 관련 학교 수: ${schoolCodes.length}`);
 
     // 학교 정보 별도 조회
     const schoolCodes = [...new Set(menuItems.map(item => item.meal_menus.school_code))];
+    console.log(`🏫 관련 학교 수: ${schoolCodes.length}`);
     const { data: schoolInfos } = await supabase
       .from('school_infos')
       .select('school_code, school_name, region')
@@ -302,7 +302,7 @@ async function calculateMonthlyMenuBattle(targetYear, targetMonth, schoolCode, s
       const { error: upsertError } = await supabase
         .from('menu_battle_monthly')
         .upsert(results, {
-          onConflict: 'menu_item_id'
+          onConflict: 'menu_item_id,battle_year,battle_month'
         });
         
       if (upsertError) {
