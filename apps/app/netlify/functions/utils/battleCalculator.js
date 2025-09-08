@@ -388,14 +388,15 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     const results = sortedMeals.map((meal, index) => {
       const schoolInfo = schoolMap[meal.school_code] || {};
       return {
-        school_code: meal.school_code,
+        meal_id: meal.id,
         battle_date: date,
-        avg_rating: meal.meal_rating_stats.avg_rating,
-        rating_count: meal.meal_rating_stats.rating_count,
-        daily_rank: index + 1,
-        national_rank: index + 1,
+        school_code: meal.school_code,
         school_name: schoolInfo.school_name || '',
-        region: schoolInfo.region || ''
+        region: schoolInfo.region || '',
+        final_avg_rating: meal.meal_rating_stats.avg_rating,
+        final_rating_count: meal.meal_rating_stats.rating_count,
+        daily_rank: index + 1,
+        national_rank: index + 1
       };
     });
 
@@ -411,14 +412,15 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     // 각 지역별로 순위 재계산
     Object.keys(regionGroups).forEach(region => {
       const regionMeals = regionGroups[region].sort((a, b) => {
-        if (b.avg_rating !== a.avg_rating) {
-          return b.avg_rating - a.avg_rating;
+        if (b.final_avg_rating !== a.final_avg_rating) {
+          return b.final_avg_rating - a.final_avg_rating;
         }
-        return b.rating_count - a.rating_count;
+        return b.final_rating_count - a.final_rating_count;
       });
       
       regionMeals.forEach((meal, index) => {
         const resultIndex = results.findIndex(r => 
+          r.meal_id === meal.meal_id && 
           r.school_code === meal.school_code
         );
         if (resultIndex !== -1) {
@@ -429,15 +431,23 @@ async function calculateDailyMealBattle(targetDate, schoolCode, supabaseClient) 
     
     // DB에 결과 저장
     if (results.length > 0) {
-      const { error: upsertError } = await supabase
+      // 기존 데이터 삭제 후 새로 삽입
+      const { error: deleteError } = await supabase
         .from('meal_battle_daily')
-        .upsert(results, {
-          onConflict: 'school_code,battle_date'
-        });
+        .delete()
+        .eq('battle_date', date);
         
-      if (upsertError) {
-        console.error('일별 급식배틀 결과 저장 실패:', upsertError);
-        return { success: false, error: upsertError };
+      if (deleteError) {
+        console.error('기존 일별 급식배틀 데이터 삭제 실패:', deleteError);
+      }
+      
+      const { error: insertError } = await supabase
+        .from('meal_battle_daily')
+        .insert(results);
+        
+      if (insertError) {
+        console.error('일별 급식배틀 결과 저장 실패:', insertError);
+        return { success: false, error: insertError };
       }
       
       console.log(`✅ 일별 급식배틀 결과 저장 완료: ${results.length}개 급식`);

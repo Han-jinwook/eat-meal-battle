@@ -1,6 +1,6 @@
 // 메뉴 아이템 별점 API
 const { createClient } = require('@supabase/supabase-js');
-const { calculateDailyMenuBattle, calculateMonthlyMenuBattle } = require('./utils/battleCalculator');
+const { calculateDailyMenuBattle, calculateMonthlyMenuBattle, calculateDailyMealBattle, calculateMonthlyMealBattle } = require('./utils/battleCalculator');
 
 // Supabase 클라이언트 초기화
 const supabase = createClient(
@@ -151,20 +151,33 @@ exports.handler = async function(event, context) {
           
           console.log('🔧 Admin 클라이언트 생성 완료');
           
-          // 일별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
-          console.log('🔄 일별 배틀 계산 호출 시작...');
+          // 일별 메뉴 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
+          console.log('🔄 일별 메뉴 배틀 계산 호출 시작...');
           console.log(`📅 배틀 계산 대상 날짜: ${mealDate}`);
-          const dailyResult = await calculateDailyMenuBattle(mealDate, null, adminClient);
-          console.log(`✅ 일별 배틀 계산 완료: ${mealDate}`, dailyResult?.success ? '성공' : '실패');
-          if (!dailyResult?.success) {
-            console.error('❌ 일별 배틀 계산 실패:', dailyResult?.error);
+          const dailyMenuResult = await calculateDailyMenuBattle(mealDate, null, adminClient);
+          console.log(`✅ 일별 메뉴 배틀 계산 완료: ${mealDate}`, dailyMenuResult?.success ? '성공' : '실패');
+          if (!dailyMenuResult?.success) {
+            console.error('❌ 일별 메뉴 배틀 계산 실패:', dailyMenuResult?.error);
           }
           
-          // 월별 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
-          console.log('🔄 월별 배틀 계산 호출 시작...');
+          // 일별 급식 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
+          console.log('🔄 일별 급식 배틀 계산 호출 시작...');
+          const dailyMealResult = await calculateDailyMealBattle(mealDate, null, adminClient);
+          console.log(`✅ 일별 급식 배틀 계산 완료: ${mealDate}`, dailyMealResult?.success ? '성공' : '실패');
+          if (!dailyMealResult?.success) {
+            console.error('❌ 일별 급식 배틀 계산 실패:', dailyMealResult?.error);
+          }
+          
+          // 월별 메뉴 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
+          console.log('🔄 월별 메뉴 배틀 계산 호출 시작...');
           const date = new Date(mealDate);
-          await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, null, adminClient);
-          console.log(`✅ 월별 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`);
+          const monthlyMenuResult = await calculateMonthlyMenuBattle(date.getFullYear(), date.getMonth() + 1, null, adminClient);
+          console.log(`✅ 월별 메뉴 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`, monthlyMenuResult?.success ? '성공' : '실패');
+          
+          // 월별 급식 배틀 계산 (Admin 클라이언트 전달) - 모든 학교 데이터 처리
+          console.log('🔄 월별 급식 배틀 계산 호출 시작...');
+          const monthlyMealResult = await calculateMonthlyMealBattle(date.getFullYear(), date.getMonth() + 1, null, adminClient);
+          console.log(`✅ 월별 급식 배틀 계산 완료: ${date.getFullYear()}-${date.getMonth() + 1}`, monthlyMealResult?.success ? '성공' : '실패');
         } else {
           console.log('❌ 메뉴 데이터 조회 실패 또는 데이터 없음');
         }
