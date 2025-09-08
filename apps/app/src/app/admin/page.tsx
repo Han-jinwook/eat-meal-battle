@@ -98,6 +98,21 @@ export default function AdminPage() {
       const report = reports.find(r => r.id === reportId);
       if (!report) return;
 
+      console.log('삭제 요청 데이터:', { 
+        imageId: report.image_id,
+        reportId: reportId,
+        report: report
+      });
+
+      // image_id가 null인 경우 처리
+      if (!report.image_id) {
+        console.log('image_id가 null입니다. 이미 삭제된 이미지일 수 있습니다.');
+        showToast('이미 삭제된 이미지입니다.', 'error');
+        // 신고 상태만 해결됨으로 변경
+        await updateReportStatus(reportId, 'resolved', '이미 삭제된 이미지');
+        return;
+      }
+
       const response = await fetch('/api/admin/delete-meal-image', {
         method: 'DELETE',
         headers: {
@@ -116,6 +131,8 @@ export default function AdminPage() {
         // 신고 상태를 "해결됨"으로 변경
         await updateReportStatus(reportId, 'resolved', '부적절한 이미지로 판단되어 삭제 처리됨');
       } else {
+        const errorData = await response.json();
+        console.error('삭제 API 응답 오류:', errorData);
         showToast('이미지 삭제에 실패했습니다.', 'error');
       }
     } catch (error) {
@@ -130,7 +147,6 @@ export default function AdminPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'reviewed': return 'bg-blue-100 text-blue-800';
       case 'resolved': return 'bg-green-100 text-green-800';
       case 'dismissed': return 'bg-gray-100 text-gray-800';
@@ -140,7 +156,6 @@ export default function AdminPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return '대기중';
       case 'reviewed': return '검토중';
       case 'resolved': return '해결됨';
       case 'dismissed': return '기각됨';

@@ -143,7 +143,7 @@ exports.handler = async (event, context) => {
       .from('meal_image_reports')
       .select('id, status, reporter_id')
       .eq('image_id', imageId)
-      .in('status', ['pending', 'reviewed', 'resolved']);
+      .in('status', ['reviewed', 'resolved']);
 
     if (imageReportError) {
       console.error('이미지 신고 확인 오류:', imageReportError);
@@ -157,15 +157,12 @@ exports.handler = async (event, context) => {
     // 이미 처리 중이거나 해결된 신고가 있는 경우
     if (existingImageReports && existingImageReports.length > 0) {
       const activeReport = existingImageReports.find(report => 
-        report.status === 'pending' || report.status === 'reviewed' || report.status === 'resolved'
+        report.status === 'reviewed' || report.status === 'resolved'
       );
       
       if (activeReport) {
         let statusMessage = '';
         switch (activeReport.status) {
-          case 'pending':
-            statusMessage = '이미 다른 사용자가 신고한 이미지입니다. 관리자 검토를 기다리고 있습니다.';
-            break;
           case 'reviewed':
             statusMessage = '이미 신고되어 관리자가 검토 중인 이미지입니다.';
             break;
@@ -194,7 +191,7 @@ exports.handler = async (event, context) => {
         image_url: imageUrl,
         uploader_nickname: uploaderNickname,
         report_reason: reportReason,
-        status: 'pending'
+        status: 'reviewed'
       })
       .select()
       .single();

@@ -13,9 +13,13 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { imageId, reportId } = await request.json();
+    const body = await request.json();
+    console.log('DELETE 요청 받은 body:', body);
+    
+    const { imageId, reportId } = body;
 
     if (!imageId || !reportId) {
+      console.log('필수 파라미터 누락 - imageId:', imageId, 'reportId:', reportId);
       return NextResponse.json(
         { error: '이미지 ID와 신고 ID가 필요합니다.' },
         { status: 400 }
