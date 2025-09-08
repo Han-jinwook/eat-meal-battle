@@ -1313,16 +1313,32 @@ export default function BattlePage() {
                     {battleData
                       .sort((a, b) => {
                         // 정렬 로직 (asc는 1위부터, desc는 마지막부터)
-                        // menu와 meal 모두 동일한 필드명 사용
-                        const rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
+                        // 지역/전국 모드에 따른 순위 필드 선택
+                        let rankField;
+                        if (selectedRegion === '전국') {
+                          rankField = viewMode === 'daily' ? 'national_rank' : 'monthly_rank';
+                        } else if (selectedRegion === '우리학교') {
+                          rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
+                        } else {
+                          // 지역 모드
+                          rankField = 'region_rank';
+                        }
                         
                         return sortOrder === 'asc' ? 
                           a[rankField] - b[rankField] : 
                           b[rankField] - a[rankField];
                       })
                       .map((item, index) => {
-                        // 순위 필드 결정 - menu와 meal 모두 동일한 필드명 사용
-                        const rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
+                        // 순위 필드 결정 - 지역/전국 모드에 따른 순위 필드 선택
+                        let rankField;
+                        if (selectedRegion === '전국') {
+                          rankField = viewMode === 'daily' ? 'national_rank' : 'monthly_rank';
+                        } else if (selectedRegion === '우리학교') {
+                          rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
+                        } else {
+                          // 지역 모드
+                          rankField = 'region_rank';
+                        }
                         
                         // 점수와 평가 수 필드 결정
                         let ratingField = 'avg_rating';
