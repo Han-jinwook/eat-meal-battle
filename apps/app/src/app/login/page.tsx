@@ -144,8 +144,8 @@ function LoginContent() {
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <h1 className="text-3xl font-bold text-gray-900">뭐먹지?</h1>
-                        <p className="mt-1 text-xl font-semibold text-blue-600">급식배틀</p>
-                        <p className="mt-3 text-lg font-bold text-red-600">급식도 민주주의!</p>
+                        <p className="mt-3 text-xl font-semibold text-blue-600">급식배틀</p>
+                        <p className="mt-4 text-lg font-bold text-red-600">급식도 민주주의!</p>
                         <p className="mt-3 text-sm text-gray-600 leading-relaxed">
                           원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
                         </p>
