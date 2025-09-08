@@ -873,12 +873,7 @@ export default function Home() {
             />
           )}
         </>
-      ) : (
-        /* 관심학교 모드일 때 안내 메시지 */
-        <span className="text-orange-600 text-sm font-medium">
-          학생은 '프로필'에서 학교등록부터 하세요^^
-        </span>
-      )}
+      ) : null}
     </div>
     
     {/* 오른쪽: 관심학교 드롭다운 */}
