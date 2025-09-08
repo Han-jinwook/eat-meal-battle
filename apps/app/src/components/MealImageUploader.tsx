@@ -1311,11 +1311,11 @@ export default function MealImageUploader({
                   });
                   handleUpload();
                 }}
-                className="p-0 relative overflow-hidden hover:opacity-90"
+                className="p-0 relative overflow-hidden hover:opacity-90 w-full sm:w-auto"
               >
                 {uploading ? (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1345,7 +1345,7 @@ export default function MealImageUploader({
                   </span>
                 ) : verifying ? (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1375,7 +1375,7 @@ export default function MealImageUploader({
                   </span>
                 ) : !isButtonReady && preview ? (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1404,7 +1404,7 @@ export default function MealImageUploader({
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="업로드 및 AI 검증 버튼">
                       <defs>
                         <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1484,15 +1484,15 @@ export default function MealImageUploader({
             </div>
           )}
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <button
                 onClick={handleAiImageGeneration}
-                className="p-0 relative overflow-hidden hover:opacity-90"
+                className="p-0 relative overflow-hidden hover:opacity-90 w-full sm:w-auto"
                 title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : ''}
               >
                 {imageStatus === 'generating' ? (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
                       <defs>
                         <linearGradient id="aiGenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
@@ -1522,7 +1522,7 @@ export default function MealImageUploader({
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <svg className="mr-2" width="280" height="60" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
+                    <svg className="w-full h-12 sm:w-[280px] sm:h-[60px]" viewBox="0 0 280 60" role="img" aria-label="AI 이미지 생성 버튼">
                       <defs>
                         <linearGradient id="aiGenGradStatic" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#6A00FF"/>
