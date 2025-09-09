@@ -168,19 +168,39 @@ const AIAnalysisModal = ({
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;
             background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
           `;
-          modal.innerHTML = `
-            <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-              <h3 style="margin: 0 0 15px 0; color: #333;">📋 iOS 수동 복사</h3>
-              <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; text-align: center;"><strong>텍스트를 터치해서 전체 선택 → 복사</strong><br/>그 다음 ${app.name}에서 붙여넣기하세요.</p>
-              <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; max-height: 160px; overflow-y: auto;">
-                <textarea readonly onclick="this.select(); this.setSelectionRange(0, this.value.length);" style="width: 100%; height: 120px; padding: 8px; border: none; background: transparent; font-size: 12px; resize: none; outline: none;">${(window as any).lastGeneratedPrompt || '프롬프트 생성 실패'}</textarea>
-              </div>
-              <div style="display: flex; gap: 10px;">
-                <button onclick="window.open('${app.webUrl}', '_blank')" style="flex: 1; padding: 12px 20px; background: #007AFF; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500;">${app.name} 웹 열기</button>
-                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 12px 16px; background: #666; color: white; border: none; border-radius: 8px; font-size: 16px;">닫기</button>
-              </div>
+          const modalContent = document.createElement('div');
+          modalContent.style.cssText = 'background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 80%; overflow-y: auto;';
+          
+          modalContent.innerHTML = `
+            <h3 style="margin: 0 0 15px 0; color: #333;">📋 아이폰 수동 복사</h3>
+            <p style="margin: 0 0 10px 0; color: #ff6b35; font-size: 13px; text-align: center; font-weight: 500;">🔒 아이폰 보안 정책으로 자동 복사가 제한되어 수동으로 복사해주세요</p>
+            <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; text-align: center;"><strong>텍스트를 터치해서 전체 선택 → 복사</strong><br/>그 다음 ${app.name}에서 붙여넣기하세요.</p>
+            <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; max-height: 160px; overflow-y: auto;">
+              <textarea readonly onclick="this.select(); this.setSelectionRange(0, this.value.length);" style="width: 100%; height: 120px; padding: 8px; border: none; background: transparent; font-size: 12px; resize: none; outline: none;">${(window as any).lastGeneratedPrompt || '프롬프트 생성 실패'}</textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button id="openWebBtn" style="flex: 1; padding: 12px 20px; background: #007AFF; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer;">${app.name} 웹 열기</button>
+              <button id="closeModalBtn" style="padding: 12px 16px; background: #666; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">닫기</button>
             </div>
           `;
+          
+          // 이벤트 리스너를 직접 추가
+          const openWebBtn = modalContent.querySelector('#openWebBtn');
+          const closeModalBtn = modalContent.querySelector('#closeModalBtn');
+          
+          openWebBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.open(app.webUrl, '_blank');
+          });
+          
+          closeModalBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            modal.remove();
+          });
+          
+          modal.appendChild(modalContent);
           document.body.appendChild(modal);
         }, 1000);
       } else {
