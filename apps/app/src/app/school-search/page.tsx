@@ -147,10 +147,10 @@ export default function SchoolSearchPage() {
     try {
       console.log('🔗 관심학교 자동 등록 시도:', schoolCode);
       
-      // 학교 정보 조회
+      // 학교 정보 조회 (외부 API 사용)
       const schoolResponse = await fetch(`/.netlify/functions/schools?keyword=${schoolCode}&exact=true`);
       if (!schoolResponse.ok) {
-        console.warn('학교 정보 조회 실패');
+        console.warn('학교 정보 조회 실패:', schoolResponse.status);
         return;
       }
       
@@ -161,6 +161,7 @@ export default function SchoolSearchPage() {
         console.warn('대상 학교를 찾을 수 없음:', schoolCode);
         return;
       }
+      
       
       // 관심학교 등록 API 호출
       const { data: { session } } = await supabase.auth.getSession();
@@ -322,9 +323,16 @@ export default function SchoolSearchPage() {
           console.log('🏆 배틀공유 완료 → 배틀페이지로 이동:', battleUrl);
           router.push(battleUrl);
         } else {
-          // 급식공유 또는 일반 등록인 경우 홈페이지로 이동
-          console.log('🏠 학교 등록 완료 → 홈페이지로 이동');
-          router.push('/');
+          // 급식공유 또는 일반 등록인 경우
+          if (shareSchoolCode && shareSchoolCode !== selectedSchool.SD_SCHUL_CODE) {
+            // 급식공유에서 타학교 등록한 경우 → 관심학교 모드로 급식페이지 이동
+            console.log('🍽️ 급식공유 타학교 등록 완료 → 관심학교 모드로 급식페이지 이동');
+            router.push(`/?school_code=${shareSchoolCode}`);
+          } else {
+            // 일반 등록 또는 같은 학교 등록인 경우 홈페이지로 이동
+            console.log('🏠 학교 등록 완료 → 홈페이지로 이동');
+            router.push('/');
+          }
         }
       }, 1500);
     } catch (err: any) {
