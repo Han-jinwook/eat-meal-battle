@@ -302,6 +302,12 @@ export default function SchoolSearchPage() {
       }
 
       // 공유 URL에서 온 학교 코드 처리
+      console.log('🔍 공유 URL 학교 코드 처리 시작:', {
+        shareSchoolCode,
+        selectedSchoolCode: selectedSchool.SD_SCHUL_CODE,
+        shareType
+      });
+      
       if (shareSchoolCode) {
         if (shareSchoolCode === selectedSchool.SD_SCHUL_CODE) {
           // 공유 URL 학교 = 등록한 학교 (같은 학교)
@@ -311,6 +317,8 @@ export default function SchoolSearchPage() {
           console.log('🔗 공유 학교 코드로 관심학교 자동 등록 시도:', shareSchoolCode);
           await attemptInterestSchoolRegistration(shareSchoolCode);
         }
+      } else {
+        console.log('ℹ️ 공유 URL 학교 코드가 없음 - 관심학교 자동 등록 생략');
       }
 
       // 공유 타입에 따라 리다이렉트 결정
