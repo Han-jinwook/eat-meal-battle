@@ -330,12 +330,14 @@ export async function GET(request: NextRequest) {
         let shareUrlSchoolCode = null;
         let shareUrlSchoolName = null;
         let isOtherSchoolShare = false;
+        let isBattleShare = false;
         
         if (shareUrl) {
           try {
             const shareUrlObj = new URL(shareUrl, request.url);
             shareUrlSchoolCode = shareUrlObj.searchParams.get('school_code');
-            console.info('🔗 공유URL 분석:', { shareUrl, shareUrlSchoolCode });
+            isBattleShare = shareUrlObj.pathname.includes('/battle');
+            console.info('🔗 공유URL 분석:', { shareUrl, shareUrlSchoolCode, isBattleShare });
           } catch (e) {
             console.warn('⚠️ 공유URL 파싱 오류:', e);
           }
@@ -430,7 +432,11 @@ export async function GET(request: NextRequest) {
                 console.info('✅ 관심학교 조회 오류이지만 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
                 // 공유URL이 있으면 school_code 파라미터를 포함하여 리다이렉트
                 if (shareUrl && shareUrlSchoolCode) {
-                  redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                  if (isBattleShare) {
+                    redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+                  } else {
+                    redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                  }
                 } else {
                   redirectUrl = '/school-search';
                 }
@@ -553,7 +559,11 @@ export async function GET(request: NextRequest) {
                 console.info('✅ 학생 나이 확인 → 학교설정 페이지로 리다이렉트');
                 // 공유URL이 있으면 school_code 파라미터를 포함하여 리다이렉트
                 if (shareUrl && shareUrlSchoolCode) {
-                  redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                  if (isBattleShare) {
+                    redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+                  } else {
+                    redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+                  }
                 } else {
                   redirectUrl = '/school-search';
                 }

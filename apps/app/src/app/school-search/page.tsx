@@ -36,15 +36,18 @@ export default function SchoolSearchPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [shareSchoolCode, setShareSchoolCode] = useState<string | null>(null);
+  const [shareType, setShareType] = useState<string | null>(null);
   
-  // URL 파라미터에서 공유 학교 코드 확인
+  // URL 파라미터에서 공유 학교 코드 및 공유 타입 확인
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const shareCode = params.get('share_school_code');
+      const shareTypeParam = params.get('share_type');
       if (shareCode) {
         setShareSchoolCode(shareCode);
-        console.log('🔗 공유 학교 코드 감지:', shareCode);
+        setShareType(shareTypeParam);
+        console.log('🔗 공유 정보 감지:', { shareCode, shareType: shareTypeParam });
       }
     }
   }, []);
@@ -309,9 +312,20 @@ export default function SchoolSearchPage() {
         }
       }
 
-      // 알림 설정 단계 건너뛰고 바로 홈으로 이동
+      // 공유 타입에 따라 리다이렉트 결정
       setTimeout(() => {
-        router.push('/');
+        if (shareType === 'battle') {
+          // 배틀공유인 경우 배틀페이지로 이동 (school_code 파라미터 포함)
+          const battleUrl = shareSchoolCode === selectedSchool.SD_SCHUL_CODE 
+            ? '/battle' // 같은 학교면 내 학교 모드로
+            : `/battle?school_code=${shareSchoolCode}`; // 다른 학교면 관심학교 모드로
+          console.log('🏆 배틀공유 완료 → 배틀페이지로 이동:', battleUrl);
+          router.push(battleUrl);
+        } else {
+          // 급식공유 또는 일반 등록인 경우 홈페이지로 이동
+          console.log('🏠 학교 등록 완료 → 홈페이지로 이동');
+          router.push('/');
+        }
       }, 1500);
     } catch (err: any) {
       console.error('학교 정보 저장 오류:', err);
