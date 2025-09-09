@@ -10,10 +10,22 @@ export async function GET(request: NextRequest) {
   const error_code = requestUrl.searchParams.get('error_code')
   const error_description = requestUrl.searchParams.get('error_description')
   
-  // 공유URL 파라미터 추출
+  // 공유URL 파라미터 추출 - 다양한 방식으로 시도
   const shareUrl = requestUrl.searchParams.get('next') || 
                    requestUrl.searchParams.get('redirect_to') || 
-                   requestUrl.searchParams.get('return_to')
+                   requestUrl.searchParams.get('return_to') ||
+                   requestUrl.searchParams.get('redirectTo') ||
+                   requestUrl.searchParams.get('state')
+  
+  console.info('🔍 OAuth 콜백 파라미터 디버깅:', {
+    next: requestUrl.searchParams.get('next'),
+    redirect_to: requestUrl.searchParams.get('redirect_to'),
+    return_to: requestUrl.searchParams.get('return_to'),
+    redirectTo: requestUrl.searchParams.get('redirectTo'),
+    state: requestUrl.searchParams.get('state'),
+    shareUrl,
+    allParams: Object.fromEntries(requestUrl.searchParams.entries())
+  })
   
   let redirectUrl = '/'
 
@@ -332,12 +344,27 @@ export async function GET(request: NextRequest) {
         let isOtherSchoolShare = false;
         let isBattleShare = false;
         
-        if (shareUrl) {
+        // OAuth 콜백 URL에서 직접 공유 파라미터 추출
+        shareUrlSchoolCode = requestUrl.searchParams.get('share_school_code');
+        const shareType = requestUrl.searchParams.get('share_type');
+        isBattleShare = shareType === 'battle';
+        
+        console.info('🔗 OAuth 콜백 공유 파라미터 분석:', { 
+          shareUrlSchoolCode, 
+          shareType, 
+          isBattleShare,
+          shareUrl 
+        });
+        
+        // 기존 shareUrl 방식도 유지 (fallback)
+        if (!shareUrlSchoolCode && shareUrl) {
           try {
             const shareUrlObj = new URL(shareUrl, request.url);
             shareUrlSchoolCode = shareUrlObj.searchParams.get('school_code');
-            isBattleShare = shareUrlObj.pathname.includes('/battle');
-            console.info('🔗 공유URL 분석:', { shareUrl, shareUrlSchoolCode, isBattleShare });
+            if (!isBattleShare) {
+              isBattleShare = shareUrlObj.pathname.includes('/battle');
+            }
+            console.info('🔗 fallback 공유URL 분석:', { shareUrl, shareUrlSchoolCode, isBattleShare });
           } catch (e) {
             console.warn('⚠️ 공유URL 파싱 오류:', e);
           }

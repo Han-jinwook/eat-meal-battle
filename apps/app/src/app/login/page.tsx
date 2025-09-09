@@ -59,11 +59,27 @@ function LoginContent() {
       
       console.log('구글 로그인 시도 중...')
       
+      // 현재 URL에서 공유 파라미터 추출
+      const currentUrl = new URL(window.location.href)
+      const schoolCode = currentUrl.searchParams.get('school_code')
+      const shareType = currentUrl.searchParams.get('share_type')
+      
+      // OAuth 콜백 URL에 공유 파라미터 포함
+      let callbackUrl = `${window.location.origin}/auth/callback`
+      if (schoolCode) {
+        const params = new URLSearchParams()
+        params.set('share_school_code', schoolCode)
+        if (shareType) params.set('share_type', shareType)
+        callbackUrl += `?${params.toString()}`
+      }
+      
+      console.log('🔗 OAuth 콜백 URL:', callbackUrl)
+      
       // 구글 OAuth에 생일 정보 scope 추가
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -93,19 +109,26 @@ function LoginContent() {
       
       console.log('카카오 로그인 시도 중...')
       
-      // 카카오는 기존 방식 유지 (signInWithRetry는 Google 전용)
-      // 리디렉션 URL 설정 - 항상 현재 도메인의 /auth/callback 사용
-      const baseUrl = window.location.origin;
-      const redirectUrl = `${baseUrl}/auth/callback`
+      // 현재 URL에서 공유 파라미터 추출
+      const currentUrl = new URL(window.location.href)
+      const schoolCode = currentUrl.searchParams.get('school_code')
+      const shareType = currentUrl.searchParams.get('share_type')
       
-      console.log('현재 도메인:', baseUrl)
+      // OAuth 콜백 URL에 공유 파라미터 포함
+      let callbackUrl = `${window.location.origin}/auth/callback`
+      if (schoolCode) {
+        const params = new URLSearchParams()
+        params.set('share_school_code', schoolCode)
+        if (shareType) params.set('share_type', shareType)
+        callbackUrl += `?${params.toString()}`
+      }
       
-      console.log('카카오 리디렉션 URL:', redirectUrl)
+      console.log('🔗 카카오 OAuth 콜백 URL:', callbackUrl)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl,
           queryParams: {
             scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
             prompt: 'consent',
