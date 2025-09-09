@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
   const error_code = requestUrl.searchParams.get('error_code')
   const error_description = requestUrl.searchParams.get('error_description')
   
+  // 전체 URL 로깅
+  console.info('🔗 OAuth 콜백 전체 URL:', request.url)
+  
   // 공유URL 파라미터 추출 - 다양한 방식으로 시도
   const shareUrl = requestUrl.searchParams.get('next') || 
                    requestUrl.searchParams.get('redirect_to') || 
@@ -23,6 +26,8 @@ export async function GET(request: NextRequest) {
     return_to: requestUrl.searchParams.get('return_to'),
     redirectTo: requestUrl.searchParams.get('redirectTo'),
     state: requestUrl.searchParams.get('state'),
+    share_school_code: requestUrl.searchParams.get('share_school_code'),
+    share_type: requestUrl.searchParams.get('share_type'),
     shareUrl,
     allParams: Object.fromEntries(requestUrl.searchParams.entries())
   })
@@ -181,52 +186,82 @@ export async function GET(request: NextRequest) {
           console.info('🔍 구글 rawProviderData 전체:', JSON.stringify(rawProviderData, null, 2));
           console.info('🔍 구글 userMetadata 전체:', JSON.stringify(userMetadata, null, 2));
           
-          // 구글 People API 직접 호출 시도
-          if (data.session.provider_token) {
+          // 구글에서 생년월일 정보 추출 시도
+          console.info('🔍 토큰 정보:', {
+            hasProviderToken: !!data.session.provider_token,
+            hasProviderRefreshToken: !!data.session.provider_refresh_token,
+            tokenLength: data.session.provider_token?.length || 0
+          });
+          
+          // 먼저 기본 OAuth 데이터에서 생년월일 찾기
+          if (rawProviderData?.birthday) {
+            birthDate = rawProviderData.birthday;
+            console.info('✅ 구글 기본 데이터에서 생일 정보 발견:', birthDate);
+          }
+          
+          // People API 호출 (토큰이 있는 경우에만)
+          if (!birthDate && data.session.provider_token) {
             try {
               console.info('🔍 구글 People API 호출 시작...');
-              console.info('🔍 사용할 토큰:', data.session.provider_token?.substring(0, 20) + '...');
               
-              const googleResponse = await fetch('https://people.googleapis.com/v1/people/me?personFields=birthdays', {
-                headers: {
-                  'Authorization': `Bearer ${data.session.provider_token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
+              // 토큰 유효성 먼저 확인
+              const tokenCheckResponse = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + data.session.provider_token);
               
-              if (googleResponse.ok) {
-                const googleUserInfo = await googleResponse.json();
-                console.info('✅ 구글 People API 응답:', JSON.stringify(googleUserInfo, null, 2));
+              if (tokenCheckResponse.ok) {
+                const tokenInfo = await tokenCheckResponse.json();
+                console.info('✅ 토큰 유효성 확인:', {
+                  scope: tokenInfo.scope,
+                  expires_in: tokenInfo.expires_in
+                });
                 
-                // 생일 데이터 추출
-                if (googleUserInfo?.birthdays && googleUserInfo.birthdays.length > 0) {
-                  for (const birthday of googleUserInfo.birthdays) {
-                    if (birthday?.date?.year && birthday?.date?.month && birthday?.date?.day) {
-                      const year = birthday.date.year;
-                      const month = String(birthday.date.month).padStart(2, '0');
-                      const day = String(birthday.date.day).padStart(2, '0');
-                      birthDate = `${year}-${month}-${day}`;
-                      console.info('✅ 구글 People API에서 생일 데이터 발견:', { year, month, day, formatted: birthDate });
-                      break;
+                // 생년월일 스코프가 있는지 확인
+                if (tokenInfo.scope && tokenInfo.scope.includes('user.birthday.read')) {
+                  const googleResponse = await fetch('https://people.googleapis.com/v1/people/me?personFields=birthdays', {
+                    headers: {
+                      'Authorization': `Bearer ${data.session.provider_token}`,
+                      'Content-Type': 'application/json'
                     }
+                  });
+                  
+                  if (googleResponse.ok) {
+                    const googleUserInfo = await googleResponse.json();
+                    console.info('✅ 구글 People API 응답:', JSON.stringify(googleUserInfo, null, 2));
+                    
+                    // 생일 데이터 추출
+                    if (googleUserInfo?.birthdays && googleUserInfo.birthdays.length > 0) {
+                      for (const birthday of googleUserInfo.birthdays) {
+                        if (birthday?.date?.year && birthday?.date?.month && birthday?.date?.day) {
+                          const year = birthday.date.year;
+                          const month = String(birthday.date.month).padStart(2, '0');
+                          const day = String(birthday.date.day).padStart(2, '0');
+                          birthDate = `${year}-${month}-${day}`;
+                          console.info('✅ 구글 People API에서 생일 데이터 발견:', { year, month, day, formatted: birthDate });
+                          break;
+                        }
+                      }
+                    }
+                    
+                    if (!birthDate) {
+                      console.warn('⚠️ 구글 People API 응답에 생일 데이터 없음');
+                    }
+                  } else {
+                    const errorText = await googleResponse.text();
+                    console.error('❌ 구글 People API 오류:', {
+                      status: googleResponse.status,
+                      statusText: googleResponse.statusText,
+                      errorBody: errorText
+                    });
                   }
-                }
-                
-                if (!birthDate) {
-                  console.warn('⚠️ 구글 People API 응답에 생일 데이터 없음');
+                } else {
+                  console.warn('⚠️ 토큰에 생년월일 스코프가 없음:', tokenInfo.scope);
                 }
               } else {
-                const errorText = await googleResponse.text();
-                console.error('❌ 구글 People API 오류:', {
-                  status: googleResponse.status,
-                  statusText: googleResponse.statusText,
-                  errorBody: errorText
-                });
+                console.error('❌ 토큰 유효성 확인 실패:', tokenCheckResponse.status);
               }
             } catch (apiError) {
-              console.error('❌ 구글 People API 호출 실패:', apiError);
+              console.error('❌ 구글 API 호출 실패:', apiError);
             }
-          } else {
+          } else if (!data.session.provider_token) {
             console.info('⚠️ provider_token이 없어서 구글 People API 호출 불가');
           }
           
@@ -528,9 +563,9 @@ export async function GET(request: NextRequest) {
             // 3단계: 관심학교도 없음 → 나이 확인 후 분기
             console.info('🔍 관심학교도 없음 - 나이 확인 후 분기 결정');
             
-            // 공유URL에 학교코드가 있으면 자동 등록 시도
+            // 공유URL에 학교코드가 있으면 자동 등록 시도 (생년월일 정보와 무관하게 실행)
             if (shareUrl && shareUrlSchoolCode) {
-              console.info('🏫 공유URL에 학교코드 발견 → 관심학교 자동 등록 시도');
+              console.info('🏫 공유URL에 학교코드 발견 → 관심학교 자동 등록 시도 (생년월일 정보 무관)');
               
               try {
                 // 공유URL의 학교 정보 조회
@@ -559,11 +594,19 @@ export async function GET(request: NextRequest) {
                   
                   if (interestResponse.ok) {
                     console.info(`✅ 공유URL 학교 관심학교 자동 등록 성공: ${shareUrlSchoolName}`);
+                    // 자동 등록 성공 시 바로 홈페이지로 리다이렉트
+                    redirectUrl = shareUrl || '/';
+                    console.info('🏠 관심학교 자동등록 완료 → 홈페이지로 리다이렉트');
                   } else if (interestResponse.status === 400) {
                     console.info(`ℹ️ 이미 등록된 관심학교: ${shareUrlSchoolName}`);
+                    // 이미 등록된 경우도 홈페이지로 리다이렉트
+                    redirectUrl = shareUrl || '/';
+                    console.info('🏠 이미 등록된 관심학교 → 홈페이지로 리다이렉트');
                   } else {
                     console.warn('⚠️ 관심학교 자동 등록 실패:', await interestResponse.text());
                   }
+                } else {
+                  console.warn('⚠️ 공유URL 학교 정보를 찾을 수 없음:', shareUrlSchoolCode);
                 }
               } catch (autoRegisterError) {
                 console.error('❌ 관심학교 자동 등록 오류:', autoRegisterError);
