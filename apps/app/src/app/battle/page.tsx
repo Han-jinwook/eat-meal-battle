@@ -1466,11 +1466,11 @@ export default function BattlePage() {
           )}
           
           {/* AI 분석 및 공유 버튼 */}
-          <div className="flex gap-3 mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 mt-8">
             {/* AI 분석 버튼 */}
             <button
               onClick={() => setIsAIAnalysisOpen(true)}
-              className="flex-1 p-0 relative overflow-hidden hover:opacity-90"
+              className="flex-1 p-0 relative overflow-hidden hover:opacity-90 h-[60px]"
             >
               <svg width="100%" height="60" viewBox="0 0 400 60" role="img" aria-label="AI 분석 버튼">
                 <defs>
