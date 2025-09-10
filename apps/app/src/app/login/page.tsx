@@ -325,6 +325,50 @@ function LoginContent() {
                   </div>
                 </div>
 
+                {/* 음성 듣기 버튼 섹션 - 데스크톱 */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                  <div className="text-center mb-3">
+                    <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
+                    <p className="text-sm text-blue-600">급식배틀앱에 대한 자세한 소개를 음성으로 들어보세요!</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={() => {
+                        const audio = new Audio('/audio/student-intro.mp4');
+                        audio.play().catch(e => {
+                          alert('음성 파일을 재생할 수 없습니다.');
+                        });
+                      }}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-green-400 to-green-500 text-white rounded-lg hover:from-green-500 hover:to-green-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-center">
+                        <div className="font-bold text-sm">학생용 (4분)</div>
+                        <div className="text-xs opacity-90">학생들을 위한 소개</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const audio = new Audio('/audio/parent-staff-intro.mp4');
+                        audio.play().catch(e => {
+                          alert('음성 파일을 재생할 수 없습니다.');
+                        });
+                      }}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-purple-400 to-purple-500 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-center">
+                        <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
+                        <div className="text-xs opacity-90">어른들을 위한 상세 소개</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </div>
 
