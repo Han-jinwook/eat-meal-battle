@@ -166,14 +166,16 @@ function LoginContent() {
                     {/* 카드 1: 메인 소개 */}
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <h1 className="text-3xl font-bold text-gray-900">뭐먹지?</h1>
-                        <p className="mt-3 text-xl font-semibold text-blue-600">급식배틀</p>
-                        <p className="mt-4 text-lg font-bold text-red-600">급식도 민주주의!</p>
-                        <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-                          원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
+                        <p className="text-xl font-semibold text-blue-600">급식배틀</p>
+                        <p className="mt-2 text-lg font-bold text-red-600">급식도 민주주의!</p>
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                          영양과 원산지만 있고 '맛'이 실종된 식판.
                         </p>
-                        <p className="mt-2 text-sm text-gray-700 font-medium">
-                          우리 스스로 맛을 평가하자! 🍽️
+                        <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                          500만 학생의 목소리를 되찾을 시간,
+                        </p>
+                        <p className="mt-1 text-sm text-gray-700 font-medium">
+                          이제 당신의 별점이 새로운 기준이 됩니다.
                         </p>
                       </div>
                     </div>
@@ -181,19 +183,16 @@ function LoginContent() {
                     {/* 카드 2: AI 기능 */}
                     <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px] border-l-4 border-purple-400">
                       <div className="text-center">
-                        <h2 className="text-xl font-bold text-purple-700 mb-3">AI 54가지 기능</h2>
+                        <h2 className="text-xl font-bold text-purple-700 mb-3">급식배틀의 핵심, AI 5대 천왕!</h2>
                         <p className="text-sm text-gray-700 mb-3">
-                          <span className="mx-1">필요</span>와 
-                          <span className="mx-1">재미</span>와 
-                          <span className="mx-1">공감</span>과 
-                          <span className="mx-1 font-medium">AI 첨단</span>의 만남
+                          귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                         </p>
-                        <div className="space-y-2 text-xs text-gray-600">
-                          <p>🔍 급식사진 검증</p>
-                          <p>🤖 급식이미지 생성</p>
-                          <p>❓ 퀴즈 생성</p>
-                          <p>✅ 오답 검증</p>
-                          <p>📊 급식 월간 분석리포트</p>
+                        <div className="space-y-1 text-xs text-gray-600">
+                          <p>1. 사진 분석 AI</p>
+                          <p>2. 이미지 생성 AI</p>
+                          <p>3. 퀴즈 출제 AI</p>
+                          <p>4. 오답노트 AI</p>
+                          <p>5. 리포트 생성 AI</p>
                         </div>
                       </div>
                     </div>
@@ -208,7 +207,7 @@ function LoginContent() {
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
                         <p className="text-gray-600 text-sm">
-                          오늘의 급식을 확인하고 별점으로 평가하세요. AI가 생성한 이미지로 더욱 생생하게!
+                          오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                         </p>
                       </div>
                     </div>
@@ -223,7 +222,7 @@ function LoginContent() {
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
                         <p className="text-gray-600 text-sm">
-                          학교별, 메뉴별 급식 평점 경쟁! 우리 학교가 1등인지 확인해보세요.
+                          우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
                         </p>
                       </div>
                     </div>
@@ -238,7 +237,7 @@ function LoginContent() {
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
                         <p className="text-gray-600 text-sm">
-                          급식 메뉴 맞추기 퀴즈로 친구들과 대결! 주장원, 월장원에 도전하세요.
+                          오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
                         </p>
                       </div>
                     </div>
@@ -251,31 +250,30 @@ function LoginContent() {
               {/* 데스크톱: 기존 레이아웃 */}
               <div className="hidden lg:block">
                 <div className="text-center lg:text-left">
-                  <h1 className="text-4xl font-bold text-gray-900 lg:text-5xl">
-                    뭐먹지?
-                  </h1>
-                  <p className="mt-2 text-2xl font-semibold text-blue-600">
+                  <p className="text-2xl font-semibold text-blue-600">
                     급식배틀
                   </p>
-                  <p className="mt-4 text-xl font-bold text-red-600">
+                  <p className="mt-2 text-xl font-bold text-red-600">
                     급식도 민주주의!
                   </p>
-                  <p className="mt-3 text-lg text-gray-600 leading-relaxed">
-                    원산지와 영양은 따지는데, 누구도 500만 학생들의 급식 맛에 대해선 알려고 하지 않는 놀~라운 세상
+                  <p className="mt-2 text-lg text-gray-600 leading-relaxed">
+                    영양과 원산지만 있고 '맛'이 실종된 식판.
                   </p>
-                  <p className="mt-2 text-lg text-gray-700 font-medium">
-                    우리 스스로 맛을 평가하자! 🍽️
+                  <p className="mt-1 text-lg text-gray-600 leading-relaxed">
+                    500만 학생의 목소리를 되찾을 시간,
                   </p>
-                  <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-l-4 border-purple-400">
+                  <p className="mt-1 text-lg text-gray-700 font-medium">
+                    이제 당신의 별점이 새로운 기준이 됩니다.
+                  </p>
+                  <div className="mt-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-l-4 border-purple-400">
                     <p className="text-sm text-gray-700">
-                      <span className="font-semibold text-purple-700">AI 54가지 기능</span>으로 
-                      <span className="mx-1">필요</span>와 
-                      <span className="mx-1">재미</span>와 
-                      <span className="mx-1">공감</span>과 
-                      <span className="mx-1 font-medium">AI 첨단</span>의 만남
+                      <span className="font-semibold text-purple-700">급식배틀의 핵심, AI 5대 천왕!</span>
+                    </p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      급식사진 검증 • 급식이미지 생성 • 퀴즈 생성 • 오답 검증 • 급식 월간 분석리포트
+                      1. 사진 분석 AI 2. 이미지 생성 AI 3. 퀴즈 출제 AI 4. 오답노트 AI 5. 리포트 생성 AI
                     </p>
                   </div>
                 </div>
@@ -289,7 +287,7 @@ function LoginContent() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">급식</h3>
                       <p className="text-gray-600 text-sm">
-                        오늘의 급식을 확인하고 별점으로 평가하세요. AI가 생성한 이미지로 더욱 생생하게!
+                        오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                       </p>
                     </div>
                   </div>
@@ -302,7 +300,7 @@ function LoginContent() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
                       <p className="text-gray-600 text-sm">
-                        학교별, 메뉴별 급식 평점 경쟁! 우리 학교가 1등인지 확인해보세요.
+                        우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
                       </p>
                     </div>
                   </div>
@@ -315,7 +313,7 @@ function LoginContent() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
                       <p className="text-gray-600 text-sm">
-                        급식 메뉴 맞추기 퀴즈로 친구들과 대결! 주장원, 월장원에 도전하세요.
+                        오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
                       </p>
                     </div>
                   </div>
