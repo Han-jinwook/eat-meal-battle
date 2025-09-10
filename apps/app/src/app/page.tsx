@@ -155,8 +155,8 @@ export default function Home() {
       // Supabase 세션 상태 확인 및 새로고침
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.warn('세션 없음 - 관심학교 자동등록 시도');
-        await attemptAutoRegisterInterestSchool(schoolCode);
+        console.warn('세션 없음 - 관심학교 등록창 표시');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -172,8 +172,8 @@ export default function Home() {
       if (userError) {
         console.error('사용자 정보 조회 오류:', userError);
         // 사용자 정보 조회 실패 시에도 관심학교 자동등록 시도
-        console.log('🏫 사용자 정보 조회 실패 - 관심학교 자동등록 시도');
-        await attemptAutoRegisterInterestSchool(schoolCode);
+        console.log('🏫 사용자 정보 조회 실패 - 관심학교 등록창 표시');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -190,28 +190,28 @@ export default function Home() {
         
         // 학생 유저인 경우에도 관심학교 자동등록 시도
         if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
-          await attemptAutoRegisterInterestSchool(schoolCode);
+          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 등록창 표시');
+          setIsSchoolSearchOpen(true);
           return;
         }
         
         // 일반 유저인 경우 - 관심학교 자동등록 시도
-        console.log('🏫 일반 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
-        await attemptAutoRegisterInterestSchool(schoolCode);
+        console.log('🏫 일반 유저 - school_infos 조회 실패, 관심학교 등록창 표시');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
       // school_infos 레코드가 없는 경우 (신규 사용자)
       if (!schoolInfo) {
         if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - 학교 미등록, 관심학교 자동등록 시도');
-          await attemptAutoRegisterInterestSchool(schoolCode);
+          console.log('🏫 학생 유저 - 학교 미등록, 관심학교 등록창 표시');
+          setIsSchoolSearchOpen(true);
           return;
         }
         
         // 일반 유저인 경우 - 관심학교 자동등록 시도
-        console.log('🏫 일반 유저 - 학교 미등록, 관심학교 자동등록 시도');
-        await attemptAutoRegisterInterestSchool(schoolCode);
+        console.log('🏫 일반 유저 - 학교 미등록, 관심학교 등록창 표시');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -219,8 +219,8 @@ export default function Home() {
       if (userInfo?.is_student) {
         // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 자동등록 시도
         if (schoolInfo.school_code !== schoolCode) {
-          console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 자동등록 시도');
-          await attemptAutoRegisterInterestSchool(schoolCode);
+          console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
+          setIsSchoolSearchOpen(true);
           return;
         }
         
@@ -230,14 +230,14 @@ export default function Home() {
       }
 
       // 일반 유저인 경우 → 관심학교 자동등록 시도
-      console.log('🏫 일반 유저 - 타학교 공유링크 감지, 관심학교 자동등록 시도');
-      await attemptAutoRegisterInterestSchool(schoolCode);
+      console.log('🏫 일반 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
+      setIsSchoolSearchOpen(true);
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
       // 오류 발생 시에도 관심학교 자동등록 시도
-      console.log('🏫 오류 발생 - 관심학교 자동등록 시도');
-      await attemptAutoRegisterInterestSchool(schoolCode);
+      console.log('🏫 오류 발생 - 관심학교 등록창 표시');
+      setIsSchoolSearchOpen(true);
     }
   };
 
