@@ -177,27 +177,40 @@ export default function Home() {
         return;
       }
 
-      // school_infos 조회 (406 오류 가능성 있음)
+      // school_infos 조회 (레코드 없을 수 있음)
       const { data: schoolInfo, error: schoolError } = await supabase
         .from('school_infos')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      // school_infos 조회 실패 시 (406 오류 포함)
+      // school_infos 조회 실패 시 (실제 오류인 경우만)
       if (schoolError) {
-        console.warn('school_infos 조회 오류 (406 등):', schoolError.message);
+        console.warn('school_infos 조회 오류:', schoolError.message);
         
-        // 406 오류는 RLS 정책 문제일 가능성이 높음 (데이터는 존재할 수 있음)
-        // 학생 유저인 경우에도 관심학교 자동등록 시도 (기존 학교와 다른 경우만)
+        // 학생 유저인 경우에도 관심학교 자동등록 시도
         if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - RLS 오류로 school_infos 조회 실패, 관심학교 자동등록 시도');
+          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
           await attemptAutoRegisterInterestSchool(schoolCode);
           return;
         }
         
         // 일반 유저인 경우 - 관심학교 자동등록 시도
         console.log('🏫 일반 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
+        await attemptAutoRegisterInterestSchool(schoolCode);
+        return;
+      }
+
+      // school_infos 레코드가 없는 경우 (신규 사용자)
+      if (!schoolInfo) {
+        if (userInfo?.is_student) {
+          console.log('🏫 학생 유저 - 학교 미등록, 관심학교 자동등록 시도');
+          await attemptAutoRegisterInterestSchool(schoolCode);
+          return;
+        }
+        
+        // 일반 유저인 경우 - 관심학교 자동등록 시도
+        console.log('🏫 일반 유저 - 학교 미등록, 관심학교 자동등록 시도');
         await attemptAutoRegisterInterestSchool(schoolCode);
         return;
       }
