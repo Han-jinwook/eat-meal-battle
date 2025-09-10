@@ -64,26 +64,29 @@ function LoginContent() {
       const schoolCode = currentUrl.searchParams.get('school_code')
       const shareType = currentUrl.searchParams.get('share_type')
       
-      // OAuth 콜백 URL에 공유 파라미터 포함
-      let callbackUrl = `${window.location.origin}/auth/callback`
+      // OAuth state에 공유 파라미터 포함
+      let stateData = {}
       if (schoolCode) {
-        const params = new URLSearchParams()
-        params.set('share_school_code', schoolCode)
-        if (shareType) params.set('share_type', shareType)
-        callbackUrl += `?${params.toString()}`
+        stateData = {
+          share_school_code: schoolCode,
+          ...(shareType && { share_type: shareType })
+        }
       }
       
-      console.log('🔗 OAuth 콜백 URL:', callbackUrl)
+      console.log('🔗 OAuth state 데이터:', stateData)
       
       // 구글 OAuth에 생일 정보 scope 추가
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: callbackUrl,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
             scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
+            ...(Object.keys(stateData).length > 0 && { 
+              state: btoa(JSON.stringify(stateData))
+            })
           }
         }
       });
@@ -114,24 +117,27 @@ function LoginContent() {
       const schoolCode = currentUrl.searchParams.get('school_code')
       const shareType = currentUrl.searchParams.get('share_type')
       
-      // OAuth 콜백 URL에 공유 파라미터 포함
-      let callbackUrl = `${window.location.origin}/auth/callback`
+      // OAuth state에 공유 파라미터 포함
+      let stateData = {}
       if (schoolCode) {
-        const params = new URLSearchParams()
-        params.set('share_school_code', schoolCode)
-        if (shareType) params.set('share_type', shareType)
-        callbackUrl += `?${params.toString()}`
+        stateData = {
+          share_school_code: schoolCode,
+          ...(shareType && { share_type: shareType })
+        }
       }
       
-      console.log('🔗 카카오 OAuth 콜백 URL:', callbackUrl)
+      console.log('🔗 카카오 OAuth state 데이터:', stateData)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: {
-          redirectTo: callbackUrl,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
             prompt: 'consent',
+            ...(Object.keys(stateData).length > 0 && { 
+              state: btoa(JSON.stringify(stateData))
+            })
           },
         },
       })

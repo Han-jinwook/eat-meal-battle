@@ -24,12 +24,32 @@ export async function GET(request: NextRequest) {
     next: requestUrl.searchParams.get('next'),
     redirect_to: requestUrl.searchParams.get('redirect_to'),
     return_to: requestUrl.searchParams.get('return_to'),
-    redirectTo: requestUrl.searchParams.get('redirectTo'),
+  })
+  
+  // URL에서 공유 파라미터 추출 (state 파라미터에서)
+  let shareSchoolCode = requestUrl.searchParams.get('share_school_code')
+  let shareType = requestUrl.searchParams.get('share_type')
+  
+  // OAuth state에서 공유 파라미터 추출 시도
+  const stateParam = requestUrl.searchParams.get('state')
+  if (stateParam && !shareSchoolCode) {
+    try {
+      const stateData = JSON.parse(atob(stateParam))
+      shareSchoolCode = stateData.share_school_code
+      shareType = stateData.share_type
+      console.log('📋 OAuth state에서 추출한 공유 파라미터:', stateData)
+    } catch (error) {
+      console.log('⚠️ OAuth state 파싱 실패:', error)
+    }
+  }
+  
+  console.log('🔗 OAuth 콜백 전체 URL:', requestUrl.toString())
+  console.log('📋 OAuth 콜백 파라미터들:', {
+    code: requestUrl.searchParams.get('code'),
     state: requestUrl.searchParams.get('state'),
-    share_school_code: requestUrl.searchParams.get('share_school_code'),
-    share_type: requestUrl.searchParams.get('share_type'),
-    shareUrl,
-    allParams: Object.fromEntries(requestUrl.searchParams.entries())
+    share_school_code: shareSchoolCode,
+    share_type: shareType,
+    all_params: Object.fromEntries(requestUrl.searchParams.entries())
   })
   
   let redirectUrl = '/'
@@ -133,11 +153,22 @@ export async function GET(request: NextRequest) {
         if (provider === 'kakao' && data.session.provider_token) {
           try {
             console.info('🔍 카카오 사용자 정보 API 호출 시작...');
-            console.info('🔍 사용할 토큰:', data.session.provider_token?.substring(0, 20) + '...');
+            
+            // 토큰 길이 확인 및 처리
+            let accessToken = data.session.provider_token;
+            console.info('🔍 원본 토큰 길이:', accessToken.length);
+            console.info('🔍 토큰 앞부분:', accessToken.substring(0, 20) + '...');
+            
+            // 토큰이 너무 길면 앞부분만 사용 (카카오 토큰은 보통 43자리)
+            if (accessToken.length > 100) {
+              console.warn('⚠️ 토큰이 너무 길어서 잘라서 사용합니다.');
+              // 일반적으로 카카오 액세스 토큰은 43자리이므로 처음 50자리만 사용
+              accessToken = accessToken.substring(0, 50);
+            }
             
             const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
               headers: {
-                'Authorization': `Bearer ${data.session.provider_token}`,
+                'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
               }
             });
@@ -164,6 +195,15 @@ export async function GET(request: NextRequest) {
         let birthDate = null;
         
         if (provider === 'kakao') {
+          console.info('🔍 카카오 생년월일 데이터 디버깅 시작');
+          console.info('🔍 카카오 API 응답 데이터:', {
+            hasKakaoUserInfo: !!kakaoUserInfo,
+            kakaoAccount: kakaoUserInfo?.kakao_account,
+            birthyear: kakaoUserInfo?.kakao_account?.birthyear,
+            birthday: kakaoUserInfo?.kakao_account?.birthday,
+            rawProviderBirthyear: rawProviderData?.birthyear
+          });
+          
           // 카카오에서 생년월일 정보 추출 (API 응답 우선, 없으면 기본 데이터 확인)
           if (kakaoUserInfo?.kakao_account?.birthday && kakaoUserInfo?.kakao_account?.birthyear) {
             const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
@@ -171,7 +211,13 @@ export async function GET(request: NextRequest) {
             const month = kakaoBirthday.substring(0, 2);
             const day = kakaoBirthday.substring(2, 4);
             birthDate = `${kakaoYear}-${month}-${day}`;
-            console.info('✅ 카카오 API에서 생년월일 정보 받음:', { year: kakaoYear, birthday: kakaoBirthday, formatted: birthDate });
+            console.info('✅ 카카오 API에서 생년월일 정보 받음:', { 
+              year: kakaoYear, 
+              birthday: kakaoBirthday, 
+              month, 
+              day, 
+              formatted: birthDate 
+            });
           } else if (kakaoUserInfo?.kakao_account?.birthyear) {
             const kakaoYear = kakaoUserInfo.kakao_account.birthyear;
             birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
@@ -180,6 +226,8 @@ export async function GET(request: NextRequest) {
             const kakaoYear = rawProviderData.birthyear;
             birthDate = `${kakaoYear}-01-01`; // 생년만 있으면 1월 1일로 설정
             console.info('✅ 카카오 기본 데이터에서 생년 정보 받음:', { year: kakaoYear, formatted: birthDate });
+          } else {
+            console.warn('⚠️ 카카오에서 생년월일 정보를 찾을 수 없음');
           }
         } else if (provider === 'google') {
           console.info('🔍 구글 OAuth 생일 데이터 디버깅 시작');
@@ -228,8 +276,22 @@ export async function GET(request: NextRequest) {
                     console.info('✅ 구글 People API 응답:', JSON.stringify(googleUserInfo, null, 2));
                     
                     // 생일 데이터 추출
+                    console.info('🔍 구글 People API 생일 데이터 분석:', {
+                      hasBirthdays: !!googleUserInfo?.birthdays,
+                      birthdaysLength: googleUserInfo?.birthdays?.length || 0,
+                      birthdays: googleUserInfo?.birthdays
+                    });
+                    
                     if (googleUserInfo?.birthdays && googleUserInfo.birthdays.length > 0) {
                       for (const birthday of googleUserInfo.birthdays) {
+                        console.info('🔍 생일 항목 분석:', {
+                          hasDate: !!birthday?.date,
+                          year: birthday?.date?.year,
+                          month: birthday?.date?.month,
+                          day: birthday?.date?.day,
+                          metadata: birthday?.metadata
+                        });
+                        
                         if (birthday?.date?.year && birthday?.date?.month && birthday?.date?.day) {
                           const year = birthday.date.year;
                           const month = String(birthday.date.month).padStart(2, '0');
@@ -239,6 +301,8 @@ export async function GET(request: NextRequest) {
                           break;
                         }
                       }
+                    } else {
+                      console.warn('⚠️ 구글 People API에서 생일 데이터를 찾을 수 없음');
                     }
                     
                     if (!birthDate) {
@@ -405,10 +469,13 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // 1단계: 학교 정보 확인
+        // 1단계: 사용자의 관심학교 정보 확인
         const { data: existingSchool, error: schoolCheckError } = await supabase
-          .from('school_infos')
-          .select('school_code, school_name')
+          .from('user_interest_schools')
+          .select(`
+            school_code,
+            school_infos!inner(school_name)
+          `)
           .eq('user_id', data.session.user.id)
           .single();
         
@@ -418,9 +485,10 @@ export async function GET(request: NextRequest) {
         } else if (existingSchool) {
           // 학교 정보 있음 → 공유URL 타학교 여부 확인
           console.info('✅ 등록된 학교 정보 발견');
-          console.info(`📚 내 학교: ${existingSchool.school_name} (${existingSchool.school_code})`);
+          const schoolName = existingSchool.school_infos?.[0]?.school_name || '알 수 없음';
+          console.info(`📚 내 학교: ${schoolName} (${existingSchool.school_code})`);
           
-          if (shareUrl && shareUrlSchoolCode && shareUrlSchoolCode !== existingSchool.school_code) {
+          if (shareUrlSchoolCode && shareUrlSchoolCode !== existingSchool.school_code) {
             // 타학교 공유URL → 관심학교 자동 등록
             console.info('🏫 타학교 공유URL 감지 → 관심학교 자동 등록 시도');
             isOtherSchoolShare = true;
