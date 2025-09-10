@@ -152,33 +152,49 @@ export default function Home() {
         return;
       }
 
-      // 사용자 프로필과 학교 등록 상태 확인
-      const [userResult, schoolResult] = await Promise.all([
-        supabase
-          .from('users')
-          .select('is_student')
-          .eq('id', user.id)
-          .single(),
-        supabase
-          .from('school_infos')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-      ]);
+      console.log('🔍 초대링크 처리 시작:', { schoolCode, userId: user.id });
 
-      const { data: userInfo } = userResult;
-      const { data: schoolInfo } = schoolResult;
+      // 사용자 프로필 확인 (users 테이블)
+      const { data: userInfo, error: userError } = await supabase
+        .from('users')
+        .select('is_student')
+        .eq('id', user.id)
+        .single();
 
-      // 학생 유저인 경우
-      if (userInfo?.is_student) {
-        // 자기학교 등록이 안 된 경우 → 프로필 페이지로 (자기학교 등록 먼저)
-        if (!schoolInfo) {
-          console.log('학생 유저 - 자기학교 등록 필요');
-          alert('학교 등록이 필요합니다. 프로필에서 학교를 등록해주세요.');
-          router.push('/profile');
+      if (userError) {
+        console.error('사용자 정보 조회 오류:', userError);
+        // 사용자 정보 조회 실패 시에도 관심학교 자동등록 시도
+        console.log('🏫 사용자 정보 조회 실패 - 관심학교 자동등록 시도');
+        await attemptAutoRegisterInterestSchool(schoolCode);
+        return;
+      }
+
+      // school_infos 조회 (406 오류 가능성 있음)
+      const { data: schoolInfo, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      // school_infos 조회 실패 시 (406 오류 포함)
+      if (schoolError) {
+        console.warn('school_infos 조회 오류 (406 등):', schoolError.message);
+        
+        // 학생 유저인 경우 - 자기학교 등록이 필요할 수 있지만 일단 관심학교 자동등록 시도
+        if (userInfo?.is_student) {
+          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
+          await attemptAutoRegisterInterestSchool(schoolCode);
           return;
         }
         
+        // 일반 유저인 경우 - 관심학교 자동등록 시도
+        console.log('🏫 일반 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
+        await attemptAutoRegisterInterestSchool(schoolCode);
+        return;
+      }
+
+      // school_infos 조회 성공한 경우
+      if (userInfo?.is_student) {
         // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 자동등록 시도
         if (schoolInfo.school_code !== schoolCode) {
           console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 자동등록 시도');
@@ -197,8 +213,9 @@ export default function Home() {
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
-      // 오류 발생 시 관심학교 등록 모달 열기
-      setIsSchoolSearchOpen(true);
+      // 오류 발생 시에도 관심학교 자동등록 시도
+      console.log('🏫 오류 발생 - 관심학교 자동등록 시도');
+      await attemptAutoRegisterInterestSchool(schoolCode);
     }
   };
 
