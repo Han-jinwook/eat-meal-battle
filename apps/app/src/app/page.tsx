@@ -152,7 +152,15 @@ export default function Home() {
         return;
       }
 
-      console.log('🔍 초대링크 처리 시작:', { schoolCode, userId: user.id });
+      // Supabase 세션 상태 확인 및 새로고침
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('세션 없음 - 관심학교 자동등록 시도');
+        await attemptAutoRegisterInterestSchool(schoolCode);
+        return;
+      }
+
+      console.log('🔍 초대링크 처리 시작:', { schoolCode, userId: user.id, sessionValid: !!session });
 
       // 사용자 프로필 확인 (users 테이블)
       const { data: userInfo, error: userError } = await supabase
@@ -180,9 +188,10 @@ export default function Home() {
       if (schoolError) {
         console.warn('school_infos 조회 오류 (406 등):', schoolError.message);
         
-        // 학생 유저인 경우 - 자기학교 등록이 필요할 수 있지만 일단 관심학교 자동등록 시도
+        // 406 오류는 RLS 정책 문제일 가능성이 높음 (데이터는 존재할 수 있음)
+        // 학생 유저인 경우에도 관심학교 자동등록 시도 (기존 학교와 다른 경우만)
         if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 자동등록 시도');
+          console.log('🏫 학생 유저 - RLS 오류로 school_infos 조회 실패, 관심학교 자동등록 시도');
           await attemptAutoRegisterInterestSchool(schoolCode);
           return;
         }
