@@ -224,7 +224,7 @@ function LoginContent() {
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-4">
-                          <img src="/images/sublogo.svg" alt="급식배틀 로고" className="w-48 h-auto" />
+                          <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-48 h-auto" />
                         </div>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                           영양과 원산지는 Good! 그렇다면 '맛'은 ?
@@ -323,9 +323,8 @@ function LoginContent() {
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                     <div className="text-center mb-3">
                       <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
-                      <p className="text-sm text-blue-600">급식배틀앱에 대한 자세한 소개를 음성으로 들어보세요!</p>
                     </div>
-                    <div className="flex flex-col gap-3 justify-center">
+                    <div className="flex flex-row gap-3 justify-center">
                       <button
                         onClick={() => handleAudioToggle('student', '/audio/student-intro.mp4')}
                         className={`px-6 py-3 ${
@@ -345,7 +344,6 @@ function LoginContent() {
                         )}
                         <div className="text-center">
                           <div className="font-bold text-sm">학생용 (4분)</div>
-                          <div className="text-xs opacity-90">학생들을 위한 소개</div>
                         </div>
                       </button>
                       <button
@@ -367,7 +365,6 @@ function LoginContent() {
                         )}
                         <div className="text-center">
                           <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
-                          <div className="text-xs opacity-90">어른들을 위한 상세 소개</div>
                         </div>
                       </button>
                     </div>
@@ -379,12 +376,9 @@ function LoginContent() {
               {/* 데스크톱: 기존 레이아웃 */}
               <div className="hidden lg:block">
                 <div className="text-center lg:text-left">
-                  <p className="text-2xl font-semibold text-blue-600">
-                    급식배틀
-                  </p>
-                  <p className="mt-2 text-xl font-bold text-red-600">
-                    급식도 민주주의!
-                  </p>
+                  <div className="flex justify-center lg:justify-start mb-4">
+                    <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-64 h-auto" />
+                  </div>
                   <p className="mt-2 text-lg text-gray-600 leading-relaxed">
                     영양과 원산지는 Good! 그렇다면 '맛'은 ?
                   </p>
@@ -467,7 +461,6 @@ function LoginContent() {
                 <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                   <div className="text-center mb-3">
                     <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
-                    <p className="text-sm text-blue-600">급식배틀앱에 대한 자세한 소개를 음성으로 들어보세요!</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
@@ -489,7 +482,6 @@ function LoginContent() {
                       )}
                       <div className="text-center">
                         <div className="font-bold text-sm">학생용 (4분)</div>
-                        <div className="text-xs opacity-90">학생들을 위한 소개</div>
                       </div>
                     </button>
                     <button
@@ -511,7 +503,6 @@ function LoginContent() {
                       )}
                       <div className="text-center">
                         <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
-                        <div className="text-xs opacity-90">어른들을 위한 상세 소개</div>
                       </div>
                     </button>
                   </div>
