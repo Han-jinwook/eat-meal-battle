@@ -259,9 +259,7 @@ function LoginContent() {
                     <div className="bg-orange-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                            <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-8 h-8 object-contain" />
-                          </div>
+                          <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-12 h-12 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
                         <p className="text-gray-600 text-sm">
@@ -280,9 +278,7 @@ function LoginContent() {
                     <div className="bg-red-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                            <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-8 h-8 object-contain" />
-                          </div>
+                          <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-12 h-12 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
                         <p className="text-gray-600 text-xs">
@@ -301,9 +297,7 @@ function LoginContent() {
                     <div className="bg-green-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                            <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-8 h-8 object-contain" />
-                          </div>
+                          <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-12 h-12 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
                         <p className="text-gray-600 text-xs">
@@ -404,9 +398,7 @@ function LoginContent() {
                 <div className="space-y-5 mt-4">
                   {/* 급식 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                      <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-8 h-8 object-contain" />
-                    </div>
+                    <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-12 h-12 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">급식</h3>
                       <p className="text-gray-600 text-sm">
@@ -423,9 +415,7 @@ function LoginContent() {
 
                   {/* 배틀 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                      <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-8 h-8 object-contain" />
-                    </div>
+                    <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-12 h-12 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
                       <p className="text-gray-600 text-xs">
@@ -442,9 +432,7 @@ function LoginContent() {
 
                   {/* 퀴즈 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                      <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-8 h-8 object-contain" />
-                    </div>
+                    <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-12 h-12 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
                       <p className="text-gray-600 text-xs">
