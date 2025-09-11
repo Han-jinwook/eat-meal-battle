@@ -38,10 +38,13 @@ export default function PublicDashboard() {
         {/* 히어로 섹션 */}
         <div className="text-center mb-16">
           <div className="mb-8">
-            <span className="text-6xl mb-4 block">🍚</span>
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
-              급식배틀
-            </h1>
+            <div className="mb-6">
+              <img 
+                src="/images/sub-logo.png" 
+                alt="급식배틀 로고" 
+                className="mx-auto h-32 md:h-40 w-auto"
+              />
+            </div>
             <p className="text-xl md:text-2xl text-gray-600 mb-8">
               우리 학교 급식을 평가하고 친구들과 퀴즈를 즐겨보세요!
             </p>
