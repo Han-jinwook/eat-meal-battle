@@ -310,6 +310,18 @@ export default function Home() {
       const params = new URLSearchParams(window.location.search);
       const dateFromUrl = params.get('date');
       const schoolCodeFromUrl = params.get('school_code');
+      const studentRegistration = params.get('student_registration');
+      
+      // 학생등록 플래그가 있으면 학교검색 모달 자동 열기
+      if (studentRegistration === 'true') {
+        console.log('🎓 학생등록 플래그 감지 - 학교검색 모달 자동 열기');
+        setIsSchoolSearchOpen(true);
+        
+        // URL에서 파라미터 제거 (한 번만 실행되도록)
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('student_registration');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
       
       // 초대링크 처리 (school_code 파라미터가 있는 경우)
       if (schoolCodeFromUrl && user) {
