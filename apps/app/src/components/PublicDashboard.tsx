@@ -59,7 +59,7 @@ export default function PublicDashboard() {
           </button>
         </div>
 
-        {/* 기능 소개 */}
+        {/* 기능 소개 - 업데이트됨 */}
         <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-16">
           <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
             <div className="text-4xl mb-4 text-center md:text-left">🍽️</div>
