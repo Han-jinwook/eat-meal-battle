@@ -478,9 +478,15 @@ export default function Home() {
       
       // 비학생이고 내 학교가 없는 경우에만 관심학교 설정 모달 자동 열기
       // 기존 관심학교가 있으면 모달을 열지 않음
-      if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && user.db_profile?.is_student === false && interestSchools.length === 0) {
+      // 학생나이(6-39세)인 경우는 절대 관심학교 등록창을 표시하지 않음
+      const isStudentAge = user.db_profile?.is_student === true;
+      
+      if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && !isStudentAge && interestSchools.length === 0) {
         console.log('🎯 비학생 관심학교 설정 모달 자동 열기');
         setIsSchoolSearchOpen(true);
+      } else if (isStudentAge && !schoolMode.hasMySchool) {
+        console.log('🎓 학생나이 유저 - 학교등록 페이지로 리다이렉트');
+        router.push('/school-search');
       }
     }
   }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
