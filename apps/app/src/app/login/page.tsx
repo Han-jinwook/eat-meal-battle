@@ -214,13 +214,13 @@ function LoginContent() {
                         <p className="text-xl font-semibold text-blue-600">급식배틀</p>
                         <p className="mt-2 text-lg font-bold text-red-600">급식도 민주주의!</p>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                          영양과 원산지만 있고 '맛'이 실종된 식판.
+                          영양과 원산지는 Good! 그렇다면 '맛'은 ?
                         </p>
                         <p className="mt-1 text-sm text-gray-600 leading-relaxed">
-                          500만 학생의 목소리를 되찾을 시간,
+                          이제 500만 학생의 목소리를 되찾을 시간,
                         </p>
                         <p className="mt-1 text-sm text-gray-700 font-medium">
-                          이제 당신의 별점이 새로운 기준이 됩니다.
+                          우리들 별점이 새로운 기준이 됩니다.
                         </p>
                       </div>
                     </div>
