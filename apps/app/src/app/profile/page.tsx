@@ -518,7 +518,7 @@ export default function Profile() {
                 </p>
                 <button
                   onClick={() => setShowSuccessModal(false)}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                  className="w-full bg-yellow-400 text-black py-2 px-4 rounded-md hover:bg-yellow-500 transition-colors"
                 >
                   확인
                 </button>
