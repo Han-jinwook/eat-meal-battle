@@ -266,6 +266,12 @@ function LoginContent() {
                         <p className="text-gray-600 text-sm">
                           오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                         </p>
+                        <p className="text-gray-600 text-xs mt-1">
+                          - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
+                        </p>
                       </div>
                     </div>
 
@@ -278,8 +284,14 @@ function LoginContent() {
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
-                        <p className="text-gray-600 text-sm">
-                          우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
+                        <p className="text-gray-600 text-xs">
+                          - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 우리동네/전국 최고 급식평점을 준 학교와 최하 평점 학교순위 확인
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - Data 기반한 월별 AI분석 리포트 - 급식담당자/학교당국/학부모 참고용
                         </p>
                       </div>
                     </div>
@@ -293,8 +305,11 @@ function LoginContent() {
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
-                        <p className="text-gray-600 text-sm">
-                          오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
+                        <p className="text-gray-600 text-xs">
+                          - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
                         </p>
                       </div>
                     </div>
@@ -402,6 +417,12 @@ function LoginContent() {
                       <p className="text-gray-600 text-sm">
                         오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                       </p>
+                      <p className="text-gray-600 text-xs mt-1">
+                        - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
+                      </p>
                     </div>
                   </div>
 
@@ -412,8 +433,14 @@ function LoginContent() {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
-                      <p className="text-gray-600 text-sm">
-                        우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
+                      <p className="text-gray-600 text-xs">
+                        - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 우리동네/전국 최고 급식평점을 준 학교와 최하 평점 학교순위 확인
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - Data 기반한 월별 AI분석 리포트 - 급식담당자/학교당국/학부모 참고용
                       </p>
                     </div>
                   </div>
@@ -425,8 +452,11 @@ function LoginContent() {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
-                      <p className="text-gray-600 text-sm">
-                        오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
+                      <p className="text-gray-600 text-xs">
+                        - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
                       </p>
                     </div>
                   </div>
