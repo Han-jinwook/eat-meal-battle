@@ -1,3 +1,15 @@
+/*
+ * BACKUP FILE - PublicDashboard_backup.tsx
+ * 
+ * 이 파일은 비로그인 사용자용 대시보드 컴포넌트의 백업입니다.
+ * login/page.tsx와 유사한 기능을 제공하므로 중복 가능성이 있어 백업으로 보관합니다.
+ * 
+ * 원래 파일명: PublicDashboard.tsx
+ * 백업 생성일: 2025-01-11
+ * 
+ * 추후 확인 후 필요 없으면 삭제 예정
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -20,7 +32,10 @@ export default function PublicDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">🍚 급식배틀</h1>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-6 h-6 object-contain" />
+              급식배틀
+            </h1>
             </div>
             <button
               onClick={handleLoginClick}
@@ -38,7 +53,7 @@ export default function PublicDashboard() {
         {/* 히어로 섹션 */}
         <div className="text-center mb-16">
           <div className="mb-8">
-            <span className="text-6xl mb-4 block">🍚</span>
+            <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-24 h-24 object-contain mx-auto mb-4" />
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
               급식배틀
             </h1>
@@ -59,7 +74,7 @@ export default function PublicDashboard() {
         {/* 기능 소개 */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">🍽️</div>
+            <img src="/images/characters/meal-rabbit.png" alt="급식 평가" className="w-16 h-16 object-contain mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 평가</h3>
             <p className="text-gray-600">
               오늘의 급식 메뉴를 확인하고 평점을 매겨보세요. 
@@ -68,7 +83,7 @@ export default function PublicDashboard() {
           </div>
 
           <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">⚔️</div>
+            <img src="/images/characters/battle-tiger.png" alt="급식 배틀" className="w-16 h-16 object-contain mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 배틀</h3>
             <p className="text-gray-600">
               학교별, 메뉴별 급식 배틀에 참여하세요. 
@@ -77,7 +92,7 @@ export default function PublicDashboard() {
           </div>
 
           <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">🧠</div>
+            <img src="/images/characters/quiz-fox.png" alt="급식 퀴즈" className="w-16 h-16 object-contain mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 퀴즈</h3>
             <p className="text-gray-600">
               급식 관련 재미있는 퀴즈를 풀어보세요. 

@@ -260,7 +260,7 @@ function LoginContent() {
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
                           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                            <span className="text-2xl">🍽️</span>
+                            <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-8 h-8 object-contain" />
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
@@ -281,7 +281,7 @@ function LoginContent() {
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
                           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                            <span className="text-2xl">⚔️</span>
+                            <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-8 h-8 object-contain" />
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
@@ -302,7 +302,7 @@ function LoginContent() {
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
                           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                            <span className="text-2xl">🧠</span>
+                            <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-8 h-8 object-contain" />
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
@@ -396,7 +396,7 @@ function LoginContent() {
                       귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      (AI 1) 사진 분석   (AI 2) 이미지 생성   (AI 3) 퀴즈 출제   (AI 4) 오답노트   (AI 5) 리포트 생성
+                      1) 사진 분석   2) 이미지 생성   3) 퀴즈 출제   4) 오답노트   5) 리포트 생성
                     </p>
                   </div>
                 </div>
@@ -405,7 +405,7 @@ function LoginContent() {
                   {/* 급식 메뉴 */}
                   <div className="flex items-start space-x-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                      <span className="text-2xl">🍽️</span>
+                      <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-8 h-8 object-contain" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">급식</h3>
@@ -424,7 +424,7 @@ function LoginContent() {
                   {/* 배틀 메뉴 */}
                   <div className="flex items-start space-x-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                      <span className="text-2xl">⚔️</span>
+                      <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-8 h-8 object-contain" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
@@ -443,7 +443,7 @@ function LoginContent() {
                   {/* 퀴즈 메뉴 */}
                   <div className="flex items-start space-x-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                      <span className="text-2xl">🧠</span>
+                      <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-8 h-8 object-contain" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
