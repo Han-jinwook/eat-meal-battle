@@ -155,8 +155,7 @@ export default function Home() {
       // Supabase 세션 상태 확인 및 새로고침
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.warn('세션 없음 - 관심학교 등록창 표시');
-        setIsSchoolSearchOpen(true);
+        console.warn('세션 없음 - 인증 대기');
         return;
       }
 
@@ -171,9 +170,8 @@ export default function Home() {
 
       if (userError) {
         console.error('사용자 정보 조회 오류:', userError);
-        // 사용자 정보 조회 실패 시에도 관심학교 자동등록 시도
-        console.log('🏫 사용자 정보 조회 실패 - 관심학교 등록창 표시');
-        setIsSchoolSearchOpen(true);
+        // 사용자 정보 조회 실패 시 인증 상태 안정화 대기
+        console.log('🏫 사용자 정보 조회 실패 - 인증 상태 대기');
         return;
       }
 
@@ -190,8 +188,15 @@ export default function Home() {
           console.warn('school_infos 조회 오류:', schoolError.message);
         }
         
-        // 모든 유저 - 관심학교 등록창 표시
-        console.log('🏫 학교 미등록 - 관심학교 등록창 표시');
+        // 학생나이 사용자는 학교등록 페이지로 리다이렉트 (우선처리)
+        if (userInfo?.is_student) {
+          console.log('🎓 학생나이 유저 - 학교 미등록, 학교등록 페이지로 리다이렉트');
+          router.push('/school-search');
+          return;
+        }
+        
+        // 비학생 유저만 관심학교 등록창 표시
+        console.log('🏫 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
       }
@@ -216,9 +221,8 @@ export default function Home() {
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
-      // 오류 발생 시에도 관심학교 자동등록 시도
-      console.log('🏫 오류 발생 - 관심학교 등록창 표시');
-      setIsSchoolSearchOpen(true);
+      // 오류 발생 시 인증 상태 안정화 대기
+      console.log('🏫 오류 발생 - 인증 상태 대기');
     }
   };
 
@@ -245,8 +249,7 @@ export default function Home() {
         .single();
 
       if (schoolError || !shareSchoolInfo) {
-        console.warn('⚠️ 공유된 학교 정보를 찾을 수 없습니다. 수동 등록 모달 열기');
-        setIsSchoolSearchOpen(true);
+        console.warn('⚠️ 공유된 학교 정보를 찾을 수 없습니다.');
         return;
       }
 
@@ -274,14 +277,13 @@ export default function Home() {
       } else if (response.status === 400) {
         console.log('ℹ️ 이미 등록된 관심학교입니다');
       } else {
-        console.warn('⚠️ 관심학교 자동등록 실패, 수동 등록 모달 열기');
-        setIsSchoolSearchOpen(true);
+        console.warn('⚠️ 관심학교 자동등록 실패');
       }
       
     } catch (autoRegisterError) {
       console.error('❌ 관심학교 자동등록 오류:', autoRegisterError);
-      // 실패 시 수동 등록 모달 열기
-      setIsSchoolSearchOpen(true);
+      // 실패 시 로그만 남기고 모달 열지 않음
+      console.log('관심학교 자동등록 실패 - 인증 상태 대기');
     }
   };
 
