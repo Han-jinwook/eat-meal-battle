@@ -57,32 +57,37 @@ export default function PublicDashboard() {
         </div>
 
         {/* 기능 소개 */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">🍽️</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 평가</h3>
-            <p className="text-gray-600">
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-16">
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-4xl mb-4 text-center md:text-left">🍽️</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center md:text-left">급식</h3>
+            <p className="text-gray-600 text-center md:text-left">
               오늘의 급식 메뉴를 확인하고 평점을 매겨보세요. 
               친구들과 함께 맛있는 메뉴를 찾아보세요!
             </p>
+            <ul className="text-gray-600 text-sm mt-3 space-y-1">
+              <li>• 메뉴별 하나하나 별점 메기고 소감댓글 남기기</li>
+              <li>• 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능</li>
+            </ul>
           </div>
 
-          <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">⚔️</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 배틀</h3>
-            <p className="text-gray-600">
-              학교별, 메뉴별 급식 배틀에 참여하세요. 
-              우리 학교 급식이 얼마나 맛있는지 확인해보세요!
-            </p>
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-4xl mb-4 text-center md:text-left">⚔️</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center md:text-left">배틀</h3>
+            <ul className="text-gray-600 text-sm space-y-1">
+              <li>• 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인</li>
+              <li>• 우리동네/전국 최고 급식평점을 준 학교와 최하 평점 학교순위 확인</li>
+              <li>• Data 기반한 월별 AI분석 리포트 - 급식담당자/학교당국/학부모 참고용</li>
+            </ul>
           </div>
 
-          <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-4xl mb-4">🧠</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">급식 퀴즈</h3>
-            <p className="text-gray-600">
-              급식 관련 재미있는 퀴즈를 풀어보세요. 
-              친구들과 퀴즈 대결을 통해 주장원, 월장원에 도전하세요!
-            </p>
+          <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-4xl mb-4 text-center md:text-left">🧠</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 text-center md:text-left">퀴즈</h3>
+            <ul className="text-gray-600 text-sm space-y-1">
+              <li>• 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기</li>
+              <li>• 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지</li>
+            </ul>
           </div>
         </div>
 
