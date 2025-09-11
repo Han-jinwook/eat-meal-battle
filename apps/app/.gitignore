@@ -122,7 +122,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - Next.js에서는 public 폴더를 추적해야 함
 
 # Storybook build outputs
 .out
