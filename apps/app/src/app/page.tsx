@@ -466,14 +466,16 @@ export default function Home() {
 
   // 비학생 사용자 자동 관심학교 설정 모달 열기
   useEffect(() => {
-    // 사용자 정보와 학교 모드가 완전히 로드되고 초기화된 후에만 실행
-    if (!userLoading && user && schoolMode.hasMySchool !== null && schoolMode.isInitialized) {
+    // 사용자 정보, 학교 모드, 관심학교 데이터가 모두 완전히 로드되고 초기화된 후에만 실행
+    if (!userLoading && !interestSchoolsLoading && user && schoolMode.hasMySchool !== null && schoolMode.isInitialized) {
       console.log('🔍 비학생 모달 체크:', {
         hasMySchool: schoolMode.hasMySchool,
         selectedInterestSchool: schoolMode.selectedInterestSchool?.school_name,
         isStudent: user.db_profile?.is_student,
         userMetadata: user.user_metadata?.is_student,
-        isInitialized: schoolMode.isInitialized
+        isInitialized: schoolMode.isInitialized,
+        interestSchoolsLoading: interestSchoolsLoading,
+        interestSchoolsCount: interestSchools.length
       });
       
       // 비학생이고 내 학교가 없는 경우에만 관심학교 설정 모달 자동 열기
@@ -489,7 +491,7 @@ export default function Home() {
         router.push('/school-search');
       }
     }
-  }, [userLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
+  }, [userLoading, interestSchoolsLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
 
   // 초기 로드 시 관심학교 데이터 가져오기
   useEffect(() => {
