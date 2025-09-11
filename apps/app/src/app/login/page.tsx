@@ -20,24 +20,36 @@ function LoginContent() {
     // URL 파라미터에서 오류 처리
     const errorType = searchParams.get('error')
     const errorCode = searchParams.get('error_code')
+    const errorDetail = searchParams.get('error_detail')
+    
+    console.log('🔍 로그인 페이지 오류 파라미터:', { errorType, errorCode, errorDetail })
     
     if (errorType === 'auth') {
       setError('인증 오류가 발생했습니다. 다시 시도해주세요.')
-    } else if (errorType === 'server_error') {
-      setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-    } else if (errorType === 'session_expired' || errorCode === 'flow_state_not_found') {
-      setError('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
+    } else if (errorType === 'session_expired') {
+      setError('세션이 만료되었습니다. 다시 로그인해주세요.')
+    } else if (errorType === 'access_denied') {
+      setError('로그인이 취소되었습니다. 다시 시도해주세요.')
+    } else if (errorType === 'oauth_error') {
+      const detailMessage = errorDetail ? ` (상세: ${errorDetail})` : ''
+      setError(`OAuth 인증 중 오류가 발생했습니다${detailMessage}`)
+    } else if (errorType) {
+      setError(`로그인 중 오류가 발생했습니다: ${errorType}`)
+    }
+    
+    if (errorType) {
       // URL에서 오류 파라미터 제거
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('error')
       newUrl.searchParams.delete('error_code')
+      newUrl.searchParams.delete('error_detail')
       newUrl.searchParams.delete('error_description')
       window.history.replaceState({}, '', newUrl.toString())
-    } else if (errorType === 'oauth_error') {
-      setError('OAuth 인증 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     }
-    
-    // 사용자가 이미 로그인되어 있는지 확인
+  }, [searchParams])
+  
+  // 사용자가 이미 로그인되어 있는지 확인
+  useEffect(() => {
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -52,7 +64,7 @@ function LoginContent() {
     }
     
     checkUser()
-  }, [router, searchParams, supabase])
+  }, [router, supabase])
 
   // 오디오 재생/정지 토글 함수
   const handleAudioToggle = (audioType: string, audioPath: string) => {

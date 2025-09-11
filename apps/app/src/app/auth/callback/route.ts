@@ -56,14 +56,25 @@ export async function GET(request: NextRequest) {
 
   // OAuth 오류 처리
   if (error_code) {
-    console.error('❌ OAuth 오류 발생:', { error_code, error_description })
+    console.error('❌ OAuth 오류 발생:', { 
+      error_code, 
+      error_description,
+      full_url: request.url,
+      all_params: Object.fromEntries(requestUrl.searchParams.entries())
+    })
     
     if (error_code === 'flow_state_not_found') {
       console.error('🔄 Flow state not found - OAuth 세션이 만료되었거나 손실됨')
-      return NextResponse.redirect(new URL('/login?error=session_expired', request.url))
+      return NextResponse.redirect(new URL('/login?error=session_expired&error_detail=flow_state_not_found', request.url))
     }
     
-    return NextResponse.redirect(new URL('/login?error=oauth_error', request.url))
+    if (error_code === 'access_denied') {
+      console.error('🚫 사용자가 OAuth 인증을 거부함')
+      return NextResponse.redirect(new URL('/login?error=access_denied&error_detail=user_cancelled', request.url))
+    }
+    
+    console.error('🔍 알 수 없는 OAuth 오류:', error_code)
+    return NextResponse.redirect(new URL(`/login?error=oauth_error&error_detail=${error_code}`, request.url))
   }
 
   try {
