@@ -113,11 +113,11 @@ export default function BattlePage() {
       return;
     }
     
-    // 로그인 완료 후 pending school_code 처리
+    // 로그인 완료 후 초대링크 처리 (급식페이지와 동일한 로직)
     const pendingSchoolCode = sessionStorage.getItem('pending_school_code');
     if (pendingSchoolCode && user) {
       console.log('🔗 로그인 완료, pending school_code 처리:', pendingSchoolCode);
-      handleUrlSchoolCode(pendingSchoolCode);
+      handleBattleUrlSchoolCode(pendingSchoolCode);
       sessionStorage.removeItem('pending_school_code');
     }
     
@@ -162,9 +162,9 @@ export default function BattlePage() {
     }
   };
 
-  // 관심학교 데이터 조회 함수
+  // 관심학교 데이터 조회 함수 (학생나이가 아닌 경우에만)
   const fetchInterestSchools = async () => {
-    if (!user) return;
+    if (!user || user.db_profile?.is_student) return;
     
     try {
       setInterestSchoolsLoading(true);
@@ -295,40 +295,93 @@ export default function BattlePage() {
     setIsSchoolSearchOpen(true);
   };
 
-  // URL school_code 파라미터 처리 함수
-  const handleUrlSchoolCode = async (schoolCode: string) => {
-    try {
-      console.log('🔍 URL school_code로 학교 정보 조회 시작:', schoolCode);
-      
-      // 학교 정보 조회 API 호출
-      const response = await fetch(`/api/school-info?school_code=${schoolCode}`);
-      if (!response.ok) {
-        console.error('❌ 학교 정보 조회 실패:', response.status);
-        return;
-      }
-      
-      const schoolData = await response.json();
-      console.log('✅ 학교 정보 조회 성공:', schoolData);
-      
-      if (schoolData.success && schoolData.data) {
-        // 임시 관심학교 객체 생성 (실제 DB 저장 없이)
-        const tempInterestSchool = {
-          id: `temp_${schoolCode}`,
-          school_name: schoolData.data.school_name,
-          school_code: schoolCode,
-          office_code: schoolData.data.office_code || '',
-          user_id: user?.id || '',
-          created_at: new Date().toISOString()
-        };
-        
-        console.log('🏫 임시 관심학교 설정:', tempInterestSchool);
-        
-        // 학교 모드에서 해당 학교 선택
-        schoolMode.selectInterestSchool(tempInterestSchool);
-      }
-    } catch (error) {
-      console.error('❌ URL school_code 처리 오류:', error);
+  // 배틀페이지 초대링크 처리 함수 (급식페이지와 동일한 나이 우선 로직)
+  const handleBattleUrlSchoolCode = async (schoolCode: string) => {
+    if (!user) {
+      console.log('비회원 - 가입 후 처리 필요');
+      return;
     }
+
+    // Supabase 세션 상태 확인 및 새로고침
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('세션 없음 - 인증 대기');
+      return;
+    }
+
+    console.log('🔍 배틀페이지 초대링크 처리 시작:', { schoolCode, userId: user.id, sessionValid: !!session });
+
+    // 사용자 프로필 확인 (users 테이블)
+    const { data: userInfo, error: userError } = await supabase
+      .from('users')
+      .select('is_student')
+      .eq('id', user.id)
+      .single();
+
+    if (userError) {
+      console.error('사용자 정보 조회 오류:', userError);
+      console.log('🏫 사용자 정보 조회 실패 - 인증 상태 대기');
+      return;
+    }
+
+    // 학생나이 사용자는 school_infos 조회 없이 바로 리다이렉트 (406 오류 회피)
+    if (userInfo?.is_student) {
+      console.log('🎓 학생나이 유저 - 바로 학교등록 페이지로 리다이렉트 (RLS 오류 회피)');
+      router.push('/school-search');
+      return;
+    }
+
+    // 비학생 사용자만 school_infos 조회
+    const { data: schoolInfo, error: schoolError } = await supabase
+      .from('school_infos')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    // school_infos 조회 실패 시 (레코드 없음 또는 오류)
+    if (schoolError || !schoolInfo) {
+      if (schoolError && schoolError.code !== 'PGRST116') {
+        console.warn('school_infos 조회 오류:', schoolError.message);
+      }
+      
+      // 비학생 유저만 관심학교 등록창 표시
+      console.log('🏫 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
+      
+      try {
+        // 학교 정보 조회 API 호출
+        const response = await fetch(`/api/school-info?school_code=${schoolCode}`);
+        if (!response.ok) {
+          console.error('❌ 학교 정보 조회 실패:', response.status);
+          return;
+        }
+        
+        const schoolData = await response.json();
+        console.log('✅ 학교 정보 조회 성공:', schoolData);
+        
+        if (schoolData.success && schoolData.data) {
+          // 임시 관심학교 객체 생성 (실제 DB 저장 없이)
+          const tempInterestSchool = {
+            id: `temp_${schoolCode}`,
+            school_name: schoolData.data.school_name,
+            school_code: schoolCode,
+            office_code: schoolData.data.office_code || '',
+            user_id: user?.id || '',
+            created_at: new Date().toISOString()
+          };
+          
+          console.log('🏫 임시 관심학교 설정:', tempInterestSchool);
+          
+          // 학교 모드에서 해당 학교 선택
+          schoolMode.selectInterestSchool(tempInterestSchool);
+        }
+      } catch (error) {
+        console.error('❌ URL school_code 처리 오류:', error);
+      }
+      return;
+    }
+
+    // 학교 등록이 되어있는 경우 - 배틀페이지 그대로 유지
+    console.log('✅ 학교 등록 완료 - 배틀페이지 유지');
   };
 
   // 배틀 계산 트리거 함수 (Plan A)
