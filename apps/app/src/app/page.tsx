@@ -175,7 +175,14 @@ export default function Home() {
         return;
       }
 
-      // school_infos 조회 (레코드 없을 수 있음)
+      // 학생나이 사용자는 school_infos 조회 없이 바로 리다이렉트 (406 오류 회피)
+      if (userInfo?.is_student) {
+        console.log('🎓 학생나이 유저 - 바로 학교등록 페이지로 리다이렉트 (RLS 오류 회피)');
+        router.push('/school-search');
+        return;
+      }
+
+      // 비학생 사용자만 school_infos 조회
       const { data: schoolInfo, error: schoolError } = await supabase
         .from('school_infos')
         .select('*')
@@ -188,35 +195,14 @@ export default function Home() {
           console.warn('school_infos 조회 오류:', schoolError.message);
         }
         
-        // 학생나이 사용자는 학교등록 페이지로 리다이렉트 (우선처리)
-        if (userInfo?.is_student) {
-          console.log('🎓 학생나이 유저 - 학교 미등록, 학교등록 페이지로 리다이렉트');
-          router.push('/school-search');
-          return;
-        }
-        
         // 비학생 유저만 관심학교 등록창 표시
         console.log('🏫 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
       }
 
-      // school_infos 조회 성공한 경우
-      if (userInfo?.is_student) {
-        // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 등록창 표시
-        if (schoolInfo.school_code !== schoolCode) {
-          console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
-          setIsSchoolSearchOpen(true);
-          return;
-        }
-        
-        // 같은 학교인 경우 정상 표시 (모달 열지 않음)
-        console.log('학생 유저 - 같은 학교, 정상 급식 페이지 표시');
-        return;
-      }
-
-      // 일반 유저인 경우 → 관심학교 등록창 표시
-      console.log('🏫 일반 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
+      // 비학생 사용자의 school_infos 조회 성공한 경우 → 관심학교 등록창 표시
+      console.log('🏫 비학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
       setIsSchoolSearchOpen(true);
       
     } catch (error) {
