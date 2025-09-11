@@ -1257,7 +1257,7 @@ export default function Home() {
                 </h3>
 
                 <div className="bg-gray-50 p-4 rounded-md text-center">
-                  {!schoolMode.currentSchoolInfo ? (
+                  {!schoolMode.currentSchoolInfo && !user?.db_profile?.is_student ? (
                     <>
                       <p className="text-gray-700 dark:text-white font-medium">
                         급식 정보를 보려면 관심학교를 선택해주세요.
