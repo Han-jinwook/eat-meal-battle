@@ -223,8 +223,9 @@ function LoginContent() {
                     {/* 카드 1: 메인 소개 */}
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <p className="text-xl font-semibold text-blue-600">급식배틀</p>
-                        <p className="mt-2 text-lg font-bold text-red-600">급식도 민주주의!</p>
+                        <div className="flex justify-center mb-4">
+                          <img src="/images/sublogo.svg" alt="급식배틀 로고" className="w-48 h-auto" />
+                        </div>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                           영양과 원산지는 Good! 그렇다면 '맛'은 ?
                         </p>
