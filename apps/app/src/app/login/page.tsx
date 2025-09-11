@@ -279,7 +279,7 @@ function LoginContent() {
                       귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      1. 사진 분석 AI 2. 이미지 생성 AI 3. 퀴즈 출제 AI 4. 오답노트 AI 5. 리포트 생성 AI
+                      (AI 1) 사진 분석   (AI 2) 이미지 생성   (AI 3) 퀴즈 출제   (AI 4) 오답노트   (AI 5) 리포트 생성
                     </p>
                   </div>
                 </div>
