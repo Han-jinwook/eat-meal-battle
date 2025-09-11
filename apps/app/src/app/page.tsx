@@ -467,7 +467,8 @@ export default function Home() {
   // 비학생 사용자 자동 관심학교 설정 모달 열기
   useEffect(() => {
     // 사용자 정보, 학교 모드, 관심학교 데이터가 모두 완전히 로드되고 초기화된 후에만 실행
-    if (!userLoading && !interestSchoolsLoading && user && schoolMode.hasMySchool !== null && schoolMode.isInitialized) {
+    // 추가 조건: user.db_profile이 완전히 로드되었는지 확인
+    if (!userLoading && !interestSchoolsLoading && user && user.db_profile && schoolMode.hasMySchool !== null && schoolMode.isInitialized) {
       console.log('🔍 비학생 모달 체크:', {
         hasMySchool: schoolMode.hasMySchool,
         selectedInterestSchool: schoolMode.selectedInterestSchool?.school_name,
@@ -475,7 +476,8 @@ export default function Home() {
         userMetadata: user.user_metadata?.is_student,
         isInitialized: schoolMode.isInitialized,
         interestSchoolsLoading: interestSchoolsLoading,
-        interestSchoolsCount: interestSchools.length
+        interestSchoolsCount: interestSchools.length,
+        hasDbProfile: !!user.db_profile
       });
       
       // 비학생이고 내 학교가 없는 경우에만 관심학교 설정 모달 자동 열기
@@ -483,12 +485,17 @@ export default function Home() {
       // 학생나이(6-39세)인 경우는 절대 관심학교 등록창을 표시하지 않음
       const isStudentAge = user.db_profile?.is_student === true;
       
+      // 학생나이 유저는 우선적으로 처리 (모달 표시 방지)
+      if (isStudentAge && !schoolMode.hasMySchool) {
+        console.log('🎓 학생나이 유저 - 학교등록 페이지로 리다이렉트 (우선처리)');
+        router.push('/school-search');
+        return; // 즉시 종료하여 모달 표시 방지
+      }
+      
+      // 비학생 유저만 모달 표시
       if (!schoolMode.hasMySchool && !schoolMode.selectedInterestSchool && !isStudentAge && interestSchools.length === 0) {
         console.log('🎯 비학생 관심학교 설정 모달 자동 열기');
         setIsSchoolSearchOpen(true);
-      } else if (isStudentAge && !schoolMode.hasMySchool) {
-        console.log('🎓 학생나이 유저 - 학교등록 페이지로 리다이렉트');
-        router.push('/school-search');
       }
     }
   }, [userLoading, interestSchoolsLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
