@@ -513,11 +513,12 @@ export async function GET(request: NextRequest) {
           console.info(`📚 등록된 학교: ${schoolInfo.school_name} (${schoolInfo.school_code})`);
         }
         
-        // 3단계: 관심학교 상태 확인 (학교 미등록인 경우만)
+        // 3단계: 관심학교 상태 확인 (학교 미등록 + 비학생나이인 경우만)
         let hasInterestSchool = false;
         let interestSchoolInfo = null;
         
-        if (!hasSchoolRegistration) {
+        // 나이 우선 원칙: 학생나이면 관심학교 확인 생략
+        if (!hasSchoolRegistration && !isStudentAge) {
           const { data: interestSchools, error: interestError } = await supabase
             .from('interest_schools')
             .select('school_code, school_name')
@@ -532,6 +533,8 @@ export async function GET(request: NextRequest) {
           } else {
             console.info('🎯 관심학교 미등록');
           }
+        } else if (isStudentAge) {
+          console.info('🎯 학생나이 → 관심학교 확인 생략 (나이 우선 원칙)');
         }
         
         // 4단계: 7가지 분기 로직 적용
