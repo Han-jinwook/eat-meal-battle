@@ -54,25 +54,15 @@ export default function useUserSchool(): UseUserSchoolReturn {
         setUser(user);
 
         if (user) {
-          // 학교 정보와 사용자 닉네임을 함께 가져오기
-          const [schoolResult, userResult] = await Promise.all([
-            supabase
-              .from('school_infos')
-              .select('*')
-              .eq('user_id', user.id)
-              .single(),
-            supabase
-              .from('users')
-              .select('nickname, is_student, birth_date')
-              .eq('id', user.id)
-              .single()
-          ]);
+          // 사용자 정보만 먼저 가져오기
+          const { data: userInfo, error: userError } = await supabase
+            .from('users')
+            .select('nickname, is_student, birth_date')
+            .eq('id', user.id)
+            .single();
 
-          const { data: schoolInfo, error: schoolError } = schoolResult;
-          const { data: userInfo } = userResult;
-
-          if (schoolError && schoolError.code !== 'PGRST116') {
-            throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
+          if (userError) {
+            throw new Error(`사용자 정보 조회 에러: ${userError.message}`);
           }
 
           // DB 프로필 정보를 user 객체에 추가
@@ -87,13 +77,30 @@ export default function useUserSchool(): UseUserSchoolReturn {
             });
           }
 
-          if (schoolInfo) {
-            setUserSchool({
-              ...schoolInfo,
-              class: schoolInfo.class_number,
-              nickname: userInfo?.nickname || '익명'
-            });
+          // 학생나이가 아닌 경우에만 school_infos 조회 (406 오류 방지)
+          if (!userInfo?.is_student) {
+            const { data: schoolInfo, error: schoolError } = await supabase
+              .from('school_infos')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+
+            if (schoolError && schoolError.code !== 'PGRST116') {
+              throw new Error(`학교 정보 조회 에러: ${schoolError.message}`);
+            }
+
+            if (schoolInfo) {
+              setUserSchool({
+                ...schoolInfo,
+                class: schoolInfo.class_number,
+                nickname: userInfo?.nickname || '익명'
+              });
+            } else {
+              setUserSchool(null);
+            }
           } else {
+            // 학생나이 사용자는 school_infos 조회 건너뛰기
+            console.log('🎓 학생나이 사용자 - school_infos 조회 건너뛰기 (406 오류 방지)');
             setUserSchool(null);
           }
         } else {
