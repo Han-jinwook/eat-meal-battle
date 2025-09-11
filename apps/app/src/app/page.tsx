@@ -488,9 +488,9 @@ export default function Home() {
     }
   }, [userLoading, interestSchoolsLoading, user, schoolMode.hasMySchool, schoolMode.selectedInterestSchool, schoolMode.isInitialized, interestSchools.length]);
 
-  // 초기 로드 시 관심학교 데이터 가져오기
+  // 초기 로드 시 관심학교 데이터 가져오기 (학생나이가 아닌 경우에만)
   useEffect(() => {
-    if (user && !userLoading) {
+    if (user && !userLoading && !user.db_profile?.is_student) {
       fetchInterestSchools();
     }
   }, [user, userLoading]);
