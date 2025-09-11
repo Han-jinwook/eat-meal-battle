@@ -182,54 +182,35 @@ export default function Home() {
         .from('school_infos')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
-      // school_infos 조회 실패 시 (실제 오류인 경우만)
-      if (schoolError) {
-        console.warn('school_infos 조회 오류:', schoolError.message);
-        
-        // 학생 유저인 경우에도 관심학교 자동등록 시도
-        if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - school_infos 조회 실패, 관심학교 등록창 표시');
-          setIsSchoolSearchOpen(true);
-          return;
+      // school_infos 조회 실패 시 (레코드 없음 또는 오류)
+      if (schoolError || !schoolInfo) {
+        if (schoolError && schoolError.code !== 'PGRST116') {
+          console.warn('school_infos 조회 오류:', schoolError.message);
         }
         
-        // 일반 유저인 경우 - 관심학교 자동등록 시도
-        console.log('🏫 일반 유저 - school_infos 조회 실패, 관심학교 등록창 표시');
-        setIsSchoolSearchOpen(true);
-        return;
-      }
-
-      // school_infos 레코드가 없는 경우 (신규 사용자)
-      if (!schoolInfo) {
-        if (userInfo?.is_student) {
-          console.log('🏫 학생 유저 - 학교 미등록, 관심학교 등록창 표시');
-          setIsSchoolSearchOpen(true);
-          return;
-        }
-        
-        // 일반 유저인 경우 - 관심학교 자동등록 시도
-        console.log('🏫 일반 유저 - 학교 미등록, 관심학교 등록창 표시');
+        // 모든 유저 - 관심학교 등록창 표시
+        console.log('🏫 학교 미등록 - 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
       }
 
       // school_infos 조회 성공한 경우
       if (userInfo?.is_student) {
-        // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 자동등록 시도
+        // 자기학교는 등록되어 있지만 다른 학교 코드인 경우 → 관심학교 등록창 표시
         if (schoolInfo.school_code !== schoolCode) {
           console.log('🏫 학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
           setIsSchoolSearchOpen(true);
           return;
         }
         
-        // 같은 학교인 경우 정상 표시 (관심학교 등록 모달 열지 않음)
+        // 같은 학교인 경우 정상 표시 (모달 열지 않음)
         console.log('학생 유저 - 같은 학교, 정상 급식 페이지 표시');
         return;
       }
 
-      // 일반 유저인 경우 → 관심학교 자동등록 시도
+      // 일반 유저인 경우 → 관심학교 등록창 표시
       console.log('🏫 일반 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
       setIsSchoolSearchOpen(true);
       
