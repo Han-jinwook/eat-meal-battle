@@ -175,27 +175,15 @@ export default function Home() {
         return;
       }
 
-      // 학생나이 사용자는 school_infos 조회 없이 바로 리다이렉트 (406 오류 회피)
-      if (userInfo?.is_student) {
-        console.log('🎓 학생나이 유저 - 바로 학교등록 페이지로 리다이렉트 (RLS 오류 회피)');
+      // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
+      if (userInfo?.is_student && !userSchool) {
+        console.log('🎓 학생나이 유저 - 학교 미등록으로 학교등록 페이지로 리다이렉트');
         router.push('/school-search');
         return;
       }
 
-      // 비학생 사용자만 school_infos 조회
-      const { data: schoolInfo, error: schoolError } = await supabase
-        .from('school_infos')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      // school_infos 조회 실패 시 (레코드 없음 또는 오류)
-      if (schoolError || !schoolInfo) {
-        if (schoolError && schoolError.code !== 'PGRST116') {
-          console.warn('school_infos 조회 오류:', schoolError.message);
-        }
-        
-        // 비학생 유저만 관심학교 등록창 표시
+      // 비학생 사용자 중 학교 미등록자만 관심학교 등록창 표시
+      if (!userInfo?.is_student && !userSchool) {
         console.log('🏫 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
