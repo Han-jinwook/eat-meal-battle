@@ -858,6 +858,33 @@ PRIMARY KEY (menu_item_id, battle_date, school_code)
 # 🔗 배틀 공유하기 링크 문제 해결 (2025-09-01)
 
 ## 📋 문제 상황
+
+---
+
+# 🔗 배틀 및 급식 공유 URL 처리 로직 완성 (2025-09-12)
+
+## 📋 주요 성과
+- OAuth 콜백 서버 측 7가지 분기 로직 완벽 구현 ✅
+- 클라이언트 측 URL 처리 로직 급식/배틀 공유 모두 대응 ✅
+- Supabase 400 에러 해결 (잘못된 조인 → 직접 테이블 조회) ✅
+- 상태 동기화 문제 해결 (userSchool 의존성 제거 → 실시간 DB 조회) ✅
+- 2번 분기 오류 해결 (타학교 감지 시 올바른 관심학교 모달) ✅
+
+## 🛠️ 핵심 수정사항
+### OAuth 콜백 (`apps/app/src/app/auth/callback/route.ts`)
+- `share_type=battle` 파라미터로 배틀/급식 구분
+- 7가지 사용자 유형별 정확한 라우팅 (학생나이/비학생, 학교등록/미등록, 신규/기존회원)
+
+### 클라이언트 (`apps/app/src/app/page.tsx`)
+- `school_infos` 테이블 직접 조회로 정확한 학교등록 상태 확인
+- 상태 동기화 문제 해결로 안정적인 분기 처리
+
+## 🎯 최종 상태
+- 급식 공유: `/?school_code=XXX`
+- 배틀 공유: `/battle?school_code=XXX&share_type=battle`
+- 모든 사용자 유형에서 정상 작동 확인 ✅
+
+## 📅 배포 테스트 중...
 - **급식 공유하기**: `https://lunbat.com/?date=2025-09-01&school_code=7310207` ✅ 정상 작동
 - **배틀 공유하기**: `https://lunbat.com/battle?date=2025-09-01&school_code=7310207` ❌ 문제 발생
   - 로그인 화면이 뜨지 않고 바로 배틀화면이 뜸
