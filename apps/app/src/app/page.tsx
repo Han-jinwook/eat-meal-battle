@@ -176,18 +176,13 @@ export default function Home() {
       }
 
       // 학교 정보 직접 조회 (userSchool 상태에 의존하지 않음)
-      const { data: schoolInfo, error: schoolError } = await supabase
-        .from('users')
-        .select(`
-          school_infos (
-            school_code,
-            school_name
-          )
-        `)
-        .eq('id', user.id)
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code, school_name')
+        .eq('user_id', user.id)
         .single();
 
-      const userRegisteredSchool = schoolInfo?.school_infos;
+      const userRegisteredSchool = schoolError ? null : schoolData;
 
       // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
       if (userInfo?.is_student && !userRegisteredSchool) {
@@ -211,15 +206,8 @@ export default function Home() {
           isStudent: userInfo?.is_student 
         });
         
-        // 학생나이 사용자는 학교등록 페이지로 리다이렉트
-        if (userInfo?.is_student) {
-          console.log('🎓 학생나이 유저 - 타학교 공유링크로 학교등록 페이지 리다이렉트');
-          router.push('/school-search');
-          return;
-        }
-        
-        // 비학생 사용자는 관심학교 등록창 표시
-        console.log('🏫 비학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
+        // 타학교 공유링크의 경우 나이에 관계없이 관심학교 등록창 표시
+        console.log('🏫 타학교 공유링크 - 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
       }
