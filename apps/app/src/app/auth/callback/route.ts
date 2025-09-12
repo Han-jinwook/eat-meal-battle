@@ -545,8 +545,11 @@ export async function GET(request: NextRequest) {
           // 분기 1: 기존 회원 + 학교등록 O + 학생나이 → / (홈페이지-학교페이지)
           console.info('✅ 분기 1: 기존 회원 + 학교등록 O + 학생나이 → 홈페이지(학교페이지)');
           
-          // 공유URL이 타학교인 경우 관심학교 등록 페이지로 리다이렉트
-          if (shareUrlSchoolCode && shareUrlSchoolCode !== schoolInfo.school_code) {
+          // 배틀 공유인 경우 배틀 페이지로, 타학교인 경우 관심학교 등록 페이지로 리다이렉트
+          if (isBattleShare) {
+            console.info(`🏆 배틀 공유URL 감지 → 배틀 페이지로 리다이렉트`);
+            redirectUrl = shareUrl || '/battle';
+          } else if (shareUrlSchoolCode && shareUrlSchoolCode !== schoolInfo.school_code) {
             console.info(`🏫 타학교 공유URL 감지: 내 학교(${schoolInfo.school_code}) ≠ 공유학교(${shareUrlSchoolCode}) → 관심학교 등록 페이지로 리다이렉트`);
             redirectUrl = '/interest-schools';
           } else {
@@ -557,8 +560,11 @@ export async function GET(request: NextRequest) {
           // 분기 2: 기존 회원 + 학교등록 X + 비학생나이 + 관심학교 O → / (관심학교 적용)
           console.info('✅ 분기 2: 기존 회원 + 학교등록 X + 비학생나이 + 관심학교 O → 홈페이지(관심학교 적용)');
           
-          // 공유URL이 타학교인 경우 관심학교 등록 페이지로 리다이렉트
-          if (shareUrlSchoolCode && shareUrlSchoolCode !== interestSchoolInfo.school_code) {
+          // 배틀 공유인 경우 배틀 페이지로, 타학교인 경우 관심학교 등록 페이지로 리다이렉트
+          if (isBattleShare) {
+            console.info(`🏆 배틀 공유URL 감지 → 배틀 페이지로 리다이렉트`);
+            redirectUrl = shareUrl || '/battle';
+          } else if (shareUrlSchoolCode && shareUrlSchoolCode !== interestSchoolInfo.school_code) {
             console.info(`🏫 타학교 공유URL 감지: 기존 관심학교(${interestSchoolInfo.school_code}) ≠ 공유학교(${shareUrlSchoolCode}) → 관심학교 등록 페이지로 리다이렉트`);
             redirectUrl = '/interest-schools';
           } else {
@@ -569,8 +575,11 @@ export async function GET(request: NextRequest) {
           // 분기 3,6: 학교등록 X + 비학생나이 + 관심학교 X → / (관심학교 안내)
           console.info(`✅ 분기 ${isNewUser ? '6' : '3'}: ${isNewUser ? '신규' : '기존'} 회원 + 학교등록 X + 비학생나이 + 관심학교 X → 홈페이지(관심학교 안내)`);
           
-          // 공유URL에 학교코드가 있으면 관심학교 등록 페이지로 리다이렉트
-          if (shareUrlSchoolCode) {
+          // 배틀 공유인 경우 배틀 페이지로, 공유URL에 학교코드가 있으면 관심학교 등록 페이지로 리다이렉트
+          if (isBattleShare) {
+            console.info(`🏆 배틀 공유URL 감지 → 배틀 페이지로 리다이렉트`);
+            redirectUrl = shareUrl || '/battle';
+          } else if (shareUrlSchoolCode) {
             console.info(`🏫 공유URL 학교코드 감지: ${shareUrlSchoolCode} → 관심학교 등록 페이지로 리다이렉트`);
             redirectUrl = '/interest-schools';
           } else {
