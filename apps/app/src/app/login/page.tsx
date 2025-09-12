@@ -11,6 +11,7 @@ function LoginContent() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showGuideModal, setShowGuideModal] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const router = useRouter()
@@ -321,7 +322,7 @@ function LoginContent() {
                     </div>
                     <div className="flex flex-row gap-3 justify-center">
                       <button
-                        onClick={() => handleAudioToggle('student', '/audio/student-intro.mp4')}
+                        onClick={() => setShowVideoModal(true)}
                         className={`px-6 py-3 ${
                           playingAudio === 'student' 
                             ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
@@ -453,7 +454,7 @@ function LoginContent() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
-                      onClick={() => handleAudioToggle('student', '/audio/student-intro.mp4')}
+                      onClick={() => setShowVideoModal(true)}
                       className={`flex-1 sm:flex-none px-6 py-3 ${
                         playingAudio === 'student' 
                           ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
@@ -641,11 +642,39 @@ function LoginContent() {
           </div>
         </div>
       )}
+
+      {/* 비디오 모달 */}
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold text-gray-900">📹 급식배틀앱 소개 영상 (학생용)</h2>
+              <button 
+                onClick={() => setShowVideoModal(false)}
+                className="text-gray-500 hover:text-gray-800 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <video 
+                controls 
+                autoPlay
+                className="w-full h-auto max-h-[70vh] rounded-lg"
+                onEnded={() => setShowVideoModal(false)}
+              >
+                <source src="/video/student-intro.mp4" type="video/mp4" />
+                브라우저가 비디오를 지원하지 않습니다.
+              </video>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// 메인 Login 컴포넌트는 useSearchParams()를 사용하는 LoginContent를 Suspense로 감싸야 함
+// ...
 export default function Login() {
   return (
     <Suspense fallback={<div className="p-4 text-center">로딩 중...</div>}>
