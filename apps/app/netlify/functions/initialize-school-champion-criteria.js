@@ -180,8 +180,11 @@ exports.handler = async (event) => {
           const weeklyMealDays = calculateWeeklyMealDays(allMealDays, currentYear, month);
           const monthlyTotal = currentMonthMealDays.length; // 해당 월만 카운트
           
+          // 주차별 토요일 계산 추가
+          const weeklySaturdays = calculateWeeklySaturdays(currentYear, month);
+          
           // 장원 조건 저장
-          await saveChampionCriteria(supabase, schoolCode, currentYear, month, weeklyMealDays, monthlyTotal);
+          await saveChampionCriteria(supabase, schoolCode, currentYear, month, weeklyMealDays, monthlyTotal, weeklySaturdays);
           
           results.push({
             school_code: schoolCode,
@@ -343,6 +346,52 @@ function calculateWeeklyMealDays(mealDays, year, month) {
   return weeklyCount
 }
 
+// 주차별 토요일 날짜 계산 (ISO 8601 기준)
+function calculateWeeklySaturdays(year, month) {
+  console.log(`${year}년 ${month}월 주차별 토요일 계산 시작...`)
+  
+  const weeklySaturdays = {}
+  
+  // 해당 월의 1일
+  const firstDayOfMonth = new Date(year, month - 1, 1)
+  
+  // ISO 8601 첫 주의 월요일 찾기
+  const dayOfWeek = firstDayOfMonth.getDay() // 0: 일요일, 1: 월요일, ..., 6: 토요일
+  const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
+  
+  const firstMonday = new Date(firstDayOfMonth)
+  firstMonday.setDate(1 + daysToMonday)
+  
+  // 첫 주 토요일 계산 (월요일 + 5일)
+  let saturday = new Date(firstMonday)
+  saturday.setDate(firstMonday.getDate() + 5)
+  
+  // 최대 5주차까지 계산하되, 해당 월의 월요일만 포함
+  for (let week = 1; week <= 5; week++) {
+    // 해당 주차의 월요일이 해당 월 범위 내에 있는지 확인
+    const mondayOfWeek = new Date(saturday)
+    mondayOfWeek.setDate(saturday.getDate() - 5) // 토요일에서 5일 빼면 월요일
+    
+    if (mondayOfWeek.getMonth() === month - 1) {
+      // 토요일 날짜 포맷팅 (YYYY-MM-DD)
+      const formattedDate = `${saturday.getFullYear()}-${String(saturday.getMonth() + 1).padStart(2, '0')}-${String(saturday.getDate()).padStart(2, '0')}`
+      
+      // 결과에 저장
+      weeklySaturdays[`week_${week}_saturday`] = formattedDate
+    } else {
+      // 해당 월에 월요일이 없으면 종료
+      break
+    }
+    
+    // 다음 주 토요일 (7일 후)
+    saturday = new Date(saturday)
+    saturday.setDate(saturday.getDate() + 7)
+  }
+  
+  console.log(`주차별 토요일 계산 완료:`, weeklySaturdays)
+  return weeklySaturdays
+}
+
 // 장원 조건 저장 함수
 async function saveChampionCriteria(
   supabase, 
@@ -350,7 +399,8 @@ async function saveChampionCriteria(
   year, 
   month, 
   weeklyMealDays,
-  monthlyTotal
+  monthlyTotal,
+  weeklySaturdays
 ) {
   try {
     const { error } = await supabase.from('champion_criteria').upsert({
@@ -363,6 +413,12 @@ async function saveChampionCriteria(
       week_4_days: weeklyMealDays[4] || 0,
       week_5_days: weeklyMealDays[5] || 0,
       month_total: monthlyTotal,
+      // 주차별 토요일 필드 추가
+      week_1_saturday: weeklySaturdays?.week_1_saturday || null,
+      week_2_saturday: weeklySaturdays?.week_2_saturday || null,
+      week_3_saturday: weeklySaturdays?.week_3_saturday || null,
+      week_4_saturday: weeklySaturdays?.week_4_saturday || null,
+      week_5_saturday: weeklySaturdays?.week_5_saturday || null,
       created_at: new Date().toISOString()
     }, {
       onConflict: 'school_code,year,month'
