@@ -9,9 +9,13 @@ export default function AboutPage() {
   const generatePDF = async () => {
     setIsGeneratingPDF(true)
     try {
-      // PDF 생성 로직은 나중에 구현
-      const html2canvas = (await import('html2canvas')).default
-      const jsPDF = (await import('jspdf')).jsPDF
+      // 동적 import로 PDF 생성 라이브러리 로드
+      const [html2canvasModule, jsPDFModule] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ])
+      const html2canvas = html2canvasModule.default
+      const jsPDF = jsPDFModule.jsPDF
       
       const element = document.getElementById('about-content')
       if (!element) return
@@ -94,25 +98,142 @@ export default function AboutPage() {
         {/* 앱 목적 및 취지 */}
         <section className="mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">🎯 앱 목적 및 취지</h2>
-          <div className="bg-white rounded-xl p-8 shadow-lg">
+          
+          {/* 배경 및 현황 */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 shadow-lg mb-8">
+            <h3 className="text-2xl font-semibold text-blue-800 mb-4">📊 급식 현황 및 배경</h3>
             <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-xl font-semibold text-blue-600 mb-4">현재 문제점</h3>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">전국 급식 현황</h4>
                 <ul className="space-y-2 text-gray-700">
-                  <li>• 영양과 원산지는 관리되지만 '맛'에 대한 피드백 부족</li>
-                  <li>• 학생들의 급식 만족도를 체계적으로 수집할 방법 없음</li>
-                  <li>• 급식 개선을 위한 데이터 기반 의사결정 어려움</li>
-                  <li>• 학교별, 지역별 급식 품질 격차 파악 불가</li>
+                  <li>• <strong>전국 학생 수:</strong> 약 500만명 (초중고)</li>
+                  <li>• <strong>급식 제공 학교:</strong> 전국 11,000여개 학교</li>
+                  <li>• <strong>일일 급식 제공:</strong> 약 450만식</li>
+                  <li>• <strong>연간 급식비:</strong> 약 4조원 규모</li>
+                  <li>• <strong>영양사 배치:</strong> 학교당 평균 1-2명</li>
                 </ul>
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-green-600 mb-4">해결 방안</h3>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">현재 관리 체계</h4>
                 <ul className="space-y-2 text-gray-700">
-                  <li>• 실시간 급식 평가 시스템으로 학생 의견 수집</li>
-                  <li>• AI 기반 데이터 분석으로 개선점 도출</li>
-                  <li>• 게임화된 시스템으로 참여도 향상</li>
-                  <li>• 투명한 급식 품질 정보 공개</li>
+                  <li>• <strong>영양 관리:</strong> 교육부 학교급식법 기준</li>
+                  <li>• <strong>원산지 표시:</strong> 의무화 (2008년부터)</li>
+                  <li>• <strong>위생 관리:</strong> HACCP 시스템 도입</li>
+                  <li>• <strong>품질 평가:</strong> 정성적 평가 위주</li>
+                  <li>• <strong>학생 의견:</strong> 체계적 수집 시스템 부재</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 shadow-lg">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xl font-semibold text-red-600 mb-4">🚨 현재 문제점</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">1. 맛에 대한 피드백 부족</h4>
+                    <p className="text-gray-700 text-sm mb-2">영양과 원산지는 철저히 관리되지만, 실제 학생들이 느끼는 '맛'과 '만족도'에 대한 체계적인 수집 시스템이 없습니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 개별 학교 단위의 비정기적 설문조사만 존재</li>
+                      <li>- 메뉴별 세부 평가 불가능</li>
+                      <li>- 실시간 피드백 시스템 부재</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">2. 데이터 기반 의사결정 한계</h4>
+                    <p className="text-gray-700 text-sm mb-2">급식 개선을 위한 객관적 데이터가 부족하여 경험과 추측에 의존한 메뉴 기획이 이루어집니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 학생 선호도 데이터 부족</li>
+                      <li>- 지역별/학교별 비교 분석 불가</li>
+                      <li>- 계절별/요일별 패턴 분석 어려움</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">3. 급식 품질 격차</h4>
+                    <p className="text-gray-700 text-sm mb-2">학교별, 지역별로 급식 품질의 편차가 크지만 이를 객관적으로 측정하고 개선할 방법이 제한적입니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 우수 급식 사례 공유 시스템 부재</li>
+                      <li>- 급식 품질 벤치마킹 어려움</li>
+                      <li>- 투명한 품질 정보 공개 한계</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-green-600 mb-4">✅ 급식배틀의 해결 방안</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">1. 실시간 학생 의견 수집</h4>
+                    <p className="text-gray-700 text-sm mb-2">전국 500만 학생의 급식 평가를 실시간으로 수집하여 빅데이터를 구축합니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 메뉴별 5점 척도 평가 시스템</li>
+                      <li>- 일일 급식 만족도 트래킹</li>
+                      <li>- 개인별 선호도 패턴 분석</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">2. AI 기반 데이터 분석</h4>
+                    <p className="text-gray-700 text-sm mb-2">수집된 데이터를 AI가 분석하여 급식 개선을 위한 인사이트를 제공합니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 메뉴 선호도 예측 모델</li>
+                      <li>- 계절별/요일별 최적 메뉴 추천</li>
+                      <li>- 영양 균형과 맛의 조화점 분석</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">3. 게임화를 통한 참여 유도</h4>
+                    <p className="text-gray-700 text-sm mb-2">배틀과 퀴즈 시스템으로 학생들의 자발적 참여를 이끌어냅니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 학교별 급식 배틀 시스템</li>
+                      <li>- 교육과 연계된 퀴즈 챌린지</li>
+                      <li>- 챔피언 시스템으로 동기 부여</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">4. 투명한 정보 공개</h4>
+                    <p className="text-gray-700 text-sm mb-2">급식 품질 정보를 투명하게 공개하여 전체적인 품질 향상을 도모합니다.</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>- 실시간 급식 만족도 공개</li>
+                      <li>- 우수 급식 사례 공유</li>
+                      <li>- 개선이 필요한 영역 식별</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 기대 효과 */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 shadow-lg mt-8">
+            <h3 className="text-2xl font-semibold text-green-800 mb-4">🌟 기대 효과</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">📈</span>
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-2">급식 품질 향상</h4>
+                <p className="text-gray-700 text-sm">데이터 기반 메뉴 개선으로 전국 급식 만족도 20% 향상 목표</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">🎓</span>
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-2">교육 효과 증대</h4>
+                <p className="text-gray-700 text-sm">급식과 연계된 교육 콘텐츠로 학습 흥미도 및 영양 지식 향상</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">💰</span>
+                </div>
+                <h4 className="font-semibold text-gray-900 mb-2">예산 효율성</h4>
+                <p className="text-gray-700 text-sm">선호도 기반 식재료 구매로 음식물 쓰레기 30% 감소 목표</p>
               </div>
             </div>
           </div>
@@ -299,61 +420,274 @@ export default function AboutPage() {
 
         {/* 규칙 및 제도 */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">📋 규칙 및 제도</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-semibold text-red-600 mb-4">평점 시스템</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li>• 1-5점 별점 시스템</li>
-                <li>• 메뉴별 개별 평가</li>
-                <li>• 하루 1회 평가 제한</li>
-                <li>• 악의적 평가 방지 시스템</li>
-              </ul>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">📋 운영 규칙 및 정책</h2>
+          
+          {/* 평점 시스템 상세 */}
+          <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
+            <h3 className="text-2xl font-semibold text-red-600 mb-6">⭐ 평점 시스템 정책</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">평가 기준 및 방식</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">1-5점 척도 시스템</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>5점:</strong> 매우 맛있음 (재주문 의사 있음)</li>
+                      <li>• <strong>4점:</strong> 맛있음 (만족스러움)</li>
+                      <li>• <strong>3점:</strong> 보통 (평균적인 맛)</li>
+                      <li>• <strong>2점:</strong> 아쉬움 (개선 필요)</li>
+                      <li>• <strong>1점:</strong> 매우 아쉬움 (대폭 개선 필요)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">메뉴별 개별 평가</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• 주식, 국/찌개, 반찬별 독립 평가</li>
+                      <li>• 최대 8개 메뉴까지 개별 점수 부여</li>
+                      <li>• 메뉴별 선택적 댓글 작성 가능</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">평가 제한 및 검증</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">시간 제한 정책</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>평가 시간:</strong> 급식시간 후 ~ 당일 23:59까지</li>
+                      <li>• <strong>수정 가능:</strong> 평가 후 2시간 이내 1회</li>
+                      <li>• <strong>삭제 불가:</strong> 평가 완료 후 삭제 불가</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">악의적 평가 방지</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• AI 기반 비정상 패턴 탐지</li>
+                      <li>• 연속 극단 평가 시 경고 시스템</li>
+                      <li>• 신고 접수 시 관리자 검토</li>
+                      <li>• 부적절 댓글 자동 필터링</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-semibold text-blue-600 mb-4">배틀 및 랭킹</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li>• 주간/월간 랭킹 시스템</li>
-                <li>• 공정한 비교를 위한 가중치 적용</li>
-                <li>• 참여도 기반 신뢰도 점수</li>
-                <li>• 지역별/규모별 구분 랭킹</li>
-              </ul>
+          </div>
+
+          {/* 배틀 시스템 상세 */}
+          <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
+            <h3 className="text-2xl font-semibold text-blue-600 mb-6">⚔️ 배틀 시스템 운영 정책</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">랭킹 계산 방식</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">가중치 적용 공식</h5>
+                    <div className="bg-gray-50 p-3 rounded text-sm">
+                      <p className="font-mono text-gray-700">최종점수 = (평균평점 × 0.7) + (참여도 × 0.2) + (일관성 × 0.1)</p>
+                    </div>
+                    <ul className="text-gray-700 text-sm space-y-1 mt-2">
+                      <li>• <strong>평균평점:</strong> 해당 기간 메뉴별 평점 평균</li>
+                      <li>• <strong>참여도:</strong> 전체 급식일 대비 평가 참여율</li>
+                      <li>• <strong>일관성:</strong> 평가자들 간 점수 편차 역수</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">공정성 보장 장치</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• 학교 규모별 그룹 분류 (소/중/대규모)</li>
+                      <li>• 지역별 기후/문화 특성 고려</li>
+                      <li>• 최소 참여자 수 기준 (일일 10명 이상)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">배틀 스케줄러</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">자동 계산 스케줄</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>일일 배틀:</strong> 매일 오후 11시 자동 계산</li>
+                      <li>• <strong>주간 배틀:</strong> 매주 일요일 오후 11시</li>
+                      <li>• <strong>월간 배틀:</strong> 매월 말일 오후 11시</li>
+                      <li>• <strong>긴급 재계산:</strong> 관리자 수동 실행 가능</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">시스템 모니터링</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• 계산 실패 시 자동 알림</li>
+                      <li>• 성능 지표 실시간 모니터링</li>
+                      <li>• 데이터 무결성 검증</li>
+                      <li>• 백업 및 복구 시스템</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-semibold text-green-600 mb-4">퀴즈 챌린지</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li>• 일일 퀴즈 1회 참여</li>
-                <li>• 주장원/월장원 선발</li>
-                <li>• 연속 참여 보너스</li>
-                <li>• 교육과정 연계 문제 출제</li>
-              </ul>
+          </div>
+
+          {/* 퀴즈 시스템 상세 */}
+          <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
+            <h3 className="text-2xl font-semibold text-green-600 mb-6">🧠 퀴즈 챌린지 정책</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">출제 및 참여 규칙</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">AI 퀴즈 생성 정책</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>출제 시간:</strong> 매일 오전 6시 자동 생성</li>
+                      <li>• <strong>난이도 조절:</strong> 학년별 맞춤 난이도</li>
+                      <li>• <strong>교과 연계:</strong> 국어, 수학, 과학, 사회, 영어</li>
+                      <li>• <strong>급식 연관성:</strong> 당일 메뉴와 70% 이상 연관</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">참여 제한 및 보상</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>참여 횟수:</strong> 1일 1회 (오전 6시 ~ 익일 5시 59분)</li>
+                      <li>• <strong>제한 시간:</strong> 문제당 60초 (총 5분)</li>
+                      <li>• <strong>재도전:</strong> 불가 (공정성 보장)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">챔피언 선발 시스템</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">주장원/월장원 기준</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>주장원:</strong> 주간 최고 점수 + 연속 참여</li>
+                      <li>• <strong>월장원:</strong> 월간 누적 점수 1위</li>
+                      <li>• <strong>동점 처리:</strong> 참여 일수 → 평균 소요시간 순</li>
+                      <li>• <strong>자격 요건:</strong> 최소 주 5일 이상 참여</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">오답노트 AI 분석</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• 개인별 취약 영역 분석</li>
+                      <li>• 맞춤형 복습 문제 추천</li>
+                      <li>• 학습 패턴 분석 리포트</li>
+                      <li>• 학부모 공유 기능</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <h3 className="text-xl font-semibold text-purple-600 mb-4">개인정보 보호</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li>• 최소한의 개인정보 수집</li>
-                <li>• 익명화된 데이터 분석</li>
-                <li>• 학부모 동의 기반 연동</li>
-                <li>• 안전한 데이터 암호화</li>
-              </ul>
+          </div>
+
+          {/* 시스템 운영 정책 */}
+          <div className="bg-white rounded-xl p-8 shadow-lg mb-8">
+            <h3 className="text-2xl font-semibold text-purple-600 mb-6">🔧 시스템 운영 정책</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">테스트 모드 vs 프로덕션 모드</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">테스트 모드 (개발/검증용)</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>데이터:</strong> 샘플 데이터 사용</li>
+                      <li>• <strong>AI 기능:</strong> 제한된 API 호출</li>
+                      <li>• <strong>알림:</strong> 개발팀에게만 전송</li>
+                      <li>• <strong>배틀 계산:</strong> 수동 실행</li>
+                      <li>• <strong>접근 권한:</strong> 개발팀 + 베타 테스터</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">프로덕션 모드 (실제 서비스)</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>데이터:</strong> 실제 사용자 데이터</li>
+                      <li>• <strong>AI 기능:</strong> 전체 기능 활성화</li>
+                      <li>• <strong>알림:</strong> 실제 사용자에게 전송</li>
+                      <li>• <strong>배틀 계산:</strong> 자동 스케줄러 실행</li>
+                      <li>• <strong>접근 권한:</strong> 모든 등록 사용자</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">데이터 보안 및 개인정보 보호</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">개인정보 수집 최소화</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>필수 정보:</strong> 이메일, 생년월일, 학교 정보</li>
+                      <li>• <strong>선택 정보:</strong> 프로필 이미지, 닉네임</li>
+                      <li>• <strong>수집 금지:</strong> 실명, 주소, 전화번호</li>
+                      <li>• <strong>보관 기간:</strong> 탈퇴 후 즉시 삭제</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">데이터 암호화 및 보안</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>전송 암호화:</strong> TLS 1.3 적용</li>
+                      <li>• <strong>저장 암호화:</strong> AES-256 암호화</li>
+                      <li>• <strong>접근 제어:</strong> Row Level Security (RLS)</li>
+                      <li>• <strong>감사 로그:</strong> 모든 데이터 접근 기록</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 서비스 제재 및 신고 정책 */}
+          <div className="bg-white rounded-xl p-8 shadow-lg">
+            <h3 className="text-2xl font-semibold text-orange-600 mb-6">⚠️ 서비스 제재 및 신고 정책</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">금지 행위 및 제재 조치</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">금지 행위</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• 허위 정보 입력 및 다중 계정 생성</li>
+                      <li>• 악의적 평점 조작 및 스팸 댓글</li>
+                      <li>• 타 사용자 괴롭힘 및 부적절한 언어</li>
+                      <li>• 시스템 해킹 시도 및 보안 위협</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">제재 단계</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>1단계:</strong> 경고 (7일간 일부 기능 제한)</li>
+                      <li>• <strong>2단계:</strong> 정지 (30일간 서비스 이용 금지)</li>
+                      <li>• <strong>3단계:</strong> 영구 정지 (계정 삭제)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">신고 및 이의제기</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">신고 처리 절차</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>접수:</strong> 앱 내 신고 버튼 또는 이메일</li>
+                      <li>• <strong>검토:</strong> 48시간 이내 1차 검토</li>
+                      <li>• <strong>조치:</strong> 7일 이내 최종 결정 통보</li>
+                      <li>• <strong>피드백:</strong> 신고자에게 처리 결과 안내</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-gray-800 mb-2">이의제기 절차</h5>
+                    <ul className="text-gray-700 text-sm space-y-1">
+                      <li>• <strong>기간:</strong> 제재 통보 후 14일 이내</li>
+                      <li>• <strong>방법:</strong> 공식 이메일로 증빙자료 첨부</li>
+                      <li>• <strong>재검토:</strong> 독립적인 검토위원회 심사</li>
+                      <li>• <strong>결과:</strong> 14일 이내 최종 결정</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 연락처 */}
-        <section className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">📞 문의하기</h2>
-          <div className="bg-white rounded-xl p-8 shadow-lg max-w-2xl mx-auto">
-            <p className="text-gray-600 mb-4">
-              급식배틀 앱에 대한 문의사항이나 제안이 있으시면 언제든 연락해 주세요.
-            </p>
-            <div className="space-y-2 text-gray-700">
-              <p><strong>개발팀:</strong> 급식배틀 개발팀</p>
-              <p><strong>이메일:</strong> contact@mealbattle.com</p>
-              <p><strong>웹사이트:</strong> www.mealbattle.com</p>
-            </div>
-          </div>
-        </section>
       </div>
 
       {/* 푸터 */}
