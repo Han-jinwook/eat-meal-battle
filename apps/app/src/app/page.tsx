@@ -189,9 +189,29 @@ export default function Home() {
         return;
       }
 
-      // 비학생 사용자의 school_infos 조회 성공한 경우 → 관심학교 등록창 표시
-      console.log('🏫 비학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
-      setIsSchoolSearchOpen(true);
+      // 학교 등록이 있는 사용자의 경우 - 타학교 여부 확인
+      if (userSchool && userSchool.school_code !== schoolCode) {
+        console.log('🏫 타학교 공유링크 감지:', { 
+          mySchool: userSchool.school_code, 
+          sharedSchool: schoolCode,
+          isStudent: userInfo?.is_student 
+        });
+        
+        // 학생나이 사용자는 학교등록 페이지로 리다이렉트
+        if (userInfo?.is_student) {
+          console.log('🎓 학생나이 유저 - 타학교 공유링크로 학교등록 페이지 리다이렉트');
+          router.push('/school-search');
+          return;
+        }
+        
+        // 비학생 사용자는 관심학교 등록창 표시
+        console.log('🏫 비학생 유저 - 타학교 공유링크 감지, 관심학교 등록창 표시');
+        setIsSchoolSearchOpen(true);
+        return;
+      }
+
+      // 같은 학교 공유링크인 경우 아무것도 하지 않음
+      console.log('✅ 같은 학교 공유링크 - 정상 표시');
       
     } catch (error) {
       console.error('초대링크 처리 오류:', error);
