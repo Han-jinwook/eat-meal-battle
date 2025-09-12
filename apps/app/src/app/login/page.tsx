@@ -7,7 +7,8 @@ import Link from 'next/link'
 
 // SearchParams를 사용하는 컴포넌트 분리 (useSearchParams는 반드시 Suspense로 감싸야 함)
 function LoginContent() {
-  const [loading, setLoading] = useState(false)
+  const [kakaoLoading, setKakaoLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showGuideModal, setShowGuideModal] = useState(false)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
@@ -105,7 +106,7 @@ function LoginContent() {
 
   const handleGoogleLogin = async () => {
     try {
-      setLoading(true)
+      setGoogleLoading(true)
       setError(null)
       
       console.log('구글 로그인 시도 중...')
@@ -151,14 +152,14 @@ function LoginContent() {
     } catch (error: any) {
       console.error('로그인 시도 중 오류:', error)
       setError(error.message || '구글 로그인 중 오류가 발생했습니다.')
-      setLoading(false)
+      setGoogleLoading(false)
     }
-    // signInWithOAuth이 성공하면 사용자가 리디렉션되므로 setLoading(false)를 호출할 필요 없음
+    // signInWithOAuth이 성공하면 사용자가 리디렉션되므로 setGoogleLoading(false)를 호출할 필요 없음
   }
 
   const handleKakaoLogin = async () => {
     try {
-      setLoading(true)
+      setKakaoLoading(true)
       setError(null)
       
       console.log('카카오 로그인 시도 중...')
@@ -202,7 +203,7 @@ function LoginContent() {
     } catch (error: any) {
       console.error('로그인 시도 중 오류:', error)
       setError(error.message || '카카오 로그인 중 오류가 발생했습니다.')
-      setLoading(false)
+      setKakaoLoading(false)
     }
   }
 
@@ -223,8 +224,9 @@ function LoginContent() {
                     {/* 카드 1: 메인 소개 */}
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <p className="text-xl font-semibold text-blue-600">급식배틀</p>
-                        <p className="mt-2 text-lg font-bold text-red-600">급식도 민주주의!</p>
+                        <div className="flex justify-center mb-4">
+                          <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[140px] h-auto" />
+                        </div>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                           영양과 원산지는 Good! 그렇다면 '맛'은 ?
                         </p>
@@ -258,13 +260,17 @@ function LoginContent() {
                     <div className="bg-orange-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                            <span className="text-2xl">🍽️</span>
-                          </div>
+                          <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-16 h-16 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
                         <p className="text-gray-600 text-sm">
                           오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
+                        </p>
+                        <p className="text-gray-600 text-xs mt-1">
+                          - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
                         </p>
                       </div>
                     </div>
@@ -273,13 +279,17 @@ function LoginContent() {
                     <div className="bg-red-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                            <span className="text-2xl">⚔️</span>
-                          </div>
+                          <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-16 h-16 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
-                        <p className="text-gray-600 text-sm">
-                          우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
+                        <p className="text-gray-600 text-xs">
+                          - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 우리동네/전국 최고 급식평점을 준 학교와 최하 평점 학교순위 확인
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - Data 기반한 월별 AI분석 리포트 - 급식담당자/학교당국/학부모 참고용
                         </p>
                       </div>
                     </div>
@@ -288,13 +298,14 @@ function LoginContent() {
                     <div className="bg-green-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                            <span className="text-2xl">🧠</span>
-                          </div>
+                          <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-16 h-16 object-contain" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
-                        <p className="text-gray-600 text-sm">
-                          오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
+                        <p className="text-gray-600 text-xs">
+                          - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
+                        </p>
+                        <p className="text-gray-600 text-xs">
+                          - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
                         </p>
                       </div>
                     </div>
@@ -307,9 +318,8 @@ function LoginContent() {
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                     <div className="text-center mb-3">
                       <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
-                      <p className="text-sm text-blue-600">급식배틀앱에 대한 자세한 소개를 음성으로 들어보세요!</p>
                     </div>
-                    <div className="flex flex-col gap-3 justify-center">
+                    <div className="flex flex-row gap-3 justify-center">
                       <button
                         onClick={() => handleAudioToggle('student', '/audio/student-intro.mp4')}
                         className={`px-6 py-3 ${
@@ -329,7 +339,6 @@ function LoginContent() {
                         )}
                         <div className="text-center">
                           <div className="font-bold text-sm">학생용 (4분)</div>
-                          <div className="text-xs opacity-90">학생들을 위한 소개</div>
                         </div>
                       </button>
                       <button
@@ -351,7 +360,6 @@ function LoginContent() {
                         )}
                         <div className="text-center">
                           <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
-                          <div className="text-xs opacity-90">어른들을 위한 상세 소개</div>
                         </div>
                       </button>
                     </div>
@@ -363,12 +371,9 @@ function LoginContent() {
               {/* 데스크톱: 기존 레이아웃 */}
               <div className="hidden lg:block">
                 <div className="text-center lg:text-left">
-                  <p className="text-2xl font-semibold text-blue-600">
-                    급식배틀
-                  </p>
-                  <p className="mt-2 text-xl font-bold text-red-600">
-                    급식도 민주주의!
-                  </p>
+                  <div className="flex justify-center lg:justify-start mb-4">
+                    <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[140px] h-auto" />
+                  </div>
                   <p className="mt-2 text-lg text-gray-600 leading-relaxed">
                     영양과 원산지는 Good! 그렇다면 '맛'은 ?
                   </p>
@@ -386,7 +391,7 @@ function LoginContent() {
                       귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      (AI 1) 사진 분석   (AI 2) 이미지 생성   (AI 3) 퀴즈 출제   (AI 4) 오답노트   (AI 5) 리포트 생성
+                      1) 사진 분석   2) 이미지 생성   3) 퀴즈 출제   4) 오답노트   5) 리포트 생성
                     </p>
                   </div>
                 </div>
@@ -394,39 +399,48 @@ function LoginContent() {
                 <div className="space-y-5 mt-4">
                   {/* 급식 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                      <span className="text-2xl">🍽️</span>
-                    </div>
+                    <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-16 h-16 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">급식</h3>
                       <p className="text-gray-600 text-sm">
                         오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
+                      </p>
+                      <p className="text-gray-600 text-xs mt-1">
+                        - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
                       </p>
                     </div>
                   </div>
 
                   {/* 배틀 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                      <span className="text-2xl">⚔️</span>
-                    </div>
+                    <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-16 h-16 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
-                      <p className="text-gray-600 text-sm">
-                        우리 학교 급식 평점은 전국 몇 등? 실시간 학교 랭킹, 메뉴 랭킹을 확인해 봐!
+                      <p className="text-gray-600 text-xs">
+                        - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 우리동네/전국 최고 급식평점을 준 학교와 최하 평점 학교순위 확인
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - Data 기반한 월별 AI분석 리포트 - 급식담당자/학교당국/학부모 참고용
                       </p>
                     </div>
                   </div>
 
                   {/* 퀴즈 메뉴 */}
                   <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                      <span className="text-2xl">🧠</span>
-                    </div>
+                    <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-16 h-16 object-contain" />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
-                      <p className="text-gray-600 text-sm">
-                        오늘의 메뉴로 AI가 내주는 꿀잼 퀴즈! 친구와 대결하고 주장원, 월장원이 되어봐!
+                      <p className="text-gray-600 text-xs">
+                        - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
                       </p>
                     </div>
                   </div>
@@ -436,7 +450,6 @@ function LoginContent() {
                 <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                   <div className="text-center mb-3">
                     <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
-                    <p className="text-sm text-blue-600">급식배틀앱에 대한 자세한 소개를 음성으로 들어보세요!</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
@@ -458,7 +471,6 @@ function LoginContent() {
                       )}
                       <div className="text-center">
                         <div className="font-bold text-sm">학생용 (4분)</div>
-                        <div className="text-xs opacity-90">학생들을 위한 소개</div>
                       </div>
                     </button>
                     <button
@@ -480,7 +492,6 @@ function LoginContent() {
                       )}
                       <div className="text-center">
                         <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
-                        <div className="text-xs opacity-90">어른들을 위한 상세 소개</div>
                       </div>
                     </button>
                   </div>
@@ -506,7 +517,7 @@ function LoginContent() {
                 <div className="space-y-4">
                   <button
                     onClick={handleKakaoLogin}
-                    disabled={loading}
+                    disabled={kakaoLoading}
                     className="flex w-full items-center justify-center rounded-lg bg-[#FEE500] px-4 py-3 text-gray-900 shadow-sm transition-colors hover:bg-[#F3D900] focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50"
                   >
                     <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none">
@@ -515,12 +526,12 @@ function LoginContent() {
                         fill="black"
                       />
                     </svg>
-                    {loading ? '로그인 중...' : '카카오로 로그인'}
+                    {kakaoLoading ? '로그인 중...' : '카카오로 로그인'}
                   </button>
 
                   <button
                     onClick={handleGoogleLogin}
-                    disabled={loading}
+                    disabled={googleLoading}
                     className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                   >
                     <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
