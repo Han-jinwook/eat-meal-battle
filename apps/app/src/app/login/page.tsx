@@ -12,6 +12,7 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [showGuideModal, setShowGuideModal] = useState(false)
   const [showVideoModal, setShowVideoModal] = useState(false)
+  const [showParentVideoModal, setShowParentVideoModal] = useState(false)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const router = useRouter()
@@ -318,7 +319,7 @@ function LoginContent() {
                 <div className="px-4 pb-4">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                     <div className="text-center mb-3">
-                      <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
+                      <h2 className="text-lg font-bold text-blue-800 mb-1">📹 앱 소개 영상</h2>
                     </div>
                     <div className="flex flex-row gap-3 justify-center">
                       <button
@@ -339,11 +340,11 @@ function LoginContent() {
                           </svg>
                         )}
                         <div className="text-center">
-                          <div className="font-bold text-sm">학생용 (4분)</div>
+                          <div className="font-bold text-sm">초중고 학생</div>
                         </div>
                       </button>
                       <button
-                        onClick={() => handleAudioToggle('parent', '/audio/parent-staff-intro.mp4')}
+                        onClick={() => setShowParentVideoModal(true)}
                         className={`px-6 py-3 ${
                           playingAudio === 'parent' 
                             ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
@@ -360,7 +361,7 @@ function LoginContent() {
                           </svg>
                         )}
                         <div className="text-center">
-                          <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
+                          <div className="font-bold text-sm">학부모/급식관계자</div>
                         </div>
                       </button>
                     </div>
@@ -450,7 +451,7 @@ function LoginContent() {
                 {/* 음성 듣기 버튼 섹션 - 데스크톱 */}
                 <div className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                   <div className="text-center mb-3">
-                    <h2 className="text-lg font-bold text-blue-800 mb-1">🎧 급식배틀앱 이야기 듣기</h2>
+                    <h2 className="text-lg font-bold text-blue-800 mb-1">📹 앱 소개 영상</h2>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
@@ -471,11 +472,11 @@ function LoginContent() {
                         </svg>
                       )}
                       <div className="text-center">
-                        <div className="font-bold text-sm">학생용 (4분)</div>
+                        <div className="font-bold text-sm">초중고 학생</div>
                       </div>
                     </button>
                     <button
-                      onClick={() => handleAudioToggle('parent', '/audio/parent-staff-intro.mp4')}
+                      onClick={() => setShowParentVideoModal(true)}
                       className={`flex-1 sm:flex-none px-6 py-3 ${
                         playingAudio === 'parent' 
                           ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
@@ -492,7 +493,7 @@ function LoginContent() {
                         </svg>
                       )}
                       <div className="text-center">
-                        <div className="font-bold text-sm">학부모/급식관계자용 (6분)</div>
+                        <div className="font-bold text-sm">학부모/급식관계자</div>
                       </div>
                     </button>
                   </div>
@@ -643,7 +644,7 @@ function LoginContent() {
         </div>
       )}
 
-      {/* 비디오 모달 */}
+      {/* 학생용 비디오 모달 */}
       {showVideoModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -664,6 +665,34 @@ function LoginContent() {
                 onEnded={() => setShowVideoModal(false)}
               >
                 <source src="/video/student-intro.mp4" type="video/mp4" />
+                브라우저가 비디오를 지원하지 않습니다.
+              </video>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 학부모/급식관계자용 비디오 모달 */}
+      {showParentVideoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold text-gray-900">📹 급식배틀앱 소개 영상 (학부모/급식관계자용)</h2>
+              <button 
+                onClick={() => setShowParentVideoModal(false)}
+                className="text-gray-500 hover:text-gray-800 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <video 
+                controls 
+                autoPlay
+                className="w-full h-auto max-h-[70vh] rounded-lg"
+                onEnded={() => setShowParentVideoModal(false)}
+              >
+                <source src="/video/parent-staff-intro.mp4" type="video/mp4" />
                 브라우저가 비디오를 지원하지 않습니다.
               </video>
             </div>
