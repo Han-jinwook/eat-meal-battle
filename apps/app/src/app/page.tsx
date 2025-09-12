@@ -175,24 +175,38 @@ export default function Home() {
         return;
       }
 
+      // 학교 정보 직접 조회 (userSchool 상태에 의존하지 않음)
+      const { data: schoolInfo, error: schoolError } = await supabase
+        .from('users')
+        .select(`
+          school_infos (
+            school_code,
+            school_name
+          )
+        `)
+        .eq('id', user.id)
+        .single();
+
+      const userRegisteredSchool = schoolInfo?.school_infos;
+
       // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
-      if (userInfo?.is_student && !userSchool) {
+      if (userInfo?.is_student && !userRegisteredSchool) {
         console.log('🎓 학생나이 유저 - 학교 미등록으로 학교등록 페이지로 리다이렉트');
         router.push('/school-search');
         return;
       }
 
       // 비학생 사용자 중 학교 미등록자만 관심학교 등록창 표시
-      if (!userInfo?.is_student && !userSchool) {
+      if (!userInfo?.is_student && !userRegisteredSchool) {
         console.log('🏫 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
         setIsSchoolSearchOpen(true);
         return;
       }
 
       // 학교 등록이 있는 사용자의 경우 - 타학교 여부 확인
-      if (userSchool && userSchool.school_code !== schoolCode) {
+      if (userRegisteredSchool && userRegisteredSchool.school_code !== schoolCode) {
         console.log('🏫 타학교 공유링크 감지:', { 
-          mySchool: userSchool.school_code, 
+          mySchool: userRegisteredSchool.school_code, 
           sharedSchool: schoolCode,
           isStudent: userInfo?.is_student 
         });

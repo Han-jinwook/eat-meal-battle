@@ -567,9 +567,9 @@ export async function GET(request: NextRequest) {
           console.info('✅ 분기 4: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 X → 관심학교 등록 페이지');
           redirectUrl = '/interest-schools';
           
-        } else if (!hasSchoolRegistration && isNewUser && isStudentAge) {
-          // 분기 5: 신규회원 + 학생나이 → 학교등록 페이지
-          console.info('✅ 분기 5: 신규회원 + 학생나이 → 학교등록 페이지');
+        } else if (!hasSchoolRegistration && !isNewUser && isStudentAge) {
+          // 분기 5: 기존회원 + 학생나이 → 학교등록 페이지
+          console.info('✅ 분기 5: 기존회원 + 학생나이 → 학교등록 페이지');
           if (shareUrlSchoolCode) {
             if (isBattleShare) {
               redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
@@ -580,9 +580,9 @@ export async function GET(request: NextRequest) {
             redirectUrl = '/school-search';
           }
           
-        } else if (!hasSchoolRegistration && !isNewUser && isStudentAge) {
-          // 분기 6: 기존회원 + 학생나이 → 학교등록 페이지 (도표에는 없지만 논리적으로 필요)
-          console.info('✅ 분기 6: 기존회원 + 학생나이 → 학교등록 페이지');
+        } else if (!hasSchoolRegistration && isNewUser && isStudentAge) {
+          // 분기 6: 신규회원 + 학생나이 → 학교등록 페이지
+          console.info('✅ 분기 6: 신규회원 + 학생나이 → 학교등록 페이지');
           if (shareUrlSchoolCode) {
             if (isBattleShare) {
               redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
