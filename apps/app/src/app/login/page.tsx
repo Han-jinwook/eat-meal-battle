@@ -272,7 +272,7 @@ function LoginContent() {
                           - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
                         </p>
                         <p className="text-gray-600 text-xs">
-                          - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
+                          - 부모님은 관심학교등록해 우리아이 학교 급식 맛 현황 파악
                         </p>
                       </div>
                     </div>
@@ -411,7 +411,7 @@ function LoginContent() {
                         - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
                       </p>
                       <p className="text-gray-600 text-xs">
-                        - 부모님과 공유연결해 두면 항상 내 입맛 체크도 가능
+                        - 부모님은 관심학교등록해 우리아이 학교 급식 맛 현황 파악
                       </p>
                     </div>
                   </div>
