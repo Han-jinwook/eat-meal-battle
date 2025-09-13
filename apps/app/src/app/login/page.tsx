@@ -261,10 +261,11 @@ function LoginContent() {
                     {/* 카드 3: 급식 기능 */}
                     <div className="bg-orange-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <div className="flex justify-center mb-3">
+                        <p className="text-xs text-blue-600 mb-3">[5조원 식판의 주인은 나! 500억 잔반을 바꾸는 맛주권 투표]</p>
+                        <div className="flex items-center justify-center gap-3 mb-2">
                           <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-16 h-16 object-contain" />
+                          <h3 className="text-lg font-semibold text-gray-900">급식</h3>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">급식</h3>
                         <p className="text-gray-600 text-sm">
                           오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                         </p>
@@ -272,7 +273,7 @@ function LoginContent() {
                           - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
                         </p>
                         <p className="text-gray-600 text-xs">
-                          - 부모님은 관심학교등록해 우리아이 학교 급식 맛 현황 파악
+                          - 학부모님은 관심학교 등록해 우리아이 급식 맛 현황 파악
                         </p>
                       </div>
                     </div>
@@ -280,10 +281,11 @@ function LoginContent() {
                     {/* 카드 4: 배틀 기능 */}
                     <div className="bg-red-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <div className="flex justify-center mb-3">
+                        <p className="text-xs text-blue-600 mb-3">[우리의 솔직한 리뷰, 영양사님을 위한 최고의 레시피가 됩니다.]</p>
+                        <div className="flex items-center justify-center gap-3 mb-2">
                           <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-16 h-16 object-contain" />
+                          <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">배틀</h3>
                         <p className="text-gray-600 text-xs">
                           - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
                         </p>
@@ -299,10 +301,11 @@ function LoginContent() {
                     {/* 카드 5: 퀴즈 기능 */}
                     <div className="bg-green-50 rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
-                        <div className="flex justify-center mb-3">
+                        <p className="text-xs text-blue-600 mb-3">[식판 위에서 만나는 교과서, 음식으로 세상을 맛보는 지적 탐험!]</p>
+                        <div className="flex items-center justify-center gap-3 mb-2">
                           <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-16 h-16 object-contain" />
+                          <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">퀴즈</h3>
                         <p className="text-gray-600 text-xs">
                           - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
                         </p>
@@ -406,7 +409,7 @@ function LoginContent() {
                   <div className="flex items-start space-x-4">
                     <img src="/images/characters/meal-rabbit.png" alt="급식" className="w-16 h-16 object-contain" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">급식</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">급식 <span className="text-xs text-blue-600">[5조원 식판의 주인은 나! 500억 잔반을 바꾸는 맛주권 투표]</span></h3>
                       <p className="text-gray-600 text-sm">
                         오늘 급식, 몇 점? AI가 그려준 이미지와 함께 별점으로 점수를 매겨봐!
                       </p>
@@ -414,7 +417,7 @@ function LoginContent() {
                         - 메뉴별 하나하나 별점 메기고 소감댓글 남기기
                       </p>
                       <p className="text-gray-600 text-xs">
-                        - 부모님은 관심학교등록해 우리아이 학교 급식 맛 현황 파악
+                        - 학부모님은 관심학교 등록해 우리아이 급식 맛 현황 파악
                       </p>
                     </div>
                   </div>
@@ -423,7 +426,7 @@ function LoginContent() {
                   <div className="flex items-start space-x-4">
                     <img src="/images/characters/battle-tiger.png" alt="배틀" className="w-16 h-16 object-contain" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">배틀</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">배틀 <span className="text-xs text-blue-600">[우리의 솔직한 리뷰, 영양사님을 위한 최고의 레시피가 됩니다.]</span></h3>
                       <p className="text-gray-600 text-xs">
                         - 우리학교/우리동네/전국 최고의 메뉴, 최악의 메뉴 실시간 확인
                       </p>
@@ -440,7 +443,7 @@ function LoginContent() {
                   <div className="flex items-start space-x-4">
                     <img src="/images/characters/quiz-fox.png" alt="퀴즈" className="w-16 h-16 object-contain" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">퀴즈</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">퀴즈 <span className="text-xs text-blue-600">[식판 위에서 만나는 교과서, 음식으로 세상을 맛보는 지적 탐험!]</span></h3>
                       <p className="text-gray-600 text-xs">
                         - 오늘 먹은 메뉴/학변별 맞춤 AI가 출제한 꿀잼 퀴즈 1일 1개 풀기
                       </p>
