@@ -309,6 +309,9 @@ function LoginContent() {
                         <p className="text-gray-600 text-xs">
                           - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
                         </p>
+                        <p className="text-gray-600 text-xs">
+                          - 학부모님은 우리아이 퀴즈구독하여 주장원/월장원 시 맛있는 간식선물 하세요!
+                        </p>
                       </div>
                     </div>
 
@@ -443,6 +446,9 @@ function LoginContent() {
                       </p>
                       <p className="text-gray-600 text-xs">
                         - 먹고 끝이 아니라 전 교과와 연계/확장된 교육소재로 공부흥미와 편식방지까지
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        - 학부모님은 우리아이 퀴즈구독하여 주장원/월장원 시 맛있는 간식선물 하세요!
                       </p>
                     </div>
                   </div>
