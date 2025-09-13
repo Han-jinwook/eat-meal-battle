@@ -167,8 +167,33 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">관리자 페이지</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">관리자 페이지</h1>
+            
+            {/* 상단 통계 버튼 */}
+            <Link 
+              href="/admin/stats"
+              className="px-6 py-3 bg-blue-500 text-white text-lg font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-md"
+            >
+              📊 통계
+            </Link>
+          </div>
           
+          {/* 네비게이션 메뉴 */}
+          <div className="flex space-x-4 mb-6">
+            <Link 
+              href="/admin/stats"
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              📊 통계 대시보드
+            </Link>
+            <Link 
+              href="/admin/ai-performance"
+              className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+            >
+              🤖 AI 성능 분석
+            </Link>
+          </div>
         </div>
 
         {/* 급식 이미지 신고 관리 섹션 */}
