@@ -179,15 +179,6 @@ export default function AdminPage() {
             </Link>
           </div>
           
-          {/* 네비게이션 메뉴 */}
-          <div className="flex space-x-4 mb-6">
-            <Link 
-              href="/admin/stats"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-              📊 통계 대시보드
-            </Link>
-          </div>
         </div>
 
         {/* 급식 이미지 신고 관리 섹션 */}

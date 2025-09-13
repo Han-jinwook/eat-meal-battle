@@ -249,11 +249,11 @@ function LoginContent() {
                           귀찮은 건 AI에게 맡기고, 여러분은 즐기기만 하세요!
                         </p>
                         <div className="space-y-1 text-xs text-gray-600">
-                          <p>1. 사진 분석 AI</p>
-                          <p>2. 이미지 생성 AI</p>
-                          <p>3. 퀴즈 출제 AI</p>
-                          <p>4. 오답노트 AI</p>
-                          <p>5. 리포트 생성 AI</p>
+                          <p>1. 급식사진 검증</p>
+                          <p>2. 급식이미지 생성</p>
+                          <p>3. 급식퀴즈 출제</p>
+                          <p>4. 오출제 검증</p>
+                          <p>5. 평가결과 리포트</p>
                         </div>
                       </div>
                     </div>
