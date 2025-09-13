@@ -187,12 +187,6 @@ export default function AdminPage() {
             >
               📊 통계 대시보드
             </Link>
-            <Link 
-              href="/admin/ai-performance"
-              className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-            >
-              🤖 AI 성능 분석
-            </Link>
           </div>
         </div>
 
