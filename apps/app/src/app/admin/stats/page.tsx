@@ -29,18 +29,19 @@ interface ActivityStats {
   monthlyImages: number;
 }
 
-interface BattleStats {
-  totalBattles: number;
-  activeBattles: number;
-  completedBattles: number;
-  averageParticipants: number;
+interface SchoolGradeStats {
+  schoolCode: string;
+  schoolName: string;
+  totalStudents: number;
+  gradeBreakdown: Record<string, number>;
 }
+
 
 export default function AdminStatsPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
+  const [schoolGradeStats, setSchoolGradeStats] = useState<SchoolGradeStats[]>([]);
   const [activityStats, setActivityStats] = useState<ActivityStats | null>(null);
-  const [battleStats, setBattleStats] = useState<BattleStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +60,8 @@ export default function AdminStatsPage() {
       
       setUserStats(data.userStats);
       setSchoolStats(data.schoolStats);
+      setSchoolGradeStats(data.schoolGradeStats || []);
       setActivityStats(data.activityStats);
-      setBattleStats(data.battleStats);
       
     } catch (err) {
       console.error('통계 데이터 로딩 오류:', err);
@@ -236,6 +237,67 @@ export default function AdminStatsPage() {
           </div>
         </div>
 
+        {/* 학교별/학년별 학생수 통계 */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">📚 학교별/학년별 학생수</h2>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            {schoolGradeStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full table-auto">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        학교명
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        총 학생수
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        학년별 분포
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {schoolGradeStats.map((school, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {school.schoolName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {school.schoolCode}
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {school.totalStudents}명
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries(school.gradeBreakdown).map(([grade, count]) => (
+                              <span
+                                key={grade}
+                                className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
+                              >
+                                {grade}학년: {count}명
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-8">
+                학교별/학년별 데이터가 없습니다.
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* 활동 통계 */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 활동 통계</h2>
@@ -289,32 +351,6 @@ export default function AdminStatsPage() {
           </div>
         </div>
 
-        {/* 배틀 통계 */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">⚔️ 배틀 통계</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="총 배틀 수"
-              value={battleStats?.totalBattles || 0}
-              color="red"
-            />
-            <StatCard
-              title="진행중인 배틀"
-              value={battleStats?.activeBattles || 0}
-              color="red"
-            />
-            <StatCard
-              title="완료된 배틀"
-              value={battleStats?.completedBattles || 0}
-              color="red"
-            />
-            <StatCard
-              title="평균 참여자 수"
-              value={battleStats?.averageParticipants?.toFixed(1) || '0.0'}
-              color="red"
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

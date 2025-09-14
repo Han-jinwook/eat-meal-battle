@@ -106,34 +106,30 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact' })
       .gte('created_at', monthAgo.toISOString());
 
-    // 4. 배틀 통계 (menu_battles 테이블이 있다고 가정)
-    const { data: totalBattlesData } = await supabase
-      .from('menu_battles')
-      .select('id', { count: 'exact' });
+    // 4. 학교별/학년별 학생수 통계
+    const { data: schoolGradeStatsData } = await supabase
+      .from('school_infos')
+      .select('school_code, school_name, grade')
+      .not('user_id', 'is', null);
 
-    const { data: activeBattlesData } = await supabase
-      .from('menu_battles')
-      .select('id', { count: 'exact' })
-      .eq('status', 'active');
-
-    const { data: completedBattlesData } = await supabase
-      .from('menu_battles')
-      .select('id', { count: 'exact' })
-      .eq('status', 'completed');
-
-    // 배틀 참여자 평균 계산 (battle_participants 테이블이 있다고 가정)
-    const { data: battleParticipantsData } = await supabase
-      .from('battle_participants')
-      .select('battle_id');
-
-    const battleParticipantCounts = battleParticipantsData?.reduce((acc, participant) => {
-      acc[participant.battle_id] = (acc[participant.battle_id] || 0) + 1;
+    // 학교별/학년별 통계 처리
+    const schoolGradeStats = schoolGradeStatsData?.reduce((acc, record) => {
+      const schoolKey = `${record.school_code}-${record.school_name}`;
+      if (!acc[schoolKey]) {
+        acc[schoolKey] = {
+          schoolCode: record.school_code,
+          schoolName: record.school_name,
+          totalStudents: 0,
+          gradeBreakdown: {}
+        };
+      }
+      acc[schoolKey].totalStudents++;
+      
+      const grade = record.grade || '미설정';
+      acc[schoolKey].gradeBreakdown[grade] = (acc[schoolKey].gradeBreakdown[grade] || 0) + 1;
+      
       return acc;
-    }, {} as Record<string, number>) || {};
-
-    const averageParticipants = Object.keys(battleParticipantCounts).length > 0
-      ? Object.values(battleParticipantCounts).reduce((sum, count) => sum + count, 0) / Object.keys(battleParticipantCounts).length
-      : 0;
+    }, {} as Record<string, any>) || {};
 
     // 응답 데이터 구성
     const stats = {
@@ -150,6 +146,7 @@ export async function GET(request: NextRequest) {
         schoolsWithUsers: schoolsWithUsersData?.length || 0,
         averageUsersPerSchool,
       },
+      schoolGradeStats: Object.values(schoolGradeStats),
       activityStats: {
         totalRatings: totalRatingsData?.length || 0,
         dailyRatings: dailyRatingsData?.length || 0,
@@ -159,12 +156,6 @@ export async function GET(request: NextRequest) {
         dailyImages: dailyImagesData?.length || 0,
         weeklyImages: weeklyImagesData?.length || 0,
         monthlyImages: monthlyImagesData?.length || 0,
-      },
-      battleStats: {
-        totalBattles: totalBattlesData?.length || 0,
-        activeBattles: activeBattlesData?.length || 0,
-        completedBattles: completedBattlesData?.length || 0,
-        averageParticipants,
       },
     };
 
