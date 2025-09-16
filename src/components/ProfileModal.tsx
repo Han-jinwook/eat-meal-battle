@@ -189,7 +189,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 )}
               </div>
               <div>
-                <div className="font-semibold text-lg text-gray-900 dark:text-white">{userProfile.nickname || '닉네임 없음'}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-lg text-gray-900 dark:text-white">{userProfile.nickname || '닉네임 없음'}</div>
+                  <button className="text-sm text-blue-600 hover:text-blue-800">수정</button>
+                </div>
                 <div className="text-sm text-gray-500 dark:text-gray-300">{user?.email}</div>
               </div>
             </div>
