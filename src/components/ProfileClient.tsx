@@ -365,6 +365,13 @@ export default function ProfileClient() {
             </div>
           </div>
           <div className="text-center">
+            {/* 디버깅 정보 */}
+            <div className="text-xs text-gray-400 mb-2">
+              DEBUG: isEditingNickname={isEditingNickname ? 'true' : 'false'}, 
+              userProfile={userProfile ? 'loaded' : 'null'}, 
+              user={user ? 'loaded' : 'null'}
+            </div>
+            
             {isEditingNickname ? (
               <div className="flex items-center justify-center gap-2 mb-1">
                 <input
@@ -391,7 +398,25 @@ export default function ProfileClient() {
             ) : (
               <div className="flex items-center justify-center gap-2 mb-1">
                 <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
-                <button onClick={() => setIsEditingNickname(true)} className="text-white font-bold ml-2 px-4 py-2 bg-red-500 rounded-lg hover:bg-red-600 border-2 border-red-600 text-lg shadow-lg">[수정]</button>
+                <button 
+                  onClick={() => setIsEditingNickname(true)} 
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '2px solid #dc2626',
+                    fontWeight: 'bold',
+                    fontSize: '18px',
+                    marginLeft: '8px',
+                    cursor: 'pointer',
+                    display: 'inline-block !important',
+                    visibility: 'visible !important',
+                    opacity: '1 !important'
+                  }}
+                >
+                  [수정]
+                </button>
               </div>
             )}
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
