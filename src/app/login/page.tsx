@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import { compressAndEncode } from '@/lib/utils'
 import { createClient, signInWithRetry, clearSession } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -136,7 +137,7 @@ function LoginContent() {
           prompt: 'consent',
           scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
           ...(Object.keys(stateData).length > 0 && { 
-            state: btoa(JSON.stringify(stateData))
+            state: compressAndEncode(stateData)
           })
         }
       });
@@ -183,7 +184,7 @@ function LoginContent() {
           scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
           prompt: 'consent',
           ...(Object.keys(stateData).length > 0 && { 
-            state: btoa(JSON.stringify(stateData))
+            state: compressAndEncode(stateData)
           })
         }
       });
