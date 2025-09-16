@@ -228,7 +228,7 @@ export const clearSession = async (): Promise<void> => {
  * - 네트워크 오류 시 자동 재시도
  * - 세션 충돌 방지
  */
-export const signInWithRetry = async (provider: string, maxRetries: number = 3): Promise<any> => {
+export const signInWithRetry = async (provider: string, options: any = {}, maxRetries: number = 3): Promise<any> => {
   const supabase = createClient();
   
   // 디버깅: 환경 정보 로그
@@ -259,14 +259,7 @@ export const signInWithRetry = async (provider: string, maxRetries: number = 3):
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
-          }
-        }
+        options
       });
       
       console.log('✅ OAuth 요청 결과:', { data, error });

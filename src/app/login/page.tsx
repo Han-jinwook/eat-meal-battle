@@ -130,18 +130,14 @@ function LoginContent() {
       console.log('🔗 OAuth state 데이터:', stateData)
       
       // 구글 OAuth에 생일 정보 scope 추가
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-            scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
-            ...(Object.keys(stateData).length > 0 && { 
-              state: btoa(JSON.stringify(stateData))
-            })
-          }
+      const { data, error } = await signInWithRetry('google', {
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+          scope: 'openid email profile https://www.googleapis.com/auth/user.birthday.read',
+          ...(Object.keys(stateData).length > 0 && { 
+            state: btoa(JSON.stringify(stateData))
+          })
         }
       });
       
@@ -182,19 +178,15 @@ function LoginContent() {
       
       console.log('🔗 카카오 OAuth state 데이터:', stateData)
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
-            prompt: 'consent',
-            ...(Object.keys(stateData).length > 0 && { 
-              state: btoa(JSON.stringify(stateData))
-            })
-          },
-        },
-      })
+      const { data, error } = await signInWithRetry('kakao', {
+        queryParams: {
+          scope: 'profile_nickname,profile_image,account_email,birthyear,birthday',
+          prompt: 'consent',
+          ...(Object.keys(stateData).length > 0 && { 
+            state: btoa(JSON.stringify(stateData))
+          })
+        }
+      });
       
       if (error) {
         console.error('카카오 로그인 오류:', error)

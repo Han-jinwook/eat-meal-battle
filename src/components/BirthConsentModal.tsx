@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
+import { createClient, signInWithRetry } from '@/lib/supabase';
 
 interface BirthConsentModalProps {
   isOpen: boolean;
@@ -63,10 +63,7 @@ export default function BirthConsentModal({ isOpen, onClose, onSuccess, userId }
         return;
       }
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options
-      });
+      const { error } = await signInWithRetry(provider, options);
 
       if (error) {
         throw error;
