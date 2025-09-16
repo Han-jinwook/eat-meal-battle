@@ -65,6 +65,7 @@ export default function ProfileClient() {
   };
 
   useEffect(() => {
+    const supabase = createClient();
     const getUser = async () => {
       try {
         setLoading(true)
@@ -123,7 +124,7 @@ export default function ProfileClient() {
     }
 
     getUser()
-  }, [supabase, router])
+  }, [router])
 
   const handleShareApp = async () => {
     if (isSharing) return;
