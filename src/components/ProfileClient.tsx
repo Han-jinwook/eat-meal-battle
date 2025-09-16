@@ -391,7 +391,7 @@ export default function ProfileClient() {
             ) : (
               <div className="flex items-center justify-center gap-2 mb-1">
                 <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
-                <button onClick={() => setIsEditingNickname(true)} className="text-blue-600 font-bold ml-2 px-2 py-1 bg-blue-50 rounded-md hover:bg-blue-100 border border-blue-200">[수정]</button>
+                <button onClick={() => setIsEditingNickname(true)} className="text-white font-bold ml-2 px-4 py-2 bg-red-500 rounded-lg hover:bg-red-600 border-2 border-red-600 text-lg shadow-lg">[수정]</button>
               </div>
             )}
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
