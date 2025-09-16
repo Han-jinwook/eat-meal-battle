@@ -1,5 +1,8 @@
 'use client'
 
+// ProfileClient.tsx - 메인 프로필 페이지 컴포넌트
+// 강제 Git 변경을 위한 주석 추가 - 2025-09-16
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
