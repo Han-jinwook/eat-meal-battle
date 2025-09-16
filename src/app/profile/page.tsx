@@ -1,39 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+// 2025-09-17 - ProfileClient.tsx가 자체 로딩 상태를 관리하므로
+// 이 페이지에서는 별도의 로딩 상태 관리를 제거합니다.
 import ProfileClient from '@/components/ProfileClient';
 
-function ProfileLoading() {
-  return (
-    <div className="flex min-h-screen flex-col p-4">
-      <div className="mx-auto w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
-        </div>
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="h-6 bg-gray-200 rounded w-24 mx-auto animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ProfilePage() {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return <ProfileLoading />;
-  }
-
+  // ProfileClient 컴포넌트에서 자체적으로 로딩 상태를 관리하므로
+  // 여기서는 직접 컴포넌트를 반환합니다.
   return <ProfileClient />;
 }

@@ -73,3 +73,9 @@
   to = "/.netlify/functions/quiz/:splat"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/user/*"
+  to = "/.netlify/functions/user/:splat"
+  status = 200
+  force = true
