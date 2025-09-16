@@ -17,6 +17,8 @@ export default function Profile() {
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
+  const [isEditingNickname, setIsEditingNickname] = useState(false)
+  const [newNickname, setNewNickname] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
@@ -26,12 +28,14 @@ export default function Profile() {
         setLoading(true)
         
         // 세션 및 사용자 정보 가져오기
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) {
-          console.error('사용자 인증 에러:', error)
-          throw error
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+
+        if (authError) {
+          console.error('사용자 인증 에러:', authError);
+          throw authError;
         }
+
+        const { user } = authData;
         
         if (user) {
           console.log('인증된 사용자 정보:', user)
@@ -45,21 +49,34 @@ export default function Profile() {
           ])
           
           // 사용자 프로필 처리
-          if (profileResult.status === 'fulfilled' && !profileResult.value.error) {
-            console.log('사용자 DB 프로필:', profileResult.value.data)
-            setUserProfile(profileResult.value.data)
-            setDbStatus('success')
-          } else {
-            console.error('사용자 프로필 조회 에러:', profileResult.value?.error)
-            setDbStatus('error')
-            if (profileResult.value?.error?.code !== 'PGRST116') {
-              setError(`DB 조회 에러: ${profileResult.value?.error?.message}`)
+          if (profileResult.status === 'fulfilled') {
+            if (profileResult.value.error) {
+              console.error('사용자 프로필 조회 에러:', profileResult.value.error);
+              setDbStatus('error');
+              if (profileResult.value.error.code !== 'PGRST116') {
+                setError(`DB 조회 에러: ${profileResult.value.error.message}`);
+              }
+            } else {
+              console.log('사용자 DB 프로필:', profileResult.value.data);
+              setUserProfile(profileResult.value.data);
+              setDbStatus('success');
             }
+          } else {
+             console.error('사용자 프로필 promise rejected:', profileResult.reason);
+             setDbStatus('error');
+             setError('사용자 프로필 정보를 가져오는데 실패했습니다.');
           }
           
           // 학교 정보 처리
-          if (schoolResult.status === 'fulfilled' && !schoolResult.value.error) {
-            setSchoolInfo(schoolResult.value.data)
+          if (schoolResult.status === 'fulfilled') {
+            if (schoolResult.value.error && schoolResult.value.error.code !== 'PGRST116') {
+              console.error('학교 정보 조회 에러:', schoolResult.value.error);
+              // 학교 정보는 필수값이 아닐 수 있으므로 에러 상태를 설정하지 않을 수 있습니다.
+            } else if (!schoolResult.value.error) {
+              setSchoolInfo(schoolResult.value.data);
+            }
+          } else {
+            console.error('학교 정보 promise rejected:', schoolResult.reason);
           }
 
         } else {
@@ -76,6 +93,24 @@ export default function Profile() {
     getUser()
   }, [supabase, router])
 
+
+  const handleUpdateNickname = async () => {
+    if (!user || !newNickname.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ nickname: newNickname.trim() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setUserProfile({ ...userProfile, nickname: newNickname.trim() });
+      setIsEditingNickname(false);
+    } catch (error: any) {
+      setError('닉네임 업데이트 중 오류가 발생했습니다: ' + error.message);
+    }
+  };
 
   // 친구에게 공유하기 함수
   const handleShareApp = async () => {
@@ -362,7 +397,37 @@ export default function Profile() {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
+                        <div className="flex items-center justify-center gap-2 mb-1">
+              {isEditingNickname ? (
+                <>
+                  <input
+                    type="text"
+                    value={newNickname}
+                    onChange={(e) => setNewNickname(e.target.value)}
+                    className="text-xl font-bold text-center border-b-2 border-gray-300 focus:border-indigo-500 outline-none"
+                  />
+                  <button onClick={handleUpdateNickname} className="text-green-500 hover:text-green-700">저장</button>
+                  <button onClick={() => setIsEditingNickname(false)} className="text-red-500 hover:text-red-700">취소</button>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</span>
+                  <button 
+                    onClick={() => {
+                      setIsEditingNickname(true);
+                      setNewNickname(userProfile?.nickname || user?.user_metadata?.name || '');
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="닉네임 수정"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                      <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
             
             {/* 출생연도 & 계정생성 */}

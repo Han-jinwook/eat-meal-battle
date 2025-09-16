@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // 싱글톤 패턴을 위한 변수
 let supabaseClientInstance: ReturnType<typeof createBrowserClient> | null = null;
@@ -19,22 +20,27 @@ export const createClient = () => {
     console.debug('서버 환경에서 Supabase 클라이언트 호출 - 제한된 기능');
     return {
       auth: {
-        getSession: () => ({ data: { session: null } }),
-        getUser: () => ({ data: { user: null } }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         signOut: () => Promise.resolve({ error: null }),
         signInWithOAuth: () => Promise.resolve({ data: null, error: new Error('서버 환경에서는 OAuth 불가') }),
       },
-      from: () => ({
-        select: () => ({
-          eq: () => ({
+      from: (table: string) => ({
+        select: (columns = '*') => ({
+          eq: (column: string, value: any) => ({
             single: () => Promise.resolve({ data: null, error: null }),
-            data: [],
-            error: null
           }),
+        }),
+        update: (data: any) => ({
+          eq: (column: string, value: any) => Promise.resolve({ data: null, error: null }),
+        }),
+        insert: (data: any) => Promise.resolve({ data: null, error: null }),
+        delete: () => ({
+          eq: (column: string, value: any) => Promise.resolve({ data: null, error: null }),
         }),
       }),
       // 필요한 최소한의 기능만 추가 구현
-    };
+    } as any;
   }
   // 키가 없는 경우 조용히 처리 (개발 환경에서 콘솔 에러 방지)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
