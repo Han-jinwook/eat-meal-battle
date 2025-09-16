@@ -17,8 +17,54 @@ export default function Profile() {
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
+  const [isEditingNickname, setIsEditingNickname] = useState(false)
+  const [newNickname, setNewNickname] = useState('')
+  const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const handleUpdateNickname = async () => {
+    if (!newNickname.trim()) {
+      setError('닉네임은 공백일 수 없습니다.');
+      // 간단한 토스트나 알림으로 대체 가능
+      alert('닉네임은 공백일 수 없습니다.');
+      return;
+    }
+    if (newNickname.trim() === userProfile?.nickname) {
+      setIsEditingNickname(false);
+      return;
+    }
+
+    setIsUpdatingNickname(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/user/update-nickname', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nickname: newNickname.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '닉네임 업데이트에 실패했습니다.');
+      }
+
+      // 성공 시 로컬 상태 업데이트
+      setUserProfile((prev: any) => ({ ...prev, nickname: newNickname.trim() }));
+      setIsEditingNickname(false);
+      alert('닉네임이 성공적으로 변경되었습니다.');
+
+    } catch (error: any) {
+      setError(error.message);
+      alert(`오류: ${error.message}`);
+    } finally {
+      setIsUpdatingNickname(false);
+    }
+  };
 
   useEffect(() => {
     const getUser = async () => {
@@ -26,12 +72,13 @@ export default function Profile() {
         setLoading(true)
         
         // 세션 및 사용자 정보 가져오기
-        const { data: { user }, error } = await supabase.auth.getUser()
-        
-        if (error) {
-          console.error('사용자 인증 에러:', error)
-          throw error
+        const userResponse = await supabase.auth.getUser();
+        // 타입 안정성을 위해 'error' 속성의 존재 여부를 확인합니다.
+        if ('error' in userResponse && userResponse.error) {
+          console.error('사용자 인증 에러:', userResponse.error);
+          throw userResponse.error;
         }
+        const user = userResponse.data.user;
         
         if (user) {
           console.log('인증된 사용자 정보:', user)
@@ -45,21 +92,31 @@ export default function Profile() {
           ])
           
           // 사용자 프로필 처리
-          if (profileResult.status === 'fulfilled' && !profileResult.value.error) {
-            console.log('사용자 DB 프로필:', profileResult.value.data)
-            setUserProfile(profileResult.value.data)
-            setDbStatus('success')
-          } else {
-            console.error('사용자 프로필 조회 에러:', profileResult.value?.error)
-            setDbStatus('error')
-            if (profileResult.value?.error?.code !== 'PGRST116') {
-              setError(`DB 조회 에러: ${profileResult.value?.error?.message}`)
+          if (profileResult.status === 'fulfilled') {
+            if (!profileResult.value.error) {
+              console.log('사용자 DB 프로필:', profileResult.value.data)
+              setUserProfile(profileResult.value.data)
+              setNewNickname(profileResult.value.data?.nickname || '') // 닉네임 상태 초기화
+              setDbStatus('success')
+            } else {
+              console.error('사용자 프로필 조회 에러:', profileResult.value.error)
+              setDbStatus('error')
+              if (profileResult.value.error?.code !== 'PGRST116') {
+                setError(`DB 조회 에러: ${profileResult.value.error?.message}`)
+              }
             }
+          } else {
+            // Promise가 rejected된 경우
+            console.error('프로필 Promise rejected:', profileResult.reason);
+            setDbStatus('error');
+            setError('프로필 정보를 가져오는 데 실패했습니다.');
           }
           
           // 학교 정보 처리
           if (schoolResult.status === 'fulfilled' && !schoolResult.value.error) {
             setSchoolInfo(schoolResult.value.data)
+          } else if (schoolResult.status === 'rejected') {
+            console.error('학교 정보 Promise rejected:', schoolResult.reason);
           }
 
         } else {
@@ -362,7 +419,40 @@ export default function Profile() {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
+            {isEditingNickname ? (
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <input
+                  type="text"
+                  value={newNickname}
+                  onChange={(e) => setNewNickname(e.target.value)}
+                  className="text-xl font-bold text-center border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={handleUpdateNickname}
+                  disabled={isUpdatingNickname}
+                  className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+                >
+                  {isUpdatingNickname ? '저장중' : '저장'}
+                </button>
+                <button
+                  onClick={() => setIsEditingNickname(false)}
+                  className="text-sm text-gray-600"
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
+                <button onClick={() => setIsEditingNickname(true)} className="text-gray-500 hover:text-gray-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                    <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
             
             {/* 출생연도 & 계정생성 */}
