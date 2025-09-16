@@ -40,7 +40,6 @@
 [build.environment]
   # 빌드 속도 최적화 환경변수 (기능 변경 없음)
   NEXT_TELEMETRY_DISABLED = "1"
-  NPM_FLAGS = "--prefer-offline --no-audit --no-fund"
   NODE_OPTIONS = "--max-old-space-size=4096"
   # 장원 시스템 환경 변수
   CHAMPION_TEST_MODE = "true"
@@ -48,6 +47,8 @@
   # 디버그 환경변수
   DEBUG = "netlify*"
   NETLIFY_FUNCTIONS_DEBUG = "true"
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--prefer-offline --no-audit --no-fund --include=optional"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
