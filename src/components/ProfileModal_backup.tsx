@@ -1,3 +1,5 @@
+// BACKUP: 이 파일은 사용되지 않음 - ProfileClient.tsx가 실제 프로필 페이지
+// 나중에 삭제 예정
 "use client";
 
 import { useState, useEffect } from 'react';

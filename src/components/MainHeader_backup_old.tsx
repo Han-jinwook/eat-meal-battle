@@ -1,4 +1,6 @@
-"use client";
+// BACKUP: 이 파일은 사용되지 않음 - MainHeader.tsx가 실제 헤더
+// 나중에 삭제 예정
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
