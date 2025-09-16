@@ -419,9 +419,6 @@ export default function ProfileClient() {
                 </div>
               </div>
             </div>
-            <div className="text-sm text-gray-500 mb-3">
-              {user?.app_metadata?.provider || 'Google'} / {user?.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : ''} 계정 생성
-            </div>
             <div className="text-center">
               <Link 
                 href="/privacy-policy" 
