@@ -3,9 +3,6 @@
 import { useEffect, useState } from 'react';
 import ProfileClient from '@/components/ProfileClient';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 function ProfileLoading() {
   return (
     <div className="flex min-h-screen flex-col p-4">
