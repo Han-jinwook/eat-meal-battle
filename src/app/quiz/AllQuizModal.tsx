@@ -444,6 +444,11 @@ export default function AllQuizModal({
                           
                           // 부모 컴포넌트로 학교급 변경 알림
                           onUniversalSchoolTypeChange(newSchoolType);
+                          
+                          // 학교급 변경 후 퀴즈 다시 로드 (약간의 지연 후)
+                          setTimeout(() => {
+                            loadQuiz();
+                          }, 100);
                         }
                       } catch (err) {
                         console.error('🚫 학교급 변경 중 오류:', err);
