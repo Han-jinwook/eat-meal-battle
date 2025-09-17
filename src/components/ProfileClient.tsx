@@ -381,12 +381,6 @@ export default function ProfileClient() {
             </div>
           </div>
           <div className="text-center">
-            {/* 디버깅 정보 */}
-            <div className="text-xs text-gray-400 mb-2">
-              DEBUG: isEditingNickname={isEditingNickname ? 'true' : 'false'}, 
-              userProfile={userProfile ? 'loaded' : 'null'}, 
-              user={user ? 'loaded' : 'null'}
-            </div>
             
             {isEditingNickname ? (
               <div className="flex items-center justify-center gap-2 mb-1">
