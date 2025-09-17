@@ -3,8 +3,10 @@ import { createClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
+export const maxDuration = 30; // 함수 실행 최대 시간 30초로 설정 (중요 함수 타임아웃 방지)
+
 export async function GET(request: NextRequest) {
-  console.info('🚀 OAuth 콜백 라우트 시작')
+  console.info('🚀 OAuth 콜백 라우트 시작 (확장된 타임아웃)')
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const error_code = requestUrl.searchParams.get('error_code')
@@ -88,6 +90,7 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       
       // 인증 성공 시 프로필 이미지 URL이 HTTP로 시작하는지 검사하고 수정
+      // avatar_url뿐만 아니라 profile_image도 함께 검사 (추가 안정성)
       if (data?.session?.user?.user_metadata?.avatar_url) {
         const avatarUrl = data.session.user.user_metadata.avatar_url;
         if (avatarUrl.startsWith('http://')) {
@@ -95,14 +98,24 @@ export async function GET(request: NextRequest) {
           
           // 사용자 메타데이터 업데이트
           const httpsAvatarUrl = avatarUrl.replace('http://', 'https://');
-          await supabase.auth.updateUser({
+          const { error: updateError } = await supabase.auth.updateUser({
             data: { 
               avatar_url: httpsAvatarUrl 
             }
           });
           
-          console.log('URL이 업데이트되었습니다:', httpsAvatarUrl);
+          if (updateError) {
+            console.error('프로필 URL 업데이트 실패:', updateError);
+          } else {
+            console.log('URL이 업데이트되었습니다:', httpsAvatarUrl);
+          }
         }
+      }
+      
+      // 세션 추가 유효성 검증
+      if (!data.session || !data.session.user) {
+        console.error('💥 심각: 세션 교환 성공했으나 세션 객체가 없음');
+        throw new Error('세션 생성 실패');
       }
 
       if (error) {
@@ -113,21 +126,32 @@ export async function GET(request: NextRequest) {
       if (data.session) {
         console.log('Session successfully created')
         
-        // 세션 안정성을 위한 추가 검증 및 지연
+        // 세션 안정성을 위한 추가 검증 및 지연 (최대 3회 재시도)
         try {
           // 세션이 제대로 설정되었는지 재확인
-          const { data: sessionCheck } = await supabase.auth.getSession()
-          if (!sessionCheck.session) {
-            console.warn('⚠️ 세션 재확인 실패, 재시도...')
-            // 잠시 대기 후 재시도
-            await new Promise(resolve => setTimeout(resolve, 500))
-            const { data: retrySession } = await supabase.auth.getSession()
-            if (!retrySession.session) {
-              throw new Error('세션 설정 실패')
+          let sessionValid = false;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (!sessionValid && retryCount < maxRetries) {
+            const { data: sessionCheck } = await supabase.auth.getSession()
+            
+            if (sessionCheck.session) {
+              sessionValid = true;
+              console.log(`✅ 세션 검증 성공 (시도: ${retryCount + 1}/${maxRetries})`)
+            } else {
+              retryCount++;
+              console.warn(`⚠️ 세션 재확인 실패, 재시도 ${retryCount}/${maxRetries}...`)
+              // 점진적으로 대기 시간 증가
+              await new Promise(resolve => setTimeout(resolve, 500 * retryCount))
             }
-            console.log('✅ 세션 재시도 성공')
           }
-          console.log('✅ 세션 검증 완료')
+          
+          if (!sessionValid) {
+            throw new Error(`세션 설정 실패 (${maxRetries}회 시도 후)`)
+          }
+          
+          console.log('✅ 세션 검증 및 안정화 완료')
         } catch (sessionError) {
           console.error('❌ 세션 검증 오류:', sessionError)
           return NextResponse.redirect(new URL('/login?error=session_failed', request.url))
@@ -614,7 +638,7 @@ export async function GET(request: NextRequest) {
 
     // 리다이렉트 전 세션 안정화를 위한 추가 지연
     console.log('🔄 세션 안정화를 위해 잠시 대기...')
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 3000)) // 세션 안정화를 위한 대기시간 3초로 증가
     
     console.log('Redirecting to:', redirectUrl)
     const response = NextResponse.redirect(new URL(redirectUrl, request.url))

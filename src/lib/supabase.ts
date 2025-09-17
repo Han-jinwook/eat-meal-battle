@@ -1,11 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { clearAllAuthStorage, clearAuthCookies, getBrowserInfo as getBrowserEnvironmentInfo } from './session-utils'
 
 // 싱글톤 패턴을 위한 변수
 let supabaseClientInstance: ReturnType<typeof createBrowserClient> | null = null;
 
 // 브라우저 환경인지 확인하는 함수
 const isBrowser = () => typeof window !== 'undefined';
+
+// 기존 로컬 getBrowserInfo 함수는 임포트한 getBrowserEnvironmentInfo로 대체하여 사용
 
 // 에러 로깅 조용히 처리를 위한 래퍼, 싱글톤 패턴으로 구현
 export const createClient = () => {
@@ -188,87 +191,189 @@ export const createClient = () => {
 }
 
 /**
- * 세션 완전 정리 함수 (로그아웃 시 사용)
+ * 향상된 세션 완전 정리 함수 (로그아웃 및 로그인 준비 시 사용)
  * - localStorage, sessionStorage, 쿠키 모두 정리
  * - 인스턴스 초기화로 깨끗한 상태 보장
+ * - 다양한 브라우저에서 안정성 강화
+ */
+/**
+ * 세션 완전 정리 및 향상된 관리 함수
+ * 새롭게 추가한 세션 유틸리티를 사용하여 더 강력하게 정리
  */
 export const clearSession = async (): Promise<void> => {
   try {
+    console.log('🔄 강화된 세션 정리 시작...');
     const supabase = createClient();
     
-    // 1. Supabase 로그아웃
-    await supabase.auth.signOut();
+    // 브라우저 환경 확인
+    const browserInfo = getBrowserEnvironmentInfo();
+    console.log('💻 장치 정보:', {
+      isMobile: browserInfo.isMobile,
+      isIOS: browserInfo.isIOS,
+      isSafari: browserInfo.isSafari,
+      isIOSSafari: browserInfo.isIOSSafari
+    });
     
-    // 2. 로컬 스토리지 정리
-    if (typeof window !== 'undefined') {
-      // Supabase 관련 키들 정리
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-          keysToRemove.push(key);
+    // 1. Supabase 로그아웃 (SDK 호출)
+    try {
+      console.log('🔑 Supabase Auth 로그아웃 시작...');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.warn('⚠️ Supabase 로그아웃 중 오류:', error);
+        // 오류 발생 시 부가적으로 세션 파기 시도
+        try {
+          await supabase.auth.setSession({ access_token: '', refresh_token: '' });
+        } catch (e) {
+          console.warn('⚠️ 세션 강제 파기 시도 실패:', e);
         }
+      } else {
+        console.log('✅ Supabase 로그아웃 성공');
       }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      
-      // 세션 스토리지도 정리
-      sessionStorage.clear();
-      
-      // 쿠키 정리
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-      });
+    } catch (signOutError) {
+      console.warn('⚠️ Supabase 로그아웃 실패:', signOutError);
     }
     
-    // 3. 인스턴스 초기화 (다음 로그인 시 깨끗한 상태)
+    // 2. 모든 저장소 정리 (유틸리티 사용)
+    await clearAllAuthStorage();
+    
+    // 3. 중요: 인스턴스 초기화 (다음 로그인 시 깨끗한 상태)
     supabaseClientInstance = null;
     
-    console.debug('세션 완전 정리 완료');
+    // 4. iOS Safari를 위한 추가 대기시간
+    if (browserInfo.isIOSSafari) {
+      console.log('🍏 iOS Safari에서 안정적인 세션 정리를 위해 추가 대기 시간 적용...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    console.log('💯 세션 완전 정리 완료');
   } catch (error) {
-    console.debug('세션 정리 중 오류 (무시됨):', error);
+    console.warn('⚠️ 세션 정리 중 오류 (대체 방식으로 계속):', error);
+    
+    // 오류 발생 시 대체 방식 시도
+    try {
+      // 유틸리티로 다시 시도
+      await clearAuthCookies();
+      supabaseClientInstance = null;
+    } catch (fallbackError) {
+      console.error('💥 대체 정리 방식도 실패:', fallbackError);
+    }
   }
 };
 
 /**
- * 재시도 로직이 포함된 로그인 함수
- * - 네트워크 오류 시 자동 재시도
- * - 세션 충돌 방지
+ * 강화된 재시도 및 안정화 로직이 포함된 소셜 로그인 함수
+ * - 네트워크 오류 시 자동 재시도 및 복구
+ * - 세션 충돌 방지 및 강화된 안정화 로직
+ * - 쿠키 및 스토리지 일관성 관리
+ * - 브라우저별 특성을 고려한 차별된 처리
+ * - 세션 정리 및 중복 로그인 방지
  */
-export const signInWithRetry = async (provider: string, options: any = {}, maxRetries: number = 3): Promise<any> => {
+export const signInWithRetry = async (provider: string, options: any = {}, maxRetries: number = 5): Promise<any> => {
   const supabase = createClient();
   
-  // 디버깅: 환경 정보 로그
-  console.log('🔍 로그인 시도 환경 정보:', {
+  // 디버깅: 향상된 환경 정보 로그
+  console.log('🔍 강화된 로그인 시도 환경 정보:', {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,
     provider,
     userAgent: navigator.userAgent,
     cookiesEnabled: navigator.cookieEnabled,
     localStorage: typeof localStorage !== 'undefined',
-    currentUrl: window.location.href
+    currentUrl: window.location.href,
+    timestamp: new Date().toISOString(),
+    screenWidth: window.innerWidth,
+    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+    storageEstimate: navigator.storage?.estimate ? 'available' : 'unavailable'
   });
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  // 브라우저 환경 확인 - iOS Safari에서 더 많은 재시도와 긴 대기시간 필요
+  const isiOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                     !navigator.userAgent.includes('Chrome') && 
+                     navigator.userAgent.includes('Safari');
+  
+  // iOS Safari에서는 최대 재시도 횟수와 대기시간 증가
+  const effectiveMaxRetries = isiOSSafari ? Math.max(5, maxRetries) : maxRetries;
+  console.log(`🍏 브라우저 환경: ${isiOSSafari ? 'iOS Safari' : '기타'}, 최대 재시도 횟수: ${effectiveMaxRetries}`);
+
+  // 모든 저장소에서 이전 세션 데이터 완전 정리
+  try {
+    console.log('🧹 로그인 전 완전한 세션 정리 시작...');
+    
+    // 세션 완전 정리 - 모든 저장소를 개선된 함수로 처리
+    await clearSession();
+    
+    // 예외 상황 대비 추가 정리 시도
     try {
-      console.log(`🚀 로그인 시도 ${attempt}/${maxRetries} 시작`);
+      // 강화된 세션 정리 유틸리티로 한번 더 정리
+      await clearAllAuthStorage();
+    } catch (additionalCleanupError) {
+      console.warn('⚠️ 추가 정리 시도 오류 (무시):', additionalCleanupError);
+    }
+    
+    // 세션 정리 후 디바이스에 따른 대기 시간 적용
+    const initialCleanupWaitTime = isiOSSafari ? 3000 : 1500;
+    console.log(`⌛ 세션 안정화를 위해 ${initialCleanupWaitTime}ms 대기 중...`);
+    await new Promise(resolve => setTimeout(resolve, initialCleanupWaitTime));
+    
+    console.log('✅ 초기 세션 정리 및 안정화 완료');
+  } catch (cleanupError) {
+    console.warn('⚠️ 초기 세션 정리 중 오류 (계속 진행):', cleanupError);
+  }
+  
+  // 쿠키 상태 진단
+  const cookieState = typeof document !== 'undefined' ? document.cookie : '쿠키 접근 불가';
+  console.log('🍪 현재 쿠키 상태:', cookieState ? '쿠키 있음' : '쿠키 없음');
+  
+  for (let attempt = 1; attempt <= effectiveMaxRetries; attempt++) {
+    try {
+      console.log(`\n🚀 로그인 시도 ${attempt}/${effectiveMaxRetries} 시작 (${new Date().toISOString()})`);
       
-      // 이전 세션이 있다면 정리
+      // 첫 시도가 아니면 더 철저한 세션 정리
       if (attempt > 1) {
-        console.log('🧹 이전 세션 정리 중...');
+        console.log(`🧹 재시도 전 세션 정리 (시도: ${attempt})...`);
         await clearSession();
-        // 잠시 대기 (세션 정리 완료 대기)
+        // 시도 횟수에 따라 대기 시간 증가 (특히 iOS에서 더 길게)
+        const waitTimeAfterCleanup = isiOSSafari ? 
+          Math.min(3000 * attempt, 10000) : // iOS: 최대 10초
+          Math.min(1500 * attempt, 5000);  // 기타: 최대 5초
+        console.log(`⏲️ 세션 정리 후 ${waitTimeAfterCleanup}ms 대기...`);
+        await new Promise(resolve => setTimeout(resolve, waitTimeAfterCleanup));
+      }
+      
+      // 현재 세션 상태 확인 및 유효성 검사
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('📊 현재 세션 상태:', sessionData.session ? '세션 있음 (정리 필요)' : '세션 없음 (정상)');
+      
+      // 이전 세션이 있다면 한 번 더 정리
+      if (sessionData.session) {
+        console.log('⚠️ 예상치 못한 세션 발견, 한 번 더 정리...');
+        await supabase.auth.signOut();
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // 현재 세션 상태 확인
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('📊 현재 세션 상태:', sessionData.session ? '있음' : '없음');
-      
+      console.log('🔑 OAuth 로그인 요청 시작...');
+      const startTime = Date.now();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
-        options
+        options: {
+          // 세션 안정성 향상을 위해 옵션 추가
+          redirectTo: options.redirectTo,
+          queryParams: {
+            ...options.queryParams,
+            // 모든 경우에 항상 동의 화면 표시 요청
+            prompt: 'consent', 
+            // OAuth 토큰 갱신을 위한 오프라인 액세스
+            access_type: 'offline'
+          }
+        }
       });
-      
-      console.log('✅ OAuth 요청 결과:', { data, error });
+      const endTime = Date.now();
+      console.log(`✅ OAuth 요청 완료 (소요시간: ${endTime - startTime}ms):`, { 
+        success: !error,
+        hasData: !!data,
+        url: data?.url || '없음',
+        error: error ? { message: error.message, status: error.status } : '없음'
+      });
       
       if (error) {
         throw error;
@@ -276,20 +381,24 @@ export const signInWithRetry = async (provider: string, options: any = {}, maxRe
       
       return { data, error: null };
     } catch (error) {
-      console.error(`❌ 로그인 시도 ${attempt}/${maxRetries} 실패:`, {
-        error,
-        errorMessage: error?.message,
-        errorCode: error?.status,
-        timestamp: new Date().toISOString()
+      console.error(`❌ 로그인 시도 ${attempt}/${effectiveMaxRetries} 실패:`, {
+        errorMessage: error?.message || '알 수 없는 오류',
+        errorCode: error?.status || 'unknown',
+        timestamp: new Date().toISOString(),
+        provider,
+        attempt
       });
       
-      if (attempt === maxRetries) {
+      if (attempt === effectiveMaxRetries) {
+        console.error('🛑 모든 재시도 실패, 오류 반환');
         return { data: null, error };
       }
       
-      // 재시도 전 대기 (지수 백오프)
-      const waitTime = Math.pow(2, attempt) * 1000;
-      console.log(`⏳ ${waitTime}ms 대기 후 재시도...`);
+      // 재시도 전 대기 (향상된 지수 백오프)
+      // iOS Safari에서는 더 긴 대기 시간 적용
+      const baseWaitTime = isiOSSafari ? 2500 : 1500;
+      const waitTime = baseWaitTime * Math.pow(1.5, attempt);
+      console.log(`⏳ ${Math.round(waitTime)}ms 대기 후 재시도...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
