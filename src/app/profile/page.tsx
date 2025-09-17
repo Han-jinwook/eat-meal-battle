@@ -84,6 +84,8 @@ export default function Profile() {
   }, [supabase, router])
 
   const handleUpdateNickname = async () => {
+    console.log('🔍 닉네임 업데이트 시작:', { newNickname, currentNickname: userProfile?.nickname });
+    
     if (!newNickname.trim()) {
       setError('닉네임은 공백일 수 없습니다.');
       alert('닉네임은 공백일 수 없습니다.');
@@ -98,25 +100,36 @@ export default function Profile() {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/update-nickname', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nickname: newNickname.trim() }),
-      });
+      console.log('🔥 직접 Supabase 호출 시작...');
+      
+      // 현재 사용자 확인
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('로그인이 필요합니다.');
+      }
+      
+      console.log('👤 사용자 ID:', user.id);
+      
+      // 직접 Supabase에서 닉네임 업데이트
+      const { data, error } = await supabase
+        .from('users')
+        .update({ nickname: newNickname.trim() })
+        .eq('id', user.id)
+        .select();
 
-      const result = await response.json();
+      console.log('📊 Supabase 응답:', { data, error });
 
-      if (!response.ok) {
-        throw new Error(result.error || '닉네임 업데이트에 실패했습니다.');
+      if (error) {
+        throw new Error(`DB 오류: ${error.message}`);
       }
 
+      // 성공!
       setUserProfile((prev: any) => ({ ...prev, nickname: newNickname.trim() }));
       setIsEditingNickname(false);
-      alert('닉네임이 성공적으로 변경되었습니다.');
+      alert('닉네임이 성공적으로 변경되었습니다! 🎉');
 
     } catch (error: any) {
+      console.error('❌ 닉네임 업데이트 오류:', error);
       setError(error.message);
       alert(`오류: ${error.message}`);
     } finally {

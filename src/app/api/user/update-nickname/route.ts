@@ -4,11 +4,20 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
+  console.log('🔍 닉네임 업데이트 API 호출됨');
+  
   const { nickname } = await request.json();
+  console.log('📝 요청된 닉네임:', nickname);
+  
   const supabase = createRouteHandlerClient({ cookies });
 
   // 사용자 세션 확인
   const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log('👤 사용자 인증 상태:', { 
+    userId: user?.id, 
+    hasError: !!authError,
+    errorMessage: authError?.message 
+  });
 
   if (authError || !user) {
     return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
@@ -58,6 +67,8 @@ export async function POST(request: Request) {
       // 이 오류는 치명적이지 않을 수 있으므로, 로깅만 하고 계속 진행합니다.
     }
 
+    console.log('✅ 닉네임 업데이트 성공:', { userId: user.id, nickname, data });
+    
     return NextResponse.json({ 
       message: '닉네임이 성공적으로 업데이트되었습니다.', 
       data 
