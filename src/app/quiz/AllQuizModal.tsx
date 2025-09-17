@@ -47,7 +47,7 @@ interface AllQuizModalProps {
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
   onUniversalSchoolChange: (direction: 'prev' | 'next') => void;
-  onUniversalSchoolTypeChange?: (schoolType: '초등학교' | '중학교' | '고등학교') => void;
+  onUniversalSchoolTypeChange: (schoolType: '초등학교' | '중학교' | '고등학교') => void;
   selectedSchoolLevel: 'elementary' | 'middle' | 'high';
   setSelectedSchoolLevel: (level: 'elementary' | 'middle' | 'high') => void;
 }
@@ -63,6 +63,7 @@ export default function AllQuizModal({
   universalSchoolType,
   onUniversalGradeChange,
   onUniversalSchoolChange,
+  onUniversalSchoolTypeChange,
   selectedSchoolLevel,
   setSelectedSchoolLevel,
 }: AllQuizModalProps) {
@@ -394,7 +395,7 @@ export default function AllQuizModal({
                 <div className="relative">
                   <select
                     value={selectedSchoolLevel}
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const newLevel = e.target.value as 'elementary' | 'middle' | 'high';
                       setSelectedSchoolLevel(newLevel);
                       
@@ -403,8 +404,53 @@ export default function AllQuizModal({
                       if (newLevel === 'middle') newSchoolType = '중학교';
                       if (newLevel === 'high') newSchoolType = '고등학교';
                       
-                      // 부모 컴포넌트로 학교급 변경 알림 (QuizClient.tsx에서 처리)
-                      onUniversalSchoolTypeChange?.(newSchoolType);
+                      console.log('🏫 AllQuizModal에서 학교급 변경:', { from: universalSchoolType, to: newSchoolType });
+                      
+                      // AllQuizModal에서 직접 학교급 변경 처리
+                      setLoading(true);
+                      setError(null);
+                      setQuiz(null);
+                      
+                      try {
+                        // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
+                        const { data: allQuizzes, error: quizError } = await supabase
+                          .from('meal_quizzes')
+                          .select('school_code')
+                          .eq('meal_date', selectedDate);
+                        
+                        if (quizError || !allQuizzes || allQuizzes.length === 0) {
+                          setError(`${selectedDate}에 퀴즈가 없습니다. 다른 날짜를 선택해보세요.`);
+                          console.log(`⚠️ ${selectedDate}에 퀴즈 없음`);
+                          return;
+                        }
+                        
+                        // 2단계: school_infos에서 해당 학교급에 맞는 학교 찾기
+                        const schoolCodes = [...new Set(allQuizzes.map(q => q.school_code))];
+                        const { data: schoolInfos, error: schoolError } = await supabase
+                          .from('school_infos')
+                          .select('school_code, school_name')
+                          .in('school_code', schoolCodes)
+                          .ilike('school_name', `%${newSchoolType}%`)
+                          .order('school_name')
+                          .limit(1);
+                        
+                        if (schoolError || !schoolInfos || schoolInfos.length === 0) {
+                          setError(`${selectedDate}에 ${newSchoolType}의 퀴즈가 없습니다. 다른 학교급이나 날짜를 선택해보세요.`);
+                          console.log(`⚠️ ${selectedDate}에 ${newSchoolType} 퀴즈 없음`);
+                        } else {
+                          // 첫 번째 학교로 설정하고 부모 컴포넌트에 알림
+                          const firstSchool = schoolInfos[0];
+                          console.log(`✅ ${newSchoolType} 첫 번째 학교 찾음:`, firstSchool.school_name);
+                          
+                          // 부모 컴포넌트로 학교급 변경 알림
+                          onUniversalSchoolTypeChange(newSchoolType);
+                        }
+                      } catch (err) {
+                        console.error('🚫 학교급 변경 중 오류:', err);
+                        setError('학교급 변경 중 오류가 발생했습니다.');
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
                     className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
                   >
