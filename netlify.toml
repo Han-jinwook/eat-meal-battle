@@ -47,7 +47,8 @@
   # 디버그 환경변수
   DEBUG = "netlify*"
   NETLIFY_FUNCTIONS_DEBUG = "true"
-  NODE_VERSION = "20"
+  # Node.js 20 강제 설정
+  NODE_VERSION = "20.x"
   NPM_FLAGS = "--prefer-offline --no-audit --no-fund --include=optional"
 
 [[plugins]]
