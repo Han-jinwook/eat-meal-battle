@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase'
 import BirthConsentModal from '@/components/BirthConsentModal'
-import ErrorBoundary from '@/components/ErrorBoundary'
+
+// ErrorBoundary를 동적으로 로드하여 hydration 문제 방지
+const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), {
+  ssr: false
+})
 
 export default function Profile() {
   const [user, setUser] = useState<any>(null)
@@ -21,8 +26,14 @@ export default function Profile() {
   const [isEditingNickname, setIsEditingNickname] = useState(false)
   const [newNickname, setNewNickname] = useState('')
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  // 클라이언트 사이드 렌더링 확인
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -322,6 +333,11 @@ export default function Profile() {
     }
   }
 
+  // 클라이언트 사이드에서만 렌더링
+  if (!mounted) {
+    return null
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col p-4">
@@ -404,9 +420,8 @@ export default function Profile() {
   }
 
   return (
-    <ErrorBoundary>
-      <div className="flex min-h-screen flex-col p-4">
-        <div className="mx-auto w-full max-w-md">
+    <div className="flex min-h-screen flex-col p-4">
+      <div className="mx-auto w-full max-w-md">
         <div className="mb-4">
           <h1 className="text-xl font-bold">내 프로필</h1>
         </div>
@@ -631,8 +646,7 @@ export default function Profile() {
           }}
           userId={user?.id || ''}
         />
-        </div>
       </div>
-    </ErrorBoundary>
+    </div>
   )
 }
