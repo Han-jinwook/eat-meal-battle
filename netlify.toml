@@ -3,8 +3,8 @@
   command = "npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
   publish = ".next"
   functions = "netlify/functions"
-  # 변경사항 없으면 빌드 스킵
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
+  # 변경사항 없으면 빌드 스킵 (임시 비활성화)
+  # ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
 
 [functions]
   node_bundler = "esbuild"
@@ -71,5 +71,11 @@
 [[redirects]]
   from = "/api/quiz/*"
   to = "/.netlify/functions/quiz/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/user/*"
+  to = "/.netlify/functions/user/:splat"
   status = 200
   force = true

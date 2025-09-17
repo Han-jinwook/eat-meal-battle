@@ -1,3 +1,5 @@
+// BACKUP: 이 파일은 사용되지 않음 - MainHeader.tsx가 실제 헤더
+// 프로필 링크가 있지만 현재 사용되지 않음, 나중에 삭제 예정
 'use client';
 
 import Link from 'next/link';
