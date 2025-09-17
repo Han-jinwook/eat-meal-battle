@@ -17,6 +17,9 @@ export default function Profile() {
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
+  const [isEditingNickname, setIsEditingNickname] = useState(false)
+  const [newNickname, setNewNickname] = useState('')
+  const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -48,6 +51,7 @@ export default function Profile() {
           if (profileResult.status === 'fulfilled' && !profileResult.value.error) {
             console.log('사용자 DB 프로필:', profileResult.value.data)
             setUserProfile(profileResult.value.data)
+            setNewNickname(profileResult.value.data?.nickname || '')
             setDbStatus('success')
           } else {
             console.error('사용자 프로필 조회 에러:', profileResult.value?.error)
@@ -76,6 +80,46 @@ export default function Profile() {
     getUser()
   }, [supabase, router])
 
+  const handleUpdateNickname = async () => {
+    if (!newNickname.trim()) {
+      setError('닉네임은 공백일 수 없습니다.');
+      alert('닉네임은 공백일 수 없습니다.');
+      return;
+    }
+    if (newNickname.trim() === userProfile?.nickname) {
+      setIsEditingNickname(false);
+      return;
+    }
+
+    setIsUpdatingNickname(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/user/update-nickname', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nickname: newNickname.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '닉네임 업데이트에 실패했습니다.');
+      }
+
+      setUserProfile((prev: any) => ({ ...prev, nickname: newNickname.trim() }));
+      setIsEditingNickname(false);
+      alert('닉네임이 성공적으로 변경되었습니다.');
+
+    } catch (error: any) {
+      setError(error.message);
+      alert(`오류: ${error.message}`);
+    } finally {
+      setIsUpdatingNickname(false);
+    }
+  };
 
   // 친구에게 공유하기 함수
   const handleShareApp = async () => {
@@ -362,7 +406,47 @@ export default function Profile() {
             </div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold mb-1">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
+            {/* 디버깅 정보 */}
+            <div className="text-xs text-gray-400 mb-2">
+              DEBUG: isEditingNickname={isEditingNickname ? 'true' : 'false'}, 
+              userProfile={userProfile ? 'loaded' : 'null'}, 
+              user={user ? 'loaded' : 'null'}
+            </div>
+            
+            {isEditingNickname ? (
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <input
+                  type="text"
+                  value={newNickname}
+                  onChange={(e) => setNewNickname(e.target.value)}
+                  className="text-xl font-bold text-center border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={handleUpdateNickname}
+                  disabled={isUpdatingNickname}
+                  className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+                >
+                  {isUpdatingNickname ? '저장중' : '저장'}
+                </button>
+                <button
+                  onClick={() => setIsEditingNickname(false)}
+                  className="text-sm text-gray-600"
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
+                <button 
+                  onClick={() => setIsEditingNickname(true)} 
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg border-2 border-red-600 font-bold text-lg ml-2 cursor-pointer hover:bg-red-600 transition-colors"
+                >
+                  [수정]
+                </button>
+              </div>
+            )}
             <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
             
             {/* 출생연도 & 계정생성 */}
