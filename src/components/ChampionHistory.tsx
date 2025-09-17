@@ -226,8 +226,9 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         const monthlySchoolTotal = allMonthlyGradeStats.reduce((sum, stat) => sum + (stat.grade_total || 0), 0);
         
         // 월간 통계를 바탕으로 my_record 상태 결정
+        // DB에서 가져온 month_champion 값만 사용
         let myMonthRecord = '✊'; // 도전 이모지
-        if (isMonthChampion || (monthTotal > 0 && monthCorrect === monthTotal)) {
+        if (isMonthChampion) {
           myMonthRecord = '🏆'; // 트로피 이모지
         }
         
