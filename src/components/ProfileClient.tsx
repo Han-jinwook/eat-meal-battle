@@ -27,6 +27,8 @@ export default function ProfileClient() {
   const supabase = createClient()
 
   const handleUpdateNickname = async () => {
+    console.log('🔍 닉네임 업데이트 시작:', { newNickname, currentNickname: userProfile?.nickname });
+    
     if (!newNickname.trim()) {
       setError('닉네임은 공백일 수 없습니다.');
       alert('닉네임은 공백일 수 없습니다.');
@@ -41,25 +43,36 @@ export default function ProfileClient() {
     setError(null);
 
     try {
-      const response = await fetch('/api/user/update-nickname', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nickname: newNickname.trim() }),
-      });
+      console.log('🔥 직접 Supabase 호출 시작...');
+      
+      // 현재 사용자 확인
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('로그인이 필요합니다.');
+      }
+      
+      console.log('👤 사용자 ID:', user.id);
+      
+      // 직접 Supabase에서 닉네임 업데이트
+      const { data, error } = await supabase
+        .from('users')
+        .update({ nickname: newNickname.trim() })
+        .eq('id', user.id)
+        .select();
 
-      const result = await response.json();
+      console.log('📊 Supabase 응답:', { data, error });
 
-      if (!response.ok) {
-        throw new Error(result.error || '닉네임 업데이트에 실패했습니다.');
+      if (error) {
+        throw new Error(`DB 오류: ${error.message}`);
       }
 
+      // 성공!
+      alert('닉네임이 성공적으로 변경되었습니다! 🎉');
       setUserProfile((prev: any) => ({ ...prev, nickname: newNickname.trim() }));
       setIsEditingNickname(false);
-      alert('닉네임이 성공적으로 변경되었습니다.');
 
     } catch (error: any) {
+      console.error('❌ 닉네임 업데이트 오류:', error);
       setError(error.message);
       alert(`오류: ${error.message}`);
     } finally {
@@ -403,20 +416,8 @@ export default function ProfileClient() {
                 <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
                 <button 
                   onClick={() => setIsEditingNickname(true)} 
-                  style={{
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '2px solid #dc2626',
-                    fontWeight: 'bold',
-                    fontSize: '18px',
-                    marginLeft: '8px',
-                    cursor: 'pointer',
-                    display: 'inline-block !important',
-                    visibility: 'visible !important',
-                    opacity: '1 !important'
-                  }}
+                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-sm"
+                  title="닉네임 수정"
                 >
                   [수정]
                 </button>

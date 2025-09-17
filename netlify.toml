@@ -54,6 +54,11 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com;"
+
 # 존재하지 않는 함수 설정 제거 완료
 
 # API 경로를 Netlify Functions로 리다이렉트
