@@ -5,10 +5,29 @@ exports.handler = async (event, context) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
+  // 디버깅을 위한 환경변수 로깅
+  console.log('🔍 환경변수 확인:', {
+    supabaseUrl: supabaseUrl ? '설정됨' : '없음',
+    supabaseKey: supabaseKey ? '설정됨' : '없음',
+    allEnvKeys: Object.keys(process.env).filter(key => key.includes('SUPABASE'))
+  });
+
   if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Supabase 환경변수 누락:', {
+      supabaseUrl: !!supabaseUrl,
+      supabaseKey: !!supabaseKey,
+      availableEnvs: Object.keys(process.env).filter(key => key.includes('SUPABASE'))
+    });
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Supabase 환경 변수가 설정되지 않았습니다.' }),
+      body: JSON.stringify({ 
+        error: 'Supabase 환경 변수가 설정되지 않았습니다.',
+        debug: {
+          supabaseUrl: !!supabaseUrl,
+          supabaseKey: !!supabaseKey,
+          availableEnvs: Object.keys(process.env).filter(key => key.includes('SUPABASE'))
+        }
+      }),
     };
   }
 
