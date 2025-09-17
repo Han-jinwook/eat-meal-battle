@@ -23,7 +23,36 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
-  
+
+  // 세션 상태 실시간 모니터링
+  useEffect(() => {
+    console.log('🔄 세션 상태 변화 리스너 설정')
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔔 Auth 상태 변화 감지:', {
+        event,
+        hasSession: !!session,
+        userId: session?.user?.id,
+        timestamp: new Date().toISOString()
+      })
+      
+      if (event === 'SIGNED_IN' && session) {
+        console.log('✅ 로그인 완료 감지, 홈으로 리다이렉트')
+        // 약간의 지연 후 리다이렉트 (세션 완전 동기화 대기)
+        setTimeout(() => {
+          router.push('/')
+        }, 500)
+      } else if (event === 'SIGNED_OUT') {
+        console.log('🚪 로그아웃 감지')
+      }
+    })
+    
+    return () => {
+      console.log('🔄 세션 상태 변화 리스너 해제')
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
+
   useEffect(() => {
     // URL 파라미터에서 오류 처리
     const errorType = searchParams.get('error')
@@ -41,6 +70,8 @@ function LoginContent() {
     } else if (errorType === 'oauth_error') {
       const detailMessage = errorDetail ? ` (상세: ${errorDetail})` : ''
       setError(`OAuth 인증 중 오류가 발생했습니다${detailMessage}`)
+    } else if (errorType === 'session_verification_failed') {
+      setError('로그인 세션 검증에 실패했습니다. 브라우저를 새로고침하고 다시 시도해주세요.')
     } else if (errorType) {
       setError(`로그인 중 오류가 발생했습니다: ${errorType}`)
     }
@@ -56,22 +87,52 @@ function LoginContent() {
     }
   }, [searchParams])
   
-  // 사용자가 이미 로그인되어 있는지 확인
+  // 사용자가 이미 로그인되어 있는지 확인 (강화된 세션 체크)
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('현재 세션 상태:', session ? '로그인됨' : '로그인되지 않음')
+        console.log('🔍 로그인 페이지에서 세션 상태 확인 시작...')
+        
+        // 여러 번 시도하여 세션 상태를 확인 (OAuth 콜백 후 세션 동기화 대기)
+        let session = null
+        let attempts = 0
+        const maxAttempts = 3
+        
+        while (!session && attempts < maxAttempts) {
+          attempts++
+          console.log(`🔄 세션 확인 시도 ${attempts}/${maxAttempts}`)
+          
+          const { data: { session: currentSession }, error } = await supabase.auth.getSession()
+          
+          if (error) {
+            console.warn(`⚠️ 세션 확인 ${attempts}번째 시도 오류:`, error)
+          } else if (currentSession) {
+            session = currentSession
+            console.log(`✅ 세션 발견! (시도 ${attempts}/${maxAttempts})`)
+            break
+          } else {
+            console.log(`❌ 세션 없음 (시도 ${attempts}/${maxAttempts})`)
+            if (attempts < maxAttempts) {
+              // 다음 시도 전 잠시 대기
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+        }
+        
         if (session) {
-          // 이미 로그인되어 있으면 홈으로 리다이렉트
+          console.log('🚀 기존 세션 발견, 홈으로 리다이렉트')
           router.push('/')
+        } else {
+          console.log('📝 세션 없음, 로그인 페이지 유지')
         }
       } catch (error) {
-        console.error('세션 확인 중 오류:', error)
+        console.error('❌ 세션 확인 중 예외 발생:', error)
       }
     }
     
-    checkUser()
+    // 페이지 로드 후 약간의 지연을 주어 OAuth 콜백 완료 대기
+    const timer = setTimeout(checkUser, 100)
+    return () => clearTimeout(timer)
   }, [router, supabase])
 
   // 오디오 재생/정지 토글 함수

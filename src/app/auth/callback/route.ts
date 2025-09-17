@@ -440,21 +440,13 @@ export async function GET(request: NextRequest) {
               .update(updateData)
               .eq('id', data.session.user.id);
             
-            // 사용자 정보 업데이트 후 로그 남기기
-            console.info('✅ 사용자 정보 업데이트 후 로그 남기기');
-            const logData = {
+            // 사용자 정보 업데이트 로그 (콘솔 로그만 사용)
+            console.info('✅ 사용자 정보 업데이트 완료:', {
               user_id: data.session.user.id,
               action: 'UPDATE_USER_INFO',
-              data: updateData
-            };
-            const { error: logError } = await supabase
-              .from('logs')
-              .insert([logData]);
-            if (logError) {
-              console.error('❌ 로그 남기기 오류:', logError);
-            } else {
-              console.info('✅ 로그 남기기 완료!');
-            }
+              data: updateData,
+              timestamp: new Date().toISOString()
+            });
             
             if (updateError) {
               console.error('❌ 사용자 정보 업데이트 실패:', updateError);
@@ -636,9 +628,50 @@ export async function GET(request: NextRequest) {
       console.error('No auth code received')
     }
 
-    // 리다이렉트 전 세션 안정화를 위한 추가 지연
-    console.log('🔄 세션 안정화를 위해 잠시 대기...')
-    await new Promise(resolve => setTimeout(resolve, 3000)) // 세션 안정화를 위한 대기시간 3초로 증가
+    // 리다이렉트 전 세션 검증 및 안정화
+    console.log('🔄 세션 검증 및 안정화 시작...')
+    
+    // 세션 검증을 위한 새로운 supabase 클라이언트 생성
+    const verificationSupabase = createClient()
+    
+    let sessionVerified = false
+    let verificationAttempts = 0
+    const maxVerificationAttempts = 5
+    
+    while (!sessionVerified && verificationAttempts < maxVerificationAttempts) {
+      verificationAttempts++
+      console.log(`🔍 세션 검증 시도 ${verificationAttempts}/${maxVerificationAttempts}`)
+      
+      try {
+        const { data: { session: currentSession }, error: sessionError } = await verificationSupabase.auth.getSession()
+        
+        if (sessionError) {
+          console.warn(`⚠️ 세션 검증 ${verificationAttempts}번째 시도 오류:`, sessionError)
+        } else if (currentSession && currentSession.user) {
+          console.log(`✅ 세션 검증 성공! (시도 ${verificationAttempts}/${maxVerificationAttempts})`)
+          console.log(`👤 검증된 사용자 ID: ${currentSession.user.id}`)
+          sessionVerified = true
+          break
+        } else {
+          console.log(`❌ 세션 없음 (시도 ${verificationAttempts}/${maxVerificationAttempts})`)
+        }
+        
+        if (!sessionVerified && verificationAttempts < maxVerificationAttempts) {
+          // 다음 시도 전 대기
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      } catch (verificationError) {
+        console.error(`❌ 세션 검증 ${verificationAttempts}번째 시도 예외:`, verificationError)
+      }
+    }
+    
+    if (!sessionVerified) {
+      console.error('❌ 세션 검증 실패 - 로그인 페이지로 리다이렉트')
+      return NextResponse.redirect(new URL('/login?error=session_verification_failed', request.url))
+    }
+    
+    console.log('✅ 세션 검증 완료, 최종 대기 중...')
+    await new Promise(resolve => setTimeout(resolve, 1000)) // 최종 안정화 대기
     
     console.log('Redirecting to:', redirectUrl)
     const response = NextResponse.redirect(new URL(redirectUrl, request.url))
