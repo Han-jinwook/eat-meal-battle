@@ -3,7 +3,7 @@ import { formatDisplayDate } from '@/utils/DateUtils';
 import { getMealTypeName } from '@/utils/mealUtils';
 import { MealInfo, MealMenuItem, MealImage } from '@/types'; // 이미지 타입 추가
 import StarRating from '@/components/StarRating';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClient } from '@/lib/supabase';
 import { useUser } from '@supabase/auth-helpers-react';
@@ -126,10 +126,29 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       supabase.removeChannel(channel);
     };
   }, [item?.id]); // 아이템 ID가 변경될 때만 재실행
-  const [rating, setRating] = useState<number | null>(item.user_rating || null);
-  const [avgRating, setAvgRating] = useState<number | null>(item.avg_rating || null);
-  const [ratingCount, setRatingCount] = useState<number | null>(item.rating_count || null);
+  // iOS Safari 호환성을 위한 강화된 상태 관리
+  const [rating, setRating] = useState<number | null>(() => {
+    // 초기값을 더 안전하게 설정
+    return item.user_rating !== undefined ? item.user_rating : null;
+  });
+  const [avgRating, setAvgRating] = useState<number | null>(() => {
+    return item.avg_rating !== undefined ? item.avg_rating : null;
+  });
+  const [ratingCount, setRatingCount] = useState<number | null>(() => {
+    return item.rating_count !== undefined ? item.rating_count : null;
+  });
   const [isLoading, setIsLoading] = useState(false);
+  
+  // iOS Safari 메모리 관리를 위한 상태 백업
+  const ratingBackupRef = useRef<{
+    rating: number | null;
+    avgRating: number | null;
+    ratingCount: number | null;
+  }>({
+    rating: item.user_rating || null,
+    avgRating: item.avg_rating || null,
+    ratingCount: item.rating_count || null
+  });
   
   // 사용자 로그인 상태 콘솔에 표시 (디버깅용)
   useEffect(() => {
@@ -323,32 +342,109 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     }
   };
 
-  // 별점 상태 초기화 함수 - 단순화된 버전
+  // iOS Safari 호환성을 위한 강화된 별점 상태 초기화 함수
   const initRatingState = async () => {
     try {
-      // 이미 별점 정보가 있으면 사용
+      console.log('🍎 iOS 호환 별점 초기화 시작 - 아이템:', item.id);
+      
+      // 1. localStorage 백업부터 확인 (iOS Safari 최우선 복원)
+      try {
+        const backupKey = `rating_backup_${item.id}_${user?.id}`;
+        const backupData = localStorage.getItem(backupKey);
+        if (backupData) {
+          const parsed = JSON.parse(backupData);
+          // 백업이 24시간 이내인지 확인 (오래된 백업은 무시)
+          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+            console.log('💾 localStorage 백업 복원:', parsed.rating);
+            setRating(parsed.rating);
+            setAvgRating(parsed.avgRating);
+            setRatingCount(parsed.ratingCount);
+            
+            // 메모리 백업도 업데이트
+            ratingBackupRef.current = {
+              rating: parsed.rating,
+              avgRating: parsed.avgRating,
+              ratingCount: parsed.ratingCount
+            };
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('localStorage 백업 읽기 실패:', e);
+      }
+      
+      // 2. 메모리 백업 확인 (iOS Safari 메모리 이슈 대응)
+      if (ratingBackupRef.current.rating !== null) {
+        console.log('📱 메모리 백업된 별점 상태 복원:', ratingBackupRef.current.rating);
+        setRating(ratingBackupRef.current.rating);
+        setAvgRating(ratingBackupRef.current.avgRating);
+        setRatingCount(ratingBackupRef.current.ratingCount);
+        return;
+      }
+      
+      // 2. 프롭스에서 전달된 별점 정보 사용
       if (item.user_rating !== undefined) {
-        setRating(item.user_rating);
-        setAvgRating(item.avg_rating);
-        setRatingCount(item.rating_count);
+        console.log('📊 프롭스 별점 정보 사용:', item.user_rating);
+        const newRating = item.user_rating;
+        const newAvgRating = item.avg_rating;
+        const newRatingCount = item.rating_count;
+        
+        setRating(newRating);
+        setAvgRating(newAvgRating);
+        setRatingCount(newRatingCount);
+        
+        // 백업에도 저장 (iOS Safari 메모리 관리)
+        ratingBackupRef.current = {
+          rating: newRating,
+          avgRating: newAvgRating,
+          ratingCount: newRatingCount
+        };
+        
+        // iOS Safari를 위한 localStorage 영구 백업
+        try {
+          const backupKey = `rating_backup_${item.id}_${user?.id}`;
+          localStorage.setItem(backupKey, JSON.stringify({
+            rating: newRating,
+            avgRating: newAvgRating,
+            ratingCount: newRatingCount,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.warn('localStorage 백업 실패:', e);
+        }
         return;
       }
 
-      // 서버에서 데이터 조회
+      // 3. 서버에서 데이터 조회 (마지막 수단)
+      console.log('🌐 서버에서 별점 데이터 조회');
       const data = await fetchRating(item.id);
       
       if (data) {
         setRating(data.user_rating);
         setAvgRating(data.avg_rating);
         setRatingCount(data.rating_count);
+        
+        // 백업에도 저장
+        ratingBackupRef.current = {
+          rating: data.user_rating,
+          avgRating: data.avg_rating,
+          ratingCount: data.rating_count
+        };
       } else {
         // 조회 실패 시 기본값 사용
         setRating(null);
         setAvgRating(0);
         setRatingCount(0);
+        
+        // 백업 초기화
+        ratingBackupRef.current = {
+          rating: null,
+          avgRating: 0,
+          ratingCount: 0
+        };
       }
     } catch (error) {
-      console.error('별점 데이터 초기화 중 오류:', error);
+      console.error('🚨 별점 데이터 초기화 중 오류:', error);
     }
   };
 
@@ -358,6 +454,35 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       initRatingState();
     }
   }, [item.id, user, item]);
+
+  // iOS Safari 페이지 포커스 복원 시 상태 복원
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && ratingBackupRef.current.rating !== null) {
+        console.log('📱 iOS Safari 페이지 포커스 복원 - 별점 상태 확인');
+        
+        // 현재 상태와 백업 상태가 다르면 복원
+        if (rating !== ratingBackupRef.current.rating) {
+          console.log('🔄 백업된 별점 상태로 복원:', ratingBackupRef.current.rating);
+          setRating(ratingBackupRef.current.rating);
+          setAvgRating(ratingBackupRef.current.avgRating);
+          setRatingCount(ratingBackupRef.current.ratingCount);
+        }
+      }
+    };
+
+    // iOS Safari에서만 이벤트 리스너 추가
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent);
+    if (isIOSSafari) {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleVisibilityChange);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleVisibilityChange);
+      };
+    }
+  }, [rating]);
 
   // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결 + 별점 취소(삭제) 지원
   const handleRating = async (value: number) => {
@@ -399,6 +524,17 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       // 이미 선택된 별을 다시 클릭하면 별점 삭제
       if (rating === value) {
         setRating(null); // UI에서 별점 제거
+        
+        // iOS Safari 백업도 업데이트
+        ratingBackupRef.current.rating = null;
+        
+        // localStorage 백업도 삭제
+        try {
+          const backupKey = `rating_backup_${item.id}_${user?.id}`;
+          localStorage.removeItem(backupKey);
+        } catch (e) {
+          console.warn('localStorage 백업 삭제 실패:', e);
+        }
         const deleted = await deleteRating(item.id);
         if (deleted) {
         }
@@ -418,6 +554,25 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           // 삭제 실패시 이전 상태로 되돌리기
           console.warn('별점 삭제 실패, 이전 상태 유지');
           setRating(previousRating);
+          
+          // iOS Safari 백업도 되돌리기
+          ratingBackupRef.current.rating = previousRating;
+          
+          // localStorage 백업도 되돌리기 (삭제 실패)
+          try {
+            const backupKey = `rating_backup_${item.id}_${user?.id}`;
+            if (previousRating !== null) {
+              localStorage.setItem(backupKey, JSON.stringify({
+                rating: previousRating,
+                avgRating: avgRating,
+                ratingCount: ratingCount,
+                timestamp: Date.now()
+              }));
+            }
+          } catch (e) {
+            console.warn('localStorage 백업 되돌리기 실패:', e);
+          }
+          
           // 위에서 변경한 평균도 되돌려야 함
           await fetchRating(item.id); // 실제 최신 데이터로 다시 재조회
         } else {
@@ -431,6 +586,22 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       } else {
         // 새로운 별점 저장 - 이곳도 낙관적 업데이트 적용
         setRating(value);
+        
+        // iOS Safari 백업도 업데이트
+        ratingBackupRef.current.rating = value;
+        
+        // localStorage 백업도 업데이트
+        try {
+          const backupKey = `rating_backup_${item.id}_${user?.id}`;
+          localStorage.setItem(backupKey, JSON.stringify({
+            rating: value,
+            avgRating: avgRating,
+            ratingCount: ratingCount,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.warn('localStorage 백업 실패:', e);
+        }
         
         // 평균 별점 및 카운트 임시 업데이트 (단순 예상)
         if (avgRating && ratingCount) {
@@ -462,6 +633,27 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           // 저장 실패시 이전 상태로 되돌리기
           console.warn('별점 저장 실패, 이전 상태로 복원');
           setRating(previousRating);
+          
+          // iOS Safari 백업도 되돌리기
+          ratingBackupRef.current.rating = previousRating;
+          
+          // localStorage 백업도 되돌리기 (저장 실패)
+          try {
+            const backupKey = `rating_backup_${item.id}_${user?.id}`;
+            if (previousRating !== null) {
+              localStorage.setItem(backupKey, JSON.stringify({
+                rating: previousRating,
+                avgRating: avgRating,
+                ratingCount: ratingCount,
+                timestamp: Date.now()
+              }));
+            } else {
+              localStorage.removeItem(backupKey);
+            }
+          } catch (e) {
+            console.warn('localStorage 백업 되돌리기 실패:', e);
+          }
+          
           // 위에서 변경한 평균도 되돌려야 함
           await fetchRating(item.id); // 실제 최신 데이터로 다시 재조회
         } else {
