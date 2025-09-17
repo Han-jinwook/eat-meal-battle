@@ -20,9 +20,7 @@ export async function POST(request: Request) {
     const response = await fetch(functionUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        // Netlify 함수에 인증 정보 전달
-        'Authorization': `Bearer ${request.headers.get('Authorization')?.split(' ')[1]}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ action: 'update-nickname', userId: user.id, nickname }),
     });

@@ -406,13 +406,6 @@ export default function Profile() {
             </div>
           </div>
           <div className="text-center">
-            {/* 디버깅 정보 */}
-            <div className="text-xs text-gray-400 mb-2">
-              DEBUG: isEditingNickname={isEditingNickname ? 'true' : 'false'}, 
-              userProfile={userProfile ? 'loaded' : 'null'}, 
-              user={user ? 'loaded' : 'null'}
-            </div>
-            
             {isEditingNickname ? (
               <div className="flex items-center justify-center gap-2 mb-1">
                 <input
@@ -441,9 +434,14 @@ export default function Profile() {
                 <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
                 <button 
                   onClick={() => setIsEditingNickname(true)} 
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg border-2 border-red-600 font-bold text-lg ml-2 cursor-pointer hover:bg-red-600 transition-colors"
+                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-sm"
+                  title="닉네임 수정"
                 >
-                  [수정]
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                    <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+                  </svg>
+                  수정
                 </button>
               </div>
             )}
