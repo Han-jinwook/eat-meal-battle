@@ -47,6 +47,7 @@ interface AllQuizModalProps {
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
   onUniversalSchoolChange: (direction: 'prev' | 'next') => void;
+  onUniversalSchoolTypeChange?: (schoolType: '초등학교' | '중학교' | '고등학교') => void;
   selectedSchoolLevel: 'elementary' | 'middle' | 'high';
   setSelectedSchoolLevel: (level: 'elementary' | 'middle' | 'high') => void;
 }
@@ -393,7 +394,18 @@ export default function AllQuizModal({
                 <div className="relative">
                   <select
                     value={selectedSchoolLevel}
-                    onChange={(e) => setSelectedSchoolLevel(e.target.value as 'elementary' | 'middle' | 'high')}
+                    onChange={(e) => {
+                      const newLevel = e.target.value as 'elementary' | 'middle' | 'high';
+                      setSelectedSchoolLevel(newLevel);
+                      
+                      // universalSchoolType 업데이트
+                      let newSchoolType: '초등학교' | '중학교' | '고등학교' = '초등학교';
+                      if (newLevel === 'middle') newSchoolType = '중학교';
+                      if (newLevel === 'high') newSchoolType = '고등학교';
+                      
+                      // 부모 컴포넌트로 학교급 변경 알림 (QuizClient.tsx에서 처리)
+                      onUniversalSchoolTypeChange?.(newSchoolType);
+                    }}
                     className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
                   >
                     <option value="elementary">초등학교</option>
