@@ -478,10 +478,7 @@ export default function AllQuizModal({
             ) : error ? (
               <div className="text-center py-10">
                 <div className="text-6xl mb-4">🍽️</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4">급식퀴즈가 없습니다!</h3>
-                <p className="text-sm text-gray-500">
-                  다른 날짜나 학교를 선택해보세요.
-                </p>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">{error}</h3>
               </div>
             ) : quiz ? (
               <div className="quiz-container">
