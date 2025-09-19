@@ -70,26 +70,23 @@ interface MealCardProps {
 
 // 별점 지정/표시 컴포넌트
 function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
-  // 상태로 사용자 관리
-  const [user, setUser] = useState(null);
+  // iOS Safari 호환성을 위해 useUser 훅 사용 (별도 상태 관리 제거)
+  const user = useUser();
   
   // 학교 정보 및 권한 확인
   const { userSchool } = useUserSchool();
   const schoolMode = useSchoolMode(userSchool);
   const canRate = schoolMode.canPerformAction('canRate');
   
-  
-  // 컴포넌트 마운트 시 사용자 정보 가져오기
+  // iOS Safari 디버깅 로그
   useEffect(() => {
-    // 비동기로 사용자 정보 가져오기
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      console.log('실제 사용자 정보:', data?.user);
-      setUser(data?.user);
-    };
-    
-    getUser();
-  }, []);
+    console.log('🍎 MenuItemWithRating - 사용자 상태:', {
+      hasUser: !!user,
+      userId: user?.id,
+      itemId: item?.id,
+      timestamp: new Date().toISOString()
+    });
+  }, [user, item?.id]);
   
   // 실시간 구독 설정: menu_item_rating_stats 테이블 변경 감지
   useEffect(() => {
@@ -150,11 +147,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     ratingCount: item.rating_count || null
   });
   
-  // 사용자 로그인 상태 콘솔에 표시 (디버깅용)
-  useEffect(() => {
-    console.log('MenuItemWithRating - 사용자 로그인 상태:', user ? '로그인됨' : '로그인 안됨');
-    if (user) console.log('사용자 ID:', user.id); // 사용자 ID 디버깅 로그 추가
-  }, [user]);
 
   // 사용자 별점 저장 함수 (Netlify Functions 사용)
   const saveRating = async (menuItemId: string, rating: number) => {
@@ -348,29 +340,31 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       console.log('🍎 iOS 호환 별점 초기화 시작 - 아이템:', item.id);
       
       // 1. localStorage 백업부터 확인 (iOS Safari 최우선 복원)
-      try {
-        const backupKey = `rating_backup_${item.id}_${user?.id}`;
-        const backupData = localStorage.getItem(backupKey);
-        if (backupData) {
-          const parsed = JSON.parse(backupData);
-          // 백업이 24시간 이내인지 확인 (오래된 백업은 무시)
-          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-            console.log('💾 localStorage 백업 복원:', parsed.rating);
-            setRating(parsed.rating);
-            setAvgRating(parsed.avgRating);
-            setRatingCount(parsed.ratingCount);
-            
-            // 메모리 백업도 업데이트
-            ratingBackupRef.current = {
-              rating: parsed.rating,
-              avgRating: parsed.avgRating,
-              ratingCount: parsed.ratingCount
-            };
-            return;
+      if (user?.id) {
+        try {
+          const backupKey = `rating_backup_${item.id}_${user.id}`;
+          const backupData = localStorage.getItem(backupKey);
+          if (backupData) {
+            const parsed = JSON.parse(backupData);
+            // 백업이 24시간 이내인지 확인 (오래된 백업은 무시)
+            if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+              console.log('💾 localStorage 백업 복원:', parsed.rating);
+              setRating(parsed.rating);
+              setAvgRating(parsed.avgRating);
+              setRatingCount(parsed.ratingCount);
+              
+              // 메모리 백업도 업데이트
+              ratingBackupRef.current = {
+                rating: parsed.rating,
+                avgRating: parsed.avgRating,
+                ratingCount: parsed.ratingCount
+              };
+              return;
+            }
           }
+        } catch (e) {
+          console.warn('localStorage 백업 읽기 실패:', e);
         }
-      } catch (e) {
-        console.warn('localStorage 백업 읽기 실패:', e);
       }
       
       // 2. 메모리 백업 확인 (iOS Safari 메모리 이슈 대응)
@@ -401,16 +395,18 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         };
         
         // iOS Safari를 위한 localStorage 영구 백업
-        try {
-          const backupKey = `rating_backup_${item.id}_${user?.id}`;
-          localStorage.setItem(backupKey, JSON.stringify({
-            rating: newRating,
-            avgRating: newAvgRating,
-            ratingCount: newRatingCount,
-            timestamp: Date.now()
-          }));
-        } catch (e) {
-          console.warn('localStorage 백업 실패:', e);
+        if (user?.id) {
+          try {
+            const backupKey = `rating_backup_${item.id}_${user.id}`;
+            localStorage.setItem(backupKey, JSON.stringify({
+              rating: newRating,
+              avgRating: newAvgRating,
+              ratingCount: newRatingCount,
+              timestamp: Date.now()
+            }));
+          } catch (e) {
+            console.warn('localStorage 백업 실패:', e);
+          }
         }
         return;
       }
@@ -458,12 +454,38 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   // iOS Safari 페이지 포커스 복원 시 상태 복원
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && ratingBackupRef.current.rating !== null) {
+      if (!document.hidden && user?.id) {
         console.log('📱 iOS Safari 페이지 포커스 복원 - 별점 상태 확인');
         
-        // 현재 상태와 백업 상태가 다르면 복원
-        if (rating !== ratingBackupRef.current.rating) {
-          console.log('🔄 백업된 별점 상태로 복원:', ratingBackupRef.current.rating);
+        // localStorage에서 최신 백업 확인
+        try {
+          const backupKey = `rating_backup_${item.id}_${user.id}`;
+          const backupData = localStorage.getItem(backupKey);
+          if (backupData) {
+            const parsed = JSON.parse(backupData);
+            // 백업이 24시간 이내이고 현재 상태와 다르면 복원
+            if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000 && rating !== parsed.rating) {
+              console.log('🔄 localStorage 백업으로 별점 상태 복원:', parsed.rating);
+              setRating(parsed.rating);
+              setAvgRating(parsed.avgRating);
+              setRatingCount(parsed.ratingCount);
+              
+              // 메모리 백업도 동기화
+              ratingBackupRef.current = {
+                rating: parsed.rating,
+                avgRating: parsed.avgRating,
+                ratingCount: parsed.ratingCount
+              };
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('포커스 복원 시 localStorage 읽기 실패:', e);
+        }
+        
+        // localStorage 백업이 없으면 메모리 백업 확인
+        if (ratingBackupRef.current.rating !== null && rating !== ratingBackupRef.current.rating) {
+          console.log('🔄 메모리 백업으로 별점 상태 복원:', ratingBackupRef.current.rating);
           setRating(ratingBackupRef.current.rating);
           setAvgRating(ratingBackupRef.current.avgRating);
           setRatingCount(ratingBackupRef.current.ratingCount);
@@ -476,13 +498,15 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     if (isIOSSafari) {
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('focus', handleVisibilityChange);
+      window.addEventListener('pageshow', handleVisibilityChange); // iOS Safari 백그라운드 복원 대응
       
       return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener('focus', handleVisibilityChange);
+        window.removeEventListener('pageshow', handleVisibilityChange);
       };
     }
-  }, [rating]);
+  }, [rating, user?.id, item.id]);
 
   // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결 + 별점 취소(삭제) 지원
   const handleRating = async (value: number) => {
@@ -529,11 +553,13 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         ratingBackupRef.current.rating = null;
         
         // localStorage 백업도 삭제
-        try {
-          const backupKey = `rating_backup_${item.id}_${user?.id}`;
-          localStorage.removeItem(backupKey);
-        } catch (e) {
-          console.warn('localStorage 백업 삭제 실패:', e);
+        if (user?.id) {
+          try {
+            const backupKey = `rating_backup_${item.id}_${user.id}`;
+            localStorage.removeItem(backupKey);
+          } catch (e) {
+            console.warn('localStorage 백업 삭제 실패:', e);
+          }
         }
         const deleted = await deleteRating(item.id);
         if (deleted) {
@@ -559,18 +585,20 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           ratingBackupRef.current.rating = previousRating;
           
           // localStorage 백업도 되돌리기 (삭제 실패)
-          try {
-            const backupKey = `rating_backup_${item.id}_${user?.id}`;
-            if (previousRating !== null) {
-              localStorage.setItem(backupKey, JSON.stringify({
-                rating: previousRating,
-                avgRating: avgRating,
-                ratingCount: ratingCount,
-                timestamp: Date.now()
-              }));
+          if (user?.id) {
+            try {
+              const backupKey = `rating_backup_${item.id}_${user.id}`;
+              if (previousRating !== null) {
+                localStorage.setItem(backupKey, JSON.stringify({
+                  rating: previousRating,
+                  avgRating: avgRating,
+                  ratingCount: ratingCount,
+                  timestamp: Date.now()
+                }));
+              }
+            } catch (e) {
+              console.warn('localStorage 백업 되돌리기 실패:', e);
             }
-          } catch (e) {
-            console.warn('localStorage 백업 되돌리기 실패:', e);
           }
           
           // 위에서 변경한 평균도 되돌려야 함
@@ -591,16 +619,18 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         ratingBackupRef.current.rating = value;
         
         // localStorage 백업도 업데이트
-        try {
-          const backupKey = `rating_backup_${item.id}_${user?.id}`;
-          localStorage.setItem(backupKey, JSON.stringify({
-            rating: value,
-            avgRating: avgRating,
-            ratingCount: ratingCount,
-            timestamp: Date.now()
-          }));
-        } catch (e) {
-          console.warn('localStorage 백업 실패:', e);
+        if (user?.id) {
+          try {
+            const backupKey = `rating_backup_${item.id}_${user.id}`;
+            localStorage.setItem(backupKey, JSON.stringify({
+              rating: value,
+              avgRating: avgRating,
+              ratingCount: ratingCount,
+              timestamp: Date.now()
+            }));
+          } catch (e) {
+            console.warn('localStorage 백업 실패:', e);
+          }
         }
         
         // 평균 별점 및 카운트 임시 업데이트 (단순 예상)
@@ -638,20 +668,22 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           ratingBackupRef.current.rating = previousRating;
           
           // localStorage 백업도 되돌리기 (저장 실패)
-          try {
-            const backupKey = `rating_backup_${item.id}_${user?.id}`;
-            if (previousRating !== null) {
-              localStorage.setItem(backupKey, JSON.stringify({
-                rating: previousRating,
-                avgRating: avgRating,
-                ratingCount: ratingCount,
-                timestamp: Date.now()
-              }));
-            } else {
-              localStorage.removeItem(backupKey);
+          if (user?.id) {
+            try {
+              const backupKey = `rating_backup_${item.id}_${user.id}`;
+              if (previousRating !== null) {
+                localStorage.setItem(backupKey, JSON.stringify({
+                  rating: previousRating,
+                  avgRating: avgRating,
+                  ratingCount: ratingCount,
+                  timestamp: Date.now()
+                }));
+              } else {
+                localStorage.removeItem(backupKey);
+              }
+            } catch (e) {
+              console.warn('localStorage 백업 되돌리기 실패:', e);
             }
-          } catch (e) {
-            console.warn('localStorage 백업 되돌리기 실패:', e);
           }
           
           // 위에서 변경한 평균도 되돌려야 함
