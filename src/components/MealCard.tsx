@@ -6,7 +6,6 @@ import StarRating from '@/components/StarRating';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClient } from '@/lib/supabase';
-import { useUser } from '@supabase/auth-helpers-react';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
 // battleCalculator 제거됨
@@ -70,20 +69,22 @@ interface MealCardProps {
 
 // 별점 지정/표시 컴포넌트
 function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
-  // iOS Safari 호환성을 위해 useUser 훅 사용 (별도 상태 관리 제거)
-  const user = useUser();
+  // iOS Safari 호환성을 위해 useUserSchool 훅 사용 (일관된 사용자 상태 관리)
+  const { user, userSchool } = useUserSchool();
   
-  // 학교 정보 및 권한 확인
-  const { userSchool } = useUserSchool();
+  // 권한 확인
   const schoolMode = useSchoolMode(userSchool);
   const canRate = schoolMode.canPerformAction('canRate');
   
-  // iOS Safari 디버깅 로그
+  // iOS Safari 및 사용자 상태 디버깅 로그
   useEffect(() => {
-    console.log('🍎 MenuItemWithRating - 사용자 상태:', {
+    console.log('🍎 MenuItemWithRating - 사용자 상태 상세:', {
       hasUser: !!user,
       userId: user?.id,
+      userEmail: user?.email,
       itemId: item?.id,
+      itemName: item?.item_name,
+      userObject: user,
       timestamp: new Date().toISOString()
     });
   }, [user, item?.id]);
@@ -511,9 +512,25 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결 + 별점 취소(삭제) 지원
   const handleRating = async (value: number) => {
     try {
+      // 상세 로그인 상태 디버깅
+      console.log('🎯 별점 클릭 디버깅:', {
+        value,
+        hasUser: !!user,
+        userId: user?.id,
+        userEmail: user?.email,
+        itemId: item?.id,
+        itemName: item?.item_name,
+        currentRating: rating,
+        timestamp: new Date().toISOString()
+      });
+      
       // 로그인 확인
       if (!user) {
-        console.error('❌ 사용자 로그인 상태가 아닙니다');
+        console.error('❌ 사용자 로그인 상태가 아닙니다 - 상세 정보:', {
+          user,
+          userType: typeof user,
+          userKeys: user ? Object.keys(user) : 'null'
+        });
         alert('별점을 남기려면 로그인해주세요!');
         return;
       }
