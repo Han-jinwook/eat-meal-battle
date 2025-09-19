@@ -105,9 +105,54 @@ export default function QuizClient() {
     // 범위 내에서만 변경 허용
     if (grade >= minGrade && grade <= maxGrade) {
       setUniversalGrade(grade);
-      console.log('🎯 학년 변경:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위)`);
+      console.log('🏀 학년 변경:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위)`);
+
     } else {
       console.log('🚫 학년 변경 불가:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위 초과)`);
+
+    }
+  };
+
+  // 학교급 변경 핸들러 함수 (초/중/고 선택)
+  const handleUniversalSchoolTypeChange = async (schoolType: '초등학교' | '중학교' | '고등학교') => {
+    console.log('🏫 학교급 변경:', { from: universalSchoolType, to: schoolType });
+    
+    // 학교급 변경
+    setUniversalSchoolType(schoolType);
+    
+    // 학년 범위 처리 (초등학교는 1-6학년, 중/고등학교는 1-3학년)
+    let maxGrade = schoolType === '초등학교' ? 6 : 3;
+    if (universalGrade > maxGrade) {
+      setUniversalGrade(maxGrade);
+      console.log('🚨 학년 자동 조정:', maxGrade, '(최대 학년 초과)'); 
+    }
+    
+    try {
+      // 새 학교급에 해당하는 첫 번째 학교 조회
+      const { data: schoolInfos, error } = await supabase
+        .from('school_infos')
+        .select('school_name, school_code')
+        .ilike('school_name', `%${schoolType}%`)
+        .order('school_name')
+        .limit(1);
+      
+      if (error || !schoolInfos || schoolInfos.length === 0) {
+        console.error('🚫 학교 정보 조회 실패:', error || '학교 없음');
+        return;
+      }
+      
+      // 첫 번째 학교로 설정
+      const firstSchool = schoolInfos[0];
+      setUniversalSchoolName(firstSchool.school_name);
+      setUniversalSchoolCode(firstSchool.school_code);
+      
+      console.log('🏠 새 학교급에서 첫 번째 학교로 설정:', {
+        name: firstSchool.school_name,
+        code: firstSchool.school_code
+      });
+      
+    } catch (err) {
+      console.error('🚫 학교급 변경 중 오류:', err);
     }
   };
 
@@ -1241,6 +1286,7 @@ export default function QuizClient() {
           universalSchoolType={universalSchoolType}
           onUniversalGradeChange={handleUniversalGradeChange}
           onUniversalSchoolChange={handleUniversalSchoolChange}
+          onUniversalSchoolTypeChange={handleUniversalSchoolTypeChange}
           selectedSchoolLevel={selectedSchoolLevel}
           setSelectedSchoolLevel={setSelectedSchoolLevel}
         />
