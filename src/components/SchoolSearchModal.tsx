@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createClient } from '@/lib/supabase';
 
 // 학교 검색 결과 타입 정의
 interface School {
@@ -24,6 +25,8 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const supabase = createClient();
 
   // 학교 검색 함수
   const searchSchools = async () => {
@@ -66,13 +69,68 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
     }
   };
 
+  // 관심학교 등록 함수
+  const registerInterestSchool = async (school: School) => {
+    try {
+      setIsRegistering(true);
+      setError('');
+
+      // 현재 사용자 확인
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('로그인이 필요합니다');
+        return;
+      }
+
+      console.log('🏫 관심학교 등록 시도:', {
+        schoolCode: school.SD_SCHUL_CODE,
+        schoolName: school.SCHUL_NM,
+        officeCode: school.ATPT_OFCDC_SC_CODE
+      });
+
+      // 관심학교 등록 API 호출
+      const response = await fetch('/api/interest-schools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          school_code: school.SD_SCHUL_CODE,
+          school_name: school.SCHUL_NM,
+          office_code: school.ATPT_OFCDC_SC_CODE
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '관심학교 등록에 실패했습니다');
+      }
+
+      console.log('✅ 관심학교 등록 성공');
+      
+      // 성공 시 콜백 호출 및 모달 닫기
+      onSelectSchool(school);
+      onClose();
+      
+      // 상태 초기화
+      setKeyword('');
+      setSchools([]);
+      setError('');
+      
+      // 페이지 새로고침으로 상태 업데이트
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('❌ 관심학교 등록 오류:', error);
+      setError(error instanceof Error ? error.message : '관심학교 등록에 실패했습니다');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   // 학교 선택 함수
   const selectSchool = (school: School) => {
-    onSelectSchool(school);
-    // 모달 닫기 및 상태 초기화
-    setKeyword('');
-    setSchools([]);
-    setError('');
+    registerInterestSchool(school);
   };
 
   // Enter 키 처리
@@ -113,7 +171,7 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
             />
             <button
               onClick={searchSchools}
-              disabled={isLoading}
+              disabled={isLoading || isRegistering}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isLoading ? '검색 중...' : '검색'}
@@ -137,8 +195,8 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
               {schools.map((school) => (
                 <li
                   key={school.SD_SCHUL_CODE}
-                  className="p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600"
-                  onClick={() => selectSchool(school)}
+                  className={`p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 ${isRegistering ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => !isRegistering && selectSchool(school)}
                 >
                   <div className="font-medium text-gray-900 dark:text-white">{school.SCHUL_NM}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-300">
