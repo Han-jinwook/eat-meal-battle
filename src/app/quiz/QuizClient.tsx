@@ -277,22 +277,37 @@ export default function QuizClient() {
       setUniversalSchoolCode(userSchool.school_code || '');
       setUniversalGrade(typeof userSchool.grade === 'number' ? userSchool.grade : parseInt(String(userSchool.grade)) || 1);
       
-      // 학교 종류 결정
-      if (userSchool.school_name?.includes('초등학교')) {
+      // 학교 종류 결정 - school_type 컬럼 사용
+      if (userSchool.school_type === '초등학교') {
         setUniversalSchoolType('초등학교');
         setSelectedSchoolLevel('elementary');
-      } else if (userSchool.school_name?.includes('중학교')) {
+      } else if (userSchool.school_type === '중학교') {
         setUniversalSchoolType('중학교');
         setSelectedSchoolLevel('middle');
-      } else if (userSchool.school_name?.includes('고등학교')) {
+      } else if (userSchool.school_type === '고등학교') {
         setUniversalSchoolType('고등학교');
         setSelectedSchoolLevel('high');
+      } else {
+        // school_type이 없거나 다른 값인 경우 학교명으로 fallback
+        if (userSchool.school_name?.includes('초등학교')) {
+          setUniversalSchoolType('초등학교');
+          setSelectedSchoolLevel('elementary');
+        } else if (userSchool.school_name?.includes('중학교')) {
+          setUniversalSchoolType('중학교');
+          setSelectedSchoolLevel('middle');
+        } else if (userSchool.school_name?.includes('고등학교') || userSchool.school_name?.includes('고')) {
+          setUniversalSchoolType('고등학교');
+          setSelectedSchoolLevel('high');
+        }
       }
       
       console.log('🎯 AllQuizModal 초기값 - 내 학교/학년으로 설정:', {
         schoolName: userSchool.school_name,
         schoolCode: userSchool.school_code,
-        grade: userSchool.grade
+        schoolType: userSchool.school_type,
+        grade: userSchool.grade,
+        selectedSchoolLevel: selectedSchoolLevel,
+        universalSchoolType: universalSchoolType
       });
     }
   }, [userSchool, userLoading]);

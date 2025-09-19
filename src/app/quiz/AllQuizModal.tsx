@@ -428,9 +428,9 @@ export default function AllQuizModal({
                         const schoolCodes = [...new Set(allQuizzes.map(q => q.school_code))];
                         const { data: schoolInfos, error: schoolError } = await supabase
                           .from('school_infos')
-                          .select('school_code, school_name')
+                          .select('school_code, school_name, school_type')
                           .in('school_code', schoolCodes)
-                          .ilike('school_name', `%${newSchoolType}%`)
+                          .eq('school_type', newSchoolType)
                           .order('school_name')
                           .limit(1);
                         
