@@ -240,9 +240,23 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       }
       
       console.log('조회된 퀴즈 결과 (quiz_champions):', quizStats);
-      console.log('조회된 장원 기록:', championData);
+      console.log('조회된 장원 기록 (user_champion_records):', championData);
       console.log('조회된 급식 메뉴:', mealMenus);
       console.log('조회된 주차별 토요일:', weekCriteria);
+      
+      // 주장원 데이터 상세 디버깅
+      if (championData) {
+        console.log('🏆 주장원 데이터 상세:', {
+          week_1_champion: championData.week_1_champion,
+          week_2_champion: championData.week_2_champion,
+          week_3_champion: championData.week_3_champion,
+          week_4_champion: championData.week_4_champion,
+          week_5_champion: championData.week_5_champion,
+          month_champion: championData.month_champion
+        });
+      } else {
+        console.log('⚠️ 주장원 데이터가 없습니다 - user_champion_records 테이블 확인 필요');
+      }
       
       // 4. 퀴즈 결과 처리 - quiz_champions 테이블의 day_N 필드 사용
       const processedResults: QuizResult[] = [];
@@ -325,6 +339,14 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         // 총 퀴즈 수는 champion_criteria의 week_X_days 사용
         const weekDaysField = `week_${week}_days` as keyof typeof weekCriteria;
         const totalCount = weekCriteria && typeof weekCriteria[weekDaysField] === 'number' ? weekCriteria[weekDaysField] as number : 0;
+        
+        console.log(`🏆 ${week}주차 트로피 생성:`, {
+          weekChampionField,
+          championValue: championData?.[weekChampionField],
+          isChampion,
+          correctCount,
+          totalCount
+        });
         
         trophies.push({
           week: week,
