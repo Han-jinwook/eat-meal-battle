@@ -295,13 +295,15 @@ export default function Home() {
       // 관심학교 모달 플래그가 있으면 관심학교 모달 자동 열기
       if (showInterestModal === 'true') {
         console.log('🏫 관심학교 모달 플래그 감지 - 관심학교 모달 자동 열기');
-        setIsSchoolSearchOpen(true);
         
-        // URL에서 파라미터 제거 (한 번만 실행되도록)
+        // URL에서 파라미터 먼저 제거 (무한 루프 방지)
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('show_interest_modal');
         newUrl.searchParams.delete('share_school_code');
         window.history.replaceState({}, '', newUrl.toString());
+        
+        // 그 다음 모달 열기
+        setIsSchoolSearchOpen(true);
       }
       
       // 학생등록 플래그가 있으면 학교검색 모달 자동 열기
@@ -636,8 +638,6 @@ export default function Home() {
         });
       }
       
-      // 모달 닫기
-      setIsSchoolSearchOpen(false);
       alert('관심학교가 성공적으로 등록되었습니다!');
       
     } catch (error) {

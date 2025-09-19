@@ -69,56 +69,28 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
     }
   };
 
-  // 관심학교 등록 함수
-  const registerInterestSchool = async (school: School) => {
+  // 학교 선택 함수 - 부모 컴포넌트의 addInterestSchool 함수 사용
+  const selectSchool = async (school: School) => {
     try {
       setIsRegistering(true);
       setError('');
-
-      // 현재 사용자 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('로그인이 필요합니다');
-        return;
-      }
 
       console.log('🏫 관심학교 등록 시도:', {
         schoolCode: school.SD_SCHUL_CODE,
         schoolName: school.SCHUL_NM,
         officeCode: school.ATPT_OFCDC_SC_CODE
       });
-
-      // 관심학교 등록 API 호출
-      const response = await fetch('/api/interest-schools', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          school_code: school.SD_SCHUL_CODE,
-          school_name: school.SCHUL_NM,
-          office_code: school.ATPT_OFCDC_SC_CODE
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '관심학교 등록에 실패했습니다');
-      }
-
-      console.log('✅ 관심학교 등록 성공');
       
-      // 성공 시 콜백 호출 및 모달 닫기
-      onSelectSchool(school);
-      onClose();
+      // 부모 컴포넌트의 addInterestSchool 함수 호출 (중복 체크 포함)
+      await onSelectSchool(school);
       
-      // 상태 초기화
+      // 상태 초기화 및 모달 닫기
       setKeyword('');
       setSchools([]);
       setError('');
+      onClose();
       
-      // 페이지 새로고침으로 상태 업데이트
-      window.location.reload();
+      console.log('✅ 관심학교 등록 완료');
       
     } catch (error) {
       console.error('❌ 관심학교 등록 오류:', error);
@@ -126,11 +98,6 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
     } finally {
       setIsRegistering(false);
     }
-  };
-
-  // 학교 선택 함수
-  const selectSchool = (school: School) => {
-    registerInterestSchool(school);
   };
 
   // Enter 키 처리
