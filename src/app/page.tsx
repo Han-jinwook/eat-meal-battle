@@ -18,7 +18,6 @@ import ShareModal from '@/components/ShareModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ChromeRedirectHandler from '@/components/ChromeRedirectHandler';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
-import PublicDashboard from '@/components/PublicDashboard';
 // 디버그 패널 제거
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -671,8 +670,8 @@ export default function Home() {
       setInterestSchools(prev => prev.filter(school => school.id !== schoolId));
       
       // 삭제된 학교가 현재 선택된 학교라면 내 학교로 돌아가기
-      if (schoolMode.selectedInterestSchool?.id === schoolId) {
-        schoolMode.selectMySchool();
+      if (schoolMode.selectedInterestSchool?.id === String(schoolId)) {
+        schoolMode.returnToMySchool();
         // 내 학교 급식 정보 다시 로드
         if (userSchool?.school_code && selectedDate) {
           fetchMealInfo(userSchool.school_code, selectedDate, resolveOfficeCode());
