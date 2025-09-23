@@ -76,6 +76,7 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
+  const [viewerInviteToken, setViewerInviteToken] = useState<string | null>(null);
   
   // 모든 퀴즈 모달 상태
   const [isAllQuizModalOpen, setIsAllQuizModalOpen] = useState(false);
@@ -352,9 +353,9 @@ export default function QuizClient() {
         setViewingUserInfo(null);
       }
       
-      // 초대 링크 처리
+      // 초대 링크 토큰 저장
       if (viewerInviteParam) {
-        handleViewerInvite(viewerInviteParam);
+        setViewerInviteToken(viewerInviteParam);
       }
       
       if (dateParam && typeof dateParam === 'string') {
@@ -412,6 +413,14 @@ export default function QuizClient() {
       setSelectedDate(getCurrentDate());
     }
   }, [searchParams]);
+
+  // 사용자 정보 로드 후 초대 링크 처리
+  useEffect(() => {
+    // 사용자 정보 로딩이 완료되었고, 처리할 초대 토큰이 있을 경우
+    if (!userLoading && viewerInviteToken) {
+      handleViewerInvite(viewerInviteToken);
+    }
+  }, [userLoading, viewerInviteToken]);
 
   // 관람 사용자 정보 로드 함수
   const loadViewingUserInfo = async (userId: string) => {
