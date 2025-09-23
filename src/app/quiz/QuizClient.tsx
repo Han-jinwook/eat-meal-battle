@@ -57,7 +57,7 @@ export default function QuizClient() {
   // State management
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userSchool, loading: userLoading, error: userError } = useUserSchool();
+  const { userSchool, loading: userLoading, error: userError, isRegistrationRequired } = useUserSchool();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -456,6 +456,14 @@ export default function QuizClient() {
 
   // 초대 링크 처리 함수
   const handleViewerInvite = async (token: string) => {
+    // 학생이지만 학교 등록이 안된 경우, 학교 등록 페이지로 먼저 보낸다.
+    if (!userLoading && isRegistrationRequired) {
+      toast('퀴즈를 보려면 먼저 학교를 등록해야 해요!', { icon: '🏫' });
+      const redirectUrl = window.location.href;
+      router.push(`/school-search?redirect_url=${encodeURIComponent(redirectUrl)}`);
+      return; // 리디렉션 후 함수 실행 중단
+    }
+
     try {
       console.log('초대 링크 처리 시작:', token);
       

@@ -21,6 +21,7 @@ interface UseUserSchoolReturn {
   userSchool: SchoolInfo | null;
   loading: boolean;
   error: string;
+  isRegistrationRequired: boolean; // 학생이지만 학교 등록이 안된 경우 true
   refresh: () => void;
 }
 
@@ -33,6 +34,7 @@ export default function useUserSchool(): UseUserSchoolReturn {
   const [userSchool, setUserSchool] = useState<SchoolInfo | null>(null);
   const [loading, setLoading] = useState(true); // 초기값을 true로 설정
   const [error, setError] = useState('');
+  const [isRegistrationRequired, setIsRegistrationRequired] = useState(false);
   const [refreshFlag, setRefreshFlag] = useState(0);
 
   const refresh = useCallback(() => {
@@ -94,11 +96,20 @@ export default function useUserSchool(): UseUserSchoolReturn {
               class: schoolInfo.class_number,
               nickname: userInfo?.nickname || '익명'
             });
+            setIsRegistrationRequired(false); // 학교 정보가 있으므로 등록 불필요
           } else {
             setUserSchool(null);
+            // 학생인데 학교 정보가 없는 경우 등록 필요
+            if (userInfo?.is_student) {
+              setIsRegistrationRequired(true);
+            } else {
+              setIsRegistrationRequired(false);
+            }
           }
         } else {
+          setUser(null);
           setUserSchool(null);
+          setIsRegistrationRequired(false); // 로그인 안했으면 등록 불필요
         }
       } catch (err: any) {
         console.error('useUserSchool 오류:', err);
@@ -111,5 +122,5 @@ export default function useUserSchool(): UseUserSchoolReturn {
     fetchUserSchool();
   }, [supabase, refreshFlag]);
 
-  return { user, userSchool, loading, error, refresh };
+  return { user, userSchool, loading, error, isRegistrationRequired, refresh };
 }
