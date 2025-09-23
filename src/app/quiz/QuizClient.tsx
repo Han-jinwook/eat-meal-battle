@@ -560,38 +560,7 @@ export default function QuizClient() {
         toast.success(`🎉 ${tokenData.owner_nickname}님의 퀴즈 관람자로 등록되었습니다!`);
       }
 
-      // 퀴즈 소유자의 학교 정보를 관심학교에 자동 등록
-      try {
-        const { data: ownerSchoolInfo } = await supabase
-          .from('school_infos')
-          .select('school_code, school_name')
-          .eq('user_id', tokenData.quiz_owner_id)
-          .single();
-
-        if (ownerSchoolInfo) {
-          // 관심학교 API를 통해 자동 등록 (중복 체크 포함)
-          const response = await fetch('/api/interest-schools', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              school_code: ownerSchoolInfo.school_code,
-              school_name: ownerSchoolInfo.school_name
-            })
-          });
-
-          if (response.ok) {
-            console.log(`${ownerSchoolInfo.school_name}이(가) 관심학교에 자동 등록되었습니다.`);
-          } else if (response.status === 400) {
-            // 이미 등록된 학교인 경우는 정상적인 상황
-            console.log(`${ownerSchoolInfo.school_name}은(는) 이미 관심학교에 등록되어 있습니다.`);
-          }
-        }
-      } catch (error) {
-        console.error('관심학교 자동 등록 오류:', error);
-        // 관심학교 등록 실패는 치명적이지 않으므로 사용자에게 오류 표시하지 않음
-      }
+      // 관심학교 자동등록 제거 - 순수 구독 시스템으로 단순화
       
       // URL에서 viewer_invite 파라미터 제거하고 해당 사용자의 퀴즈로 이동
       const newUrl = new URL(window.location.href);
