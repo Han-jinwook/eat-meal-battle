@@ -274,9 +274,10 @@ export default function BattlePage() {
       setInterestSchools(prev => prev.filter(school => school.id !== schoolId));
       
       // 삭제된 학교가 현재 선택된 학교라면 내 학교로 돌아가기
-      if (schoolMode.selectedInterestSchool?.id === schoolId) {
-        schoolMode.selectMySchool();
+      if (String(schoolMode.selectedInterestSchool?.id) === String(schoolId)) {
+        schoolMode.returnToMySchool();
       }
+
       
       alert('관심학교가 삭제되었습니다.');
       
@@ -516,12 +517,11 @@ export default function BattlePage() {
     
     try {
       // 학교 유형 결정: 선택된 유형 또는 현재 학교 유형
-      // 관심학교 모드일 때는 유저 학교의 school_type을 기준으로 함
-      const schoolForType = schoolMode.selectedInterestSchool ? userSchool : currentSchool;
+      // '내 학교' 정보가 있을 때만 school_type을 사용하고, 관심학교 모드에서는 빈 값으로 처리
       const schoolTypeForApi = selectedSchoolType || 
-        (schoolForType?.school_type?.includes('초') ? '초등학교' :
-         schoolForType?.school_type?.includes('중') ? '중학교' :
-         schoolForType?.school_type?.includes('고') ? '고등학교' : '');
+        (userSchool?.school_type?.includes('초') ? '초등학교' :
+         userSchool?.school_type?.includes('중') ? '중학교' :
+         userSchool?.school_type?.includes('고') ? '고등학교' : '');
       
       const params = new URLSearchParams({
         schoolCode: currentSchool.school_code,
@@ -583,6 +583,65 @@ export default function BattlePage() {
       setBattleLoading(false);
     }
   };
+
+  // Plan A: 페이지 로드 시 메뉴 배틀 데이터 없으면 자동 집계 (iOS 별점 사라짐 해결)
+  useEffect(() => {
+    const ensureMenuBattleData = async () => {
+      // 메뉴/일별 탭이 아니거나, 학교 정보가 없으면 실행 안함
+      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      if (activeTab !== 'menu' || viewMode !== 'daily' || !currentSchool?.school_code) {
+        return;
+      }
+
+      try {
+        console.log(`🔍 ${selectedDate} 날짜의 메뉴 배틀 데이터 확인...`);
+        
+        const { error, count } = await supabase
+          .from('menu_battle_daily')
+          .select('*', { count: 'exact', head: true })
+          .eq('battle_date', selectedDate)
+          .eq('school_code', currentSchool.school_code);
+
+        if (error) {
+          console.error('메뉴 배틀 데이터 확인 중 오류:', error);
+          return;
+        }
+
+        console.log(`📊 데이터 확인 결과: ${count}개`);
+
+        // 데이터가 없으면 집계 API 호출
+        if (count === 0) {
+          console.log('🔥 데이터 없음! 일일 메뉴 배틀 집계를 시작합니다...');
+          
+          const response = await fetch('/api/battle/calculate-daily-menu-battle', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              schoolCode: currentSchool.school_code,
+              date: selectedDate,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || '메뉴 배틀 집계에 실패했습니다.');
+          }
+
+          console.log('✅ 메뉴 배틀 집계 성공! 데이터를 다시 로드합니다.');
+          // 데이터 집계 후, 최신 데이터를 불러오기 위해 loadBattleData를 다시 호출
+          loadBattleData();
+
+        }
+      } catch (err) {
+        console.error('메뉴 배틀 자동 집계 과정에서 오류 발생:', err);
+      }
+    };
+
+    ensureMenuBattleData();
+  }, [userSchool, schoolMode.selectedInterestSchool, activeTab, viewMode, selectedDate]);
 
   // 데이터 로딩 useEffect - 지역 설정 완료 후 로딩
   useEffect(() => {
