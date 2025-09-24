@@ -1,9 +1,7 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { extractBattleRegion } from '@/utils/addressParser';
 // import PushNotificationSetup from '@/components/PushNotificationSetup'; // 푸시 알림 비활성화
@@ -27,7 +25,6 @@ interface ClassInfo {
 
 export default function SchoolSearchPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
   const [keyword, setKeyword] = useState('');
   const [schools, setSchools] = useState<School[]>([]);
@@ -47,8 +44,7 @@ export default function SchoolSearchPage() {
       const params = new URLSearchParams(window.location.search);
       const shareCode = params.get('share_school_code');
       const shareTypeParam = params.get('share_type');
-      const redirectUrl = params.get('redirect_url'); // 리다이렉트 URL 파라미터 추가
-      if (shareCode) {
+            if (shareCode) {
         setShareSchoolCode(shareCode);
         setShareType(shareTypeParam);
         console.log('🔗 공유 정보 감지:', { shareCode, shareType: shareTypeParam });
@@ -325,27 +321,33 @@ export default function SchoolSearchPage() {
         console.log('ℹ️ 공유 URL 학교 코드가 없음 - 관심학교 자동 등록 생략');
       }
 
-      // 리다이렉트 로직
+                  // 공유 타입에 따라 리다이렉트 결정
       setTimeout(() => {
-        const redirectUrl = searchParams.get('redirect_url');
+        const params = new URLSearchParams(window.location.search);
+        const redirectUrl = params.get('redirect_url');
+
         if (redirectUrl) {
           console.log('🚀 redirect_url 감지! 해당 URL로 이동:', redirectUrl);
-          router.push(redirectUrl);
+          // URL 디코딩을 통해 안전하게 리다이렉트
+          router.push(decodeURIComponent(redirectUrl));
           return;
         }
 
-        // 기존 리다이렉트 로직 (redirect_url이 없을 경우)
         if (shareType === 'battle') {
+          // 배틀공유인 경우 배틀페이지로 이동 (school_code 파라미터 포함)
           const battleUrl = shareSchoolCode === selectedSchool.SD_SCHUL_CODE 
-            ? '/battle' 
-            : `/battle?school_code=${shareSchoolCode}`;
+            ? '/battle' // 같은 학교면 내 학교 모드로
+            : `/battle?school_code=${shareSchoolCode}`; // 다른 학교면 관심학교 모드로
           console.log('🏆 배틀공유 완료 → 배틀페이지로 이동:', battleUrl);
           router.push(battleUrl);
         } else {
+          // 급식공유 또는 일반 등록인 경우
           if (shareSchoolCode && shareSchoolCode !== selectedSchool.SD_SCHUL_CODE) {
+            // 급식공유에서 타학교 등록한 경우 → 관심학교 모드로 급식페이지 이동
             console.log('🍽️ 급식공유 타학교 등록 완료 → 관심학교 모드로 급식페이지 이동');
             router.push(`/?school_code=${shareSchoolCode}`);
           } else {
+            // 일반 등록 또는 같은 학교 등록인 경우 홈페이지로 이동
             console.log('🏠 학교 등록 완료 → 홈페이지로 이동');
             router.push('/');
           }
