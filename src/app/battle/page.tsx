@@ -378,7 +378,6 @@ export default function BattlePage() {
   // 배틀 계산 트리거 함수 (Plan A)
   const triggerBattleCalculation = async (schoolCode: string, viewMode: 'daily' | 'monthly', selectedDate: string, selectedMonth: string) => {
     try {
-{{ ... }}
       console.log('🔄 배틀 계산 트리거 시작:', { schoolCode, viewMode, selectedDate, selectedMonth });
       
       // ...
