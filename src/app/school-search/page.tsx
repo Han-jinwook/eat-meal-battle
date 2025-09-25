@@ -334,12 +334,16 @@ export default function SchoolSearchPage() {
         }
 
         if (shareType === 'battle') {
-          // 배틀공유인 경우 배틀페이지로 이동 (school_code 파라미터 포함)
-          const battleUrl = shareSchoolCode === selectedSchool.SD_SCHUL_CODE 
-            ? '/battle' // 같은 학교면 내 학교 모드로
-            : `/battle?school_code=${shareSchoolCode}`; // 다른 학교면 관심학교 모드로
-          console.log('🏆 배틀공유 완료 → 배틀페이지로 이동:', battleUrl);
-          router.push(battleUrl);
+          // 배틀공유인 경우 (5,6번 분기)
+          if (shareSchoolCode === selectedSchool.SD_SCHUL_CODE) {
+            // 같은 학교를 등록한 경우 → 바로 배틀 페이지로 이동
+            console.log('🏆 배틀공유 같은학교 등록 완료 → 배틀페이지로 이동');
+            router.push('/battle');
+          } else {
+            // 다른 학교를 등록한 경우 → 관심학교 관리 페이지로 이동 (5,6번 분기의 2단계)
+            console.log('🏫 배틀공유 타학교 등록 → 관심학교 관리 페이지로 이동');
+            router.push(`/interest-schools?share_school_code=${shareSchoolCode}&share_type=battle`);
+          }
         } else {
           // 급식공유 또는 일반 등록인 경우
           if (shareSchoolCode && shareSchoolCode !== selectedSchool.SD_SCHUL_CODE) {
