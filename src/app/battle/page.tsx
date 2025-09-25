@@ -347,7 +347,7 @@ export default function BattlePage() {
       // 비학생 사용자 중 학교 미등록자만 관심학교 등록창 표시
       if (!userInfo?.is_student && !userRegisteredSchool) {
         console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
-        router.push(`/interest-schools?share_school_code=${schoolCode}&share_type=battle`);
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -359,11 +359,12 @@ export default function BattlePage() {
           isStudent: userInfo?.is_student 
         });
         
-        // 학생 나이이면 학교 등록 페이지로, 비학생이면 관심학교 페이지로
+        // 학생 나이이면 학교 등록 페이지로, 비학생이면 관심학교 모달 표시
         if (userInfo?.is_student) {
           router.push(`/school-search?share_school_code=${schoolCode}&share_type=battle`);
         } else {
-          router.push(`/interest-schools?share_school_code=${schoolCode}&share_type=battle`);
+          console.log('🎓 타학교 공유링크 - 비학생 사용자 관심학교 모달 표시');
+          setIsSchoolSearchOpen(true);
         }
         return;
       }
