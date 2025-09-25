@@ -69,10 +69,8 @@ export default function BattlePage() {
       const params = new URLSearchParams(window.location.search);
       const dateParam = params.get('date');
       const schoolCodeParam = params.get('school_code');
-      const showInterestModal = params.get('show_interest_modal') === 'true';
-      const shareSchoolCode = params.get('share_school_code');
       
-      console.log('🔗 URL 파라미터 확인:', { dateParam, schoolCodeParam, showInterestModal, shareSchoolCode });
+      console.log('🔗 URL 파라미터 확인:', { dateParam, schoolCodeParam });
       
       if (dateParam) {
         setSelectedDate(dateParam);
@@ -84,26 +82,6 @@ export default function BattlePage() {
         console.log('🏫 URL에서 school_code 감지, 로그인 후 처리 예정:', schoolCodeParam);
         // sessionStorage에 임시 저장
         sessionStorage.setItem('pending_school_code', schoolCodeParam);
-      }
-      
-      // 관심학교 모달 플래그가 있으면 관심학교 모달 자동 열기
-      if (showInterestModal) {
-        console.log('🏫 관심학교 모달 플래그 감지 - 관심학교 모달 자동 열기');
-        
-        // URL에서 파라미터 먼저 제거 (무한 루프 방지)
-        const newParams = new URLSearchParams(window.location.search);
-        newParams.delete('show_interest_modal');
-        const newUrl = `${window.location.pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
-        window.history.replaceState({}, '', newUrl);
-        
-        // 학교코드가 있는 경우 저장
-        if (shareSchoolCode) {
-          console.log('🏫 공유받은 학교코드 감지:', shareSchoolCode);
-          sessionStorage.setItem('pending_interest_school', shareSchoolCode);
-        }
-        
-        // 관심학교 모달 열기
-        setIsSchoolSearchOpen(true);
       }
     } catch (err) {
       console.error('URL 파라미터 파싱 오류:', err);
@@ -141,14 +119,6 @@ export default function BattlePage() {
       console.log('🔗 로그인 완료, pending school_code 처리:', pendingSchoolCode);
       handleBattleUrlSchoolCode(pendingSchoolCode);
       sessionStorage.removeItem('pending_school_code');
-    }
-    
-    // 관심학교 모달 처리
-    const pendingInterestSchool = sessionStorage.getItem('pending_interest_school');
-    if (pendingInterestSchool && user) {
-      console.log('🔗 로그인 완료, pending interest school 처리:', pendingInterestSchool);
-      setIsSchoolSearchOpen(true);
-      sessionStorage.removeItem('pending_interest_school');
     }
     
     // 사용자가 있으면 배틀 페이지 접근 허용
@@ -274,15 +244,6 @@ export default function BattlePage() {
       setIsSchoolSearchOpen(false);
       alert('관심학교가 성공적으로 등록되었습니다!');
       
-      // 등록 후 해당 학교의 배틀 페이지로 자동 이동
-      // 저장해둘 pending_interest_school이 있는 경우에만 적용 (공유받은 학교인 경우)
-      const pendingInterestSchool = sessionStorage.getItem('pending_interest_school');
-      if (pendingInterestSchool && pendingInterestSchool === schoolData.SD_SCHUL_CODE) {
-        console.log('👉 공유받은 학교 등록 후 배틀 페이지로 이동:', schoolData.SD_SCHUL_CODE);
-        sessionStorage.removeItem('pending_interest_school');
-        router.push(`/battle?school_code=${schoolData.SD_SCHUL_CODE}`);
-      }
-      
     } catch (error) {
       console.error('관심학교 등록 중 예외 발생:', error);
       alert('관심학교 등록 중 오류가 발생했습니다.');
@@ -335,7 +296,7 @@ export default function BattlePage() {
     setIsSchoolSearchOpen(true);
   };
 
-  // 배틀페이지 초대링크 처리 함수 (급식페이지와 동일한 로직으로 수정)
+  // 배틀페이지 초대링크 처리 함수 (급식페이지와 동일한 로직, 리다이렉트 URL만 바꿔서 배틀 관련으로 설정)
   const handleBattleUrlSchoolCode = async (schoolCode: string) => {
     try {
       if (!user) {
@@ -398,9 +359,13 @@ export default function BattlePage() {
           isStudent: userInfo?.is_student 
         });
         
-        // 학생나이와 관계없이 관심학교 모달 표시 (급식 페이지와 동일하게 수정)
-        console.log('🎓 타학교 공유링크 - 관심학교 등록창 표시');
-        setIsSchoolSearchOpen(true);
+        // 학생 나이이면 학교 등록 페이지로, 비학생이면 관심학교 모달 표시
+        if (userInfo?.is_student) {
+          router.push(`/school-search?share_school_code=${schoolCode}&share_type=battle`);
+        } else {
+          console.log('🎓 타학교 공유링크 - 비학생 사용자 관심학교 모달 표시');
+          setIsSchoolSearchOpen(true);
+        }
         return;
       }
 

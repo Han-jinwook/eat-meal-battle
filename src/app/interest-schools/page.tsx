@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import useUserSchool from '@/hooks/useUserSchool';
@@ -38,7 +38,7 @@ function InterestSchoolsContent() {
   }, [user, userLoading, router]);
 
   // 관심학교 목록 조회
-  const fetchInterestSchools = async () => {
+  const fetchInterestSchools = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -62,10 +62,10 @@ function InterestSchoolsContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, supabase, setLoading, setError, setInterestSchools]);
 
   // 관심학교 삭제
-  const removeInterestSchool = async (schoolId: string, schoolName: string) => {
+  const removeInterestSchool = useCallback(async (schoolId: string, schoolName: string) => {
     if (!confirm(`${schoolName}을(를) 관심학교에서 제거하시겠습니까?`)) {
       return;
     }
@@ -85,13 +85,100 @@ function InterestSchoolsContent() {
       console.error('관심학교 제거 오류:', err);
       alert('관심학교 제거에 실패했습니다.');
     }
-  };
+  }, [fetchInterestSchools]);
 
+  // 학교 코드로 학교 정보를 검색하고 관심학교에 등록하는 함수
+  const autoRegisterInterestSchool = useCallback(async (schoolCode: string) => {
+    if (!user) return;
+    
+    try {
+      console.log('🏫 공유받은 학교코드 자동 등록 시도:', schoolCode);
+      
+      // 학교 정보 검색 API 호출
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      let apiUrl;
+      
+      if (baseUrl.includes('lunbat.com') || baseUrl.includes('netlify')) {
+        apiUrl = `${baseUrl}/.netlify/functions/schools?school_code=${schoolCode}`;
+      } else {
+        apiUrl = `${baseUrl}/api/schools?school_code=${schoolCode}`;
+      }
+      
+      const searchResponse = await fetch(apiUrl);
+      if (!searchResponse.ok) {
+        throw new Error('학교 정보를 검색할 수 없습니다');
+      }
+      
+      const searchData = await searchResponse.json();
+      if (!searchData.schools || searchData.schools.length === 0) {
+        throw new Error('해당 학교코드의 학교가 존재하지 않습니다');
+      }
+      
+      const schoolInfo = searchData.schools[0];
+      console.log('✅ 학교 정보 검색 성공:', schoolInfo);
+      
+      // 이미 관심학교로 등록되어 있는지 확인
+      const isDuplicate = interestSchools.some(school => school.school_code === schoolCode);
+      if (isDuplicate) {
+        console.log('ℹ️ 이미 관심학교로 등록된 학교입니다');
+        if (isBattleShare) {
+          router.push(`/battle?school_code=${schoolCode}`);
+        } else {
+          router.push(`/?school_code=${schoolCode}`);
+        }
+        return;
+      }
+      
+      // 관심학교 등록 API 호출
+      const registerResponse = await fetch('/api/interest-schools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          school_code: schoolInfo.SD_SCHUL_CODE,
+          school_name: schoolInfo.SCHUL_NM,
+          office_code: schoolInfo.ATPT_OFCDC_SC_CODE,
+        }),
+      });
+      
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json();
+        throw new Error(errorData.error || '관심학교 등록에 실패했습니다');
+      }
+      
+      console.log('✅ 관심학교 등록 성공:', schoolInfo.SCHUL_NM);
+      alert(`${schoolInfo.SCHUL_NM}이(가) 관심학교로 등록되었습니다.`);
+      
+      // 목록 새로고침
+      await fetchInterestSchools();
+      
+      // 등록 후 해당 페이지로 이동 (배틀 또는 급식)
+      if (isBattleShare) {
+        router.push(`/battle?school_code=${schoolCode}`);
+      } else {
+        router.push(`/?school_code=${schoolCode}`);
+      }
+      
+    } catch (err) {
+      console.error('❌ 관심학교 자동 등록 오류:', err);
+      alert(err instanceof Error ? err.message : '관심학교 등록 중 오류가 발생했습니다');
+    }
+  }, [user, interestSchools, isBattleShare, router, fetchInterestSchools]);
+  
+  // 공유받은 학교코드 처리
+  useEffect(() => {
+    if (user && shareSchoolCode) {
+      autoRegisterInterestSchool(shareSchoolCode);
+    }
+  }, [user, shareSchoolCode, autoRegisterInterestSchool]);
+
+  // 관심학교 목록 초기 로드
   useEffect(() => {
     if (user) {
       fetchInterestSchools();
     }
-  }, [user]);
+  }, [user, fetchInterestSchools]);
 
   if (userLoading || loading) {
     return (
@@ -165,7 +252,7 @@ function InterestSchoolsContent() {
                   }
                 </p>
                 <button
-                  onClick={() => router.push('/school-search')}
+                  onClick={() => shareSchoolCode ? autoRegisterInterestSchool(shareSchoolCode) : router.push('/school-search')}
                   className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   {shareSchoolCode ? '공유받은 학교 등록하기' : '첫 번째 관심학교 추가하기'}
