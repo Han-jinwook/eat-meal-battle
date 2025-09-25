@@ -233,8 +233,14 @@ function LoginContent() {
       
       console.log('🔗 OAuth state 데이터 구성:', stateData)
       
-      // 영구 접근 권한을 위한 redirectTo 구성
-      const redirectUrl = new URL('/auth/callback', window.location.origin).toString()
+      // 영구 접근 권한을 위한 redirectTo 구성 (현재 페이지 URL 포함)
+      const callbackUrl = new URL('/auth/callback', window.location.origin);
+      
+      // 현재 페이지 URL을 next 파라미터로 전달
+      const currentPageUrl = window.location.pathname + window.location.search;
+      callbackUrl.searchParams.set('next', currentPageUrl);
+      
+      const redirectUrl = callbackUrl.toString();
       
       // 강화된 OAuth 설정 가져오기
       const enhancedOptions = getOptimizedOAuthConfig('google', {
@@ -355,8 +361,14 @@ function LoginContent() {
       
       console.log('🔗 OAuth state 데이터 구성:', stateData)
       
-      // 영구 접근 권한을 위한 redirectTo 구성
-      const redirectUrl = new URL('/auth/callback', window.location.origin).toString()
+      // 영구 접근 권한을 위한 redirectTo 구성 (현재 페이지 URL 포함)
+      const callbackUrl = new URL('/auth/callback', window.location.origin);
+      
+      // 현재 페이지 URL을 next 파라미터로 전달
+      const currentPageUrl = window.location.pathname + window.location.search;
+      callbackUrl.searchParams.set('next', currentPageUrl);
+      
+      const redirectUrl = callbackUrl.toString();
       
       // 강화된 OAuth 설정 가져오기
       const enhancedOptions = getOptimizedOAuthConfig('kakao', {
