@@ -57,7 +57,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       const finalSchoolCode = schoolCode || schoolName.split(' ')[0];
       url.searchParams.set('school_code', finalSchoolCode);
       
-      // 배틀 페이지는 URL 경로(/battle)로 자동 감지되므로 추가 파라미터 불필요
+      // 배틀 페이지인 경우 share_type=battle 파라미터 추가
+      if (isBattlePage) {
+        url.searchParams.set('share_type', 'battle');
+      }
       
       // 레퍼럴 코드 로직 제거됨
       
