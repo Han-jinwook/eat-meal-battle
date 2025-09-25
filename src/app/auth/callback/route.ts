@@ -474,13 +474,20 @@ export async function GET(request: NextRequest) {
         const shareType = requestUrl.searchParams.get('share_type');
         isBattleShare = shareType === 'battle';
         
-        // 기존 shareUrl 방식도 유지 (fallback)
-        if (!shareUrlSchoolCode && shareUrl) {
+        // 항상 shareUrl도 확인 (중요: 배틀 감지 강화)
+        if (shareUrl) {
           try {
             const shareUrlObj = new URL(shareUrl, request.url);
-            shareUrlSchoolCode = shareUrlObj.searchParams.get('school_code');
+            
+            // school_code가 없는 경우에만 URL에서 추출
+            if (!shareUrlSchoolCode) {
+              shareUrlSchoolCode = shareUrlObj.searchParams.get('school_code');
+            }
+            
+            // 항상 URL 경로에서 배틀 여부 확인 (중요)
             if (!isBattleShare) {
               isBattleShare = shareUrlObj.pathname.includes('/battle');
+              console.info('🏆 URL 경로에서 배틀 감지:', { isBattleShare, path: shareUrlObj.pathname });
             }
           } catch (e) {
             console.warn('⚠️ 공유URL 파싱 오류:', e);
@@ -488,6 +495,14 @@ export async function GET(request: NextRequest) {
         }
         
         console.info('🔗 공유URL 분석 결과:', { shareUrlSchoolCode, shareType, isBattleShare, shareUrl });
+        
+        if (isBattleShare) {
+          console.info('🏆 배틀 원본 URL 감지됨!', { 
+            shareType,
+            urlPath: shareUrl ? new URL(shareUrl, request.url).pathname : null,
+            hasShareSchoolCode: !!shareUrlSchoolCode
+          });
+        }
         
         // 1단계: 나이 및 학생 여부 확인 (나이 우선 원칙)
         let userAge = null;
@@ -571,7 +586,15 @@ export async function GET(request: NextRequest) {
             // 분기 1: 자기학교 → 해당 URL로
             console.info('✅ 분기 1: 학교등록 O + 자기학교 → 해당 URL로');
             if (isBattleShare) {
-              redirectUrl = shareUrl || '/battle';
+              // 배틀일 경우, shareUrl이 없어도 공유받은 학교코드가 있는 경우 학교코드 포함
+              if (shareUrl) {
+                redirectUrl = shareUrl;
+              } else if (shareUrlSchoolCode) {
+                redirectUrl = `/battle?school_code=${shareUrlSchoolCode}`;
+              } else {
+                redirectUrl = '/battle';
+              }
+              console.info('🏆 배틀 분기 1 리다이렉트 URL:', redirectUrl);
             } else {
               redirectUrl = shareUrl || '/';
             }
@@ -582,6 +605,7 @@ export async function GET(request: NextRequest) {
           console.info('✅ 분기 3: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 O → 관심학교 관리 페이지로 이동');
           if (isBattleShare) {
             redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
+            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
           } else {
             redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
           }
@@ -591,6 +615,7 @@ export async function GET(request: NextRequest) {
           console.info('✅ 분기 4: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 X → 관심학교 관리 페이지로 이동');
           if (isBattleShare) {
             redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
+            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
           } else {
             redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
           }
@@ -626,6 +651,7 @@ export async function GET(request: NextRequest) {
           console.info('✅ 분기 7: 신규회원 + 비학생나이 → 관심학교 관리 페이지로 이동');
           if (isBattleShare) {
             redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
+            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
           } else {
             redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
           }
