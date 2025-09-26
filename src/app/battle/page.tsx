@@ -391,6 +391,8 @@ export default function BattlePage() {
       // 비학생 사용자 중 학교 미등록자만 관심학교 등록창 표시
       if (!userInfo?.is_student && !userRegisteredSchool) {
         console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
+        // 공유받은 학교 코드를 임시 저장
+        sessionStorage.setItem('pending_interest_school', schoolCode);
         setIsSchoolSearchOpen(true);
         return;
       }
@@ -405,6 +407,8 @@ export default function BattlePage() {
         
         // 학생나이와 관계없이 관심학교 모달 표시 (급식 페이지와 동일하게 수정)
         console.log('🎓 타학교 공유링크 - 관심학교 등록창 표시');
+        // 공유받은 학교 코드를 임시 저장
+        sessionStorage.setItem('pending_interest_school', schoolCode);
         setIsSchoolSearchOpen(true);
         return;
       }
