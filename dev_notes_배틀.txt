@@ -851,6 +851,87 @@ PRIMARY KEY (menu_item_id, battle_date, school_code)
 ```
 2. **불필요한 복잡성 제거**: 논리적으로 불필요한 복합키 사용 지양
 3. **성능 고려**: 간단한 기본키 구조가 더 효율적
+
+---
+
+# 🚨 배틀 공유 404 에러 해결 - interest-schools 페이지/API 혼동 문제 (2025-09-26)
+
+## 📋 문제 상황
+- 배틀 공유 링크 접속 시 404 에러 발생
+- 2/3/4번 분기는 성공하는데 5번 분기만 실패
+- OAuth 콜백에서 `/interest-schools` 경로로 리다이렉트 시도하지만 페이지가 존재하지 않음
+
+## 🔍 혼동의 원인: 동일한 이름의 서로 다른 것들
+
+### 1. `/interest-schools` (페이지) ❌
+- **경로**: `d:\WhatEat\src\app\interest-schools\page.tsx`
+- **역할**: 관심학교 관리 UI 페이지
+- **상태**: **삭제됨** (가짜 컴포넌트였음, 3일간 골탕먹인 주범)
+
+### 2. `/api/interest-schools` (API 엔드포인트) ✅
+- **경로**: `d:\WhatEat\src\app\api\interest-schools\route.ts`
+- **역할**: 관심학교 CRUD API
+- **상태**: **정상 작동** (실제 필요한 API)
+
+### 3. Supabase DB 테이블 ✅
+```
+Request URL: https://izkumvvlkrkgiuuczffp.supabase.co/rest/v1/interest_schools
+```
+- **테이블**: `interest_schools`
+- **역할**: 관심학교 데이터 저장
+- **상태**: **정상 작동** (API가 호출하는 실제 DB 테이블)
+
+## 🛠️ 해결 과정
+
+### 문제 발견
+- OAuth 콜백에서 존재하지 않는 `/interest-schools` **페이지**로 리다이렉트 시도
+- 하지만 `/api/interest-schools` **API**는 정상 작동
+- 네트워크 로그에서 API 호출은 성공(201 Created)하지만 페이지 로딩은 실패
+
+### 해결 방법
+**5번 분기 (school-search 페이지)에서:**
+```typescript
+// 기존 (404 발생)
+router.push(`/interest-schools?share_school_code=${shareSchoolCode}&share_type=battle`);
+
+// 수정 후 (성공)
+router.push(`/battle?show_interest_modal=true&share_school_code=${shareSchoolCode}`);
+```
+
+**OAuth 콜백 분기들에서:**
+```typescript
+// 기존 (404 발생)
+redirectUrl = `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+
+// 수정 후 (성공)
+redirectUrl = `/battle?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}`;
+```
+
+## 🎯 수정 완료된 분기들
+- ✅ **분기 2**: 학교등록 O + 타학교 공유
+- ✅ **분기 3**: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 O
+- ✅ **분기 4**: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 X
+- ✅ **분기 5**: 기존회원 + 학생나이 (school-search 페이지에서 수정)
+- ✅ **분기 7**: 신규회원 + 비학생나이
+
+## 📊 최종 리다이렉트 패턴
+### 급식 공유 (isBattleShare = false)
+- **모든 분기**: `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` ✅
+
+### 배틀 공유 (isBattleShare = true)
+- **모든 분기**: `/battle?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` ✅
+
+## 📝 핵심 교훈
+1. **이름 혼동 주의**: 동일한 이름의 페이지/API/테이블을 명확히 구분
+2. **가짜 컴포넌트 제거**: 불필요한 페이지는 과감히 삭제
+3. **일관된 패턴**: 급식 공유와 배틀 공유의 동일한 처리 패턴 적용
+4. **네트워크 로그 활용**: API 성공 vs 페이지 로딩 실패를 구분하여 문제 파악
+5. **점진적 해결**: 5번 성공 패턴을 다른 분기에 적용하여 전체 해결
+
+## 🚀 결과
+- **모든 배틀 공유 분기 정상 작동** ✅
+- **404 에러 완전 해결** ✅
+- **급식 공유와 동일한 안정성 확보** ✅
 4. **일관성**: 일별/월별 배틀 함수 모두 동일한 로직 적용
 
 ---

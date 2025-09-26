@@ -650,8 +650,8 @@ export async function GET(request: NextRequest) {
           // 분기 7: 신규회원 + 비학생나이 → 관심학교 관리 페이지로 이동
           console.info('✅ 분기 7: 신규회원 + 비학생나이 → 관심학교 관리 페이지로 이동');
           if (isBattleShare) {
-            redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
-            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
+            redirectUrl = shareUrlSchoolCode ? `/battle?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/battle?show_interest_modal=true';
+            console.info('🏆 배틀 분기 7 리다이렉트 URL:', redirectUrl);
           } else {
             redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
           }
