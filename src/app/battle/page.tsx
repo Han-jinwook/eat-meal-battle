@@ -274,13 +274,18 @@ export default function BattlePage() {
       setIsSchoolSearchOpen(false);
       alert('관심학교가 성공적으로 등록되었습니다!');
       
-      // 등록 후 해당 학교의 배틀 페이지로 자동 이동
-      // 저장해둘 pending_interest_school이 있는 경우에만 적용 (공유받은 학교인 경우)
-      const pendingInterestSchool = sessionStorage.getItem('pending_interest_school');
-      if (pendingInterestSchool && pendingInterestSchool === schoolData.SD_SCHUL_CODE) {
-        console.log('👉 공유받은 학교 등록 후 배틀 페이지로 이동:', schoolData.SD_SCHUL_CODE);
+      // 등록 후 해당 학교를 '관심학교 모드'로 즉시 전환 (새로고침 방지)
+      const pendingInterestSchoolCode = sessionStorage.getItem('pending_interest_school');
+      if (pendingInterestSchoolCode && pendingInterestSchoolCode === schoolData.SD_SCHUL_CODE) {
+        console.log('👉 공유받은 학교 등록 완료, 관심학교 모드로 전환:', schoolData.SCHUL_NM);
+        if (data && data[0]) {
+          // schoolMode 상태를 업데이트하여 관심학교의 배틀을 표시
+          schoolMode.selectInterestSchool(data[0]);
+          // URL도 school_code 파라미터를 포함하도록 변경 (새로고침 방지)
+          const newUrl = `/battle?school_code=${schoolData.SD_SCHUL_CODE}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        }
         sessionStorage.removeItem('pending_interest_school');
-        router.push(`/battle?school_code=${schoolData.SD_SCHUL_CODE}`);
       }
       
     } catch (error) {
