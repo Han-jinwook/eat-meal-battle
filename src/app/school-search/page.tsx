@@ -340,9 +340,9 @@ export default function SchoolSearchPage() {
             console.log('🏆 배틀공유 같은학교 등록 완료 → 배틀페이지로 이동');
             router.push('/battle');
           } else {
-            // 다른 학교를 등록한 경우 → 관심학교 관리 페이지로 이동 (5,6번 분기의 2단계)
-            console.log('🏫 배틀공유 타학교 등록 → 관심학교 관리 페이지로 이동');
-            router.push(`/interest-schools?share_school_code=${shareSchoolCode}&share_type=battle`);
+            // 다른 학교를 등록한 경우 → 배틀 페이지 관심모드로 이동 (5,6번 분기의 2단계)
+            console.log('🏫 배틀공유 타학교 등록 → 배틀 페이지 관심모드로 이동');
+            router.push(`/battle?show_interest_modal=true&share_school_code=${shareSchoolCode}`);
           }
         } else {
           // 급식공유 또는 일반 등록인 경우
