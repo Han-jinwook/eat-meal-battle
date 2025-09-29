@@ -524,7 +524,6 @@ export default function Home() {
   useEffect(() => {
     if (!userLoading && user && interestSchools.length > 0 && !schoolMode.hasMySchool && !schoolMode.selectedInterestSchool) {
       const firstSchool = interestSchools[0];
-      console.log('첫 번째 관심학교 자동 선택:', firstSchool.school_name);
       
       schoolMode.selectInterestSchool({
         id: firstSchool.id,
@@ -736,8 +735,6 @@ export default function Home() {
 
   // 현재 선택된 학교 정보 기준 officeCode 결정
   const resolveOfficeCode = () => {
-    console.log('현재 선택된 학교:', schoolMode.selectedInterestSchool);
-    console.log('내 학교 정보:', userSchool);
     
     // 관심학교가 선택되었으면 해당 학교의 office_code 사용
     if (schoolMode.selectedInterestSchool?.office_code) {
@@ -1140,8 +1137,6 @@ export default function Home() {
             const currentSchool = schoolMode.selectedInterestSchool;
             const mySchool = userSchool;
             
-            console.log('현재 선택된 학교:', currentSchool);
-            console.log('내 학교 정보:', mySchool);
             
             if (currentSchool) {
               // 관심학교가 선택된 경우

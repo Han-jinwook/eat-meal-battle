@@ -370,7 +370,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       
       // 2. 메모리 백업 확인 (iOS Safari 메모리 이슈 대응)
       if (ratingBackupRef.current.rating !== null) {
-        console.log('📱 메모리 백업된 별점 상태 복원:', ratingBackupRef.current.rating);
         setRating(ratingBackupRef.current.rating);
         setAvgRating(ratingBackupRef.current.avgRating);
         setRatingCount(ratingBackupRef.current.ratingCount);
@@ -466,7 +465,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
             const parsed = JSON.parse(backupData);
             // 백업이 24시간 이내이고 현재 상태와 다르면 복원
             if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000 && rating !== parsed.rating) {
-              console.log('🔄 localStorage 백업으로 별점 상태 복원:', parsed.rating);
               setRating(parsed.rating);
               setAvgRating(parsed.avgRating);
               setRatingCount(parsed.ratingCount);
@@ -486,7 +484,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         
         // localStorage 백업이 없으면 메모리 백업 확인
         if (ratingBackupRef.current.rating !== null && rating !== ratingBackupRef.current.rating) {
-          console.log('🔄 메모리 백업으로 별점 상태 복원:', ratingBackupRef.current.rating);
           setRating(ratingBackupRef.current.rating);
           setAvgRating(ratingBackupRef.current.avgRating);
           setRatingCount(ratingBackupRef.current.ratingCount);
@@ -558,7 +555,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
         // 조용히 차단 (메시지 없이)
         return;
       }
-      console.log('⭐ 별점 선택:', value);
       setIsLoading(true);
       const previousRating = rating;
 

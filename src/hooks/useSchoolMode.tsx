@@ -100,7 +100,6 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
           .single();
 
         if (!error && school) {
-          console.log('관심학교 상태 복원:', school.school_name);
           setSelectedInterestSchool({
             id: school.id,
             school_name: school.school_name,
@@ -130,10 +129,8 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
       if (session?.user) {
         if (school) {
           localStorage.setItem(`last_selected_school_${session.user.id}`, school.id);
-          console.log('관심학교 선택 저장:', school.school_name);
         } else {
           localStorage.removeItem(`last_selected_school_${session.user.id}`);
-          console.log('관심학교 선택 해제');
         }
       }
     } catch (error) {
