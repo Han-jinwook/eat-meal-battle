@@ -648,7 +648,7 @@ else if (rawProviderData?.birthdate) {
 // 2. 나이 계산 및 학생 여부 자동 판단
 const age = calculateAge(birthDate)
 // 🚧 테스트 중: 나이 제한 임시 확장 (출시 전 만 6-19세로 변경 예정)
-const isStudent = age >= 6 && age <= 39 // 테스트: 만 6-39세 | 출시: 만 6-19세 (초등입학전~고3)
+const isStudent = age >= 6 && age <= 53 // 테스트: 만 6-53세 | 출시: 만 6-19세 (초등입학전~고3)
 
 // 3. DB 자동 업데이트
 await supabase.from('users').update({
