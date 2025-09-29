@@ -106,7 +106,6 @@ export default function QuizClient() {
     // 범위 내에서만 변경 허용
     if (grade >= minGrade && grade <= maxGrade) {
       setUniversalGrade(grade);
-      console.log('🏀 학년 변경:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위)`);
 
     } else {
       console.log('🚫 학년 변경 불가:', grade, `(${universalSchoolType} ${minGrade}-${maxGrade}학년 범위 초과)`);

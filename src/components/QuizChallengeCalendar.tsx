@@ -543,7 +543,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
       
-      console.log('📅 월 변경 감지:', { year, month: month + 1 });
       
       // 퀴즈 결과 데이터 가져오기
       fetchCalendarData(year, month);
@@ -564,7 +563,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
       
-      console.log('👀 관람 모드 변경 감지:', { viewingUserId, year, month: month + 1 });
       
       // 관람 모드 변경 시 모든 데이터 새로고침
       fetchCalendarData(year, month);

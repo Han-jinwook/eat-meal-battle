@@ -322,7 +322,6 @@ export default function MealImageUploader({
   
   // mealDate 변경 시 상태 초기화
   useEffect(() => {
-    console.log('mealDate 변경됨, 상태 초기화:', mealDate);
     // 이전 날짜의 미리보기나 AI 생성 이미지 제거
     setPreview(null);
     setImageStatus('idle');
