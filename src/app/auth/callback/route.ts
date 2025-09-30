@@ -186,28 +186,24 @@ export async function GET(request: NextRequest) {
         // 카카오 사용자 정보 API 직접 호출 (생년 정보 획득)
         let kakaoUserInfo = null;
         if (provider === 'kakao' && data.session.provider_token) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+
           try {
-            console.info('🔍 카카오 사용자 정보 API 호출 시작...');
+            console.info('🔍 카카오 사용자 정보 API 호출 시작 (5초 타임아웃 설정)...');
             
-            // 토큰 길이 확인 및 처리
             let accessToken = data.session.provider_token;
-            console.info('🔍 원본 토큰 길이:', accessToken.length);
-            console.info('🔍 토큰 앞부분:', accessToken.substring(0, 20) + '...');
-            
-            // 토큰이 너무 길면 앞부분만 사용 (카카오 토큰은 보통 43자리)
-            if (accessToken.length > 100) {
-              console.warn('⚠️ 토큰이 너무 길어서 잘라서 사용합니다.');
-              // 일반적으로 카카오 액세스 토큰은 43자리이므로 처음 50자리만 사용
-              accessToken = accessToken.substring(0, 50);
-            }
             
             const kakaoResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
-              }
+              },
+              signal: controller.signal // AbortController 적용
             });
             
+            clearTimeout(timeoutId); // 성공 시 타임아웃 해제
+
             if (kakaoResponse.ok) {
               kakaoUserInfo = await kakaoResponse.json();
               console.info('✅ 카카오 사용자 정보 API 응답:', JSON.stringify(kakaoUserInfo, null, 2));
@@ -219,8 +215,15 @@ export async function GET(request: NextRequest) {
                 errorBody: errorText
               });
             }
-          } catch (apiError) {
-            console.error('❌ 카카오 API 호출 실패:', apiError);
+          } catch (apiError: any) {
+            clearTimeout(timeoutId); // 에러 시에도 타임아웃 해제
+            if (apiError.name === 'AbortError') {
+              console.error('❌ 카카오 API 호출 시간 초과 (5초)');
+            } else {
+              console.error('❌ 카카오 API 호출 실패:', apiError);
+            }
+            // API 호출이 실패해도 로그인 흐름은 계속 진행
+            kakaoUserInfo = null;
           }
         } else if (provider === 'kakao') {
           console.info('⚠️ provider_token이 없어서 카카오 API 호출 불가');
