@@ -317,8 +317,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       }
       
       const result = {
-        avg_rating: avgRating,
-        rating_count: ratingCount,
         user_rating: userRating
       };
       
@@ -328,8 +326,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       console.error('별점 정보 조회 오류:', error);
       // 오류 발생시 기본값 반환
       return {
-        avg_rating: 0,
-        rating_count: 0,
         user_rating: null
       };
     }
@@ -351,15 +347,9 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
             if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
               console.log('💾 localStorage 백업 복원:', parsed.rating);
               setRating(parsed.rating);
-              setAvgRating(parsed.avgRating);
-              setRatingCount(parsed.ratingCount);
               
               // 메모리 백업도 업데이트
-              ratingBackupRef.current = {
-                rating: parsed.rating,
-                avgRating: parsed.avgRating,
-                ratingCount: parsed.ratingCount
-              };
+              ratingBackupRef.current.rating = parsed.rating;
               return;
             }
           }
@@ -371,8 +361,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       // 2. 메모리 백업 확인 (iOS Safari 메모리 이슈 대응)
       if (ratingBackupRef.current.rating !== null) {
         setRating(ratingBackupRef.current.rating);
-        setAvgRating(ratingBackupRef.current.avgRating);
-        setRatingCount(ratingBackupRef.current.ratingCount);
         return;
       }
       
@@ -380,19 +368,11 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       if (item.user_rating !== undefined) {
         console.log('📊 프롭스 별점 정보 사용:', item.user_rating);
         const newRating = item.user_rating;
-        const newAvgRating = item.avg_rating;
-        const newRatingCount = item.rating_count;
         
         setRating(newRating);
-        setAvgRating(newAvgRating);
-        setRatingCount(newRatingCount);
         
         // 백업에도 저장 (iOS Safari 메모리 관리)
-        ratingBackupRef.current = {
-          rating: newRating,
-          avgRating: newAvgRating,
-          ratingCount: newRatingCount
-        };
+        ratingBackupRef.current.rating = newRating;
         
         // iOS Safari를 위한 localStorage 영구 백업
         if (user?.id) {
@@ -400,8 +380,6 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
             const backupKey = `rating_backup_${item.id}_${user.id}`;
             localStorage.setItem(backupKey, JSON.stringify({
               rating: newRating,
-              avgRating: newAvgRating,
-              ratingCount: newRatingCount,
               timestamp: Date.now()
             }));
           } catch (e) {
@@ -417,27 +395,15 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       
       if (data) {
         setRating(data.user_rating);
-        setAvgRating(data.avg_rating);
-        setRatingCount(data.rating_count);
         
         // 백업에도 저장
-        ratingBackupRef.current = {
-          rating: data.user_rating,
-          avgRating: data.avg_rating,
-          ratingCount: data.rating_count
-        };
+        ratingBackupRef.current.rating = data.user_rating;
       } else {
         // 조회 실패 시 기본값 사용
         setRating(null);
-        setAvgRating(0);
-        setRatingCount(0);
         
         // 백업 초기화
-        ratingBackupRef.current = {
-          rating: null,
-          avgRating: 0,
-          ratingCount: 0
-        };
+        ratingBackupRef.current.rating = null;
       }
     } catch (error) {
       console.error('🚨 별점 데이터 초기화 중 오류:', error);
