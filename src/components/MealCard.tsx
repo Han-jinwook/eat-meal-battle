@@ -70,7 +70,7 @@ interface MealCardProps {
 // 별점 지정/표시 컴포넌트
 function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
   // iOS Safari 호환성을 위해 useUserSchool 훅 사용 (일관된 사용자 상태 관리)
-  const { user, userSchool } = useUserSchool();
+  const { user, userSchool, loading: userLoading } = useUserSchool();
   
   // 권한 확인
   const schoolMode = useSchoolMode(userSchool);
@@ -510,6 +510,12 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   const handleRating = async (value: number) => {
     try {
       // 상세 로그인 상태 디버깅
+      if (userLoading) {
+        alert(`⏳ 로딩 중입니다. 잠시만 기다려주세요.`);
+        return;
+      }
+
+      // 상세 로그인 상태 디버깅
       console.log('🎯 별점 클릭 디버깅:', {
         value,
         hasUser: !!user,
@@ -523,12 +529,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       
       // 로그인 확인
       if (!user) {
-        console.error('❌ 사용자 로그인 상태가 아닙니다 - 상세 정보:', {
-          user,
-          userType: typeof user,
-          userKeys: user ? Object.keys(user) : 'null'
-        });
-        alert('별점을 남기려면 로그인해주세요!');
+        alert(`❌ 로그인이 필요합니다!\n\n다시 로그인해주세요.`);
         return;
       }
       
@@ -727,7 +728,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
           <StarRating 
             value={rating || 0}
             onChange={handleRating}
-            interactive={interactive && canRate}
+            interactive={interactive && canRate && !userLoading}
             showValue={false}
             size="medium"
           />
