@@ -444,12 +444,33 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     }
   };
 
-  // 초기 별점 조회 및 사용자/아이템 변경 시 재조회
+  // 전체 통계 조회 (초기 로드 및 아이템 변경 시)
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!item?.id) return;
+      const { data, error } = await supabase
+        .from('menu_item_rating_stats')
+        .select('avg_rating, rating_count')
+        .eq('menu_item_id', item.id)
+        .single();
+
+      if (data) {
+        setAvgRating(data.avg_rating);
+        setRatingCount(data.rating_count);
+      } else {
+        setAvgRating(null);
+        setRatingCount(0);
+      }
+    };
+    fetchStats();
+  }, [item?.id]);
+
+  // 개인 별점 조회 (사용자 변경 시)
   useEffect(() => {
     if (item && item.id) {
       initRatingState();
     }
-  }, [item.id, user, item]);
+  }, [item.id, user]);
 
   // iOS Safari 페이지 포커스 복원 시 상태 복원
   useEffect(() => {
