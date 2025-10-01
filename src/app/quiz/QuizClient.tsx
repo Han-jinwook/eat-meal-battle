@@ -333,6 +333,71 @@ export default function QuizClient() {
     class?: number;
   } | null>(null);
   
+  // 구독퀴즈 없는 비학생 상태
+  const [isNonStudentWithNoSubscription, setIsNonStudentWithNoSubscription] = useState<boolean>(false);
+  const [hasCheckedSubscription, setHasCheckedSubscription] = useState<boolean>(false);
+
+  // 비학생이 구독퀴즈 있는지 확인하고 자동 리디렉션
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      // viewing 파라미터가 이미 있거나 학생이면 스킵
+      if (searchParams?.get('viewing') || isViewingMode || userSchool || userLoading) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+        
+        // 구독 퀴즈 조회
+        const { data: subscribedQuizzes, error } = await supabase
+          .from('quiz_viewers')
+          .select('id, quiz_owner_id')
+          .eq('viewer_id', session.user.id);
+
+        if (error) {
+          console.error('구독 퀴즈 조회 오류:', error);
+          setHasCheckedSubscription(true);
+          return;
+        }
+
+        // 구독 퀴즈가 있으면 첫 번째로 자동 리디렉션
+        if (subscribedQuizzes && subscribedQuizzes.length > 0) {
+          const firstQuiz = subscribedQuizzes[0];
+          
+          // 소유자 정보 가져오기
+          const { data: ownerData } = await supabase
+            .from('users')
+            .select('nickname, school_infos(school_name)')
+            .eq('id', firstQuiz.quiz_owner_id)
+            .single();
+          
+          if (ownerData) {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
+            if (ownerData.nickname) {
+              currentUrl.searchParams.set('owner_nickname', ownerData.nickname);
+            }
+            if (ownerData.school_infos?.school_name) {
+              currentUrl.searchParams.set('school_name', ownerData.school_infos.school_name);
+            }
+            
+            router.push(currentUrl.toString());
+            return;
+          }
+        } else {
+          // 구독 퀴즈 없음
+          setIsNonStudentWithNoSubscription(true);
+        }
+        
+        setHasCheckedSubscription(true);
+      } catch (error) {
+        console.error('구독 퀴즈 확인 오류:', error);
+        setHasCheckedSubscription(true);
+      }
+    };
+    
+    checkAndRedirect();
+  }, [userLoading, userSchool, isViewingMode, searchParams, router, supabase]);
+  
   // Handle URL parameters (date and viewing)
   useEffect(() => {
     try {
@@ -1079,7 +1144,30 @@ export default function QuizClient() {
           </button>
         </div>
 
-        {/* 퀴즈 콘텐츠 */}
+        {/* 구독 퀴즈 없는 비학생을 위한 안내 화면 */}
+        {isNonStudentWithNoSubscription && hasCheckedSubscription && (
+          <div className="mt-6 bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="flex flex-col items-center">
+              <div className="text-5xl mb-4">🔔</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                자녀나/친구에게 퀴즈 공유 링크를 받아 클릭하면
+              </h3>
+              <p className="text-gray-600 mb-6">
+                자동으로 퀴즈구독되어 자유롭게 관람할 수 있습니다.
+              </p>
+              <button
+                onClick={() => setIsAllQuizModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-base font-medium"
+              >
+                <span>🤩</span>
+                <span>모든 퀴즈 풀어보기</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 퀴즈 콘텐츠 - 구독퀴즈 없는 비학생에게는 표시하지 않음 */}
+        {(!isNonStudentWithNoSubscription || !hasCheckedSubscription) && (
         <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
           {loading ? (
             <div className="text-center py-10">
@@ -1169,8 +1257,10 @@ export default function QuizClient() {
             </div>
           )}
         </div>
+        )}
         
-        {/* 퀴즈 챌린지 현황 달력 */}
+        {/* 퀴즈 챌린지 현황 달력 - 구독퀴즈 없는 비학생에게는 표시하지 않음 */}
+        {(!isNonStudentWithNoSubscription || !hasCheckedSubscription) && (
         <QuizChallengeCalendar 
           currentQuizDate={selectedDate}
           onDateSelect={(date) => {
@@ -1193,6 +1283,7 @@ export default function QuizClient() {
           }}
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
+        )}
         
         {/* 퀴즈 공유 버튼 - 월간 현황판 바로 아래 배치 */}
         {userSchool?.school_name && (
@@ -1206,11 +1297,13 @@ export default function QuizClient() {
           />
         )}
         
-        {/* 장원 히스토리 - 무한 루프 수정 완료 */}
+        {/* 장원 히스토리 - 구독퀴즈 없는 비학생에게는 표시하지 않음 */}
+        {(!isNonStudentWithNoSubscription || !hasCheckedSubscription) && (
         <ChampionHistory 
           currentMonth={calendarMonth} 
           viewingUserId={isViewingMode ? viewingUserId : undefined}
         />
+        )}
         
         {/* 모든 퀴즈 모달 */}
         <AllQuizModal

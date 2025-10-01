@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface QuizRelation {
@@ -33,6 +34,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, classNa
   const [myViewingQuizzes, setMyViewingQuizzes] = useState<QuizRelation[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -265,7 +267,20 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, classNa
                             <div className="flex-1">
                               <button
                                 onClick={() => {
-                                  window.location.href = `/quiz?viewing=${quiz.quiz_owner_id}`;
+                                  const currentUrl = new URL(window.location.href);
+                                  const dateParam = currentUrl.searchParams.get('date');
+                                  const queryParams = new URLSearchParams();
+                                  
+                                  if (dateParam) {
+                                    queryParams.set('date', dateParam);
+                                  }
+                                  
+                                  queryParams.set('viewing', quiz.quiz_owner_id);
+                                  if (quiz.owner_info?.nickname) {
+                                    queryParams.set('owner_nickname', quiz.owner_info.nickname);
+                                  }
+                                  
+                                  router.push(`/quiz?${queryParams.toString()}`);
                                   setIsOpen(false);
                                 }}
                                 className="text-sm font-medium text-green-800 hover:text-green-900 hover:underline cursor-pointer bg-transparent border-none p-0"
