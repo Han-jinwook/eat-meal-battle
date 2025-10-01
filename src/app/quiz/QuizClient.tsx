@@ -478,8 +478,10 @@ export default function QuizClient() {
       // 브라우저 환경에 맞는 안전한 방식으로 토큰 디코딩 (공백 제거 로직 추가)
       let tokenData;
       try {
-        // 디코딩 전에 토큰에서 모든 공백 문자를 제거합니다.
-        const cleanedToken = token.replace(/\s/g, '');
+        // 디코딩 전에 토큰에서 모든 공백 문자를 강력하게 제거합니다.
+        const cleanedToken = token.replace(/[\s\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, '');
+        console.log('토큰 정리 전:', token.length, '정리 후:', cleanedToken.length);
+        console.log('정리된 토큰:', cleanedToken);
         const decodedData = atob(cleanedToken);
         const uint8Array = new Uint8Array(decodedData.length);
         for (let i = 0; i < decodedData.length; i++) {
