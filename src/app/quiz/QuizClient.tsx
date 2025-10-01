@@ -475,10 +475,17 @@ export default function QuizClient() {
     try {
       console.log('초대 링크 처리 시작:', token);
       
-      // 안전하고 간결한 방식으로 토큰 디코딩
+      // 브라우저 환경에 맞는 안전한 방식으로 토큰 디코딩 (공백 제거 로직 추가)
       let tokenData;
       try {
-        const jsonString = Buffer.from(token, 'base64').toString('utf8');
+        // 디코딩 전에 토큰에서 모든 공백 문자를 제거합니다.
+        const cleanedToken = token.replace(/\s/g, '');
+        const decodedData = atob(cleanedToken);
+        const uint8Array = new Uint8Array(decodedData.length);
+        for (let i = 0; i < decodedData.length; i++) {
+          uint8Array[i] = decodedData.charCodeAt(i);
+        }
+        const jsonString = new TextDecoder('utf-8').decode(uint8Array);
         tokenData = JSON.parse(jsonString);
         console.log('토큰 파싱 성공:', tokenData);
       } catch (decodeError) {
