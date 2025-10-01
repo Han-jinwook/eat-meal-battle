@@ -399,11 +399,14 @@ export default function QuizClient() {
           const firstQuiz = subscribedQuizzes[0];
           
           // 소유자 정보 가져오기
-          const { data: ownerData } = await supabase
+          console.log('👤 소유자 정보 조회 시작:', firstQuiz.quiz_owner_id);
+          const { data: ownerData, error: ownerError } = await supabase
             .from('users')
             .select('nickname, school_infos(school_name)')
             .eq('id', firstQuiz.quiz_owner_id)
             .single();
+          
+          console.log('👤 소유자 정보 조회 결과:', { ownerData, ownerError });
           
           if (ownerData) {
             const currentUrl = new URL(window.location.href);
@@ -418,6 +421,8 @@ export default function QuizClient() {
             console.log('🚀 자동 리디렉션 실행:', currentUrl.toString());
             router.push(currentUrl.toString());
             return;
+          } else {
+            console.log('❌ 소유자 정보 없음 - 리디렉션 실패');
           }
         } else {
           // 구독 퀴즈 없음
