@@ -20,11 +20,13 @@ interface QuizRelation {
 }
 
 interface QuizDropdownProps {
-  userId: string;
+  userId?: string;
   className?: string;
 }
 
-const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) => {
+const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, className = '' }) => {
+  // 현재 로그인된 사용자 ID 상태
+  const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null);
   const [isOpen, setIsOpen] = useState(false);
   const [mySharedQuizzes, setMySharedQuizzes] = useState<QuizRelation[]>([]);
   const [myViewingQuizzes, setMyViewingQuizzes] = useState<QuizRelation[]>([]);
@@ -36,6 +38,25 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+
+  // 현재 로그인된 사용자 ID 가져오기
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (!currentUserId) { // userId prop이 없거나 빈 문자열이면 현재 로그인된 사용자 ID 가져오기
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.id) {
+            console.log('🔑 현재 로그인된 사용자 ID 가져옴:', user.id);
+            setCurrentUserId(user.id);
+          }
+        } catch (error) {
+          console.error('🚫 현재 사용자 ID 조회 오류:', error);
+        }
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -51,10 +72,10 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
 
   // 퀴즈 관계 데이터 로드
   const loadQuizRelations = async () => {
-    if (!userId) return;
+    if (!currentUserId) return;
     
     setLoading(true);
-    console.log('🔍 퀴즈 관계 데이터 로드 시작:', userId);
+    console.log('🔍 퀴즈 관계 데이터 로드 시작:', currentUserId);
 
     try {
       // 내가 공유한 퀴즈 (다른 사람들이 내 퀴즈를 보는 경우) - 개별 관람자 정보 포함
@@ -66,7 +87,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
           viewer_id,
           created_at
         `)
-        .eq('quiz_owner_id', userId);
+        .eq('quiz_owner_id', currentUserId);
 
       if (sharedError) {
         console.error('공유 퀴즈 로드 오류:', sharedError);
@@ -111,7 +132,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
           viewer_id,
           created_at
         `)
-        .eq('viewer_id', userId);
+        .eq('viewer_id', currentUserId);
 
       if (viewingError) {
         console.error('관람 퀴즈 로드 오류:', viewingError);
@@ -180,11 +201,22 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
 
   // 드롭다운 토글
   const toggleDropdown = () => {
-    if (!isOpen) {
-      loadQuizRelations();
-    }
     setIsOpen(!isOpen);
   };
+
+  // currentUserId가 변경되면 구독 데이터 로드
+  useEffect(() => {
+    if (currentUserId) {
+      loadQuizRelations();
+    }
+  }, [currentUserId]);
+  
+  // 드롭다운 열리면 데이터 새로고침
+  useEffect(() => {
+    if (isOpen && currentUserId) {
+      loadQuizRelations();
+    }
+  }, [isOpen]);
 
   // 전체 퀴즈 개수 계산
   const totalQuizCount = mySharedQuizzes.length + myViewingQuizzes.length;

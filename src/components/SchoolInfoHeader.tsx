@@ -90,9 +90,17 @@ export default function SchoolInfoHeader({
         {isViewingMode && viewingUserInfo && (
           <button
             onClick={() => {
-              const newUrl = new URL(window.location.href);
-              newUrl.searchParams.delete('viewing');
-              router.replace(newUrl.pathname + newUrl.search);
+              // 관람 모드 종료 - 페이지 유지하면서 URL만 변경
+              const currentUrl = new URL(window.location.href);
+              
+              // date 파라미터가 있는지 확인
+              const dateParam = currentUrl.searchParams.get('date');
+              
+              // 관람 파라미터만 제거하고 date는 유지
+              const newPath = dateParam ? `/quiz?date=${dateParam}` : '/quiz';
+              
+              // 클라이언트 네비게이션으로 전환
+              router.push(newPath);
             }}
             className="flex items-center gap-2 px-4 py-2 bg-white/90 border border-purple-200 rounded-lg hover:bg-white transition-colors shadow-sm"
           >
@@ -111,8 +119,8 @@ export default function SchoolInfoHeader({
           </button>
         )}
         
-        {/* 구독퀴즈 드롭다운 - 항상 표시 */}
-        <QuizDropdown userId={userSchool?.user_id || ''} />
+        {/* 구독퀴즈 드롭다운 - 항상 표시 (로그인 사용자 ID 직접 가져오기) */}
+        <QuizDropdown />
       </div>
     </div>
   );
