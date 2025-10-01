@@ -38,8 +38,8 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
 
   // 장원 통계 데이터 가져오기 - quiz_champions 테이블의 day_N 필드를 활용하는 최적화 방식으로 변경
   const fetchChampionStats = useCallback(async () => {
-    if (!userSchool?.school_code) {
-      console.log('❌ userSchool 정보 없음');
+    if (!userSchool?.school_code && !viewingUserId) {
+      console.log('❌ userSchool 정보 없음 - 관람 모드가 아님');
       return;
     }
     

@@ -125,7 +125,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   // 퀴즈 결과 데이터 가져오기
   const fetchCalendarData = async (year: number, month: number) => {
-    if (!userSchool) return;
+    if (!userSchool && !viewingUserId) return;
     
     setLoading(true);
     try {
@@ -470,7 +470,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   const fetchPreviousMonthStats = async (year: number, month: number) => {
     try {
       const session = await supabase.auth.getSession();
-      if (!session.data.session || !userSchool) return;
+      if (!session.data.session || (!userSchool && !viewingUserId)) return;
       
       // JavaScript의 month는 0-11이므로 DB 조회용으로 +1 해줌
       const displayMonth = month + 1;
