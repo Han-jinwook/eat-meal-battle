@@ -346,6 +346,9 @@ export default function QuizClient() {
         setIsViewingMode(true);
         setViewingUserId(viewingParam);
         
+        // 구독 등록 처리 (새로운 구독인 경우)
+        handleQuizSubscription(viewingParam, ownerNicknameParam);
+        
         // URL 파라미터에서 사용자 정보 직접 사용
         if (ownerNicknameParam && schoolNameParam) {
           setViewingUserInfo({
@@ -420,6 +423,74 @@ export default function QuizClient() {
     }
   }, [searchParams]);
 
+
+  // 퀴즈 구독 등록 함수
+  const handleQuizSubscription = async (ownerId: string, ownerNickname?: string) => {
+    // 학생이지만 학교 등록이 안된 경우, 구독 먼저 하고 학교 등록 페이지로 안내
+    if (!userLoading && isRegistrationRequired) {
+      console.log('🏫 학교 등록 필요한 학생 - 구독 먼저 진행');
+    }
+
+    try {
+      // 현재 사용자 확인
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('로그인이 필요합니다.');
+        router.push('/login');
+        return;
+      }
+      
+      // 자기 자신을 구독하는 경우 방지
+      if (user.id === ownerId) {
+        console.log('🚫 자기 자신의 퀴즈는 구독할 수 없음');
+        return;
+      }
+      
+      // 이미 구독한 관람자인지 확인
+      const { data: existingViewer } = await supabase
+        .from('quiz_viewers')
+        .select('id')
+        .eq('quiz_owner_id', ownerId)
+        .eq('viewer_id', user.id)
+        .single();
+      
+      if (existingViewer) {
+        console.log('✅ 이미 구독된 퀴즈');
+        const nickname = ownerNickname ? decodeURIComponent(ownerNickname) : '해당 사용자';
+        toast.success(`이미 ${nickname}님의 퀴즈 관람자로 등록되어 있습니다!`);
+      } else {
+        // 새 구독자 등록
+        const { error: insertError } = await supabase
+          .from('quiz_viewers')
+          .insert({
+            quiz_owner_id: ownerId,
+            viewer_id: user.id
+          });
+        
+        if (insertError) {
+          console.error('구독 등록 오류:', insertError);
+          toast.error('구독 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        
+        const nickname = ownerNickname ? decodeURIComponent(ownerNickname) : '해당 사용자';
+        toast.success(`🎉 ${nickname}님의 퀴즈 관람자로 등록되었습니다!`);
+        console.log('✅ 새 구독 등록 완료:', { ownerId, viewerId: user.id });
+      }
+
+      // 학생이지만 학교 등록이 안된 경우, 구독 후 학교 등록 페이지로 안내
+      if (!userLoading && isRegistrationRequired) {
+        toast('퀴즈를 보려면 먼저 학교를 등록해야 해요!', { icon: '🏫' });
+        const redirectUrl = window.location.href;
+        router.push(`/school-search?redirect_url=${encodeURIComponent(redirectUrl)}`);
+        return;
+      }
+      
+    } catch (error) {
+      console.error('퀴즈 구독 처리 오류:', error);
+      toast.error('구독 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   // 관람 사용자 정보 로드 함수
   const loadViewingUserInfo = async (userId: string) => {
