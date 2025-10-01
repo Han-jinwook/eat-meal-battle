@@ -260,7 +260,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
 
   // 데이터 로드 - 무한 루프 방지를 위한 최적화된 의존성 배열
   useEffect(() => {
-    if (userSchool?.school_code) {
+    if (userSchool?.school_code || viewingUserId) {
       fetchChampionStats();
     }
   }, [fetchChampionStats]); // isApiCalling 제거로 무한 루프 방지

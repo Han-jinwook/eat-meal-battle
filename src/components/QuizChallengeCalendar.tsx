@@ -559,7 +559,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
 
   // viewingUserId 변경 시 데이터 새로고침
   useEffect(() => {
-    if (userSchool) {
+    if (userSchool || viewingUserId) {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
       
