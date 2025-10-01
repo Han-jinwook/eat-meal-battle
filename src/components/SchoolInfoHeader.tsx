@@ -84,32 +84,36 @@ export default function SchoolInfoHeader({
         ) : null}
       </div>
       
-      {/* 오른쪽: 관심퀴즈 드롭다운 또는 관람 종료 버튼 */}
-      {isViewingMode && viewingUserInfo ? (
-        <button
-          onClick={() => {
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete('viewing');
-            router.replace(newUrl.pathname + newUrl.search);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-white/90 border border-purple-200 rounded-lg hover:bg-white transition-colors shadow-sm"
-        >
-          <span className="text-purple-600">👀</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold">
-            {viewingUserInfo.nickname}님의 퀴즈 관람 종료
-          </span>
-          <span className="ml-1 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
-            {viewingUserInfo.school_name}
-            {viewingUserInfo.grade && ` ${viewingUserInfo.grade}학년`}
-            {viewingUserInfo.class && ` ${viewingUserInfo.class}반`}
-          </span>
-          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      ) : userSchool ? (
-        <QuizDropdown userId={userSchool.user_id || ''} />
-      ) : null}
+      {/* 오른쪽: 관심퀴즈 드롭다운과 관람 종료 버튼 */}
+      <div className="flex items-center gap-3">
+        {/* 관람모드일 때 관람 종료 버튼 */}
+        {isViewingMode && viewingUserInfo && (
+          <button
+            onClick={() => {
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.delete('viewing');
+              router.replace(newUrl.pathname + newUrl.search);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white/90 border border-purple-200 rounded-lg hover:bg-white transition-colors shadow-sm"
+          >
+            <span className="text-purple-600">👀</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold">
+              {viewingUserInfo.nickname}님의 퀴즈 관람 종료
+            </span>
+            <span className="ml-1 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+              {viewingUserInfo.school_name}
+              {viewingUserInfo.grade && ` ${viewingUserInfo.grade}학년`}
+              {viewingUserInfo.class && ` ${viewingUserInfo.class}반`}
+            </span>
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
+        {/* 구독퀴즈 드롭다운 - 항상 표시 */}
+        <QuizDropdown userId={userSchool?.user_id || ''} />
+      </div>
     </div>
   );
 }

@@ -36,6 +36,7 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId, className = '' }) =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+
   // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
