@@ -1057,6 +1057,7 @@ export default function QuizClient() {
           userSchool={userSchool}
           isViewingMode={isViewingMode}
           viewingUserInfo={viewingUserInfo}
+          onOpenAllQuizModal={() => setIsAllQuizModalOpen(true)}
         />
 
         {/* 날짜 선택 및 퀴즈 버튼 영역 */}

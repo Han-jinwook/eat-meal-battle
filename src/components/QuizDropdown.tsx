@@ -22,9 +22,10 @@ interface QuizRelation {
 interface QuizDropdownProps {
   userId?: string;
   className?: string;
+  onOpenAllQuizModal?: () => void;
 }
 
-const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, className = '' }) => {
+const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, className = '', onOpenAllQuizModal }) => {
   // 현재 로그인된 사용자 ID 상태
   const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null);
   const [isOpen, setIsOpen] = useState(false);
@@ -307,12 +308,12 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, classNa
                   </div>
                 )}
 
-                {/* 빈 상태 */}
+                {/* 빈 상태 - 구독퀴즈 없을 때 */}
                 {mySharedQuizzes.length === 0 && myViewingQuizzes.length === 0 && (
                   <div className="text-center py-6">
-                    <div className="text-4xl mb-2">📚</div>
-                    <p className="text-sm text-gray-500 mb-2">아직 공유하거나 관람 중인 퀴즈가 없어요</p>
-                    <p className="text-xs text-gray-400">퀴즈를 공유하거나 초대 링크를 받아보세요!</p>
+                    <div className="text-4xl mb-3">🔔</div>
+                    <p className="text-sm text-gray-600 font-medium mb-2">아직 구독중인 퀴즈가 없습니다</p>
+                    <p className="text-xs text-gray-500">자녀나/친구에게 퀴즈 공유 링크를 받아 클릭하면<br/>자동으로 퀴즈구독되어 자유롭게 관람할 수 있습니다.</p>
                   </div>
                 )}
               </>
