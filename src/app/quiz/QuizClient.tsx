@@ -340,14 +340,24 @@ export default function QuizClient() {
   // 비학생이 구독퀴즈 있는지 확인하고 자동 리디렉션
   useEffect(() => {
     const checkAndRedirect = async () => {
+      console.log('🔍 자동 리디렉션 체크 시작:', {
+        viewing: searchParams?.get('viewing'),
+        isViewingMode,
+        userLoading
+      });
+      
       // viewing 파라미터가 이미 있으면 스킵
-      if (searchParams?.get('viewing') || isViewingMode || userLoading) return;
+      if (searchParams?.get('viewing') || isViewingMode || userLoading) {
+        console.log('⏭️ 자동 리디렉션 스킵 - 이미 viewing 모드이거나 로딩 중');
+        return;
+      }
       
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user?.id) return;
         
         // users 테이블에서 is_student 확인
+        console.log('👤 사용자 정보 조회 시작:', session.user.id);
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('is_student')
@@ -355,12 +365,19 @@ export default function QuizClient() {
           .single();
         
         if (userError || !userData) {
-          console.error('사용자 정보 조회 오류:', userError);
+          console.error('❌ 사용자 정보 조회 오류:', userError);
           return;
         }
         
+        console.log('👤 사용자 정보:', userData);
+        
         // 학생이면 스킵
-        if (userData.is_student) return;
+        if (userData.is_student) {
+          console.log('🎓 학생이므로 자동 리디렉션 스킵');
+          return;
+        }
+        
+        console.log('👨‍👩‍👧‍👦 비학생 확인됨 - 구독 퀴즈 조회 시작');
         
         // 구독 퀴즈 조회
         const { data: subscribedQuizzes, error } = await supabase
@@ -374,8 +391,11 @@ export default function QuizClient() {
           return;
         }
 
+        console.log('📚 구독 퀴즈 조회 결과:', subscribedQuizzes);
+        
         // 구독 퀴즈가 있으면 첫 번째로 자동 리디렉션
         if (subscribedQuizzes && subscribedQuizzes.length > 0) {
+          console.log('✅ 구독 퀴즈 발견 - 자동 리디렉션 시작');
           const firstQuiz = subscribedQuizzes[0];
           
           // 소유자 정보 가져오기
@@ -395,11 +415,13 @@ export default function QuizClient() {
               currentUrl.searchParams.set('school_name', ownerData.school_infos.school_name);
             }
             
+            console.log('🚀 자동 리디렉션 실행:', currentUrl.toString());
             router.push(currentUrl.toString());
             return;
           }
         } else {
           // 구독 퀴즈 없음
+          console.log('❌ 구독 퀴즈 없음 - 안내 화면 표시');
           setIsNonStudentWithNoSubscription(true);
         }
         
@@ -411,7 +433,7 @@ export default function QuizClient() {
     };
     
     checkAndRedirect();
-  }, [userLoading, userSchool, isViewingMode, searchParams, router, supabase]);
+  }, [userLoading, isViewingMode, searchParams, router, supabase]);
   
   // Handle URL parameters (date and viewing)
   useEffect(() => {
