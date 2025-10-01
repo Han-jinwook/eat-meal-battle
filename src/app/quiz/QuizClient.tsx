@@ -340,12 +340,27 @@ export default function QuizClient() {
   // 비학생이 구독퀴즈 있는지 확인하고 자동 리디렉션
   useEffect(() => {
     const checkAndRedirect = async () => {
-      // viewing 파라미터가 이미 있거나 학생이면 스킵
-      if (searchParams?.get('viewing') || isViewingMode || userSchool || userLoading) return;
+      // viewing 파라미터가 이미 있으면 스킵
+      if (searchParams?.get('viewing') || isViewingMode || userLoading) return;
       
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user?.id) return;
+        
+        // users 테이블에서 is_student 확인
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_student')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userError || !userData) {
+          console.error('사용자 정보 조회 오류:', userError);
+          return;
+        }
+        
+        // 학생이면 스킵
+        if (userData.is_student) return;
         
         // 구독 퀴즈 조회
         const { data: subscribedQuizzes, error } = await supabase
