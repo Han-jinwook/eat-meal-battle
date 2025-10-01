@@ -408,22 +408,22 @@ export default function QuizClient() {
           
           console.log('👤 소유자 정보 조회 결과:', { ownerData, ownerError });
           
+          // 소유자 정보가 있든 없든 기본 viewing 파라미터로 리디렉션
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
+          
           if (ownerData) {
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
             if (ownerData.nickname) {
               currentUrl.searchParams.set('owner_nickname', ownerData.nickname);
             }
             if (ownerData.school_infos?.school_name) {
               currentUrl.searchParams.set('school_name', ownerData.school_infos.school_name);
             }
-            
-            console.log('🚀 자동 리디렉션 실행:', currentUrl.toString());
-            router.push(currentUrl.toString());
-            return;
-          } else {
-            console.log('❌ 소유자 정보 없음 - 리디렉션 실패');
           }
+          
+          console.log('🚀 자동 리디렉션 실행:', currentUrl.toString());
+          router.push(currentUrl.toString());
+          return;
         } else {
           // 구독 퀴즈 없음
           console.log('❌ 구독 퀴즈 없음 - 안내 화면 표시');
