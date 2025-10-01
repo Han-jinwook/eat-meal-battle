@@ -23,7 +23,7 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // 초대 토큰 생성 함수 (iOS Safari 호환)
+  // 초대 토큰 생성 함수 (단순하고 안전한 방식)
   const generateInviteToken = async (ownerId: string, ownerInfo: any) => {
     try {
       const tokenData = {
@@ -33,35 +33,8 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
         expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7일 후 만료
       };
 
-      // iOS Safari 호환성을 위한 안전한 UTF-8 인코딩 후 Base64 변환
-      const jsonString = JSON.stringify(tokenData);
-      let base64String;
-      
-      if (typeof TextEncoder !== 'undefined') {
-        // 최신 브라우저: TextEncoder 사용
-        try {
-          const utf8Bytes = new TextEncoder().encode(jsonString);
-          base64String = btoa(String.fromCharCode(...utf8Bytes));
-          console.log('TextEncoder로 토큰 생성 성공');
-        } catch (textEncoderError) {
-          console.warn('TextEncoder 실패, fallback 사용:', textEncoderError);
-          const encodedString = unescape(encodeURIComponent(jsonString));
-          base64String = btoa(encodedString);
-        }
-      } else {
-        // iOS Safari 호환: escape/unescape 사용
-        console.log('TextEncoder 없음, fallback 사용');
-        try {
-          const encodedString = unescape(encodeURIComponent(jsonString));
-          base64String = btoa(encodedString);
-          console.log('escape/unescape로 토큰 생성 성공');
-        } catch (fallbackError) {
-          console.warn('escape/unescape 실패, 직접 Base64 사용:', fallbackError);
-          // 최종 fallback: 직접 Base64 인코딩
-          base64String = btoa(jsonString);
-        }
-      }
-      
+      // 단순하고 안전한 Base64 인코딩 (다른 공유 기능과 동일한 방식)
+      const base64String = btoa(JSON.stringify(tokenData));
       console.log('토큰 생성 완료, 길이:', base64String.length);
       
       return base64String;
