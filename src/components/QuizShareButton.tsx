@@ -23,25 +23,16 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // 초대 토큰 생성 함수 (단순하고 안전한 방식)
-  const generateInviteToken = async (ownerId: string, ownerInfo: any) => {
-    try {
-      const tokenData = {
-        quiz_owner_id: ownerId,
-        owner_nickname: ownerInfo.nickname || '익명',
-        school_name: ownerInfo.school_name || schoolName,
-        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7일 후 만료
-      };
-
-      // 단순하고 안전한 Base64 인코딩 (다른 공유 기능과 동일한 방식)
-      const base64String = btoa(JSON.stringify(tokenData));
-      console.log('토큰 생성 완료, 길이:', base64String.length);
-      
-      return base64String;
-    } catch (error) {
-      console.error('토큰 생성 오류:', error);
-      throw error;
-    }
+  // 퀴즈 공유 URL 생성 (토큰 없이 URL 파라미터 방식)
+  const generateShareUrl = (ownerId: string, ownerInfo: any) => {
+    const baseUrl = window.location.origin;
+    const params = new URLSearchParams();
+    
+    params.set('viewing', ownerId);
+    params.set('owner_nickname', ownerInfo.nickname || '익명');
+    params.set('school_name', ownerInfo.school_name || schoolName);
+    
+    return `${baseUrl}/quiz?${params.toString()}`;
   };
 
   const handleShare = async () => {
@@ -49,15 +40,11 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
     setIsSharing(true);
 
     try {
-      // 초대 토큰 생성
-      const token = await generateInviteToken(userId, {
+      // 공유 URL 생성 (토큰 없이 URL 파라미터 방식)
+      const shareUrl = generateShareUrl(userId, {
         nickname: userNickname,
         school_name: schoolName
       });
-
-      // 공유 URL 생성
-      const baseUrl = window.location.origin;
-      const shareUrl = `${baseUrl}/quiz?viewer_invite=${token}`;
 
       // 학년/반 정보 구성
       const gradeClassInfo = userGrade && userClass ? `${userGrade}학년 ${userClass}반 ` : '';

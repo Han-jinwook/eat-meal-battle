@@ -76,7 +76,6 @@ export default function QuizClient() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [generatingQuiz, setGeneratingQuiz] = useState<boolean>(false);
   const [reportingQuiz, setReportingQuiz] = useState<boolean>(false);
-  const [viewerInviteToken, setViewerInviteToken] = useState<string | null>(null);
   
   // 모든 퀴즈 모달 상태
   const [isAllQuizModalOpen, setIsAllQuizModalOpen] = useState(false);
@@ -334,27 +333,35 @@ export default function QuizClient() {
     class?: number;
   } | null>(null);
   
-  // Handle URL parameters (date and viewer_invite)
+  // Handle URL parameters (date and viewing)
   useEffect(() => {
     try {
       const dateParam = searchParams?.get('date');
-      const viewerInviteParam = searchParams?.get('viewer_invite');
       const viewingParam = searchParams?.get('viewing');
+      const ownerNicknameParam = searchParams?.get('owner_nickname');
+      const schoolNameParam = searchParams?.get('school_name');
       
       // 관람 모드 처리
       if (viewingParam) {
         setIsViewingMode(true);
         setViewingUserId(viewingParam);
-        loadViewingUserInfo(viewingParam);
+        
+        // URL 파라미터에서 사용자 정보 직접 사용
+        if (ownerNicknameParam && schoolNameParam) {
+          setViewingUserInfo({
+            nickname: decodeURIComponent(ownerNicknameParam),
+            school_name: decodeURIComponent(schoolNameParam),
+            grade: undefined,
+            class: undefined
+          });
+        } else {
+          // 파라미터가 없으면 DB에서 로드
+          loadViewingUserInfo(viewingParam);
+        }
       } else {
         setIsViewingMode(false);
         setViewingUserId(null);
         setViewingUserInfo(null);
-      }
-      
-      // 초대 링크 토큰 저장
-      if (viewerInviteParam) {
-        setViewerInviteToken(viewerInviteParam);
       }
       
       if (dateParam && typeof dateParam === 'string') {
@@ -413,13 +420,6 @@ export default function QuizClient() {
     }
   }, [searchParams]);
 
-  // 사용자 정보 로드 후 초대 링크 처리
-  useEffect(() => {
-    // 사용자 정보 로딩이 완료되었고, 처리할 초대 토큰이 있을 경우
-    if (!userLoading && viewerInviteToken) {
-      handleViewerInvite(viewerInviteToken);
-    }
-  }, [userLoading, viewerInviteToken]);
 
   // 관람 사용자 정보 로드 함수
   const loadViewingUserInfo = async (userId: string) => {
@@ -462,100 +462,6 @@ export default function QuizClient() {
     }
   };
 
-  // 초대 링크 처리 함수
-  const handleViewerInvite = async (token: string) => {
-    // 학생이지만 학교 등록이 안된 경우, 학교 등록 페이지로 먼저 보낸다.
-    if (!userLoading && isRegistrationRequired) {
-      toast('퀴즈를 보려면 먼저 학교를 등록해야 해요!', { icon: '🏫' });
-      const redirectUrl = window.location.href;
-      router.push(`/school-search?redirect_url=${encodeURIComponent(redirectUrl)}`);
-      return; // 리디렉션 후 함수 실행 중단
-    }
-
-    try {
-      console.log('초대 링크 처리 시작:', token);
-      
-      // 브라우저 환경에 맞는 안전한 방식으로 토큰 디코딩 (공백 제거 로직 추가)
-      let tokenData;
-      try {
-        // 단순하고 안전한 Base64 디코딩 (다른 공유 기능과 동일한 방식)
-        const jsonString = atob(token);
-        tokenData = JSON.parse(jsonString);
-        console.log('토큰 파싱 성공:', tokenData);
-      } catch (decodeError) {
-        console.error('토큰 디코딩 상세 오류:', {
-          error: decodeError,
-          message: decodeError.message,
-          stack: decodeError.stack,
-          tokenLength: token.length,
-          tokenSample: token.substring(0, 50) + '...'
-        });
-        toast.error('초대 링크 형식이 올바르지 않습니다. 다시 시도해주세요.');
-        return;
-      }
-      
-      // 토큰 만료 확인
-      if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
-        toast.error('초대 링크가 만료되었습니다.');
-        return;
-      }
-      
-      // 현재 사용자 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('로그인이 필요합니다.');
-        router.push('/login');
-        return;
-      }
-      
-      // 자기 자신을 초대하는 경우 방지
-      if (user.id === tokenData.quiz_owner_id) {
-        toast.error('자신의 퀴즈는 공유할 수 없습니다.');
-        return;
-      }
-      
-      // 이미 등록된 관람자인지 확인
-      const { data: existingViewer } = await supabase
-        .from('quiz_viewers')
-        .select('id')
-        .eq('quiz_owner_id', tokenData.quiz_owner_id)
-        .eq('viewer_id', user.id)
-        .single();
-      
-      if (existingViewer) {
-        toast.success(`이미 ${tokenData.owner_nickname}님의 퀴즈 관람자로 등록되어 있습니다!`);
-      } else {
-        // 새 관람자 등록
-        const { error: insertError } = await supabase
-          .from('quiz_viewers')
-          .insert({
-            quiz_owner_id: tokenData.quiz_owner_id,
-            viewer_id: user.id
-          });
-        
-        if (insertError) {
-          console.error('관람자 등록 오류:', insertError);
-          toast.error('관람자 등록 중 오류가 발생했습니다.');
-          return;
-        }
-        
-        toast.success(`🎉 ${tokenData.owner_nickname}님의 퀴즈 관람자로 등록되었습니다!`);
-      }
-
-      // 관심학교 자동등록 제거 - 순수 구독 시스템으로 단순화
-      
-      // URL에서 viewer_invite 파라미터 제거하고 해당 사용자의 퀴즈로 이동
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('viewer_invite');
-      newUrl.searchParams.set('viewing', tokenData.quiz_owner_id);
-      
-      router.replace(newUrl.pathname + newUrl.search);
-      
-    } catch (error) {
-      console.error('초대 링크 처리 오류:', error);
-      toast.error('초대 링크 처리 중 오류가 발생했습니다.');
-    }
-  };
 
   // Fetch quiz for selected date
   const fetchQuiz = async () => {
