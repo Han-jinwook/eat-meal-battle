@@ -122,9 +122,16 @@ export default function BattlePage() {
       return;
     }
     
-    // 에러가 있는 경우에도 대기 (일시적 네트워크 오류 등)
+    // userError 발생 시 오류 처리 - 비로그인 사용자는 배틀 페이지 표시 (급식 페이지와 동일한 로직)
     if (userError) {
-      return;
+      // Auth session missing 에러인 경우 배틀 페이지 표시 (로그인 페이지로 리다이렉트하지 않음)
+      if (userError.includes('Auth session missing') || userError.includes('session missing')) {
+        console.log('비로그인 사용자 - 배틀 페이지 표시');
+        // 에러를 무시하고 정상 진행
+      } else {
+        // 다른 에러인 경우에만 대기
+        return;
+      }
     }
     
     // 로딩이 완료되고 에러가 없는데 사용자가 없으면 로그인 필요
