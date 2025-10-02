@@ -129,9 +129,9 @@ export default function BattlePage() {
     
     // 로딩이 완료되고 에러가 없는데 사용자가 없으면 로그인 필요
     if (!user) {
-      const currentUrl = window.location.href;
-      const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
-      router.replace(loginUrl);
+      // const currentUrl = window.location.href;
+      // const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
+      // router.replace(loginUrl); // 비로그인 사용자도 배틀 페이지 접근 허용
       return;
     }
     
