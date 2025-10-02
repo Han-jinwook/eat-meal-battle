@@ -33,20 +33,13 @@ export async function GET(request: NextRequest) {
   let shareType = requestUrl.searchParams.get('share_type')
   
   // OAuth state에서 공유 파라미터 추출 시도
-  let viewingUserId = null
-  let ownerNickname = null
-  let ownerSchoolName = null
-  
   const stateParam = requestUrl.searchParams.get('state')
-  if (stateParam) {
+  if (stateParam && !shareSchoolCode) {
     try {
       const stateData = JSON.parse(atob(stateParam))
-      shareSchoolCode = stateData.share_school_code || shareSchoolCode
-      shareType = stateData.share_type || shareType
-      viewingUserId = stateData.viewing
-      ownerNickname = stateData.owner_nickname
-      ownerSchoolName = stateData.school_name
-      console.log('📋 OAuth state에서 추출한 파라미터:', stateData)
+      shareSchoolCode = stateData.share_school_code
+      shareType = stateData.share_type
+      console.log('📋 OAuth state에서 추출한 공유 파라미터:', stateData)
     } catch (error) {
       console.log('⚠️ OAuth state 파싱 실패:', error)
     }
@@ -578,58 +571,99 @@ export async function GET(request: NextRequest) {
           console.info('🎯 학생나이 → 관심학교 확인 생략 (나이 우선 원칙)');
         }
         
-        // 4단계: 단순화된 3가지 케이스 적용
-        console.info('🔀 단순화된 3가지 케이스 적용 시작');
+        // 4단계: 7가지 분기 로직 적용
+        console.info('🔀 7가지 분기 로직 적용 시작');
         console.info(`📊 현재 상태: ${isNewUser ? '신규' : '기존'}회원, 학교등록: ${hasSchoolRegistration ? 'O' : 'X'}, 학생나이: ${isStudentAge ? 'O' : 'X'}, 관심학교: ${hasInterestSchool ? 'O' : 'X'}`);
         
-        if (viewingUserId) {
-          // 케이스 1: 퀴즈 공유 (학생/비학생 상관없이 퀴즈구독 자동등록 + 관람모드)
-          console.info('✅ 케이스 1: 퀴즈 공유 → 퀴즈구독 자동등록 + 관람모드');
-          
-          const quizParams = new URLSearchParams();
-          quizParams.set('viewing', viewingUserId);
-          if (ownerNickname) quizParams.set('owner_nickname', ownerNickname);
-          if (ownerSchoolName) quizParams.set('school_name', ownerSchoolName);
-          
-          redirectUrl = `/quiz?${quizParams.toString()}`;
-          
-        } else if (shareUrlSchoolCode) {
-          // 케이스 2,3: 급식/배틀 공유
-          if (hasSchoolRegistration && shareUrlSchoolCode === schoolInfo.school_code) {
-            // 케이스 2: 자기학교 급식/배틀 공유 → 해당 페이지로 바로 이동
-            console.info('✅ 케이스 2: 자기학교 급식/배틀 공유 → 해당 페이지로 바로 이동');
-            
-            if (isBattleShare) {
-              redirectUrl = shareUrl || `/battle?school_code=${shareUrlSchoolCode}`;
-            } else {
-              redirectUrl = shareUrl || `/?school_code=${shareUrlSchoolCode}`;
-            }
-            
-          } else {
-            // 케이스 3: 타학교/비학생 급식/배틀 공유 → 관심학교등록창 (관심모드)
-            console.info('✅ 케이스 3: 타학교/비학생 급식/배틀 공유 → 관심학교등록창 (관심모드)');
-            
+        if (hasSchoolRegistration) {
+          // 분기 1,2: 학교등록 O (나이 무관)
+          if (shareUrlSchoolCode && shareUrlSchoolCode !== schoolInfo.school_code) {
+            // 분기 2: 타학교 공유 → 관심학교 관리 페이지로 이동
+            console.info('✅ 분기 2: 학교등록 O + 타학교 → 관심학교 관리 페이지로 이동');
             if (isBattleShare) {
               redirectUrl = `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
             } else {
               redirectUrl = `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}`;
             }
+          } else {
+            // 분기 1: 자기학교 → 해당 URL로
+            console.info('✅ 분기 1: 학교등록 O + 자기학교 → 해당 URL로');
+            if (isBattleShare) {
+              // 배틀일 경우, shareUrl이 없어도 공유받은 학교코드가 있는 경우 학교코드 포함
+              if (shareUrl) {
+                redirectUrl = shareUrl;
+              } else if (shareUrlSchoolCode) {
+                redirectUrl = `/battle?school_code=${shareUrlSchoolCode}`;
+              } else {
+                redirectUrl = '/battle';
+              }
+              console.info('🏆 배틀 분기 1 리다이렉트 URL:', redirectUrl);
+            } else {
+              redirectUrl = shareUrl || '/';
+            }
+          }
+          
+        } else if (!hasSchoolRegistration && !isNewUser && !isStudentAge && hasInterestSchool) {
+          // 분기 3: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 O → 관심학교 관리 페이지로 이동
+          console.info('✅ 분기 3: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 O → 관심학교 관리 페이지로 이동');
+          if (isBattleShare) {
+            redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
+            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
+          } else {
+            redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
+          }
+          
+        } else if (!hasSchoolRegistration && !isNewUser && !isStudentAge && !hasInterestSchool) {
+          // 분기 4: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 X → 관심학교 관리 페이지로 이동
+          console.info('✅ 분기 4: 기존회원 + 학교등록 X + 비학생나이 + 관심학교 X → 관심학교 관리 페이지로 이동');
+          if (isBattleShare) {
+            redirectUrl = shareUrlSchoolCode ? `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle` : '/interest-schools';
+            console.info('🏆 배틀 분기 3 리다이렉트 URL:', redirectUrl);
+          } else {
+            redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
+          }
+          
+        } else if (!hasSchoolRegistration && !isNewUser && isStudentAge) {
+          // 분기 5: 기존회원 + 학생나이 → 학교등록 페이지
+          console.info('✅ 분기 5: 기존회원 + 학생나이 → 학교등록 페이지');
+          if (shareUrlSchoolCode) {
+            if (isBattleShare) {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+            } else {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+            }
+          } else {
+            redirectUrl = '/school-search';
+          }
+          
+        } else if (!hasSchoolRegistration && isNewUser && isStudentAge) {
+          // 분기 6: 신규회원 + 학생나이 → 학교등록 페이지
+          console.info('✅ 분기 6: 신규회원 + 학생나이 → 학교등록 페이지');
+          if (shareUrlSchoolCode) {
+            if (isBattleShare) {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+            } else {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}`;
+            }
+          } else {
+            redirectUrl = '/school-search';
+          }
+          
+        } else if (!hasSchoolRegistration && isNewUser && !isStudentAge) {
+          // 분기 7: 신규회원 + 비학생나이 → 관심학교 관리 페이지로 이동
+          console.info('✅ 분기 7: 신규회원 + 비학생나이 → 관심학교 관리 페이지로 이동');
+          if (isBattleShare) {
+            redirectUrl = shareUrlSchoolCode ? `/battle?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/battle?show_interest_modal=true';
+            console.info('🏆 배틀 분기 7 리다이렉트 URL:', redirectUrl);
+          } else {
+            redirectUrl = shareUrlSchoolCode ? `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}` : '/?show_interest_modal=true';
           }
           
         } else {
-          // 일반 공유 또는 기본 케이스 → 기존 로직 유지 (학생은 학교등록, 비학생은 관심학교등록)
-          console.info('✅ 일반 케이스: 기존 로직 유지');
-          
-          if (isStudentAge && !hasSchoolRegistration) {
-            // 학생나이 + 학교 미등록 → 학교등록 페이지
-            redirectUrl = '/school-search';
-          } else if (!isStudentAge && !hasSchoolRegistration && !hasInterestSchool) {
-            // 비학생나이 + 학교 미등록 + 관심학교 미등록 → 관심학교등록창
-            redirectUrl = '/?show_interest_modal=true';
-          } else {
-            // 기타 → 홈페이지
-            redirectUrl = shareUrl || '/';
-          }
+          // 예외 상황 처리
+          console.warn('⚠️ 예상치 못한 분기 상황 - 기본 홈페이지로 리다이렉트');
+          console.warn('📊 예외 상태:', { hasSchoolRegistration, isStudentAge, hasInterestSchool, isNewUser });
+          redirectUrl = shareUrl || '/';
         }
         
         console.info(`🎯 최종 리다이렉트 URL: ${redirectUrl}`);
