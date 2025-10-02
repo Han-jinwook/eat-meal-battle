@@ -709,8 +709,8 @@ export default function BattlePage() {
     }
   }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType, selectedRegion]);
 
-  // 로딩 상태 표시
-  if (userLoading) {
+  // 로딩 상태 표시 - 비로그인 사용자는 AuthSessionMissingError가 있어도 로딩 완료로 처리
+  if (userLoading && !(userError && (userError.includes('Auth session missing') || userError.includes('session missing')))) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
