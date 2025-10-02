@@ -395,9 +395,21 @@ export default function BattlePage() {
         return;
       }
 
-      // 비학생 사용자 중 학교 미등록자만 관심학교 등록창 표시
+      // 비학생 사용자 중 학교 미등록자 - 관심학교 등록창 표시 (기존 관심학교 있어도 추가 등록 가능)
       if (!userInfo?.is_student && !userRegisteredSchool) {
-        console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시');
+        // 이미 관심학교에 등록되어 있는지 확인
+        const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
+        
+        if (isAlreadyInterestSchool) {
+          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
+          const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
+          if (targetSchool) {
+            schoolMode.selectInterestSchool(targetSchool);
+          }
+          return;
+        }
+        
+        console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시 (추가 등록 가능)');
         // 공유받은 학교 코드를 임시 저장
         sessionStorage.setItem('pending_interest_school', schoolCode);
         setIsSchoolSearchOpen(true);

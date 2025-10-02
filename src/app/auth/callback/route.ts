@@ -610,7 +610,7 @@ export async function GET(request: NextRequest) {
             console.info('✅ 케이스 3: 타학교/비학생 급식/배틀 공유 → 관심학교등록창 (관심모드)');
             
             if (isBattleShare) {
-              redirectUrl = `/interest-schools?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+              redirectUrl = `/battle?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}`;
             } else {
               redirectUrl = `/?show_interest_modal=true&share_school_code=${shareUrlSchoolCode}`;
             }
@@ -621,8 +621,14 @@ export async function GET(request: NextRequest) {
           console.info('✅ 일반 케이스: 기존 로직 유지');
           
           if (isStudentAge && !hasSchoolRegistration) {
-            // 학생나이 + 학교 미등록 → 학교등록 페이지
-            redirectUrl = '/school-search';
+            // 학생나이 + 학교 미등록 → 학교등록 페이지 (공유 타입에 따라 리다이렉트 URL 설정)
+            if (isBattleShare && shareUrlSchoolCode) {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=battle`;
+            } else if (shareUrlSchoolCode) {
+              redirectUrl = `/school-search?share_school_code=${shareUrlSchoolCode}&share_type=meal`;
+            } else {
+              redirectUrl = '/school-search';
+            }
           } else if (!isStudentAge && !hasSchoolRegistration && !hasInterestSchool) {
             // 비학생나이 + 학교 미등록 + 관심학교 미등록 → 관심학교등록창
             redirectUrl = '/?show_interest_modal=true';
