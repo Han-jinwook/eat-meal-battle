@@ -1251,21 +1251,34 @@ export default function BattlePage() {
                       </button>
                     )}
                     {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
-                    {(userSchool?.region || (schoolMode.selectedInterestSchool && selectedInterestSchoolRegion)) && (
+                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
                       <button
                         onClick={() => {
-                          const regionToSet = schoolMode.selectedInterestSchool ? selectedInterestSchoolRegion : userSchool?.region;
+                          let regionToSet;
+                          if (schoolMode.selectedInterestSchool) {
+                            // 관심학교 모드: 관심학교 데이터에서 직접 지역 정보 가져오기
+                            const currentInterestSchool = interestSchools.find(
+                              school => school.school_code === schoolMode.selectedInterestSchool?.school_code
+                            );
+                            regionToSet = currentInterestSchool?.region || selectedInterestSchoolRegion;
+                          } else {
+                            regionToSet = userSchool?.region;
+                          }
                           if (regionToSet) {
                             setSelectedRegion(regionToSet);
                           }
                         }}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === (schoolMode.selectedInterestSchool ? selectedInterestSchoolRegion : userSchool?.region)
+                          selectedRegion === (schoolMode.selectedInterestSchool ? 
+                            (interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || selectedInterestSchoolRegion) : 
+                            userSchool?.region)
                             ? 'bg-red-500 text-white shadow-sm'
                             : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                         }`}
                       >
-                        {schoolMode.selectedInterestSchool ? selectedInterestSchoolRegion || '지역' : userSchool?.region}
+                        {schoolMode.selectedInterestSchool ? 
+                          (interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || selectedInterestSchoolRegion || '지역') : 
+                          userSchool?.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
