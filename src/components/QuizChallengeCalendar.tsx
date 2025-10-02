@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import useUserSchool from '@/hooks/useUserSchool';
+import { getHolidaysForYear } from '@/data/holidays';
 // import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const supabase = createBrowserClient(
@@ -64,63 +65,29 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   
   const { userSchool } = useUserSchool();
 
-  // 한국 공휴일 API에서 데이터 가져오기
+  // 하드코딩된 공휴일 데이터 로드
   useEffect(() => {
-    const fetchHolidays = async () => {
+    const loadHolidays = () => {
       const currentYear = currentMonth.getFullYear();
       const currentMonthNum = currentMonth.getMonth() + 1;
       const holidayMap: {[key: string]: string} = {};
       
-      try {
-        // 현재 월과 다음 월의 공휴일 데이터를 가져옴 (캘린더에 표시되는 범위)
-        const monthsToFetch = [currentMonthNum];
-        if (currentMonthNum === 12) {
-          monthsToFetch.push(1); // 12월이면 다음해 1월도 가져옴
-        } else {
-          monthsToFetch.push(currentMonthNum + 1);
-        }
-        
-        for (const month of monthsToFetch) {
-          const year = month === 1 && currentMonthNum === 12 ? currentYear + 1 : currentYear;
-          const response = await fetch(`/api/holidays?year=${year}&month=${month.toString().padStart(2, '0')}`);
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.holidays) {
-              data.holidays.forEach((holiday: any) => {
-                const dateStr = holiday.locdate.toString();
-                const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
-                holidayMap[formattedDate] = holiday.dateName;
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error('공휴일 데이터 로드 실패:', error);
-        // Fallback: 기본 공휴일 데이터
-        if (currentYear === 2025) {
-          holidayMap['2025-01-01'] = '신정';
-          holidayMap['2025-01-28'] = '설날연휴';
-          holidayMap['2025-01-29'] = '설날';
-          holidayMap['2025-01-30'] = '설날연휴';
-          holidayMap['2025-03-01'] = '삼일절';
-          holidayMap['2025-05-05'] = '어린이날';
-          holidayMap['2025-05-06'] = '대체공휴일';
-          holidayMap['2025-06-06'] = '현충일';
-          holidayMap['2025-08-15'] = '광복절';
-          holidayMap['2025-10-06'] = '추석연휴';
-          holidayMap['2025-10-07'] = '추석';
-          holidayMap['2025-10-08'] = '추석연휴';
-          holidayMap['2025-10-03'] = '개천절';
-          holidayMap['2025-10-09'] = '한글날';
-          holidayMap['2025-12-25'] = '크리스마스';
-        }
+      // 현재 연도와 다음 연도의 공휴일 데이터를 가져옴 (12월→1월 경계 처리)
+      const currentYearHolidays = getHolidaysForYear(currentYear);
+      const nextYearHolidays = getHolidaysForYear(currentYear + 1);
+      
+      // 현재 연도 공휴일 추가
+      Object.assign(holidayMap, currentYearHolidays);
+      
+      // 12월인 경우 다음 연도 1월 공휴일도 추가 (캘린더 표시 범위)
+      if (currentMonthNum === 12) {
+        Object.assign(holidayMap, nextYearHolidays);
       }
       
       setHolidays(holidayMap);
     };
     
-    fetchHolidays();
+    loadHolidays();
   }, [currentMonth]);
 
   // 퀴즈 결과 데이터 가져오기
