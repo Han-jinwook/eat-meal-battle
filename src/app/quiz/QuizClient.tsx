@@ -1197,13 +1197,9 @@ export default function QuizClient() {
               <p className="text-gray-600 mb-6">
                 자동으로 퀴즈구독되어 자유롭게 관람할 수 있습니다.
               </p>
-              <button
-                onClick={() => setIsAllQuizModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-base font-medium"
-              >
-                <span>🤩</span>
-                <span>모든 퀴즈 풀어보기</span>
-              </button>
+              <p className="text-sm text-gray-500 mt-4">
+                (혹시 이미 퀴즈공유 링크 받았다면? 한번 더 클릭^^)
+              </p>
             </div>
           </div>
         )}
