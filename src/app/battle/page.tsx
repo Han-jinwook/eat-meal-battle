@@ -1291,13 +1291,11 @@ export default function BattlePage() {
                 
                 {/* 테이블 내용 - 실제 데이터 */}
                 <div className={`divide-y divide-red-100 ${viewMode === 'monthly' ? 'max-h-96 overflow-y-auto' : ''}`}>
-                  {userLoading || (!userLoading && !user) ? (
+                  {(userLoading && !(userError && (userError.includes('Auth session missing') || userError.includes('session missing')))) ? (
                     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                        <p className="text-gray-600">
-                          {userLoading ? '사용자 정보를 불러오는 중...' : '로그인 페이지로 이동 중...'}
-                        </p>
+                        <p className="text-gray-600">사용자 정보를 불러오는 중...</p>
                       </div>
                     </div>
                   ) : battleLoading ? (
