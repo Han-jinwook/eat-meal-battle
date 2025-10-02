@@ -1251,25 +1251,29 @@ export default function BattlePage() {
                       </button>
                     )}
                     {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
-                    {(() => {
-                      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
-                      const currentRegion = schoolMode.selectedInterestSchool 
-                        ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                        : userSchool?.region;
-                      
-                      return currentRegion && (
-                        <button
-                          onClick={() => setSelectedRegion(currentRegion)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            selectedRegion === currentRegion
-                              ? 'bg-red-500 text-white shadow-sm'
-                              : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                          }`}
-                        >
-                          {currentRegion}
-                        </button>
-                      );
-                    })()}
+                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
+                      <button
+                        onClick={() => {
+                          const regionToSet = schoolMode.selectedInterestSchool 
+                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
+                            : userSchool?.region;
+                          if (regionToSet) {
+                            setSelectedRegion(regionToSet);
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === (schoolMode.selectedInterestSchool 
+                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
+                            : userSchool?.region)
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {schoolMode.selectedInterestSchool 
+                          ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || '지역'
+                          : userSchool?.region || '지역'}
+                      </button>
+                    )}
                     {/* 전국 버튼 */}
                     <button
                       onClick={() => setSelectedRegion('전국')}
@@ -1460,25 +1464,29 @@ export default function BattlePage() {
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
                     {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
-                    {(() => {
-                      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
-                      const currentRegion = schoolMode.selectedInterestSchool 
-                        ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                        : userSchool?.region;
-                      
-                      return currentRegion && (
-                        <button
-                          onClick={() => setSelectedRegion(currentRegion)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                            selectedRegion === currentRegion
-                              ? 'bg-blue-500 text-white shadow-sm'
-                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
-                          }`}
-                        >
-                          {currentRegion}
-                        </button>
-                      );
-                    })()}
+                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
+                      <button
+                        onClick={() => {
+                          const regionToSet = schoolMode.selectedInterestSchool 
+                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
+                            : userSchool?.region;
+                          if (regionToSet) {
+                            setSelectedRegion(regionToSet);
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === (schoolMode.selectedInterestSchool 
+                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
+                            : userSchool?.region)
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                        }`}
+                      >
+                        {schoolMode.selectedInterestSchool 
+                          ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || '지역'
+                          : userSchool?.region || '지역'}
+                      </button>
+                    )}
                     {/* 전국 버튼 */}
                     <button
                       onClick={() => setSelectedRegion('전국')}
