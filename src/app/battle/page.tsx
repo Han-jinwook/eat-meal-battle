@@ -168,6 +168,13 @@ export default function BattlePage() {
       setSelectedRegion('우리학교');
     }
   }, [userSchool, selectedRegion]);
+
+  // 관심학교가 선택되었을 때 해당 학교의 지역 정보 자동 로드
+  useEffect(() => {
+    if (schoolMode.selectedInterestSchool && !selectedInterestSchoolRegion) {
+      fetchInterestSchoolRegion(schoolMode.selectedInterestSchool.school_code);
+    }
+  }, [schoolMode.selectedInterestSchool, selectedInterestSchoolRegion]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
