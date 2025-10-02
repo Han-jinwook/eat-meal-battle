@@ -35,18 +35,21 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           // 메뉴배틀 섹션
           shareTitle = `🍽️ ${schoolName} ${mealDate} 메뉴배틀 결과! 🥇`;
           shareText = `우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?
-#메뉴배틀 #급식메뉴 #인기메뉴 #메뉴순위 #${schoolName.split(' ')[0]}`;
+
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
         } else {
           // 급식배틀 섹션 (meal)
           shareTitle = `🏆 ${schoolName} ${mealDate} 급식배틀 결과! 🥇`;
           shareText = `우리동네 급식배틀 순위를 확인해보세요! 메뉴별 배틀 & 학교별 배틀 결과 공개!
-#급식배틀 #학교순위 #급식평가 #배틀결과 #${schoolName.split(' ')[0]}`;
+
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
         }
       } else {
         // 급식 페이지
         shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
         shareText = `메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
-#급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
+
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
       }
       
       // URL에 필요한 파라미터 추가

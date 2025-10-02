@@ -56,7 +56,7 @@ const QuizShareButton: React.FC<QuizShareButtonProps> = ({
 📊 퀴즈 성적과 도전 현황을 확인해보세요
 🏆 매일매일 새로운 급식퀴즈 도전 중!
 
-#급식퀴즈 #학습현황 #부모자녀소통 #${schoolName.replace(/\s+/g, '')}`;
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
 
       // 네이티브 공유 API 지원 확인
       if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {

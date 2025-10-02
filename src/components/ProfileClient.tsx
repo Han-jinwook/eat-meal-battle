@@ -148,7 +148,9 @@ export default function ProfileClient() {
     
     try {
       const shareTitle = `🍽️ 뭐먹지? - 우리학교 급식 평가 앱! 🏆`;
-      const shareText = `친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!\n#급식배틀 #학교급식 #급식평가 #메뉴평가`;
+      const shareText = `친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!
+
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
       
       const baseUrl = window.location.origin;
       let shareUrl = baseUrl;

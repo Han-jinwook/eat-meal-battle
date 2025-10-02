@@ -31,7 +31,8 @@ const ShareModal: React.FC<ShareModalProps> = ({
       // 공유할 텍스트와 URL 준비
       const shareTitle = `📋 ${schoolName} ${mealDate} 오늘의 급식 평가! 👀`;
       const shareText = `메뉴별 맛 평가로 메뉴별 배틀 & 학교별 배틀 함께 해봐요!
-#급식평가 #맛평가 #학교급식 #급식배틀 #${schoolName.split(' ')[0]}`;
+
+(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
       
       // URL에 필요한 파라미터 추가 (날짜와 학교 정보)
       const url = new URL(window.location.href);
