@@ -1470,17 +1470,35 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
-                    {/* 사용자 지역 버튼 */}
-                    {userSchool?.region && (
+                    {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
+                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
                       <button
-                        onClick={() => setSelectedRegion(userSchool.region)}
+                        onClick={() => {
+                          let regionToSet;
+                          if (schoolMode.selectedInterestSchool) {
+                            // 관심학교 모드: 관심학교 데이터에서 직접 지역 정보 가져오기
+                            const currentInterestSchool = interestSchools.find(
+                              school => school.school_code === schoolMode.selectedInterestSchool?.school_code
+                            );
+                            regionToSet = currentInterestSchool?.region || selectedInterestSchoolRegion;
+                          } else {
+                            regionToSet = userSchool?.region;
+                          }
+                          if (regionToSet) {
+                            setSelectedRegion(regionToSet);
+                          }
+                        }}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === userSchool.region
+                          selectedRegion === (schoolMode.selectedInterestSchool ? 
+                            (interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || selectedInterestSchoolRegion) : 
+                            userSchool?.region)
                             ? 'bg-blue-500 text-white shadow-sm'
                             : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
                         }`}
                       >
-                        {userSchool.region}
+                        {schoolMode.selectedInterestSchool ? 
+                          (interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || selectedInterestSchoolRegion || '지역') : 
+                          userSchool?.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
