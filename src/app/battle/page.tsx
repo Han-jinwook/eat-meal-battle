@@ -122,12 +122,12 @@ export default function BattlePage() {
       return;
     }
     
-    // userError 발생 시 오류 처리 - 비로그인 사용자는 배틀 페이지 표시 (급식 페이지와 동일한 로직)
+    // userError 발생 시 오류 처리 - 비로그인 사용자는 컴포넌트 렌더링에서 처리
     if (userError) {
-      // Auth session missing 에러인 경우 배틀 페이지 표시 (로그인 페이지로 리다이렉트하지 않음)
+      // Auth session missing 에러인 경우 컴포넌트 렌더링에서 리다이렉트 처리
       if (userError.includes('Auth session missing') || userError.includes('session missing')) {
-        console.log('비로그인 사용자 - 배틀 페이지 표시');
-        // 에러를 무시하고 정상 진행
+        console.log('비로그인 사용자 - 컴포넌트에서 리다이렉트 처리');
+        return;
       } else {
         // 다른 에러인 경우에만 대기
         return;
@@ -412,7 +412,19 @@ export default function BattlePage() {
           isStudent: userInfo?.is_student 
         });
         
-        // 학생나이와 관계없이 관심학교 모달 표시 (급식 페이지와 동일하게 수정)
+        // 관심학교에 이미 등록되어 있는지 확인
+        const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
+        
+        if (isAlreadyInterestSchool) {
+          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
+          const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
+          if (targetSchool) {
+            schoolMode.selectInterestSchool(targetSchool);
+          }
+          return;
+        }
+        
+        // 관심학교에 없으면 등록창 표시
         console.log('🎓 타학교 공유링크 - 관심학교 등록창 표시');
         // 공유받은 학교 코드를 임시 저장
         sessionStorage.setItem('pending_interest_school', schoolCode);
@@ -709,8 +721,19 @@ export default function BattlePage() {
     }
   }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType, selectedRegion]);
 
-  // 로딩 상태 표시 - 비로그인 사용자는 AuthSessionMissingError가 있어도 로딩 완료로 처리
-  if (userLoading && !(userError && (userError.includes('Auth session missing') || userError.includes('session missing')))) {
+  // 비로그인 사용자인 경우 로그인 페이지로 리다이렉트 (급식 페이지와 동일)
+  if (userError && (userError.includes('Auth session missing') || userError.includes('session missing'))) {
+    router.push('/login');
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-2xl mb-4">🏆</div>
+        <p className="text-gray-600">로그인 페이지로 이동 중...</p>
+      </div>
+    </div>;
+  }
+
+  // 로딩 상태 표시
+  if (userLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -1291,7 +1314,7 @@ export default function BattlePage() {
                 
                 {/* 테이블 내용 - 실제 데이터 */}
                 <div className={`divide-y divide-red-100 ${viewMode === 'monthly' ? 'max-h-96 overflow-y-auto' : ''}`}>
-                  {(userLoading && !(userError && (userError.includes('Auth session missing') || userError.includes('session missing')))) ? (
+                  {userLoading ? (
                     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
