@@ -161,12 +161,15 @@ export default function BattlePage() {
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
 
-  // 사용자 학교 정보가 로드되면 기본값을 '우리학교'로 설정
+  // 사용자 학교 또는 관심학교 정보가 로드되면 기본값을 '우리학교'로 설정
   useEffect(() => {
-    if (userSchool?.school_code && !selectedRegion) {
+    // 관심모드: interest_schools 테이블 데이터 사용
+    // 학생모드: school_infos 테이블 데이터 사용
+    const currentSchool = schoolMode.selectedInterestSchool ? schoolMode.selectedInterestSchool : userSchool;
+    if (currentSchool?.school_code && !selectedRegion) {
       setSelectedRegion('우리학교');
     }
-  }, [userSchool, selectedRegion]);
+  }, [userSchool, schoolMode.selectedInterestSchool, selectedRegion]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -239,6 +242,8 @@ export default function BattlePage() {
     if (interestSchools.length >= 10) {
       alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;
+    } else if (interestSchools.length >= 5 && !user?.db_profile?.is_student) {
+      alert('비학생 사용자는 최대 5개의 관심학교만 등록할 수 있습니다.');
     }
 
     // 중복 등록 확인
@@ -1206,32 +1211,38 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
-                    {/* 우리학교 버튼 */}
-                    {userSchool?.school_code && (
-                      <button
-                        onClick={() => setSelectedRegion('우리학교')}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === '우리학교'
-                            ? 'bg-red-500 text-white shadow-sm'
-                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                        }`}
-                      >
-                        우리학교
-                      </button>
-                    )}
-                    {/* 사용자 지역 버튼 */}
-                    {userSchool?.region && (
-                      <button
-                        onClick={() => setSelectedRegion(userSchool.region)}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === userSchool.region
-                            ? 'bg-red-500 text-white shadow-sm'
-                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                        }`}
-                      >
-                        {userSchool.region}
-                      </button>
-                    )}
+                    {/* 우리학교 버튼 - 관심학교 모드일 때도 표시 */}
+                    {(() => {
+                      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                      return currentSchool?.school_code && (
+                        <button
+                          onClick={() => setSelectedRegion('우리학교')}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            selectedRegion === '우리학교'
+                              ? 'bg-red-500 text-white shadow-sm'
+                              : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                          }`}
+                        >
+                          우리학교
+                        </button>
+                      );
+                    })()}
+                    {/* 사용자 지역 버튼 - 관심학교 모드일 때도 표시 */}
+                    {(() => {
+                      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                      return currentSchool?.region && (
+                        <button
+                          onClick={() => setSelectedRegion(currentSchool.region)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            selectedRegion === currentSchool.region
+                              ? 'bg-red-500 text-white shadow-sm'
+                              : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                          }`}
+                        >
+                          {currentSchool.region}
+                        </button>
+                      );
+                    })()}
                     {/* 전국 버튼 */}
                     <button
                       onClick={() => setSelectedRegion('전국')}
@@ -1421,19 +1432,22 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
-                    {/* 사용자 지역 버튼 */}
-                    {userSchool?.region && (
-                      <button
-                        onClick={() => setSelectedRegion(userSchool.region)}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === userSchool.region
-                            ? 'bg-blue-500 text-white shadow-sm'
-                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
-                        }`}
-                      >
-                        {userSchool.region}
-                      </button>
-                    )}
+                    {/* 사용자 지역 버튼 - 관심학교 모드일 때도 표시 */}
+                    {(() => {
+                      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                      return currentSchool?.region && (
+                        <button
+                          onClick={() => setSelectedRegion(currentSchool.region)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            selectedRegion === currentSchool.region
+                              ? 'bg-blue-500 text-white shadow-sm'
+                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                          }`}
+                        >
+                          {currentSchool.region}
+                        </button>
+                      );
+                    })()}
                     {/* 전국 버튼 */}
                     <button
                       onClick={() => setSelectedRegion('전국')}
