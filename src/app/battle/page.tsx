@@ -169,12 +169,18 @@ export default function BattlePage() {
     }
   }, [userSchool, selectedRegion]);
 
-  // 관심학교가 선택되었을 때 해당 학교의 지역 정보 자동 로드
+  // 관심학교가 선택되었을 때 해당 학교의 지역 정보 자동 설정
   useEffect(() => {
     if (schoolMode.selectedInterestSchool && !selectedInterestSchoolRegion) {
-      fetchInterestSchoolRegion(schoolMode.selectedInterestSchool.school_code);
+      // 관심학교 데이터에서 지역 정보 찾기
+      const interestSchool = interestSchools.find(
+        school => school.school_code === schoolMode.selectedInterestSchool?.school_code
+      );
+      if (interestSchool) {
+        setInterestSchoolRegion(interestSchool);
+      }
     }
-  }, [schoolMode.selectedInterestSchool, selectedInterestSchoolRegion]);
+  }, [schoolMode.selectedInterestSchool, selectedInterestSchoolRegion, interestSchools]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -217,7 +223,7 @@ export default function BattlePage() {
       
       const { data, error } = await supabase
         .from('interest_schools')
-        .select('*')
+        .select('*, region')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -236,21 +242,11 @@ export default function BattlePage() {
     }
   };
 
-  // 관심학교 지역 정보 가져오기 함수
-  const fetchInterestSchoolRegion = async (schoolCode: string) => {
-    try {
-      const { data: schoolInfo } = await supabase
-        .from('school_infos')
-        .select('region')
-        .eq('school_code', schoolCode)
-        .single();
-      
-      if (schoolInfo?.region) {
-        setSelectedInterestSchoolRegion(schoolInfo.region);
-        console.log('관심학교 지역 정보 설정:', schoolInfo.region);
-      }
-    } catch (error) {
-      console.log('관심학교 지역 정보 조회 실패:', error);
+  // 관심학교 지역 정보 설정 함수 (이제 관심학교 데이터에서 직접 가져옴)
+  const setInterestSchoolRegion = (interestSchool: any) => {
+    if (interestSchool?.region) {
+      setSelectedInterestSchoolRegion(interestSchool.region);
+      console.log('관심학교 지역 정보 설정:', interestSchool.region);
     }
   };
 
@@ -286,7 +282,8 @@ export default function BattlePage() {
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
-          office_code: schoolData.ATPT_OFCDC_SC_CODE
+          office_code: schoolData.ATPT_OFCDC_SC_CODE,
+          region: schoolData.LCTN_SC_NM // 지역 정보 추가
         })
         .select();
       
@@ -314,8 +311,8 @@ export default function BattlePage() {
         if (data && data[0]) {
           // schoolMode 상태를 업데이트하여 관심학교의 배틀을 표시
           schoolMode.selectInterestSchool(data[0]);
-          // 지역 정보 가져오기
-          await fetchInterestSchoolRegion(schoolData.SD_SCHUL_CODE);
+          // 지역 정보 설정 (등록된 데이터에서 직접 가져옴)
+          setInterestSchoolRegion(data[0]);
           // URL도 school_code 파라미터를 포함하도록 변경 (새로고침 방지)
           const newUrl = `/battle?school_code=${schoolData.SD_SCHUL_CODE}`;
           window.history.pushState({ path: newUrl }, '', newUrl);
@@ -433,7 +430,7 @@ export default function BattlePage() {
           const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
           if (targetSchool) {
             schoolMode.selectInterestSchool(targetSchool);
-            await fetchInterestSchoolRegion(schoolCode);
+            setInterestSchoolRegion(targetSchool);
           }
           return;
         }
@@ -461,7 +458,7 @@ export default function BattlePage() {
           const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
           if (targetSchool) {
             schoolMode.selectInterestSchool(targetSchool);
-            await fetchInterestSchoolRegion(schoolCode);
+            setInterestSchoolRegion(targetSchool);
           }
           return;
         }
@@ -930,8 +927,8 @@ export default function BattlePage() {
                                   created_at: school.created_at
                                 });
                                 
-                                // 해당 학교의 지역 정보 가져오기
-                                await fetchInterestSchoolRegion(school.school_code);
+                                // 해당 학교의 지역 정보 설정
+                                setInterestSchoolRegion(school);
                                 
                                 setIsDropdownOpen(false);
                               }}
