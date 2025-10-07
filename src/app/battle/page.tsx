@@ -27,6 +27,16 @@ const getSchoolCharacterImage = (schoolType: string): string => {
   return '/images/characters/elementary.png';
 };
 
+
+// 학교명 약식 변환 함수 (예: 가림고등학교 -> 가림고)
+const getShortSchoolName = (schoolName: string): string => {
+  if (!schoolName) return '';
+  return schoolName
+    .replace(/고등학교$/, '고')
+    .replace(/중학교$/, '중')
+    .replace(/초등학교$/, '초');
+};
+
 export default function BattlePage() {
   const supabase = createClient();
   const router = useRouter();
@@ -1226,7 +1236,7 @@ export default function BattlePage() {
                               : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                           }`}
                         >
-                          우리학교
+                          {getShortSchoolName(currentSchool.school_name)}
                         </button>
                       );
                     })()}
