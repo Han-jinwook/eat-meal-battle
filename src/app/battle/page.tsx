@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -858,6 +858,7 @@ export default function BattlePage() {
                       onClick={() => {
                         // 내 학교로 돌아가기
                         schoolMode.returnToMySchool();
+                        setSelectedRegion('우리학교');
                         setIsDropdownOpen(false);
                       }}
                     >
@@ -904,6 +905,7 @@ export default function BattlePage() {
                                   office_code: school.office_code,
                                   created_at: school.created_at
                                 });
+                                setSelectedRegion(\'우리학교\');
                                 setIsDropdownOpen(false);
                               }}
                             >
@@ -1769,3 +1771,5 @@ export default function BattlePage() {
     </div>
   );
 }
+
+

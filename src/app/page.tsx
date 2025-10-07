@@ -611,7 +611,8 @@ export default function Home() {
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
-          office_code: schoolData.ATPT_OFCDC_SC_CODE // 교육청 코드만 추가
+          office_code: schoolData.ATPT_OFCDC_SC_CODE,
+          region: schoolData.LCTN_SC_NM // 지역 정보 추가
         })
         .select();
       
