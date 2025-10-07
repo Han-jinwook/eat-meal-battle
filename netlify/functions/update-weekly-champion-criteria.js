@@ -46,12 +46,14 @@ exports.handler = async (event) => {
         }
       }
 
-      const schoolCodes = (allSchools || []).map(school => school.school_code)
+      // 중복 학교 제거
+      const uniqueSchoolCodes = [...new Set((allSchools || []).map(school => school.school_code))]
+      
       return {
         statusCode: 200,
         body: JSON.stringify({ 
-          school_codes: schoolCodes,
-          total_schools: schoolCodes.length
+          school_codes: uniqueSchoolCodes,
+          total_schools: uniqueSchoolCodes.length
         })
       }
     }
