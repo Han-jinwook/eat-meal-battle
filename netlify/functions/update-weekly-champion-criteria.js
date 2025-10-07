@@ -90,7 +90,7 @@ exports.handler = async (event) => {
       }
       schools = [singleSchool]
     } else {
-      // 모든 학교 조회
+      // 모든 학교 조회 (중복 제거)
       const { data: allSchools, error: schoolError } = await supabase
         .from('school_infos')
         .select('school_code, office_code')
@@ -98,7 +98,20 @@ exports.handler = async (event) => {
       if (schoolError) {
         throw new Error(`학교 목록 조회 실패: ${schoolError.message}`)
       }
-      schools = allSchools || []
+      
+      // 중복 학교 제거 (school_code 기준)
+      const uniqueSchools = []
+      const seenSchoolCodes = new Set()
+      
+      for (const school of (allSchools || [])) {
+        if (!seenSchoolCodes.has(school.school_code)) {
+          seenSchoolCodes.add(school.school_code)
+          uniqueSchools.push(school)
+        }
+      }
+      
+      schools = uniqueSchools
+      console.log(`중복 제거: ${allSchools?.length || 0}개 → ${schools.length}개 학교`)
     }
 
     if (schools.length === 0) {
