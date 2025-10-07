@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -1272,19 +1272,25 @@ export default function BattlePage() {
 
                 {/* 학교 유형 선택 - 한 줄 배치 */}
                 <div className="flex gap-2 justify-center">
-                  {['초등학교', '중학교', '고등학교'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setSelectedSchoolType(type)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
-                          ? 'bg-red-500 text-white shadow-sm'
-                          : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
+                  {['초등학교', '중학교', '고등학교'].map((type) => {
+                    const isOurSchoolSelected = selectedRegion === '우리학교';
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => !isOurSchoolSelected && setSelectedSchoolType(type)}
+                        disabled={isOurSchoolSelected}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isOurSchoolSelected
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
