@@ -903,6 +903,7 @@ export default function BattlePage() {
                                   school_name: school.school_name,
                                   school_code: school.school_code,
                                   office_code: school.office_code,
+                                  region: school.region,
                                   created_at: school.created_at
                                 });
                                 setSelectedRegion('우리학교');
