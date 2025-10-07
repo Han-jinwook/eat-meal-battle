@@ -1245,7 +1245,19 @@ export default function BattlePage() {
                       const currentSchool = schoolMode.selectedInterestSchool || userSchool;
                       return currentSchool?.region && (
                         <button
-                          onClick={() => setSelectedRegion(currentSchool.region)}
+                          onClick={() => {
+                            setSelectedRegion(currentSchool.region);
+                            // 지역 선택 시 현재 학교의 학교급에 맞춰 자동 설정
+                            if (currentSchool.school_type) {
+                              if (currentSchool.school_type.includes('초등')) {
+                                setSelectedSchoolType('초등학교');
+                              } else if (currentSchool.school_type.includes('중')) {
+                                setSelectedSchoolType('중학교');
+                              } else if (currentSchool.school_type.includes('고등')) {
+                                setSelectedSchoolType('고등학교');
+                              }
+                            }
+                          }}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                             selectedRegion === currentSchool.region
                               ? 'bg-red-500 text-white shadow-sm'
@@ -1258,7 +1270,20 @@ export default function BattlePage() {
                     })()}
                     {/* 전국 버튼 */}
                     <button
-                      onClick={() => setSelectedRegion('전국')}
+                      onClick={() => {
+                        setSelectedRegion('전국');
+                        // 전국 선택 시에도 현재 학교의 학교급에 맞춰 자동 설정
+                        const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                        if (currentSchool?.school_type) {
+                          if (currentSchool.school_type.includes('초등')) {
+                            setSelectedSchoolType('초등학교');
+                          } else if (currentSchool.school_type.includes('중')) {
+                            setSelectedSchoolType('중학교');
+                          } else if (currentSchool.school_type.includes('고등')) {
+                            setSelectedSchoolType('고등학교');
+                          }
+                        }
+                      }}
                       className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                         selectedRegion === '전국'
                           ? 'bg-red-500 text-white shadow-sm'
