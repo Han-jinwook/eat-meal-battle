@@ -177,9 +177,39 @@ export default function BattlePage() {
     // 학생모드: school_infos 테이블 데이터 사용
     const currentSchool = schoolMode.selectedInterestSchool ? schoolMode.selectedInterestSchool : userSchool;
     if (currentSchool?.school_code && !selectedRegion) {
-      setSelectedRegion('우리학교');
+      // 메뉴배틀: '우리학교' 기본값
+      // 급식배틀: 지역 기본값
+      if (activeTab === 'menu') {
+        setSelectedRegion('우리학교');
+      } else if (activeTab === 'meal' && currentSchool.region) {
+        setSelectedRegion(currentSchool.region);
+      }
     }
-  }, [userSchool, schoolMode.selectedInterestSchool, selectedRegion]);
+  }, [userSchool, schoolMode.selectedInterestSchool, selectedRegion, activeTab]);
+
+  // 급식배틀 탭 전환 시 지역 및 학교급 자동 설정
+  useEffect(() => {
+    if (activeTab === 'meal') {
+      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      
+      // 지역 자동 설정
+      if (currentSchool?.region && selectedRegion !== currentSchool.region && selectedRegion !== '전국') {
+        setSelectedRegion(currentSchool.region);
+      }
+      
+      // 학교급 자동 설정
+      if (currentSchool?.school_type || currentSchool?.school_name) {
+        const schoolType = currentSchool.school_type || currentSchool.school_name || '';
+        if (schoolType.includes('초등') && selectedSchoolType !== '초등학교') {
+          setSelectedSchoolType('초등학교');
+        } else if (schoolType.includes('중') && selectedSchoolType !== '중학교') {
+          setSelectedSchoolType('중학교');
+        } else if (schoolType.includes('고등') && selectedSchoolType !== '고등학교') {
+          setSelectedSchoolType('고등학교');
+        }
+      }
+    }
+  }, [activeTab, userSchool, schoolMode.selectedInterestSchool]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
