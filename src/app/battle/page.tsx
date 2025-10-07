@@ -905,7 +905,7 @@ export default function BattlePage() {
                                   office_code: school.office_code,
                                   created_at: school.created_at
                                 });
-                                setSelectedRegion(\'우리학교\');
+                                setSelectedRegion('우리학교');
                                 setIsDropdownOpen(false);
                               }}
                             >
