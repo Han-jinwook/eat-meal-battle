@@ -4,6 +4,7 @@ on:
   schedule:
     # 매주 일요일 새벽 3시 (한국 시간, UTC+9)
     # UTC 기준으로는 토요일 오후 6시
+    # 중복 학교 제거 로직 추가됨 (2025-10-07)
     - cron: '0 18 * * 0'
   workflow_dispatch:
     inputs:
