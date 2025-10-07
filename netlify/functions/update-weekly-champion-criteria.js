@@ -81,16 +81,21 @@ exports.handler = async (event) => {
     // 특정 학교만 조회 (school_code 파라미터가 있는 경우)
     let schools = []
     if (schoolCode) {
-      const { data: singleSchool, error: schoolError } = await supabase
+      const { data: schoolData, error: schoolError } = await supabase
         .from('school_infos')
         .select('school_code, office_code')
         .eq('school_code', schoolCode)
-        .single()
+        .limit(1)  // 첫 번째 행만 가져오기
 
       if (schoolError) {
         throw new Error(`학교 조회 실패: ${schoolError.message}`)
       }
-      schools = [singleSchool]
+      
+      if (!schoolData || schoolData.length === 0) {
+        throw new Error(`학교를 찾을 수 없습니다: ${schoolCode}`)
+      }
+      
+      schools = [schoolData[0]]
     } else {
       // 모든 학교 조회 (중복 제거)
       const { data: allSchools, error: schoolError } = await supabase
