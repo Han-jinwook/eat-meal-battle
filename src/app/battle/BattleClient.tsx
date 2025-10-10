@@ -83,24 +83,18 @@ export default function BattleClient() {
       const showInterestModal = params.get('show_interest_modal') === 'true';
       const shareSchoolCode = params.get('share_school_code');
       
-      console.log('🔗 URL 파라미터 확인:', { dateParam, schoolCodeParam, showInterestModal, shareSchoolCode });
-      
       if (dateParam) {
         setSelectedDate(dateParam);
-        console.log('📅 URL에서 날짜 설정:', dateParam);
       }
       
       // school_code는 로그인 후 처리하기 위해 임시 저장
       if (schoolCodeParam) {
-        console.log('🏫 URL에서 school_code 감지, 로그인 후 처리 예정:', schoolCodeParam);
         // sessionStorage에 임시 저장
         sessionStorage.setItem('pending_school_code', schoolCodeParam);
       }
       
       // 관심학교 모달 플래그가 있으면 관심학교 모달 자동 열기
       if (showInterestModal) {
-        console.log('🏫 관심학교 모달 플래그 감지 - 관심학교 모달 자동 열기');
-        
         // URL에서 파라미터 먼저 제거 (무한 루프 방지)
         const newParams = new URLSearchParams(window.location.search);
         newParams.delete('show_interest_modal');
@@ -109,7 +103,6 @@ export default function BattleClient() {
         
         // 학교코드가 있는 경우 저장
         if (shareSchoolCode) {
-          console.log('🏫 공유받은 학교코드 감지:', shareSchoolCode);
           sessionStorage.setItem('pending_interest_school', shareSchoolCode);
         }
         
@@ -137,7 +130,6 @@ export default function BattleClient() {
     if (userError) {
       // Auth session missing 에러인 경우 컴포넌트 렌더링에서 리다이렉트 처리
       if (userError.includes('Auth session missing') || userError.includes('session missing')) {
-        console.log('비로그인 사용자 - 컴포넌트에서 리다이렉트 처리');
         return;
       } else {
         // 다른 에러인 경우에만 대기
@@ -156,7 +148,6 @@ export default function BattleClient() {
     // 로그인 완료 후 초대링크 처리 (급식페이지와 동일한 로직)
     const pendingSchoolCode = sessionStorage.getItem('pending_school_code');
     if (pendingSchoolCode && user) {
-      console.log('🔗 로그인 완료, pending school_code 처리:', pendingSchoolCode);
       handleBattleUrlSchoolCode(pendingSchoolCode);
       sessionStorage.removeItem('pending_school_code');
     }
@@ -164,7 +155,6 @@ export default function BattleClient() {
     // 관심학교 모달 처리
     const pendingInterestSchool = sessionStorage.getItem('pending_interest_school');
     if (pendingInterestSchool && user) {
-      console.log('🔗 로그인 완료, pending interest school 처리:', pendingInterestSchool);
       setIsSchoolSearchOpen(true);
       sessionStorage.removeItem('pending_interest_school');
     }
@@ -223,7 +213,6 @@ export default function BattleClient() {
     
     try {
       setInterestSchoolsLoading(true);
-      console.log('관심학교 데이터 조회 시작:', user.id);
       
       const { data, error } = await supabase
         .from('interest_schools')
@@ -236,12 +225,6 @@ export default function BattleClient() {
         return;
       }
       
-      console.log('관심학교 데이터 조회 성공 (school_type 포함):', data);
-      // school_type 필드 확인
-      if (data && data.length > 0) {
-        console.log('🔍 첫 번째 관심학교 school_type:', data[0].school_type);
-        console.log('🔍 첫 번째 관심학교 school_name:', data[0].school_name);
-      }
       setInterestSchools(data || []);
       
     } catch (error) {
@@ -255,7 +238,6 @@ export default function BattleClient() {
   const setInterestSchoolRegion = (interestSchool: any) => {
     if (interestSchool?.region) {
       setSelectedInterestSchoolRegion(interestSchool.region);
-      console.log('관심학교 지역 정보 설정:', interestSchool.region);
     }
   };
 
@@ -285,8 +267,6 @@ export default function BattleClient() {
     }
 
     try {
-      console.log('관심학교 등록 시작:', schoolData);
-      
       // school_type 추출 (학교명에서)
       let schoolType = '';
       if (schoolData.SCHUL_NM.includes('초등')) {
@@ -313,8 +293,6 @@ export default function BattleClient() {
         return;
       }
       
-      console.log('관심학교 등록 성공:', data);
-      
       // 로컬 상태 업데이트
       if (data && data[0]) {
         setInterestSchools(prev => [data[0], ...prev]);
@@ -327,7 +305,6 @@ export default function BattleClient() {
       // 등록 후 해당 학교를 '관심학교 모드'로 즉시 전환 (새로고침 방지)
       const pendingInterestSchoolCode = sessionStorage.getItem('pending_interest_school');
       if (pendingInterestSchoolCode && pendingInterestSchoolCode === schoolData.SD_SCHUL_CODE) {
-        console.log('👉 공유받은 학교 등록 완료, 관심학교 모드로 전환:', schoolData.SCHUL_NM);
         if (data && data[0]) {
           // schoolMode 상태를 업데이트하여 관심학교의 배틀을 표시
           schoolMode.selectInterestSchool(data[0]);
@@ -396,7 +373,6 @@ export default function BattleClient() {
   const handleBattleUrlSchoolCode = async (schoolCode: string) => {
     try {
       if (!user) {
-        console.log('비회원 - 가입 후 처리 필요');
         // 비회원은 가입 과정에서 처리하미로 여기서는 아무것도 하지 않음
         return;
       }
@@ -404,11 +380,8 @@ export default function BattleClient() {
       // Supabase 세션 상태 확인 및 새로고침
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.warn('세션 없음 - 인증 대기');
         return;
       }
-
-      console.log('🔍 배틀페이지 초대링크 처리 시작:', { schoolCode, userId: user.id, sessionValid: !!session });
 
       // 사용자 프로필 확인 (users 테이블)
       const { data: userInfo, error: userError } = await supabase
@@ -420,7 +393,6 @@ export default function BattleClient() {
       if (userError) {
         console.error('사용자 정보 조회 오류:', userError);
         // 사용자 정보 조회 실패 시 인증 상태 안정화 대기
-        console.log('🎓 사용자 정보 조회 실패 - 인증 상태 대기');
         return;
       }
 
@@ -435,7 +407,6 @@ export default function BattleClient() {
 
       // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
       if (userInfo?.is_student && !userRegisteredSchool) {
-        console.log('🎓 학생나이 유저 - 학교 미등록으로 학교등록 페이지로 리다이렉트');
         router.push(`/school-search?share_school_code=${schoolCode}&share_type=battle`);
         return;
       }
@@ -446,7 +417,6 @@ export default function BattleClient() {
         const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
         
         if (isAlreadyInterestSchool) {
-          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
           const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
           if (targetSchool) {
             schoolMode.selectInterestSchool(targetSchool);
@@ -455,7 +425,6 @@ export default function BattleClient() {
           return;
         }
         
-        console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시 (추가 등록 가능)');
         // 공유받은 학교 코드를 임시 저장
         sessionStorage.setItem('pending_interest_school', schoolCode);
         setIsSchoolSearchOpen(true);
@@ -464,17 +433,11 @@ export default function BattleClient() {
 
       // 학교 등록이 있는 사용자의 경우 - 타학교 여부 확인
       if (userRegisteredSchool && userRegisteredSchool.school_code !== schoolCode) {
-        console.log('🎓 타학교 공유링크 감지:', { 
-          mySchool: userRegisteredSchool.school_code, 
-          sharedSchool: schoolCode,
-          isStudent: userInfo?.is_student 
-        });
         
         // 관심학교에 이미 등록되어 있는지 확인
         const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
         
         if (isAlreadyInterestSchool) {
-          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
           const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
           if (targetSchool) {
             schoolMode.selectInterestSchool(targetSchool);
@@ -484,7 +447,6 @@ export default function BattleClient() {
         }
         
         // 관심학교에 없으면 등록창 표시
-        console.log('🎓 타학교 공유링크 - 관심학교 등록창 표시');
         // 공유받은 학교 코드를 임시 저장
         sessionStorage.setItem('pending_interest_school', schoolCode);
         setIsSchoolSearchOpen(true);
@@ -492,7 +454,6 @@ export default function BattleClient() {
       }
 
       // 같은 학교 공유링크인 경우 아무것도 하지 않음
-      console.log('✅ 같은 학교 공유링크 - 정상 표시');
     } catch (error) {
       console.error('배틀 초대링크 처리 오류:', error);
     }
@@ -501,15 +462,11 @@ export default function BattleClient() {
   // 배틀 계산 트리거 함수 (Plan A)
   const triggerBattleCalculation = async (schoolCode: string, viewMode: 'daily' | 'monthly', selectedDate: string, selectedMonth: string) => {
     try {
-      console.log('🔄 배틀 계산 트리거 시작:', { schoolCode, viewMode, selectedDate, selectedMonth });
-      
       // ...
       if (viewMode === 'daily') {
         // 배틀 계산 기능 제거됨
-        console.log('배틀 계산 기능이 제거되었습니다.');
       } else {
         // 배틀 계산 기능 제거됨
-        console.log('배틀 계산 기능이 제거되었습니다.');
       }
     } catch (error) {
       console.error('배틀 계산 트리거 오류:', error);
@@ -518,7 +475,6 @@ export default function BattleClient() {
 
   // AI 앱 선택 핸들러 (iOS 대응 버전)
   const handleAIAppSelection = async (selectedApp: any) => {
-    console.log('🎯 AI 앱 선택됨:', selectedApp);
     setIsAIAnalysisOpen(false);
     
     try {
@@ -535,8 +491,6 @@ export default function BattleClient() {
       const targetDate = viewMode === 'daily' ? new Date(selectedDate) : new Date(selectedMonth);
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
-
-      console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
       
       // 1단계: 급식 데이터 집계
       const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`;
@@ -585,7 +539,6 @@ export default function BattleClient() {
         // 다른 플랫폼: 자동 복사 시도
         try {
           await navigator.clipboard.writeText(generatedPrompt);
-          console.log('✅ 클립보드 복사 완료');
           alert('AI 분석 프롬프트가 클립보드에 복사되었습니다. AI 앱에서 붙여넣기(Ctrl+V)하세요.');
         } catch (clipboardError) {
           console.warn('⚠️ 클립보드 복사 실패:', clipboardError);
@@ -612,18 +565,8 @@ export default function BattleClient() {
     const currentSchool = schoolMode.selectedInterestSchool || userSchool;
     
     if (!currentSchool?.school_code) {
-      console.log('⚠️ 학교 코드가 없어 배틀 데이터 로딩 중단');
       return;
     }
-    
-    console.log('🔍 배틀 데이터 로딩 시작:', {
-      currentSchool: currentSchool.school_name,
-      schoolCode: currentSchool.school_code,
-      isInterestSchool: !!schoolMode.selectedInterestSchool,
-      viewMode: viewMode,
-      selectedDate: selectedDate,
-      selectedMonth: selectedMonth
-    });
     
     setBattleLoading(true);
     setBattleError(null);
@@ -652,18 +595,9 @@ export default function BattleClient() {
       // 탭에 따라 다른 API 호출
       const apiEndpoint = activeTab === 'menu' ? '/api/battle/menu' : '/api/battle/meal';
       const apiUrl = `${apiEndpoint}?${params}`;
-      console.log('📡 API 호출 URL:', apiUrl);
-      console.log('📋 API 파라미터:', Object.fromEntries(params));
-      console.log('🏷️ 활성 탭:', activeTab);
       
       const response = await fetch(apiUrl);
       const result = await response.json();
-      
-      console.log('📨 API 응답:', {
-        status: response.status,
-        ok: response.ok,
-        result: result
-      });
       
       if (!response.ok) {
         throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
@@ -671,22 +605,8 @@ export default function BattleClient() {
       
       // 데이터가 없으면 빈 배열로 설정 (자동 집계 제거)
       if (!result.data || result.data.length === 0) {
-        console.log('⚠️ 배틀 데이터가 없음 - 빈 상태로 표시');
         setBattleData([]);
       } else {
-        // 지역 모드 디버깅: region_rank 값 확인
-        if (selectedRegion && selectedRegion !== '전국' && selectedRegion !== '우리학교') {
-          console.log('🔍 지역 모드 데이터 확인:', {
-            selectedRegion,
-            dataCount: result.data.length,
-            sampleData: result.data.slice(0, 3).map(item => ({
-              school_name: item.school_name,
-              region_rank: item.region_rank,
-              daily_rank: item.daily_rank,
-              national_rank: item.national_rank
-            }))
-          });
-        }
         setBattleData(result.data);
       }
     } catch (error) {
@@ -707,8 +627,6 @@ export default function BattleClient() {
       }
 
       try {
-        console.log(`🔍 ${selectedDate} 날짜의 메뉴 배틀 데이터 확인...`);
-        
         const { error, count } = await supabase
           .from('menu_battle_daily')
           .select('*', { count: 'exact', head: true })
@@ -720,12 +638,8 @@ export default function BattleClient() {
           return;
         }
 
-        console.log(`📊 데이터 확인 결과: ${count}개`);
-
         // 데이터가 없으면 집계 API 호출
         if (count === 0) {
-          console.log('🔥 데이터 없음! 일일 메뉴 배틀 집계를 시작합니다...');
-          
           const response = await fetch('/api/battle/calculate-daily-menu-battle', {
             method: 'POST',
             headers: {
@@ -743,7 +657,6 @@ export default function BattleClient() {
             throw new Error(result.error || '메뉴 배틀 집계에 실패했습니다.');
           }
 
-          console.log('✅ 메뉴 배틀 집계 성공! 데이터를 다시 로드합니다.');
           // 데이터 집계 후, 최신 데이터를 불러오기 위해 loadBattleData를 다시 호출
           loadBattleData();
 
@@ -762,20 +675,10 @@ export default function BattleClient() {
     
     // 사용자 학교가 있지만 지역이 아직 설정되지 않은 경우 로딩 지연
     if (userSchool?.region && !selectedRegion) {
-      console.log('⏳ 지역 설정 대기 중 - 배틀 데이터 로딩 지연');
       return;
     }
     
     if (currentSchool?.school_code) {
-      console.log('📣 배틀 데이터 로딩 트리거됨', { 
-        currentSchool: currentSchool.school_name,
-        isInterestSchool: !!schoolMode.selectedInterestSchool,
-        activeTab, 
-        viewMode, 
-        selectedDate, 
-        selectedMonth,
-        selectedRegion
-      });
       loadBattleData();
     }
   }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType, selectedRegion]);
@@ -1062,12 +965,10 @@ export default function BattleClient() {
                       const lastMonth = lastSelectedDate.substring(0, 7);
                       if (lastMonth === selectedMonth) {
                         // 동일한 월이면 이전 날짜 사용
-                        console.log(`🔄 일별 버튼→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
                         setSelectedDate(lastSelectedDate);
                       } else {
                         // 다른 월이면 현재 선택된 월의 1일로 설정
                         const newDate = `${selectedMonth}-01`;
-                        console.log(`🔄 일별 버튼→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
                         setSelectedDate(newDate);
                       }
                     }
@@ -1094,12 +995,10 @@ export default function BattleClient() {
                       const lastMonth = lastSelectedDate.substring(0, 7);
                       if (lastMonth === selectedMonth) {
                         // 동일한 월이면 이전 날짜 사용
-                        console.log(`🔄 날짜 선택기 클릭→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
                         setSelectedDate(lastSelectedDate);
                       } else {
                         // 다른 월이면 현재 선택된 월의 1일로 설정
                         const newDate = `${selectedMonth}-01`;
-                        console.log(`🔄 날짜 선택기 클릭→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
                         setSelectedDate(newDate);
                       }
                     }
@@ -1146,7 +1045,6 @@ export default function BattleClient() {
                       setLastSelectedDate(selectedDate);
                       
                       const month = selectedDate.substring(0, 7);
-                      console.log(`🔄 월별 버튼→월별 전환: selectedMonth를 ${month}로 설정, 이전 날짜 ${selectedDate} 저장`);
                       setSelectedMonth(month);
                     }
                     setViewMode('monthly');
@@ -1198,7 +1096,6 @@ export default function BattleClient() {
                       if (viewMode === 'daily') {
                         // 일별에서 월별로 전환 시 selectedMonth를 해당 월로 설정
                         const newMonth = selectedDate.substring(0, 7);
-                        console.log(`🔄 월별 표시 클릭→월별 전환: selectedMonth를 ${newMonth}로 설정`);
                         setSelectedMonth(newMonth);
                       }
                       setViewMode('monthly');
@@ -1284,25 +1181,16 @@ export default function BattleClient() {
                     {/* 전국 버튼 */}
                     <button
                       onClick={() => {
-                        console.log('🔘 전국 버튼 클릭됨!');
                         setSelectedRegion('전국');
                         // 전국 선택 시에도 현재 학교의 학교급에 맞춰 자동 설정
                         const currentSchool = schoolMode.selectedInterestSchool || userSchool;
-                        console.log('   currentSchool:', currentSchool);
                         const schoolType = currentSchool?.school_type || currentSchool?.school_name || '';
-                        console.log('🔍 전국 버튼 - school_type:', currentSchool?.school_type, 'school_name:', currentSchool?.school_name);
-                        console.log('🔍 추출된 schoolType:', schoolType);
                         if (schoolType.includes('초등')) {
-                          console.log('✅ 초등학교 설정');
                           setSelectedSchoolType('초등학교');
                         } else if (schoolType.includes('중')) {
-                          console.log('✅ 중학교 설정');
                           setSelectedSchoolType('중학교');
                         } else if (schoolType.includes('고등')) {
-                          console.log('✅ 고등학교 설정');
                           setSelectedSchoolType('고등학교');
-                        } else {
-                          console.log('❌ 학교급 추출 실패 - schoolType:', schoolType);
                         }
                       }}
                       className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -1324,15 +1212,8 @@ export default function BattleClient() {
                       <button
                         key={type}
                         onClick={() => {
-                          console.log('🔘 학교급 버튼 클릭:', type);
-                          console.log('   - isOurSchoolSelected:', isOurSchoolSelected);
-                          console.log('   - selectedRegion:', selectedRegion);
-                          console.log('   - 현재 selectedSchoolType:', selectedSchoolType);
                           if (!isOurSchoolSelected) {
                             setSelectedSchoolType(type);
-                            console.log('   ✅ 설정됨:', type);
-                          } else {
-                            console.log('   ❌ 우리학교 모드라 차단됨');
                           }
                         }}
                         disabled={isOurSchoolSelected}
@@ -1644,15 +1525,6 @@ export default function BattleClient() {
                           rankField = 'region_rank';
                         }
                         
-                        // 디버깅 로그 추가
-                        if (process.env.NODE_ENV === 'development') {
-                          console.log('🔍 정렬 디버깅:', {
-                            selectedRegion,
-                            rankField,
-                            itemA: { school_name: a.school_name, [rankField]: a[rankField] },
-                            itemB: { school_name: b.school_name, [rankField]: b[rankField] }
-                          });
-                        }
                         
                         // null/undefined 값 처리 - region_rank가 null인 경우 평점으로 정렬
                         if (rankField === 'region_rank' && (!a[rankField] || !b[rankField])) {
