@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import QuizWrapper from './client-wrapper';
 import { createClient } from '@supabase/supabase-js';
 
+// 동적 렌더링 강제 (메타데이터를 요청마다 생성)
+export const dynamic = 'force-dynamic';
+
 type Props = {
   searchParams: { viewing?: string }
 }
@@ -43,6 +46,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       ? `${schoolData.grade}학년 ${schoolData.class_number}반 ` 
       : '';
     
+    const shareUrl = `https://lunbat.com/quiz?viewing=${viewingUserId}`;
+    
     return {
       title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
       description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
@@ -50,6 +55,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
         description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
         type: 'website',
+        url: shareUrl,
+        siteName: '뭐먹지?',
+      },
+      twitter: {
+        card: 'summary',
+        title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
+        description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
       },
     };
   } catch (error) {
