@@ -67,9 +67,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-// 동적 렌더링 강제
+// 동적 렌더링 강제 (모든 요청마다 서버에서 실행)
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
 
 export default function BattlePage() {
+  console.log('🏁 BattlePage 컴포넌트 렌더링 시작!');
   return <BattleClient />;
 }
