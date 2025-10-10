@@ -1,0 +1,1846 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import useUserSchool from '@/hooks/useUserSchool';
+import { useSchoolMode } from '@/hooks/useSchoolMode';
+import DateNavigator from '@/components/DateNavigator';
+import { getCurrentDate } from '@/utils/DateUtils';
+import { createClient } from '@/lib/supabase';
+import SchoolSearchModal from '@/components/SchoolSearchModal';
+import ShareButton from '@/components/ShareButton';
+import AIAnalysisModal from '@/components/AIAnalysisModal';
+// battleCalculator 제거됨
+
+// 학교 유형별 캐릭터 이미지 경로 반환 함수
+const getSchoolCharacterImage = (schoolType: string): string => {
+  if (schoolType?.includes('초등학교') || schoolType?.includes('초')) {
+    return '/images/characters/elementary.png';
+  }
+  if (schoolType?.includes('중학교') || schoolType?.includes('중')) {
+    return '/images/characters/middle.png';
+  }
+  if (schoolType?.includes('고등학교') || schoolType?.includes('고')) {
+    return '/images/characters/high.png';
+  }
+  // 기본값: 초등학교 캐릭터
+  return '/images/characters/elementary.png';
+};
+
+
+// 학교명 약식 변환 함수 (예: 가림고등학교 -> 가림고)
+const getShortSchoolName = (schoolName: string): string => {
+  if (!schoolName) return '';
+  return schoolName
+    .replace(/고등학교$/, '고')
+    .replace(/중학교$/, '중')
+    .replace(/초등학교$/, '초');
+};
+
+export default function BattleClient() {
+  const supabase = createClient();
+  const router = useRouter();
+  
+  // 사용자/학교 정보 훅
+  const { user, userSchool, loading: userLoading, error: userError, refresh: refreshUser } = useUserSchool();
+  
+  // 학교 모드 관리 훅
+  const schoolMode = useSchoolMode(userSchool);
+  
+  // 관심학교 드롭다운 상태 관리
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [interestSchools, setInterestSchools] = useState<any[]>([]);
+  const [interestSchoolsLoading, setInterestSchoolsLoading] = useState<boolean>(false);
+  const [selectedInterestSchoolRegion, setSelectedInterestSchoolRegion] = useState<string | null>(null);
+  
+  // 학교검색 모달 상태 관리
+  const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
+  
+  // AI 분석 모달 상태 관리
+  const [isAIAnalysisOpen, setIsAIAnalysisOpen] = useState<boolean>(false);
+  
+  
+  // 배틀 페이지는 읽기 전용이므로 권한 체크 불필요
+  
+  // 상태 관리
+  const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().substring(0, 7));
+  const [lastSelectedDate, setLastSelectedDate] = useState<string>(getCurrentDate());
+  const [activeTab, setActiveTab] = useState<'menu' | 'meal'>('menu');
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily'); // 일별/월별 선택 모드
+  const [selectedSchoolType, setSelectedSchoolType] = useState<string>(''); // 초/중/고 선택
+  const [selectedRegion, setSelectedRegion] = useState<string>(''); // 지역 선택 (기본값: 사용자 지역, '전국' 옵션 포함)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // 순위 정렬 순서 (asc: 1위부터, desc: 마지막부터)
+
+  // URL의 date와 school_code 파라미터를 상태에 반영 (로그인 체크보다 먼저 실행)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dateParam = params.get('date');
+      const schoolCodeParam = params.get('school_code');
+      const showInterestModal = params.get('show_interest_modal') === 'true';
+      const shareSchoolCode = params.get('share_school_code');
+      
+      console.log('🔗 URL 파라미터 확인:', { dateParam, schoolCodeParam, showInterestModal, shareSchoolCode });
+      
+      if (dateParam) {
+        setSelectedDate(dateParam);
+        console.log('📅 URL에서 날짜 설정:', dateParam);
+      }
+      
+      // school_code는 로그인 후 처리하기 위해 임시 저장
+      if (schoolCodeParam) {
+        console.log('🏫 URL에서 school_code 감지, 로그인 후 처리 예정:', schoolCodeParam);
+        // sessionStorage에 임시 저장
+        sessionStorage.setItem('pending_school_code', schoolCodeParam);
+      }
+      
+      // 관심학교 모달 플래그가 있으면 관심학교 모달 자동 열기
+      if (showInterestModal) {
+        console.log('🏫 관심학교 모달 플래그 감지 - 관심학교 모달 자동 열기');
+        
+        // URL에서 파라미터 먼저 제거 (무한 루프 방지)
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('show_interest_modal');
+        const newUrl = `${window.location.pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
+        window.history.replaceState({}, '', newUrl);
+        
+        // 학교코드가 있는 경우 저장
+        if (shareSchoolCode) {
+          console.log('🏫 공유받은 학교코드 감지:', shareSchoolCode);
+          sessionStorage.setItem('pending_interest_school', shareSchoolCode);
+        }
+        
+        // 관심학교 모달 열기
+        setIsSchoolSearchOpen(true);
+      }
+    } catch (err) {
+      console.error('URL 파라미터 파싱 오류:', err);
+    }
+  }, []); // 의존성 제거하여 즉시 실행
+
+  // 사용자 인증 상태 체크 - 배틀 페이지 접근 제어
+  useEffect(() => {
+    // SSR 환경에서는 아무것도 하지 않음
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    // 초기 로딩 상태에서는 대기
+    if (userLoading) {
+      return;
+    }
+    
+    // userError 발생 시 오류 처리 - 비로그인 사용자는 컴포넌트 렌더링에서 처리
+    if (userError) {
+      // Auth session missing 에러인 경우 컴포넌트 렌더링에서 리다이렉트 처리
+      if (userError.includes('Auth session missing') || userError.includes('session missing')) {
+        console.log('비로그인 사용자 - 컴포넌트에서 리다이렉트 처리');
+        return;
+      } else {
+        // 다른 에러인 경우에만 대기
+        return;
+      }
+    }
+    
+    // 로딩이 완료되고 에러가 없는데 사용자가 없으면 로그인 필요
+    if (!user) {
+      // const currentUrl = window.location.href;
+      // const loginUrl = `/login?returnUrl=${encodeURIComponent(currentUrl)}`;
+      // router.replace(loginUrl); // 비로그인 사용자도 배틀 페이지 접근 허용
+      return;
+    }
+    
+    // 로그인 완료 후 초대링크 처리 (급식페이지와 동일한 로직)
+    const pendingSchoolCode = sessionStorage.getItem('pending_school_code');
+    if (pendingSchoolCode && user) {
+      console.log('🔗 로그인 완료, pending school_code 처리:', pendingSchoolCode);
+      handleBattleUrlSchoolCode(pendingSchoolCode);
+      sessionStorage.removeItem('pending_school_code');
+    }
+    
+    // 관심학교 모달 처리
+    const pendingInterestSchool = sessionStorage.getItem('pending_interest_school');
+    if (pendingInterestSchool && user) {
+      console.log('🔗 로그인 완료, pending interest school 처리:', pendingInterestSchool);
+      setIsSchoolSearchOpen(true);
+      sessionStorage.removeItem('pending_interest_school');
+    }
+    
+    // 사용자가 있으면 배틀 페이지 접근 허용
+  }, [user, userLoading, userError, router]);
+
+  // 사용자 학교 또는 관심학교 정보가 로드되면 기본값을 '우리학교'로 설정
+  useEffect(() => {
+    if (userSchool?.school_code && !selectedRegion) {
+      setSelectedRegion('우리학교');
+    }
+  }, [userSchool, selectedRegion]);
+
+  // 초기 로드 시 관심학교 데이터 가져오기
+  useEffect(() => {
+    if (user && !userLoading) {
+      fetchInterestSchools();
+    }
+  }, [user, userLoading]);
+  
+  // 배틀 데이터 상태
+  const [battleData, setBattleData] = useState<any[]>([]);
+  const [battleLoading, setBattleLoading] = useState(false);
+  const [battleError, setBattleError] = useState<string | null>(null);
+
+  // 관심학교 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // 관심학교 드롭다운 토글 함수
+  const handleDropdownToggle = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+    // 드롭다운을 열 때만 관심학교 데이터 로드
+    if (!isDropdownOpen && user && interestSchools.length === 0) {
+      fetchInterestSchools();
+    }
+  };
+
+  // 관심학교 데이터 조회 함수
+  const fetchInterestSchools = async () => {
+    if (!user) return;
+    
+    try {
+      setInterestSchoolsLoading(true);
+      console.log('관심학교 데이터 조회 시작:', user.id);
+      
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('관심학교 조회 오류:', error);
+        return;
+      }
+      
+      console.log('관심학교 데이터 조회 성공 (school_type 포함):', data);
+      // school_type 필드 확인
+      if (data && data.length > 0) {
+        console.log('🔍 첫 번째 관심학교 school_type:', data[0].school_type);
+        console.log('🔍 첫 번째 관심학교 school_name:', data[0].school_name);
+      }
+      setInterestSchools(data || []);
+      
+    } catch (error) {
+      console.error('관심학교 조회 중 예외 발생:', error);
+    } finally {
+      setInterestSchoolsLoading(false);
+    }
+  };
+
+  // 관심학교 지역 정보 설정 함수 (이제 관심학교 데이터에서 직접 가져옴)
+  const setInterestSchoolRegion = (interestSchool: any) => {
+    if (interestSchool?.region) {
+      setSelectedInterestSchoolRegion(interestSchool.region);
+      console.log('관심학교 지역 정보 설정:', interestSchool.region);
+    }
+  };
+
+  // 관심학교 등록 함수
+  const addInterestSchool = async (schoolData: any) => {
+    if (!user) {
+      console.error('사용자 인증이 필요합니다');
+      return;
+    }
+
+    // 최대 10개 제한 확인
+    if (interestSchools.length >= 10) {
+      alert('최대 10개의 관심학교만 등록할 수 있습니다.');
+      return;
+    } else if (interestSchools.length >= 5 && !user?.db_profile?.is_student) {
+      alert('비학생 사용자는 최대 5개의 관심학교만 등록할 수 있습니다.');
+    }
+
+    // 중복 등록 확인
+    const isDuplicate = interestSchools.some(
+      school => school.school_code === schoolData.SD_SCHUL_CODE
+    );
+    
+    if (isDuplicate) {
+      alert('이미 등록된 관심학교입니다.');
+      return;
+    }
+
+    try {
+      console.log('관심학교 등록 시작:', schoolData);
+      
+      // school_type 추출 (학교명에서)
+      let schoolType = '';
+      if (schoolData.SCHUL_NM.includes('초등')) {
+        schoolType = '초등학교';
+      } else if (schoolData.SCHUL_NM.includes('중')) {
+        schoolType = '중학교';
+      } else if (schoolData.SCHUL_NM.includes('고등')) {
+        schoolType = '고등학교';
+      }
+
+      const { data, error } = await supabase
+        .from('interest_schools')
+        .insert({
+          user_id: user.id,
+          school_name: schoolData.SCHUL_NM,
+          school_code: schoolData.SD_SCHUL_CODE,
+          office_code: schoolData.ATPT_OFCDC_SC_CODE
+        })
+        .select();
+      
+      if (error) {
+        console.error('관심학교 등록 오류:', error);
+        alert('관심학교 등록에 실패했습니다.');
+        return;
+      }
+      
+      console.log('관심학교 등록 성공:', data);
+      
+      // 로컬 상태 업데이트
+      if (data && data[0]) {
+        setInterestSchools(prev => [data[0], ...prev]);
+      }
+      
+      // 모달 닫기
+      setIsSchoolSearchOpen(false);
+      alert('관심학교가 성공적으로 등록되었습니다!');
+      
+      // 등록 후 해당 학교를 '관심학교 모드'로 즉시 전환 (새로고침 방지)
+      const pendingInterestSchoolCode = sessionStorage.getItem('pending_interest_school');
+      if (pendingInterestSchoolCode && pendingInterestSchoolCode === schoolData.SD_SCHUL_CODE) {
+        console.log('👉 공유받은 학교 등록 완료, 관심학교 모드로 전환:', schoolData.SCHUL_NM);
+        if (data && data[0]) {
+          // schoolMode 상태를 업데이트하여 관심학교의 배틀을 표시
+          schoolMode.selectInterestSchool(data[0]);
+          // 지역 정보 설정 (등록된 데이터에서 직접 가져옴)
+          setInterestSchoolRegion(data[0]);
+          // URL도 school_code 파라미터를 포함하도록 변경 (새로고침 방지)
+          const newUrl = `/battle?school_code=${schoolData.SD_SCHUL_CODE}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        }
+        sessionStorage.removeItem('pending_interest_school');
+      }
+      
+    } catch (error) {
+      console.error('관심학교 등록 중 예외 발생:', error);
+      alert('관심학교 등록 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 관심학교 삭제 함수
+  const removeInterestSchool = async (schoolId: number) => {
+    if (!user) {
+      console.error('사용자 인증이 필요합니다');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('interest_schools')
+        .delete()
+        .eq('id', schoolId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('관심학교 삭제 오류:', error);
+        alert('관심학교 삭제에 실패했습니다.');
+        return;
+      }
+
+      // 로컬 상태 업데이트
+      setInterestSchools(prev => prev.filter(school => school.id !== schoolId));
+      
+      // 삭제된 학교가 현재 선택된 학교라면 내 학교로 돌아가기
+      if (String(schoolMode.selectedInterestSchool?.id) === String(schoolId)) {
+        schoolMode.returnToMySchool();
+      }
+
+      
+      alert('관심학교가 삭제되었습니다.');
+      
+    } catch (error) {
+      console.error('관심학교 삭제 중 예외 발생:', error);
+      alert('관심학교 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 학교등록 버튼 클릭 핸들러
+  const handleSchoolRegister = () => {
+    if (interestSchools.length >= 10) {
+      alert('최대 10개의 관심학교만 등록할 수 있습니다.');
+      return;
+    }
+    setIsSchoolSearchOpen(true);
+  };
+
+  // 배틀페이지 초대링크 처리 함수 (급식페이지와 동일한 로직으로 수정)
+  const handleBattleUrlSchoolCode = async (schoolCode: string) => {
+    try {
+      if (!user) {
+        console.log('비회원 - 가입 후 처리 필요');
+        // 비회원은 가입 과정에서 처리하미로 여기서는 아무것도 하지 않음
+        return;
+      }
+
+      // Supabase 세션 상태 확인 및 새로고침
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('세션 없음 - 인증 대기');
+        return;
+      }
+
+      console.log('🔍 배틀페이지 초대링크 처리 시작:', { schoolCode, userId: user.id, sessionValid: !!session });
+
+      // 사용자 프로필 확인 (users 테이블)
+      const { data: userInfo, error: userError } = await supabase
+        .from('users')
+        .select('is_student')
+        .eq('id', user.id)
+        .single();
+
+      if (userError) {
+        console.error('사용자 정보 조회 오류:', userError);
+        // 사용자 정보 조회 실패 시 인증 상태 안정화 대기
+        console.log('🎓 사용자 정보 조회 실패 - 인증 상태 대기');
+        return;
+      }
+
+      // 학교 정보 직접 조회 (userSchool 상태에 의존하지 않음)
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code, school_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const userRegisteredSchool = schoolError ? null : schoolData;
+
+      // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
+      if (userInfo?.is_student && !userRegisteredSchool) {
+        console.log('🎓 학생나이 유저 - 학교 미등록으로 학교등록 페이지로 리다이렉트');
+        router.push(`/school-search?share_school_code=${schoolCode}&share_type=battle`);
+        return;
+      }
+
+      // 비학생 사용자 중 학교 미등록자 - 관심학교 등록창 표시 (기존 관심학교 있어도 추가 등록 가능)
+      if (!userInfo?.is_student && !userRegisteredSchool) {
+        // 이미 관심학교에 등록되어 있는지 확인
+        const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
+        
+        if (isAlreadyInterestSchool) {
+          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
+          const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
+          if (targetSchool) {
+            schoolMode.selectInterestSchool(targetSchool);
+            setInterestSchoolRegion(targetSchool);
+          }
+          return;
+        }
+        
+        console.log('🎓 비학생 유저 - 학교 미등록, 관심학교 등록창 표시 (추가 등록 가능)');
+        // 공유받은 학교 코드를 임시 저장
+        sessionStorage.setItem('pending_interest_school', schoolCode);
+        setIsSchoolSearchOpen(true);
+        return;
+      }
+
+      // 학교 등록이 있는 사용자의 경우 - 타학교 여부 확인
+      if (userRegisteredSchool && userRegisteredSchool.school_code !== schoolCode) {
+        console.log('🎓 타학교 공유링크 감지:', { 
+          mySchool: userRegisteredSchool.school_code, 
+          sharedSchool: schoolCode,
+          isStudent: userInfo?.is_student 
+        });
+        
+        // 관심학교에 이미 등록되어 있는지 확인
+        const isAlreadyInterestSchool = interestSchools.some(school => school.school_code === schoolCode);
+        
+        if (isAlreadyInterestSchool) {
+          console.log('🎓 이미 관심학교에 등록된 학교 - 해당 학교로 전환');
+          const targetSchool = interestSchools.find(school => school.school_code === schoolCode);
+          if (targetSchool) {
+            schoolMode.selectInterestSchool(targetSchool);
+            setInterestSchoolRegion(targetSchool);
+          }
+          return;
+        }
+        
+        // 관심학교에 없으면 등록창 표시
+        console.log('🎓 타학교 공유링크 - 관심학교 등록창 표시');
+        // 공유받은 학교 코드를 임시 저장
+        sessionStorage.setItem('pending_interest_school', schoolCode);
+        setIsSchoolSearchOpen(true);
+        return;
+      }
+
+      // 같은 학교 공유링크인 경우 아무것도 하지 않음
+      console.log('✅ 같은 학교 공유링크 - 정상 표시');
+    } catch (error) {
+      console.error('배틀 초대링크 처리 오류:', error);
+    }
+  };
+
+  // 배틀 계산 트리거 함수 (Plan A)
+  const triggerBattleCalculation = async (schoolCode: string, viewMode: 'daily' | 'monthly', selectedDate: string, selectedMonth: string) => {
+    try {
+      console.log('🔄 배틀 계산 트리거 시작:', { schoolCode, viewMode, selectedDate, selectedMonth });
+      
+      // ...
+      if (viewMode === 'daily') {
+        // 배틀 계산 기능 제거됨
+        console.log('배틀 계산 기능이 제거되었습니다.');
+      } else {
+        // 배틀 계산 기능 제거됨
+        console.log('배틀 계산 기능이 제거되었습니다.');
+      }
+    } catch (error) {
+      console.error('배틀 계산 트리거 오류:', error);
+    }
+  };
+
+  // AI 앱 선택 핸들러 (iOS 대응 버전)
+  const handleAIAppSelection = async (selectedApp: any) => {
+    console.log('🎯 AI 앱 선택됨:', selectedApp);
+    setIsAIAnalysisOpen(false);
+    
+    try {
+      // 현재 학교 정보 확인
+      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      
+      if (!currentSchool?.school_code) {
+        console.error('❌ 학교 정보 없음');
+        alert('학교 정보가 없어 AI 분석을 진행할 수 없습니다.');
+        return;
+      }
+
+      // 현재 날짜 정보 추출
+      const targetDate = viewMode === 'daily' ? new Date(selectedDate) : new Date(selectedMonth);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+
+      console.log(`🚀 AI 분석 시작: ${currentSchool.school_code}, ${year}-${month}`);
+      
+      // 1단계: 급식 데이터 집계
+      const apiUrl = `/.netlify/functions/ai-analysis-data?school_code=${currentSchool.school_code}&year=${year}&month=${month}`;
+      const analysisResponse = await fetch(apiUrl);
+      
+      if (!analysisResponse.ok) {
+        throw new Error('데이터 집계 실패');
+      }
+      
+      const analysisData = await analysisResponse.json();
+      
+      if (analysisData.error) {
+        throw new Error(analysisData.error);
+      }
+
+      // 2단계: AI 프롬프트 생성
+      const promptPayload = {
+        analysis_data: analysisData,
+        school_code: currentSchool.school_code
+      };
+      
+      const promptResponse = await fetch('/.netlify/functions/generate-ai-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(promptPayload)
+      });
+
+      if (!promptResponse.ok) {
+        throw new Error('프롬프트 생성 실패');
+      }
+
+      const promptData = await promptResponse.json();
+      const generatedPrompt = promptData.data?.prompt || promptData.prompt;
+
+      if (!generatedPrompt) {
+        throw new Error('프롬프트가 생성되지 않았습니다');
+      }
+
+      // 3단계: iOS 감지 및 클립보드 처리
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      if (isIOS) {
+        // iOS: 수동 복사 모달 표시
+        // iOS는 AIAnalysisModal 내부에서 처리됨
+      } else {
+        // 다른 플랫폼: 자동 복사 시도
+        try {
+          await navigator.clipboard.writeText(generatedPrompt);
+          console.log('✅ 클립보드 복사 완료');
+          alert('AI 분석 프롬프트가 클립보드에 복사되었습니다. AI 앱에서 붙여넣기(Ctrl+V)하세요.');
+        } catch (clipboardError) {
+          console.warn('⚠️ 클립보드 복사 실패:', clipboardError);
+          alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
+        }
+        
+        // AI 앱 열기
+        window.open(selectedApp.webUrl, '_blank');
+      }
+
+    } catch (error) {
+      console.error('❌ AI 분석 처리 오류:', error);
+      alert(`AI 분석 중 오류가 발생했습니다: ${error.message}`);
+      
+      // 에러 시에도 기본 웹 버전으로 폴백
+      window.open(selectedApp.webUrl, '_blank');
+    }
+  };
+
+
+  // 배틀 데이터 로딩 함수
+  const loadBattleData = async () => {
+    // 현재 선택된 학교 정보 결정 (관심학교 또는 내 학교)
+    const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    
+    if (!currentSchool?.school_code) {
+      console.log('⚠️ 학교 코드가 없어 배틀 데이터 로딩 중단');
+      return;
+    }
+    
+    console.log('🔍 배틀 데이터 로딩 시작:', {
+      currentSchool: currentSchool.school_name,
+      schoolCode: currentSchool.school_code,
+      isInterestSchool: !!schoolMode.selectedInterestSchool,
+      viewMode: viewMode,
+      selectedDate: selectedDate,
+      selectedMonth: selectedMonth
+    });
+    
+    setBattleLoading(true);
+    setBattleError(null);
+    
+    try {
+      // 학교 유형 결정: 선택된 유형 또는 현재 학교 유형
+      // '내 학교' 정보가 있을 때만 school_type을 사용하고, 관심학교 모드에서는 빈 값으로 처리
+      const schoolTypeForApi = selectedSchoolType || 
+        (userSchool?.school_type?.includes('초') ? '초등학교' :
+         userSchool?.school_type?.includes('중') ? '중학교' :
+         userSchool?.school_type?.includes('고') ? '고등학교' : '');
+      
+      const params = new URLSearchParams({
+        schoolCode: currentSchool.school_code,
+        type: viewMode,
+        ...(viewMode === 'daily' ? { date: selectedDate } : { month: selectedMonth }),
+        ...(schoolTypeForApi && { schoolType: schoolTypeForApi }),
+        ...(selectedRegion && selectedRegion !== '우리학교' && { region: selectedRegion }) // 우리학교가 아닐 때만 지역 필터링
+      });
+      
+      // 우리학교 선택 시 학교별 필터링 추가
+      if (selectedRegion === '우리학교') {
+        params.append('schoolOnly', 'true');
+      }
+      
+      // 탭에 따라 다른 API 호출
+      const apiEndpoint = activeTab === 'menu' ? '/api/battle/menu' : '/api/battle/meal';
+      const apiUrl = `${apiEndpoint}?${params}`;
+      console.log('📡 API 호출 URL:', apiUrl);
+      console.log('📋 API 파라미터:', Object.fromEntries(params));
+      console.log('🏷️ 활성 탭:', activeTab);
+      
+      const response = await fetch(apiUrl);
+      const result = await response.json();
+      
+      console.log('📨 API 응답:', {
+        status: response.status,
+        ok: response.ok,
+        result: result
+      });
+      
+      if (!response.ok) {
+        throw new Error(result.error || '배틀 데이터를 불러오는데 실패했습니다.');
+      }
+      
+      // 데이터가 없으면 빈 배열로 설정 (자동 집계 제거)
+      if (!result.data || result.data.length === 0) {
+        console.log('⚠️ 배틀 데이터가 없음 - 빈 상태로 표시');
+        setBattleData([]);
+      } else {
+        // 지역 모드 디버깅: region_rank 값 확인
+        if (selectedRegion && selectedRegion !== '전국' && selectedRegion !== '우리학교') {
+          console.log('🔍 지역 모드 데이터 확인:', {
+            selectedRegion,
+            dataCount: result.data.length,
+            sampleData: result.data.slice(0, 3).map(item => ({
+              school_name: item.school_name,
+              region_rank: item.region_rank,
+              daily_rank: item.daily_rank,
+              national_rank: item.national_rank
+            }))
+          });
+        }
+        setBattleData(result.data);
+      }
+    } catch (error) {
+      console.error('배틀 데이터 로딩 오류:', error);
+      setBattleError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+    } finally {
+      setBattleLoading(false);
+    }
+  };
+
+  // Plan A: 페이지 로드 시 메뉴 배틀 데이터 없으면 자동 집계 (iOS 별점 사라짐 해결)
+  useEffect(() => {
+    const ensureMenuBattleData = async () => {
+      // 메뉴/일별 탭이 아니거나, 학교 정보가 없으면 실행 안함
+      const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+      if (activeTab !== 'menu' || viewMode !== 'daily' || !currentSchool?.school_code) {
+        return;
+      }
+
+      try {
+        console.log(`🔍 ${selectedDate} 날짜의 메뉴 배틀 데이터 확인...`);
+        
+        const { error, count } = await supabase
+          .from('menu_battle_daily')
+          .select('*', { count: 'exact', head: true })
+          .eq('battle_date', selectedDate)
+          .eq('school_code', currentSchool.school_code);
+
+        if (error) {
+          console.error('메뉴 배틀 데이터 확인 중 오류:', error);
+          return;
+        }
+
+        console.log(`📊 데이터 확인 결과: ${count}개`);
+
+        // 데이터가 없으면 집계 API 호출
+        if (count === 0) {
+          console.log('🔥 데이터 없음! 일일 메뉴 배틀 집계를 시작합니다...');
+          
+          const response = await fetch('/api/battle/calculate-daily-menu-battle', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              schoolCode: currentSchool.school_code,
+              date: selectedDate,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || '메뉴 배틀 집계에 실패했습니다.');
+          }
+
+          console.log('✅ 메뉴 배틀 집계 성공! 데이터를 다시 로드합니다.');
+          // 데이터 집계 후, 최신 데이터를 불러오기 위해 loadBattleData를 다시 호출
+          loadBattleData();
+
+        }
+      } catch (err) {
+        console.error('메뉴 배틀 자동 집계 과정에서 오류 발생:', err);
+      }
+    };
+
+    ensureMenuBattleData();
+  }, [userSchool, schoolMode.selectedInterestSchool, activeTab, viewMode, selectedDate]);
+
+  // 데이터 로딩 useEffect - 지역 설정 완료 후 로딩
+  useEffect(() => {
+    const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    
+    // 사용자 학교가 있지만 지역이 아직 설정되지 않은 경우 로딩 지연
+    if (userSchool?.region && !selectedRegion) {
+      console.log('⏳ 지역 설정 대기 중 - 배틀 데이터 로딩 지연');
+      return;
+    }
+    
+    if (currentSchool?.school_code) {
+      console.log('📣 배틀 데이터 로딩 트리거됨', { 
+        currentSchool: currentSchool.school_name,
+        isInterestSchool: !!schoolMode.selectedInterestSchool,
+        activeTab, 
+        viewMode, 
+        selectedDate, 
+        selectedMonth,
+        selectedRegion
+      });
+      loadBattleData();
+    }
+  }, [activeTab, userSchool?.school_code, schoolMode.selectedInterestSchool, viewMode, selectedDate, selectedMonth, selectedSchoolType, selectedRegion]);
+
+  // 비로그인 사용자인 경우 로그인 페이지로 리다이렉트 (급식 페이지와 동일)
+  if (userError && (userError.includes('Auth session missing') || userError.includes('session missing'))) {
+    router.push('/login');
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-2xl mb-4">🏆</div>
+        <p className="text-gray-600">로그인 페이지로 이동 중...</p>
+      </div>
+    </div>;
+  }
+
+  // 로딩 상태 표시
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">배틀 페이지를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-4xl mx-auto">
+      {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
+      <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
+        schoolMode.isStudentMode 
+          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-500' 
+          : 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-500'
+      }`}>
+        {/* 왼쪽: 학교 정보 (isStudentMode일 때만 표시) */}
+        <div className="flex items-center">
+          {schoolMode.isStudentMode ? (
+            <>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+                <span className="hidden sm:inline">{userSchool?.school_name || '학교 정보 없음'}</span>
+                <span className="sm:hidden">
+                  {(userSchool?.school_name || '학교 정보 없음').replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+                </span>
+              </span>
+              {(userSchool?.grade || userSchool?.class) && (
+                <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  {userSchool.grade ? `${userSchool.grade}학년` : ''}
+                  {userSchool.class ? ` ${userSchool.class}반` : ''}
+                </span>
+              )}
+              
+              {/* 초중고 캐릭터 - 모바일에서 숨김 */}
+              {userSchool?.school_type && (
+                <img 
+                  src={getSchoolCharacterImage(userSchool.school_type)}
+                  alt="학교 캐릭터"
+                  className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm hidden sm:block"
+                />
+              )}
+            </>
+          ) : null}
+        </div>
+        
+        {/* 오른쪽: 관심학교 드롭다운 */}
+        {user && (
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm flex-wrap sm:flex-nowrap"
+              onClick={handleDropdownToggle}
+            >
+              <span className="text-blue-600 hidden sm:inline">🏠</span>
+              <span className="whitespace-nowrap sm:whitespace-normal">
+                <span className="hidden sm:inline">
+                  {schoolMode.isStudentMode 
+                    ? '관심학교' 
+                    : `관심학교 - ${schoolMode.getDisplaySchoolName()}`
+                  }
+                </span>
+                <span className="sm:hidden">
+                  {schoolMode.isStudentMode 
+                    ? '관심학교' 
+                    : (
+                      <>
+                        관심학교<br />
+                        <span className="text-xs text-gray-600">
+                          {schoolMode.getDisplaySchoolName()?.replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
+                        </span>
+                      </>
+                    )
+                  }
+                </span>
+              </span>
+              <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* 드롭다운 메뉴 */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
+                    <button
+                      onClick={handleSchoolRegister}
+                      className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
+                    >
+                      + 학교등록
+                    </button>
+                  </div>
+                  
+                  {/* 내 학교 옵션 */}
+                  {schoolMode.hasMySchool && (
+                    <button
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md mb-2 transition-colors ${
+                        schoolMode.isStudentMode 
+                          ? 'text-gray-700 bg-green-50' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => {
+                        // 내 학교로 돌아가기
+                        schoolMode.returnToMySchool();
+                        setSelectedRegion('우리학교');
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <span className="text-green-600">🏠</span>
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">내 학교</div>
+                        <div className="text-xs text-gray-500">
+                          {schoolMode.isStudentMode ? '현재' : '내 학교로 돌아가기'}
+                        </div>
+                      </div>
+                      {schoolMode.isStudentMode && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">현재</span>
+                      )}
+                    </button>
+                  )}
+                  
+                  {/* 관심학교 목록 또는 빈 상태 */}
+                  {interestSchoolsLoading ? (
+                    <div className="text-center py-6 text-gray-500">
+                      <div className="text-sm">로딩 중...</div>
+                    </div>
+                  ) : interestSchools.length > 0 ? (
+                    <div className="space-y-2">
+                      {interestSchools.map((school) => {
+                        const isSelected = schoolMode.selectedInterestSchool?.id === school.id;
+                        
+                        return (
+                          <div 
+                            key={school.id}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                              isSelected 
+                                ? 'text-gray-700 bg-blue-50' 
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            <button
+                              className="flex items-center gap-3 flex-1"
+                              onClick={async () => {
+                                // 관심학교 선택
+                                schoolMode.selectInterestSchool({
+                                  id: school.id,
+                                  school_name: school.school_name,
+                                  school_code: school.school_code,
+                                  office_code: school.office_code,
+                                  region: school.region,
+                                  created_at: school.created_at
+                                });
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              <span className="text-blue-600">🏠</span>
+                              <div className="flex-1 text-left">
+                                <div className="font-medium">{school.school_name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {isSelected ? '현재 선택됨' : '선택하기'}
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">선택됨</span>
+                              )}
+                            </button>
+                            <button
+                              className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`${school.school_name}을(를) 관심학교에서 삭제하시겠습니까?`)) {
+                                  removeInterestSchool(school.id);
+                                }
+                              }}
+                              title="관심학교 삭제"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <div className="text-sm mb-2">등록된 관심학교가 없습니다</div>
+                      <button
+                        onClick={handleSchoolRegister}
+                        className="text-xs text-blue-600 hover:text-blue-700 underline"
+                      >
+                        관심학교 등록하기
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+
+
+      {/* 2개 섹션 탭 UI */}
+      <div className="mb-6">
+        <div className="flex gap-6 mb-6">
+          <div
+            onClick={() => setActiveTab('menu')}
+            className={`flex-1 cursor-pointer transition-all duration-200 ${
+              activeTab === 'menu'
+                ? 'border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-white pl-4 py-3 rounded-r-lg'
+                : 'border-l-4 border-gray-200 bg-gradient-to-r from-gray-50 to-white pl-4 py-3 rounded-r-lg hover:border-red-300 hover:from-red-25'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🍽️</span>
+              <div>
+                <h3 className={`font-bold text-lg ${activeTab === 'menu' ? 'text-red-700' : 'text-gray-700'}`}>
+                  메뉴 배틀
+                </h3>
+                <p className={`text-sm ${activeTab === 'menu' ? 'text-red-600' : 'text-gray-500'}`}>
+                  오늘의 인기 메뉴 순위
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            onClick={() => setActiveTab('meal')}
+            className={`flex-1 cursor-pointer transition-all duration-200 ${
+              activeTab === 'meal'
+                ? 'border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-white pl-4 py-3 rounded-r-lg'
+                : 'border-l-4 border-gray-200 bg-gradient-to-r from-gray-50 to-white pl-4 py-3 rounded-r-lg hover:border-blue-300 hover:from-blue-25'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏆</span>
+              <div>
+                <h3 className={`font-bold text-lg ${activeTab === 'meal' ? 'text-blue-700' : 'text-gray-700'}`}>
+                  급식 배틀
+                </h3>
+                <p className={`text-sm ${activeTab === 'meal' ? 'text-blue-600' : 'text-gray-500'}`}>
+                  학교간 급식 순위 경쟁
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 네비게이션 컨트롤들 - 한 줄 배치 (모바일에서도) */}
+        <div className="mb-6">
+          <div className="flex gap-4 md:gap-6">
+            {/* 일별 집계 섹션 */}
+            <div className={`flex-1 transition-all duration-300 ${
+              viewMode === 'daily' ? 'opacity-100' : 'opacity-60'
+            }`}>
+              <button
+                onClick={() => {
+                  // 일별 뷰 모드로 전환
+                  if (viewMode !== 'daily') {
+                    // 월별에서 일별로 전환 시 이전에 저장해둔 날짜로 돌아가기
+                    if (viewMode === 'monthly') {
+                      // 이전에 보던 날짜(lastSelectedDate)가 현재 선택된 월에 속하는지 확인
+                      const lastMonth = lastSelectedDate.substring(0, 7);
+                      if (lastMonth === selectedMonth) {
+                        // 동일한 월이면 이전 날짜 사용
+                        console.log(`🔄 일별 버튼→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
+                        setSelectedDate(lastSelectedDate);
+                      } else {
+                        // 다른 월이면 현재 선택된 월의 1일로 설정
+                        const newDate = `${selectedMonth}-01`;
+                        console.log(`🔄 일별 버튼→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
+                        setSelectedDate(newDate);
+                      }
+                    }
+                    setViewMode('daily');
+                  }
+                }}
+                className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
+                  viewMode === 'daily' 
+                    ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
+                    : (activeTab === 'menu' ? 'text-gray-500 hover:text-red-500' : 'text-gray-500 hover:text-blue-500')
+                }`}
+              >
+                일별 집계
+              </button>
+              <div 
+                className={`transition-all duration-300 cursor-pointer ${
+                  viewMode === 'daily' ? 'transform-none' : 'transform scale-95'
+                }`}
+                onClick={() => {
+                  // 🎯 UX 개선: 날짜 선택기 클릭 시 일별 모드로 자동 전환
+                  if (viewMode !== 'daily') {
+                    if (viewMode === 'monthly') {
+                      // 월별에서 일별로 전환 시 이전에 저장해둔 날짜로 돌아가기
+                      const lastMonth = lastSelectedDate.substring(0, 7);
+                      if (lastMonth === selectedMonth) {
+                        // 동일한 월이면 이전 날짜 사용
+                        console.log(`🔄 날짜 선택기 클릭→일별 전환: 이전 날짜 ${lastSelectedDate} 복원`);
+                        setSelectedDate(lastSelectedDate);
+                      } else {
+                        // 다른 월이면 현재 선택된 월의 1일로 설정
+                        const newDate = `${selectedMonth}-01`;
+                        console.log(`🔄 날짜 선택기 클릭→일별 전환: selectedDate를 ${newDate}로 설정 (월 변경됨)`);
+                        setSelectedDate(newDate);
+                      }
+                    }
+                    setViewMode('daily');
+                  }
+                }}
+              >
+                <DateNavigator 
+                  selectedDate={selectedDate}
+                  onDateChange={(date) => {
+                    // 🎯 UX 개선: 날짜 변경 시 일별 모드로 자동 전환
+                    if (viewMode !== 'daily') {
+                      setViewMode('daily');
+                    }
+                    setSelectedDate(date);
+                    if (typeof window !== 'undefined') {
+                      try {
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('date', date);
+                        const url = `${window.location.pathname}?${params.toString()}`;
+                        window.history.replaceState({}, '', url);
+                      } catch (err) {
+                        console.error('URL 날짜 파라미터 업데이트 오류:', err);
+                      }
+                    }
+                  }}
+                  theme={activeTab === 'menu' ? 'red' : 'blue'}
+                  size="sm"
+                />
+              </div>
+            </div>
+
+            {/* 월별 집계 섹션 */}
+            <div className={`flex-1 transition-all duration-300 ${
+              viewMode === 'monthly' ? 'opacity-100' : 'opacity-60'
+            }`}>
+              <button
+                onClick={() => {
+                  // 월별 뷰 모드로 전환
+                  if (viewMode !== 'monthly') {
+                    // 일별에서 월별로 전환 시 해당 날짜의 연월을 selectedMonth로 설정
+                    if (viewMode === 'daily') {
+                      // 현재 선택된 날짜를 기억해두기
+                      setLastSelectedDate(selectedDate);
+                      
+                      const month = selectedDate.substring(0, 7);
+                      console.log(`🔄 월별 버튼→월별 전환: selectedMonth를 ${month}로 설정, 이전 날짜 ${selectedDate} 저장`);
+                      setSelectedMonth(month);
+                    }
+                    setViewMode('monthly');
+                  }
+                }}
+                className={`text-sm font-medium mb-2 block transition-colors duration-200 ${
+                  viewMode === 'monthly' 
+                    ? (activeTab === 'menu' ? 'text-red-600' : 'text-blue-600')
+                    : (activeTab === 'menu' ? 'text-gray-500 hover:text-red-500' : 'text-gray-500 hover:text-blue-500')
+                }`}
+              >
+                월별 집계
+              </button>
+              <div className={`flex items-center gap-1 w-fit transition-all duration-300 cursor-pointer ${
+                viewMode === 'monthly' ? 'transform-none' : 'transform scale-95'
+              }`}>
+                <button
+                  onClick={() => {
+                    // 🎯 UX 개선: 월별 선택기 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      setViewMode('monthly');
+                    }
+                    const current = new Date(selectedMonth + '-01');
+                    current.setMonth(current.getMonth() - 1);
+                    setSelectedMonth(current.toISOString().slice(0, 7));
+                  }}
+                  className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                    viewMode === 'monthly'
+                      ? (activeTab === 'menu' 
+                           ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                           : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600')
+                      : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <div 
+                  className={`rounded-lg px-2 py-1.5 min-w-20 text-center border transition-all duration-200 text-xs cursor-pointer hover:opacity-80 ${
+                    viewMode === 'monthly'
+                      ? (activeTab === 'menu' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200')
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                  onClick={() => {
+                    // 🎯 UX 개선: 월별 날짜 표시 영역 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      if (viewMode === 'daily') {
+                        // 일별에서 월별로 전환 시 selectedMonth를 해당 월로 설정
+                        const newMonth = selectedDate.substring(0, 7);
+                        console.log(`🔄 월별 표시 클릭→월별 전환: selectedMonth를 ${newMonth}로 설정`);
+                        setSelectedMonth(newMonth);
+                      }
+                      setViewMode('monthly');
+                    }
+                  }}
+                >
+                  <span className={`font-medium transition-colors duration-200 ${
+                    viewMode === 'monthly' 
+                      ? (activeTab === 'menu' ? 'text-red-700' : 'text-blue-700') 
+                      : 'text-gray-500'
+                  }`}>
+                    {new Date(selectedMonth + '-01').toLocaleDateString('ko-KR', { 
+                      year: '2-digit', 
+                      month: 'short' 
+                    })}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    // 🎯 UX 개선: 월별 선택기 클릭 시 월별 모드로 자동 전환
+                    if (viewMode !== 'monthly') {
+                      setViewMode('monthly');
+                    }
+                    const current = new Date(selectedMonth + '-01');
+                    current.setMonth(current.getMonth() + 1);
+                    setSelectedMonth(current.toISOString().slice(0, 7));
+                  }}
+                  className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                    viewMode === 'monthly'
+                      ? (activeTab === 'menu' 
+                           ? 'bg-red-50 hover:bg-red-100 border-red-200 text-red-600'
+                           : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600')
+                      : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 탭별 콘텐츠 영역 */}
+        <div className={`min-h-96 rounded-lg p-6 transition-colors duration-300 ${
+          activeTab === 'menu' ? 'bg-red-50' : 'bg-blue-50'
+        }`}>
+          {activeTab === 'menu' ? (
+            <div>
+              {/* 지역 및 학교 유형 선택 */}
+              <div className="bg-white rounded-lg p-4 mb-6 border border-red-200">
+                {/* 지역 선택 버튼 - 왼쪽 정렬 */}
+                <div className="text-left mb-4 ml-3">
+                  <div className="flex gap-2">
+                    {/* 우리학교 버튼 */}
+                    {userSchool?.school_code && (
+                      <button
+                        onClick={() => setSelectedRegion('우리학교')}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === '우리학교'
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        우리학교
+                      </button>
+                    )}
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
+                      <button
+                        onClick={() => setSelectedRegion(userSchool.region)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === userSchool.region
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {userSchool.region}
+                      </button>
+                    )}
+                    {/* 전국 버튼 */}
+                    <button
+                      onClick={() => {
+                        console.log('🔘 전국 버튼 클릭됨!');
+                        setSelectedRegion('전국');
+                        // 전국 선택 시에도 현재 학교의 학교급에 맞춰 자동 설정
+                        const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                        console.log('   currentSchool:', currentSchool);
+                        const schoolType = currentSchool?.school_type || currentSchool?.school_name || '';
+                        console.log('🔍 전국 버튼 - school_type:', currentSchool?.school_type, 'school_name:', currentSchool?.school_name);
+                        console.log('🔍 추출된 schoolType:', schoolType);
+                        if (schoolType.includes('초등')) {
+                          console.log('✅ 초등학교 설정');
+                          setSelectedSchoolType('초등학교');
+                        } else if (schoolType.includes('중')) {
+                          console.log('✅ 중학교 설정');
+                          setSelectedSchoolType('중학교');
+                        } else if (schoolType.includes('고등')) {
+                          console.log('✅ 고등학교 설정');
+                          setSelectedSchoolType('고등학교');
+                        } else {
+                          console.log('❌ 학교급 추출 실패 - schoolType:', schoolType);
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedRegion === '전국'
+                          ? 'bg-red-500 text-white shadow-sm'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                      }`}
+                    >
+                      전국
+                    </button>
+                  </div>
+                </div>
+
+                {/* 학교 유형 선택 - 한 줄 배치 */}
+                <div className="flex gap-2 justify-center">
+                  {['초등학교', '중학교', '고등학교'].map((type) => {
+                    const isOurSchoolSelected = selectedRegion === '우리학교';
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          console.log('🔘 학교급 버튼 클릭:', type);
+                          console.log('   - isOurSchoolSelected:', isOurSchoolSelected);
+                          console.log('   - selectedRegion:', selectedRegion);
+                          console.log('   - 현재 selectedSchoolType:', selectedSchoolType);
+                          if (!isOurSchoolSelected) {
+                            setSelectedSchoolType(type);
+                            console.log('   ✅ 설정됨:', type);
+                          } else {
+                            console.log('   ❌ 우리학교 모드라 차단됨');
+                          }
+                        }}
+                        disabled={isOurSchoolSelected}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isOurSchoolSelected
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 일간 베스트 메뉴 도표 */}
+              <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
+                {/* 도표 제목 */}
+                <div className="bg-red-500 text-white px-4 py-3">
+                  <div className="flex items-center justify-center gap-3">
+                    <h3 className="font-bold">
+                      {viewMode === 'daily' ? '일간' : '월간'} 베스트 메뉴
+                    </h3>
+                    {/* 순위 정렬 버튼 - 개선된 디자인 */}
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="flex flex-col items-center justify-center w-8 h-8 hover:bg-red-400 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경 (높은 순위부터)' : '오름차순으로 변경 (낮은 순위부터)'}
+                    >
+                      {/* 위쪽 화살표 (오름차순) */}
+                      <svg 
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          sortOrder === 'asc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-red-100'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                      {/* 아래쪽 화살표 (내림차순) */}
+                      <svg 
+                        className={`w-5 h-5 -mt-2 transition-all duration-200 ${
+                          sortOrder === 'desc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-red-100'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 테이블 헤더 */}
+                <div className="bg-red-50 border-b border-red-200">
+                  <div className={`grid gap-4 px-4 py-3 text-sm font-medium text-red-700 ${
+                    viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
+                  }`}>
+                    <div className="text-center">순위</div>
+                    <div className="text-center">학교명</div>
+                    {viewMode === 'monthly' && <div className="text-center">급식날짜</div>}
+                    <div className="text-center">메뉴명</div>
+                    <div className="text-center">점수</div>
+                    <div className="text-center">평가수</div>
+                  </div>
+                </div>
+                
+                {/* 테이블 내용 - 실제 데이터 */}
+                <div className={`divide-y divide-red-100 ${viewMode === 'monthly' ? 'max-h-96 overflow-y-auto' : ''}`}>
+                  {userLoading ? (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        <p className="text-gray-600">사용자 정보를 불러오는 중...</p>
+                      </div>
+                    </div>
+                  ) : battleLoading ? (
+                    <div className="p-8 text-center text-red-400">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-4"></div>
+                      <p>데이터를 불러오는 중...</p>
+                    </div>
+                  ) : battleError ? (
+                    <div className="p-8 text-center text-red-500">
+                      <p className="mb-2">오류가 발생했습니다</p>
+                      <p className="text-sm text-red-400">{battleError}</p>
+                      <button 
+                        onClick={loadBattleData}
+                        className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        다시 시도
+                      </button>
+                    </div>
+                  ) : battleData.length === 0 ? (
+                    <div className="p-8 text-center text-red-400">
+                      <p>해당 {viewMode === 'daily' ? '날짜' : '월'}에 배틀 데이터가 없습니다.</p>
+                      <p className="text-sm mt-2">메뉴에 별점을 매겨주세요!</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      // 동률 처리를 위한 순위 계산
+                      const sortedData = sortOrder === 'asc' ? battleData : [...battleData].reverse();
+                      const dataWithRank = [];
+                      let currentRank = 1;
+                      
+                      for (let i = 0; i < sortedData.length; i++) {
+                        const item = sortedData[i];
+                        
+                        if (i > 0) {
+                          const prevItem = sortedData[i - 1];
+                          // 평점이 다르면 순위 업데이트 (현재 인덱스 + 1)
+                          if (item.final_avg_rating !== prevItem.final_avg_rating) {
+                            currentRank = i + 1;
+                          }
+                          // 평점이 같으면 currentRank 유지 (동률)
+                        }
+                        
+                        dataWithRank.push({
+                          ...item,
+                          displayRank: currentRank
+                        });
+                      }
+                      
+                      return dataWithRank;
+                    })()
+                      .map((item, index) => (
+                      <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
+                        viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
+                      }`}>
+                        <div className="text-center font-medium text-red-600">
+                          {item.displayRank}
+                        </div>
+                        <div className="text-center text-gray-700 text-sm font-medium">
+                          {item.school_name || '-'}
+                        </div>
+                        {viewMode === 'monthly' && (
+                          <div className="text-center text-gray-600 text-sm">
+                            {item.meal_date ? new Date(item.meal_date).toLocaleDateString('ko-KR', {
+                              month: 'short',
+                              day: 'numeric'
+                            }) : '-'}
+                          </div>
+                        )}
+                        <div className="text-center font-medium text-gray-800">
+                          {item.item_name}
+                        </div>
+                        <div className="text-center text-red-600 font-bold">
+                          {item.final_avg_rating?.toFixed(1) || '0.0'}
+                        </div>
+                        <div className="text-center text-gray-600">
+                          {item.final_rating_count || 0}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* 지역 및 학교 유형 선택 */}
+              <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
+                {/* 지역 선택 버튼 - 왼쪽 정렬 */}
+                <div className="text-left mb-4 ml-3">
+                  <div className="flex gap-2">
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
+                      <button
+                        onClick={() => setSelectedRegion(userSchool.region)}
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedRegion === userSchool.region
+                            ? 'bg-blue-500 text-white shadow-sm'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                        }`}
+                      >
+                        {userSchool.region}
+                      </button>
+                    )}
+                    {/* 전국 버튼 */}
+                    <button
+                      onClick={() => setSelectedRegion('전국')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedRegion === '전국'
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      전국
+                    </button>
+                  </div>
+                </div>
+
+                {/* 학교 유형 선택 - 한 줄 배치 */}
+                <div className="flex gap-2 justify-center">
+                  {['초등학교', '중학교', '고등학교'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedSchoolType(type)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                          ? 'bg-blue-500 text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 우리동네 급식배틀 테이블 */}
+              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                {/* 테이블 제목 */}
+                <div className="bg-blue-500 text-white px-4 py-3">
+                  <div className="flex items-center justify-center gap-3">
+                    <h3 className="font-bold">
+                      우리동네 급식배틀
+                    </h3>
+                    {/* 순위 정렬 버튼 - 개선된 디자인 */}
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="flex flex-col items-center justify-center w-8 h-8 hover:bg-blue-400 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                      title={sortOrder === 'asc' ? '내림차순으로 변경 (높은 순위부터)' : '오름차순으로 변경 (낮은 순위부터)'}
+                    >
+                      {/* 위쪽 화살표 (오름차순) */}
+                      <svg 
+                        className={`w-5 h-5 transition-all duration-200 ${
+                          sortOrder === 'asc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-blue-100'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                      {/* 아래쪽 화살표 (내림차순) */}
+                      <svg 
+                        className={`w-5 h-5 -mt-2 transition-all duration-200 ${
+                          sortOrder === 'desc' 
+                            ? 'opacity-100 text-white drop-shadow-sm transform scale-110' 
+                            : 'opacity-50 text-blue-100'
+                        }`} 
+                        fill="currentColor" 
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 테이블 헤더 */}
+                <div className="bg-blue-50 border-b border-blue-200">
+                  <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm font-medium text-blue-700">
+                    <div className="text-center">순위</div>
+                    <div className="text-center">학교명</div>
+                    <div className="text-center">점수</div>
+                    <div className="text-center">평가수</div>
+                  </div>
+                </div>
+                
+                {/* 테이블 내용 - 데이터 표시 */}
+                {battleLoading ? (
+                  <div className="p-8 text-center text-blue-400">
+                    <div className="animate-pulse flex justify-center mb-4">
+                      <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent border-opacity-50 animate-spin"></div>
+                    </div>
+                    <p>데이터를 불러오는 중...</p>
+                  </div>
+                ) : battleError ? (
+                  <div className="p-8 text-center text-red-400">
+                    <p>오류가 발생했습니다</p>
+                    <p className="text-sm mt-1">{battleError}</p>
+                  </div>
+                ) : battleData.length === 0 ? (
+                  <div className="p-8 text-center text-blue-400">
+                    <p>표시할 배틀 데이터가 없습니다</p>
+                    <p className="text-sm mt-2">다른 날짜나 학교 유형을 선택해보세요</p>
+                  </div>
+                ) : (
+                  <div>
+                    {/* 정렬된 배틀 데이터 표시 - API에서 이미 schoolType으로 필터링됨 */}
+                    {battleData
+                      .sort((a, b) => {
+                        // 정렬 로직 (asc는 1위부터, desc는 마지막부터)
+                        // 지역/전국 모드에 따른 순위 필드 선택
+                        let rankField;
+                        if (selectedRegion === '전국') {
+                          rankField = viewMode === 'daily' ? 'national_rank' : 'monthly_rank';
+                        } else if (selectedRegion === '우리학교') {
+                          rankField = viewMode === 'daily' ? 'daily_rank' : 'monthly_rank';
+                        } else {
+                          // 지역 모드
+                          rankField = 'region_rank';
+                        }
+                        
+                        // 디버깅 로그 추가
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('🔍 정렬 디버깅:', {
+                            selectedRegion,
+                            rankField,
+                            itemA: { school_name: a.school_name, [rankField]: a[rankField] },
+                            itemB: { school_name: b.school_name, [rankField]: b[rankField] }
+                          });
+                        }
+                        
+                        // null/undefined 값 처리 - region_rank가 null인 경우 평점으로 정렬
+                        if (rankField === 'region_rank' && (!a[rankField] || !b[rankField])) {
+                          // region_rank가 null인 경우 평점으로 대체 정렬
+                          const aRating = a.final_avg_rating || 0;
+                          const bRating = b.final_avg_rating || 0;
+                          return sortOrder === 'asc' ? 
+                            aRating - bRating : 
+                            bRating - aRating;
+                        }
+                        
+                        const aRank = a[rankField] || 999999;
+                        const bRank = b[rankField] || 999999;
+                        
+                        return sortOrder === 'asc' ? 
+                          aRank - bRank : 
+                          bRank - aRank;
+                      })
+                      .map((item, index, sortedArray) => {
+                        // 동률 처리를 위한 순위 계산
+                        let displayRank = 1;
+                        
+                        // 점수와 평가 수 필드 결정
+                        let ratingField = 'avg_rating';
+                        let countField = 'rating_count';
+                        
+                        if (activeTab === 'meal') {
+                          if (viewMode === 'monthly') {
+                            ratingField = 'final_avg_rating';
+                            countField = 'final_rating_count';
+                          } else {
+                            // 일별 급식배틀도 동일한 필드명 사용
+                            ratingField = 'avg_rating';
+                            countField = 'rating_count';
+                          }
+                        }
+                        
+                        // 동률 순위 계산
+                        if (index > 0) {
+                          let currentRank = 1;
+                          for (let i = 0; i < sortedArray.length; i++) {
+                            if (i > 0) {
+                              const prevItem = sortedArray[i - 1];
+                              const currentItem = sortedArray[i];
+                              // 평점이 다르면 순위 업데이트 (현재 인덱스 + 1)
+                              if (currentItem[ratingField] !== prevItem[ratingField]) {
+                                currentRank = i + 1;
+                              }
+                            }
+                            if (i === index) {
+                              displayRank = currentRank;
+                              break;
+                            }
+                          }
+                        }
+                          
+                        return (
+                          <div 
+                            key={`${item.school_code}-${index}`}
+                            className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/30'}`}
+                          >
+                            <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm">
+                              <div className="text-center">
+                                <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${displayRank <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                                  {displayRank}
+                                </span>
+                              </div>
+                              <div className="text-center font-medium text-gray-800">
+                                {item.school_name || '-'}
+                              </div>
+                              <div className="text-center font-medium text-blue-700">
+                                {item[ratingField] ? item[ratingField].toFixed(1) : '-'}
+                              </div>
+                              <div className="text-center text-gray-500">
+                                {item[countField] || '0'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* AI 분석 및 공유 버튼 */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-8">
+            {/* AI 분석 버튼 */}
+            <button
+              onClick={() => setIsAIAnalysisOpen(true)}
+              className="flex-1 p-0 relative overflow-hidden hover:opacity-90 h-[60px]"
+            >
+              <svg width="100%" height="60" viewBox="0 0 400 60" role="img" aria-label="AI 분석 버튼">
+                <defs>
+                  <linearGradient id="battleAiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#6A00FF"/>
+                    <stop offset="50%" stopColor="#3F55FF"/>
+                    <stop offset="100%" stopColor="#00D1FF"/>
+                  </linearGradient>
+                  <filter id="battleAiShadow" x="-20%" y="-20%" width="140%" height="160%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0A1B2B" floodOpacity="0.18"/>
+                  </filter>
+                </defs>
+                
+                {/* Button shape */}
+                <rect x="3" y="3" rx="12" ry="12" width="394" height="54" fill="url(#battleAiGrad)" filter="url(#battleAiShadow)"/>
+                
+                {/* Robot icon */}
+                <g id="robot" transform="translate(35,30) scale(0.3)">
+                  {/* Antenna */}
+                  <circle cx="-10" cy="-58" r="8" fill="#1EE6D6"/>
+                  <rect x="-12" y="-48" rx="4" ry="4" width="4" height="16" fill="#1EE6D6"/>
+                  
+                  {/* Head outer */}
+                  <rect x="-80" y="-40" width="140" height="100" rx="28" ry="28" fill="#1EE6D6"/>
+                  
+                  {/* Side ears */}
+                  <rect x="-98" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                  <rect x="60" y="-8" width="18" height="36" rx="9" ry="9" fill="#1EE6D6"/>
+                  
+                  {/* Face window */}
+                  <rect x="-60" y="-20" width="100" height="60" rx="18" ry="18" fill="#0A1B2B"/>
+                  
+                  {/* Eyes */}
+                  <circle cx="-32" cy="4" r="7" fill="#1EE6D6"/>
+                  <circle cx="8" cy="4" r="7" fill="#1EE6D6"/>
+                  
+                  {/* Smile */}
+                  <path d="M -36 20 Q -26 32 -16 20" fill="none" stroke="#1EE6D6" strokeWidth="4" strokeLinecap="round"/>
+                  
+                  {/* Neck */}
+                  <rect x="-40" y="60" width="60" height="10" rx="5" ry="5" fill="#11BDB0"/>
+                  
+                  {/* Base */}
+                  <path d="M -70 70 h 120 a 20 20 0 0 1 0 40 h -120 a 20 20 0 0 1 0 -40 z" fill="#1EE6D6"/>
+                </g>
+                
+                {/* Text - centered */}
+                <text x="200" y="28" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="700" fontSize="16" fill="#FFFFFF" textAnchor="middle">AI 분석</text>
+                <text x="200" y="44" fontFamily="Pretendard, 'Noto Sans KR', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif"
+                  fontWeight="400" fontSize="12" fill="#FFFFFF" opacity="0.9" textAnchor="middle">
+                  {viewMode === 'daily' 
+                    ? `${new Date(selectedDate).getFullYear()}년 ${new Date(selectedDate).getMonth() + 1}월`
+                    : `${new Date(selectedMonth).getFullYear()}년 ${new Date(selectedMonth).getMonth() + 1}월`
+                  } 리포트
+                </text>
+              </svg>
+            </button>
+            
+            {/* 공유 버튼 */}
+            <ShareButton
+              mealDate={viewMode === 'daily' ? selectedDate : selectedMonth}
+              schoolName={schoolMode.selectedSchool?.school_name || userSchool?.school_name || '학교정보 없음'}
+              schoolCode={schoolMode.selectedSchool?.school_code || userSchool?.school_code}
+              isBattlePage={true}
+              activeTab={activeTab}
+              className="flex-1"
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* 학교검색 모달 */}
+      <SchoolSearchModal 
+        isOpen={isSchoolSearchOpen}
+        onClose={() => setIsSchoolSearchOpen(false)}
+        onSelectSchool={addInterestSchool}
+      />
+      
+      {/* AI 분석 모달 */}
+      <AIAnalysisModal
+        isOpen={isAIAnalysisOpen}
+        onClose={() => setIsAIAnalysisOpen(false)}
+        onSelectApp={handleAIAppSelection}
+        schoolName={(schoolMode.selectedInterestSchool || userSchool)?.school_name || ''}
+        schoolCode={(schoolMode.selectedInterestSchool || userSchool)?.school_code || ''}
+        monthYear={viewMode === 'daily' ? selectedDate.substring(0, 7) : selectedMonth}
+        isViewingMode={!!schoolMode.selectedInterestSchool}
+        prompt=""
+        year={viewMode === 'daily' ? new Date(selectedDate).getFullYear() : new Date(selectedMonth).getFullYear()}
+        month={viewMode === 'daily' ? new Date(selectedDate).getMonth() + 1 : new Date(selectedMonth).getMonth() + 1}
+      />
+
+      </div>
+    </div>
+  );
+}
+
+
