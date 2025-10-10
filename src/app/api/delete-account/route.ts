@@ -90,9 +90,8 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin.from('interest_schools').delete().eq('user_id', user_id)
     console.log('관심학교 완전 삭제 완료')
     
-    // school_infos는 학교 정보이므로 개인정보가 아님 - 유지
-    // 배틀 기능과의 외래키 관계 유지를 위해 삭제하지 않음
-    console.log('학교정보는 개인정보가 아니므로 유지')
+    await supabaseAdmin.from('school_infos').delete().eq('user_id', user_id)
+    console.log('학교 정보 완전 삭제 완료')
     
     // === 통계 데이터 익명화 처리 ===
     console.log('통계 데이터 익명화 시작...')

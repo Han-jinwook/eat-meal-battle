@@ -22,7 +22,8 @@ export interface InterestSchoolInfo {
   id: string;
   school_name: string;
   school_code: string;
-  office_code?: string; // 교육청 코드만 추가
+  office_code?: string;
+  region?: string; // 지역 정보 추가
   created_at: string;
 }
 
@@ -105,6 +106,7 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
             school_name: school.school_name,
             school_code: school.school_code,
             office_code: school.office_code,
+            region: school.region,
             created_at: school.created_at
           });
         }

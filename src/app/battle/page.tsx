@@ -27,6 +27,16 @@ const getSchoolCharacterImage = (schoolType: string): string => {
   return '/images/characters/elementary.png';
 };
 
+
+// 학교명 약식 변환 함수 (예: 가림고등학교 -> 가림고)
+const getShortSchoolName = (schoolName: string): string => {
+  if (!schoolName) return '';
+  return schoolName
+    .replace(/고등학교$/, '고')
+    .replace(/중학교$/, '중')
+    .replace(/초등학교$/, '초');
+};
+
 export default function BattlePage() {
   const supabase = createClient();
   const router = useRouter();
@@ -162,25 +172,12 @@ export default function BattlePage() {
     // 사용자가 있으면 배틀 페이지 접근 허용
   }, [user, userLoading, userError, router]);
 
-  // 사용자 학교 정보가 로드되면 기본값을 '우리학교'로 설정
+  // 사용자 학교 또는 관심학교 정보가 로드되면 기본값을 '우리학교'로 설정
   useEffect(() => {
     if (userSchool?.school_code && !selectedRegion) {
       setSelectedRegion('우리학교');
     }
   }, [userSchool, selectedRegion]);
-
-  // 관심학교가 선택되었을 때 해당 학교의 지역 정보 자동 설정
-  useEffect(() => {
-    if (schoolMode.selectedInterestSchool && !selectedInterestSchoolRegion) {
-      // 관심학교 데이터에서 지역 정보 찾기
-      const interestSchool = interestSchools.find(
-        school => school.school_code === schoolMode.selectedInterestSchool?.school_code
-      );
-      if (interestSchool) {
-        setInterestSchoolRegion(interestSchool);
-      }
-    }
-  }, [schoolMode.selectedInterestSchool, selectedInterestSchoolRegion, interestSchools]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -223,7 +220,7 @@ export default function BattlePage() {
       
       const { data, error } = await supabase
         .from('interest_schools')
-        .select('*, region')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
@@ -232,7 +229,12 @@ export default function BattlePage() {
         return;
       }
       
-      console.log('관심학교 데이터 조회 성공:', data);
+      console.log('관심학교 데이터 조회 성공 (school_type 포함):', data);
+      // school_type 필드 확인
+      if (data && data.length > 0) {
+        console.log('🔍 첫 번째 관심학교 school_type:', data[0].school_type);
+        console.log('🔍 첫 번째 관심학교 school_name:', data[0].school_name);
+      }
       setInterestSchools(data || []);
       
     } catch (error) {
@@ -261,6 +263,8 @@ export default function BattlePage() {
     if (interestSchools.length >= 10) {
       alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;
+    } else if (interestSchools.length >= 5 && !user?.db_profile?.is_student) {
+      alert('비학생 사용자는 최대 5개의 관심학교만 등록할 수 있습니다.');
     }
 
     // 중복 등록 확인
@@ -276,14 +280,23 @@ export default function BattlePage() {
     try {
       console.log('관심학교 등록 시작:', schoolData);
       
+      // school_type 추출 (학교명에서)
+      let schoolType = '';
+      if (schoolData.SCHUL_NM.includes('초등')) {
+        schoolType = '초등학교';
+      } else if (schoolData.SCHUL_NM.includes('중')) {
+        schoolType = '중학교';
+      } else if (schoolData.SCHUL_NM.includes('고등')) {
+        schoolType = '고등학교';
+      }
+
       const { data, error } = await supabase
         .from('interest_schools')
         .insert({
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
-          office_code: schoolData.ATPT_OFCDC_SC_CODE,
-          region: schoolData.LCTN_SC_NM // 지역 정보 추가
+          office_code: schoolData.ATPT_OFCDC_SC_CODE
         })
         .select();
       
@@ -880,6 +893,7 @@ export default function BattlePage() {
                       onClick={() => {
                         // 내 학교로 돌아가기
                         schoolMode.returnToMySchool();
+                        setSelectedRegion('우리학교');
                         setIsDropdownOpen(false);
                       }}
                     >
@@ -924,12 +938,9 @@ export default function BattlePage() {
                                   school_name: school.school_name,
                                   school_code: school.school_code,
                                   office_code: school.office_code,
+                                  region: school.region,
                                   created_at: school.created_at
                                 });
-                                
-                                // 해당 학교의 지역 정보 설정
-                                setInterestSchoolRegion(school);
-                                
                                 setIsDropdownOpen(false);
                               }}
                             >
@@ -1237,8 +1248,8 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
-                    {/* 우리학교 버튼 - 관심모드에서도 표시 */}
-                    {(userSchool?.school_code || schoolMode.selectedInterestSchool) && (
+                    {/* 우리학교 버튼 */}
+                    {userSchool?.school_code && (
                       <button
                         onClick={() => setSelectedRegion('우리학교')}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -1250,33 +1261,43 @@ export default function BattlePage() {
                         우리학교
                       </button>
                     )}
-                    {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
-                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
                       <button
-                        onClick={() => {
-                          const regionToSet = schoolMode.selectedInterestSchool 
-                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                            : userSchool?.region;
-                          if (regionToSet) {
-                            setSelectedRegion(regionToSet);
-                          }
-                        }}
+                        onClick={() => setSelectedRegion(userSchool.region)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === (schoolMode.selectedInterestSchool 
-                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                            : userSchool?.region)
+                          selectedRegion === userSchool.region
                             ? 'bg-red-500 text-white shadow-sm'
                             : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                         }`}
                       >
-                        {schoolMode.selectedInterestSchool 
-                          ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || '지역'
-                          : userSchool?.region || '지역'}
+                        {userSchool.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
                     <button
-                      onClick={() => setSelectedRegion('전국')}
+                      onClick={() => {
+                        console.log('🔘 전국 버튼 클릭됨!');
+                        setSelectedRegion('전국');
+                        // 전국 선택 시에도 현재 학교의 학교급에 맞춰 자동 설정
+                        const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+                        console.log('   currentSchool:', currentSchool);
+                        const schoolType = currentSchool?.school_type || currentSchool?.school_name || '';
+                        console.log('🔍 전국 버튼 - school_type:', currentSchool?.school_type, 'school_name:', currentSchool?.school_name);
+                        console.log('🔍 추출된 schoolType:', schoolType);
+                        if (schoolType.includes('초등')) {
+                          console.log('✅ 초등학교 설정');
+                          setSelectedSchoolType('초등학교');
+                        } else if (schoolType.includes('중')) {
+                          console.log('✅ 중학교 설정');
+                          setSelectedSchoolType('중학교');
+                        } else if (schoolType.includes('고등')) {
+                          console.log('✅ 고등학교 설정');
+                          setSelectedSchoolType('고등학교');
+                        } else {
+                          console.log('❌ 학교급 추출 실패 - schoolType:', schoolType);
+                        }
+                      }}
                       className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                         selectedRegion === '전국'
                           ? 'bg-red-500 text-white shadow-sm'
@@ -1290,19 +1311,36 @@ export default function BattlePage() {
 
                 {/* 학교 유형 선택 - 한 줄 배치 */}
                 <div className="flex gap-2 justify-center">
-                  {['초등학교', '중학교', '고등학교'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setSelectedSchoolType(type)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
-                          ? 'bg-red-500 text-white shadow-sm'
-                          : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
+                  {['초등학교', '중학교', '고등학교'].map((type) => {
+                    const isOurSchoolSelected = selectedRegion === '우리학교';
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          console.log('🔘 학교급 버튼 클릭:', type);
+                          console.log('   - isOurSchoolSelected:', isOurSchoolSelected);
+                          console.log('   - selectedRegion:', selectedRegion);
+                          console.log('   - 현재 selectedSchoolType:', selectedSchoolType);
+                          if (!isOurSchoolSelected) {
+                            setSelectedSchoolType(type);
+                            console.log('   ✅ 설정됨:', type);
+                          } else {
+                            console.log('   ❌ 우리학교 모드라 차단됨');
+                          }
+                        }}
+                        disabled={isOurSchoolSelected}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          isOurSchoolSelected
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1463,28 +1501,17 @@ export default function BattlePage() {
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
-                    {/* 사용자 지역 버튼 - 관심모드에서는 관심학교 지역 표시 */}
-                    {(userSchool?.region || schoolMode.selectedInterestSchool) && (
+                    {/* 사용자 지역 버튼 */}
+                    {userSchool?.region && (
                       <button
-                        onClick={() => {
-                          const regionToSet = schoolMode.selectedInterestSchool 
-                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                            : userSchool?.region;
-                          if (regionToSet) {
-                            setSelectedRegion(regionToSet);
-                          }
-                        }}
+                        onClick={() => setSelectedRegion(userSchool.region)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === (schoolMode.selectedInterestSchool 
-                            ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region
-                            : userSchool?.region)
+                          selectedRegion === userSchool.region
                             ? 'bg-blue-500 text-white shadow-sm'
                             : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
                         }`}
                       >
-                        {schoolMode.selectedInterestSchool 
-                          ? interestSchools.find(school => school.school_code === schoolMode.selectedInterestSchool?.school_code)?.region || '지역'
-                          : userSchool?.region || '지역'}
+                        {userSchool.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
@@ -1808,3 +1835,5 @@ export default function BattlePage() {
     </div>
   );
 }
+
+
