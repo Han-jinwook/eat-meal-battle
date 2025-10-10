@@ -7,10 +7,15 @@ type Props = {
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  console.log('🎯 배틀 페이지 generateMetadata 실행! searchParams:', searchParams);
+  
   const schoolCode = searchParams.school_code;
   const date = searchParams.date || new Date().toISOString().split('T')[0];
   
+  console.log('📊 파라미터:', { schoolCode, date });
+  
   if (!schoolCode) {
+    console.log('❌ school_code 없음, 기본 메타데이터 반환');
     return {
       title: '🍽️ 급식 메뉴배틀 🥇',
       description: '우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?',
@@ -34,6 +39,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     const schoolName = schoolData?.school_name || '학교';
     const shareUrl = `https://lunbat.com/battle?date=${date}&school_code=${schoolCode}`;
     
+    console.log('✅ 학교 조회 성공:', { schoolName, shareUrl });
+    
     return {
       title: `🍽️ ${schoolName} ${date} 메뉴배틀 결과! 🥇`,
       description: `우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?`,
@@ -51,7 +58,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       },
     };
   } catch (error) {
-    console.error('메타데이터 생성 오류:', error);
+    console.error('❌ 메타데이터 생성 오류:', error);
+    console.error('❌ 에러 상세:', error instanceof Error ? error.message : String(error));
     return {
       title: '🍽️ 급식 메뉴배틀 🥇',
       description: '우리학교 인기 메뉴 순위를 확인해보세요!',
