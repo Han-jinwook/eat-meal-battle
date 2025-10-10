@@ -303,13 +303,9 @@ async function updateTwoWeeks(supabase, school, year, month, currentWeekNumber) 
     console.log(`[${school.school_code}] ${week}주차: ${weekMealDays.length}일`)
   }
   
-  // month_total 재계산 (전체 주차 합산)
-  const monthTotal = 
-    (updatedWeeklyDays.week_1_days !== undefined ? updatedWeeklyDays.week_1_days : existingCriteria.week_1_days || 0) +
-    (updatedWeeklyDays.week_2_days !== undefined ? updatedWeeklyDays.week_2_days : existingCriteria.week_2_days || 0) +
-    (updatedWeeklyDays.week_3_days !== undefined ? updatedWeeklyDays.week_3_days : existingCriteria.week_3_days || 0) +
-    (updatedWeeklyDays.week_4_days !== undefined ? updatedWeeklyDays.week_4_days : existingCriteria.week_4_days || 0) +
-    (updatedWeeklyDays.week_5_days !== undefined ? updatedWeeklyDays.week_5_days : existingCriteria.week_5_days || 0)
+  // month_total 재계산 (해당 월 1일~말일만, 주차 합산 아님!)
+  const monthMealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, year, month)
+  const monthTotal = monthMealDays.length
   
   // 업데이트
   const updateData = {
@@ -362,13 +358,9 @@ async function updateNextMonthFirstWeek(supabase, school, year, month) {
     1
   )
   
-  // month_total 재계산
-  const monthTotal = 
-    week1MealDays.length +
-    (nextMonthCriteria.week_2_days || 0) +
-    (nextMonthCriteria.week_3_days || 0) +
-    (nextMonthCriteria.week_4_days || 0) +
-    (nextMonthCriteria.week_5_days || 0)
+  // month_total 재계산 (해당 월 1일~말일만)
+  const monthMealDays = await fetchMealDaysFromNEIS(school.school_code, school.office_code, year, month)
+  const monthTotal = monthMealDays.length
   
   // 업데이트
   const { error: updateError } = await supabase
