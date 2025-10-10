@@ -178,6 +178,13 @@ export default function BattlePage() {
       setSelectedRegion('우리학교');
     }
   }, [userSchool, selectedRegion]);
+
+  // 초기 로드 시 관심학교 데이터 가져오기
+  useEffect(() => {
+    if (user && !userLoading) {
+      fetchInterestSchools();
+    }
+  }, [user, userLoading]);
   
   // 배틀 데이터 상태
   const [battleData, setBattleData] = useState<any[]>([]);
@@ -210,9 +217,9 @@ export default function BattlePage() {
     }
   };
 
-  // 관심학교 데이터 조회 함수 (학생나이가 아닌 경우에만)
+  // 관심학교 데이터 조회 함수
   const fetchInterestSchools = async () => {
-    if (!user || user.db_profile?.is_student) return;
+    if (!user) return;
     
     try {
       setInterestSchoolsLoading(true);
