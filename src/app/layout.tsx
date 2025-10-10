@@ -35,13 +35,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "뭐먹지?",
-    title: "뭐먹지? - 학교 급식 평가 서비스",
-    description: "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 서비스",
+    title: "🍽️ 우리학교 급식 메뉴배틀! 🥇",
+    description: "우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?",
+    url: "https://lunbat.com",
   },
   twitter: {
-    card: "summary",
-    title: "뭐먹지?",
-    description: "학교 급식 평가 및 경쟁 서비스",
+    card: "summary_large_image",
+    title: "🍽️ 우리학교 급식 메뉴배틀! 🥇",
+    description: "우리학교 인기 메뉴 순위를 확인해보세요!",
   },
 };
 
