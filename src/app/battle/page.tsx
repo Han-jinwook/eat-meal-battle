@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import BattleClient from './BattleClient';
+import BattleWrapper from './client-wrapper';
 
 type Props = {
   searchParams: { school_code?: string; date?: string }
@@ -75,5 +75,5 @@ export const runtime = 'nodejs';
 
 export default function BattlePage() {
   console.log('🏁 BattlePage 컴포넌트 렌더링 시작!');
-  return <BattleClient />;
+  return <BattleWrapper />;
 }
