@@ -28,7 +28,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     
-    // 학교 정보 조회 (중복 학교 대비)
+    // 학교 정보 조회 (사용자별 테이블에서 DISTINCT 조회)
     const { data: schoolList } = await supabase
       .from('school_infos')
       .select('school_name')
