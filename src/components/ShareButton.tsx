@@ -59,6 +59,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       }
       const finalSchoolCode = schoolCode || schoolName.split(' ')[0];
       url.searchParams.set('school_code', finalSchoolCode);
+      url.searchParams.set('school_name', schoolName); // 학교명 직접 전달
       
       // 배틀 페이지는 URL 경로(/battle)로 자동 감지되므로 추가 파라미터 불필요
       

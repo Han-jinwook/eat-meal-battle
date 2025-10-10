@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import MealWrapper from './client-wrapper';
 
 type Props = {
-  searchParams: { school_code?: string; date?: string }
+  searchParams: { school_code?: string; date?: string; school_name?: string }
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
@@ -11,8 +11,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   
   const schoolCode = searchParams.school_code;
   const date = searchParams.date || new Date().toISOString().split('T')[0];
+  const schoolNameParam = searchParams.school_name; // URL 파라미터의 학교명
   
-  console.log('📊 파라미터:', { schoolCode, date });
+  console.log('📊 파라미터:', { schoolCode, date, schoolNameParam });
   
   if (!schoolCode) {
     console.log('❌ school_code 없음, 기본 메타데이터 반환');
@@ -23,20 +24,25 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    // URL 파라미터에 학교명이 있으면 우선 사용, 없으면 DB 조회
+    let schoolName = schoolNameParam;
     
-    // 학교 정보 조회 (사용자별 테이블에서 DISTINCT 조회)
-    const { data: schoolList } = await supabase
-      .from('school_infos')
-      .select('school_name')
-      .eq('school_code', schoolCode)
-      .limit(1);
-    
-    const schoolData = schoolList?.[0];
-    const schoolName = schoolData?.school_name || '학교';
+    if (!schoolName) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      // 학교 정보 조회 (사용자별 테이블에서 DISTINCT 조회)
+      const { data: schoolList } = await supabase
+        .from('school_infos')
+        .select('school_name')
+        .eq('school_code', schoolCode)
+        .limit(1);
+      
+      const schoolData = schoolList?.[0];
+      schoolName = schoolData?.school_name || '학교';
+    }
     const shareUrl = `https://lunbat.com/?date=${date}&school_code=${schoolCode}`;
     
     console.log('✅ 학교 조회 성공:', { schoolName, shareUrl });
