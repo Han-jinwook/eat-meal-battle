@@ -1,7 +1,7 @@
 'use client'
 
 // ProfileClient.tsx - 메인 프로필 페이지 컴포넌트
-// 강제 Git 변경을 위한 주석 추가 - 2025-09-16
+// 서버 컴포넌트 최적화 - 2025-10-13
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -9,19 +9,31 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import BirthConsentModal from '@/components/BirthConsentModal'
 
-export default function ProfileClient() {
-  const [user, setUser] = useState<any>(null)
-  const [userProfile, setUserProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+interface ProfileClientProps {
+  initialUser: any
+  initialUserProfile: any
+  initialSchoolInfo: any
+}
+
+export default function ProfileClient({ 
+  initialUser, 
+  initialUserProfile, 
+  initialSchoolInfo 
+}: ProfileClientProps) {
+  const [user, setUser] = useState<any>(initialUser)
+  const [userProfile, setUserProfile] = useState<any>(initialUserProfile)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deletingAccount, setDeletingAccount] = useState(false)
-  const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(null)
-  const [schoolInfo, setSchoolInfo] = useState<any>(null)
+  const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(
+    initialUserProfile ? 'success' : null
+  )
+  const [schoolInfo, setSchoolInfo] = useState<any>(initialSchoolInfo)
   const [isSharing, setIsSharing] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
   const [isEditingNickname, setIsEditingNickname] = useState(false)
-  const [newNickname, setNewNickname] = useState('')
+  const [newNickname, setNewNickname] = useState(initialUserProfile?.nickname || '')
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -80,67 +92,14 @@ export default function ProfileClient() {
     }
   };
 
+  // 서버에서 초기 데이터를 받았으므로 useEffect에서 데이터 로드 불필요!
+  // 필요한 경우에만 세션 유효성 확인
   useEffect(() => {
-    const supabase = createClient();
-    const getUser = async () => {
-      try {
-        setLoading(true)
-        
-        const userResponse = await supabase.auth.getUser();
-        if ('error' in userResponse && userResponse.error) {
-          console.error('사용자 인증 에러:', userResponse.error);
-          throw userResponse.error;
-        }
-        const user = userResponse.data.user;
-        
-        if (user) {
-          console.log('인증된 사용자 정보:', user)
-          setUser(user)
-          
-          setDbStatus('loading')
-          const [profileResult, schoolResult] = await Promise.allSettled([
-            supabase.from('users').select('*').eq('id', user.id).single(),
-            supabase.from('school_infos').select('*').eq('user_id', user.id).single()
-          ])
-          
-          if (profileResult.status === 'fulfilled') {
-            if (!profileResult.value.error) {
-              console.log('사용자 DB 프로필:', profileResult.value.data)
-              setUserProfile(profileResult.value.data)
-              setNewNickname(profileResult.value.data?.nickname || '')
-              setDbStatus('success')
-            } else {
-              console.error('사용자 프로필 조회 에러:', profileResult.value.error)
-              setDbStatus('error')
-              if (profileResult.value.error?.code !== 'PGRST116') {
-                setError(`DB 조회 에러: ${profileResult.value.error?.message}`)
-              }
-            }
-          } else {
-            console.error('프로필 Promise rejected:', profileResult.reason);
-            setDbStatus('error');
-            setError('프로필 정보를 가져오는 데 실패했습니다.');
-          }
-          
-          if (schoolResult.status === 'fulfilled' && !schoolResult.value.error) {
-            setSchoolInfo(schoolResult.value.data)
-          } else if (schoolResult.status === 'rejected') {
-            console.error('학교 정보 Promise rejected:', schoolResult.reason);
-          }
-
-        } else {
-          router.push('/login')
-        }
-      } catch (error: any) {
-        console.error('프로필 로딩 에러:', error)
-        setError(error.message || '사용자 정보를 불러오는 중 오류가 발생했습니다.')
-      } finally {
-        setLoading(false)
-      }
+    // 이미 데이터가 있으면 스킨
+    if (!initialUser) {
+      router.push('/login')
     }
-
-    getUser()
-  }, [router])
+  }, [initialUser, router])
 
   const handleShareApp = async () => {
     if (isSharing) return;
