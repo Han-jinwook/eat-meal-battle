@@ -356,14 +356,9 @@ export const signInWithRetry = async (provider: string, options: any = {}, maxRe
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
         options: {
-          // 세션 안정성 향상을 위해 옵션 추가
           redirectTo: options.redirectTo,
           queryParams: {
-            ...options.queryParams,
-            // 모든 경우에 항상 동의 화면 표시 요청
-            prompt: 'consent', 
-            // OAuth 토큰 갱신을 위한 오프라인 액세스
-            access_type: 'offline'
+            ...options.queryParams
           }
         }
       });
