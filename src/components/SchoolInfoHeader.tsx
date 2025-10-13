@@ -99,7 +99,11 @@ export default function SchoolInfoHeader({
         )}
         
         {/* 구독퀴즈 드롭다운 - 항상 표시 (로그인 사용자 ID 직접 가져오기) */}
-        <QuizDropdown onOpenAllQuizModal={onOpenAllQuizModal} />
+        <QuizDropdown 
+          onOpenAllQuizModal={onOpenAllQuizModal}
+          isViewingMode={isViewingMode}
+          userSchool={userSchool}
+        />
       </div>
     </div>
   );
