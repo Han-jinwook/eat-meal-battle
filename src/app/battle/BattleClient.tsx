@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import ShareButton from '@/components/ShareButton';
 import AIAnalysisModal from '@/components/AIAnalysisModal';
+import { extractBattleRegion } from '@/utils/addressParser';
 // battleCalculator 제거됨
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -267,23 +268,15 @@ export default function BattleClient() {
     }
 
     try {
-      // school_type 추출 (학교명에서)
-      let schoolType = '';
-      if (schoolData.SCHUL_NM.includes('초등')) {
-        schoolType = '초등학교';
-      } else if (schoolData.SCHUL_NM.includes('중')) {
-        schoolType = '중학교';
-      } else if (schoolData.SCHUL_NM.includes('고등')) {
-        schoolType = '고등학교';
-      }
-
       const { data, error } = await supabase
         .from('interest_schools')
         .insert({
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
-          office_code: schoolData.ATPT_OFCDC_SC_CODE
+          office_code: schoolData.ATPT_OFCDC_SC_CODE,
+          school_type: schoolData.SCHUL_KND_SC_NM,
+          region: extractBattleRegion(schoolData.ORG_RDNMA || schoolData.LCTN_SC_NM)
         })
         .select();
       
