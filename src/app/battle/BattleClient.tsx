@@ -1155,7 +1155,10 @@ export default function BattleClient() {
                             : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                         }`}
                       >
-                        {schoolMode.selectedInterestSchool?.school_name || userSchool?.school_name}
+                        {(schoolMode.selectedInterestSchool?.school_name || userSchool?.school_name || '')
+                          .replace('초등학교', '초')
+                          .replace('중학교', '중')
+                          .replace('고등학교', '고')}
                       </button>
                     )}
                     {/* 사용자 지역 버튼 */}
