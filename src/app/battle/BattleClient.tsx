@@ -1146,7 +1146,7 @@ export default function BattleClient() {
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
                     {/* 우리학교 버튼 */}
-                    {userSchool?.school_code && (
+                    {(userSchool?.school_code || schoolMode.selectedInterestSchool?.school_code) && (
                       <button
                         onClick={() => setSelectedRegion('우리학교')}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -1155,20 +1155,20 @@ export default function BattleClient() {
                             : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                         }`}
                       >
-                        우리학교
+                        {schoolMode.selectedInterestSchool?.school_name || userSchool?.school_name}
                       </button>
                     )}
                     {/* 사용자 지역 버튼 */}
-                    {userSchool?.region && (
+                    {(schoolMode.selectedInterestSchool?.region || userSchool?.region) && (
                       <button
-                        onClick={() => setSelectedRegion(userSchool.region)}
+                        onClick={() => setSelectedRegion(schoolMode.selectedInterestSchool?.region || userSchool?.region)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === userSchool.region
+                          selectedRegion === (schoolMode.selectedInterestSchool?.region || userSchool?.region)
                             ? 'bg-red-500 text-white shadow-sm'
                             : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
                         }`}
                       >
-                        {userSchool.region}
+                        {schoolMode.selectedInterestSchool?.region || userSchool.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
@@ -1383,16 +1383,16 @@ export default function BattleClient() {
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
                     {/* 사용자 지역 버튼 */}
-                    {userSchool?.region && (
+                    {(schoolMode.selectedInterestSchool?.region || userSchool?.region) && (
                       <button
-                        onClick={() => setSelectedRegion(userSchool.region)}
+                        onClick={() => setSelectedRegion(schoolMode.selectedInterestSchool?.region || userSchool?.region)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                          selectedRegion === userSchool.region
+                          selectedRegion === (schoolMode.selectedInterestSchool?.region || userSchool?.region)
                             ? 'bg-blue-500 text-white shadow-sm'
                             : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
                         }`}
                       >
-                        {userSchool.region}
+                        {schoolMode.selectedInterestSchool?.region || userSchool.region}
                       </button>
                     )}
                     {/* 전국 버튼 */}
