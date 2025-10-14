@@ -1305,12 +1305,12 @@ export default function BattleClient() {
                   <div className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-red-700`}
                     style={{
                       gridTemplateColumns: viewMode === 'monthly' 
-                        ? '40px 1.2fr 80px 2.5fr 55px 40px'
+                        ? '35px 1fr 55px 3fr 50px 35px'
                         : '40px 1.2fr 2.5fr 55px 40px'
                     }}>
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
-                    {viewMode === 'monthly' && <div className="text-center">급식날짜</div>}
+                    {viewMode === 'monthly' && <div className="text-center">날짜</div>}
                     <div className="text-center">메뉴명</div>
                     <div className="text-center">점수</div>
                     <div className="text-center">평가수</div>
@@ -1378,21 +1378,21 @@ export default function BattleClient() {
                       <div key={item.menu_item_id} className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4 hover:bg-red-25 transition-colors text-xs sm:text-sm`}
                         style={{
                           gridTemplateColumns: viewMode === 'monthly' 
-                            ? '40px 1.2fr 80px 2.5fr 55px 40px'
+                            ? '35px 1fr 55px 3fr 50px 35px'
                             : '40px 1.2fr 2.5fr 55px 40px'
                         }}>
                         <div className="text-center font-medium text-red-600">
                           {item.displayRank}
                         </div>
-                        <div className="text-center text-gray-700 text-xs sm:text-sm font-medium">
+                        <div className="text-center text-gray-700 text-[10px] sm:text-xs font-medium">
                           {getShortSchoolName(item.school_name) || '-'}
                         </div>
                         {viewMode === 'monthly' && (
-                          <div className="text-center text-gray-600 text-sm">
-                            {item.meal_date ? new Date(item.meal_date).toLocaleDateString('ko-KR', {
-                              month: 'short',
-                              day: 'numeric'
-                            }) : '-'}
+                          <div className="text-center text-gray-600 text-[10px] sm:text-xs">
+                            {item.meal_date ? (() => {
+                              const date = new Date(item.meal_date);
+                              return `${date.getMonth() + 1}/${date.getDate()}`;
+                            })() : '-'}
                           </div>
                         )}
                         <div className="text-center font-medium text-gray-800">

@@ -555,42 +555,16 @@ function LoginContent() {
                     <div className="flex flex-row gap-3 justify-center">
                       <button
                         onClick={() => setShowVideoModal(true)}
-                        className={`px-6 py-3 ${
-                          playingAudio === 'student' 
-                            ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
-                            : 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600'
-                        } text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]`}
+                        className="px-6 py-3 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center min-h-[60px]"
                       >
-                        {playingAudio === 'student' ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
-                          </svg>
-                        )}
                         <div className="text-center">
                           <div className="font-bold text-sm">초중고 학생</div>
                         </div>
                       </button>
                       <button
                         onClick={() => setShowParentVideoModal(true)}
-                        className={`px-6 py-3 ${
-                          playingAudio === 'parent' 
-                            ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
-                            : 'bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600'
-                        } text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]`}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center min-h-[60px]"
                       >
-                        {playingAudio === 'parent' ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
-                          </svg>
-                        )}
                         <div className="text-center">
                           <div className="font-bold text-sm">학부모/급식관계자</div>
                         </div>
@@ -690,42 +664,16 @@ function LoginContent() {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={() => setShowVideoModal(true)}
-                      className={`flex-1 sm:flex-none px-6 py-3 ${
-                        playingAudio === 'student' 
-                          ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
-                          : 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600'
-                      } text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]`}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center min-h-[60px]"
                     >
-                      {playingAudio === 'student' ? (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
-                        </svg>
-                      )}
                       <div className="text-center">
                         <div className="font-bold text-sm">초중고 학생</div>
                       </div>
                     </button>
                     <button
                       onClick={() => setShowParentVideoModal(true)}
-                      className={`flex-1 sm:flex-none px-6 py-3 ${
-                        playingAudio === 'parent' 
-                          ? 'bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600' 
-                          : 'bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600'
-                      } text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center gap-2 min-h-[60px]`}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-purple-400 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center justify-center min-h-[60px]"
                     >
-                      {playingAudio === 'parent' ? (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.816L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.316a1 1 0 011.617.816zM16 10a6 6 0 01-1.71 4.24l-1.42-1.42A4 4 0 0015 10a4 4 0 00-2.13-3.82l1.42-1.42A6 6 0 0116 10z" clipRule="evenodd" />
-                        </svg>
-                      )}
                       <div className="text-center">
                         <div className="font-bold text-sm">학부모/급식관계자</div>
                       </div>
