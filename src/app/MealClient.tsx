@@ -18,6 +18,7 @@ import ShareModal from '@/components/ShareModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ChromeRedirectHandler from '@/components/ChromeRedirectHandler';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
+import { extractBattleRegion } from '@/utils/addressParser';
 // 디버그 패널 제거
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -612,7 +613,8 @@ export default function MealClient() {
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
           office_code: schoolData.ATPT_OFCDC_SC_CODE,
-          region: schoolData.LCTN_SC_NM // 지역 정보 추가
+          school_type: schoolData.SCHUL_KND_SC_NM,
+          region: extractBattleRegion(schoolData.ORG_RDNMA || schoolData.LCTN_SC_NM)
         })
         .select();
       
