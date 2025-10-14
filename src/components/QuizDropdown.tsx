@@ -229,17 +229,17 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, classNa
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button 
-        className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm"
+        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-xs sm:text-sm font-medium shadow-sm whitespace-nowrap"
         onClick={toggleDropdown}
       >
-        <span className="text-purple-600">📚</span>
-        <span>구독퀴즈</span>
+        <span className="text-purple-600 flex-shrink-0">📚</span>
+        <span className="flex-shrink-0">구독퀴즈</span>
         {totalQuizCount > 0 && (
-          <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+          <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center flex-shrink-0">
             {totalQuizCount}
           </span>
         )}
-        <svg className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>

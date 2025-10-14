@@ -66,7 +66,7 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
       </button>
 
       {/* 중앙 학교명/학년 영역 */}
-      <div className="flex items-center mx-1 sm:mx-2 min-w-[120px] sm:min-w-[200px] flex-1 sm:flex-none">
+      <div className="flex items-center mx-1 sm:mx-2 min-w-[140px] sm:min-w-[200px] flex-1 sm:flex-none">
         {/* 학년 감소 버튼 */}
         <button
           onClick={handleGradeDown}
@@ -80,10 +80,10 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
 
         {/* 학교명과 학년을 한 줄로 */}
         <div className="flex items-center justify-center flex-1 text-center">
-          <div className="text-lg font-semibold text-gray-800 truncate max-w-[80px] sm:max-w-[120px]" title={schoolName}>
+          <div className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[90px] sm:max-w-[120px]" title={schoolName}>
             {getShortSchoolName(schoolName)}
           </div>
-          <div className="text-sm font-medium text-blue-600 ml-2">
+          <div className="text-xs sm:text-sm font-medium text-blue-600 ml-1 sm:ml-2 whitespace-nowrap flex-shrink-0">
             {grade}학년
           </div>
         </div>

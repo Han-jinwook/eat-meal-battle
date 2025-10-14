@@ -673,26 +673,26 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         </div>
         
         {/* 월 네비게이션 및 성과 표시 - 가로 배치 */}
-        <div className="flex items-center justify-center space-x-8">
+        <div className="flex items-center justify-between max-w-md mx-auto">
           <button
             onClick={handlePrevMonth}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-2xl font-bold text-gray-600 flex-shrink-0"
           >
             ‹
           </button>
           
           {/* 성과 표시 */}
-          <div className="text-lg font-bold text-green-600">
+          <div className="text-sm sm:text-base font-bold text-green-600 whitespace-nowrap">
             ( {monthlyStats.correct}/{championCriteria?.month_total || monthlyStats.total}개 맞음 )
           </div>
           
           {/* 월 표시 */}
-          <div className="text-xl font-bold text-blue-700">
+          <div className="text-lg sm:text-xl font-bold text-blue-700 whitespace-nowrap">
             {currentMonth.getMonth() + 1}월
           </div>
           
           {/* 월장원 트로피 공간 */}
-          <div className="w-8 h-8 flex items-center justify-center">
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
             {monthlyTrophy && (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <path d="M3 19L12 15L21 19V21H3V19Z" fill="#4B5563" stroke="#000" strokeWidth="1"/>
