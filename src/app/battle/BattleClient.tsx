@@ -1379,7 +1379,7 @@ export default function BattleClient() {
                           {item.displayRank}
                         </div>
                         <div className="text-center text-gray-700 text-sm font-medium">
-                          {item.school_name || '-'}
+                          {getShortSchoolName(item.school_name) || '-'}
                         </div>
                         {viewMode === 'monthly' && (
                           <div className="text-center text-gray-600 text-sm">
@@ -1615,7 +1615,7 @@ export default function BattleClient() {
                                 </span>
                               </div>
                               <div className="text-center font-medium text-gray-800">
-                                {item.school_name || '-'}
+                                {getShortSchoolName(item.school_name) || '-'}
                               </div>
                               <div className="text-center font-medium text-blue-700">
                                 {item[ratingField] ? item[ratingField].toFixed(1) : '-'}

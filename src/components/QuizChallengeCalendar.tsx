@@ -871,7 +871,7 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               {/* 공휴일 표시 - 가운데 */}
               {day.isHoliday && day.isCurrentMonth && (
                 <div className="flex items-center justify-center h-full w-full">
-                  <div className="text-xs text-red-500 font-bold">
+                  <div className="text-[10px] sm:text-xs text-red-500 font-bold">
                     공휴일
                   </div>
                 </div>
@@ -880,12 +880,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
               {/* 급식 정보 없음 표시 */}
               {!day.hasMeal && day.isCurrentMonth && (
                 <div className="flex items-center justify-center h-full w-full">
-                  <div className="text-gray-400 text-xs font-medium">
+                  <div className="text-gray-400 text-[10px] sm:text-xs font-medium">
                     <span className="flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      <span className="ml-1">급식없음</span>
+                      <span className="ml-0.5 sm:ml-1">급식없음</span>
                     </span>
                   </div>
                 </div>
