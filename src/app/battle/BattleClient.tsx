@@ -1305,8 +1305,8 @@ export default function BattleClient() {
                   <div className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-red-700`}
                     style={{
                       gridTemplateColumns: viewMode === 'monthly' 
-                        ? '50px 1fr 80px 2fr 60px 50px'
-                        : '50px 1fr 2fr 60px 50px'
+                        ? '40px 1.2fr 80px 2.5fr 55px 40px'
+                        : '40px 1.2fr 2.5fr 55px 40px'
                     }}>
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
@@ -1378,13 +1378,13 @@ export default function BattleClient() {
                       <div key={item.menu_item_id} className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4 hover:bg-red-25 transition-colors text-xs sm:text-sm`}
                         style={{
                           gridTemplateColumns: viewMode === 'monthly' 
-                            ? '50px 1fr 80px 2fr 60px 50px'
-                            : '50px 1fr 2fr 60px 50px'
+                            ? '40px 1.2fr 80px 2.5fr 55px 40px'
+                            : '40px 1.2fr 2.5fr 55px 40px'
                         }}>
                         <div className="text-center font-medium text-red-600">
                           {item.displayRank}
                         </div>
-                        <div className="text-center text-gray-700 text-sm font-medium">
+                        <div className="text-center text-gray-700 text-xs sm:text-sm font-medium">
                           {getShortSchoolName(item.school_name) || '-'}
                         </div>
                         {viewMode === 'monthly' && (
@@ -1511,7 +1511,7 @@ export default function BattleClient() {
                 {/* 테이블 헤더 */}
                 <div className="bg-blue-50 border-b border-blue-200">
                   <div className="grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-blue-700"
-                    style={{ gridTemplateColumns: '50px 2fr 60px 50px' }}>
+                    style={{ gridTemplateColumns: '40px 2.5fr 55px 40px' }}>
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
                     <div className="text-center">점수</div>
@@ -1616,13 +1616,13 @@ export default function BattleClient() {
                             className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/30'}`}
                           >
                             <div className="grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm"
-                              style={{ gridTemplateColumns: '50px 2fr 60px 50px' }}>
+                              style={{ gridTemplateColumns: '40px 2.5fr 55px 40px' }}>
                               <div className="text-center">
                                 <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${displayRank <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
                                   {displayRank}
                                 </span>
                               </div>
-                              <div className="text-center font-medium text-gray-800">
+                              <div className="text-center font-medium text-gray-800 text-xs sm:text-sm">
                                 {getShortSchoolName(item.school_name) || '-'}
                               </div>
                               <div className="text-center font-medium text-blue-700">

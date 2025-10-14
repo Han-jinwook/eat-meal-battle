@@ -17,9 +17,12 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
   onGradeChange,
   onSchoolChange
 }) => {
-  // 학교명에서 '등학교' 제거하여 모바일 최적화
+  // 학교명에서 '학교', '등학교' 제거하여 모바일 최적화
   const getShortSchoolName = (name: string) => {
-    return name.replace(/등학교$/, '');
+    return name
+      .replace(/고등학교$/, '고')
+      .replace(/중학교$/, '중')
+      .replace(/초등학교$/, '초');
   };
   const getMaxGrade = () => {
     switch (schoolType) {
@@ -80,11 +83,11 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
 
         {/* 학교명과 학년을 한 줄로 */}
         <div className="flex items-center justify-center flex-1 text-center">
-          <div className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[90px] sm:max-w-[120px]" title={schoolName}>
+          <div className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[100px] sm:max-w-[140px]" title={schoolName}>
             {getShortSchoolName(schoolName)}
           </div>
-          <div className="text-xs sm:text-sm font-medium text-blue-600 ml-1 sm:ml-2 whitespace-nowrap flex-shrink-0">
-            {grade}학년
+          <div className="text-sm sm:text-base font-bold text-blue-600 ml-1 sm:ml-2 whitespace-nowrap flex-shrink-0">
+            {grade}
           </div>
         </div>
 
