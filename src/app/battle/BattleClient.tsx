@@ -170,6 +170,20 @@ export default function BattleClient() {
     }
   }, [userSchool, selectedRegion]);
 
+  // 탭 전환 시 지역 자동 설정
+  useEffect(() => {
+    const currentSchool = schoolMode.selectedInterestSchool || userSchool;
+    
+    if (activeTab === 'menu') {
+      setSelectedRegion('우리학교');
+    } else if (activeTab === 'meal') {
+      const region = currentSchool?.region;
+      if (region) {
+        setSelectedRegion(region);
+      }
+    }
+  }, [activeTab]);
+
   // 초기 로드 시 관심학교 데이터 가져오기
   useEffect(() => {
     if (user && !userLoading) {
@@ -796,7 +810,11 @@ export default function BattleClient() {
                       onClick={() => {
                         // 내 학교로 돌아가기
                         schoolMode.returnToMySchool();
-                        setSelectedRegion('우리학교');
+                        if (activeTab === 'menu') {
+                          setSelectedRegion('우리학교');
+                        } else if (activeTab === 'meal') {
+                          setSelectedRegion(userSchool?.region || '전국');
+                        }
                         setIsDropdownOpen(false);
                       }}
                     >
@@ -844,6 +862,14 @@ export default function BattleClient() {
                                   region: school.region,
                                   created_at: school.created_at
                                 });
+                                
+                                // 탭에 따라 지역 설정
+                                if (activeTab === 'menu') {
+                                  setSelectedRegion('우리학교');
+                                } else if (activeTab === 'meal') {
+                                  setSelectedRegion(school.region || '전국');
+                                }
+                                
                                 setIsDropdownOpen(false);
                               }}
                             >
