@@ -56,7 +56,7 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
   const maxGrade = getMaxGrade();
 
   return (
-    <div className="flex items-center justify-between sm:justify-center bg-white border border-blue-200 rounded-lg px-2 py-2 shadow-sm sm:px-4">
+    <div className="flex items-center justify-between sm:justify-center bg-white border border-blue-200 rounded-lg px-2 py-1 shadow-sm sm:px-4">
       {/* 왼쪽 화살표 - 이전 학교 */}
       <button
         onClick={() => onSchoolChange('prev')}
@@ -83,10 +83,10 @@ const SchoolGradeSelector: React.FC<SchoolGradeSelectorProps> = ({
 
         {/* 학교명과 학년을 한 줄로 */}
         <div className="flex items-center justify-center flex-1 text-center">
-          <div className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[100px] sm:max-w-[140px]" title={schoolName}>
+          <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate max-w-[100px] sm:max-w-[140px]" title={schoolName}>
             {getShortSchoolName(schoolName)}
           </div>
-          <div className="text-sm sm:text-base font-bold text-blue-600 ml-1 sm:ml-2 whitespace-nowrap flex-shrink-0">
+          <div className="text-xs sm:text-sm font-bold text-blue-600 ml-1 sm:ml-2 whitespace-nowrap flex-shrink-0">
             {grade}
           </div>
         </div>
