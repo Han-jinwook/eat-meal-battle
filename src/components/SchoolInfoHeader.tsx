@@ -90,15 +90,10 @@ export default function SchoolInfoHeader({
       <div className="flex items-center gap-3">
         {/* 관람모드일 때 '관람 중' 표시 - 클릭 불가능 */}
         {isViewingMode && viewingUserInfo && (
-          <div className="flex flex-col items-center gap-0.5 px-2 py-1 bg-white/90 border border-purple-200 rounded-lg">
-            <div className="flex items-center gap-1">
-              <span className="text-purple-600 text-xs">👀</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-[10px] font-semibold whitespace-nowrap">
-                {viewingUserInfo.nickname}님의
-              </span>
-            </div>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-[10px] font-semibold">
-              퀴즈 관람 중
+          <div className="flex items-center gap-1 px-3 py-1.5 bg-white/90 border border-purple-200 rounded-lg">
+            <span className="text-purple-600 text-sm">👀</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 text-xs font-semibold whitespace-nowrap">
+              {viewingUserInfo.nickname}님의 퀴즈 관람 중
             </span>
           </div>
         )}
