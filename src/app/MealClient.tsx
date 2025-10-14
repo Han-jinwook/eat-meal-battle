@@ -870,7 +870,7 @@ export default function MealClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8">
       {/* 디버그 패널 제거 */}
 
 
@@ -878,7 +878,7 @@ export default function MealClient() {
       {/* 모달 (상세 정보) */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-center">{modalTitle}</h3>
               <button 
@@ -978,7 +978,7 @@ export default function MealClient() {
       {/* 드롭다운 메뉴 */}
       {isDropdownOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
               <button
@@ -1250,7 +1250,7 @@ export default function MealClient() {
                 )}
               </div>
             ) : (
-              <div className="bg-white shadow-md rounded-lg p-6">
+              <div className="bg-white shadow-md rounded-lg p-4 sm:p-6">
                 <div className="flex items-center justify-center mb-4">
                   <div className="bg-yellow-100 rounded-full p-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1263,7 +1263,7 @@ export default function MealClient() {
                   {schoolMode.currentSchoolInfo?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
                 </h3>
 
-                <div className="bg-gray-50 p-4 rounded-md text-center">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-md text-center">
                   {!schoolMode.currentSchoolInfo && !user?.db_profile?.is_student ? (
                     <>
                       <p className="text-gray-700 dark:text-white font-medium">
@@ -1274,7 +1274,7 @@ export default function MealClient() {
                       </p>
                       <button
                         onClick={() => setIsSchoolSearchOpen(true)}
-                        className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                        className="mt-3 px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
                       >
                         관심학교 등록하기
                       </button>

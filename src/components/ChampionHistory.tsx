@@ -296,7 +296,7 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mt-6">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-6 mt-6">
       <h3 className="text-lg font-bold text-center mb-4 border-2 border-black rounded-lg py-2">
         급식장원 History
       </h3>
@@ -305,20 +305,20 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
         <table className="w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-50 dark:bg-white">
-              <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">월/주차</th>
-              <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">나의 기록</th>
-              <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">반</th>
-              <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">학년</th>
-              <th className="border border-gray-300 px-3 py-2 text-sm font-semibold">학교</th>
+              <th className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold">월/주차</th>
+              <th className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold">나의 기록</th>
+              <th className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold">반</th>
+              <th className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold">학년</th>
+              <th className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold">학교</th>
             </tr>
           </thead>
           <tbody>
             {championStats.map((stat, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center">
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center whitespace-nowrap">
                   {stat.period_label.replace(`${currentMonth.getFullYear()}년 `, '')}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center">
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center">
                   {stat.my_record === '🏆' && (
                     <span className="text-yellow-600 font-bold flex items-center justify-center">
                       {stat.period_type === 'weekly' ? (
@@ -358,13 +358,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
                     </span>
                   )}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.class_count}명 / {stat.total_students || 0}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.grade_count}명 / {stat.total_students || 0}
                 </td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-500 dark:text-gray-700">
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-500 dark:text-gray-700">
                   {stat.school_count}명 / {stat.total_students || 0}
                 </td>
               </tr>
@@ -373,11 +373,11 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             {/* 빈 행들 채우기 */}
             {Array.from({ length: Math.max(0, 5 - championStats.length) }, (_, index) => (
               <tr key={`empty-${index}`}>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
-                <td className="border border-gray-300 px-3 py-2 text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-300 dark:text-gray-400">-</td>
+                <td className="border border-gray-300 px-1.5 sm:px-3 py-2 text-xs sm:text-sm text-center text-gray-300 dark:text-gray-400">-</td>
               </tr>
             ))}
           </tbody>

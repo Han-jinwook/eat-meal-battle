@@ -662,11 +662,11 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sm:p-6">
       {/* 헤더 - 컴팩한 가로 배치 디자인 */}
       <div className="text-center mb-6">
         {/* 메인 제목 */}
-        <div className="border-4 border-black rounded-lg py-3 px-6 mb-4 inline-block">
+        <div className="border-4 border-black rounded-lg py-3 px-3 sm:px-6 mb-4 inline-block">
           <h2 className="text-xl font-bold text-gray-900 tracking-wide">
             급식퀴즈 챌린지
           </h2>

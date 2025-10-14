@@ -60,7 +60,7 @@ const QuizResultSection: React.FC<QuizResultSectionProps> = ({
         
         {/* 설명 */}
         {quiz.explanation && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-gray-700 mb-1">💡 설명</p>
             <p className="text-gray-600">{quiz.explanation}</p>
             

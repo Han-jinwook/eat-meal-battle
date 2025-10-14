@@ -1206,7 +1206,7 @@ export default function QuizClient() {
 
         {/* 퀴즈 콘텐츠 - 구독퀴즈 없는 비학생에게는 표시하지 않음 */}
         {(!isNonStudentWithNoSubscription || !hasCheckedSubscription) && (
-        <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
+        <div className="mt-6 bg-white rounded-lg shadow-sm p-3 sm:p-6">
           {loading ? (
             <div className="text-center py-10">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
@@ -1259,7 +1259,7 @@ export default function QuizClient() {
           ) : (
             <div className="text-center py-10">
               {noMenu ? (
-                <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
+                <div className="bg-amber-50 border-2 border-amber-200 p-4 sm:p-6 rounded-lg shadow-md text-center">
                   <div className="text-5xl mb-2">🏫</div>
                   <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
                   <p className="text-amber-600">{noMenuMessage}</p>

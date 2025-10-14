@@ -714,7 +714,7 @@ export default function BattleClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
       {/* 학교 정보 헤더 및 관심학교 드롭다운 */}
       <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between ${
@@ -788,7 +788,7 @@ export default function BattleClient() {
             {/* 드롭다운 메뉴 */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
                     <button
@@ -924,7 +924,7 @@ export default function BattleClient() {
 
       {/* 2개 섹션 탭 UI */}
       <div className="mb-6">
-        <div className="flex gap-6 mb-6">
+        <div className="flex gap-3 sm:gap-6 mb-6">
           <div
             onClick={() => setActiveTab('menu')}
             className={`flex-1 cursor-pointer transition-all duration-200 ${
@@ -969,7 +969,7 @@ export default function BattleClient() {
 
         {/* 네비게이션 컨트롤들 - 한 줄 배치 (모바일에서도) */}
         <div className="mb-6">
-          <div className="flex gap-4 md:gap-6">
+          <div className="flex gap-2 sm:gap-4 md:gap-6">
             {/* 일별 집계 섹션 */}
             <div className={`flex-1 transition-all duration-300 ${
               viewMode === 'daily' ? 'opacity-100' : 'opacity-60'
@@ -1161,13 +1161,13 @@ export default function BattleClient() {
         </div>
 
         {/* 탭별 콘텐츠 영역 */}
-        <div className={`min-h-96 rounded-lg p-6 transition-colors duration-300 ${
+        <div className={`min-h-96 rounded-lg p-3 sm:p-6 transition-colors duration-300 ${
           activeTab === 'menu' ? 'bg-red-50' : 'bg-blue-50'
         }`}>
           {activeTab === 'menu' ? (
             <div>
               {/* 지역 및 학교 유형 선택 */}
-              <div className="bg-white rounded-lg p-4 mb-6 border border-red-200">
+              <div className="bg-white rounded-lg p-3 sm:p-4 mb-6 border border-red-200">
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
@@ -1239,7 +1239,7 @@ export default function BattleClient() {
                           }
                         }}
                         disabled={isOurSchoolSelected}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                           isOurSchoolSelected
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
@@ -1257,7 +1257,7 @@ export default function BattleClient() {
               {/* 일간 베스트 메뉴 도표 */}
               <div className="bg-white rounded-lg border border-red-200 overflow-hidden">
                 {/* 도표 제목 */}
-                <div className="bg-red-500 text-white px-4 py-3">
+                <div className="bg-red-500 text-white px-3 sm:px-4 py-3">
                   <div className="flex items-center justify-center gap-3">
                     <h3 className="font-bold">
                       {viewMode === 'daily' ? '일간' : '월간'} 베스트 메뉴
@@ -1302,7 +1302,7 @@ export default function BattleClient() {
                 
                 {/* 테이블 헤더 */}
                 <div className="bg-red-50 border-b border-red-200">
-                  <div className={`grid gap-4 px-4 py-3 text-sm font-medium text-red-700 ${
+                  <div className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-red-700 ${
                     viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                   }`}>
                     <div className="text-center">순위</div>
@@ -1334,7 +1334,7 @@ export default function BattleClient() {
                       <p className="text-sm text-red-400">{battleError}</p>
                       <button 
                         onClick={loadBattleData}
-                        className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                        className="mt-4 px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                       >
                         다시 시도
                       </button>
@@ -1372,7 +1372,7 @@ export default function BattleClient() {
                       return dataWithRank;
                     })()
                       .map((item, index) => (
-                      <div key={item.menu_item_id} className={`grid gap-4 px-4 py-4 hover:bg-red-25 transition-colors ${
+                      <div key={item.menu_item_id} className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4 hover:bg-red-25 transition-colors text-xs sm:text-sm ${
                         viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
                       }`}>
                         <div className="text-center font-medium text-red-600">
@@ -1407,7 +1407,7 @@ export default function BattleClient() {
           ) : (
             <div>
               {/* 지역 및 학교 유형 선택 */}
-              <div className="bg-white rounded-lg p-4 mb-6 border border-blue-200">
+              <div className="bg-white rounded-lg p-3 sm:p-4 mb-6 border border-blue-200">
                 {/* 지역 선택 버튼 - 왼쪽 정렬 */}
                 <div className="text-left mb-4 ml-3">
                   <div className="flex gap-2">
@@ -1444,7 +1444,7 @@ export default function BattleClient() {
                     <button
                       key={type}
                       onClick={() => setSelectedSchoolType(type)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         selectedSchoolType === type || (!selectedSchoolType && userSchool?.school_type?.includes(type.slice(0, 1)))
                           ? 'bg-blue-500 text-white shadow-sm'
                           : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
@@ -1459,7 +1459,7 @@ export default function BattleClient() {
               {/* 우리동네 급식배틀 테이블 */}
               <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
                 {/* 테이블 제목 */}
-                <div className="bg-blue-500 text-white px-4 py-3">
+                <div className="bg-blue-500 text-white px-3 sm:px-4 py-3">
                   <div className="flex items-center justify-center gap-3">
                     <h3 className="font-bold">
                       우리동네 급식배틀
@@ -1504,7 +1504,7 @@ export default function BattleClient() {
                 
                 {/* 테이블 헤더 */}
                 <div className="bg-blue-50 border-b border-blue-200">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm font-medium text-blue-700">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-blue-700">
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
                     <div className="text-center">점수</div>
@@ -1608,7 +1608,7 @@ export default function BattleClient() {
                             key={`${item.school_code}-${index}`}
                             className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/30'}`}
                           >
-                            <div className="grid grid-cols-4 gap-4 px-4 py-3 text-sm">
+                            <div className="grid grid-cols-4 gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm">
                               <div className="text-center">
                                 <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${displayRank <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
                                   {displayRank}
