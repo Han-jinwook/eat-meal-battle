@@ -977,7 +977,7 @@ export default function MealClient() {
       
       {/* 드롭다운 메뉴 */}
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[70vh] overflow-y-auto">
           <div className="p-3 sm:p-4">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-semibold text-gray-800">관심학교 선택</h3>
@@ -1036,7 +1036,7 @@ export default function MealClient() {
                 <div className="text-sm">로딩 중...</div>
               </div>
             ) : interestSchools.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {interestSchools.map((school) => {
                   const isSelected = schoolMode.selectedInterestSchool?.id === school.id;
                   

@@ -61,14 +61,14 @@ export default function SchoolInfoHeader({
       <div className="flex items-center">
         {!isViewingMode && userSchool ? (
           <>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-sm sm:text-base font-semibold truncate max-w-[140px] sm:max-w-none">
               <span className="hidden sm:inline">{userSchool.school_name || '학교 정보 없음'}</span>
               <span className="sm:hidden">
                 {(userSchool.school_name || '학교 정보 없음').replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초')}
               </span>
             </span>
             {(userSchool.grade || userSchool.class) && (
-              <span className="ml-2 text-gray-600 text-xs bg-white px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 sm:ml-2 text-gray-600 text-[10px] sm:text-xs bg-white px-1 sm:px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
                 {userSchool.grade ? `${userSchool.grade}학년` : ''}
                 {userSchool.class ? ` ${userSchool.class}반` : ''}
               </span>
@@ -79,10 +79,10 @@ export default function SchoolInfoHeader({
               <img 
                 src={getSchoolCharacterImage(userSchool.school_type)}
                 alt="학교 캐릭터"
-                className="ml-3 w-8 h-8 md:w-10 md:h-10 drop-shadow-sm"
+                className="ml-2 sm:ml-3 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 drop-shadow-sm flex-shrink-0"
               />
             )}
-          </>
+          </> 
         ) : null}
       </div>
       
