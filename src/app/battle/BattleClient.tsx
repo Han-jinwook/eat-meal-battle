@@ -1302,9 +1302,12 @@ export default function BattleClient() {
                 
                 {/* 테이블 헤더 */}
                 <div className="bg-red-50 border-b border-red-200">
-                  <div className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-red-700 ${
-                    viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
-                  }`}>
+                  <div className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-red-700`}
+                    style={{
+                      gridTemplateColumns: viewMode === 'monthly' 
+                        ? '50px 1fr 80px 2fr 60px 50px'
+                        : '50px 1fr 2fr 60px 50px'
+                    }}>
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
                     {viewMode === 'monthly' && <div className="text-center">급식날짜</div>}
@@ -1372,9 +1375,12 @@ export default function BattleClient() {
                       return dataWithRank;
                     })()
                       .map((item, index) => (
-                      <div key={item.menu_item_id} className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4 hover:bg-red-25 transition-colors text-xs sm:text-sm ${
-                        viewMode === 'monthly' ? 'grid-cols-6' : 'grid-cols-5'
-                      }`}>
+                      <div key={item.menu_item_id} className={`grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 sm:py-4 hover:bg-red-25 transition-colors text-xs sm:text-sm`}
+                        style={{
+                          gridTemplateColumns: viewMode === 'monthly' 
+                            ? '50px 1fr 80px 2fr 60px 50px'
+                            : '50px 1fr 2fr 60px 50px'
+                        }}>
                         <div className="text-center font-medium text-red-600">
                           {item.displayRank}
                         </div>
@@ -1504,7 +1510,8 @@ export default function BattleClient() {
                 
                 {/* 테이블 헤더 */}
                 <div className="bg-blue-50 border-b border-blue-200">
-                  <div className="grid grid-cols-4 gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-blue-700">
+                  <div className="grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-blue-700"
+                    style={{ gridTemplateColumns: '50px 2fr 60px 50px' }}>
                     <div className="text-center">순위</div>
                     <div className="text-center">학교명</div>
                     <div className="text-center">점수</div>
@@ -1608,7 +1615,8 @@ export default function BattleClient() {
                             key={`${item.school_code}-${index}`}
                             className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50/30'}`}
                           >
-                            <div className="grid grid-cols-4 gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm">
+                            <div className="grid gap-2 sm:gap-4 px-2 sm:px-4 py-3 text-xs sm:text-sm"
+                              style={{ gridTemplateColumns: '50px 2fr 60px 50px' }}>
                               <div className="text-center">
                                 <span className={`inline-block w-8 h-8 rounded-full font-bold flex items-center justify-center ${displayRank <= 3 ? 'bg-yellow-400 text-white' : 'bg-blue-100 text-blue-700'}`}>
                                   {displayRank}
