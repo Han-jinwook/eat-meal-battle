@@ -26,6 +26,17 @@ export default function PWAInstallPrompt() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      
+      // 로컬스토리지 확인 후 표시
+      const installDismissed = localStorage.getItem('pwa-install-dismissed');
+      if (installDismissed) {
+        const dismissedTime = parseInt(installDismissed);
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < oneDayInMs) {
+          return;
+        }
+      }
+      
       setShowInstallPrompt(true);
     };
 
@@ -39,19 +50,17 @@ export default function PWAInstallPrompt() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // 로컬스토리지에서 사용자가 이전에 설치를 거부했는지 확인
-    const installDismissed = localStorage.getItem('pwa-install-dismissed');
-    if (installDismissed) {
-      const dismissedTime = parseInt(installDismissed);
-      const oneDayInMs = 24 * 60 * 60 * 1000;
-      if (Date.now() - dismissedTime < oneDayInMs) {
-        setShowInstallPrompt(false);
-        return;
-      }
-    }
-
-    // iOS Safari의 경우 수동으로 프롬프트 표시 (3초 후)
+    // iOS Safari의 경우 로컬스토리지 확인 후 프롬프트 표시 (3초 후)
     if (isIOSSafari) {
+      const installDismissed = localStorage.getItem('pwa-install-dismissed');
+      if (installDismissed) {
+        const dismissedTime = parseInt(installDismissed);
+        const oneDayInMs = 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < oneDayInMs) {
+          return;
+        }
+      }
+      
       const timer = setTimeout(() => {
         setShowInstallPrompt(true);
       }, 3000);
@@ -82,7 +91,7 @@ export default function PWAInstallPrompt() {
       setShowInstallPrompt(false);
     } else if (isIOSSafari) {
       // iOS Safari의 경우 수동 안내
-      alert('홈 화면에 추가하려면:\n1. 하단의 공유 버튼(📤) 터치\n2. "홈 화면에 추가" 선택\n3. "추가" 버튼 터치');
+      alert('홈 화면에 아이콘을 추가하려면:\n\n1. 하단의 공유 버튼(📤) 터치\n2. "홈 화면에 추가" 선택\n3. "추가" 버튼 터치');
       setShowInstallPrompt(false);
       localStorage.setItem('pwa-install-dismissed', Date.now().toString());
     }
@@ -119,13 +128,10 @@ export default function PWAInstallPrompt() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900">
-              {isIOSSafari ? '홈 화면에 추가하기' : '앱으로 설치하기'}
+              앱 아이콘을 홈 화면에 추가하세요
             </p>
             <p className="text-sm text-gray-500">
-              {isIOSSafari 
-                ? '홈 화면에 뭐먹지를 추가하여 앱처럼 사용하세요!' 
-                : '홈 화면에 뭐먹지를 추가하여 더 빠르게 접속하세요!'
-              }
+              앱처럼 편하게 사용할 수 있어요!
             </p>
           </div>
           <button
@@ -142,7 +148,7 @@ export default function PWAInstallPrompt() {
             onClick={handleInstallClick}
             className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-{isIOSSafari ? '방법 보기' : '설치하기'}
+            {isIOSSafari ? '방법 보기' : '추가하기'}
           </button>
           <button
             onClick={handleDismiss}
