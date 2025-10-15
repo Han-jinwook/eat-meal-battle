@@ -71,6 +71,10 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
             school_code: viewingSchoolData.school_code,
             grade: viewingSchoolData.grade
           };
+        } else {
+          // 비학생이 구독한 경우, 구독 대상의 학교 정보가 없으면 스킵
+          console.log('🚫 구독 대상의 학교 정보 없음 - 장원 히스토리 스킵');
+          return;
         }
       }
 

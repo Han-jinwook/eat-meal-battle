@@ -562,7 +562,6 @@ export default function QuizClient() {
 
       setViewingUserInfo({
         nickname: userData.nickname,
-        school_name: '구독퀴즈', // 비학생은 학교 정보가 없으므로 기본값 설정
       });
 
     } catch (error) {

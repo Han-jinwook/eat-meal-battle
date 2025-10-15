@@ -24,12 +24,13 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, requestedDate, viewingUserId = null) {
-  // 유저 학교 정보 확인
+  // 유저 학교 정보 확인 - 관람 모드일 때는 관람 대상의 학교 정보 사용
   if (!schoolCode || !grade) {
+    const targetUserId = viewingUserId || userId;
     const { data: userSchool, error: userSchoolError } = await supabaseClient
       .from('school_infos')
       .select('school_code, grade')
-      .eq('user_id', userId)
+      .eq('user_id', targetUserId)
       .single();
 
     if (userSchoolError) {
