@@ -392,7 +392,7 @@ export default function AllQuizModal({
                 />
                 
                 {/* 학급 선택 드롭다운 */}
-                <div className="relative">
+                <div className="relative z-10">
                   <select
                     value={selectedSchoolLevel}
                     onChange={async (e) => {
@@ -457,13 +457,13 @@ export default function AllQuizModal({
                         setLoading(false);
                       }
                     }}
-                    className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm"
+                    className="appearance-none bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded px-3 py-2 pr-7 text-sm font-medium text-gray-700 hover:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors shadow-sm min-h-[44px] touch-manipulation"
                   >
                     <option value="elementary">초등학교</option>
                     <option value="middle">중학교</option>
                     <option value="high">고등학교</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none z-0">
                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
