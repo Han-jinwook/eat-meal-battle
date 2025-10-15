@@ -114,10 +114,6 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
             school_code: viewingSchoolData.school_code,
             grade: viewingSchoolData.grade
           };
-        } else {
-          // 비학생이 구독한 경우, 구독 대상의 학교 정보가 없으면 스킵
-          console.log('🚫 구독 대상의 학교 정보 없음 - 퀴즈 캘린더 스킵');
-          return;
         }
       }
 
