@@ -117,6 +117,12 @@ const QuizChallengeCalendar: React.FC<QuizChallengeCalendarProps> = ({
         }
       }
 
+      // targetSchoolInfo가 null이면 조회 중단
+      if (!targetSchoolInfo?.school_code) {
+        console.log('🚫 학교 정보 없음 - 퀴즈 캘린더 조회 중단');
+        return;
+      }
+
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
       

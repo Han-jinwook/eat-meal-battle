@@ -77,6 +77,13 @@ const ChampionHistory: React.FC<ChampionHistoryProps> = ({
       // 관람 모드일 때는 관람 대상 사용자의 ID 사용
       const userId = viewingUserId || session.data.session.user.id;
       
+      // targetSchoolInfo가 null이면 조회 중단
+      if (!targetSchoolInfo?.school_code) {
+        console.log('🚫 학교 정보 없음 - 장원 히스토리 조회 중단');
+        setLoading(false);
+        return;
+      }
+      
       // 1. champion_criteria에서 월/주차 정보 가져오기
       const { data: criteriaData } = await supabase
         .from('champion_criteria')
