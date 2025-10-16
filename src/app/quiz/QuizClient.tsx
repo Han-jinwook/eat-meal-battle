@@ -57,7 +57,7 @@ export default function QuizClient() {
   // State management
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userSchool, loading: userLoading, error: userError, isRegistrationRequired } = useUserSchool();
+  const { userSchool, setUserSchool, loading: userLoading, isRegistrationRequired } = useUserSchool();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
