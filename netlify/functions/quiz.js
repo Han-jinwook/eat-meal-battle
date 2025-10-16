@@ -1,5 +1,93 @@
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
+const OpenAI = require('openai');
+
+// NEIS API 관련 함수들 import
+const https = require('https');
+const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
+
+// HTTP 요청 함수 (Node.js 환경에서 fetch 대신 사용)
+async function fetchWithPromise(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (error) {
+          reject(new Error('JSON 파싱 오류: ' + error.message));
+        }
+      });
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+// NEIS API에서 급식 정보 조회
+async function fetchMealFromNEIS(schoolCode, date) {
+  try {
+    // 학교 코드로 교육청 코드 조회
+    const { data: schoolInfo, error: schoolError } = await supabaseAdmin
+      .from('school_infos')
+      .select('office_code')
+      .eq('school_code', schoolCode)
+      .limit(1)
+      .single();
+    
+    if (schoolError || !schoolInfo) {
+      throw new Error('학교 정보를 찾을 수 없습니다.');
+    }
+    
+    const officeCode = schoolInfo.office_code;
+    const apiDate = date.replace(/-/g, ''); // YYYY-MM-DD -> YYYYMMDD
+    
+    // NEIS API 호출
+    const apiUrl = `${NEIS_API_BASE_URL}/mealServiceDietInfo`;
+    const params = {
+      KEY: process.env.NEIS_API_KEY,
+      Type: 'json',
+      ATPT_OFCDC_SC_CODE: officeCode,
+      SD_SCHUL_CODE: schoolCode,
+      MLSV_YMD: apiDate
+    };
+    
+    const queryString = Object.keys(params)
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
+      .join('&');
+    
+    const fullUrl = `${apiUrl}?${queryString}`;
+    console.log('[quiz] NEIS API 호출:', fullUrl);
+    
+    const response = await fetchWithPromise(fullUrl);
+    
+    if (!response.mealServiceDietInfo || !response.mealServiceDietInfo[1]) {
+      return null;
+    }
+    
+    const mealInfo = response.mealServiceDietInfo[1].row[0];
+    const menuItems = mealInfo.DDISH_NM
+      .split('<br/>')
+      .map(item => item.replace(/\([^)]*\)/g, '').trim())
+      .filter(item => item.length > 0);
+    
+    return {
+      school_code: schoolCode,
+      meal_date: date,
+      menu_items: menuItems,
+      origin_info: mealInfo.ORPLC_INFO || '',
+      calorie_info: mealInfo.CAL_INFO || '',
+      nutrition_info: mealInfo.NTR_INFO || ''
+    };
+    
+  } catch (error) {
+    console.error('[quiz] NEIS API 호출 오류:', error);
+    throw error;
+  }
+}
 
 // Champion Calculator import
 const { ChampionCalculator } = require('./utils/championCalculator');
@@ -1053,6 +1141,47 @@ exports.handler = async function(event, context) {
         };
       }
       
+      // 시간 제약 체크
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const currentHour = now.getHours();
+      
+      // 1. 미래 날짜 체크
+      if (date > today) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: '미래 날짜의 퀴즈는 생성할 수 없습니다. 급식을 먹은 후에 퀴즈를 풀어보세요!' 
+          })
+        };
+      }
+      
+      // 2. 당일 12시 이전 체크
+      if (date === today && currentHour < 12) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: '당일 퀴즈는 12시 이후부터 생성 가능합니다. 급식 시간 이후에 다시 시도해주세요!' 
+          })
+        };
+      }
+      
+      // 3. 과거 범위 체크 (전월 1일 ~ 현재)
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthStart = lastMonth.toISOString().split('T')[0];
+      
+      if (date < lastMonthStart) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: '너무 오래된 날짜입니다. 전월 1일부터 현재까지의 퀴즈만 생성 가능합니다.' 
+          })
+        };
+      }
+      
       try {
         // 퀴즈 생성 로직을 직접 구현
         // 이미 해당 날짜에 퀴즈가 존재하는지 확인
@@ -1084,7 +1213,57 @@ exports.handler = async function(event, context) {
           
         if (mealError || !mealData || mealData.length === 0 || !mealData[0].menu_items ||
             (Array.isArray(mealData[0].menu_items) && mealData[0].menu_items.includes('급식 정보가 없습니다'))) {
-          // 급식 정보가 없는 경우
+          
+          console.log('[quiz] DB에 급식 정보 없음, NEIS API 호출 시도...');
+          
+          // NEIS API에서 급식 정보 조회 시도
+          try {
+            const neisMealData = await fetchMealFromNEIS(school_code, date);
+            
+            if (neisMealData && neisMealData.menu_items && neisMealData.menu_items.length > 0) {
+              console.log('[quiz] NEIS에서 급식 정보 조회 성공, 퀴즈 생성 진행');
+              // NEIS에서 가져온 데이터로 퀴즈 생성 진행
+              const meal = neisMealData;
+              
+              // OpenAI 기반 퀴즈 생성으로 이동
+              const { generateQuizWithAI } = require('./manual-generate-meal-quiz');
+              
+              let generatedQuiz = null;
+              let lastError = null;
+              const MAX_RETRIES = 3;
+              
+              for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                  generatedQuiz = await generateQuizWithAI(meal, grade, userId);
+                  break;
+                } catch (error) {
+                  console.error(`[quiz] NEIS 데이터로 퀴즈 생성 시도 ${attempt} 실패:`, error.message);
+                  lastError = error;
+                  
+                  if (attempt < MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                  }
+                }
+              }
+              
+              if (generatedQuiz) {
+                return {
+                  statusCode: 200,
+                  headers,
+                  body: JSON.stringify({
+                    success: true,
+                    message: 'NEIS 데이터로 퀴즈가 생성되었습니다.',
+                    quiz: generatedQuiz,
+                    source: 'neis'
+                  })
+                };
+              }
+            }
+          } catch (neisError) {
+            console.error('[quiz] NEIS API 호출 실패:', neisError.message);
+          }
+          
+          // DB와 NEIS 모두에서 급식 정보를 찾을 수 없는 경우
           const message = '급식 정보가 없는 날이어서 급식퀴즈도 쉬어가요';
           
           return {

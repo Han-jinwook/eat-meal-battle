@@ -63,6 +63,42 @@ export default function QuizClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // 퀴즈 생성 시간 제약 체크 함수
+  const checkQuizTimeConstraint = (targetDate: string) => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentHour = now.getHours();
+    
+    // 1. 미래 날짜 체크
+    if (targetDate > today) {
+      return {
+        allowed: false,
+        message: '미래 날짜의 퀴즈는 생성할 수 없습니다. 급식을 먹은 후에 퀴즈를 풀어보세요!'
+      };
+    }
+    
+    // 2. 당일 12시 이전 체크
+    if (targetDate === today && currentHour < 12) {
+      return {
+        allowed: false,
+        message: '당일 퀴즈는 12시 이후부터 생성 가능합니다. 급식 시간 이후에 다시 시도해주세요!'
+      };
+    }
+    
+    // 3. 과거 범위 체크 (전월 1일 ~ 현재)
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthStart = lastMonth.toISOString().split('T')[0];
+    
+    if (targetDate < lastMonthStart) {
+      return {
+        allowed: false,
+        message: '너무 오래된 날짜입니다. 전월 1일부터 현재까지의 퀴즈만 생성 가능합니다.'
+      };
+    }
+    
+    return { allowed: true, message: '' };
+  };
+
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -939,6 +975,13 @@ export default function QuizClient() {
   // Manual quiz generation
   const handleManualQuizGenerate = async () => {
     if (!userSchool || !selectedDate) return;
+    
+    // 시간 제약 체크 (급식과 동일한 로직)
+    const isAllowedTime = checkQuizTimeConstraint(selectedDate);
+    if (!isAllowedTime.allowed) {
+      setError(isAllowedTime.message);
+      return;
+    }
     
     setGeneratingQuiz(true);
     setError(null);
