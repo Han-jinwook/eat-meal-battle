@@ -22,9 +22,21 @@ interface ReportData {
   menu_items: string;
 }
 
+interface SeedSchool {
+  id: number;
+  school_name: string;
+  school_code: string;
+  region: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export default function AdminPage() {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false); // 데이터 생성 로딩 상태
+  const [seedSchools, setSeedSchools] = useState<SeedSchool[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'reviewed' | 'resolved' | 'dismissed'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -32,6 +44,74 @@ export default function AdminPage() {
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000); // 3초 후 자동 사라짐
+  };
+
+  const handleSeed = async (endpoint: string) => {
+    if (seeding) return;
+    setSeeding(true);
+
+    try {
+      const response = await fetch(`/api/admin/${endpoint}`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(data.message || '작업을 성공적으로 완료했습니다.', 'success');
+      } else {
+        showToast(data.error || '작업 중 오류가 발생했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error(`${endpoint} 작업 오류:`, error);
+      showToast('서버와 통신 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const fetchSeedSchools = async () => {
+    setSchoolsLoading(true);
+    try {
+      const response = await fetch('/api/admin/seed-schools');
+      const data = await response.json();
+      
+      if (data.schools) {
+        setSeedSchools(data.schools);
+      }
+    } catch (error) {
+      console.error('거점 학교 데이터 로딩 오류:', error);
+      showToast('거점 학교 목록을 불러오는데 실패했습니다.', 'error');
+    } finally {
+      setSchoolsLoading(false);
+    }
+  };
+
+  const toggleSchoolActive = async (schoolId: number, isActive: boolean) => {
+    try {
+      const response = await fetch('/api/admin/seed-schools', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: schoolId,
+          is_active: !isActive
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(data.message, 'success');
+        fetchSeedSchools(); // 목록 새로고침
+      } else {
+        showToast(data.error || '상태 변경에 실패했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('학교 상태 변경 오류:', error);
+      showToast('서버와 통신 중 오류가 발생했습니다.', 'error');
+    }
   };
 
   const cleanupOldReports = async () => {
@@ -143,6 +223,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchReports();
+    fetchSeedSchools();
   }, [filter]);
 
   const getStatusColor = (status: string) => {
@@ -179,6 +260,125 @@ export default function AdminPage() {
             </Link>
           </div>
           
+        </div>
+
+        {/* 초기 데이터 생성 섹션 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">초기 데이터 생성 (시뮬레이션)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => handleSeed('seed-accounts')}
+              disabled={seeding}
+              className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '1. 가계정 생성 (일회성)'}
+            </button>
+            <button
+              onClick={() => handleSeed('seed-lunch-activity')}
+              disabled={seeding}
+              className="px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '2. 점심시간 활동 생성'}
+            </button>
+            <button
+              onClick={() => handleSeed('seed-quiz-activity')}
+              disabled={seeding}
+              className="px-6 py-3 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '3. 하교 후 퀴즈 풀이'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-4">* 각 버튼은 독립적으로 실행되며, 처리 시간이 몇 분 소요될 수 있습니다. 가계정 생성은 한 번만 실행하세요.</p>
+        </div>
+
+        {/* 거점 학교 관리 섹션 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-800">거점 학교 관리</h2>
+            <button
+              onClick={fetchSeedSchools}
+              disabled={schoolsLoading}
+              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+            >
+              {schoolsLoading ? '로딩 중...' : '새로고침'}
+            </button>
+          </div>
+
+          {schoolsLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <p className="mt-2 text-gray-600">거점 학교 목록 로딩 중...</p>
+            </div>
+          ) : seedSchools.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              등록된 거점 학교가 없습니다.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      지역
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      학교명
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      학교 코드
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      상태
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      액션
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {seedSchools.map((school) => (
+                    <tr key={school.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {school.region}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{school.school_name}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{school.school_code}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          school.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {school.is_active ? '활성' : '비활성'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => toggleSchoolActive(school.id, school.is_active)}
+                          className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                            school.is_active
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          {school.is_active ? '비활성화' : '활성화'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-4 text-sm text-gray-500">
+                총 {seedSchools.length}개 거점 학교 | 활성: {seedSchools.filter(s => s.is_active).length}개 | 비활성: {seedSchools.filter(s => !s.is_active).length}개
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 급식 이미지 신고 관리 섹션 */}

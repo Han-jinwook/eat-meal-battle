@@ -16,11 +16,21 @@ interface SchoolInfo {
   created_at: string;
 }
 
+interface User {
+  id: string;
+  db_profile: {
+    nickname: string;
+    is_student: boolean;
+    birth_date: string;
+  };
+}
+
 interface UseUserSchoolReturn {
-  user: any;
+  user: User | null;
   userSchool: SchoolInfo | null;
+  setUserSchool: React.Dispatch<React.SetStateAction<SchoolInfo | null>>;
   loading: boolean;
-  error: string;
+  error: string | null;
   isRegistrationRequired: boolean; // 학생이지만 학교 등록이 안된 경우 true
   refresh: () => void;
 }
@@ -122,5 +132,5 @@ export default function useUserSchool(): UseUserSchoolReturn {
     fetchUserSchool();
   }, [supabase, refreshFlag]);
 
-  return { user, userSchool, loading, error, isRegistrationRequired, refresh };
+  return { user, userSchool, setUserSchool, loading, error, isRegistrationRequired, refresh };
 }

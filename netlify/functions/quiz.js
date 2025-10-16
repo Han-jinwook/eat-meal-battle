@@ -24,21 +24,35 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 // 유저 퀴즈 가져오기
 async function getUserQuiz(userId, schoolCode, grade, requestedDate, viewingUserId = null) {
-  // 유저 학교 정보 확인 - 관람 모드일 때는 관람 대상의 학교 정보 사용
-  if (!schoolCode || !grade) {
-    const targetUserId = viewingUserId || userId;
-    const { data: userSchool, error: userSchoolError } = await supabaseClient
+  // 관람 모드일 경우, 관람 대상의 학교 정보를 먼저 조회
+  if (viewingUserId) {
+    const { data: viewingUserSchool, error: viewingUserSchoolError } = await supabaseAdmin
       .from('school_infos')
       .select('school_code, grade')
-      .eq('user_id', targetUserId)
+      .eq('user_id', viewingUserId)
       .single();
 
-    if (userSchoolError) {
-      return { error: "사용자의 학교 정보를 찾을 수 없습니다." };
+    if (viewingUserSchoolError || !viewingUserSchool) {
+      return { error: "관람 대상의 학교 정보를 찾을 수 없습니다." };
     }
-    
-    schoolCode = userSchool.school_code;
-    grade = userSchool.grade;
+    schoolCode = viewingUserSchool.school_code;
+    grade = viewingUserSchool.grade;
+  } else {
+    // 일반 모드일 경우, 요청한 사용자의 학교 정보 확인
+    if (!schoolCode || !grade) {
+      const { data: userSchool, error: userSchoolError } = await supabaseClient
+        .from('school_infos')
+        .select('school_code, grade')
+        .eq('user_id', userId)
+        .single();
+
+      if (userSchoolError) {
+        return { error: "사용자의 학교 정보를 찾을 수 없습니다." };
+      }
+      
+      schoolCode = userSchool.school_code;
+      grade = userSchool.grade;
+    }
   }
 
   // 날짜 처리
