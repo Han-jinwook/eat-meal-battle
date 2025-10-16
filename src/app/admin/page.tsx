@@ -25,6 +25,7 @@ interface ReportData {
 export default function AdminPage() {
   const [reports, setReports] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false); // 데이터 생성 로딩 상태
   const [filter, setFilter] = useState<'all' | 'reviewed' | 'resolved' | 'dismissed'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -32,6 +33,30 @@ export default function AdminPage() {
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000); // 3초 후 자동 사라짐
+  };
+
+  const handleSeed = async (endpoint: string) => {
+    if (seeding) return;
+    setSeeding(true);
+
+    try {
+      const response = await fetch(`/api/admin/${endpoint}`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(data.message || '작업을 성공적으로 완료했습니다.', 'success');
+      } else {
+        showToast(data.error || '작업 중 오류가 발생했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error(`${endpoint} 작업 오류:`, error);
+      showToast('서버와 통신 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setSeeding(false);
+    }
   };
 
   const cleanupOldReports = async () => {
@@ -179,6 +204,35 @@ export default function AdminPage() {
             </Link>
           </div>
           
+        </div>
+
+        {/* 초기 데이터 생성 섹션 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">초기 데이터 생성 (시뮬레이션)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => handleSeed('seed-accounts')}
+              disabled={seeding}
+              className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '1. 가계정 생성 (일회성)'}
+            </button>
+            <button
+              onClick={() => handleSeed('seed-lunch-activity')}
+              disabled={seeding}
+              className="px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '2. 점심시간 활동 생성'}
+            </button>
+            <button
+              onClick={() => handleSeed('seed-quiz-activity')}
+              disabled={seeding}
+              className="px-6 py-3 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {seeding ? '처리 중...' : '3. 하교 후 퀴즈 풀이'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-4">* 각 버튼은 독립적으로 실행되며, 처리 시간이 몇 분 소요될 수 있습니다. 가계정 생성은 한 번만 실행하세요.</p>
         </div>
 
         {/* 급식 이미지 신고 관리 섹션 */}
