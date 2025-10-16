@@ -841,10 +841,6 @@ const USE_NEW_SYSTEM = false; // 테스트 완료 후 true로 변경
      * 사용법: `/.netlify/functions/force-june-champion-criteria` URL 접속
      * 기능: 모든 학교의 특정 월 크리테리아를 NEIS API 기반으로 강제 재계산
      * 특징: 기존 데이터 삭제 → 실제 급식일수 조회 → 주차별 계산 → 저장
-3. 테스트: 실제 UI로 퀴즈를 풀면서 새 장원 시스템 동작 확인
-4. 전환 방법: 
-   - 코드 내 USE_NEW_SYSTEM=true로 변경 후 재배포
-   - 최종 출시 전 TEST_MODE=false로 변경 후 배포
 
 === 주장원/월장원 시스템 구현  REDESIGNING (2025년 7월 5일 재설계)
 ===## 주장원/월장원 시스템 구현 🔄 REDESIGNING (2025년 7월 5일 재설계)

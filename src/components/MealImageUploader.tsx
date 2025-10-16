@@ -282,18 +282,43 @@ export default function MealImageUploader({
         const isPastCutoffTime = true; // 테스트용: 항상 활성화
         // const isPastCutoffTime = hour >= 12; // 프로덕션용: 12시 이후
         
+        // 시간 제약 함수 정의 (금주중 한정)
+        const isWithinAllowedTime = () => {
+          const today = new Date().toISOString().split('T')[0];
+          
+          // 당일: 12:30 이후 (AI 생성), 12:00 이후 (업로드)
+          if (mealDate === today) {
+            return hour >= 12; // 업로드는 12:00, AI는 아래에서 별도 체크
+          }
+          
+          // 이번 주 (월~일): 언제든 가능
+          const now = new Date();
+          const monday = new Date(now);
+          monday.setDate(now.getDate() - now.getDay() + 1); // 이번 주 월요일
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6); // 이번 주 일요일
+          
+          const targetDate = new Date(mealDate);
+          return targetDate >= monday && targetDate <= sunday;
+        };
+        
         console.log('시간 조건 확인:', {
           hour,
           minute,
-          isPastCutoffTime
+          mealDate,
+          isWithinAllowed: isWithinAllowedTime()
         });
         
-        // 파일선택 버튼은 12:00 이후부터 활성화
-        setCanUploadImage(isPastCutoffTime);
+        // 파일선택 버튼 시간 제약 적용
+        setCanUploadImage(isWithinAllowedTime());
         
-        // AI 이미지 생성 버튼은 12:30 이후부터 활성화 (테스트 모드 - 시간 제약 해제)
-        isPastAiCutoffTime = true; // 테스트용: 항상 활성화
-        // isPastAiCutoffTime = hour > 12 || (hour === 12 && minute >= 30); // 프로덕션용: 12:30 이후
+        // AI 이미지 생성 버튼 시간 제약 (12:30 이후)
+        const isAiAllowed = isWithinAllowedTime() && (
+          mealDate !== new Date().toISOString().split('T')[0] || 
+          hour > 12 || (hour === 12 && minute >= 30)
+        );
+        
+        isPastAiCutoffTime = isAiAllowed;
         if (!isPastAiCutoffTime) {
           console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
           setShowAiGenButton(false);

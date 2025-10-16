@@ -30,12 +30,41 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   // 학교 모드 및 권한 관리
   const schoolMode = useSchoolMode(userSchool);
   
-  // 댓글 작성 권한 확인
-  const canComment = schoolMode.canPerformAction('canComment');
+  // 댓글 작성 권한 확인 (이미지 승인에 종속)
+  const [canComment, setCanComment] = useState<boolean>(false);
   
   const supabase = createClient();
   
   const PAGE_SIZE = 10;
+
+  // 댓글 권한 확인 (이미지 승인 여부 + 기본 권한)
+  useEffect(() => {
+    const checkCommentPermission = async () => {
+      // 1. 기본 권한 체크
+      const hasBasicPermission = schoolMode.canPerformAction('canComment');
+      if (!hasBasicPermission) {
+        setCanComment(false);
+        return;
+      }
+      
+      // 2. 이미지 승인 여부 체크
+      try {
+        const { data: approvedImage } = await supabase
+          .from('meal_images')
+          .select('id')
+          .eq('meal_id', mealId)
+          .eq('status', 'approved')
+          .single();
+          
+        setCanComment(!!approvedImage);
+      } catch (error) {
+        console.error('이미지 승인 상태 확인 오류:', error);
+        setCanComment(false);
+      }
+    };
+    
+    checkCommentPermission();
+  }, [mealId, schoolMode]);
 
   // 댓글 로드 함수
   const loadComments = async (reset = false) => {

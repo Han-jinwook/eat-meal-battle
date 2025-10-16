@@ -18,43 +18,22 @@ const supabase = createClient();
 // 디버깅용 콘솔 로그
 console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화');
 
-// 별점 시간 제한 체크 함수 - 파일 업로더와 동일한 로직 사용
-const canRateAtCurrentTime = (mealDate: string): boolean => {
-  // 테스트용: 시간 제약 해제 (주석 해제하면 항상 허용)
-  return true;
-  
-  const now = new Date();
-  // 한국 시간대로 변환
-  const koreaTimeString = now.toLocaleString('en-CA', { 
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit', 
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-  
-  const [dateStr, timeStr] = koreaTimeString.split(', ');
-  const today = dateStr; // YYYY-MM-DD 형식
-  const [hourStr] = timeStr.split(':');
-  const hour = parseInt(hourStr);
-  
-  console.log('별점 시간 체크:', {
-    mealDate,
-    today,
-    hour,
-    isToday: mealDate === today,
-    isPastCutoffTime: hour >= 12
-  });
-  
-  // 당일이 아니면 불가
-  if (mealDate !== today) {
+// 별점 시간 제한 체크 함수 - 이미지 승인에 종속
+const canRateAtCurrentTime = async (mealId: string): Promise<boolean> => {
+  try {
+    // 1. 이미지 승인 여부 체크
+    const { data: approvedImage } = await supabase
+      .from('meal_images')
+      .select('id')
+      .eq('meal_id', mealId)
+      .eq('status', 'approved')
+      .single();
+      
+    return !!approvedImage; // 승인된 이미지가 있으면 true
+  } catch (error) {
+    console.error('이미지 승인 상태 확인 오류:', error);
     return false;
   }
-  
-  // 당일 12시 이후만 가능
-  return hour >= 12;
 };
 
 interface MealCardProps {
@@ -758,15 +737,39 @@ export default function MealCard({
   showImageOnly = false,
   showInfoOnly = false,
 }: MealCardProps) {
+  // 메뉴 평가 권한 상태 관리
+  const [canRate, setCanRate] = useState<boolean>(false);
+  
+  // 이미지 승인 상태에 따른 평가 권한 확인
+  useEffect(() => {
+    const checkRatingPermission = async () => {
+      if (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') {
+        setCanRate(false);
+      } else {
+        const allowed = await canRateAtCurrentTime(meal.id);
+        setCanRate(allowed);
+      }
+    };
+    
+    checkRatingPermission();
+  }, [meal.id, meal.menu_items]);
+
   // 이미지 업로드 성공 시 호출되는 함수 (단순화됨)
   const handleImageChange = useCallback(() => {
     console.log('📣 이미지 변경 알림 받음');
+    
+    // 이미지 변경 시 평가 권한 재확인
+    const recheckPermission = async () => {
+      const allowed = await canRateAtCurrentTime(meal.id);
+      setCanRate(allowed);
+    };
+    recheckPermission();
     
     // 최상위 컴포넌트의 콜백 호출 (있는 경우)
     if (onUploadSuccess) {
       onUploadSuccess();
     }
-  }, [onUploadSuccess]);
+  }, [onUploadSuccess, meal.id]);
 
   // 이미지만 표시하는 경우
   if (showImageOnly) {
@@ -835,11 +838,7 @@ export default function MealCard({
                     key={item.id}
                     item={item}
                     mealDate={meal.meal_date}
-                    interactive={
-                      (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') 
-                        ? false 
-                        : canRateAtCurrentTime(meal.meal_date)
-                    }
+                    interactive={canRate}
                   />
                 ))
               ) : (
@@ -913,26 +912,23 @@ export default function MealCard({
           <ul className="space-y-2">
             {meal.menuItems && meal.menuItems.length > 0 ? (
               // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
-              meal.menuItems.map((item) => (
+              meal.menuItems.map((item, idx) => (
                 <MenuItemWithRating
-                  key={item.id}
-                  item={item}
+                  key={idx}
+                  item={{ id: `${meal.id}-${idx}`, name: item }}
                   mealDate={meal.meal_date}
-                  // 급식정보 체크 + 시간 제한 체크
-                  interactive={
-                    // 급식정보가 없는 경우 비활성화
-                    (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') 
-                      ? false 
-                      : canRateAtCurrentTime(meal.meal_date) // 시간 제한 체크 추가
-                  }
+                  interactive={canRate}
                 />
               ))
             ) : (
               // 기존 menu_items 배열 사용 (하위 호환성 유지)
               meal.menu_items.map((item, idx) => (
-                <li key={idx} className="text-gray-700">
-                  {item}
-                </li>
+                <MenuItemWithRating
+                  key={idx}
+                  item={{ id: `${meal.id}-${idx}`, name: item }}
+                  mealDate={meal.meal_date}
+                  interactive={canRate}
+                />
               ))
             )}
           </ul>
