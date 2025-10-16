@@ -228,7 +228,7 @@ export default function QuizClient() {
       });
       
       const currentIndex = uniqueSchools.findIndex(school => 
-        school.school_name === universalSchoolName && school.school_code === universalSchoolCode
+        school.school_code === universalSchoolCode
       );
       
       console.log('📍 현재 학교 인덱스:', currentIndex, '/', uniqueSchools.length);
@@ -413,11 +413,15 @@ export default function QuizClient() {
           currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
           
           if (ownerData) {
-            if (ownerData.nickname) {
-              currentUrl.searchParams.set('owner_nickname', ownerData.nickname);
+            const typedOwnerData = ownerData as any;
+            if (typedOwnerData.nickname) {
+              currentUrl.searchParams.set('owner_nickname', typedOwnerData.nickname);
             }
-            if (ownerData.school_infos?.school_name) {
-              currentUrl.searchParams.set('school_name', ownerData.school_infos.school_name);
+            const schoolName = Array.isArray(typedOwnerData.school_infos)
+              ? typedOwnerData.school_infos[0]?.school_name
+              : typedOwnerData.school_infos?.school_name;
+            if (schoolName) {
+              currentUrl.searchParams.set('school_name', schoolName);
             }
           }
           
@@ -438,7 +442,7 @@ export default function QuizClient() {
     };
     
     checkAndRedirect();
-  }, [userLoading, isViewingMode, searchParams, router, supabase]);
+  }, [userLoading, searchParams, router, supabase]);
   
   // Handle viewing mode and subscription
   useEffect(() => {
@@ -543,25 +547,32 @@ export default function QuizClient() {
     }
   };
 
-  // 관람 사용자 정보 로드 함수 (닉네임만)
+  // 관람 사용자 정보 로드 함수
   const loadViewingUserInfo = async (userId: string) => {
     try {
-      console.log('🔍 관람 사용자 닉네임 로드:', userId);
-      
+      console.log('🔍 관람 사용자 정보 로드:', userId);
+
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('nickname')
+        .select('nickname, school_infos ( school_name, grade, class_number )')
         .eq('id', userId)
         .single();
 
-      if (userError) {
-        console.error('관람 사용자 닉네임 로드 오류:', userError);
+      if (userError || !userData) {
+        console.error('관람 사용자 정보 로드 오류:', userError);
         toast.error('관람 사용자 정보를 불러오는데 실패했습니다.');
         return;
       }
 
+      const schoolInfo = Array.isArray(userData.school_infos)
+        ? userData.school_infos[0]
+        : userData.school_infos;
+
       setViewingUserInfo({
         nickname: userData.nickname,
+        school_name: schoolInfo?.school_name || '학교 정보 없음',
+        grade: schoolInfo?.grade,
+        class: schoolInfo?.class_number,
       });
 
     } catch (error) {
