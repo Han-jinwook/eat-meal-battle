@@ -398,31 +398,30 @@ export default function QuizClient() {
           console.log('✅ 구독 퀴즈 발견 - 자동 리디렉션 시작');
           const firstQuiz = subscribedQuizzes[0];
           
-          // 소유자 정보 가져오기
+          // 소유자 정보 가져오기 (안정성을 위해 분리된 쿼리 사용)
           console.log('👤 소유자 정보 조회 시작:', firstQuiz.quiz_owner_id);
-          const { data: ownerData, error: ownerError } = await supabase
+          const { data: ownerUser, error: ownerUserError } = await supabase
             .from('users')
-            .select('nickname, school_infos(school_name)')
+            .select('nickname')
             .eq('id', firstQuiz.quiz_owner_id)
             .single();
-          
-          console.log('👤 소유자 정보 조회 결과:', { ownerData, ownerError });
-          
-          // 소유자 정보가 있든 없든 기본 viewing 파라미터로 리디렉션
+
+          const { data: ownerSchool, error: ownerSchoolError } = await supabase
+            .from('school_infos')
+            .select('school_name')
+            .eq('user_id', firstQuiz.quiz_owner_id)
+            .single();
+
+          console.log('👤 소유자 정보 조회 결과:', { ownerUser, ownerSchool });
+
           const currentUrl = new URL(window.location.href);
           currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
-          
-          if (ownerData) {
-            const typedOwnerData = ownerData as any;
-            if (typedOwnerData.nickname) {
-              currentUrl.searchParams.set('owner_nickname', typedOwnerData.nickname);
-            }
-            const schoolName = Array.isArray(typedOwnerData.school_infos)
-              ? typedOwnerData.school_infos[0]?.school_name
-              : typedOwnerData.school_infos?.school_name;
-            if (schoolName) {
-              currentUrl.searchParams.set('school_name', schoolName);
-            }
+
+          if (ownerUser?.nickname) {
+            currentUrl.searchParams.set('owner_nickname', ownerUser.nickname);
+          }
+          if (ownerSchool?.school_name) {
+            currentUrl.searchParams.set('school_name', ownerSchool.school_name);
           }
           
           console.log('🚀 자동 리디렉션 실행:', currentUrl.toString());
@@ -547,32 +546,36 @@ export default function QuizClient() {
     }
   };
 
-  // 관람 사용자 정보 로드 함수
+  // 관람 사용자 정보 로드 함수 (안정성을 위해 분리된 쿼리 사용)
   const loadViewingUserInfo = async (userId: string) => {
     try {
       console.log('🔍 관람 사용자 정보 로드:', userId);
 
+      // 1. 닉네임 조회
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('nickname, school_infos ( school_name, grade, class_number )')
+        .select('nickname')
         .eq('id', userId)
         .single();
 
+      // 2. 학교 정보 조회
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_name, grade, class_number')
+        .eq('user_id', userId)
+        .single();
+
       if (userError || !userData) {
-        console.error('관람 사용자 정보 로드 오류:', userError);
+        console.error('관람 사용자 닉네임 로드 오류:', userError);
         toast.error('관람 사용자 정보를 불러오는데 실패했습니다.');
         return;
       }
 
-      const schoolInfo = Array.isArray(userData.school_infos)
-        ? userData.school_infos[0]
-        : userData.school_infos;
-
       setViewingUserInfo({
         nickname: userData.nickname,
-        school_name: schoolInfo?.school_name || '학교 정보 없음',
-        grade: schoolInfo?.grade,
-        class: schoolInfo?.class_number,
+        school_name: schoolData?.school_name || '학교 정보 없음',
+        grade: schoolData?.grade,
+        class: schoolData?.class_number,
       });
 
     } catch (error) {
