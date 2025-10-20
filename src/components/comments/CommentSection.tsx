@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase';
 import CommentForm from './CommentForm';
 import { User } from '@supabase/supabase-js';
 import { Comment } from './types';
-import useUserSchool from '@/hooks/useUserSchool';
-import { useSchoolMode } from '@/hooks/useSchoolMode';
+import useUserSchool from '../../hooks/useUserSchool';
+import { useSchoolMode } from '../../hooks/useSchoolMode';
+import { isWithinAllowedTime, getTimeConstraintMessage } from '../../utils/timeConstraints';
 
 // 순환 참조를 피하기 위해 동적 임포트 대신 타입 단언을 사용
 import CommentItem from './CommentItem';
@@ -15,9 +16,10 @@ interface CommentSectionProps {
   mealId: string;
   className?: string;
   schoolCode?: string; // 학교 코드 추가
+  mealDate: string; // 시간 제약을 위한 급식 날짜
 }
 
-export default function CommentSection({ mealId, className = '', schoolCode }: CommentSectionProps) {
+export default function CommentSection({ mealId, className = '', schoolCode, mealDate }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +39,9 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
   
   const PAGE_SIZE = 10;
 
-  // 댓글 권한 확인 (이미지 승인 여부 + 기본 권한)
+  // 댓글 권한 확인 (시간 제약 + 기본 권한)
   useEffect(() => {
-    const checkCommentPermission = async () => {
+    const checkCommentPermission = () => {
       // 1. 기본 권한 체크
       const hasBasicPermission = schoolMode.canPerformAction('canComment');
       if (!hasBasicPermission) {
@@ -47,24 +49,13 @@ export default function CommentSection({ mealId, className = '', schoolCode }: C
         return;
       }
       
-      // 2. 이미지 승인 여부 체크
-      try {
-        const { data: approvedImage } = await supabase
-          .from('meal_images')
-          .select('id')
-          .eq('meal_id', mealId)
-          .eq('status', 'approved')
-          .single();
-          
-        setCanComment(!!approvedImage);
-      } catch (error) {
-        console.error('이미지 승인 상태 확인 오류:', error);
-        setCanComment(false);
-      }
+      // 2. 시간 제약 체크
+      const timeAllowed = isWithinAllowedTime(mealDate);
+      setCanComment(timeAllowed);
     };
     
     checkCommentPermission();
-  }, [mealId, schoolMode]);
+  }, [mealDate, schoolMode]);
 
   // 댓글 로드 함수
   const loadComments = async (reset = false) => {

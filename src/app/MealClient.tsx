@@ -1232,7 +1232,8 @@ export default function MealClient() {
                           <CommentSection 
                             mealId={meal.id} 
                             className="mt-4" 
-                            schoolCode={meal.school_code} 
+                            schoolCode={meal.school_code}
+                            mealDate={meal.meal_date}
                           />
                         </div>
                       </div>

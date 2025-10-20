@@ -6,9 +6,9 @@ import { createClient } from '@/lib/supabase';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import useUserSchool from '@/hooks/useUserSchool';
-import { useSchoolMode } from '@/hooks/useSchoolMode';
-import { supabase } from '../lib/supabase';
+import { useSchoolMode } from '../hooks/useSchoolMode';
 import toast from 'react-hot-toast';
+import { isWithinAllowedTime, isWithinAiAllowedTime, getTimeConstraintMessage } from '../utils/timeConstraints';
 
 interface MealImageUploaderProps {
   schoolCode: string;
@@ -278,47 +278,20 @@ export default function MealImageUploader({
         
         // hasValidMeal 체크는 위에서 이미 완료됨
         
-        // 3. 시간 조건 확인 (테스트 모드 - 시간 제약 해제)
-        const isPastCutoffTime = true; // 테스트용: 항상 활성화
-        // const isPastCutoffTime = hour >= 12; // 프로덕션용: 12시 이후
-        
-        // 시간 제약 함수 정의 (금주중 한정)
-        const isWithinAllowedTime = () => {
-          const today = new Date().toISOString().split('T')[0];
-          
-          // 당일: 12:30 이후 (AI 생성), 12:00 이후 (업로드)
-          if (mealDate === today) {
-            return hour >= 12; // 업로드는 12:00, AI는 아래에서 별도 체크
-          }
-          
-          // 이번 주 (월~일): 언제든 가능
-          const now = new Date();
-          const monday = new Date(now);
-          monday.setDate(now.getDate() - now.getDay() + 1); // 이번 주 월요일
-          const sunday = new Date(monday);
-          sunday.setDate(monday.getDate() + 6); // 이번 주 일요일
-          
-          const targetDate = new Date(mealDate);
-          return targetDate >= monday && targetDate <= sunday;
-        };
-        
+        // 3. 시간 조건 확인 - 공통 함수 사용
         console.log('시간 조건 확인:', {
           hour,
           minute,
           mealDate,
-          isWithinAllowed: isWithinAllowedTime()
+          isWithinAllowed: isWithinAllowedTime(mealDate),
+          isAiAllowed: isWithinAiAllowedTime(mealDate)
         });
         
         // 파일선택 버튼 시간 제약 적용
-        setCanUploadImage(isWithinAllowedTime());
+        setCanUploadImage(isWithinAllowedTime(mealDate));
         
         // AI 이미지 생성 버튼 시간 제약 (12:30 이후)
-        const isAiAllowed = isWithinAllowedTime() && (
-          mealDate !== new Date().toISOString().split('T')[0] || 
-          hour > 12 || (hour === 12 && minute >= 30)
-        );
-        
-        isPastAiCutoffTime = isAiAllowed;
+        isPastAiCutoffTime = isWithinAiAllowedTime(mealDate);
         if (!isPastAiCutoffTime) {
           console.log('AI 이미지 생성 버튼 비활성화: 12:30 이전');
           setShowAiGenButton(false);
@@ -1309,7 +1282,7 @@ export default function MealImageUploader({
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
-                title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? '당일 급식 메뉴에 대해서만 12시 이후 업로드 가능합니다.' : ''}
+                title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? getTimeConstraintMessage() : ''}
               >
                 파일 선택
               </button>
@@ -1511,8 +1484,13 @@ export default function MealImageUploader({
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <button
                 onClick={handleAiImageGeneration}
-                className="p-0 relative overflow-hidden hover:opacity-90 w-full sm:w-auto"
-                title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : ''}
+                disabled={!canUploadImage || !canUseAI}
+                className={`p-0 relative overflow-hidden w-full sm:w-auto ${
+                  canUploadImage && canUseAI 
+                    ? 'hover:opacity-90' 
+                    : 'opacity-50 cursor-not-allowed'
+                }`}
+                title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : !canUploadImage ? getTimeConstraintMessage() : ''}
               >
                 {imageStatus === 'generating' ? (
                   <span className="flex items-center">

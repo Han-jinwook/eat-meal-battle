@@ -3,14 +3,15 @@ import { formatDisplayDate } from '@/utils/DateUtils';
 import { getMealTypeName } from '@/utils/mealUtils';
 import { MealInfo, MealMenuItem, MealImage } from '@/types'; // 이미지 타입 추가
 import StarRating from '@/components/StarRating';
-import { useState, useEffect, useCallback, useRef } from 'react';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClient } from '@/lib/supabase';
 import MyMealRating from '@/components/MyMealRating';
 import SchoolRating from './SchoolRating';
 // battleCalculator 제거됨
-import useUserSchool from '@/hooks/useUserSchool';
-import { useSchoolMode } from '@/hooks/useSchoolMode';
+import useUserSchool from '../hooks/useUserSchool';
+import { useSchoolMode } from '../hooks/useSchoolMode';
+import { isWithinAllowedTime } from '../utils/timeConstraints';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Supabase 클라이언트 초기화
 const supabase = createClient();
@@ -18,22 +19,9 @@ const supabase = createClient();
 // 디버깅용 콘솔 로그
 console.log('MealCard 컴포넌트 로드됨, Supabase 클라이언트 초기화');
 
-// 별점 시간 제한 체크 함수 - 이미지 승인에 종속
-const canRateAtCurrentTime = async (mealId: string): Promise<boolean> => {
-  try {
-    // 1. 이미지 승인 여부 체크
-    const { data: approvedImage } = await supabase
-      .from('meal_images')
-      .select('id')
-      .eq('meal_id', mealId)
-      .eq('status', 'approved')
-      .single();
-      
-    return !!approvedImage; // 승인된 이미지가 있으면 true
-  } catch (error) {
-    console.error('이미지 승인 상태 확인 오류:', error);
-    return false;
-  }
+// 별점 시간 제한 체크 함수 - 시간 제약만 적용
+const canRateAtCurrentTime = (mealDate: string): boolean => {
+  return isWithinAllowedTime(mealDate);
 };
 
 interface MealCardProps {
@@ -746,7 +734,7 @@ export default function MealCard({
       if (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') {
         setCanRate(false);
       } else {
-        const allowed = await canRateAtCurrentTime(meal.id);
+        const allowed = canRateAtCurrentTime(meal.meal_date);
         setCanRate(allowed);
       }
     };
@@ -760,7 +748,7 @@ export default function MealCard({
     
     // 이미지 변경 시 평가 권한 재확인
     const recheckPermission = async () => {
-      const allowed = await canRateAtCurrentTime(meal.id);
+      const allowed = canRateAtCurrentTime(meal.meal_date);
       setCanRate(allowed);
     };
     recheckPermission();
