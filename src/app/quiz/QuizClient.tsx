@@ -63,11 +63,25 @@ export default function QuizClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // 퀴즈 생성 시간 제약 체크 함수
+  // 퀴즈 생성 시간 제약 체크 함수 (KST 기준)
   const checkQuizTimeConstraint = (targetDate: string) => {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentHour = now.getHours();
+    
+    // 한국 시간대로 변환
+    const koreaTimeString = now.toLocaleString('en-CA', { 
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    const [dateStr, timeStr] = koreaTimeString.split(', ');
+    const today = dateStr; // YYYY-MM-DD 형식
+    const [hourStr] = timeStr.split(':');
+    const currentHour = parseInt(hourStr);
     
     // 1. 미래 날짜 체크
     if (targetDate > today) {
@@ -85,8 +99,9 @@ export default function QuizClient() {
       };
     }
     
-    // 3. 과거 범위 체크 (전월 1일 ~ 현재)
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    // 3. 과거 범위 체크 (전월 1일 ~ 현재) - KST 기준
+    const koreaDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+    const lastMonth = new Date(koreaDate.getFullYear(), koreaDate.getMonth() - 1, 1);
     const lastMonthStart = lastMonth.toISOString().split('T')[0];
     
     if (targetDate < lastMonthStart) {
