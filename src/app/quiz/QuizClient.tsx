@@ -139,6 +139,16 @@ export default function QuizClient() {
   const [universalSchoolType, setUniversalSchoolType] = useState<'초등학교' | '중학교' | '고등학교'>('초등학교');
   const [universalSchoolCode, setUniversalSchoolCode] = useState<string>('');
 
+  // 관람 모드 상태
+  const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserInfo, setViewingUserInfo] = useState<{
+    nickname: string;
+    school_name: string;
+    grade?: number;
+    class?: number;
+  } | null>(null);
+
   // 만능 선택기 핸들러 함수들
   const handleUniversalGradeChange = (grade: number) => {
     // 학교 종류별 학년 범위 확인
@@ -320,47 +330,81 @@ export default function QuizClient() {
     }
   };
 
-  // 만능 선택기 초기값 설정 - 내 학교/학년으로 설정
+  // 구독 대상 정보 조회 함수
+  const getViewingUserInfo = async (viewingUserId) => {
+    if (!viewingUserId) return null;
+    
+    try {
+      const { data } = await supabase
+        .from('school_infos')
+        .select('school_name, school_code, grade, school_type')
+        .eq('user_id', viewingUserId)
+        .single();
+        
+      return data;
+    } catch (error) {
+      console.error('구독 대상 정보 조회 오류:', error);
+      return null;
+    }
+  };
+
+  // 만능 선택기 초기값 설정 - 구독모드면 구독 대상, 아니면 내 학교/학년으로 설정
   useEffect(() => {
-    if (userSchool && !userLoading) {
-      setUniversalSchoolName(userSchool.school_name || '');
-      setUniversalSchoolCode(userSchool.school_code || '');
-      setUniversalGrade(typeof userSchool.grade === 'number' ? userSchool.grade : parseInt(String(userSchool.grade)) || 1);
+    const initializeQuizModal = async () => {
+      let targetSchool = userSchool;
       
-      // 학교 종류 결정 - school_type 컬럼 사용
-      if (userSchool.school_type === '초등학교') {
-        setUniversalSchoolType('초등학교');
-        setSelectedSchoolLevel('elementary');
-      } else if (userSchool.school_type === '중학교') {
-        setUniversalSchoolType('중학교');
-        setSelectedSchoolLevel('middle');
-      } else if (userSchool.school_type === '고등학교') {
-        setUniversalSchoolType('고등학교');
-        setSelectedSchoolLevel('high');
-      } else {
-        // school_type이 없거나 다른 값인 경우 학교명으로 fallback
-        if (userSchool.school_name?.includes('초등학교')) {
-          setUniversalSchoolType('초등학교');
-          setSelectedSchoolLevel('elementary');
-        } else if (userSchool.school_name?.includes('중학교')) {
-          setUniversalSchoolType('중학교');
-          setSelectedSchoolLevel('middle');
-        } else if (userSchool.school_name?.includes('고등학교') || userSchool.school_name?.includes('고')) {
-          setUniversalSchoolType('고등학교');
-          setSelectedSchoolLevel('high');
+      // 구독모드인 경우에만 구독 대상 정보 조회
+      if (isViewingMode && viewingUserId) {
+        const viewingUserInfo = await getViewingUserInfo(viewingUserId);
+        if (viewingUserInfo) {
+          targetSchool = viewingUserInfo;
+          console.log('🎯 구독모드: 구독 대상 정보 사용:', viewingUserInfo);
         }
       }
       
-      console.log('🎯 AllQuizModal 초기값 - 내 학교/학년으로 설정:', {
-        schoolName: userSchool.school_name,
-        schoolCode: userSchool.school_code,
-        schoolType: userSchool.school_type,
-        grade: userSchool.grade,
-        selectedSchoolLevel: selectedSchoolLevel,
-        universalSchoolType: universalSchoolType
-      });
-    }
-  }, [userSchool, userLoading]);
+      if (targetSchool && !userLoading) {
+        setUniversalSchoolName(targetSchool.school_name || '');
+        setUniversalSchoolCode(targetSchool.school_code || '');
+        setUniversalGrade(typeof targetSchool.grade === 'number' ? targetSchool.grade : parseInt(String(targetSchool.grade)) || 1);
+        
+        // 학교 종류 결정 - school_type 컬럼 사용
+        if (targetSchool.school_type === '초등학교') {
+          setUniversalSchoolType('초등학교');
+          setSelectedSchoolLevel('elementary');
+        } else if (targetSchool.school_type === '중학교') {
+          setUniversalSchoolType('중학교');
+          setSelectedSchoolLevel('middle');
+        } else if (targetSchool.school_type === '고등학교') {
+          setUniversalSchoolType('고등학교');
+          setSelectedSchoolLevel('high');
+        } else {
+          // school_type이 없거나 다른 값인 경우 학교명으로 fallback
+          if (targetSchool.school_name?.includes('초등학교')) {
+            setUniversalSchoolType('초등학교');
+            setSelectedSchoolLevel('elementary');
+          } else if (targetSchool.school_name?.includes('중학교')) {
+            setUniversalSchoolType('중학교');
+            setSelectedSchoolLevel('middle');
+          } else if (targetSchool.school_name?.includes('고등학교') || targetSchool.school_name?.includes('고')) {
+            setUniversalSchoolType('고등학교');
+            setSelectedSchoolLevel('high');
+          }
+        }
+        
+        console.log('🎯 AllQuizModal 초기값 설정:', {
+          isViewingMode,
+          schoolName: targetSchool.school_name,
+          schoolCode: targetSchool.school_code,
+          schoolType: targetSchool.school_type,
+          grade: targetSchool.grade,
+          selectedSchoolLevel: selectedSchoolLevel,
+          universalSchoolType: universalSchoolType
+        });
+      }
+    };
+    
+    initializeQuizModal();
+  }, [userSchool, userLoading, isViewingMode, viewingUserId]);
 
   // 모든 퀴즈 모달에서 만능 선택기 값 변경 시 퀴즈 로드
   useEffect(() => {
@@ -374,16 +418,6 @@ export default function QuizClient() {
     }
   }, [isAllQuizModalOpen, universalSchoolCode, universalGrade, selectedDate]);
 
-  // 관람 모드 상태
-  const [isViewingMode, setIsViewingMode] = useState<boolean>(false);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
-  const [viewingUserInfo, setViewingUserInfo] = useState<{
-    nickname: string;
-    school_name: string;
-    grade?: number;
-    class?: number;
-  } | null>(null);
-  
   // 구독퀴즈 없는 비학생 상태
   const [isNonStudentWithNoSubscription, setIsNonStudentWithNoSubscription] = useState<boolean>(false);
   const [hasCheckedSubscription, setHasCheckedSubscription] = useState<boolean>(false);
