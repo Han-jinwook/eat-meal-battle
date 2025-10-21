@@ -942,6 +942,17 @@ async function compensateAllUsersForIncorrectQuiz(quizId) {
       return;
     }
     
+    // all_quiz_attempts 테이블도 함께 업데이트 (모든퀴즈용)
+    const { error: allQuizUpdateError } = await supabaseAdmin
+      .from('all_quiz_attempts')
+      .update({ is_correct: true })
+      .eq('quiz_id', quizId);
+      
+    if (allQuizUpdateError) {
+      console.error('[quiz] all_quiz_attempts 업데이트 실패:', allQuizUpdateError);
+      // 에러가 있어도 계속 진행 (quiz_results는 이미 성공했으므로)
+    }
+    
     // 퀴즈 정보 조회 (날짜 정보 필요)
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('meal_quizzes')
