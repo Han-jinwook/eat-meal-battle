@@ -1239,7 +1239,7 @@ export default function MealImageUploader({
                 {uploadedImage.status === 'approved' && uploadedImage.source === 'user' && (
                   <button
                     onClick={handleReportError}
-                    disabled={isReporting || hasReported}
+                    disabled={isReporting || hasReported || !canUploadPhoto}
                     className={`mt-2 px-3 py-1 text-xs border rounded-md disabled:cursor-not-allowed ${
                       hasReported 
                         ? 'bg-blue-50 text-blue-700 border-blue-200' 

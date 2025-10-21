@@ -233,7 +233,9 @@ async function processQuiz(userId, quiz, canShowAnswer, viewingUserId = null) {
   // 1. 이미 풀었고 정답 확인 시간 이후이거나
   // 2. 이미 풀었고 오출제 확정된 문제이거나  
   // 3. 아직 안 풀었지만 정답 확인 시간 이후인 경우
-  const shouldShowAnswer = (hasAnswered && (canShowAnswer || isVerifiedIncorrect)) || (!hasAnswered && canShowAnswer);
+  // 4. 오답신고가 처리된 경우 (verified_correct 또는 verified_incorrect)
+  const hasReportProcessed = quiz.report_status === 'verified_correct' || quiz.report_status === 'verified_incorrect';
+  const shouldShowAnswer = (hasAnswered && (canShowAnswer || isVerifiedIncorrect || hasReportProcessed)) || (!hasAnswered && canShowAnswer);
   
   // 이미 풀었거나 정답 확인 시간 이후인 경우
   if (hasAnswered || canShowAnswer) {
