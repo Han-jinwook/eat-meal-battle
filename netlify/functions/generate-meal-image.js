@@ -186,17 +186,49 @@ exports.handler = async (event, context) => {
     // 파일명 생성 (JPEG 포맷)
     const fileName = `ai_generated_${meal_id}_${Date.now()}.jpg`;
     
-    // 압축된 JPEG 이미지를 Supabase Storage에 업로드
+    // 압축된 JPEG 이미지를 Supabase Storage에 업로드 (재시도 로직 포함)
     console.log(`[generate-meal-image] Supabase Storage에 업로드 중: ${fileName}`);
-    const { data: fileData, error: uploadError } = await supabaseAdmin.storage
-      .from('meal-images')
-      .upload(fileName, jpegBuffer, {
-        contentType: 'image/jpeg',
-        upsert: true
-      });
+    
+    let uploadResult;
+    let uploadError;
+    
+    // 최대 3회 재시도
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await supabaseAdmin.storage
+          .from('meal-images')
+          .upload(fileName, jpegBuffer, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+          
+        uploadResult = result.data;
+        uploadError = result.error;
+        
+        if (!uploadError) {
+          console.log(`[generate-meal-image] 업로드 성공 (시도 ${attempt}/3)`);
+          break;
+        }
+        
+        console.warn(`[generate-meal-image] 업로드 시도 ${attempt}/3 실패:`, uploadError);
+        
+        // 마지막 시도가 아니면 잠시 대기
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      } catch (error) {
+        console.error(`[generate-meal-image] 업로드 시도 ${attempt}/3 예외:`, error);
+        uploadError = error;
+        
+        // 마지막 시도가 아니면 잠시 대기
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
       
     if (uploadError) {
-      console.error('[generate-meal-image] 이미지 업로드 오류:', uploadError);
+      console.error('[generate-meal-image] 최종 이미지 업로드 오류:', uploadError);
       throw uploadError;
     }
     
