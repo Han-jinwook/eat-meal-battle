@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         // 사용자의 기존 답변 조회 (모든퀴즈는 all_quiz_attempts 테이블 사용)
         const { data: userAnswer } = await supabase
           .from('all_quiz_attempts')
-          .select('selected_option, is_correct, created_at')
+          .select('selected_option, is_correct, answer_time')
           .eq('user_id', targetUserId)
           .eq('quiz_id', quiz.id)
           .single();
@@ -141,8 +141,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '이미 답변한 퀴즈입니다.' }, { status: 400 });
     }
 
-    // 정답 확인
-    const is_correct = quiz.correct_answer === selected_option;
+    // 정답 확인 (오출제 확정된 문제는 모든 답변을 정답으로 처리)
+    const isVerifiedIncorrect = quiz.report_status === 'verified_incorrect';
+    const is_correct = isVerifiedIncorrect ? true : (quiz.correct_answer === selected_option);
 
     // 답안 기록 저장
     const { error: attemptError } = await supabase
