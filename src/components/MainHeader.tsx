@@ -92,7 +92,7 @@ export default function MainHeader() {
     <header className="sticky top-0 z-40 border-b bg-yellow-400 backdrop-blur">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center">
-          <img src="/images/logo.png" alt="뭐먹지?" className="h-10 w-auto" />
+          <img src="/images/logo.png" alt="급식배틀" className="h-8 w-auto" />
         </Link>
 
         <nav className="flex overflow-x-auto gap-2 sm:gap-4 px-1 py-1 -mx-1 scrollbar-hide">
