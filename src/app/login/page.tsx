@@ -452,7 +452,7 @@ function LoginContent() {
                     <div className="bg-white rounded-xl p-6 shadow-lg min-w-[280px] max-w-[280px]">
                       <div className="text-center">
                         <div className="flex justify-center mb-4">
-                          <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[140px] h-auto" />
+                          <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[210px] h-auto" />
                         </div>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                           영양과 원산지는 Good! 그렇다면 '맛'은 ?
@@ -579,7 +579,7 @@ function LoginContent() {
               <div className="hidden lg:block">
                 <div className="text-center lg:text-left">
                   <div className="flex justify-center lg:justify-start mb-4">
-                    <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[140px] h-auto" />
+                    <img src="/images/sublogo.png" alt="급식배틀 로고" className="w-[210px] h-auto" />
                   </div>
                   <p className="mt-2 text-lg text-gray-600 leading-relaxed">
                     영양과 원산지는 Good! 그렇다면 '맛'은 ?
