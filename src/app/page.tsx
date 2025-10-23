@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!schoolCode) {
     console.log('❌ school_code 없음, 기본 메타데이터 반환');
     return {
-      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈 | 뭐먹지?',
+      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈',
       description: '전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!',
     };
   }
@@ -48,7 +48,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     console.log('✅ 학교 조회 성공:', { schoolName, shareUrl });
     
     return {
-      title: `급식배틀 🍱 ${schoolName} ${date} 급식 랭킹 | 뭐먹지?`,
+      title: `급식배틀 🍱 ${schoolName} ${date} 급식 랭킹`,
       description: `${schoolName} 급식 평가 & 랭킹 확인! 오늘 급식 점수는? 전국 학교 급식 배틀에 참여하고 우리 학교 순위를 올려보세요!`,
       openGraph: {
         title: `급식배틀 🍱 ${schoolName} ${date} 급식 랭킹`,
@@ -76,7 +76,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     console.error('❌ 메타데이터 생성 오류:', error);
     console.error('❌ 에러 상세:', error instanceof Error ? error.message : String(error));
     return {
-      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈 | 뭐먹지?',
+      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈',
       description: '전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!',
     };
   }

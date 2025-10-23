@@ -1,7 +1,7 @@
 {
-  "name": "뭐먹지? - 학교 급식 평가 서비스",
-  "short_name": "뭐먹지?",
-  "description": "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 앱",
+  "name": "급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈",
+  "short_name": "급식배틀",
+  "description": "전국 학교 급식 평가와 AI 학습형 급식퀴즈 플랫폼",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
