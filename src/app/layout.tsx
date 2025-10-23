@@ -21,28 +21,41 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "뭐먹지? - 학교 급식 평가 및 경쟁 서비스",
-  description: "학생들이 매일 급식을 평가·경쟁하며 올바른 식습관을 형성하도록 돕는 서비스입니다.",
+  title: "급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈 | 뭐먹지?",
+  description: "전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!",
+  keywords: "급식, 학교 급식, 급식 평가, 급식 랭킹, 급식 퀴즈, AI 급식퀴즈, 교과 연계 퀴즈, 학습 퀴즈, 급식배틀, 뭐먹지",
+  alternates: {
+    canonical: "https://lunbat.com",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "뭐먹지?",
+    title: "급식배틀",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "뭐먹지?",
-    title: "🍽️ 우리학교 급식 메뉴배틀! 🥇",
-    description: "우리학교 인기 메뉴 순위를 확인해보세요! 오늘/이번달 최고의 메뉴는?",
+    siteName: "급식배틀",
+    title: "급식배틀 🍱 급식평가 + AI 급식퀴즈 도전",
+    description: "오늘 급식 → 교과 연계 AI 퀴즈! 수학 · 영어 · 과학 · 사회 학습과 급식 랭킹까지!",
     url: "https://lunbat.com",
+    images: [
+      {
+        url: "https://lunbat.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "급식배틀 - 전국 학교 급식 랭킹",
+      }
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "🍽️ 우리학교 급식 메뉴배틀! 🥇",
-    description: "우리학교 인기 메뉴 순위를 확인해보세요!",
+    title: "급식배틀 - AI 급식퀴즈 & 급식 랭킹",
+    description: "오늘 급식으로 교과 연계 AI 퀴즈 도전! 수학·영어·과학·사회 학습과 전국 급식 랭킹 경쟁까지!",
+    images: ["https://lunbat.com/og-image.png"],
   },
 };
 
@@ -62,6 +75,9 @@ export default function RootLayout({
       <head>
         {/* Google Site Verification */}
         <meta name="google-site-verification" content="1SubKBLpvpoVZ4U63uD6crpSMHPxk1z-nnDwZWcxcXk" />
+        
+        {/* Naver Site Verification - 등록 후 content 값 업데이트 필요 */}
+        <meta name="naver-site-verification" content="NAVER_VERIFICATION_CODE_HERE" />
         
         <meta name="theme-color" content="#4F46E5" />
         <meta name="mobile-web-app-capable" content="yes" />
