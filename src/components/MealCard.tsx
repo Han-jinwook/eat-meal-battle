@@ -725,39 +725,16 @@ export default function MealCard({
   showImageOnly = false,
   showInfoOnly = false,
 }: MealCardProps) {
-  // 메뉴 평가 권한 상태 관리
-  const [canRate, setCanRate] = useState<boolean>(false);
-  
-  // 이미지 승인 상태에 따른 평가 권한 확인
-  useEffect(() => {
-    const checkRatingPermission = async () => {
-      if (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다') {
-        setCanRate(false);
-      } else {
-        const allowed = canRateAtCurrentTime(meal.meal_date);
-        setCanRate(allowed);
-      }
-    };
-    
-    checkRatingPermission();
-  }, [meal.id, meal.menu_items]);
 
   // 이미지 업로드 성공 시 호출되는 함수 (단순화됨)
   const handleImageChange = useCallback(() => {
     console.log('📣 이미지 변경 알림 받음');
     
-    // 이미지 변경 시 평가 권한 재확인
-    const recheckPermission = async () => {
-      const allowed = canRateAtCurrentTime(meal.meal_date);
-      setCanRate(allowed);
-    };
-    recheckPermission();
-    
     // 최상위 컴포넌트의 콜백 호출 (있는 경우)
     if (onUploadSuccess) {
       onUploadSuccess();
     }
-  }, [onUploadSuccess, meal.id]);
+  }, [onUploadSuccess]);
 
   // 이미지만 표시하는 경우
   if (showImageOnly) {
@@ -826,7 +803,7 @@ export default function MealCard({
                     key={item.id}
                     item={item}
                     mealDate={meal.meal_date}
-                    interactive={canRate}
+                    interactive={canRateAtCurrentTime(meal.meal_date)}
                   />
                 ))
               ) : (
@@ -905,7 +882,7 @@ export default function MealCard({
                   key={idx}
                   item={{ id: `${meal.id}-${idx}`, name: item }}
                   mealDate={meal.meal_date}
-                  interactive={canRate}
+                  interactive={canRateAtCurrentTime(meal.meal_date)}
                 />
               ))
             ) : (
@@ -915,7 +892,7 @@ export default function MealCard({
                   key={idx}
                   item={{ id: `${meal.id}-${idx}`, name: item }}
                   mealDate={meal.meal_date}
-                  interactive={canRate}
+                  interactive={canRateAtCurrentTime(meal.meal_date)}
                 />
               ))
             )}
