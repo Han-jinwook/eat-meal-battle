@@ -95,7 +95,7 @@ export default function MainHeader() {
           <img src="/images/logo.png" alt="급식배틀" className="h-8 w-auto" />
         </Link>
 
-        <nav className="flex overflow-x-auto gap-2 sm:gap-4 px-1 py-1 -mx-1 scrollbar-hide">
+        <nav className="flex overflow-x-auto gap-1 sm:gap-2 px-1 py-1 -mx-1 scrollbar-hide">
           {NAV_ITEMS.map((item) => {
             const currentDate = searchParams?.get('date');
             const linkHref = currentDate ? `${item.href}?date=${currentDate}` : item.href;
@@ -128,7 +128,7 @@ export default function MainHeader() {
                 key={item.href}
                 href={linkHref}
                 onClick={handleNavigation}
-                className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-base font-bold transition-all duration-200 ${
+                className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${
                   pathname === item.href
                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 hover:text-gray-900 hover:shadow-md hover:scale-102'
