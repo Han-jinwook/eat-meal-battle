@@ -298,112 +298,73 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     }
   };
 
-  // iOS Safari 호환성을 위한 강화된 별점 상태 초기화 함수
-  const initRatingState = async () => {
-    try {
-      console.log('🍎 iOS 호환 별점 초기화 시작 - 아이템:', item.id);
-      
-      // 1. localStorage 백업부터 확인 (iOS Safari 최우선 복원)
-      if (user?.id) {
-        try {
-          const backupKey = `rating_backup_${item.id}_${user.id}`;
-          const backupData = localStorage.getItem(backupKey);
-          if (backupData) {
-            const parsed = JSON.parse(backupData);
-            // 백업이 24시간 이내인지 확인 (오래된 백업은 무시)
-            if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-              console.log('💾 localStorage 백업 복원:', parsed.rating);
-              setRating(parsed.rating);
-              
-              // 메모리 백업도 업데이트
-              ratingBackupRef.current.rating = parsed.rating;
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn('localStorage 백업 읽기 실패:', e);
-        }
-      }
-      
-      // 2. 메모리 백업 확인 (iOS Safari 메모리 이슈 대응)
-      if (ratingBackupRef.current.rating !== null) {
-        setRating(ratingBackupRef.current.rating);
-        return;
-      }
-      
-      // 2. 프롭스에서 전달된 별점 정보 사용
-      if (item.user_rating !== undefined) {
-        console.log('📊 프롭스 별점 정보 사용:', item.user_rating);
-        const newRating = item.user_rating;
-        
-        setRating(newRating);
-        
-        // 백업에도 저장 (iOS Safari 메모리 관리)
-        ratingBackupRef.current.rating = newRating;
-        
-        // iOS Safari를 위한 localStorage 영구 백업
-        if (user?.id) {
-          try {
-            const backupKey = `rating_backup_${item.id}_${user.id}`;
-            localStorage.setItem(backupKey, JSON.stringify({
-              rating: newRating,
-              timestamp: Date.now()
-            }));
-          } catch (e) {
-            console.warn('localStorage 백업 실패:', e);
-          }
-        }
-        return;
-      }
-
-      // 3. 서버에서 데이터 조회 (마지막 수단)
-      console.log('🌐 서버에서 별점 데이터 조회');
-      const data = await fetchRating(item.id);
-      
-      if (data) {
-        setRating(data.user_rating);
-        
-        // 백업에도 저장
-        ratingBackupRef.current.rating = data.user_rating;
-      } else {
-        // 조회 실패 시 기본값 사용
-        setRating(null);
-        
-        // 백업 초기화
-        ratingBackupRef.current.rating = null;
-      }
-    } catch (error) {
-      console.error('🚨 별점 데이터 초기화 중 오류:', error);
-    }
-  };
-
-  // 전체 통계 조회 (초기 로드 및 아이템 변경 시)
+  // ✨ [Refactored] 통합 상태 초기화 useEffect
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!item?.id) return;
-      const { data, error } = await supabase
-        .from('menu_item_rating_stats')
-        .select('avg_rating, rating_count')
-        .eq('menu_item_id', item.id)
-        .single();
+    // 컴포넌트가 살아있는지 확인하는 플래그
+    let isMounted = true;
 
-      if (data) {
-        setAvgRating(data.avg_rating);
-        setRatingCount(data.rating_count);
-      } else {
-        setAvgRating(null);
-        setRatingCount(0);
+    const initializeState = async () => {
+      if (!item?.id) return;
+      
+      console.log(`[State Init] 🏁 시작: ${item.id}`);
+      setIsLoading(true);
+
+      try {
+        // 1. 서버에서 최신 통계와 내 별점을 한 번에 가져오기
+        const { data: serverData, error } = await supabase
+          .from('menu_item_ratings')
+          .select('rating, user_id')
+          .eq('menu_item_id', item.id);
+
+        if (error) {
+          console.warn(`[State Init] ‼️ 데이터 조회 실패: ${item.id}`, error.message);
+        }
+
+        if (isMounted) {
+          const ratings = serverData || [];
+          
+          // 내 별점 찾기
+          const myRatingData = user?.id ? ratings.find(r => r.user_id === user.id) : undefined;
+          const userRating = myRatingData?.rating ?? item.user_rating ?? null;
+
+          // 평균 및 카운트 계산
+          let avgRating = null;
+          let ratingCount = 0;
+          if (ratings.length > 0) {
+            const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+            avgRating = Math.round((sum / ratings.length) * 10) / 10;
+            ratingCount = ratings.length;
+          } else {
+            avgRating = item.avg_rating ?? null;
+            ratingCount = item.rating_count ?? 0;
+          }
+
+          console.log(`[State Init] ✅ 최종 상태 설정: user=${userRating}, avg=${avgRating}, count=${ratingCount}`);
+          
+          setRating(userRating);
+          setAvgRating(avgRating);
+          setRatingCount(ratingCount);
+
+          // iOS를 위한 백업 업데이트
+          ratingBackupRef.current = { rating: userRating, avgRating, ratingCount };
+        }
+      } catch (e) {
+        console.error('[State Init] 🚨 심각한 오류 발생', e);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
-    fetchStats();
-  }, [item?.id]);
 
-  // 개인 별점 조회 (사용자 변경 시)
-  useEffect(() => {
-    if (item && item.id) {
-      initRatingState();
-    }
-  }, [item.id, user]);
+    initializeState();
+
+    // Cleanup 함수: 컴포넌트가 언마운트되면 isMounted를 false로 설정
+    return () => {
+      console.log(`[State Init] 🧹 Cleanup: ${item.id}`);
+      isMounted = false;
+    };
+  }, [item?.id, user?.id]); // 아이템 ID 또는 사용자 ID가 변경될 때만 실행
 
   // iOS Safari 페이지 포커스 복원 시 상태 복원
   useEffect(() => {
