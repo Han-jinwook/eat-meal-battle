@@ -803,7 +803,11 @@ export default function MealCard({
                     key={item.id}
                     item={item}
                     mealDate={meal.meal_date}
-                    interactive={canRateAtCurrentTime(meal.meal_date)}
+                    interactive={
+                      (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
+                        ? false
+                        : canRateAtCurrentTime(meal.meal_date)
+                    }
                   />
                 ))
               ) : (
@@ -882,7 +886,11 @@ export default function MealCard({
                   key={idx}
                   item={{ id: `${meal.id}-${idx}`, name: item }}
                   mealDate={meal.meal_date}
-                  interactive={canRateAtCurrentTime(meal.meal_date)}
+                  interactive={
+                    (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
+                      ? false
+                      : canRateAtCurrentTime(meal.meal_date)
+                  }
                 />
               ))
             ) : (
@@ -892,7 +900,11 @@ export default function MealCard({
                   key={idx}
                   item={{ id: `${meal.id}-${idx}`, name: item }}
                   mealDate={meal.meal_date}
-                  interactive={canRateAtCurrentTime(meal.meal_date)}
+                  interactive={
+                    (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
+                      ? false
+                      : canRateAtCurrentTime(meal.meal_date)
+                  }
                 />
               ))
             )}
