@@ -881,10 +881,10 @@ export default function MealCard({
           <ul className="space-y-2">
             {meal.menuItems && meal.menuItems.length > 0 ? (
               // 개별 메뉴 아이템 표시 (새로운 데이터 구조 사용 + 별점 기능)
-              meal.menuItems.map((item, idx) => (
+              meal.menuItems.map((item) => (
                 <MenuItemWithRating
-                  key={idx}
-                  item={{ id: `${meal.id}-${idx}`, name: item }}
+                  key={item.id}
+                  item={item}
                   mealDate={meal.meal_date}
                   interactive={
                     (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
@@ -898,7 +898,7 @@ export default function MealCard({
               meal.menu_items.map((item, idx) => (
                 <MenuItemWithRating
                   key={idx}
-                  item={{ id: `${meal.id}-${idx}`, name: item }}
+                  item={{ id: `${meal.id}-${idx}`, item_name: item }}
                   mealDate={meal.meal_date}
                   interactive={
                     (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
