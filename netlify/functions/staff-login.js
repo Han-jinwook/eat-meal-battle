@@ -66,10 +66,24 @@ exports.handler = async (event) => {
 
     console.log('✅ 사용자 이메일 조회 성공:', user.email);
 
-    // 2. Supabase Admin으로 해당 이메일의 세션 토큰 생성 (recovery 타입 = 기존 사용자 로그인)
+    // 2. Auth 사용자 존재 여부 확인
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    
+    if (authError || !authUser.user) {
+      console.error('❌ Auth 사용자 없음:', authError);
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: 'Auth 사용자를 찾을 수 없습니다.' })
+      };
+    }
+
+    console.log('✅ Auth 사용자 확인:', authUser.user.email);
+
+    // 3. 기존 사용자에 대한 세션 토큰 생성
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
-      email: user.email
+      email: authUser.user.email
     });
 
     if (error) {
