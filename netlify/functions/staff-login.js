@@ -66,9 +66,9 @@ exports.handler = async (event) => {
 
     console.log('✅ 사용자 이메일 조회 성공:', user.email);
 
-    // 2. Supabase Admin으로 해당 이메일의 세션 토큰 생성
+    // 2. Supabase Admin으로 해당 이메일의 세션 토큰 생성 (recovery 타입 = 기존 사용자 로그인)
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'recovery',
       email: user.email
     });
 
