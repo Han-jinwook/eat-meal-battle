@@ -752,7 +752,7 @@ export default function BattleClient() {
         </div>
         
         {/* 오른쪽: 관심학교 드롭다운 */}
-        {user && (
+        {user && !interestSchoolsLoading && (
           <div className="relative" ref={dropdownRef}>
             <button 
               className="flex items-center gap-2 px-3 py-1.5 bg-white/80 border border-gray-300 rounded-md hover:bg-white transition-colors text-sm font-medium shadow-sm flex-wrap sm:flex-nowrap"

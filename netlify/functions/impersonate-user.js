@@ -63,15 +63,44 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // 관리자 권한 확인 (실제 구현 필요)
-  // const isUserAdmin = await isAdmin(context);
-  // if (!isUserAdmin) {
-  //   return {
-  //     statusCode: 403,
-  //     headers,
-  //     body: JSON.stringify({ error: '접근 권한이 없습니다.' }),
-  //   };
-  // }
+  const authorization = event.headers.authorization;
+  if (!authorization) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: '인증 정보가 없습니다.' }),
+    };
+  }
+
+  try {
+    const token = authorization.split(' ')[1];
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      throw new Error('유효하지 않은 토큰입니다.');
+    }
+
+    // users 테이블에서 is_admin 플래그 확인
+    const { data: adminUser, error: adminError } = await supabaseAdmin
+      .from('users')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (adminError || !adminUser || !adminUser.is_admin) {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({ error: '관리자 권한이 없습니다.' }),
+      };
+    }
+  } catch (error) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: error.message || '인증 처리 중 오류가 발생했습니다.' }),
+    };
+  }
 
   try {
     const { userId } = JSON.parse(event.body);
