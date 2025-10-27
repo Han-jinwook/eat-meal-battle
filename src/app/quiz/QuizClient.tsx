@@ -1222,7 +1222,7 @@ export default function QuizClient() {
         <SchoolInfoHeader
           userSchool={userSchool}
           isViewingMode={isViewingMode}
-          viewingUserInfo={viewingUserInfo}
+          viewingUserInfo={isViewingMode && !viewingUserInfo ? { nickname: '...', school_name: '...' } : viewingUserInfo}
           onOpenAllQuizModal={() => setIsAllQuizModalOpen(true)}
         />
 
