@@ -46,7 +46,7 @@ export default function AdminPage() {
 
   const fetchStudentUsers = async () => {
     try {
-      const { createClient } = await import('@/utils/supabase/client');
+      const { createClient } = await import('@/lib/supabase');
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -79,7 +79,7 @@ export default function AdminPage() {
     }
     setImpersonating(true);
     try {
-      const { createClient } = await import('@/utils/supabase/client');
+      const { createClient } = await import('@/lib/supabase');
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
