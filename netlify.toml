@@ -37,6 +37,9 @@
 [functions.schedule-champion-criteria]
   timeout = 120
 
+[functions.staff-login]
+  timeout = 30
+
 [build.environment]
   # 빌드 속도 최적화 환경변수 (기능 변경 없음)
   NEXT_TELEMETRY_DISABLED = "1"
