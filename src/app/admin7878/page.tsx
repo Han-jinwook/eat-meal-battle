@@ -48,24 +48,19 @@ export default function AdminPage() {
     try {
       const { createClient } = await import('@/lib/supabase');
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        throw new Error('관리자 인증 정보가 없습니다. 다시 로그인해주세요.');
-      }
+      // 이메일에 'student'가 포함된 사용자 직접 조회
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, nickname, email')
+        .ilike('email', '%student%')
+        .order('email', { ascending: true });
 
-      const response = await fetch('/.netlify/functions/get-student-users', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        }
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || '학생 목록을 가져오는데 실패했습니다.');
+      if (error) {
+        throw new Error(error.message || '학생 목록을 가져오는데 실패했습니다.');
       }
       
-      setStudentUsers(result.users || []);
+      setStudentUsers(users || []);
     } catch (error) {
       console.error('학생 계정 목록 로딩 오류:', error);
       showToast(error instanceof Error ? error.message : '학생 계정 목록을 불러오는데 실패했습니다.', 'error');
@@ -81,17 +76,12 @@ export default function AdminPage() {
     try {
       const { createClient } = await import('@/lib/supabase');
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        throw new Error('관리자 인증 정보가 없습니다. 다시 로그인해주세요.');
-      }
-
-      const response = await fetch('/.netlify/functions/impersonate-user', {
+      // staff-login.js에 userId만 전달 (인증 없이)
+      const response = await fetch('/.netlify/functions/staff-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ userId: selectedUser }),
       });
@@ -102,10 +92,10 @@ export default function AdminPage() {
         throw new Error(result.error || '로그인에 실패했습니다.');
       }
 
-      // 기존 supabase 클라이언트를 재사용하여 세션 설정
+      // 서버에서 받은 토큰으로 세션 설정
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: result.access_token,
-        refresh_token: result.access_token, // Magic link 토큰은 잠시 refresh token으로 사용 가능
+        refresh_token: result.refresh_token,
       });
 
       if (sessionError) throw sessionError;
