@@ -108,7 +108,7 @@ export default function AdminStatsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center space-x-4 mb-4">
-              <Link href="/admin" className="text-blue-600 hover:text-blue-800">
+              <Link href="/admin7878" className="text-blue-600 hover:text-blue-800">
                 ← 관리자 페이지로 돌아가기
               </Link>
             </div>
@@ -130,7 +130,7 @@ export default function AdminStatsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center space-x-4 mb-4">
-              <Link href="/admin" className="text-blue-600 hover:text-blue-800">
+              <Link href="/admin7878" className="text-blue-600 hover:text-blue-800">
                 ← 관리자 페이지로 돌아가기
               </Link>
             </div>
@@ -157,7 +157,7 @@ export default function AdminStatsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <Link href="/admin" className="text-blue-600 hover:text-blue-800">
+            <Link href="/admin7878" className="text-blue-600 hover:text-blue-800">
               ← 관리자 페이지로 돌아가기
             </Link>
             <button
