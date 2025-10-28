@@ -357,7 +357,12 @@ export default function QuizClient() {
       if (isViewingMode && viewingUserId) {
         const viewingUserInfo = await getViewingUserInfo(viewingUserId);
         if (viewingUserInfo) {
-          targetSchool = viewingUserInfo;
+          targetSchool = {
+            ...viewingUserInfo,
+            id: '', // TypeScript 호환성을 위한 기본값
+            user_id: viewingUserId,
+            created_at: new Date().toISOString()
+          };
           console.log('🎯 구독모드: 구독 대상 정보 사용:', viewingUserInfo);
         }
       }
@@ -428,12 +433,19 @@ export default function QuizClient() {
       console.log('🔍 자동 리디렉션 체크 시작:', {
         viewing: searchParams?.get('viewing'),
         isViewingMode,
-        userLoading
+        userLoading,
+        userSchool: userSchool?.school_code
       });
       
       // viewing 파라미터가 이미 있으면 스킵
       if (searchParams?.get('viewing') || isViewingMode || userLoading) {
         console.log('⏭️ 자동 리디렉션 스킵 - 이미 viewing 모드이거나 로딩 중');
+        return;
+      }
+      
+      // 학교 등록이 있으면 스킵 (학생 모드)
+      if (userSchool?.school_code) {
+        console.log('🎓 학교 등록 사용자이므로 자동 리디렉션 스킵');
         return;
       }
       
@@ -456,7 +468,7 @@ export default function QuizClient() {
         
         console.log('👤 사용자 정보:', userData);
         
-        // 학생이면 스킵
+        // 학생이면 스킵 (이중 체크)
         if (userData.is_student) {
           console.log('🎓 학생이므로 자동 리디렉션 스킵');
           return;
@@ -526,7 +538,7 @@ export default function QuizClient() {
     };
     
     checkAndRedirect();
-  }, [userLoading, searchParams, router, supabase]);
+  }, [userLoading, searchParams, router, supabase, userSchool]);
   
   // Handle viewing mode and subscription
   useEffect(() => {
@@ -1378,11 +1390,17 @@ export default function QuizClient() {
               currentViewingParam
             });
             
-            // URL 파라미터와 상태가 일치하는 경우에만 구독 모드로 처리
-            if (currentViewingParam && isViewingMode && viewingUserId === currentViewingParam) {
+            // 학교 등록 사용자는 무조건 일반 모드로 처리
+            if (userSchool?.school_code) {
+              console.log('🎓 학교 등록 사용자 - 일반 모드로 처리');
+              router.push(`/quiz?date=${date}`);
+            } else if (currentViewingParam && isViewingMode && viewingUserId === currentViewingParam) {
+              // 비학생 + 구독 모드인 경우에만 구독 모드로 처리
+              console.log('👨‍👩‍👧‍👦 비학생 구독 모드 - 구독 모드 유지');
               router.push(`/quiz?viewing=${viewingUserId}&date=${date}`);
             } else {
-              // 일반 모드로 처리
+              // 기타 모든 경우 일반 모드로 처리
+              console.log('🏠 기타 경우 - 일반 모드로 처리');
               router.push(`/quiz?date=${date}`);
             }
           }}
