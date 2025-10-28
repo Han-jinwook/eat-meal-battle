@@ -533,12 +533,17 @@ export default function QuizClient() {
     const viewingParam = searchParams?.get('viewing');
     const ownerNicknameParam = searchParams?.get('owner_nickname');
 
+    console.log('🔍 URL 파라미터 체크:', { viewingParam, ownerNicknameParam });
+
     if (viewingParam) {
+      console.log('✅ 구독 모드 활성화:', viewingParam);
       setIsViewingMode(true);
       setViewingUserId(viewingParam);
       handleQuizSubscription(viewingParam, ownerNicknameParam);
       loadViewingUserInfo(viewingParam);
     } else {
+      console.log('🏠 일반 모드로 초기화');
+      // 확실한 초기화
       setIsViewingMode(false);
       setViewingUserId(null);
       setViewingUserInfo(null);
@@ -1362,10 +1367,22 @@ export default function QuizClient() {
           currentQuizDate={selectedDate}
           onDateSelect={(date) => {
             setSelectedDate(date);
-            // 구독 모드일 때는 viewing 파라미터 유지
-            if (isViewingMode && viewingUserId) {
+            
+            // 현재 URL에서 viewing 파라미터 재확인 (상태 불일치 방지)
+            const currentViewingParam = searchParams?.get('viewing');
+            
+            console.log('📅 날짜 클릭 - 상태 확인:', {
+              date,
+              isViewingMode,
+              viewingUserId,
+              currentViewingParam
+            });
+            
+            // URL 파라미터와 상태가 일치하는 경우에만 구독 모드로 처리
+            if (currentViewingParam && isViewingMode && viewingUserId === currentViewingParam) {
               router.push(`/quiz?viewing=${viewingUserId}&date=${date}`);
             } else {
+              // 일반 모드로 처리
               router.push(`/quiz?date=${date}`);
             }
           }}
