@@ -78,10 +78,13 @@ export default function AllQuizModal({
   const [noMenuMessage, setNoMenuMessage] = useState('');
   const [mealImageUrl, setMealImageUrl] = useState<string>('');
   const [schools, setSchools] = useState<Array<{school_code: string; school_name: string}>>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
   // 학교 목록 로드 함수
   const loadSchools = async () => {
+    if (isLoading) return; // 중복 요청 방지
+    setIsLoading(true);
     try {
       // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
       const { data: allQuizzes, error: quizError } = await supabase
@@ -100,7 +103,7 @@ export default function AllQuizModal({
         .from('school_infos')
         .select('school_code, school_name')
         .in('school_code', schoolCodes)
-        .ilike('school_name', `%${universalSchoolType}%`)
+        .eq('school_type', universalSchoolType)
         .order('school_name');
       
       if (schoolError || !schoolInfos) {
@@ -120,6 +123,8 @@ export default function AllQuizModal({
     } catch (err) {
       console.error('학교 목록 로드 오류:', err);
       setSchools([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -379,10 +384,14 @@ export default function AllQuizModal({
 
   // 오답신고 관련 함수 제거됨
 
-  // 날짜나 학교급 변경 시 학교 목록 로드
+  // 날짜나 학교급 변경 시 학교 목록 로드 (디바운스 적용)
   useEffect(() => {
-    if (isOpen && selectedDate && universalSchoolType) {
-      loadSchools();
+    if (isOpen && selectedDate && universalSchoolType && !isLoading) {
+      const timer = setTimeout(() => {
+        loadSchools();
+      }, 300); // 300ms 디바운스
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, selectedDate, universalSchoolType]);
 
