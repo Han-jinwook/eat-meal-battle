@@ -92,7 +92,7 @@ export default function MainHeader() {
     <header className="sticky top-0 z-40 border-b bg-yellow-400 backdrop-blur">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center">
-          <img src="/images/logo.png" alt="급식배틀" className="h-8 w-auto" />
+          <img src="/images/logo.png" alt="급식배틀" className="h-8 w-auto lg:h-10" />
         </Link>
 
         <nav className="flex overflow-x-auto gap-1 sm:gap-2 px-1 py-1 -mx-1 scrollbar-hide">
@@ -128,7 +128,7 @@ export default function MainHeader() {
                 key={item.href}
                 href={linkHref}
                 onClick={handleNavigation}
-                className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 ${
+                className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200 lg:px-4 lg:py-3 lg:text-base ${
                   pathname === item.href
                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105'
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 hover:text-gray-900 hover:shadow-md hover:scale-102'
@@ -147,7 +147,7 @@ export default function MainHeader() {
             <button
               onClick={navigateToProfile}
               disabled={isNavigating}
-              className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-200 hover:bg-gray-300 transition-colors disabled:opacity-50"
+              className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-200 hover:bg-gray-300 transition-colors disabled:opacity-50 lg:h-10 lg:w-10"
             >
               {isNavigating ? (
                 <div className="absolute inset-0 flex items-center justify-center">
