@@ -196,7 +196,6 @@ export default function QuizClient() {
       setUniversalSchoolCode(schoolCode);
       setUniversalSchoolName(schoolName);
       console.log('✅ AllQuizModal에서 전달받은 학교로 설정:', { name: schoolName, code: schoolCode });
-      return;
     }
     
     // 학교 정보가 없는 경우 기존 로직 실행 (호환성 유지)
