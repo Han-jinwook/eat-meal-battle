@@ -395,10 +395,14 @@ export default function AllQuizModal({
     }
   }, [isOpen, selectedDate, universalSchoolType]);
 
-  // 날짜나 학교 정보 변경 시 퀴즈 다시 로드
+  // 날짜나 학교 정보 변경 시 퀴즈 다시 로드 (디바운스 + 중복 방지)
   useEffect(() => {
-    if (isOpen && universalSchoolCode && universalGrade) {
-      loadQuiz();
+    if (isOpen && universalSchoolCode && universalGrade && !loading) {
+      const timer = setTimeout(() => {
+        loadQuiz();
+      }, 200); // 200ms 디바운스로 빠른 클릭 방지
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, selectedDate, universalSchoolCode, universalGrade]);
 
