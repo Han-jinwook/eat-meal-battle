@@ -47,7 +47,7 @@ interface AllQuizModalProps {
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
   onUniversalSchoolChange: (direction: 'prev' | 'next') => void;
-  onUniversalSchoolTypeChange: (schoolType: '초등학교' | '중학교' | '고등학교') => void;
+  onUniversalSchoolTypeChange: (schoolType: '초등학교' | '중학교' | '고등학교', schoolCode?: string, schoolName?: string) => void;
   selectedSchoolLevel: 'elementary' | 'middle' | 'high';
   setSelectedSchoolLevel: (level: 'elementary' | 'middle' | 'high') => void;
 }
@@ -497,13 +497,10 @@ export default function AllQuizModal({
                           const firstSchool = schoolInfos[0];
                           console.log(`✅ ${newSchoolType} 첫 번째 학교 찾음:`, firstSchool.school_name);
                           
-                          // 부모 컴포넌트로 학교급 변경 알림
-                          onUniversalSchoolTypeChange(newSchoolType);
+                          // 부모 컴포넌트로 학교급 + 학교 정보 전달
+                          onUniversalSchoolTypeChange(newSchoolType, firstSchool.school_code, firstSchool.school_name);
                           
-                          // 학교급 변경 후 퀴즈 다시 로드 (약간의 지연 후)
-                          setTimeout(() => {
-                            loadQuiz();
-                          }, 100);
+                          // useEffect가 자동으로 loadQuiz() 호출하므로 수동 호출 불필요
                         }
                       } catch (err) {
                         console.error('🚫 학교급 변경 중 오류:', err);

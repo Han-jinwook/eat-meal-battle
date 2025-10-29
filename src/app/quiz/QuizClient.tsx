@@ -174,8 +174,12 @@ export default function QuizClient() {
   };
 
   // 학교급 변경 핸들러 함수 (초/중/고 선택)
-  const handleUniversalSchoolTypeChange = async (schoolType: '초등학교' | '중학교' | '고등학교') => {
-    console.log('🏫 학교급 변경:', { from: universalSchoolType, to: schoolType });
+  const handleUniversalSchoolTypeChange = async (
+    schoolType: '초등학교' | '중학교' | '고등학교',
+    schoolCode?: string,
+    schoolName?: string
+  ) => {
+    console.log('🏫 학교급 변경:', { from: universalSchoolType, to: schoolType, providedSchool: schoolCode });
     
     // 학교급 변경
     setUniversalSchoolType(schoolType);
@@ -187,6 +191,15 @@ export default function QuizClient() {
       console.log('🚨 학년 자동 조정:', maxGrade, '(최대 학년 초과)'); 
     }
     
+    // AllQuizModal에서 학교 정보를 전달받은 경우 (퀴즈가 있는 학교)
+    if (schoolCode && schoolName) {
+      setUniversalSchoolCode(schoolCode);
+      setUniversalSchoolName(schoolName);
+      console.log('✅ AllQuizModal에서 전달받은 학교로 설정:', { name: schoolName, code: schoolCode });
+      return;
+    }
+    
+    // 학교 정보가 없는 경우 기존 로직 실행 (호환성 유지)
     try {
       // 새 학교급에 해당하는 첫 번째 학교 조회
       const { data: schoolInfos, error } = await supabase
