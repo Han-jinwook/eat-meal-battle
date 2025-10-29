@@ -202,7 +202,7 @@ export default function AllQuizModal({
       const quizData = quizzes.length > 0 ? quizzes[0] : null;
       
       if (!quizData) {
-        setError('퀴즈 데이터를 찾을 수 없습니다.');
+        setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
         return;
       }
       
@@ -462,7 +462,6 @@ export default function AllQuizModal({
                       // AllQuizModal에서 직접 학교급 변경 처리
                       setLoading(true);
                       setError(null);
-                      setQuiz(null);
                       
                       try {
                         // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
@@ -472,7 +471,7 @@ export default function AllQuizModal({
                           .eq('meal_date', selectedDate);
                         
                         if (quizError || !allQuizzes || allQuizzes.length === 0) {
-                          setError(`${selectedDate}에 퀴즈가 없습니다. 다른 날짜를 선택해보세요.`);
+                          setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
                           console.log(`⚠️ ${selectedDate}에 퀴즈 없음`);
                           return;
                         }
@@ -488,8 +487,11 @@ export default function AllQuizModal({
                           .limit(1);
                         
                         if (schoolError || !schoolInfos || schoolInfos.length === 0) {
-                          setError(`${selectedDate}에 ${newSchoolType}의 퀴즈가 없습니다. 다른 학교급이나 날짜를 선택해보세요.`);
+                          setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
                           console.log(`⚠️ ${selectedDate}에 ${newSchoolType} 퀴즈 없음`);
+                          // 에러여도 상태 동기화 (드롭다운 불일치 방지)
+                          onUniversalSchoolTypeChange(newSchoolType);
+                          setSchools([]);
                         } else {
                           // 첫 번째 학교로 설정하고 부모 컴포넌트에 알림
                           const firstSchool = schoolInfos[0];
@@ -537,6 +539,7 @@ export default function AllQuizModal({
               <div className="text-center py-10">
                 <div className="text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">{error}</h3>
+                <p className="text-gray-600">다른 날짜, 학교, 학년을 선택해보세요!</p>
               </div>
             ) : quiz ? (
               <div className="quiz-container">
@@ -696,24 +699,19 @@ export default function AllQuizModal({
                   </div>
                 )}
               </div>
+            ) : noMenu ? (
+              <div className="text-center py-10">
+                <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
+                  <div className="text-5xl mb-2">🏫</div>
+                  <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
+                  <p className="text-amber-600">{noMenuMessage}</p>
+                </div>
+              </div>
             ) : (
               <div className="text-center py-10">
-                {noMenu ? (
-                  <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
-                    <div className="text-5xl mb-2">🏫</div>
-                    <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
-                    <p className="text-amber-600">{noMenuMessage}</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🧩</div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">퀴즈가 없습니다</h3>
-                    <p className="text-gray-600 mb-8">
-                      선택한 날짜/학교/학년에 퀴즈가 없습니다.<br/>
-                      다른 날짜, 학교, 학년을 선택해보세요!
-                    </p>
-                  </div>
-                )}
+                <div className="text-6xl mb-4">🍽️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">선택한 날짜/학교/학년에 퀴즈가 없습니다.</h3>
+                <p className="text-gray-600">다른 날짜, 학교, 학년을 선택해보세요!</p>
               </div>
             )}
           </div>
