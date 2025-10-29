@@ -426,10 +426,29 @@ export default function QuizClient() {
   // 구독퀴즈 없는 비학생 상태
   const [isNonStudentWithNoSubscription, setIsNonStudentWithNoSubscription] = useState<boolean>(false);
   const [hasCheckedSubscription, setHasCheckedSubscription] = useState<boolean>(false);
+  const [isStudent, setIsStudent] = useState<boolean | null>(null);
 
   // 비학생이 구독퀴즈 있는지 확인하고 자동 리디렉션
   useEffect(() => {
     const checkAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      // isStudent 상태가 이미 설정되었는지 확인
+      if (isStudent === null) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_student')
+          .eq('id', session.user.id)
+          .single();
+
+        if (userError || !userData) {
+          console.error('❌ 사용자 정보 조회 오류:', userError);
+        } else {
+          setIsStudent(userData.is_student);
+        }
+      }
+
       console.log('🔍 자동 리디렉션 체크 시작:', {
         viewing: searchParams?.get('viewing'),
         isViewingMode,
@@ -469,6 +488,8 @@ export default function QuizClient() {
         console.log('👤 사용자 정보:', userData);
         
         // 학생이면 스킵 (이중 체크)
+        setIsStudent(userData.is_student); // isStudent 상태 설정
+
         if (userData.is_student) {
           console.log('🎓 학생이므로 자동 리디렉션 스킵');
           return;
@@ -510,6 +531,7 @@ export default function QuizClient() {
             .single();
 
           console.log('👤 소유자 정보 조회 결과:', { ownerUser, ownerSchool });
+
 
           const currentUrl = new URL(window.location.href);
           currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
@@ -1379,27 +1401,28 @@ export default function QuizClient() {
           currentQuizDate={selectedDate}
           onDateSelect={(date) => {
             setSelectedDate(date);
-            
+
             // 현재 URL에서 viewing 파라미터 재확인 (상태 불일치 방지)
             const currentViewingParam = searchParams?.get('viewing');
-            
+
             console.log('📅 날짜 클릭 - 상태 확인:', {
               date,
+              isStudent,
               isViewingMode,
               viewingUserId,
               currentViewingParam
             });
-            
-            // 학교 등록 사용자는 무조건 일반 모드로 처리
-            if (userSchool?.school_code) {
-              console.log('🎓 학교 등록 사용자 - 일반 모드로 처리');
+
+            // 학생 사용자는 무조건 일반 모드로 처리
+            if (isStudent === true) {
+              console.log('🎓 학생 사용자 - 일반 모드로 처리');
               router.push(`/quiz?date=${date}`);
             } else if (currentViewingParam && isViewingMode && viewingUserId === currentViewingParam) {
-              // 비학생 + 구독 모드인 경우에만 구독 모드로 처리
+              // 비학생 + 구독 모드인 경우에만 구독 모드를 유지
               console.log('👨‍👩‍👧‍👦 비학생 구독 모드 - 구독 모드 유지');
               router.push(`/quiz?viewing=${viewingUserId}&date=${date}`);
             } else {
-              // 기타 모든 경우 일반 모드로 처리
+              // 기타 모든 경우(비학생이 구독모드가 아니거나, 정보가 없는 경우) 일반 모드로 처리
               console.log('🏠 기타 경우 - 일반 모드로 처리');
               router.push(`/quiz?date=${date}`);
             }
