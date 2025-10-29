@@ -47,7 +47,7 @@ interface AllQuizModalProps {
   universalSchoolType: '초등학교' | '중학교' | '고등학교';
   onUniversalGradeChange: (grade: number) => void;
   onUniversalSchoolChange: (direction: 'prev' | 'next') => void;
-  onUniversalSchoolTypeChange: (schoolType: '초등학교' | '중학교' | '고등학교') => void;
+  onUniversalSchoolTypeChange: (schoolType: '초등학교' | '중학교' | '고등학교', schoolCode?: string, schoolName?: string) => void;
   selectedSchoolLevel: 'elementary' | 'middle' | 'high';
   setSelectedSchoolLevel: (level: 'elementary' | 'middle' | 'high') => void;
 }
@@ -77,32 +77,91 @@ export default function AllQuizModal({
   const [noMenu, setNoMenu] = useState(false);
   const [noMenuMessage, setNoMenuMessage] = useState('');
   const [mealImageUrl, setMealImageUrl] = useState<string>('');
+  const [schools, setSchools] = useState<Array<{school_code: string; school_name: string}>>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
-  // 학교 변경 핸들러 - AllQuizModal 내부에서 처리
-  const handleSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🔥 AllQuizModal 화살표 클릭:', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType });
-    
+  // 학교 목록 로드 함수
+  const loadSchools = async () => {
+    console.log('🏫 loadSchools 함수 호출:', { selectedDate, universalSchoolType, isLoading });
+    if (isLoading) return; // 중복 요청 방지
+    setIsLoading(true);
     try {
-      // 먼저 퀴즈 상태 초기화 (깜빡임 방지)
-      setQuiz(null);
-      setError(null);
-      setSelectedOption(null);
-      setSubmitted(false);
-      setLoading(true);
+      // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
+      const { data: allQuizzes, error: quizError } = await supabase
+        .from('meal_quizzes')
+        .select('school_code')
+        .eq('meal_date', selectedDate);
       
-      // 부모 컴포넌트의 핸들러 호출
-      console.log('🔥 AllQuizModal 부모 함수 호출 시작');
-      await onUniversalSchoolChange(direction);
-      console.log('🔥 AllQuizModal 부모 함수 호출 완료');
+      if (quizError || !allQuizzes || allQuizzes.length === 0) {
+        setSchools([]);
+        return;
+      }
       
-      // useEffect에서 자동으로 퀴즈를 로드하므로 여기서는 수동 로드하지 않음
-      // 중복 로드 방지를 위해 loadQuiz 호출 제거
-      console.log('🔄 학교 변경 완료, useEffect에서 자동으로 퀴즈 로드됨');
-    } catch (error) {
-      console.error('💥 AllQuizModal 학교 변경 중 오류:', error);
-      setLoading(false);
+      // 2단계: school_infos에서 해당 학교급에 맞는 학교 찾기
+      const schoolCodes = [...new Set(allQuizzes.map(q => q.school_code))];
+      const { data: schoolInfos, error: schoolError } = await supabase
+        .from('school_infos')
+        .select('school_code, school_name')
+        .in('school_code', schoolCodes)
+        .eq('school_type', universalSchoolType)
+        .order('school_name');
+      
+      if (schoolError || !schoolInfos) {
+        setSchools([]);
+        return;
+      }
+      
+      // 중복 제거
+      const uniqueSchoolMap = new Map();
+      schoolInfos.forEach(school => {
+        if (!uniqueSchoolMap.has(school.school_code)) {
+          uniqueSchoolMap.set(school.school_code, school);
+        }
+      });
+      
+      const finalSchools = Array.from(uniqueSchoolMap.values());
+      console.log('✅ 학교 목록 설정 완료:', finalSchools);
+      setSchools(finalSchools);
+    } catch (err) {
+      console.error('학교 목록 로드 오류:', err);
+      setSchools([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  // 학교 변경 핸들러 - schools 배열에서 찾기
+  const handleSchoolChange = (direction: 'prev' | 'next') => {
+    console.log('🔄 학교 화살표 클릭:', { direction, schoolsCount: schools.length, schools });
+    if (schools.length === 0) {
+      console.log('❌ 학교 목록이 비어있어서 변경 불가');
+      return;
+    }
+    
+    // 먼저 퀴즈 상태 초기화 (깜빡임 방지)
+    setQuiz(null);
+    setError(null);
+    setSelectedOption(null);
+    setSubmitted(false);
+    setLoading(true);
+    
+    const currentIndex = schools.findIndex(s => s.school_code === universalSchoolCode);
+    let nextIndex;
+    
+    if (direction === 'next') {
+      nextIndex = currentIndex >= schools.length - 1 ? 0 : currentIndex + 1;
+    } else {
+      nextIndex = currentIndex <= 0 ? schools.length - 1 : currentIndex - 1;
+    }
+    
+    const nextSchool = schools[nextIndex];
+    console.log('🎯 다음 학교로 변경:', { currentIndex, nextIndex, nextSchool });
+    if (nextSchool) {
+      onUniversalSchoolTypeChange(universalSchoolType, nextSchool.school_code, nextSchool.school_name);
+    }
+    
+    setLoading(false);
   };
 
   // 퀴즈 로드 함수
@@ -156,7 +215,7 @@ export default function AllQuizModal({
       const quizData = quizzes.length > 0 ? quizzes[0] : null;
       
       if (!quizData) {
-        setError('퀴즈 데이터를 찾을 수 없습니다.');
+        setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
         return;
       }
       
@@ -333,10 +392,25 @@ export default function AllQuizModal({
 
   // 오답신고 관련 함수 제거됨
 
-  // 날짜나 학교 정보 변경 시 퀴즈 다시 로드
+  // 날짜나 학교급 변경 시 학교 목록 로드 (디바운스 적용)
   useEffect(() => {
-    if (isOpen && universalSchoolCode && universalGrade) {
-      loadQuiz();
+    if (isOpen && selectedDate && universalSchoolType && !isLoading) {
+      const timer = setTimeout(() => {
+        loadSchools();
+      }, 300); // 300ms 디바운스
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, selectedDate, universalSchoolType]);
+
+  // 날짜나 학교 정보 변경 시 퀴즈 다시 로드 (디바운스 + 중복 방지)
+  useEffect(() => {
+    if (isOpen && universalSchoolCode && universalGrade && !loading) {
+      const timer = setTimeout(() => {
+        loadQuiz();
+      }, 200); // 200ms 디바운스로 빠른 클릭 방지
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen, selectedDate, universalSchoolCode, universalGrade]);
 
@@ -409,7 +483,6 @@ export default function AllQuizModal({
                       // AllQuizModal에서 직접 학교급 변경 처리
                       setLoading(true);
                       setError(null);
-                      setQuiz(null);
                       
                       try {
                         // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
@@ -419,7 +492,7 @@ export default function AllQuizModal({
                           .eq('meal_date', selectedDate);
                         
                         if (quizError || !allQuizzes || allQuizzes.length === 0) {
-                          setError(`${selectedDate}에 퀴즈가 없습니다. 다른 날짜를 선택해보세요.`);
+                          setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
                           console.log(`⚠️ ${selectedDate}에 퀴즈 없음`);
                           return;
                         }
@@ -435,20 +508,20 @@ export default function AllQuizModal({
                           .limit(1);
                         
                         if (schoolError || !schoolInfos || schoolInfos.length === 0) {
-                          setError(`${selectedDate}에 ${newSchoolType}의 퀴즈가 없습니다. 다른 학교급이나 날짜를 선택해보세요.`);
+                          setError('선택한 날짜/학교/학년에 퀴즈가 없습니다.');
                           console.log(`⚠️ ${selectedDate}에 ${newSchoolType} 퀴즈 없음`);
+                          // 에러여도 상태 동기화 (드롭다운 불일치 방지)
+                          onUniversalSchoolTypeChange(newSchoolType);
+                          setSchools([]);
                         } else {
                           // 첫 번째 학교로 설정하고 부모 컴포넌트에 알림
                           const firstSchool = schoolInfos[0];
                           console.log(`✅ ${newSchoolType} 첫 번째 학교 찾음:`, firstSchool.school_name);
                           
-                          // 부모 컴포넌트로 학교급 변경 알림
-                          onUniversalSchoolTypeChange(newSchoolType);
+                          // 부모 컴포넌트로 학교급 + 학교 정보 전달
+                          onUniversalSchoolTypeChange(newSchoolType, firstSchool.school_code, firstSchool.school_name);
                           
-                          // 학교급 변경 후 퀴즈 다시 로드 (약간의 지연 후)
-                          setTimeout(() => {
-                            loadQuiz();
-                          }, 100);
+                          // useEffect가 자동으로 loadQuiz() 호출하므로 수동 호출 불필요
                         }
                       } catch (err) {
                         console.error('🚫 학교급 변경 중 오류:', err);
@@ -484,6 +557,7 @@ export default function AllQuizModal({
               <div className="text-center py-10">
                 <div className="text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">{error}</h3>
+                <p className="text-gray-600">다른 날짜, 학교, 학년을 선택해보세요!</p>
               </div>
             ) : quiz ? (
               <div className="quiz-container">
@@ -643,24 +717,19 @@ export default function AllQuizModal({
                   </div>
                 )}
               </div>
+            ) : noMenu ? (
+              <div className="text-center py-10">
+                <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
+                  <div className="text-5xl mb-2">🏫</div>
+                  <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
+                  <p className="text-amber-600">{noMenuMessage}</p>
+                </div>
+              </div>
             ) : (
               <div className="text-center py-10">
-                {noMenu ? (
-                  <div className="bg-amber-50 border-2 border-amber-200 p-6 rounded-lg shadow-md text-center">
-                    <div className="text-5xl mb-2">🏫</div>
-                    <h3 className="text-lg font-bold text-amber-700 mb-2">오늘은 쉬는 날!</h3>
-                    <p className="text-amber-600">{noMenuMessage}</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🧩</div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">퀴즈가 없습니다</h3>
-                    <p className="text-gray-600 mb-8">
-                      선택한 날짜/학교/학년에 퀴즈가 없습니다.<br/>
-                      다른 날짜, 학교, 학년을 선택해보세요!
-                    </p>
-                  </div>
-                )}
+                <div className="text-6xl mb-4">🍽️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-4">선택한 날짜/학교/학년에 퀴즈가 없습니다.</h3>
+                <p className="text-gray-600">다른 날짜, 학교, 학년을 선택해보세요!</p>
               </div>
             )}
           </div>

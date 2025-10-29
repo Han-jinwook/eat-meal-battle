@@ -174,8 +174,12 @@ export default function QuizClient() {
   };
 
   // 학교급 변경 핸들러 함수 (초/중/고 선택)
-  const handleUniversalSchoolTypeChange = async (schoolType: '초등학교' | '중학교' | '고등학교') => {
-    console.log('🏫 학교급 변경:', { from: universalSchoolType, to: schoolType });
+  const handleUniversalSchoolTypeChange = async (
+    schoolType: '초등학교' | '중학교' | '고등학교',
+    schoolCode?: string,
+    schoolName?: string
+  ) => {
+    console.log('🏫 학교급 변경:', { from: universalSchoolType, to: schoolType, providedSchool: schoolCode });
     
     // 학교급 변경
     setUniversalSchoolType(schoolType);
@@ -187,12 +191,21 @@ export default function QuizClient() {
       console.log('🚨 학년 자동 조정:', maxGrade, '(최대 학년 초과)'); 
     }
     
+    // AllQuizModal에서 학교 정보를 전달받은 경우 (퀴즈가 있는 학교)
+    if (schoolCode && schoolName) {
+      setUniversalSchoolCode(schoolCode);
+      setUniversalSchoolName(schoolName);
+      console.log('✅ AllQuizModal에서 전달받은 학교로 설정:', { name: schoolName, code: schoolCode });
+      return; // 학교 정보가 있으면 여기서 종료
+    }
+    
+    // 학교 정보가 없는 경우 기존 로직 실행 (호환성 유지)
     try {
       // 새 학교급에 해당하는 첫 번째 학교 조회
       const { data: schoolInfos, error } = await supabase
         .from('school_infos')
         .select('school_name, school_code')
-        .ilike('school_name', `%${schoolType}%`)
+        .eq('school_type', schoolType)
         .order('school_name')
         .limit(1);
       
@@ -216,118 +229,9 @@ export default function QuizClient() {
     }
   };
 
-  const handleUniversalSchoolChange = async (direction: 'prev' | 'next') => {
-    console.log('🔥🔥🔥 화살표 클릭됨!', { direction, currentSchool: universalSchoolName, schoolType: universalSchoolType, date: selectedDate });
-    
-    try {
-      console.log('🔍 해당 날짜에 퀴즈가 있는 학교만 조회 시작...');
-      
-      // school_infos는 사용자별 테이블이므로 학교 마스터 정보를 가져올 수 없음
-      // 대신 현재 사용자의 학교 정보를 기반으로 같은 종류의 학교들을 찾아야 함
-      
-      // 1단계: 해당 날짜에 퀴즈가 있는 모든 학교코드 조회
-      const { data: allQuizData, error: quizError } = await supabase
-        .from('meal_quizzes')
-        .select('school_code')
-        .eq('meal_date', selectedDate);
-        
-      if (quizError) {
-        console.error('❌ 퀴즈 데이터 조회 오류:', quizError);
-        return;
-      }
-      
-      if (!allQuizData || allQuizData.length === 0) {
-        console.error('❌ 해당 날짜에 퀴즈가 없습니다:', selectedDate);
-        return;
-      }
-      
-      const allSchoolCodes = [...new Set(allQuizData.map(q => q.school_code))];
-      console.log('🔍 해당 날짜 모든 학교코드들:', allSchoolCodes);
-      
-      // 2단계: 각 사용자의 school_infos에서 해당 학교종류의 학교들만 필터링
-      const { data: schoolInfos, error } = await supabase
-        .from('school_infos')
-        .select('school_name, school_code')
-        .in('school_code', allSchoolCodes)
-        .ilike('school_name', `%${universalSchoolType}%`);
-        
-      if (error) {
-        console.error('❌ 학교 정보 조회 오류:', error);
-        return;
-      }
-      
-      // 중복 제거 (여러 사용자가 같은 학교에 있을 수 있음)
-      const uniqueSchoolMap = new Map();
-      schoolInfos?.forEach(school => {
-        if (!uniqueSchoolMap.has(school.school_code)) {
-          uniqueSchoolMap.set(school.school_code, school);
-        }
-      });
-      
-      const quizSchools = Array.from(uniqueSchoolMap.values()).sort((a, b) => 
-        a.school_name.localeCompare(b.school_name)
-      );
-        
-      console.log('🔍 퀴즈 있는 학교 조회 완료:', { error: error?.message || error, dataLength: quizSchools?.length });
-        
-      if (error) {
-        console.error('❌ DB 쿼리 오류:', error);
-        return;
-      }
-      
-      if (!quizSchools || quizSchools.length === 0) {
-        console.error('❌ 해당 날짜에 퀴즈가 있는 학교가 없습니다:', { date: selectedDate, schoolType: universalSchoolType });
-        return;
-      }
-      
-      // 학교 정보를 그대로 사용 (이미 중복 제거됨)
-      const uniqueSchools = quizSchools;
-      
-      console.log('📋 퀴즈 있는 학교 목록:', uniqueSchools.length, '개');
-      uniqueSchools.forEach((school, idx) => {
-        console.log(`  ${idx}: ${school.school_name} (${school.school_code})`);
-      });
-      
-      const currentIndex = uniqueSchools.findIndex(school => 
-        school.school_code === universalSchoolCode
-      );
-      
-      console.log('📍 현재 학교 인덱스:', currentIndex, '/', uniqueSchools.length);
-      console.log('📍 현재 학교 정보:', { name: universalSchoolName, code: universalSchoolCode });
-      
-      let nextIndex;
-      if (direction === 'next') {
-        nextIndex = currentIndex >= uniqueSchools.length - 1 ? 0 : currentIndex + 1;
-      } else {
-        nextIndex = currentIndex <= 0 ? uniqueSchools.length - 1 : currentIndex - 1;
-      }
-      
-      const nextSchool = uniqueSchools[nextIndex];
-      console.log('➡️ 다음 학교:', nextSchool?.school_name, '(인덱스:', nextIndex, ')');
-      
-      if (!nextSchool) {
-        console.error('❌ 다음 학교를 찾을 수 없습니다!');
-        return;
-      }
-      
-      // 상태 업데이트 - 퀴즈를 먼저 초기화하여 깜빡임 방지
-      console.log('🔄 상태 업데이트 시작...');
-      
-      // 1. 먼저 퀴즈 상태 초기화 (깜빡임 방지)
-      setQuiz(null);
-      setError('');
-      setSelectedOption(null);
-      setSubmitted(false);
-      
-      // 2. 그 다음 학교 정보 업데이트
-      setUniversalSchoolName(nextSchool.school_name);
-      setUniversalSchoolCode(nextSchool.school_code);
-      
-      console.log('✅ 학교 변경 완료:', nextSchool.school_name);
-      
-    } catch (err) {
-      console.error('💥 학교 변경 중 오류:', err);
-    }
+  const handleUniversalSchoolChange = (direction: 'prev' | 'next') => {
+    // AllQuizModal이 자체적으로 학교 목록을 관리하므로 여기서는 아무 작업도 하지 않음
+    // 이 함수는 호환성을 위해 유지
   };
 
   // 구독 대상 정보 조회 함수
@@ -357,7 +261,12 @@ export default function QuizClient() {
       if (isViewingMode && viewingUserId) {
         const viewingUserInfo = await getViewingUserInfo(viewingUserId);
         if (viewingUserInfo) {
-          targetSchool = viewingUserInfo;
+          targetSchool = {
+            ...viewingUserInfo,
+            id: '', // TypeScript 호환성을 위한 기본값
+            user_id: viewingUserId,
+            created_at: new Date().toISOString()
+          };
           console.log('🎯 구독모드: 구독 대상 정보 사용:', viewingUserInfo);
         }
       }
@@ -421,19 +330,45 @@ export default function QuizClient() {
   // 구독퀴즈 없는 비학생 상태
   const [isNonStudentWithNoSubscription, setIsNonStudentWithNoSubscription] = useState<boolean>(false);
   const [hasCheckedSubscription, setHasCheckedSubscription] = useState<boolean>(false);
+  const [isStudent, setIsStudent] = useState<boolean | null>(null);
 
   // 비학생이 구독퀴즈 있는지 확인하고 자동 리디렉션
   useEffect(() => {
     const checkAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      // isStudent 상태가 이미 설정되었는지 확인
+      if (isStudent === null) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('is_student')
+          .eq('id', session.user.id)
+          .single();
+
+        if (userError || !userData) {
+          console.error('❌ 사용자 정보 조회 오류:', userError);
+        } else {
+          setIsStudent(userData.is_student);
+        }
+      }
+
       console.log('🔍 자동 리디렉션 체크 시작:', {
         viewing: searchParams?.get('viewing'),
         isViewingMode,
-        userLoading
+        userLoading,
+        userSchool: userSchool?.school_code
       });
       
       // viewing 파라미터가 이미 있으면 스킵
       if (searchParams?.get('viewing') || isViewingMode || userLoading) {
         console.log('⏭️ 자동 리디렉션 스킵 - 이미 viewing 모드이거나 로딩 중');
+        return;
+      }
+      
+      // 학교 등록이 있으면 스킵 (학생 모드)
+      if (userSchool?.school_code) {
+        console.log('🎓 학교 등록 사용자이므로 자동 리디렉션 스킵');
         return;
       }
       
@@ -456,7 +391,9 @@ export default function QuizClient() {
         
         console.log('👤 사용자 정보:', userData);
         
-        // 학생이면 스킵
+        // 학생이면 스킵 (이중 체크)
+        setIsStudent(userData.is_student); // isStudent 상태 설정
+
         if (userData.is_student) {
           console.log('🎓 학생이므로 자동 리디렉션 스킵');
           return;
@@ -499,6 +436,7 @@ export default function QuizClient() {
 
           console.log('👤 소유자 정보 조회 결과:', { ownerUser, ownerSchool });
 
+
           const currentUrl = new URL(window.location.href);
           currentUrl.searchParams.set('viewing', firstQuiz.quiz_owner_id);
 
@@ -526,19 +464,24 @@ export default function QuizClient() {
     };
     
     checkAndRedirect();
-  }, [userLoading, searchParams, router, supabase]);
+  }, [userLoading, searchParams, router, supabase, userSchool]);
   
   // Handle viewing mode and subscription
   useEffect(() => {
     const viewingParam = searchParams?.get('viewing');
     const ownerNicknameParam = searchParams?.get('owner_nickname');
 
+    console.log('🔍 URL 파라미터 체크:', { viewingParam, ownerNicknameParam });
+
     if (viewingParam) {
+      console.log('✅ 구독 모드 활성화:', viewingParam);
       setIsViewingMode(true);
       setViewingUserId(viewingParam);
       handleQuizSubscription(viewingParam, ownerNicknameParam);
       loadViewingUserInfo(viewingParam);
     } else {
+      console.log('🏠 일반 모드로 초기화');
+      // 확실한 초기화
       setIsViewingMode(false);
       setViewingUserId(null);
       setViewingUserInfo(null);
@@ -1362,10 +1305,29 @@ export default function QuizClient() {
           currentQuizDate={selectedDate}
           onDateSelect={(date) => {
             setSelectedDate(date);
-            // 구독 모드일 때는 viewing 파라미터 유지
-            if (isViewingMode && viewingUserId) {
+
+            // 현재 URL에서 viewing 파라미터 재확인 (상태 불일치 방지)
+            const currentViewingParam = searchParams?.get('viewing');
+
+            console.log('📅 날짜 클릭 - 상태 확인:', {
+              date,
+              isStudent,
+              isViewingMode,
+              viewingUserId,
+              currentViewingParam
+            });
+
+            // 학생 사용자는 무조건 일반 모드로 처리
+            if (isStudent === true) {
+              console.log('🎓 학생 사용자 - 일반 모드로 처리');
+              router.push(`/quiz?date=${date}`);
+            } else if (currentViewingParam && isViewingMode && viewingUserId === currentViewingParam) {
+              // 비학생 + 구독 모드인 경우에만 구독 모드를 유지
+              console.log('👨‍👩‍👧‍👦 비학생 구독 모드 - 구독 모드 유지');
               router.push(`/quiz?viewing=${viewingUserId}&date=${date}`);
             } else {
+              // 기타 모든 경우(비학생이 구독모드가 아니거나, 정보가 없는 경우) 일반 모드로 처리
+              console.log('🏠 기타 경우 - 일반 모드로 처리');
               router.push(`/quiz?date=${date}`);
             }
           }}
@@ -1407,10 +1369,7 @@ export default function QuizClient() {
           isOpen={isAllQuizModalOpen}
           onClose={() => {
             setIsAllQuizModalOpen(false);
-            // 모달 닫을 때 메인페이지 퀴즈 상태 새로고침
-            if (selectedDate && userSchool && !userLoading) {
-              fetchQuiz();
-            }
+            // 모달 닫을 때는 기존 퀴즈 상태 유지 (fetchQuiz 호출 제거)
           }}
           selectedDate={selectedDate}
           onDateChange={handleDateChange}

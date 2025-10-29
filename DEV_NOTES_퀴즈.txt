@@ -1,3 +1,119 @@
+=== 🎯 퀴즈 관련 개발 노트 (2025-10-29 업데이트) ===
+
+## 🚀 AllQuizModal 학교 화살표 버그 완전 해결 (2025-10-29)
+
+### 📋 문제 상황
+- **고등학교 2개 존재**: 가정고등학교, 가좌고등학교
+- **학교 화살표 클릭 시**: 가좌고등학교로 순간 변경되다가 다시 가정고등학교로 되돌아감
+- **드롭다운 불일치**: 학교급 변경 시 일부 학교만 표시됨
+
+### 🔍 원인 분석
+
+#### 1️⃣ **학교 화살표 함수 호출 오류**
+**파일**: `AllQuizModal.tsx` (160줄)
+```typescript
+// 문제 코드 (잘못된 함수 호출)
+onUniversalSchoolChange(direction);  // ❌ direction만 전달
+
+// 수정 코드 (올바른 함수 호출)
+onUniversalSchoolTypeChange(universalSchoolType, nextSchool.school_code, nextSchool.school_name);  // ✅
+```
+
+#### 2️⃣ **드롭다운 초기화 버그**
+**파일**: `QuizClient.tsx` (199줄)
+```typescript
+// 문제: AllQuizModal에서 학교 설정 후 바로 다음 로직이 실행되어 덮어씀
+if (schoolCode && schoolName) {
+  setUniversalSchoolCode(schoolCode);
+  setUniversalSchoolName(schoolName);
+  // return; 누락! ← 이 부분이 문제
+}
+
+// 바로 다음에 실행되는 로직이 학교를 다시 덮어씀
+const { data: schoolInfos } = await supabase
+  .from('school_infos')
+  .select('school_name, school_code')
+  .eq('school_type', schoolType)
+  .order('school_name')  // 가나다순 → 가정고가 먼저
+  .limit(1);
+```
+
+#### 3️⃣ **드롭다운 필터링 불일치**
+**파일**: `QuizClient.tsx` (207줄)
+```typescript
+// 문제 코드 (패턴 매칭)
+.ilike('school_name', `%${schoolType}%`)  // ❌ 부정확한 매칭
+
+// 수정 코드 (정확한 필드 매칭)
+.eq('school_type', schoolType)  // ✅ school_type 필드로 정확 매칭
+```
+
+### 🛠️ 해결 방안
+
+#### 1️⃣ **학교 화살표 함수 수정**
+```typescript
+// AllQuizModal.tsx - handleSchoolChange 함수
+const nextSchool = schools[nextIndex];
+console.log('🎯 다음 학교로 변경:', { currentIndex, nextIndex, nextSchool });
+if (nextSchool) {
+  onUniversalSchoolTypeChange(universalSchoolType, nextSchool.school_code, nextSchool.school_name);
+}
+```
+
+#### 2️⃣ **드롭다운 초기화 방지**
+```typescript
+// QuizClient.tsx - handleUniversalSchoolTypeChange 함수
+if (schoolCode && schoolName) {
+  setUniversalSchoolCode(schoolCode);
+  setUniversalSchoolName(schoolName);
+  console.log('✅ AllQuizModal에서 전달받은 학교로 설정:', { name: schoolName, code: schoolCode });
+  return; // 🆕 학교 정보가 있으면 여기서 종료
+}
+```
+
+#### 3️⃣ **드롭다운 필터링 통일**
+```typescript
+// QuizClient.tsx - 드롭다운 학교급 변경 시
+const { data: schoolInfos, error } = await supabase
+  .from('school_infos')
+  .select('school_name, school_code')
+  .eq('school_type', schoolType)  // 🆕 정확한 필드 매칭
+  .order('school_name')
+  .limit(1);
+```
+
+### 🎯 수정 결과
+
+#### ✅ **학교 화살표 정상 작동**
+- 가정고등학교 ↔ 가좌고등학교 정상 변경
+- 네트워크 로그에서 `school_code: '7310217'` (가좌고) 확인
+- 더 이상 "🏠 새 학교급에서 첫 번째 학교로 설정" 로그 실행 안됨
+
+#### ✅ **드롭다운 통일성 확보**
+- 모든 진입 경로에서 동일한 `school_type` 필터링 사용
+- AllQuizModal 학교 목록과 드롭다운 학교 목록 일치
+
+#### ✅ **UX 개선**
+- 학교 변경 시 깜빡임 없는 부드러운 전환
+- 실제 퀴즈가 있는 학년으로 자동 조정
+- 디버깅 로그로 동작 과정 투명하게 확인 가능
+
+### 📋 관련 파일
+- **수정**: `AllQuizModal.tsx` (160줄, 159줄 디버깅 로그 추가)
+- **수정**: `QuizClient.tsx` (199줄 return 추가, 207줄 필터링 통일)
+
+### 🔧 커밋 정보
+- **커밋 1**: `모든퀴즈 - 고등학교하나 안보임 - 버튼클릭버그-디버깅`
+- **커밋 2**: `모든퀴즈 - 고등학교하나 안보임 - 드롭다운 초기화버그`
+
+### 🎉 **최종 상태**
+- **고등학교 2개 모두 표시** ✅
+- **학교 화살표 완전 정상 작동** ✅  
+- **드롭다운 필터링 통일성 확보** ✅
+- **UX 개선 및 안정성 확보** ✅
+
+---
+
 === 🎯 퀴즈 관련 개발 노트 (2025-10-24 업데이트) ===
 
 ## 🚀 아이폰(iOS) 별점 랜덤 소실 버그 해결 (완료)

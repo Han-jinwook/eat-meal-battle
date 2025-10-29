@@ -428,7 +428,7 @@ export async function GET(request: NextRequest) {
             }
             
             // 🚧 테스트 중: 나이 제한 임시 확장 (출시 전 만 6-19세로 변경 예정)
-            const isStudent = age >= 6 && age <= 39; // 테스트: 만 6-39세 | 출시: 만 6-19세 (초등입학전~고3)
+            const isStudent = age >= 6 && age <= 19; // 출시: 만 6-19세 (초등입학전~고3)
             
             console.info(`✅ 나이 계산 결과: ${age}세, 학생 여부: ${isStudent}`);
             
@@ -529,7 +529,7 @@ export async function GET(request: NextRequest) {
             userAge--;
           }
           
-          isStudentAge = userAge >= 6 && userAge <= 39; // 테스트: 만 6-39세
+          isStudentAge = userAge >= 6 && userAge <= 19; // 출시: 만 6-19세
           console.info(`📅 나이 계산 결과: ${userAge}세, 학생나이 여부: ${isStudentAge}`);
         } else {
           console.info('📅 생년월일 정보 없음 - 비학생나이로 처리');

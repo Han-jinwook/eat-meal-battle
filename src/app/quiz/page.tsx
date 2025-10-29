@@ -49,10 +49,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     const shareUrl = `https://lunbat.com/quiz?viewing=${viewingUserId}`;
     
     return {
-      title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
+      title: `${nickname}님의 급식퀴즈 초대`,
       description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
       openGraph: {
-        title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
+        title: `${nickname}님의 급식퀴즈 초대`,
         description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
         type: 'website',
         url: shareUrl,
@@ -60,7 +60,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       },
       twitter: {
         card: 'summary',
-        title: `📚 ${nickname}님의 급식퀴즈 초대! 🎯`,
+        title: `${nickname}님의 급식퀴즈 초대`,
         description: `${schoolName} ${gradeClass}${nickname}님이 급식퀴즈 결과를 공유했어요!`,
       },
     };
