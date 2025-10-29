@@ -204,7 +204,7 @@ export default function QuizClient() {
       const { data: schoolInfos, error } = await supabase
         .from('school_infos')
         .select('school_name, school_code')
-        .ilike('school_name', `%${schoolType}%`)
+        .eq('school_type', schoolType)
         .order('school_name')
         .limit(1);
       

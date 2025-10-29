@@ -83,6 +83,7 @@ export default function AllQuizModal({
 
   // 학교 목록 로드 함수
   const loadSchools = async () => {
+    console.log('🏫 loadSchools 함수 호출:', { selectedDate, universalSchoolType, isLoading });
     if (isLoading) return; // 중복 요청 방지
     setIsLoading(true);
     try {
@@ -119,7 +120,9 @@ export default function AllQuizModal({
         }
       });
       
-      setSchools(Array.from(uniqueSchoolMap.values()));
+      const finalSchools = Array.from(uniqueSchoolMap.values());
+      console.log('✅ 학교 목록 설정 완료:', finalSchools);
+      setSchools(finalSchools);
     } catch (err) {
       console.error('학교 목록 로드 오류:', err);
       setSchools([]);
@@ -130,7 +133,11 @@ export default function AllQuizModal({
 
   // 학교 변경 핸들러 - schools 배열에서 찾기
   const handleSchoolChange = (direction: 'prev' | 'next') => {
-    if (schools.length === 0) return;
+    console.log('🔄 학교 화살표 클릭:', { direction, schoolsCount: schools.length, schools });
+    if (schools.length === 0) {
+      console.log('❌ 학교 목록이 비어있어서 변경 불가');
+      return;
+    }
     
     // 먼저 퀴즈 상태 초기화 (깜빡임 방지)
     setQuiz(null);
