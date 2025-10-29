@@ -156,8 +156,9 @@ export default function AllQuizModal({
     }
     
     const nextSchool = schools[nextIndex];
+    console.log('🎯 다음 학교로 변경:', { currentIndex, nextIndex, nextSchool });
     if (nextSchool) {
-      onUniversalSchoolChange(direction);
+      onUniversalSchoolTypeChange(universalSchoolType, nextSchool.school_code, nextSchool.school_name);
     }
     
     setLoading(false);
