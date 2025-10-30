@@ -458,10 +458,10 @@ export default function AllQuizModal({
         <div className="relative p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              ✨ 모든 퀴즈 풀어보기 ✨
+              <span className="hidden sm:inline">✨ </span>모든 퀴즈 풀어보기<span className="hidden sm:inline"> ✨</span>
             </h2>
             <p className="text-sm text-gray-600 font-medium">
-              다양한 날짜의 급식 퀴즈를 자유롭게 도전해보세요!
+              누구나 자유롭게 '생성된 모든 퀴즈'에 도전하기!
             </p>
           </div>
           

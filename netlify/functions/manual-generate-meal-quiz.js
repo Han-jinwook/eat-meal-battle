@@ -69,7 +69,13 @@ ${gradeLimit}
 
 👍 톤: 따뜻한 대화, "오늘 급식 어땠어?" 분위기, 유행어 금지
 
-JSON: {"question":"문장","options":["보기1","보기2","보기3","보기4"],"correct_answer":숫자,"explanation":"교과서 수준 설명"}
+JSON 형식으로 반환:
+{
+  "question": "문제 내용",
+  "options": ["보기1", "보기2", "보기3", "보기4"],
+  "correct_answer": 정답번호(1-4),
+  "explanation": "해설"
+}
 `;
 }
 

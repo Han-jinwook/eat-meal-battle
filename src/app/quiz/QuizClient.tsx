@@ -1182,9 +1182,9 @@ export default function QuizClient() {
             onClick={() => setIsAllQuizModalOpen(true)}
             className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium whitespace-nowrap"
           >
-            <span>🧩</span>
+            <span className="hidden sm:inline">🧩</span>
             <span className="hidden sm:inline">모든 퀴즈 풀어보기</span>
-            <span className="sm:hidden">퀴즈</span>
+            <span className="sm:hidden">모든퀴즈</span>
           </button>
         </div>
 
