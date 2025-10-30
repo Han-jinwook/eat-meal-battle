@@ -80,6 +80,9 @@ export default function AllQuizModal({
   const [schools, setSchools] = useState<Array<{school_code: string; school_name: string}>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
+  
+  // API 호출 중단을 위한 AbortController
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // 학교 목록 로드 함수
   const loadSchools = async () => {
@@ -168,6 +171,16 @@ export default function AllQuizModal({
   const loadQuiz = async () => {
     if (!universalSchoolCode || !universalGrade) return;
     
+    // 이전 API 호출 중단
+    if (abortController) {
+      console.log('🚫 이전 API 호출 중단');
+      abortController.abort();
+    }
+    
+    // 새로운 AbortController 생성
+    const newAbortController = new AbortController();
+    setAbortController(newAbortController);
+    
     setLoading(true);
     setError(null);
     setQuiz(null);
@@ -187,10 +200,13 @@ export default function AllQuizModal({
       }
 
       const dateStr = selectedDate;
+      console.log('🔄 새로운 퀴즈 API 호출 시작:', { universalSchoolCode, universalGrade, dateStr });
+      
       const response = await fetch(`/api/all-quiz?school_code=${universalSchoolCode}&grade=${universalGrade}&date=${dateStr}&limit=1`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
-        }
+        },
+        signal: newAbortController.signal // AbortController 신호 추가
       });
       
       if (!response.ok) {
@@ -265,11 +281,17 @@ export default function AllQuizModal({
       } else {
         setMealImageUrl('');
       }
-    } catch (err) {
+    } catch (err: any) {
+      // AbortError는 정상적인 중단이므로 에러로 처리하지 않음
+      if (err.name === 'AbortError') {
+        console.log('✅ API 호출이 정상적으로 중단됨');
+        return;
+      }
       console.error('퀴즈 로드 에러:', err);
       setError('퀴즈를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+      setAbortController(null); // AbortController 정리
     }
   };
 
