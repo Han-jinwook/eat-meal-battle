@@ -84,6 +84,19 @@ export default function AllQuizModal({
   // API 호출 중단을 위한 AbortController
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
+  // AllQuizModal 전용 날짜 변경 핸들러
+  const handleModalDateChange = (date: string) => {
+    // 기존 API 호출 중단
+    if (abortController) {
+      abortController.abort();
+    }
+    
+    // 외부 상태 업데이트 (URL 등)
+    onDateChange(date);
+    
+    // 내부에서는 loadQuiz가 useEffect에 의해 자동 호출됨
+  };
+
   // 학교 목록 로드 함수
   const loadSchools = async () => {
     console.log('🏫 loadSchools 함수 호출:', { selectedDate, universalSchoolType, isLoading });
@@ -472,7 +485,7 @@ export default function AllQuizModal({
               <div className="flex justify-center">
                 <DateNavigator 
                   selectedDate={selectedDate}
-                  onDateChange={onDateChange}
+                  onDateChange={handleModalDateChange}
                 />
               </div>
               
