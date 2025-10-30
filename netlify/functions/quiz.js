@@ -691,12 +691,11 @@ async function submitQuizReport(userId, quizId, reason) {
   console.log('[quiz] submitQuizReport 시작:', { userId, quizId, reason });
   
   try {
-    // 퀴즈 정보 조회 (학교 정보 및 급식 메뉴 포함)
+    // 퀴즈 정보 조회 (급식 메뉴 포함)
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('meal_quizzes')
       .select(`
         *,
-        school_infos!meal_quizzes_school_code_fkey(school_type),
         meal_menus(menu_items, ntr_info, origin_info)
       `)
       .eq('id', quizId)
@@ -815,8 +814,23 @@ async function verifyQuizWithAI(quiz) {
   console.log('[quiz] verifyQuizWithAI 시작:', quiz.id);
   
   try {
-    // 학교 종류와 학년 정보 추출 (정확한 school_type 사용)
-    const schoolType = quiz.school_infos?.school_type || '학교';
+    // 학교 종류 정보를 별도 조회
+    let schoolType = '학교';
+    try {
+      const { data: schoolInfo } = await supabaseAdmin
+        .from('school_infos')
+        .select('school_type')
+        .eq('school_code', quiz.school_code)
+        .limit(1)
+        .single();
+      
+      if (schoolInfo?.school_type) {
+        schoolType = schoolInfo.school_type;
+      }
+    } catch (error) {
+      console.log('[quiz] 학교 정보 조회 실패, 기본값 사용:', error);
+    }
+    
     const gradeInfo = quiz.grade ? `${schoolType} ${quiz.grade}학년` : '해당 학년';
     
     // 학년별 평가 기준 설정
