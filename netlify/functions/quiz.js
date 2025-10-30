@@ -691,10 +691,14 @@ async function submitQuizReport(userId, quizId, reason) {
   console.log('[quiz] submitQuizReport 시작:', { userId, quizId, reason });
   
   try {
-    // 퀴즈 정보 조회
+    // 퀴즈 정보 조회 (학교 정보 및 급식 메뉴 포함)
     const { data: quiz, error: quizError } = await supabaseAdmin
       .from('meal_quizzes')
-      .select('*')
+      .select(`
+        *,
+        school_infos!meal_quizzes_school_code_fkey(school_type),
+        meal_menus(menu_items, ntr_info, origin_info)
+      `)
       .eq('id', quizId)
       .single();
       
@@ -811,41 +815,44 @@ async function verifyQuizWithAI(quiz) {
   console.log('[quiz] verifyQuizWithAI 시작:', quiz.id);
   
   try {
-    // 학교 종류와 학년 정보 추출
-    const schoolType = quiz.school_code ? (quiz.school_code.startsWith('E') ? '초등학교' : 
-                                         quiz.school_code.startsWith('M') ? '중학교' : 
-                                         quiz.school_code.startsWith('H') ? '고등학교' : '학교') : '학교';
+    // 학교 종류와 학년 정보 추출 (정확한 school_type 사용)
+    const schoolType = quiz.school_infos?.school_type || '학교';
     const gradeInfo = quiz.grade ? `${schoolType} ${quiz.grade}학년` : '해당 학년';
     
+    // 학년별 평가 기준 설정
+    let evaluationCriteria, explanationStyle;
+    if (schoolType === '초등학교' && quiz.grade <= 2) {
+      evaluationCriteria = '매우 관대한 기준: 관찰과 경험 중심, 명확한 정답만 있으면 충분';
+      explanationStyle = '초등 저학년이 이해하기 쉬운 간단한 말로';
+    } else if (schoolType === '초등학교') {
+      evaluationCriteria = '관대한 기준: 기본적인 사실 확인, 일상 경험 연결';
+      explanationStyle = '초등학생이 이해하기 쉬운 친근한 말로';
+    } else if (schoolType === '중학교') {
+      evaluationCriteria = '보통 기준: 교과서 기본 개념 수준';
+      explanationStyle = '중학생 수준의 논리적 설명으로';
+    } else {
+      evaluationCriteria = '엄격한 기준: 교과서 범위 내 정확성';
+      explanationStyle = '고등학생 수준의 체계적 설명으로';
+    }
+    
     const prompt = `
-다음 퀴즈의 출제 내용을 종합적으로 검증해주세요.
+${gradeInfo} 급식퀴즈 검증:
 
-퀴즈 정보:
-- 대상: ${gradeInfo}
-- 문제: ${quiz.question}
-- 선택지: ${JSON.stringify(quiz.options)}
-- 정답: ${quiz.correct_answer}번 (${quiz.options[quiz.correct_answer - 1]})
-- 해설: ${quiz.explanation}
+퀴즈: ${quiz.question}
+선택지: ${JSON.stringify(quiz.options)}
+정답: ${quiz.correct_answer}번
+급식메뉴: ${quiz.meal_menus?.menu_items?.join(', ') || '정보없음'}
+영양소: ${quiz.meal_menus?.ntr_info || '정보없음'}
+원산지: ${quiz.meal_menus?.origin_info || '정보없음'}
 
-검증 기준:
-1. 출제 품질: 문제가 명확하고 모호하지 않은가? 학습 목표에 적합한가?
-2. 보기 적절성: 선택지가 논리적이고 구별 가능한가? 정답 외 선택지가 적절한 오답인가?
-3. 정답 정확성: 지정된 정답이 실제로 맞는가? 다른 선택지보다 명확히 우수한가?
-4. 해설 타당성: 해설이 정답을 올바르게 설명하는가? 사실에 기반하는가?
-5. 전체 일관성: 문제-보기-정답-해설이 서로 일치하고 논리적으로 연결되는가?
-6. 교육적 가치: 학생들에게 올바른 지식을 전달하는가?
+검증기준: ${evaluationCriteria}
 
-중요 고려사항:
-- 이 퀴즈는 ${gradeInfo} 학생들을 대상으로 한 맞춤 퀴즈입니다
-- ${gradeInfo} 수준에 맞는 내용과 난이도로 검증해주세요
-- 신뢰도는 보수적으로 평가하여 과도한 확신을 피해주세요
+평가원칙:
+- 급식메뉴 기반 출제 (제한된 소재 고려)
+- ${gradeInfo} 수준 맞춤 (어른기준 금지)
+- 과도한 완벽성 요구 금지
 
-다음 JSON 형식으로 응답해주세요:
-{
-  "isCorrect": true/false,
-  "confidence": 0.0-1.0,
-  "reasoning": "출제 내용에 대한 종합적 검증 결과를 ${gradeInfo} 학생들이 이해하기 쉽게 설명"
-}
+JSON: {"isCorrect":true/false,"confidence":0.0-1.0,"reasoning":"${explanationStyle} 결과"}
 `;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

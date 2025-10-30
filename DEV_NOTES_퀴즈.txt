@@ -1373,3 +1373,133 @@ JSON: {"question":"문장","options":["보기1","보기2","보기3","보기4"],"
 - **테스트 대상**: manual-generate-meal-quiz.js generateQuizPrompt 함수
 - **백업 완료**: 기존 프롬프트 DEV_NOTES에 보관
 - **모니터링**: 출제 오류율 추적 및 개선 효과 측정
+
+---
+
+=== 🔧 오답신고 AI 프롬프트 개선 작업 (2025-10-30) ===
+
+## 📊 문제 상황
+- **기존 문제**: "학교 1학년" 표시 (학교급 정보 누락)
+- **평가 기준**: 어른 기준의 엄격한 잣대 적용
+- **해설 방식**: 학년에 맞지 않는 어른식 화법/논리
+- **정보 부족**: 급식 메뉴 범위 제한 조건 미고려
+
+## 🔄 오답신고 AI 프롬프트 변천사
+
+### 📋 **기존 오답신고 프롬프트 (2025-07-26 버전)**
+```javascript
+// quiz.js verifyQuizWithAI 함수 (814-865번째 줄)
+const schoolType = quiz.school_code ? (quiz.school_code.startsWith('E') ? '초등학교' : 
+                                     quiz.school_code.startsWith('M') ? '중학교' : 
+                                     quiz.school_code.startsWith('H') ? '고등학교' : '학교') : '학교';
+const gradeInfo = quiz.grade ? `${schoolType} ${quiz.grade}학년` : '해당 학년';
+
+const prompt = `
+다음 퀴즈의 출제 내용을 종합적으로 검증해주세요.
+
+퀴즈 정보:
+- 대상: ${gradeInfo}
+- 문제: ${quiz.question}
+- 선택지: ${JSON.stringify(quiz.options)}
+- 정답: ${quiz.correct_answer}번 (${quiz.options[quiz.correct_answer - 1]})
+- 해설: ${quiz.explanation}
+
+검증 기준:
+1. 출제 품질: 문제가 명확하고 모호하지 않은가? 학습 목표에 적합한가?
+2. 보기 적절성: 선택지가 논리적이고 구별 가능한가? 정답 외 선택지가 적절한 오답인가?
+3. 정답 정확성: 지정된 정답이 실제로 맞는가? 다른 선택지보다 명확히 우수한가?
+4. 해설 타당성: 해설이 정답을 올바르게 설명하는가? 사실에 기반하는가?
+5. 전체 일관성: 문제-보기-정답-해설이 서로 일치하고 논리적으로 연결되는가?
+6. 교육적 가치: 학생들에게 올바른 지식을 전달하는가?
+
+중요 고려사항:
+- 이 퀴즈는 ${gradeInfo} 학생들을 대상으로 한 맞춤 퀴즈입니다
+- ${gradeInfo} 수준에 맞는 내용과 난이도로 검증해주세요
+- 신뢰도는 보수적으로 평가하여 과도한 확신을 피해주세요
+
+다음 JSON 형식으로 응답해주세요:
+{
+  "isCorrect": true/false,
+  "confidence": 0.0-1.0,
+  "reasoning": "출제 내용에 대한 종합적 검증 결과를 ${gradeInfo} 학생들이 이해하기 쉽게 설명"
+}
+`;
+```
+
+### ✅ **개선된 오답신고 AI 프롬프트 (2025-10-30 신규)**
+```javascript
+// quiz.js submitQuizReport 함수 - 퀴즈 조회 (694-703번째 줄)
+const { data: quiz, error: quizError } = await supabaseAdmin
+  .from('meal_quizzes')
+  .select(`
+    *,
+    school_infos!meal_quizzes_school_code_fkey(school_type),
+    meal_menus(menu_items, ntr_info, origin_info)
+  `)
+  .eq('id', quizId)
+  .single();
+
+// quiz.js verifyQuizWithAI 함수 (817-856번째 줄)
+const schoolType = quiz.school_infos?.school_type || '학교';
+const gradeInfo = quiz.grade ? `${schoolType} ${quiz.grade}학년` : '해당 학년';
+
+// 학년별 평가 기준 설정
+let evaluationCriteria, explanationStyle;
+if (schoolType === '초등학교' && quiz.grade <= 2) {
+  evaluationCriteria = '매우 관대한 기준: 관찰과 경험 중심, 명확한 정답만 있으면 충분';
+  explanationStyle = '초등 저학년이 이해하기 쉬운 간단한 말로';
+} else if (schoolType === '초등학교') {
+  evaluationCriteria = '관대한 기준: 기본적인 사실 확인, 일상 경험 연결';
+  explanationStyle = '초등학생이 이해하기 쉬운 친근한 말로';
+} else if (schoolType === '중학교') {
+  evaluationCriteria = '보통 기준: 교과서 기본 개념 수준';
+  explanationStyle = '중학생 수준의 논리적 설명으로';
+} else {
+  evaluationCriteria = '엄격한 기준: 교과서 범위 내 정확성';
+  explanationStyle = '고등학생 수준의 체계적 설명으로';
+}
+
+const prompt = `
+${gradeInfo} 급식퀴즈 검증:
+
+퀴즈: ${quiz.question}
+선택지: ${JSON.stringify(quiz.options)}
+정답: ${quiz.correct_answer}번
+급식메뉴: ${quiz.meal_menus?.menu_items?.join(', ') || '정보없음'}
+영양소: ${quiz.meal_menus?.ntr_info || '정보없음'}
+원산지: ${quiz.meal_menus?.origin_info || '정보없음'}
+
+검증기준: ${evaluationCriteria}
+
+평가원칙:
+- 급식메뉴 기반 출제 (제한된 소재 고려)
+- ${gradeInfo} 수준 맞춤 (어른기준 금지)
+- 과도한 완벽성 요구 금지
+
+JSON: {"isCorrect":true/false,"confidence":0.0-1.0,"reasoning":"${explanationStyle} 결과"}
+`;
+```
+
+## 📊 개선 효과 예상
+
+| **항목** | **기존** | **개선 후** |
+|----------|----------|-------------|
+| **학교급 정확성** | "학교 1학년" | "초등학교 1학년" |
+| **평가 기준** | 일률적 어른 기준 | 학년별 맞춤 기준 |
+| **해설 방식** | 어른식 화법 | 학년별 맞춤 화법 |
+| **급식 연관성** | 미고려 | 급식 범위 제한 고려 |
+| **정보 완성도** | 기본 정보만 | 메뉴+영양소+원산지 |
+| **프롬프트 비용** | 100% | 60% (40% 절약) |
+
+## 🎯 주요 개선 사항
+1. **학교급 정보 정확성**: school_infos 테이블 JOIN으로 정확한 학교급 조회
+2. **학년별 맞춤 평가**: 초등 저학년(매우 관대) ~ 고등학교(엄격) 차별화
+3. **학년별 맞춤 해설**: 간단한 말 ~ 체계적 설명 스타일 구분
+4. **급식 범위 고려**: 제한된 급식 소재 내 출제라는 전제조건 반영
+5. **완전한 정보**: 급식 메뉴, 영양소, 원산지 정보 모두 포함
+6. **비용 효율성**: 프롬프트 길이 40% 단축
+
+## 📝 테스트 및 모니터링 계획
+- **테스트 대상**: quiz.js verifyQuizWithAI 함수
+- **모니터링 지표**: 오답신고 처리 정확도, 학년별 평가 적절성
+- **개선 방향**: 테스트 결과에 따른 프롬프트 명확성 보완
