@@ -23,79 +23,53 @@ const openai = new OpenAI({
  * @returns {string} OpenAI에 전달할 프롬프트
  */
 function generateQuizPrompt(meal, grade, mealDate, schoolCode, schoolType) {
-  // 학년별 스타일 차등화를 위한 설정
-  let difficultyLevel, optionComplexity;
-  
   // 학교 유형이 없는 경우 처리
   if (!schoolType) {
     console.error('[manual-generate-meal-quiz] school_type 조회 실패 - 기본값 없이 진행');
     console.log(`[DEBUG] generateQuizPrompt 함수: schoolType이 없음, '정보없음'으로 설정`);
-    console.log(`[DEBUG] 코드 버전: 2025-07-26 수정본 (fallback 제거)`);
+    console.log(`[DEBUG] 코드 버전: 2025-10-30 개선 압축 프롬프트`);
     schoolType = '정보없음'; // fallback 로직 제거
   } else {
     console.log(`[DEBUG] generateQuizPrompt 함수: schoolType = ${schoolType}`);
   }
   
-  // 학년과 학교 유형에 따른 기본 설정 분리
-  if (schoolType === '초등학교' && grade <= 2) { // 초등 저학년
-    difficultyLevel = '매우 쉽음';
-    optionComplexity = '단어나 짧은 구문의 간단한 보기 (2~3단어)';
-  } 
-  else if (schoolType === '초등학교') { // 초등 중고학년
-    difficultyLevel = grade <= 4 ? '쉽음' : '보통';
-    optionComplexity = '구체적인 설명이 있는 보기 (한 문장 수준)';
-  } 
-  else if (schoolType === '중학교') { // 중학생
-    difficultyLevel = '다소 어려움';
-    optionComplexity = '복합적인 설명과 개념이 포함된 보기 (여러 요소 비교)';
-  } 
-  else { // 고등학생
-    difficultyLevel = '어려움/복합적';
-    optionComplexity = '복잡한 인과관계, 여러 개념을 결합한 보기, 미묘한 차이가 있는 선택지';
-  }
-  
+  // 학년별 엄격한 제한 설정
+  const gradeLimit = schoolType === '초등학교' && grade <= 2 ? 
+    '초저: 색깔/맛/모양 관찰만, 추상개념 금지' :
+    schoolType === '초등학교' ? 
+    '초등: 기초 암기 위주, 복잡한 원리 금지' :
+    schoolType === '중학교' ? 
+    '중학: 교과서 기본 원리만, 고등 내용 금지' :
+    '고등: 교과서 범위만, 대학 수준 금지';
+
   return `
+당신은 "대한민국 학교 급식 교육 콘텐츠 전문가"입니다.
+다음 정보를 기반으로 한국의 학생을 위한 "AI 급식퀴즈"를 만드세요.
+
 급식 메뉴: ${meal.menu_items.join(', ')}
-영양소 정보: ${meal.ntr_info || '정보 없음'}
-원산지 정보: ${meal.origin_info || '정보 없음'}
-대상: ${schoolType} ${grade}학년
+영양소: ${meal.ntr_info || '정보 없음'}
+원산지: ${meal.origin_info || '정보 없음'}
+대상: 한국 ${schoolType} ${grade}학년
 
-위 급식 메뉴를 소재로 한국의 ${schoolType} ${grade}학년에게 적합한 교육적 퀴즈를 만들어주세요.
+🎯 필수 원칙
+- 정답: ${schoolType} 교과서 확인 가능한 사실만
+- 오답: 명확히 틀린 정보
+- 금지어: "~카더라", "~것 같다", "~알려짐", "최근", "요즘", "트렌드"
+- 금지 내용: 민간요법, 광고성, 검증되지 않은 정보
+- 교과 연결: 급식→영양/과학/지리/역사/사회 (단순 연결만)
 
-**정확성 원칙:**
-- 정답은 확실하고 검증 가능한 사실 사용
-- 오답 선택지는 명백히 틀린 내용으로 구성
-- 역사적 사실, 과학적 원리는 교과서 수준의 정확한 내용 사용
-- 퀴즈 정답풀이(explanation)에 출처가 있는 내용은 반드시 출처를 명시해야 함
+📚 학년 제한 (엄격 준수)
+${gradeLimit}
 
-**창의성 요구사항:**
-- 급식 메뉴에서 시작하되, 다양한 교과 영역(수학, 과학, 역사, 지리, 문학, 예술 등)으로 자유롭게 확장
-- 매번 완전히 다른 접근 방식과 문체 사용
-- 특정 표현이나 패턴의 반복 금지
-- 한국의 ${schoolType} ${grade}학년 수준에 맞는 어휘와 개념 사용
+✅ 안전 패턴 (필수 선택)
+1. 영양소형: "○○에 많은 영양소는?" (기본 영양소→기능)
+2. 원산지형: "○○의 주산지는?" (지역→특징)  
+3. 조리형: "○○을 ○○하는 이유는?" (조리법→과학원리)
+4. 역사형: "○○이 전래된 시기는?" (정확한 연도 필수)
 
-**문화적 재미 요소:**
-- 한국의 ${schoolType} ${grade}학년이 좋아하는 건전한 캐릭터, 밈, 영화, 드라마, 게임 등을 적절히 활용
-- 딱딱한 학교식 문제가 아닌 재미있고 편안한 톤으로 작성
-- "방금 먹은 음식"에 대해 재미있고 유익하게 생각해보는 즐거움 제공
-- 학습보다는 "오늘 급식 어땠어?"라는 친근한 대화 느낌으로 접근
+👍 톤: 따뜻한 대화, "오늘 급식 어땠어?" 분위기, 유행어 금지
 
-**난이도:** ${difficultyLevel}
-**보기 스타일:** ${optionComplexity}
-
-**재미와 정확성의 균형:**
-- 창의적이고 재미있게 접근하되, 핵심 정보는 정확하게
-- ${schoolType} ${grade}학년 수준에 맞는 흥미로운 소재와 접근 방식 활용
-
-**중요:** 이전에 만든 문제와 완전히 다른 새로운 관점으로 접근하세요.
-
-JSON 형식으로 반환:
-{
-  "question": "문제 내용",
-  "options": ["보기1", "보기2", "보기3", "보기4"],
-  "correct_answer": 정답번호(1-4),
-  "explanation": "해설"
-}
+JSON: {"question":"문장","options":["보기1","보기2","보기3","보기4"],"correct_answer":숫자,"explanation":"교과서 수준 설명"}
 `;
 }
 
