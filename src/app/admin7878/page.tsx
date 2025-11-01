@@ -393,6 +393,42 @@ export default function AdminPage() {
           <p className="text-sm text-gray-500 mt-4">* 관리자만 사용할 수 있는 기능입니다. 선택한 학생 계정으로 즉시 로그인하여 앱을 테스트할 수 있습니다.</p>
         </div>
 
+        {/* 관리자 메뉴 섹션 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">🎛️ 관리자 메뉴</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link
+              href="/admin7878/db-cleanup"
+              className="block p-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+            >
+              <div className="text-center">
+                <div className="text-3xl mb-2">🗂️</div>
+                <h3 className="text-lg font-semibold mb-2">DB 정리 관리</h3>
+                <p className="text-sm opacity-90">사용되지 않는 급식정보 정리</p>
+              </div>
+            </Link>
+            
+            <Link
+              href="/admin7878/stats"
+              className="block p-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md"
+            >
+              <div className="text-center">
+                <div className="text-3xl mb-2">📊</div>
+                <h3 className="text-lg font-semibold mb-2">통계 관리</h3>
+                <p className="text-sm opacity-90">시스템 통계 및 분석</p>
+              </div>
+            </Link>
+            
+            <div className="p-6 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-lg opacity-60">
+              <div className="text-center">
+                <div className="text-3xl mb-2">🔧</div>
+                <h3 className="text-lg font-semibold mb-2">시스템 관리</h3>
+                <p className="text-sm opacity-90">개발 예정</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* 거점 학교 관리 섹션 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex justify-between items-center mb-6">
