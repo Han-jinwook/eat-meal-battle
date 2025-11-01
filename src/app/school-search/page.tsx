@@ -321,6 +321,29 @@ export default function SchoolSearchPage() {
         console.log('ℹ️ 공유 URL 학교 코드가 없음 - 관심학교 자동 등록 생략');
       }
 
+      // 🍽️ 벌크 급식정보 생성 (비동기, 백그라운드 실행)
+      try {
+        console.log('🚀 벌크 급식정보 생성 시작...');
+        fetch('/api/bulk-meals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            school_code: selectedSchool.SD_SCHUL_CODE,
+            office_code: selectedSchool.ATPT_OFCDC_SC_CODE
+          })
+        }).then(response => {
+          if (response.ok) {
+            console.log('✅ 벌크 급식정보 생성 요청 완료');
+          } else {
+            console.warn('⚠️ 벌크 급식정보 생성 요청 실패 (학교 등록은 성공)');
+          }
+        }).catch(error => {
+          console.warn('⚠️ 벌크 급식정보 생성 오류 (학교 등록은 성공):', error);
+        });
+      } catch (bulkError) {
+        console.warn('⚠️ 벌크 급식정보 생성 시도 실패 (학교 등록은 성공):', bulkError);
+      }
+
                   // 공유 타입에 따라 리다이렉트 결정
       setTimeout(() => {
         const params = new URLSearchParams(window.location.search);
