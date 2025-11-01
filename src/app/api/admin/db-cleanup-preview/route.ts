@@ -40,9 +40,6 @@ export async function GET() {
         meal_type,
         menu_items,
         created_at,
-        school_infos!meal_menus_school_code_fkey(
-          school_name
-        ),
         meal_menu_items!meal_menu_items_meal_id_fkey(
           id,
           menu_item_ratings(id)
@@ -77,7 +74,7 @@ export async function GET() {
           unusedMeals.push({
             id: meal.id,
             school_code: meal.school_code,
-            school_name: meal.school_infos?.school_name || '알 수 없는 학교',
+            school_name: `학교코드: ${meal.school_code}`, // school_infos 조회 없이 school_code만 표시
             meal_date: meal.meal_date,
             meal_type: meal.meal_type,
             menu_items: meal.menu_items || [],
