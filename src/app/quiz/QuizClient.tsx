@@ -488,43 +488,6 @@ export default function QuizClient() {
     }
   }, [searchParams?.get('viewing')]); // viewing 파라미터가 변경될 때만 실행
 
-  // [ADDED] 퀴즈 페이지 진입/날짜 변경 시, 급식 정보가 없으면 자동으로 채워넣는 로직
-  useEffect(() => {
-    const ensureMealDataExists = async () => {
-      // 1. 사용자 학교 정보가 로드되었고, 관람 모드가 아닐 때만 실행
-      if (userLoading || !userSchool?.school_code || isViewingMode) {
-        return;
-      }
-
-      // 2. 현재 날짜에 퀴즈나 '급식 없음' 메시지가 이미 있는지 확인
-      // 이미 정보가 있다면, 중복 호출을 방지하기 위해 함수 종료
-      if (quiz || noMenu) {
-        return;
-      }
-
-      try {
-        // 3. 백그라운드에서 'meals.js'를 호출하여 데이터 확인 및 자동 저장 요청
-        console.log(`[Meal Auto-fetch] ${selectedDate} 날짜의 급식 정보 확인 및 자동 생성 시작...`);
-        const response = await fetch(`/api/meals?school_code=${userSchool.school_code}&office_code=${userSchool.office_code}&date=${selectedDate}`);
-        
-        if (!response.ok) {
-          console.warn(`[Meal Auto-fetch] ${selectedDate} 날짜의 급식 정보 자동 생성 실패.`);
-        }
-
-        const data = await response.json();
-        console.log(`[Meal Auto-fetch] 자동 생성 완료. Source: ${data.source}`);
-
-        // 4. 데이터가 성공적으로 채워졌으므로, 퀴즈를 다시 불러옴
-        // 이 호출을 통해 UI가 최종적으로 업데이트됨
-        fetchQuiz();
-
-      } catch (error) {
-        console.error('[Meal Auto-fetch] 급식 정보 자동 생성 중 심각한 오류 발생:', error);
-      }
-    };
-
-    ensureMealDataExists();
-  }, [selectedDate, userSchool, userLoading, isViewingMode, quiz, noMenu]);
 
   // Handle date parameter
   useEffect(() => {
