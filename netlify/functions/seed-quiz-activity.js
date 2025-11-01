@@ -24,7 +24,7 @@ async function getSimulationAccounts() {
     .select(`
       id,
       nickname,
-      age,
+      email,
       school_infos (
         school_code,
         school_name,
@@ -32,7 +32,7 @@ async function getSimulationAccounts() {
         class_number
       )
     `)
-    .eq('is_simulation', true)
+    .like('email', '%@simulation.test')
     .not('school_infos', 'is', null);
 
   if (error) {

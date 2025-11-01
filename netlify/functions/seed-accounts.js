@@ -89,13 +89,13 @@ function getSchoolType(schoolName) {
   return 'high'; // 기본값
 }
 
-// 학교 유형별 학년 범위
+// 학교 유형별 학년 범위 (한국 학제)
 function getGradeRange(schoolType) {
   switch (schoolType) {
-    case 'elementary': return [1, 2, 3, 4, 5, 6];
-    case 'middle': return [7, 8, 9];
-    case 'high': return [10, 11, 12];
-    default: return [10, 11, 12];
+    case 'elementary': return [1, 2, 3, 4, 5, 6];  // 초등학교 1-6학년
+    case 'middle': return [1, 2, 3];               // 중학교 1-3학년  
+    case 'high': return [1, 2, 3];                 // 고등학교 1-3학년
+    default: return [1, 2, 3];
   }
 }
 
@@ -137,7 +137,7 @@ async function createSimulationAccounts() {
       
       for (let i = 0; i < accountCount; i++) {
         const nickname = getRandomItem(KOREAN_NICKNAMES);
-        const email = `sim_${school.school_code.toLowerCase()}_${nickname.toLowerCase()}_${Date.now()}_${i}@simulation.local`;
+        const email = `sim_${school.school_code.toLowerCase()}_${nickname.toLowerCase()}_${Date.now()}_${i}@simulation.test`;
         const age = getRandomAge(selectedGrade);
         const classNumber = Math.floor(Math.random() * 5) + 1; // 1-5반
         const profileImage = generateProfileImage(nickname, selectedGrade);
@@ -168,9 +168,8 @@ async function createSimulationAccounts() {
             id: authUser.user.id,
             email: email,
             nickname: nickname,
-            age: age,
             profile_image: profileImage,
-            is_simulation: true,
+            is_student: true,
             created_at: new Date().toISOString()
           });
 

@@ -43,6 +43,11 @@ export default function AdminPage() {
   const [studentUsers, setStudentUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [impersonating, setImpersonating] = useState(false);
+  const [dailyLimits, setDailyLimits] = useState({
+    'seed-accounts': false,
+    'seed-lunch-activity': false,
+    'seed-quiz-activity': false
+  });
 
   const fetchStudentUsers = async () => {
     try {
@@ -120,6 +125,20 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3000); // 3초 후 자동 사라짐
   };
 
+  // 하루 1회 제한 체크
+  const checkDailyLimit = (endpoint: string) => {
+    const today = new Date().toDateString();
+    const lastExecuted = localStorage.getItem(`${endpoint}-last-executed`);
+    return lastExecuted === today;
+  };
+
+  // 하루 1회 제한 설정
+  const setDailyLimit = (endpoint: string) => {
+    const today = new Date().toDateString();
+    localStorage.setItem(`${endpoint}-last-executed`, today);
+    setDailyLimits(prev => ({ ...prev, [endpoint]: true }));
+  };
+
   const handleSeed = async (endpoint: string) => {
     if (seeding) return;
     setSeeding(true);
@@ -133,6 +152,9 @@ export default function AdminPage() {
 
       if (response.ok) {
         showToast(data.message || '작업을 성공적으로 완료했습니다.', 'success');
+        
+        // 성공 시 하루 1회 제한 설정
+        setDailyLimit(endpoint);
       } else {
         showToast(data.error || '작업 중 오류가 발생했습니다.', 'error');
       }
@@ -299,6 +321,13 @@ export default function AdminPage() {
     fetchReports();
     fetchSeedSchools();
     fetchStudentUsers();
+    
+    // 페이지 로드 시 하루 1회 제한 상태 확인
+    setDailyLimits({
+      'seed-accounts': checkDailyLimit('seed-accounts'),
+      'seed-lunch-activity': checkDailyLimit('seed-lunch-activity'),
+      'seed-quiz-activity': checkDailyLimit('seed-quiz-activity')
+    });
   }, [filter]);
 
   const getStatusColor = (status: string) => {
@@ -343,27 +372,33 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
               onClick={() => handleSeed('seed-accounts')}
-              disabled={seeding}
+              disabled={seeding || dailyLimits['seed-accounts']}
               className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {seeding ? '처리 중...' : '1. 가계정 생성 (일회성)'}
+              {seeding ? '처리 중...' : 
+               dailyLimits['seed-accounts'] ? '생성 완료' : 
+               '1. 가계정 생성 (1회만)'}
             </button>
             <button
               onClick={() => handleSeed('seed-lunch-activity')}
-              disabled={seeding}
+              disabled={seeding || dailyLimits['seed-lunch-activity']}
               className="px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {seeding ? '처리 중...' : '2. 점심시간 활동 생성'}
+              {seeding ? '처리 중...' : 
+               dailyLimits['seed-lunch-activity'] ? '오늘 실행 완료' : 
+               '2. 점심시간 활동 생성'}
             </button>
             <button
               onClick={() => handleSeed('seed-quiz-activity')}
-              disabled={seeding}
+              disabled={seeding || dailyLimits['seed-quiz-activity']}
               className="px-6 py-3 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {seeding ? '처리 중...' : '3. 하교 후 퀴즈 풀이'}
+              {seeding ? '처리 중...' : 
+               dailyLimits['seed-quiz-activity'] ? '오늘 실행 완료' : 
+               '3. 하교 후 퀴즈 풀이'}
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-4">* 각 버튼은 독립적으로 실행되며, 처리 시간이 몇 분 소요될 수 있습니다. 가계정 생성은 한 번만 실행하세요.</p>
+          <p className="text-sm text-gray-500 mt-4">* 각 버튼은 독립적으로 실행되며, 처리 시간이 몇 분 소요될 수 있습니다. 모든 버튼은 하루 1회만 실행 가능합니다.</p>
         </div>
 
         {/* 계정 전환 섹션 (테스트용) */}

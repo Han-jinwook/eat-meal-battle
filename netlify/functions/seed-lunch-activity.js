@@ -96,7 +96,7 @@ async function getSimulationAccounts() {
     .select(`
       id,
       nickname,
-      age,
+      email,
       school_infos (
         school_code,
         school_name,
@@ -104,7 +104,7 @@ async function getSimulationAccounts() {
         class_number
       )
     `)
-    .eq('is_simulation', true)
+    .like('email', '%@simulation.test')
     .not('school_infos', 'is', null);
 
   if (error) {
@@ -148,11 +148,11 @@ async function simulateMealImageUpload(uploader, mealMenu) {
     const { data: imageRecord, error: imageError } = await supabaseAdmin
       .from('meal_images')
       .insert({
-        uploader_id: uploader.id,
+        uploaded_by: uploader.id,
         meal_id: mealMenu.id,
         image_url: imageUrl,
-        is_shared: true, // 시뮬레이션 이미지는 공유됨
-        is_ai_generated: true,
+        source: 'user_ai',
+        status: 'approved',
         created_at: new Date().toISOString()
       })
       .select()
@@ -206,14 +206,14 @@ async function simulateRatingAndComment(user, mealMenu, imageRecord) {
       console.error('[lunch-activity] 별점 저장 실패:', ratingError);
     }
 
-    // meal_comments 테이블에 저장 (이미지가 있는 경우)
+    // comments 테이블에 저장 (이미지가 있는 경우)
     if (imageRecord) {
       const { error: commentError } = await supabaseAdmin
-        .from('meal_comments')
+        .from('comments')
         .insert({
           user_id: user.id,
-          image_id: imageRecord.id,
-          comment: comment,
+          meal_id: mealMenu.id,
+          content: comment,
           created_at: new Date().toISOString()
         });
 
