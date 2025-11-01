@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 export async function POST() {
   try {
     console.log('하교 후 퀴즈 풀이 요청 수신');
     
-    // Netlify 함수 호출
-    const netlifyFunctionUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/.netlify/functions/seed-quiz-activity`;
+    // 현재 호스트 자동 감지 (Netlify 전용)
+    const headersList = headers();
+    const host = headersList.get('host');
+    const netlifyFunctionUrl = `https://${host}/.netlify/functions/seed-quiz-activity`;
     
     const response = await fetch(netlifyFunctionUrl, {
       method: 'POST',
