@@ -24,16 +24,16 @@ export const isWithinAllowedTime = (mealDate: string): boolean => {
       return hour >= 12;
     }
     
-    // 3. 과거: 금주중만 활성화 (월~일)
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1); // 이번 주 월요일
-    monday.setHours(0, 0, 0, 0); // 시간 초기화
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6); // 이번 주 일요일
-    sunday.setHours(23, 59, 59, 999); // 시간 설정
-    
-    return targetDate >= monday && targetDate <= sunday;
+    // 3. 과거: 해당 급식일이 속한 주의 일요일 자정까지 허용
+    const targetDay = targetDate.getDay(); // 0:일, 1:월, ..., 6:토
+    const daysUntilSunday = 7 - (targetDay === 0 ? 7 : targetDay);
+
+    const endOfWeek = new Date(targetDate);
+    endOfWeek.setDate(targetDate.getDate() + daysUntilSunday);
+    endOfWeek.setHours(23, 59, 59, 999); // 해당 주 일요일 자정
+
+    // 오늘이 해당 급식 주간의 마지막 날(일요일)을 넘지 않았으면 허용
+    return now <= endOfWeek;
     
   } catch (error) {
     console.error('시간 제약 확인 중 오류:', error);

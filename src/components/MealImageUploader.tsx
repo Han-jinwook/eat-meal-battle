@@ -1262,7 +1262,7 @@ export default function MealImageUploader({
         <>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              오늘의 급식 사진을 공유해보세요!
+              월~금까지 급식은 일요일까지 활동 가능합니다!
             </label>
             
             <input
