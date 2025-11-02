@@ -323,7 +323,6 @@ export default function AdminPage() {
     
     // 페이지 로드 시 하루 1회 제한 상태 확인
     setDailyLimits({
-      'seed-accounts': checkDailyLimit('seed-accounts'),
       'seed-lunch-activity': checkDailyLimit('seed-lunch-activity'),
       'seed-quiz-activity': checkDailyLimit('seed-quiz-activity')
     });
@@ -365,19 +364,10 @@ export default function AdminPage() {
           
         </div>
 
-        {/* 초기 데이터 생성 섹션 */}
+        {/* 시뮬레이션 활동 생성 섹션 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">초기 데이터 생성 (시뮬레이션)</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleSeed('seed-accounts')}
-              disabled={seeding || dailyLimits['seed-accounts']}
-              className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {seeding ? '처리 중...' : 
-               dailyLimits['seed-accounts'] ? '생성 완료' : 
-               '1. 가계정 생성 (1회만)'}
-            </button>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">시뮬레이션 활동 생성</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => handleSeed('seed-lunch-activity')}
               disabled={seeding || dailyLimits['seed-lunch-activity']}
@@ -385,7 +375,7 @@ export default function AdminPage() {
             >
               {seeding ? '처리 중...' : 
                dailyLimits['seed-lunch-activity'] ? '오늘 실행 완료' : 
-               '2. 점심시간 활동 생성'}
+               '1. 점심시간 활동 생성'}
             </button>
             <button
               onClick={() => handleSeed('seed-quiz-activity')}
@@ -394,10 +384,10 @@ export default function AdminPage() {
             >
               {seeding ? '처리 중...' : 
                dailyLimits['seed-quiz-activity'] ? '오늘 실행 완료' : 
-               '3. 하교 후 퀴즈 풀이'}
+               '2. 하교 후 퀴즈 풀이'}
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-4">* 각 버튼은 독립적으로 실행되며, 처리 시간이 몇 분 소요될 수 있습니다. 모든 버튼은 하루 1회만 실행 가능합니다.</p>
+          <p className="text-sm text-gray-500 mt-4">* 가계정은 SQL로 직접 생성됩니다. 각 버튼은 하루 1회만 실행 가능합니다.</p>
         </div>
 
         {/* 계정 전환 섹션 (테스트용) */}
