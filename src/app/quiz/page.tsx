@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Metadata } from 'next';
 import QuizWrapper from './client-wrapper';
 import { createClient } from '@supabase/supabase-js';
+import StructuredData from '@/components/StructuredData';
 
 // 동적 렌더링 강제 (메타데이터를 요청마다 생성)
 export const dynamic = 'force-dynamic';
@@ -73,19 +74,41 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-export default function QuizPage() {
+export default function QuizPage({ searchParams }: Props) {
+  // 퀴즈 페이지 BreadcrumbList 스키마
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "급식배틀",
+        "item": "https://lunbat.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "급식퀴즈",
+        "item": "https://lunbat.com/quiz"
+      }
+    ]
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <Suspense fallback={
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        }>
-          <QuizWrapper />
-        </Suspense>
-      </div>
-    </main>
+    <>
+      <StructuredData type="breadcrumb" data={breadcrumbSchema} />
+      <main className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <Suspense fallback={
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          }>
+            <QuizWrapper />
+          </Suspense>
+        </div>
+      </main>
+    </>
   );
 }

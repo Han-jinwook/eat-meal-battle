@@ -8,6 +8,7 @@ import SupabaseProvider from '@/lib/supabase/supabase-provider';
 import MainHeader from '@/components/MainHeader';
 import Footer from '@/components/Footer';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import StructuredData from '@/components/StructuredData';
 import { SchoolModeProvider } from '@/hooks/useSchoolMode';
 
 const geistSans = Geist({
@@ -96,6 +97,8 @@ export default function RootLayout({
         <SupabaseProvider>
           <SchoolModeProvider>
             <ServiceWorkerRegistration />
+            <StructuredData type="organization" />
+            <StructuredData type="website" />
             <Suspense fallback={
               <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/40">
                 <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">

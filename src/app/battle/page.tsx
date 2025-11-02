@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import BattleWrapper from './client-wrapper';
+import StructuredData from '@/components/StructuredData';
 
 type Props = {
   searchParams: { school_code?: string; date?: string; school_name?: string }
@@ -79,7 +80,46 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 
-export default function BattlePage() {
+export default function BattlePage({ searchParams }: Props) {
   console.log('🏁 BattlePage 컴포넌트 렌더링 시작!');
-  return <BattleWrapper />;
+  
+  // 배틀 페이지 BreadcrumbList 스키마
+  const schoolCode = searchParams.school_code;
+  const schoolName = searchParams.school_name;
+  
+  let breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "급식배틀",
+        "item": "https://lunbat.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "급식배틀",
+        "item": "https://lunbat.com/battle"
+      }
+    ]
+  };
+  
+  // 학교별 배틀 페이지인 경우 추가
+  if (schoolCode && schoolName) {
+    breadcrumbSchema.itemListElement.push({
+      "@type": "ListItem",
+      "position": 3,
+      "name": `${schoolName} 배틀`,
+      "item": `https://lunbat.com/battle?school_code=${schoolCode}&school_name=${encodeURIComponent(schoolName)}`
+    });
+  }
+  
+  return (
+    <>
+      <StructuredData type="breadcrumb" data={breadcrumbSchema} />
+      <BattleWrapper />
+    </>
+  );
 }
