@@ -772,10 +772,18 @@ export default function MealCard({
                   />
                 ))
               ) : (
+                // 기존 menu_items 배열 사용 (하위 호환성 유지)
                 meal.menu_items.map((item, idx) => (
-                  <li key={idx} className="text-gray-700 py-1">
-                    {item}
-                  </li>
+                  <MenuItemWithRating
+                    key={idx}
+                    item={{ id: `${meal.id}-${idx}`, item_name: item }}
+                    mealDate={meal.meal_date}
+                    interactive={
+                      (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
+                        ? false
+                        : canRateAtCurrentTime(meal.meal_date)
+                    }
+                  />
                 ))
               )}
             </ul>
