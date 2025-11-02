@@ -279,14 +279,6 @@ export default function AdminPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">관리자 페이지</h1>
-            
-            {/* 상단 통계 버튼 */}
-            <Link 
-              href="/admin7878/stats"
-              className="px-6 py-3 bg-blue-500 text-white text-lg font-medium rounded-lg hover:bg-blue-600 transition-colors shadow-md"
-            >
-              📊 통계
-            </Link>
           </div>
           
         </div>
