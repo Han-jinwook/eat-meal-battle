@@ -44,7 +44,6 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [impersonating, setImpersonating] = useState(false);
   const [dailyLimits, setDailyLimits] = useState({
-    'seed-accounts': false,
     'seed-lunch-activity': false,
     'seed-quiz-activity': false
   });
