@@ -65,53 +65,54 @@ export default function QuizClient() {
 
   // 퀴즈 생성 시간 제약 체크 함수 (KST 기준)
   const checkQuizTimeConstraint = (targetDate: string) => {
-    const now = new Date();
-    
-    // 한국 시간대로 변환
-    const koreaTimeString = now.toLocaleString('en-CA', { 
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    
-    const [dateStr, timeStr] = koreaTimeString.split(', ');
-    const today = dateStr; // YYYY-MM-DD 형식
-    const [hourStr] = timeStr.split(':');
-    const currentHour = parseInt(hourStr);
-    
-    // 1. 미래 날짜 체크
-    if (targetDate > today) {
-      return {
-        allowed: false,
-        message: '미래 날짜의 퀴즈는 생성할 수 없습니다. 급식을 먹은 후에 퀴즈를 풀어보세요!'
+    try {
+      // KST 기준 현재 시간 정보 얻기
+      const now = new Date();
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const kstNow = new Date(now.getTime() + kstOffset);
+
+      const kstToday_YYYYMMDD = kstNow.toISOString().split('T')[0];
+      const kstCurrentHour = kstNow.getUTCHours();
+
+      // 1. 미래 날짜 체크
+      if (targetDate > kstToday_YYYYMMDD) {
+        return {
+          allowed: false,
+          message: '미래 날짜의 퀴즈는 생성할 수 없습니다. 급식을 먹은 후에 퀴즈를 풀어보세요!'
+        };
+      }
+
+      // 2. 당일 12시 이전 체크
+      if (targetDate === kstToday_YYYYMMDD && kstCurrentHour < 12) {
+        return {
+          allowed: false,
+          message: '당일 퀴즈는 12시 이후부터 생성 가능합니다. 급식 시간 이후에 다시 시도해주세요!'
+        };
+      }
+
+      // 3. 과거 범위 체크 (전월 1일 ~ 현재)
+      const kstYear = kstNow.getUTCFullYear();
+      const kstMonth = kstNow.getUTCMonth(); // 0-11
+
+      const startOfLastMonth = new Date(Date.UTC(kstYear, kstMonth - 1, 1));
+      const startOfLastMonth_YYYYMMDD = startOfLastMonth.toISOString().split('T')[0];
+
+      if (targetDate < startOfLastMonth_YYYYMMDD) {
+        return {
+          allowed: false,
+          message: '너무 오래된 날짜입니다. 전월 1일부터 현재까지의 퀴즈만 생성 가능합니다.'
+        };
+      }
+
+      return { allowed: true, message: '' };
+    } catch (error) {
+      console.error('시간 제약 확인 중 오류:', error);
+      // 오류 발생 시 안전하게 비활성화
+      return { 
+        allowed: false, 
+        message: '시간을 확인하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' 
       };
     }
-    
-    // 2. 당일 12시 이전 체크
-    if (targetDate === today && currentHour < 12) {
-      return {
-        allowed: false,
-        message: '당일 퀴즈는 12시 이후부터 생성 가능합니다. 급식 시간 이후에 다시 시도해주세요!'
-      };
-    }
-    
-    // 3. 과거 범위 체크 (전월 1일 ~ 현재) - KST 기준
-    const koreaDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-    const lastMonth = new Date(koreaDate.getFullYear(), koreaDate.getMonth() - 1, 1);
-    const lastMonthStart = lastMonth.toISOString().split('T')[0];
-    
-    if (targetDate < lastMonthStart) {
-      return {
-        allowed: false,
-        message: '너무 오래된 날짜입니다. 전월 1일부터 현재까지의 퀴즈만 생성 가능합니다.'
-      };
-    }
-    
-    return { allowed: true, message: '' };
   };
 
   const [selectedDate, setSelectedDate] = useState<string>(getCurrentDate());
