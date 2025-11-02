@@ -40,84 +40,12 @@ export default function AdminPage() {
   const [filter, setFilter] = useState<'all' | 'reviewed' | 'resolved' | 'dismissed'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [studentUsers, setStudentUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [impersonating, setImpersonating] = useState(false);
   const [dailyLimits, setDailyLimits] = useState({
     'seed-lunch-activity': false,
     'seed-quiz-activity': false
   });
 
-  const fetchStudentUsers = async () => {
-    try {
-      const { createClient } = await import('@/lib/supabase');
-      const supabase = createClient();
 
-      // 이메일에 'student'가 포함된 사용자 직접 조회
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('id, nickname, email')
-        .ilike('email', '%student%')
-        .order('email', { ascending: true });
-
-      if (error) {
-        throw new Error(error.message || '학생 목록을 가져오는데 실패했습니다.');
-      }
-      
-      setStudentUsers(users || []);
-    } catch (error) {
-      console.error('학생 계정 목록 로딩 오류:', error);
-      showToast(error instanceof Error ? error.message : '학생 계정 목록을 불러오는데 실패했습니다.', 'error');
-    }
-  };
-
-  const handleImpersonate = async () => {
-    if (!selectedUser) {
-      showToast('로그인할 학생 계정을 선택해주세요.', 'error');
-      return;
-    }
-    setImpersonating(true);
-    try {
-      const { createClient } = await import('@/lib/supabase');
-      const supabase = createClient();
-
-      // staff-login.js에 userId만 전달 (인증 없이)
-      const response = await fetch('/.netlify/functions/staff-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: selectedUser }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || '로그인에 실패했습니다.');
-      }
-
-      // 서버에서 받은 토큰으로 세션 설정
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-      });
-
-      if (sessionError) throw sessionError;
-
-      showToast(`${studentUsers.find(u => u.id === selectedUser)?.nickname} 계정으로 로그인되었습니다.`, 'success');
-      
-      // 1초 후 메인 페이지로 리디렉션
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-
-    } catch (error) {
-      console.error('계정 전환 오류:', error);
-      showToast(error instanceof Error ? error.message : '계정 전환 중 오류가 발생했습니다.', 'error');
-    } finally {
-      setImpersonating(false);
-    }
-  };
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -319,7 +247,6 @@ export default function AdminPage() {
   useEffect(() => {
     fetchReports();
     fetchSeedSchools();
-    fetchStudentUsers();
     
     // 페이지 로드 시 하루 1회 제한 상태 확인
     setDailyLimits({
@@ -390,32 +317,6 @@ export default function AdminPage() {
           <p className="text-sm text-gray-500 mt-4">* 가계정은 SQL로 직접 생성됩니다. 각 버튼은 하루 1회만 실행 가능합니다.</p>
         </div>
 
-        {/* 계정 전환 섹션 (테스트용) */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">계정 전환 (테스트용)</h2>
-          <div className="flex items-center space-x-4">
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">로그인할 학생 계정을 선택하세요</option>
-              {studentUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.nickname} ({user.email})
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleImpersonate}
-              disabled={impersonating || !selectedUser}
-              className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {impersonating ? '로그인 중...' : '선택한 계정으로 로그인'}
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mt-4">* 관리자만 사용할 수 있는 기능입니다. 선택한 학생 계정으로 즉시 로그인하여 앱을 테스트할 수 있습니다.</p>
-        </div>
 
         {/* 관리자 메뉴 섹션 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
