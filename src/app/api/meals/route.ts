@@ -356,6 +356,14 @@ export async function GET(request: Request) {
     const today = kstNow.toISOString().split('T')[0]; // YYYY-MM-DD (KST 기준)
     const isToday = formattedDate === today;
     
+    console.log('🔍 날짜 비교 디버깅:', {
+      formattedDate,
+      today,
+      isToday,
+      utcTime: now.toISOString(),
+      kstTime: kstNow.toISOString()
+    });
+    
     let meals = [];
     
     if (isToday) {
