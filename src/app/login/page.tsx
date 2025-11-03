@@ -184,19 +184,7 @@ function LoginContent() {
    */
   const handleGoogleLogin = async () => {
     try {
-      // 카카오톡 환경에서 구글 로그인 시도 시 외부 브라우저 유도
-      const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
-      if (isKakaoTalk) {
-        const currentUrl = window.location.href;
-        const confirmed = window.confirm(
-          '카카오톡에서는 구글 로그인이 제한됩니다.\n외부 브라우저에서 열어서 구글 로그인을 진행하시겠습니까?\n\n(취소 시 카카오 로그인을 이용해주세요)'
-        );
-        if (confirmed) {
-          // 외부 브라우저로 열기 시도
-          window.open(currentUrl, '_blank');
-        }
-        return;
-      }
+      // 인앱브라우저 사전 안내는 제거 - 실제 실패 시에만 안내하도록 변경
 
       // 디바운스: 이미 요청 중이면 무시
       if (googleLoading) return
