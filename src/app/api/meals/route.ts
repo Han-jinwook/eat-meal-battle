@@ -40,19 +40,23 @@ function generate7DayRange(centerDate: string): string[] {
 }
 
 /**
- * 급식 정보 API 호출
+ * 급식 정보 API 호출 (단일 날짜 또는 날짜 범위)
  * @param schoolCode 학교 코드
  * @param officeCode 교육청 코드
- * @param date 날짜 (YYYYMMDD 형식)
+ * @param date 날짜 (YYYYMMDD 형식) 또는 시작 날짜
+ * @param endDate 종료 날짜 (YYYYMMDD 형식, 선택적)
  * @returns 급식 정보
  */
-async function fetchMealInfo(schoolCode: string, officeCode: string, date: string) {
-  // NEIS API 호출을 위해 날짜 형식을 YYYYMMDD로 변환 (API는 하이픈이 없는 형식 요구)
-  let apiDate = date;
+async function fetchMealInfo(schoolCode: string, officeCode: string, date: string, endDate?: string) {
+  // 날짜 형식을 YYYYMMDD로 변환
+  let apiStartDate = date;
+  let apiEndDate = endDate;
+  
   if (date && date.includes('-')) {
-    // YYYY-MM-DD 형식이면 YYYYMMDD로 변환
-    apiDate = date.replace(/-/g, '');
-    console.log(`API 호출을 위해 날짜 형식 변환: ${date} -> ${apiDate}`);
+    apiStartDate = date.replace(/-/g, '');
+  }
+  if (endDate && endDate.includes('-')) {
+    apiEndDate = endDate.replace(/-/g, '');
   }
   
   // NEIS API 호출 URL 구성
@@ -62,16 +66,24 @@ async function fetchMealInfo(schoolCode: string, officeCode: string, date: strin
     Type: 'json',
     pIndex: '1',
     pSize: '100',
-    ATPT_OFCDC_SC_CODE: officeCode, // 시도교육청코드
-    SD_SCHUL_CODE: schoolCode,      // 표준학교코드
-    MLSV_YMD: apiDate,              // 급식일자 (하이픈 없는 YYYYMMDD 형식)
-    MMEAL_SC_CODE: '2',             // 식사 코드 (1:조식, 2:중식, 3:석식)
+    ATPT_OFCDC_SC_CODE: officeCode,
+    SD_SCHUL_CODE: schoolCode,
+    MMEAL_SC_CODE: '2', // 중식
   });
+
+  // 날짜 범위 또는 단일 날짜 설정
+  if (apiEndDate) {
+    queryParams.set('MLSV_FROM_YMD', apiStartDate);
+    queryParams.set('MLSV_TO_YMD', apiEndDate);
+    console.log(`급식 API 요청 (범위): ${apiStartDate} ~ ${apiEndDate}`);
+  } else {
+    queryParams.set('MLSV_YMD', apiStartDate);
+    console.log(`급식 API 요청 (단일): ${apiStartDate}`);
+  }
 
   const fullUrl = `${apiUrl}?${queryParams.toString()}`;
   console.log(`급식 API 요청 URL: ${fullUrl}`);
 
-  // API 호출
   const response = await fetch(fullUrl);
   
   if (!response.ok) {
@@ -274,7 +286,7 @@ async function saveMealData(supabase: any, schoolCode: string, officeCode: strin
  * - date: 날짜 (YYYYMMDD 형식, 기본값: 오늘)
  */
 export async function GET(request: Request) {
-  const cookieStore = cookies(); // cookies 함수 호출
+  const cookieStore = await cookies(); // cookies 함수 호출 (await 추가)
   const supabase = createServerClient( // createServerClient 사용
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -367,54 +379,54 @@ export async function GET(request: Request) {
     let meals = [];
     
     if (isToday) {
-      // 오늘인 경우: 7일치 API 호출 (오늘 포함 앞뒤 3일씩)
+      // 오늘인 경우: 7일치 한번에 가져오기
       console.log('🎯 오늘 날짜 감지 - 7일치 급식정보 일괄 생성 시작');
       const dates = generate7DayRange(today);
+      const startDate = dates[0]; // 첫 번째 날짜
+      const endDate = dates[dates.length - 1]; // 마지막 날짜
       
-      for (const targetDate of dates) {
-        try {
-          // 각 날짜별로 DB에 이미 있는지 확인
-          const { data: existingMeal } = await supabase
-            .from('meal_menus')
-            .select('id')
-            .eq('school_code', schoolCode)
-            .eq('meal_date', targetDate)
-            .eq('meal_type', '중식')
-            .single();
-
-          if (existingMeal) {
-            console.log(`⏭️ ${targetDate} 급식정보 이미 존재, 건너뜀`);
-            continue;
+      try {
+        // 7일치 한번에 API 호출
+        console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
+        const rangeData = await fetchMealInfo(schoolCode, officeCode, startDate, endDate);
+        const allMeals = parseMealInfo(rangeData);
+        
+        // 날짜별로 그룹화하여 DB 저장
+        const mealsByDate = new Map();
+        allMeals.forEach(meal => {
+          const date = meal.meal_date;
+          if (!mealsByDate.has(date)) {
+            mealsByDate.set(date, []);
           }
-
-          // API 호출 및 파싱
-          const targetMealData = await fetchMealInfo(schoolCode, officeCode, targetDate);
-          const targetMeals = parseMealInfo(targetMealData);
+          mealsByDate.get(date).push(meal);
+        });
+        
+        // 각 날짜별로 DB 저장
+        for (const targetDate of dates) {
+          const dateMeals = mealsByDate.get(targetDate) || [];
           
-          // 오늘 날짜의 데이터만 응답용으로 저장
+          // 오늘 날짜 데이터는 응답용으로 저장
           if (targetDate === today) {
-            meals = targetMeals;
+            meals = dateMeals;
           }
           
-          // DB 저장 (각 날짜별로)
-          await saveMealData(supabase, schoolCode, officeCode, targetDate, targetMeals);
-          
-          console.log(`✅ ${targetDate} 급식정보 처리 완료`);
-          
-          // API 호출 제한을 위한 지연 (100ms)
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-        } catch (dateError) {
-          console.error(`❌ ${targetDate} 급식정보 처리 오류:`, dateError);
+          // DB 저장
+          await saveMealData(supabase, schoolCode, officeCode, targetDate, dateMeals);
+          console.log(`✅ ${targetDate} 급식정보 처리 완료 (${dateMeals.length}개)`);
         }
+        
+        console.log('🎉 7일치 급식정보 일괄 생성 완료');
+      } catch (rangeError) {
+        console.error('❌ 7일치 범위 조회 실패, 개별 조회로 전환:', rangeError);
+        // 실패 시 기존 방식으로 폴백
+        const singleData = await fetchMealInfo(schoolCode, officeCode, formattedDate);
+        meals = parseMealInfo(singleData);
       }
-      
-      console.log('🎉 7일치 급식정보 일괄 생성 완료');
       
     } else {
       // 과거/미래인 경우: 기존 로직 (1일치만)
-      const mealData = await fetchMealInfo(schoolCode, officeCode, date);
-      meals = parseMealInfo(mealData);
+      const singleMealData = await fetchMealInfo(schoolCode, officeCode, formattedDate);
+      meals = parseMealInfo(singleMealData);
     }
     
     // 3. DB에 결과 저장 (급식 정보가 있던 없던 저장)
@@ -518,10 +530,8 @@ export async function GET(request: Request) {
           console.error('빈 급식 정보 저장 오류:', saveError);
         }
         
-        // API 응답에 오류 코드가 있는지 확인
-        if (mealData.RESULT && mealData.RESULT.CODE !== 'INFO-000') {
-          console.error(`API 오류: ${mealData.RESULT.CODE} - ${mealData.RESULT.MESSAGE || '알 수 없는 오류'}`);
-        }
+        // API 응답에 오류 코드가 있는지 확인 (변수명 수정)
+        // 이 부분은 isToday 조건에서 이미 처리되므로 제거
       }
     } catch (dbError) {
       console.error('DB 저장 중 오류 발생:', dbError);
@@ -653,7 +663,7 @@ export async function GET(request: Request) {
  * @returns {Promise<NextResponse>} HTTP 응답 객체
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
