@@ -349,8 +349,11 @@ export async function GET(request: Request) {
     // 2. DB에 없으면 API 호출
     console.log('DB에 없는 데이터입니다. API 호출을 시도합니다.');
     
-    // 오늘 날짜인지 확인
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    // 오늘 날짜인지 확인 (KST 기준)
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000; // 9시간
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = kstNow.toISOString().split('T')[0]; // YYYY-MM-DD (KST 기준)
     const isToday = formattedDate === today;
     
     let meals = [];
