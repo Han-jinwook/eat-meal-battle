@@ -278,6 +278,151 @@ async function saveMealData(supabase: any, schoolCode: string, officeCode: strin
 }
 
 /**
+ * 오늘 날짜 처리: 7일치 로직
+ */
+async function handleTodayRequest(supabase: any, schoolCode: string, officeCode: string, formattedDate: string, today: string) {
+  console.log('🎯 오늘 날짜 감지 - 7일치 급식정보 처리 시작');
+  
+  // 1. 오늘 데이터가 DB에 있는지 확인
+  const { data: todayData, error: todayError } = await supabase
+    .from('meal_menus')
+    .select('*')
+    .eq('school_code', schoolCode)
+    .eq('meal_date', today);
+    
+  if (todayError) {
+    throw new Error(`DB 조회 오류: ${todayError.message}`);
+  }
+  
+  // 2. 오늘 데이터가 있으면 바로 반환
+  if (todayData && todayData.length > 0) {
+    console.log('✅ 오늘 데이터 이미 존재 - DB에서 반환');
+    const hasEmptyResult = todayData.some(meal => meal.is_empty_result);
+    
+    return NextResponse.json({
+      success: true,
+      date: formattedDate,
+      meals: hasEmptyResult ? [] : todayData,
+      source: 'database',
+      is_empty_result: hasEmptyResult,
+      school_code: schoolCode,
+      office_code: officeCode
+    });
+  }
+  
+  // 3. 오늘 데이터가 없으면 7일치 API 호출
+  console.log('📅 7일치 범위 API 호출 시작');
+  const dates = generate7DayRange(today);
+  const startDate = dates[0];
+  const endDate = dates[dates.length - 1];
+  
+  try {
+    // 7일치 한번에 API 호출
+    console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
+    const rangeData = await fetchMealInfo(schoolCode, officeCode, startDate, endDate);
+    const allMeals = parseMealInfo(rangeData);
+    
+    // 날짜별로 그룹화
+    const mealsByDate = new Map();
+    allMeals.forEach(meal => {
+      const date = meal.meal_date;
+      if (!mealsByDate.has(date)) {
+        mealsByDate.set(date, []);
+      }
+      mealsByDate.get(date).push(meal);
+    });
+    
+    // 각 날짜별로 DB 저장
+    let todayMeals = [];
+    for (const targetDate of dates) {
+      const dateMeals = mealsByDate.get(targetDate) || [];
+      
+      if (targetDate === today) {
+        todayMeals = dateMeals;
+      }
+      
+      await saveMealData(supabase, schoolCode, officeCode, targetDate, dateMeals);
+      console.log(`✅ ${targetDate} 급식정보 처리 완료 (${dateMeals.length}개)`);
+    }
+    
+    console.log('🎉 7일치 급식정보 일괄 생성 완료');
+    
+    const hasEmptyResult = !todayMeals || todayMeals.length === 0;
+    
+    return NextResponse.json({
+      success: true,
+      date: formattedDate,
+      meals: hasEmptyResult ? [] : todayMeals,
+      source: 'api',
+      is_empty_result: hasEmptyResult,
+      school_code: schoolCode,
+      office_code: officeCode
+    });
+    
+  } catch (rangeError) {
+    console.error('❌ 7일치 범위 조회 실패, 1일치로 폴백:', rangeError);
+    // 실패 시 1일치 폴백
+    return await handleOtherDateRequest(supabase, schoolCode, officeCode, formattedDate);
+  }
+}
+
+/**
+ * 과거/미래 날짜 처리: 1일치 로직
+ */
+async function handleOtherDateRequest(supabase: any, schoolCode: string, officeCode: string, formattedDate: string) {
+  console.log('📅 과거/미래 날짜 - 1일치 급식정보 처리 시작');
+  
+  // 1. DB에서 급식 정보 확인
+  const { data: dbMeals, error: dbError } = await supabase
+    .from('meal_menus')
+    .select('*')
+    .eq('school_code', schoolCode)
+    .eq('meal_date', formattedDate);
+    
+  if (dbError) {
+    throw new Error(`DB 조회 오류: ${dbError.message}`);
+  }
+  
+  // 2. DB에 데이터가 있으면 바로 반환
+  if (dbMeals && dbMeals.length > 0) {
+    console.log(`DB에서 ${dbMeals.length}개의 급식 정보를 가져왔습니다.`);
+    const hasEmptyResult = dbMeals.some(meal => meal.is_empty_result);
+    
+    return NextResponse.json({
+      success: true,
+      date: formattedDate,
+      meals: hasEmptyResult ? [] : dbMeals,
+      source: 'database',
+      is_empty_result: hasEmptyResult,
+      school_code: schoolCode,
+      office_code: officeCode
+    });
+  }
+  
+  // 3. DB에 없으면 1일치 API 호출
+  console.log('DB에 없는 데이터입니다. 1일치 API 호출을 시도합니다.');
+  
+  const singleData = await fetchMealInfo(schoolCode, officeCode, formattedDate);
+  const meals = parseMealInfo(singleData);
+  
+  // 4. DB에 저장
+  await saveMealData(supabase, schoolCode, officeCode, formattedDate, meals);
+  console.log('급식 정보 저장 성공');
+  
+  const hasEmptyResult = !meals || meals.length === 0;
+  
+  return NextResponse.json({
+    success: true,
+    date: formattedDate,
+    meals: hasEmptyResult ? [] : meals,
+    source: 'api',
+    is_empty_result: hasEmptyResult,
+    school_code: schoolCode,
+    office_code: officeCode
+  });
+}
+
+/**
  * 특정 학교의 급식 정보 조회 API (GET)
  * 
  * Query Parameters:
@@ -321,325 +466,29 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 날짜 형식 확인 및 통일 (DB 조회 전)
+    // 날짜 형식 확인 및 통일
     let formattedDate = date;
-    // YYYYMMDD 형식이면 YYYY-MM-DD로 변환
     if (date && date.length === 8 && !date.includes('-')) {
       formattedDate = `${date.substring(0, 4)}-${date.substring(4, 6)}-${date.substring(6, 8)}`;
-      console.log(`날짜 형식 변환 (조회 전): ${date} -> ${formattedDate}`);
+      console.log(`날짜 형식 변환: ${date} -> ${formattedDate}`);
     }
-    
-    // 1. DB에서 급식 정보 가져오기 (형식화된 날짜 사용)
-    const { data: dbMeals, error: dbError } = await supabase
-      .from('meal_menus')
-      .select('*')
-      .eq('school_code', schoolCode)
-      .eq('meal_date', formattedDate);
-      
-    if (dbError) {
-      throw new Error(`DB 조회 오류: ${dbError.message}`);
-    }
-    
-    // DB에 데이터가 있으면 바로 반환
-    if (dbMeals && dbMeals.length > 0) {
-      console.log(`DB에서 ${dbMeals.length}개의 급식 정보를 가져왔습니다.`);
-      
-      // 빈 급식 정보 확인 (meal_type이 'empty'인 경우)
-      const hasEmptyResult = dbMeals.some(meal => meal.meal_type === 'empty');
-      
-      return NextResponse.json({
-        success: true,
-        date: formattedDate, // 형식화된 날짜 사용
-        meals: hasEmptyResult ? [] : dbMeals, // 빈 결과인 경우 빈 배열 반환
-        source: 'database',
-        is_empty_result: hasEmptyResult,
-        school_code: schoolCode,
-        office_code: officeCode
-      });
-    }
-    
-    // 2. DB에 없으면 API 호출
-    console.log('DB에 없는 데이터입니다. API 호출을 시도합니다.');
     
     // 오늘 날짜인지 확인 (KST 기준)
     const now = new Date();
-    const kstOffset = 9 * 60 * 60 * 1000; // 9시간
+    const kstOffset = 9 * 60 * 60 * 1000;
     const kstNow = new Date(now.getTime() + kstOffset);
-    const today = kstNow.toISOString().split('T')[0]; // YYYY-MM-DD (KST 기준)
+    const today = kstNow.toISOString().split('T')[0];
     const isToday = formattedDate === today;
     
-    console.log('🔍 날짜 비교 디버깅:', {
-      formattedDate,
-      today,
-      isToday,
-      utcTime: now.toISOString(),
-      kstTime: kstNow.toISOString()
-    });
-    
-    let meals = [];
+    console.log('🔍 날짜 확인:', { formattedDate, today, isToday });
     
     if (isToday) {
-      // 오늘인 경우: 7일치 한번에 가져오기
-      console.log('🎯 오늘 날짜 감지 - 7일치 급식정보 일괄 생성 시작');
-      const dates = generate7DayRange(today);
-      const startDate = dates[0]; // 첫 번째 날짜
-      const endDate = dates[dates.length - 1]; // 마지막 날짜
-      
-      try {
-        // 7일치 한번에 API 호출
-        console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
-        const rangeData = await fetchMealInfo(schoolCode, officeCode, startDate, endDate);
-        const allMeals = parseMealInfo(rangeData);
-        
-        // 날짜별로 그룹화하여 DB 저장
-        const mealsByDate = new Map();
-        allMeals.forEach(meal => {
-          const date = meal.meal_date;
-          if (!mealsByDate.has(date)) {
-            mealsByDate.set(date, []);
-          }
-          mealsByDate.get(date).push(meal);
-        });
-        
-        // 각 날짜별로 DB 저장
-        for (const targetDate of dates) {
-          const dateMeals = mealsByDate.get(targetDate) || [];
-          
-          // 오늘 날짜 데이터는 응답용으로 저장
-          if (targetDate === today) {
-            meals = dateMeals;
-          }
-          
-          // DB 저장
-          await saveMealData(supabase, schoolCode, officeCode, targetDate, dateMeals);
-          console.log(`✅ ${targetDate} 급식정보 처리 완료 (${dateMeals.length}개)`);
-        }
-        
-        console.log('🎉 7일치 급식정보 일괄 생성 완료');
-      } catch (rangeError) {
-        console.error('❌ 7일치 범위 조회 실패, 개별 조회로 전환:', rangeError);
-        // 실패 시 기존 방식으로 폴백
-        const singleData = await fetchMealInfo(schoolCode, officeCode, formattedDate);
-        meals = parseMealInfo(singleData);
-      }
-      
+      // 🎯 오늘 날짜 처리: 7일치 로직
+      return await handleTodayRequest(supabase, schoolCode, officeCode, formattedDate, today);
     } else {
-      // 과거/미래인 경우: 기존 로직 (1일치만)
-      const singleMealData = await fetchMealInfo(schoolCode, officeCode, formattedDate);
-      meals = parseMealInfo(singleMealData);
+      // 📅 과거/미래 날짜 처리: 1일치 로직
+      return await handleOtherDateRequest(supabase, schoolCode, officeCode, formattedDate);
     }
-    
-    // 3. DB에 결과 저장 (급식 정보가 있던 없던 저장)
-    // 급식 정보가 없는 경우도 저장하여 중복 API 호출 방지
-    try {
-      // formattedDate는 위에서 이미 정의되었음
-      console.log(`저장에 사용할 날짜 형식: ${formattedDate}`);
-      // 날짜 형식은 무조건 YYYY-MM-DD 형식을 사용
-      
-      // 이미 저장된 데이터가 있는지 확인 (중복 체크 정확도 향상을 위해 날짜 형식 통일)
-      const { data: existingData, error: checkError } = await supabase
-        .from('meal_menus')
-        .select('id, meal_type')
-        .eq('school_code', schoolCode)
-        .eq('meal_date', formattedDate);
-        
-      if (checkError) {
-        console.error('기존 데이터 확인 오류:', checkError);
-      }
-      
-      // 이미 데이터가 있으면 저장하지 않고 기존 데이터 반환
-      if (existingData && existingData.length > 0) {
-        console.log(`이미 DB에 ${formattedDate} 날짜의 급식 정보가 ${existingData.length}개 있습니다.`);
-        
-        // 기존 데이터를 다시 조회하여 반환
-        const { data: existingMeals, error: fetchError } = await supabase
-          .from('meal_menus')
-          .select('*')
-          .eq('school_code', schoolCode)
-          .eq('meal_date', formattedDate);
-          
-        if (fetchError) {
-          console.error('기존 데이터 조회 오류:', fetchError);
-          throw new Error(`기존 데이터 조회 오류: ${fetchError.message}`);
-        }
-        
-        // 빈 급식 정보 확인
-        const hasEmptyResult = existingMeals && existingMeals.some(meal => meal.meal_type === 'empty');
-        
-        return NextResponse.json({
-          success: true,
-          date: formattedDate,
-          meals: hasEmptyResult ? [] : existingMeals,
-          source: 'database',
-          is_empty_result: hasEmptyResult,
-          school_code: schoolCode,
-          office_code: officeCode
-        });
-      }
-      
-      if (meals && meals.length > 0) {
-        // 급식 정보가 있는 경우
-        const mealRecords = meals.map(meal => ({
-          school_code: meal.school_code,
-          office_code: meal.office_code,
-          meal_date: meal.meal_date,
-          meal_type: meal.meal_type,
-          menu_items: meal.menu_items,
-          kcal: meal.kcal,
-          // nutrition_info 필드 제거 (DB 스키마 변경에 맞추기)
-          origin_info: meal.origin_info,
-          ntr_info: meal.ntr_info || {}
-        }));
-        
-        // DB에 저장
-        const { error: insertError } = await supabase
-          .from('meal_menus')
-          .insert(mealRecords);
-          
-        if (insertError) {
-          console.error('급식 정보 DB 저장 오류:', insertError);
-        } else {
-          console.log(`${meals.length}개의 급식 정보를 DB에 저장했습니다.`);
-        }
-      } else {
-        // 급식 정보가 없는 경우에도 빈 레코드 저장 (중복 API 호출 방지)
-        const emptyRecord = {
-          school_code: schoolCode,
-          office_code: officeCode,
-          meal_date: formattedDate,  // 통일된 날짜 형식 사용
-          meal_type: '중식', // 빈 급식 정보 표시용, 스케줄러와 형식 통일
-          menu_items: ['급식 정보가 없습니다'],
-          kcal: '0 kcal',    // 통일한 형식으로 변경
-          // nutrition_info 필드 제거
-          origin_info: [],
-          ntr_info: {}
-        };
-        
-        try {
-          // DB에 빈 급식 정보 저장
-          const { error: emptyInsertError } = await supabase
-            .from('meal_menus')
-            .insert([emptyRecord]);
-            
-          if (emptyInsertError) {
-            console.error('빈 급식 정보 DB 저장 오류:', emptyInsertError);
-          } else {
-            console.log('빈 급식 정보를 DB에 저장했습니다.');
-          }
-        } catch (saveError) {
-          console.error('빈 급식 정보 저장 오류:', saveError);
-        }
-        
-        // API 응답에 오류 코드가 있는지 확인 (변수명 수정)
-        // 이 부분은 isToday 조건에서 이미 처리되므로 제거
-      }
-    } catch (dbError) {
-      console.error('DB 저장 중 오류 발생:', dbError);
-    }
-    
-    // 4. 결과 반환
-    // 결과 반환 전에 DB에 저장 작업이 완료되었는지 확인
-    // DB에서 최신 데이터 다시 조회 (형식화된 날짜 사용)
-    const { data: savedMeals, error: savedError } = await supabase
-      .from('meal_menus')
-      .select('*')
-      .eq('school_code', schoolCode)
-      .eq('meal_date', formattedDate);
-      
-    if (savedError) {
-      console.error('저장된 데이터 조회 오류:', savedError);
-    }
-    
-    // 실제로 저장된 데이터가 있으면 그것을 반환, 없으면 API 결과 반환
-    let finalMeals = (savedMeals && savedMeals.length > 0) ? savedMeals : meals;
-    let hasEmptyMeal = (savedMeals && savedMeals.length > 0) ? 
-      savedMeals.some(meal => meal.meal_type === 'empty') : (meals.length === 0);
-    
-    // 급식 정보가 전혀 없는 경우 (savedMeals도 없고 meals도 없는 경우)
-    // 반드시 empty 레코드를 DB에 저장하여 추후 동일한 검색에 API 호출 방지
-    // 단, 중복 검사를 위해 school_code + office_code + meal_date 조합으로 한번 더 확인
-    if (finalMeals.length === 0 && !hasEmptyMeal) {
-      console.log(`${formattedDate} 날짜의 급식 정보가 없습니다. 빈 레코드 저장 시도...`);
-      
-      // 동일한 school_code + office_code + meal_date 조합으로 이미 저장된 급식 정보가 있는지 한번 더 확인
-      console.log(`중복 여부 검사: ${schoolCode}, ${officeCode}, ${formattedDate}`);
-      const { data: duplicateCheck, error: dupCheckError } = await supabase
-        .from('meal_menus')
-        .select('id')
-        .eq('school_code', schoolCode)
-        .eq('office_code', officeCode)
-        .eq('meal_date', formattedDate);
-        
-      if (dupCheckError) {
-        console.error('중복 확인 오류:', dupCheckError);
-      }
-      
-      // 이미 동일한 조건의 데이터가 있으면 추가 저장하지 않음
-      if (duplicateCheck && duplicateCheck.length > 0) {
-        console.log(`이미 ${duplicateCheck.length}개의 동일한 레코드가 있어 저장하지 않습니다.`);
-        // 기존 데이터 사용
-        console.log('DB 쿼리 조건:', {
-          school_code: schoolCode,
-          office_code: officeCode,
-          meal_date: formattedDate,
-        });
-        const { data: existingData } = await supabase
-          .from('meal_menus')
-          .select('*')
-          .eq('school_code', schoolCode)
-          .eq('office_code', officeCode)
-          .eq('meal_date', formattedDate);
-          
-        if (existingData && existingData.length > 0) {
-          finalMeals = existingData;
-          hasEmptyMeal = existingData.some(meal => meal.meal_type === 'empty');
-        }
-        
-      } else {
-        // 중복이 없는 경우에만 새 레코드 추가
-        const emptyRecord = {
-          school_code: schoolCode,
-          office_code: officeCode,
-          meal_date: formattedDate,
-          meal_type: '중식',
-          menu_items: ['급식 정보가 없습니다 (주말 또는 공휴일)'],
-          kcal: '0 kcal',
-          origin_info: [],
-          ntr_info: {}
-        };
-        
-        try {
-          // DB에 빈 급식 정보 저장
-          const { data: emptyData, error: emptyInsertError } = await supabase
-            .from('meal_menus')
-            .insert([emptyRecord])
-            .select();
-            
-          if (emptyInsertError) {
-            console.error('빈 급식 정보 DB 저장 오류:', emptyInsertError);
-          } else {
-            console.log('빈 급식 정보를 DB에 성공적으로 저장했습니다.');
-            hasEmptyMeal = true;
-            finalMeals = emptyData || [];
-          }
-        } catch (saveError) {
-          console.error('빈 급식 정보 저장 오류:', saveError);
-        }
-      }
-    }
-    
-    // 날짜 형식 통일 처리 - formattedDate가 없을 경우 원래 date 사용
-    const responseDate = formattedDate || date;
-    
-    return NextResponse.json({ 
-      success: true,
-      date: responseDate, // 통일된 날짜 형식 사용
-      meals: hasEmptyMeal ? [] : finalMeals,
-      source: hasEmptyMeal ? 'database' : ((savedMeals && savedMeals.length > 0) ? 'database' : 'api'),
-      is_empty_result: hasEmptyMeal,
-      school_code: schoolCode,
-      office_code: officeCode
-    });
   } catch (error) {
     console.error('급식 정보 API 오류:', error);
     
