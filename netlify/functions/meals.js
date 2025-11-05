@@ -685,8 +685,16 @@ function generate7DayRange(centerDate) {
 async function fetchMealInfoRange(schoolCode, officeCode, startDate, endDate) {
   console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
   
-  // 각 날짜별로 개별 호출 (안전한 방식)
-  const dates = generate7DayRange(startDate);
+  // startDate부터 endDate까지의 모든 날짜 생성
+  const dates = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  
+  console.log(`📅 생성된 날짜 목록: ${dates.join(', ')}`);
   const results = [];
   
   for (const date of dates) {
