@@ -617,6 +617,95 @@ async function fetchMealInfo(schoolCode, officeCode, date) {
   }
 }
 
+// 🎯 오늘 날짜 처리: 7일치 로직
+async function handleTodayRequest(schoolCode, officeCode, mealDate, today) {
+  console.log('🎯 오늘 날짜 감지 - 7일치 급식정보 처리 시작');
+  
+  // 1. 오늘 데이터가 DB에 있는지 확인
+  const { data: todayData, error: todayError } = await supabase
+    .from('meal_menus')
+    .select('*')
+    .eq('school_code', schoolCode)
+    .eq('meal_date', today);
+    
+  if (todayError) {
+    console.error('DB 조회 오류:', todayError);
+    // 오류 시 기존 방식으로 폴백
+    return await fetchMealInfo(schoolCode, officeCode, mealDate);
+  }
+  
+  // 2. 오늘 데이터가 있으면 바로 반환
+  if (todayData && todayData.length > 0) {
+    console.log('✅ 오늘 데이터 이미 존재 - DB에서 반환');
+    return todayData[0]; // 첫 번째 급식 데이터 반환
+  }
+  
+  // 3. 오늘 데이터가 없으면 7일치 API 호출
+  console.log('📅 7일치 범위 API 호출 시작');
+  const dates = generate7DayRange(today);
+  const startDate = dates[0];
+  const endDate = dates[dates.length - 1];
+  
+  try {
+    console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
+    
+    // 7일치 한번에 API 호출
+    const rangeData = await fetchMealInfoRange(schoolCode, officeCode, startDate, endDate);
+    
+    // 오늘 데이터만 반환 (나머지는 DB에 저장됨)
+    const todayMeal = rangeData.find(meal => meal.meal_date === today);
+    
+    console.log('🎉 7일치 급식정보 일괄 생성 완료');
+    
+    return todayMeal || await fetchMealInfo(schoolCode, officeCode, mealDate);
+    
+  } catch (rangeError) {
+    console.error('❌ 7일치 범위 조회 실패, 1일치로 폴백:', rangeError);
+    // 실패 시 1일치 폴백
+    return await fetchMealInfo(schoolCode, officeCode, mealDate);
+  }
+}
+
+// 7일 범위 생성 함수
+function generate7DayRange(centerDate) {
+  const center = new Date(centerDate);
+  const dates = [];
+  
+  // 앞뒤 3일씩 총 7일
+  for (let i = -3; i <= 3; i++) {
+    const targetDate = new Date(center);
+    targetDate.setDate(center.getDate() + i);
+    dates.push(targetDate.toISOString().split('T')[0]);
+  }
+  
+  return dates;
+}
+
+// 7일치 범위 API 호출 함수 (간단 버전)
+async function fetchMealInfoRange(schoolCode, officeCode, startDate, endDate) {
+  console.log(`📅 7일치 범위 API 호출: ${startDate} ~ ${endDate}`);
+  
+  // 각 날짜별로 개별 호출 (안전한 방식)
+  const dates = generate7DayRange(startDate);
+  const results = [];
+  
+  for (const date of dates) {
+    try {
+      const mealData = await fetchMealInfo(schoolCode, officeCode, date);
+      if (mealData) {
+        results.push(mealData);
+      }
+    } catch (error) {
+      console.error(`${date} 급식 정보 조회 실패:`, error);
+    }
+    
+    // API 호출 제한을 위한 지연
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  return results;
+}
+
 // Netlify 함수 핸들러
 exports.handler = async function(event, context) {
   console.log('급식 정보 조회 함수 실행 - ', new Date().toISOString());
@@ -656,8 +745,24 @@ exports.handler = async function(event, context) {
     // 날짜 기본값은 오늘
     const mealDate = date || new Date().toISOString().slice(0, 10);
     
+    // 🎯 오늘 날짜인지 확인 (KST 기준)
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = kstNow.toISOString().split('T')[0];
+    const isToday = mealDate === today;
+    
+    console.log('🔍 날짜 확인:', { mealDate, today, isToday });
+    
     // 급식 정보 조회
-    const mealData = await fetchMealInfo(school_code, office_code, mealDate);
+    let mealData;
+    if (isToday) {
+      console.log('🎯 오늘 날짜 감지 - 7일치 급식정보 처리 시작');
+      mealData = await handleTodayRequest(school_code, office_code, mealDate, today);
+    } else {
+      console.log('📅 과거/미래 날짜 - 1일치 급식정보 처리');
+      mealData = await fetchMealInfo(school_code, office_code, mealDate);
+    }
     
     // 응답 JSON을 프론트엔드 기대 형식으로 래핑
     // 데이터 소스를 정확히 표시
