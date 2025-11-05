@@ -750,9 +750,15 @@ exports.handler = async function(event, context) {
     const kstOffset = 9 * 60 * 60 * 1000;
     const kstNow = new Date(now.getTime() + kstOffset);
     const today = kstNow.toISOString().split('T')[0];
-    const isToday = mealDate === today;
     
-    console.log('🔍 날짜 확인:', { mealDate, today, isToday });
+    // 날짜 형식 통일 (YYYYMMDD -> YYYY-MM-DD)
+    const normalizedMealDate = mealDate.length === 8 ? 
+      `${mealDate.slice(0,4)}-${mealDate.slice(4,6)}-${mealDate.slice(6,8)}` : 
+      mealDate;
+    
+    const isToday = normalizedMealDate === today;
+    
+    console.log('🔍 날짜 확인:', { mealDate, normalizedMealDate, today, isToday });
     
     // 급식 정보 조회
     let mealData;
