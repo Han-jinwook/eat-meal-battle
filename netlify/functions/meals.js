@@ -666,15 +666,15 @@ async function handleTodayRequest(schoolCode, officeCode, mealDate, today) {
   }
 }
 
-// 7일 범위 생성 함수
-function generate7DayRange(centerDate) {
-  const center = new Date(centerDate);
+// 7일 범위 생성 함수 (오늘부터 미래 7일)
+function generate7DayRange(startDate) {
+  const start = new Date(startDate);
   const dates = [];
   
-  // 앞뒤 3일씩 총 7일
-  for (let i = -3; i <= 3; i++) {
-    const targetDate = new Date(center);
-    targetDate.setDate(center.getDate() + i);
+  // 오늘부터 미래 6일까지 총 7일
+  for (let i = 0; i < 7; i++) {
+    const targetDate = new Date(start);
+    targetDate.setDate(start.getDate() + i);
     dates.push(targetDate.toISOString().split('T')[0]);
   }
   
