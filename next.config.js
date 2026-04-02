@@ -34,11 +34,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
-  // 빌드 시 ESLint 검사 비활성화
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // 빌드 시 타입 검사 비활성화 (Netlify 배포를 위한 설정)
   typescript: {
     ignoreBuildErrors: true,
