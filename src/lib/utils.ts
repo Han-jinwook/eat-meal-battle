@@ -1,5 +1,9 @@
 import pako from 'pako';
 
+export function cn(...inputs: Array<string | false | null | undefined>) {
+  return inputs.filter(Boolean).join(' ');
+}
+
 // JSON 객체를 압축하고 Base64로 인코딩하는 함수
 export const compressAndEncode = (data: object): string => {
   try {

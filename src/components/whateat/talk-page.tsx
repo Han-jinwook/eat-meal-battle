@@ -1,0 +1,737 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { 
+  MapPin, 
+  Star,
+  Heart,
+  MessageCircle,
+  ChevronDown,
+  UserPlus,
+  UserCheck,
+  Search,
+  ArrowUpDown,
+  X,
+  Send
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+
+// 타입 정의
+interface TalkPost {
+  id: number
+  type: "homemade" | "delivery" | "dineout"
+  title: string
+  image: string
+  description: string
+  region: {
+    dong: string
+    gu: string
+    city: string
+  }
+  // 외식/배달인 경우 상점 정보
+  restaurant?: {
+    name: string
+    address: string
+  }
+  author: {
+    id: number
+    nickname: string
+    avatar: string
+    region: string
+  }
+  createdAt: string
+  // 별점 시스템 (평균 + 참여자 수)
+  rating: {
+    average: number
+    count: number
+  }
+  likes: number
+  isLiked: boolean
+  commentCount: number
+  // 집밥만 구독 가능
+  isSubscribed?: boolean
+}
+
+interface Comment {
+  id: number
+  author: {
+    nickname: string
+    avatar: string
+    region: string
+  }
+  content: string
+  createdAt: string
+  likes: number
+  isLiked: boolean
+}
+
+// 더미 데이터
+const dummyPosts: TalkPost[] = [
+  {
+    id: 1,
+    type: "homemade",
+    title: "주말 브런치 에그베네딕트",
+    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&h=450&fit=crop",
+    description: "홀란다이즈 소스 직접 만들어봤는데 생각보다 어렵지 않아요! 레시피 공유할게요",
+    region: { dong: "청라동", gu: "서구", city: "인천" },
+    author: {
+      id: 1,
+      nickname: "요리하는직장인",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
+      region: "청라동"
+    },
+    createdAt: "2시간 전",
+    rating: { average: 4.8, count: 24 },
+    likes: 156,
+    isLiked: true,
+    commentCount: 12,
+    isSubscribed: true
+  },
+  {
+    id: 2,
+    type: "dineout",
+    title: "부평 숨은 돈까스 맛집",
+    image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&h=600&fit=crop",
+    description: "두툼한 등심돈까스에 수제 데미글라스 소스가 예술이에요. 웨이팅 있어도 가치있음!",
+    region: { dong: "부평동", gu: "부평구", city: "인천" },
+    restaurant: {
+      name: "돈까스연구소",
+      address: "인천 부평구 부평동 123-45"
+    },
+    author: {
+      id: 2,
+      nickname: "인천맛집헌터",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+      region: "부평동"
+    },
+    createdAt: "5시간 전",
+    rating: { average: 4.9, count: 87 },
+    likes: 342,
+    isLiked: false,
+    commentCount: 45
+  },
+  {
+    id: 3,
+    type: "delivery",
+    title: "야식으로 시킨 마라탕",
+    image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&h=600&fit=crop",
+    description: "3단계 매운맛에 양 많고 가성비 최고. 청라 배달 맛집 인정합니다",
+    region: { dong: "청라동", gu: "서구", city: "인천" },
+    restaurant: {
+      name: "마라킹",
+      address: "인천 서구 청라동 456-78"
+    },
+    author: {
+      id: 3,
+      nickname: "야식킹",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
+      region: "청라동"
+    },
+    createdAt: "어제",
+    rating: { average: 4.5, count: 156 },
+    likes: 523,
+    isLiked: true,
+    commentCount: 67
+  },
+  {
+    id: 4,
+    type: "homemade",
+    title: "된장찌개 황금레시피",
+    image: "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=600&h=600&fit=crop",
+    description: "어머니께 배운 비법 된장찌개. 멸치육수가 핵심이에요!",
+    region: { dong: "연수동", gu: "연수구", city: "인천" },
+    author: {
+      id: 4,
+      nickname: "집밥마스터",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+      region: "연수동"
+    },
+    createdAt: "2일 전",
+    rating: { average: 4.7, count: 312 },
+    likes: 891,
+    isLiked: false,
+    commentCount: 89,
+    isSubscribed: false
+  }
+]
+
+const dummyComments: Comment[] = [
+  {
+    id: 1,
+    author: { nickname: "맛집탐험가", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face", region: "부평동" },
+    content: "레시피 공유해주세요!! 너무 맛있어 보여요",
+    createdAt: "1시간 전",
+    likes: 5,
+    isLiked: false
+  },
+  {
+    id: 2,
+    author: { nickname: "요리초보", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face", region: "청라동" },
+    content: "저도 따라해봤는데 성공했어요! 감사합니다",
+    createdAt: "30분 전",
+    likes: 3,
+    isLiked: true
+  }
+]
+
+// 카테고리 옵션
+const categoryOptions = [
+  { id: "all", label: "전체" },
+  { id: "homemade", label: "집밥" },
+  { id: "delivery", label: "배달" },
+  { id: "dineout", label: "외식" },
+]
+
+export function TalkPage() {
+  const PAGE_SIZE = 12
+  const [posts, setPosts] = useState(dummyPosts)
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
+  const [userRegion, setUserRegion] = useState<string>("청라동") // 사용자 기본 지역
+  const [scopeFilter, setScopeFilter] = useState<string>("dong") // 범위: dong/gu/city/all
+  const [searchRegion, setSearchRegion] = useState<string>("") // 검색 지역
+  const [showScopeDropdown, setShowScopeDropdown] = useState(false)
+  const [showRegionSearch, setShowRegionSearch] = useState(false)
+  const [showOnlyNew, setShowOnlyNew] = useState(true)
+  const [showOnlyLiked, setShowOnlyLiked] = useState(false)
+  const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
+  const [expandedComments, setExpandedComments] = useState<number | null>(null)
+  const [commentInput, setCommentInput] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const userAddress = {
+    dong: userRegion,
+    gu: "서구",
+    city: "인천",
+  }
+  const hasProfileAddress = Boolean(userAddress.dong && userAddress.gu && userAddress.city)
+  const regionScopeOptions = hasProfileAddress
+    ? [
+        { id: "dong", label: userAddress.dong },
+        { id: "gu", label: userAddress.gu },
+        { id: "city", label: userAddress.city },
+        { id: "all", label: "전국" },
+      ]
+    : [{ id: "all", label: "전국" }]
+
+  // 좋아요 토글
+  const toggleLike = (postId: number) => {
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 }
+        : p
+    ))
+  }
+
+  // 구독 토글 (집밥만)
+  const toggleSubscribe = (postId: number) => {
+    setPosts(posts.map(p => 
+      p.id === postId && p.type === "homemade"
+        ? { ...p, isSubscribed: !p.isSubscribed }
+        : p
+    ))
+  }
+
+  // 필터링된 포스트
+  const toKstDateKey = (date: Date) => {
+    const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+    const y = kstDate.getUTCFullYear()
+    const m = String(kstDate.getUTCMonth() + 1).padStart(2, "0")
+    const d = String(kstDate.getUTCDate()).padStart(2, "0")
+    return `${y}-${m}-${d}`
+  }
+
+  const isTodayPost = (createdAt: string) => {
+    const parsed = Date.parse(createdAt)
+    if (!Number.isNaN(parsed)) {
+      return toKstDateKey(new Date()) === toKstDateKey(new Date(parsed))
+    }
+
+    if (createdAt.includes("어제") || createdAt.includes("일 전")) return false
+    if (createdAt.includes("방금") || createdAt.includes("분 전") || createdAt.includes("시간 전")) return true
+    return false
+  }
+
+  const filteredPosts = posts.filter(post => {
+    if (categoryFilter !== "all" && post.type !== categoryFilter) return false
+    if (showOnlyNew && !isTodayPost(post.createdAt)) return false
+    if (showOnlyLiked && !post.isLiked) return false
+    if (showOnlySubscribed && !post.isSubscribed) return false
+    
+    // 지역 필터: 검색 지역이 있으면 우선, 없으면 내 지역 + 범위
+    const targetRegion = searchRegion || userRegion
+    const postRegion = post.author?.region || post.region?.dong || ""
+    
+    if (scopeFilter === "dong") {
+      return postRegion === targetRegion
+    } else if (scopeFilter === "gu") {
+      return post.region.gu === userAddress.gu
+    } else if (scopeFilter === "city") {
+      return post.region.city === userAddress.city
+    }
+    // all: 모든 지역
+    return true
+  })
+
+  const getCategoryCount = (categoryId: string) => {
+    return posts.filter((post) => {
+      if (categoryId !== "all" && post.type !== categoryId) return false
+      if (showOnlyNew && !isTodayPost(post.createdAt)) return false
+      if (showOnlyLiked && !post.isLiked) return false
+      if (showOnlySubscribed && !post.isSubscribed) return false
+
+      const targetRegion = searchRegion || userRegion
+      const postRegion = post.author?.region || post.region?.dong || ""
+
+      if (scopeFilter === "dong") {
+        return postRegion === targetRegion
+      } else if (scopeFilter === "gu") {
+        return post.region.gu === userAddress.gu
+      } else if (scopeFilter === "city") {
+        return post.region.city === userAddress.city
+      }
+
+      return true
+    }).length
+  }
+
+  const getPostTimestamp = (createdAt: string, fallbackId: number) => {
+    const parsed = Date.parse(createdAt)
+    if (!Number.isNaN(parsed)) return parsed
+
+    const hourMatch = createdAt.match(/(\d+)\s*시간\s*전/)
+    if (hourMatch) return Date.now() - Number(hourMatch[1]) * 60 * 60 * 1000
+
+    const dayMatch = createdAt.match(/(\d+)\s*일\s*전/)
+    if (dayMatch) return Date.now() - Number(dayMatch[1]) * 24 * 60 * 60 * 1000
+
+    if (createdAt.includes("어제")) return Date.now() - 24 * 60 * 60 * 1000
+
+    return fallbackId
+  }
+
+  const formatRelativeTime = (createdAt: string) => {
+    const parsed = Date.parse(createdAt)
+    if (Number.isNaN(parsed)) return createdAt
+
+    const diffMs = Date.now() - parsed
+    const diffMinutes = Math.floor(diffMs / (60 * 1000))
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMinutes < 1) return "방금 전"
+    if (diffMinutes < 60) return `${diffMinutes}분 전`
+    if (diffHours < 24) return `${diffHours}시간 전`
+    if (diffDays === 1) return "어제"
+    return `${diffDays}일 전`
+  }
+
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    const aTs = getPostTimestamp(a.createdAt, a.id)
+    const bTs = getPostTimestamp(b.createdAt, b.id)
+    return sortOrder === "latest" ? bTs - aTs : aTs - bTs
+  })
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [
+    categoryFilter,
+    sortOrder,
+    scopeFilter,
+    searchRegion,
+    searchQuery,
+    showOnlyNew,
+    showOnlyLiked,
+    showOnlySubscribed,
+  ])
+
+  const visiblePosts = sortedPosts.slice(0, visibleCount)
+  const hasMorePosts = visibleCount < sortedPosts.length
+
+  // 별점 렌더링
+  const renderStars = (average: number) => {
+    const fullStars = Math.floor(average)
+    const hasHalf = average - fullStars >= 0.5
+    return (
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, i) => (
+          <Star 
+            key={i} 
+            className={cn(
+              "size-3",
+              i < fullStars 
+                ? "fill-yellow-400 text-yellow-400" 
+                : i === fullStars && hasHalf 
+                  ? "fill-yellow-400/50 text-yellow-400"
+                  : "text-muted-foreground/30"
+            )} 
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <p className="text-xs font-semibold text-cyan-500 whitespace-nowrap">우리 동네 5점 맛집 모음</p>
+            <div className="relative group">
+              <button
+                type="button"
+                aria-label="맛톡 노출 규칙 도움말"
+                className="size-4 rounded-full border border-cyan-300 text-[10px] leading-none font-bold text-cyan-600 bg-cyan-50 flex items-center justify-center"
+              >
+                ?
+              </button>
+              <div className="pointer-events-none absolute left-0 top-full mt-1 w-72 rounded-lg border border-cyan-100 bg-white px-3 py-2 text-[11px] leading-4 text-muted-foreground shadow-lg opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 z-50">
+                솔로/패밀리에서 5점 부여한 식사는 맛톡에 자동으로 올라오며, 3일간 좋아요 3개 받지 못하면 사라집니다.
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="음식, 식당, 별명 검색"
+              className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none text-sm placeholder:text-muted-foreground/50"
+            />
+          </div>
+        </div>
+
+        {/* 지역 필터: 사용자 행정구역 드롭다운 + 검색 */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowScopeDropdown(!showScopeDropdown)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-extrabold transition-all whitespace-nowrap border",
+                scopeFilter === "all"
+                  ? "bg-white text-foreground border-gray-300 hover:border-orange-200"
+                  : "bg-orange-50 text-orange-600 border-orange-200"
+              )}
+            >
+              {regionScopeOptions.find((s) => s.id === scopeFilter)?.label}
+              <ChevronDown className="size-3" />
+            </button>
+            {showScopeDropdown && (
+              <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                {regionScopeOptions.map((scope) => (
+                  <button
+                    key={scope.id}
+                    onClick={() => {
+                      setScopeFilter(scope.id)
+                      setShowScopeDropdown(false)
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between gap-2",
+                      scopeFilter === scope.id
+                        ? "bg-orange-50 text-orange-500 font-bold"
+                        : "text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <span>{scope.label}</span>
+                    {scopeFilter === scope.id && <span className="text-[10px]">선택된 항목</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {showRegionSearch && (
+            <input
+              type="text"
+              autoFocus
+              placeholder="지역명 입력 (동/구/시) - ESC로 취소"
+              value={searchRegion}
+              onChange={(e) => setSearchRegion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setShowRegionSearch(false)
+                  setSearchRegion("")
+                }
+              }}
+              className="flex-1 px-4 py-2 bg-white border border-orange-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-300/40 outline-none placeholder:text-muted-foreground/50"
+            />
+          )}
+
+          {!showRegionSearch && <div className="flex-1" />}
+
+          {/* 지역 검색 */}
+          <button
+            onClick={() => setShowRegionSearch(!showRegionSearch)}
+            className="flex items-center gap-1 px-3 py-2 bg-white/60 border border-white/80 rounded-lg text-xs font-medium text-muted-foreground hover:border-orange-200 transition-all whitespace-nowrap"
+          >
+            <Search className="size-3.5" />
+            지역 검색
+          </button>
+        </div>
+
+        {/* Category Filter */}
+        <div className="flex items-center gap-1.5">
+          {categoryOptions.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setCategoryFilter(option.id)}
+              className={cn(
+                "relative px-3 py-1.5 rounded-full text-[13px] font-bold transition-all whitespace-nowrap",
+                categoryFilter === option.id
+                  ? "bg-orange-500 text-white shadow-md shadow-orange-300/50"
+                  : "bg-white/70 text-muted-foreground hover:bg-white"
+              )}
+            >
+              <span className="absolute -top-2 right-0 z-10 text-[11px] leading-none font-black text-cyan-600">
+                {getCategoryCount(option.id)}
+              </span>
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Quick Filters */}
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-muted/30">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setShowOnlyNew(false)
+                setShowOnlyLiked(false)
+                setShowOnlySubscribed(false)
+              }}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+                !showOnlyNew && !showOnlyLiked && !showOnlySubscribed
+                  ? "bg-orange-50 text-orange-500 border border-orange-200"
+                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
+              )}
+            >
+              전체
+            </button>
+            <button
+              onClick={() => setShowOnlyNew(!showOnlyNew)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+                showOnlyNew
+                  ? "bg-cyan-50 text-cyan-600 border border-cyan-200"
+                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
+              )}
+            >
+              NEW
+            </button>
+            <button
+              onClick={() => setShowOnlyLiked(!showOnlyLiked)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+                showOnlyLiked
+                  ? "bg-orange-50 text-orange-500 border border-orange-200"
+                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
+              )}
+            >
+              <Heart className={cn("size-3", showOnlyLiked && "fill-current")} />
+              my 좋아요
+            </button>
+            <button
+              onClick={() => setShowOnlySubscribed(!showOnlySubscribed)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
+                showOnlySubscribed
+                  ? "bg-orange-50 text-orange-500 border border-orange-200"
+                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
+              )}
+            >
+              <UserCheck className={cn("size-3")} />
+              구독중
+            </button>
+          </div>
+
+          <button
+            onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
+            className="flex items-center gap-1 text-xs text-muted-foreground px-1"
+          >
+            <ArrowUpDown className="size-3" />
+            {sortOrder === "latest" ? "최신순" : "오래된순"}
+          </button>
+        </div>
+      </div>
+
+      {/* Posts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {visiblePosts.map((post) => (
+          <div key={post.id} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
+            {/* Author Header */}
+            <div className="flex items-center justify-between p-4 pb-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={post.author.avatar}
+                  alt={post.author.nickname}
+                  className="size-10 rounded-xl object-cover border-2 border-white shadow-sm"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-foreground">{post.author.nickname}</span>
+                    {post.type === "homemade" && (
+                      <button
+                        onClick={() => toggleSubscribe(post.id)}
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all",
+                          post.isSubscribed
+                            ? "bg-orange-500 text-white"
+                            : "bg-muted/50 text-muted-foreground hover:bg-orange-50 hover:text-orange-500"
+                        )}
+                      >
+                        {post.isSubscribed ? <UserCheck className="size-3" /> : <UserPlus className="size-3" />}
+                        {post.isSubscribed ? "구독중" : "구독"}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <MapPin className="size-3 text-muted-foreground" />
+                    <span className="text-[11px] text-muted-foreground">{post.author.region}</span>
+                    <span className="text-[10px] text-muted-foreground/50">·</span>
+                    <span className="text-[10px] text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Type Badge */}
+              <div className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-bold",
+                post.type === "homemade" && "bg-green-50 text-green-600",
+                post.type === "delivery" && "bg-blue-50 text-blue-600",
+                post.type === "dineout" && "bg-purple-50 text-purple-600"
+              )}>
+                {post.type === "homemade" && "집밥"}
+                {post.type === "delivery" && "배달"}
+                {post.type === "dineout" && "외식"}
+              </div>
+            </div>
+
+            {/* Image */}
+            <div className="relative aspect-[4/3] bg-muted/20 overflow-hidden">
+              {post.image ? (
+                <img 
+                  src={post.image} 
+                  alt={post.title} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : null}
+              {post.restaurant && (
+                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2">
+                  <span className="font-bold text-white text-sm">{post.restaurant.name}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <h3 className="font-bold text-foreground mb-1">{post.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{post.description}</p>
+            </div>
+
+            {/* Stats & Actions */}
+            <div className="px-4 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* 좋아요 */}
+                <button 
+                  onClick={() => toggleLike(post.id)}
+                  className="flex items-center gap-1.5"
+                >
+                  <Heart className={cn(
+                    "size-5 transition-all",
+                    post.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                  )} />
+                  <span className={cn(
+                    "text-sm font-bold",
+                    post.isLiked ? "text-red-500" : "text-muted-foreground"
+                  )}>{post.likes}</span>
+                </button>
+                {/* 댓글 */}
+                <button 
+                  onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
+                  className="flex items-center gap-1.5"
+                >
+                  <MessageCircle className={cn(
+                    "size-5 transition-all",
+                    expandedComments === post.id ? "text-orange-500" : "text-muted-foreground"
+                  )} />
+                  <span className="text-sm font-bold text-muted-foreground">{post.commentCount}</span>
+                </button>
+              </div>
+              {/* 별점 */}
+              <div className="flex items-center gap-2">
+                {renderStars(post.rating.average)}
+                <span className="text-xs text-muted-foreground">
+                  {post.rating.average.toFixed(1)} ({post.rating.count}명)
+                </span>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            {expandedComments === post.id && (
+              <div className="border-t border-muted/30">
+                {/* Comment List */}
+                <div className="divide-y divide-muted/20">
+                  {dummyComments.map((comment) => (
+                    <div key={comment.id} className="p-4 flex gap-3">
+                      <img
+                        src={comment.author.avatar}
+                        alt={comment.author.nickname}
+                        className="size-8 rounded-lg object-cover shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-foreground">{comment.author.nickname}</span>
+                          <span className="text-[10px] text-muted-foreground">{comment.author.region}</span>
+                          <span className="text-[10px] text-muted-foreground">·</span>
+                          <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
+                        </div>
+                        <p className="text-sm text-foreground mt-1">{comment.content}</p>
+                        <button className="flex items-center gap-1 mt-1.5 text-muted-foreground">
+                          <Heart className={cn(
+                            "size-3",
+                            comment.isLiked && "fill-red-500 text-red-500"
+                          )} />
+                          <span className="text-[10px]">{comment.likes}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Comment Input */}
+                <div className="p-4 pt-3 border-t border-muted/30 flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    placeholder="댓글을 입력하세요..."
+                    className="flex-1 px-4 py-2.5 bg-muted/30 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300/40"
+                  />
+                  <button className="size-10 bg-orange-500 text-white rounded-xl flex items-center justify-center hover:bg-orange-600 transition-colors">
+                    <Send className="size-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {hasMorePosts && (
+        <div className="flex justify-center -mt-1">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-white/80 border border-orange-200 text-orange-600 hover:bg-orange-50 transition-colors"
+          >
+            게시물 더보기
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
