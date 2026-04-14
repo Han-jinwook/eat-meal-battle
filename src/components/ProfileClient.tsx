@@ -29,6 +29,8 @@ interface SchoolRegistrationPayload {
   classNumber: string
 }
 
+type EmailAuthPromptType = 'school-setting' | 'email-verify'
+
 export default function ProfileClient({ 
   initialUser, 
   initialUserProfile, 
@@ -49,6 +51,8 @@ export default function ProfileClient({
   const [newEmail, setNewEmail] = useState(initialUser?.email || '')
   const [newProfileImage, setNewProfileImage] = useState(initialUserProfile?.profile_image || '')
   const [isUpdatingProfileInfo, setIsUpdatingProfileInfo] = useState(false)
+  const [showEmailAuthPromptModal, setShowEmailAuthPromptModal] = useState(false)
+  const [emailAuthPromptType, setEmailAuthPromptType] = useState<EmailAuthPromptType>('school-setting')
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -92,6 +96,23 @@ export default function ProfileClient({
   const displayNickname = userProfile?.nickname || user?.user_metadata?.name || '익명 사용자'
   const displayEmail = user?.email || newEmail || '이메일 미등록'
   const isEmailVerified = Boolean(user?.email_confirmed_at)
+  const emailAuthPromptContent =
+    emailAuthPromptType === 'school-setting'
+      ? {
+          title: '학교설정 전에 인증이 필요해요',
+          message: '학교정보를 저장하려면 먼저 로그인 후 이메일 인증을 진행해주세요.',
+          highlight: '학교정보를 저장하고 싶다면?',
+        }
+      : {
+          title: '이메일 인증이 필요해요',
+          message: '계정 보호와 복구 기능을 사용하려면 이메일 인증을 먼저 진행해주세요.',
+          highlight: '인증 및 설정을 저장하고 싶다면?',
+        }
+
+  const openEmailAuthPromptModal = (type: EmailAuthPromptType) => {
+    setEmailAuthPromptType(type)
+    setShowEmailAuthPromptModal(true)
+  }
 
   const handleUpdateNickname = async () => {
     console.log('🔍 닉네임 업데이트 시작:', { newNickname, currentNickname: userProfile?.nickname });
@@ -384,8 +405,16 @@ export default function ProfileClient({
     }
   }
   return (
-    <div className="min-h-screen bg-[#f3f4f6] px-4 py-8">
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-[1px]">
+      <div className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="absolute right-4 top-4 text-2xl leading-none text-slate-400 transition hover:text-slate-700"
+          aria-label="프로필 닫기"
+        >
+          ×
+        </button>
         <h1 className="mb-4 text-center text-2xl font-bold text-slate-900">프로필 설정</h1>
 
         {error && <div className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
@@ -495,8 +524,7 @@ export default function ProfileClient({
               type="button"
               onClick={() => {
                 if (!canMutate) {
-                  setNotice('로그인 후 이메일 인증 설정을 진행할 수 있습니다.')
-                  router.push('/login')
+                  openEmailAuthPromptModal('email-verify')
                   return
                 }
                 setIsEditingProfileInfo(true)
@@ -526,7 +554,7 @@ export default function ProfileClient({
                     const { data: authData, error: authError } = await supabase.auth.getUser()
 
                     if (authError || !authData.user) {
-                      setNotice('로그인 후 학교설정을 진행할 수 있습니다.')
+                      openEmailAuthPromptModal('school-setting')
                       return
                     }
 
@@ -628,6 +656,57 @@ export default function ProfileClient({
           allowFamilyRegistration={false}
           onComplete={handleCompleteSchoolRegistrationFlow}
         />
+
+        {showEmailAuthPromptModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-4">
+            <div className="w-full max-w-md rounded-2xl border border-violet-100 bg-white p-5 shadow-xl">
+              <div className="mb-4 flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-cyan-400" />
+                  <p className="text-4xl font-black leading-none text-slate-900">WhatEat</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailAuthPromptModal(false)}
+                  className="text-xl text-slate-400 hover:text-slate-700"
+                  aria-label="닫기"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="mb-4 text-xl font-semibold text-slate-900">{emailAuthPromptContent.title}</p>
+              <p className="mb-4 text-base text-slate-600">{emailAuthPromptContent.message}</p>
+
+              <div className="mb-4 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-center text-base font-semibold text-violet-600">
+                {emailAuthPromptContent.highlight}
+              </div>
+
+              <label className="mb-2 block text-sm font-semibold text-slate-700">이메일 주소</label>
+              <input
+                type="email"
+                placeholder="example@email.com"
+                className="mb-4 w-full rounded-xl border border-violet-200 bg-violet-50/40 px-4 py-3 text-sm text-slate-700"
+              />
+
+              <button
+                type="button"
+                disabled
+                className="mb-3 w-full rounded-xl bg-gradient-to-r from-slate-400 to-slate-500 px-4 py-3 text-base font-bold text-white opacity-80"
+              >
+                인증 코드 받기 (준비중)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowEmailAuthPromptModal(false)}
+                className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+              >
+                뒤로 가기
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
