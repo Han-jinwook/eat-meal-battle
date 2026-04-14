@@ -405,8 +405,9 @@ export default function ProfileClient({
     }
   }
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-[1px]">
-      <div className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+    <div className="fixed inset-0 z-40 h-dvh overflow-y-auto bg-black/35 backdrop-blur-[1px]">
+      <div className="flex min-h-full items-center justify-center px-4 py-6 sm:py-8">
+        <div className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
         <button
           type="button"
           onClick={() => router.back()}
@@ -658,7 +659,8 @@ export default function ProfileClient({
         />
 
         {showEmailAuthPromptModal && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-4">
+          <div className="fixed inset-0 z-[70] h-dvh overflow-y-auto bg-black/45">
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
             <div className="w-full max-w-md rounded-2xl border border-violet-100 bg-white p-5 shadow-xl">
               <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-2">
@@ -705,8 +707,10 @@ export default function ProfileClient({
                 뒤로 가기
               </button>
             </div>
+            </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )
