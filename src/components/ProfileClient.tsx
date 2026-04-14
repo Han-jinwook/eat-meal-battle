@@ -3,16 +3,30 @@
 // ProfileClient.tsx - 메인 프로필 페이지 컴포넌트
 // 서버 컴포넌트 최적화 - 2025-10-13
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import BirthConsentModal from '@/components/BirthConsentModal'
+import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal'
+import { extractBattleRegion } from '@/utils/addressParser'
 
 interface ProfileClientProps {
   initialUser: any
   initialUserProfile: any
   initialSchoolInfo: any
+}
+
+interface SchoolRegistrationPayload {
+  school: {
+    SD_SCHUL_CODE: string
+    SCHUL_NM: string
+    ATPT_OFCDC_SC_CODE: string
+    SCHUL_KND_SC_NM: string
+    ORG_RDNMA: string
+    LCTN_SC_NM: string
+  }
+  grade: string
+  classNumber: string
 }
 
 export default function ProfileClient({ 
@@ -22,21 +36,62 @@ export default function ProfileClient({
 }: ProfileClientProps) {
   const [user, setUser] = useState<any>(initialUser)
   const [userProfile, setUserProfile] = useState<any>(initialUserProfile)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [deletingAccount, setDeletingAccount] = useState(false)
-  const [dbStatus, setDbStatus] = useState<'loading' | 'success' | 'error' | null>(
-    initialUserProfile ? 'success' : null
-  )
   const [schoolInfo, setSchoolInfo] = useState<any>(initialSchoolInfo)
-  const [isSharing, setIsSharing] = useState(false)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
+  const [isSchoolRegistrationFlowOpen, setIsSchoolRegistrationFlowOpen] = useState(false)
   const [isEditingNickname, setIsEditingNickname] = useState(false)
   const [newNickname, setNewNickname] = useState(initialUserProfile?.nickname || '')
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false)
+  const [isEditingProfileInfo, setIsEditingProfileInfo] = useState(false)
+  const [newEmail, setNewEmail] = useState(initialUser?.email || '')
+  const [newProfileImage, setNewProfileImage] = useState(initialUserProfile?.profile_image || '')
+  const [isUpdatingProfileInfo, setIsUpdatingProfileInfo] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
+  useEffect(() => {
+    const hydrateProfileState = async () => {
+      try {
+        if (user?.id && userProfile && schoolInfo) {
+          return
+        }
+
+        const { data: authData, error: authError } = await supabase.auth.getUser()
+        if (authError || !authData.user) {
+          return
+        }
+
+        setUser(authData.user)
+
+        const [{ data: freshProfile }, { data: freshSchoolInfo }] = await Promise.all([
+          supabase.from('users').select('*').eq('id', authData.user.id).maybeSingle(),
+          supabase.from('school_infos').select('*').eq('user_id', authData.user.id).maybeSingle(),
+        ])
+
+        if (freshProfile) {
+          setUserProfile(freshProfile)
+          setNewNickname(freshProfile.nickname || '')
+          setNewProfileImage(freshProfile.profile_image || '')
+        }
+
+        if (freshSchoolInfo) {
+          setSchoolInfo(freshSchoolInfo)
+        }
+      } catch (hydrateError) {
+        console.warn('프로필 초기 동기화 실패:', hydrateError)
+      }
+    }
+
+    void hydrateProfileState()
+  }, [supabase, user?.id, userProfile, schoolInfo])
+
+  const canMutate = Boolean(user?.id)
+  const displayNickname = userProfile?.nickname || user?.user_metadata?.name || '익명 사용자'
+  const displayEmail = user?.email || newEmail || '이메일 미등록'
+  const isEmailVerified = Boolean(user?.email_confirmed_at)
 
   const handleUpdateNickname = async () => {
     console.log('🔍 닉네임 업데이트 시작:', { newNickname, currentNickname: userProfile?.nickname });
@@ -92,80 +147,144 @@ export default function ProfileClient({
     }
   };
 
-  // 서버에서 초기 데이터를 받았으므로 useEffect에서 데이터 로드 불필요!
-  // 필요한 경우에만 세션 유효성 확인
-  useEffect(() => {
-    // 이미 데이터가 있으면 스킨
-    if (!initialUser) {
-      router.push('/login')
+  const handleUpdateProfileInfo = async () => {
+    if (!canMutate) {
+      setNotice('로그인 후 프로필 정보를 수정할 수 있습니다.')
+      return
     }
-  }, [initialUser, router])
 
-  const handleShareApp = async () => {
-    if (isSharing) return;
-    setIsSharing(true);
-    
+    const normalizedEmail = newEmail.trim().toLowerCase()
+    const normalizedProfileImage = newProfileImage.trim()
+
+    if (!normalizedEmail) {
+      setError('이메일을 입력해주세요.')
+      return
+    }
+
+    setError(null)
+    setNotice(null)
+    setIsUpdatingProfileInfo(true)
+
     try {
-      const shareTitle = `🍽️ 뭐먹지? - 우리학교 급식 평가 앱! 🏆`;
-      const shareText = `친구들과 함께 급식을 평가하고 배틀해보세요! 메뉴별 평점, 학교별 순위, 퀴즈까지!
-
-(가입/학교등록/로그인을 하게되면, 직후에 공유링크 한번 더 클릭 👆)`;
-      
-      const baseUrl = window.location.origin;
-      let shareUrl = baseUrl;
-      
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (navigator.share && isMobile) {
-        try {
-          await navigator.share({
-            title: shareTitle,
-            text: shareText,
-            url: shareUrl,
-          });
-        } catch (shareError: any) {
-          if (shareError.name !== 'AbortError') {
-            console.warn('네이티브 공유 실패, 클립보드 복사로 대체:', shareError);
-            const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              await navigator.clipboard.writeText(fullShareContent);
-            } else {
-              const textArea = document.createElement('textarea');
-              textArea.value = fullShareContent;
-              document.body.appendChild(textArea);
-              textArea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textArea);
-            }
-            setShowSuccessModal(true);
-          }
-        }
-      } else {
-        const fullShareContent = `${shareTitle}\n\n${shareText}\n\n${shareUrl}`;
-        try {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(fullShareContent);
-          } else {
-            const textArea = document.createElement('textarea');
-            textArea.value = fullShareContent;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-          }
-        } catch (clipboardError) {
-          console.warn('클립보드 복사 실패:', clipboardError);
-          alert(`다음 내용을 복사해주세요:\n\n${fullShareContent}`);
-        }
-        setShowSuccessModal(true);
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError || !authData.user) {
+        throw new Error('로그인이 필요합니다.')
       }
-    } catch (error) {
-      console.error('공유 중 오류 발생:', error);
-      alert('공유 중 문제가 발생했습니다.');
+
+      const currentEmail = (authData.user.email || '').toLowerCase()
+      const isEmailChanged = currentEmail !== normalizedEmail
+
+      if (isEmailChanged) {
+        const { data: updatedAuth, error: emailUpdateError } = await supabase.auth.updateUser({
+          email: normalizedEmail,
+        })
+
+        if (emailUpdateError) {
+          throw emailUpdateError
+        }
+
+        if (updatedAuth.user) {
+          setUser(updatedAuth.user)
+        }
+      }
+
+      const { error: profileError } = await supabase
+        .from('users')
+        .update({ profile_image: normalizedProfileImage || null })
+        .eq('id', authData.user.id)
+
+      if (profileError) {
+        throw new Error(`프로필 이미지 업데이트 실패: ${profileError.message}`)
+      }
+
+      setUserProfile((prev: any) => ({
+        ...(prev || {}),
+        profile_image: normalizedProfileImage || null,
+      }))
+      setIsEditingProfileInfo(false)
+      setNotice(
+        isEmailChanged
+          ? '이메일 변경 인증 메일을 확인해주세요.'
+          : '프로필 정보가 저장되었습니다.',
+      )
+    } catch (updateError: any) {
+      console.error('프로필 정보 업데이트 오류:', updateError)
+      setError(updateError?.message || '프로필 정보 저장 중 오류가 발생했습니다.')
     } finally {
-      setIsSharing(false);
+      setIsUpdatingProfileInfo(false)
     }
-  };
+  }
+
+  const addInterestSchool = async (school: {
+    SD_SCHUL_CODE: string
+    SCHUL_NM: string
+    ATPT_OFCDC_SC_CODE: string
+  }) => {
+    try {
+      const response = await fetch('/api/interest-schools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          school_code: school.SD_SCHUL_CODE,
+          school_name: school.SCHUL_NM,
+          office_code: school.ATPT_OFCDC_SC_CODE,
+        }),
+      })
+
+      if (!response.ok) {
+        console.warn('관심학교 등록 실패')
+      }
+    } catch (interestError) {
+      console.warn('관심학교 등록 중 오류:', interestError)
+    }
+  }
+
+  const handleCompleteSchoolRegistrationFlow = async (payload: SchoolRegistrationPayload) => {
+    if (!user?.id) {
+      setError('로그인이 필요합니다.')
+      return
+    }
+
+    const schoolData = {
+      user_id: user.id,
+      school_code: payload.school.SD_SCHUL_CODE,
+      school_name: payload.school.SCHUL_NM,
+      school_type: payload.school.SCHUL_KND_SC_NM,
+      region: extractBattleRegion(payload.school.ORG_RDNMA || payload.school.LCTN_SC_NM),
+      address: payload.school.ORG_RDNMA,
+      office_code: payload.school.ATPT_OFCDC_SC_CODE,
+      grade: payload.grade,
+      class_number: payload.classNumber,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data: existingSchoolInfo, error: schoolInfoError } = await supabase
+      .from('school_infos')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (schoolInfoError && schoolInfoError.code !== 'PGRST116') {
+      throw new Error(`학교 정보 조회 오류: ${schoolInfoError.message}`)
+    }
+
+    const saveResult = existingSchoolInfo
+      ? await supabase.from('school_infos').update(schoolData).eq('user_id', user.id)
+      : await supabase.from('school_infos').insert([schoolData])
+
+    if (saveResult.error) {
+      throw new Error(`학교 정보 저장 오류: ${saveResult.error.message}`)
+    }
+
+    await addInterestSchool(payload.school)
+    setSchoolInfo(schoolData)
+    setNotice('학교정보가 저장되었습니다.')
+  }
+
+  // 비로그인 상태에서도 화면 구성 확인이 가능하도록 리다이렉트하지 않음
+
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut()
@@ -264,263 +383,250 @@ export default function ProfileClient({
       setDeletingAccount(false)
     }
   }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col p-4">
-        <div className="mx-auto w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
-          </div>
-          <div className="mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse"></div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="h-6 bg-gray-200 rounded w-24 mx-auto animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-40 mx-auto animate-pulse"></div>
-              <div className="h-3 bg-gray-200 rounded w-32 mx-auto animate-pulse"></div>
-            </div>
-          </div>
-          <div className="mb-8 border-t border-b py-4">
-            <div className="flex justify-between items-center mb-3">
-              <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-            </div>
-          </div>
-          <div className="mb-8 border-b py-4">
-            <div className="h-5 bg-gray-200 rounded w-48 mx-auto mb-3 animate-pulse"></div>
-            <div className="bg-gray-50 rounded-lg p-3 h-72"></div>
-            <div className="flex justify-center mt-4">
-              <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
-            </div>
-          </div>
-          <div className="flex justify-center gap-4 mt-12">
-            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-            <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-lg bg-red-50 p-6 text-center">
-          <p className="text-red-700">{error}</p>
-          <button
-            onClick={() => router.push('/')}
-            className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-          >
-            홈으로 돌아가기
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex min-h-screen flex-col p-4">
-      <div className="mx-auto w-full max-w-md">
-        <div className="mb-4">
-          <h1 className="text-xl font-bold">내 프로필</h1>
-        </div>
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden border-2 border-orange-600">
-              {userProfile?.profile_image ? (
-                <img src={userProfile.profile_image} alt="프로필" className="w-full h-full object-cover" />
+    <div className="min-h-screen bg-[#f3f4f6] px-4 py-8">
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h1 className="mb-4 text-center text-2xl font-bold text-slate-900">프로필 설정</h1>
+
+        {error && <div className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {notice && <div className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</div>}
+
+        <section className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-3 h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow">
+              {newProfileImage || userProfile?.profile_image ? (
+                <img
+                  src={newProfileImage || userProfile?.profile_image}
+                  alt="프로필"
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <div className="text-white text-2xl font-bold">{user?.email?.charAt(0).toUpperCase()}</div>
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-cyan-200 text-2xl font-bold text-cyan-700">
+                  {(displayNickname || 'U').charAt(0).toUpperCase()}
+                </div>
               )}
             </div>
-          </div>
-          <div className="text-center">
-            
+
             {isEditingNickname ? (
-              <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="mb-2 flex w-full items-center justify-center gap-2">
                 <input
                   type="text"
                   value={newNickname}
                   onChange={(e) => setNewNickname(e.target.value)}
-                  className="text-xl font-bold text-center border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 w-40"
+                  className="w-44 rounded-lg border border-slate-300 px-2 py-1 text-center text-lg font-bold"
                   autoFocus
                 />
                 <button
                   onClick={handleUpdateNickname}
                   disabled={isUpdatingNickname}
-                  className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+                  className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   {isUpdatingNickname ? '저장중' : '저장'}
                 </button>
+              </div>
+            ) : (
+              <div className="mb-2 flex items-center gap-2">
+                <p className="text-2xl font-bold text-slate-900">{displayNickname}</p>
                 <button
-                  onClick={() => setIsEditingNickname(false)}
-                  className="text-sm text-gray-600"
+                  type="button"
+                  onClick={() => setIsEditingNickname(true)}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100"
+                >
+                  변경
+                </button>
+              </div>
+            )}
+
+            <p className="text-sm text-slate-600">{displayEmail}</p>
+          </div>
+
+          {isEditingProfileInfo ? (
+            <div className="mt-4 space-y-2">
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="이메일"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <input
+                type="text"
+                value={newProfileImage}
+                onChange={(e) => setNewProfileImage(e.target.value)}
+                placeholder="프로필 이미지 URL"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleUpdateProfileInfo}
+                  disabled={isUpdatingProfileInfo}
+                  className="flex-1 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50"
+                >
+                  {isUpdatingProfileInfo ? '저장 중...' : '저장'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfileInfo(false)}
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
                 >
                   취소
                 </button>
               </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <div className="text-xl font-bold">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</div>
-                <button 
-                  onClick={() => setIsEditingNickname(true)} 
-                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-sm"
-                  title="닉네임 수정"
-                >
-                  [수정]
-                </button>
-              </div>
-            )}
-            <div className="font-medium mb-3">{user?.email || '이메일 없음'}</div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <div className="text-xs text-blue-600 font-medium mb-1">출생연도</div>
-                <div className="text-sm font-semibold text-blue-800">
-                  {userProfile?.birth_date 
-                    ? new Date(userProfile.birth_date).getFullYear() + '년'
-                    : '미설정'
-                  }
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                <div className="text-xs text-green-600 font-medium mb-1">계정생성</div>
-                <div className="text-sm font-semibold text-green-800">
-                  {user?.created_at 
-                    ? new Date(user.created_at).toLocaleDateString('ko-KR', { 
-                        year: 'numeric', 
-                        month: 'numeric', 
-                        day: 'numeric' 
-                      })
-                    : '정보 없음'
-                  }
-                </div>
-              </div>
             </div>
-            <div className="text-center">
-              <Link 
-                href="/privacy-policy" 
-                className="inline-flex items-center text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200"
-              >
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                개인정보처리방침
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="mb-8 border-t border-b py-4">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-bold">학교정보</h2>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingProfileInfo(true)}
+              className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              이메일 / 이미지 수정
+            </button>
+          )}
+        </section>
+
+        {!isEmailVerified && (
+          <section className="mb-5 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+            <p className="mb-1 text-sm font-semibold text-cyan-900">📧 이메일 인증이 필요해요</p>
+            <p className="mb-3 text-xs leading-5 text-cyan-800">
+              이메일 인증을 완료하면 계정 보안과 복구 기능을 안정적으로 사용할 수 있습니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (!canMutate) {
+                  setNotice('로그인 후 이메일 인증 설정을 진행할 수 있습니다.')
+                  router.push('/login')
+                  return
+                }
+                setIsEditingProfileInfo(true)
+              }}
+              className="w-full rounded-lg bg-gradient-to-r from-slate-800 to-cyan-800 px-3 py-2 text-sm font-semibold text-white"
+            >
+              이메일 인증 설정하기
+            </button>
+          </section>
+        )}
+
+        <section className="mb-5 rounded-2xl border border-slate-200 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">학교정보</h2>
             {userProfile?.birth_date && userProfile?.is_student === false ? (
               <button
                 disabled
-                className="px-4 py-2 bg-gray-400 text-white rounded-md text-base font-medium cursor-not-allowed shadow-sm"
+                className="rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-semibold text-white"
                 title="비학생은 학교설정을 할 수 없습니다"
               >
                 학교설정
               </button>
             ) : (
               <button
-                onClick={() => {
-                  if (!userProfile?.birth_date || userProfile?.is_student === null) {
-                    setShowBirthConsentModal(true);
-                  } else {
-                    router.push('/school-search');
+                onClick={async () => {
+                  try {
+                    const { data: authData, error: authError } = await supabase.auth.getUser()
+
+                    if (authError || !authData.user) {
+                      setNotice('로그인 후 학교설정을 진행할 수 있습니다.')
+                      return
+                    }
+
+                    setUser(authData.user)
+
+                    const { data: latestProfile, error: latestProfileError } = await supabase
+                      .from('users')
+                      .select('*')
+                      .eq('id', authData.user.id)
+                      .maybeSingle()
+
+                    if (latestProfileError) {
+                      setError(`프로필 정보를 확인할 수 없습니다: ${latestProfileError.message}`)
+                      return
+                    }
+
+                    const resolvedProfile = latestProfile || userProfile
+                    if (latestProfile) {
+                      setUserProfile(latestProfile)
+                    }
+
+                    if (!resolvedProfile?.birth_date || resolvedProfile?.is_student == null) {
+                      setShowBirthConsentModal(true)
+                      return
+                    }
+
+                    setIsSchoolRegistrationFlowOpen(true)
+                  } catch (openError: any) {
+                    setError(openError?.message || '학교설정 화면을 여는 중 오류가 발생했습니다.')
                   }
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md text-base font-medium hover:bg-green-700 shadow-sm"
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 학교설정
               </button>
             )}
           </div>
+
           {schoolInfo ? (
-            <div>
-              <div className="text-base font-medium mb-1 flex justify-between">
-                <span>{schoolInfo.school_name}</span>
-                <span>{schoolInfo.grade}학년 {schoolInfo.class_number}반</span>
-              </div>
-              <div className="text-sm text-gray-700">
-                {schoolInfo.region} {schoolInfo.address && schoolInfo.address.substring(0, 20)}{schoolInfo.address && schoolInfo.address.length > 20 ? '...' : ''}
-              </div>
+            <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">{schoolInfo.school_name}</p>
+              <p>{schoolInfo.grade}학년 {schoolInfo.class_number}반</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {schoolInfo.region} {schoolInfo.address && schoolInfo.address.substring(0, 24)}
+                {schoolInfo.address && schoolInfo.address.length > 24 ? '...' : ''}
+              </p>
             </div>
           ) : (
-            <div className="text-center py-3 text-gray-500 text-sm">
-              {userProfile?.birth_date && userProfile?.is_student === false 
-                ? '비학생은 학교정보를 설정할 수 없습니다' 
-                : '학교정보가 설정되지 않았습니다'
-              }
-            </div>
+            <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+              {userProfile?.birth_date && userProfile?.is_student === false
+                ? '비학생은 학교정보를 설정할 수 없습니다'
+                : '학교정보가 설정되지 않았습니다'}
+            </p>
           )}
-        </div>
-        <div className="px-4 mb-6 mt-8">
-          <button
-            onClick={handleShareApp}
-            disabled={isSharing}
-            className={`w-full px-4 py-4 bg-yellow-400 text-black rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium shadow-md ${isSharing ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-            </svg>
-            {isSharing ? '공유 중...' : '친구에게 공유하기'}
-          </button>
-        </div>
-        <div className="flex justify-center gap-4">
+        </section>
+
+        <div className="flex gap-2">
           <button
             onClick={handleSignOut}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700 transition-colors"
+            className="flex-1 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
           >
             로그아웃
           </button>
           <button
             onClick={handleDeleteAccount}
             disabled={deletingAccount}
-            className="rounded-md bg-red-600 px-4 py-2 text-white text-sm hover:bg-red-700 disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {deletingAccount ? '삭제 중...' : '회원 탈퇴'}
+            {deletingAccount ? '탈퇴 처리중...' : '회원 탈퇴'}
           </button>
         </div>
+
         {deletingAccount && (
-          <div className="mt-3 text-yellow-700 text-sm text-center">회원 탈퇴 처리 중... 잠시만 기다려주세요.</div>
+          <div className="mt-3 text-center text-xs text-amber-700">회원 탈퇴 처리 중입니다. 잠시만 기다려주세요.</div>
         )}
-        {showSuccessModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg w-full max-w-sm mx-4 p-6">
-              <div className="text-center">
-                <div className="mb-4">
-                  <svg className="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">복사 완료!</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  앱 공유 링크가 클립보드에 복사되었습니다.
-                </p>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="w-full bg-yellow-400 text-black py-2 px-4 rounded-md hover:bg-yellow-500 transition-colors"
-                >
-                  확인
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
         <BirthConsentModal
           isOpen={showBirthConsentModal}
           onClose={() => setShowBirthConsentModal(false)}
           onSuccess={() => {
-            window.location.reload();
+            setShowBirthConsentModal(false)
+            setIsSchoolRegistrationFlowOpen(true)
           }}
           userId={user?.id || ''}
+        />
+
+        <SchoolRegistrationFlowModal
+          isOpen={isSchoolRegistrationFlowOpen}
+          onClose={() => setIsSchoolRegistrationFlowOpen(false)}
+          familyMembers={[
+            {
+              id: user?.id || 'me',
+              name: displayNickname,
+              avatar: (displayNickname || '나').charAt(0),
+              relation: '본인',
+            },
+          ]}
+          currentUserId={user?.id || 'me'}
+          allowFamilyRegistration={false}
+          onComplete={handleCompleteSchoolRegistrationFlow}
         />
       </div>
     </div>
