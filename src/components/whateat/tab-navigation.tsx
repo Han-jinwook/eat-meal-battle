@@ -31,7 +31,7 @@ export function TabNavigation({
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "px-3 py-2.5 text-[14px] font-bold transition-all duration-300 relative whitespace-nowrap rounded-t-lg",
+              "px-4 py-3 text-[15px] font-bold transition-all duration-300 relative whitespace-nowrap rounded-t-lg",
               activeTab === tab.id
                 ? "text-cyan-600 bg-cyan-50/50 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-cyan-500 after:rounded-full"
                 : "text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50/30"

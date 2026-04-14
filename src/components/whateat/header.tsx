@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { Bell } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 import whatEatLogo from "@/v0-migration/public/logo.png"
 
 export type HeaderNavTab = "solo" | "family" | "talk" | "meal"
@@ -20,25 +21,27 @@ const navItems = [
 ]
 
 export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
+  const router = useRouter()
+
   return (
     <header className="bg-white border-b border-gray-100">
-      <div className="flex items-center gap-1 px-3 py-2">
+      <div className="flex min-h-[62px] items-center gap-2 px-4 py-3">
         {/* Logo */}
         <Image 
           src={whatEatLogo}
           alt="뭐먹지?" 
-          width={110}
-          height={52}
-          className="h-8 w-auto object-contain shrink-0 mr-1"
+          width={120}
+          height={56}
+          className="mr-1 h-9 w-auto shrink-0 object-contain"
         />
         {/* Main Nav - 텍스트만, 아이콘 없음 */}
-        <div className="flex items-center gap-0.5 flex-1">
+        <div className="flex flex-1 items-center gap-1">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onNavTabChange?.(item.id)}
               className={cn(
-                "px-2.5 py-1.5 rounded-full text-[12px] font-bold transition-all whitespace-nowrap",
+                "rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap",
                 activeNavTab === item.id
                   ? "text-cyan-600 bg-cyan-50"
                   : "text-gray-400 hover:text-cyan-500"
@@ -49,11 +52,16 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           ))}
         </div>
         {/* 알림 + 프로필 */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button className="size-7 flex items-center justify-center rounded-full bg-cyan-50 text-cyan-600 border border-cyan-100 hover:bg-cyan-100 transition-colors">
-            <Bell className="size-3.5" />
+        <div className="flex shrink-0 items-center gap-2">
+          <button className="flex size-8 items-center justify-center rounded-full border border-cyan-100 bg-cyan-50 text-cyan-600 transition-colors hover:bg-cyan-100">
+            <Bell className="size-4" />
           </button>
-          <div className="size-7 rounded-full ring-2 ring-cyan-200 bg-gradient-to-br from-cyan-100 to-cyan-200 shrink-0" />
+          <button
+            type="button"
+            onClick={() => router.push('/profile')}
+            className="size-8 shrink-0 rounded-full bg-gradient-to-br from-cyan-100 to-cyan-200 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300"
+            aria-label="프로필 설정 열기"
+          />
         </div>
       </div>
     </header>
