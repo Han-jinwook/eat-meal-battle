@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Bell } from "lucide-react"
+import { Bell, MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import whatEatLogo from "@/v0-migration/public/logo.png"
@@ -14,10 +14,10 @@ interface HeaderProps {
 }
 
 const navItems = [
-  { id: "solo" as HeaderNavTab, label: "솔로" },
-  { id: "family" as HeaderNavTab, label: "패밀리" },
-  { id: "talk" as HeaderNavTab, label: "맛톡" },
-  { id: "meal" as HeaderNavTab, label: "급식" },
+  { id: "solo" as HeaderNavTab, label: "솔로", icon: User },
+  { id: "family" as HeaderNavTab, label: "패밀리", icon: Users },
+  { id: "talk" as HeaderNavTab, label: "맛톡", icon: MessageSquare },
+  { id: "meal" as HeaderNavTab, label: "급식", icon: UtensilsCrossed },
 ]
 
 export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
@@ -41,12 +41,13 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
               key={item.id}
               onClick={() => onNavTabChange?.(item.id)}
               className={cn(
-                "rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap",
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap",
                 activeNavTab === item.id
                   ? "text-cyan-600 bg-cyan-50"
                   : "text-gray-400 hover:text-cyan-500"
               )}
             >
+              <item.icon className="hidden size-3.5 md:inline-block" />
               {item.label}
             </button>
           ))}
