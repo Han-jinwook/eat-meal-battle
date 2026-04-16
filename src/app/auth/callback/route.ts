@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       console.info('🔑 OAuth 코드 수신됨, 세션 교환 시작')
 
       // createClient는 동기 함수로 복원됨
-      const supabase = createClient()
+      const supabase = await createClient()
 
       // 인증 코드로 세션 교환
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -649,7 +649,7 @@ export async function GET(request: NextRequest) {
     console.log('🔄 세션 검증 및 안정화 시작...')
     
     // 세션 검증을 위한 새로운 supabase 클라이언트 생성
-    const verificationSupabase = createClient()
+    const verificationSupabase = await createClient()
     
     let sessionVerified = false
     let verificationAttempts = 0

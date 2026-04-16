@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
 import useUserSchool from '@/hooks/useUserSchool';
 import Link from 'next/link';
 import MealCard from '@/components/MealCard';
+import MealImageUploader from '@/components/MealImageUploader';
 import { formatDisplayDate, formatApiDate, getCurrentDate } from '@/utils/DateUtils';
 import useMeals from '@/hooks/useMeals';
 import useModal from '@/hooks/useModal';
@@ -14,11 +15,13 @@ import { CommentSection } from '@/components/comments';
 import DateNavigator from '@/components/DateNavigator';
 import ShareButton from '@/components/ShareButton';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
+import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal';
 import ShareModal from '@/components/ShareModal';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ChromeRedirectHandler from '@/components/ChromeRedirectHandler';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import { extractBattleRegion } from '@/utils/addressParser';
+import { familyMembers as sharedFamilyMembers } from '@/components/whateat/family-page';
 // 디버그 패널 제거
 
 // 학교 유형별 캐릭터 이미지 경로 반환 함수
@@ -53,9 +56,26 @@ export default function MealClient() {
   
   // 학교검색 모달 상태 관리
   const [isSchoolSearchOpen, setIsSchoolSearchOpen] = useState<boolean>(false);
+  const [isSchoolRegistrationFlowOpen, setIsSchoolRegistrationFlowOpen] = useState<boolean>(false);
+  const [proxyAssignments, setProxyAssignments] = useState<Record<string, {
+    ownerUserId: string;
+    ownerName: string;
+    schoolName: string;
+    schoolCode: string;
+    grade: string;
+    classNumber: string;
+    ownerType: 'self' | 'family';
+  }>>({});
 
   // 사용자/학교 정보 훅
-  const { user, userSchool, loading: userLoading, error: userError } = useUserSchool();
+  const {
+    user,
+    userSchool,
+    setUserSchool,
+    loading: userLoading,
+    error: userError,
+    refresh: refreshUserSchool,
+  } = useUserSchool();
   
   // 학교 모드 관리 훅
   const schoolMode = useSchoolMode(userSchool);
@@ -186,8 +206,8 @@ export default function MealClient() {
 
       // 학생나이 사용자도 학교 정보가 있는지 확인 후 리다이렉트 결정
       if (userInfo?.is_student && !userRegisteredSchool) {
-        console.log('🎓 학생나이 유저 - 학교 미등록으로 학교등록 페이지로 리다이렉트');
-        router.push('/school-search');
+        console.log('🎓 학생나이 유저 - 학교 미등록으로 학교검색 모달 표시');
+        setIsSchoolSearchOpen(true);
         return;
       }
 
@@ -487,7 +507,6 @@ export default function MealClient() {
         hasMySchool: schoolMode.hasMySchool,
         selectedInterestSchool: schoolMode.selectedInterestSchool?.school_name,
         isStudent: user.db_profile?.is_student,
-        userMetadata: user.user_metadata?.is_student,
         isInitialized: schoolMode.isInitialized,
         interestSchoolsLoading: interestSchoolsLoading,
         interestSchoolsCount: interestSchools.length,
@@ -501,8 +520,8 @@ export default function MealClient() {
       
       // 학생나이 유저는 우선적으로 처리 (모달 표시 방지)
       if (isStudentAge && !schoolMode.hasMySchool) {
-        console.log('🎓 학생나이 유저 - 학교등록 페이지로 리다이렉트 (우선처리)');
-        router.push('/school-search');
+        console.log('🎓 학생나이 유저 - 학교검색 모달 표시 (우선처리)');
+        setIsSchoolSearchOpen(true);
         return; // 즉시 종료하여 모달 표시 방지
       }
       
@@ -697,7 +716,170 @@ export default function MealClient() {
       alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;
     }
-    setIsSchoolSearchOpen(true);
+    setIsSchoolRegistrationFlowOpen(true);
+  };
+
+  const ownerProfiles = useMemo(() => {
+    const meId = user?.id || 'me';
+    const meName = userSchool?.nickname || '내 프로필';
+    const relationMap = ['가족1', '가족2', '가족3', '가족4'];
+
+    const mappedFamily = sharedFamilyMembers
+      .filter((member) => !member.name.includes('(나)'))
+      .slice(0, 4)
+      .map((member, index) => ({
+        id: `family-${member.id}`,
+        name: member.name,
+        avatar: member.name.charAt(0),
+        relation: relationMap[index] || '가족',
+      }));
+
+    return [{ id: meId, name: meName, avatar: '나', relation: '본인' }, ...mappedFamily];
+  }, [user?.id, userSchool?.nickname]);
+
+  const registeredOwnerProfiles = useMemo(
+    () => ownerProfiles.filter((profile) => Boolean(proxyAssignments[profile.id])),
+    [ownerProfiles, proxyAssignments],
+  );
+
+  const [selectedOwnerId, setSelectedOwnerId] = useState(user?.id || 'me');
+
+  const selectedAssignment = selectedOwnerId ? proxyAssignments[selectedOwnerId] : undefined;
+  const selectedSchoolLabel = selectedAssignment?.schoolName || (selectedAssignment as any)?.school_name || '학교 미선택';
+
+  useEffect(() => {
+    if (registeredOwnerProfiles.length === 0) {
+      setSelectedOwnerId('');
+      return;
+    }
+
+    const hasSelectedOwner = registeredOwnerProfiles.some((profile) => profile.id === selectedOwnerId);
+    if (!hasSelectedOwner) {
+      setSelectedOwnerId(registeredOwnerProfiles[0].id);
+    }
+  }, [registeredOwnerProfiles, selectedOwnerId]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+
+    const saved = localStorage.getItem(`proxy_school_assignments_${user.id}`);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved) as Record<string, {
+        ownerUserId: string;
+        ownerName: string;
+        schoolName: string;
+        schoolCode: string;
+        grade: string;
+        classNumber: string;
+        ownerType: 'self' | 'family';
+      }>;
+      const normalized = Object.fromEntries(
+        Object.entries(parsed).map(([key, value]) => [
+          key,
+          {
+            ...value,
+            schoolName: value.schoolName || (value as any).school_name || '',
+          },
+        ]),
+      );
+      setProxyAssignments(normalized);
+    } catch (error) {
+      console.warn('대리 등록 상태 복원 실패:', error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    localStorage.setItem(`proxy_school_assignments_${user.id}`, JSON.stringify(proxyAssignments));
+  }, [proxyAssignments, user?.id]);
+
+  const handleCompleteSchoolRegistrationFlow = async (payload: {
+    school: {
+      SD_SCHUL_CODE: string;
+      SCHUL_NM: string;
+      ATPT_OFCDC_SC_CODE: string;
+      SCHUL_KND_SC_NM: string;
+      ORG_RDNMA: string;
+      LCTN_SC_NM: string;
+    };
+    grade: string;
+    classNumber: string;
+    ownerType: 'self' | 'family';
+    ownerUserId: string;
+    ownerName: string;
+  }) => {
+    setProxyAssignments((prev) => ({
+      ...prev,
+      [payload.ownerUserId]: {
+        ownerUserId: payload.ownerUserId,
+        ownerName: payload.ownerName,
+        schoolName: payload.school.SCHUL_NM,
+        schoolCode: payload.school.SD_SCHUL_CODE,
+        grade: payload.grade,
+        classNumber: payload.classNumber,
+        ownerType: payload.ownerType,
+      },
+    }));
+
+    setSelectedOwnerId(payload.ownerUserId);
+
+    if (payload.ownerType === 'self' && user?.id === payload.ownerUserId) {
+      const schoolData = {
+        user_id: user.id,
+        school_code: payload.school.SD_SCHUL_CODE,
+        school_name: payload.school.SCHUL_NM,
+        school_type: payload.school.SCHUL_KND_SC_NM,
+        region: extractBattleRegion(payload.school.ORG_RDNMA || payload.school.LCTN_SC_NM),
+        address: payload.school.ORG_RDNMA,
+        office_code: payload.school.ATPT_OFCDC_SC_CODE,
+        grade: payload.grade,
+        class_number: payload.classNumber,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: existingSchoolInfo, error: schoolInfoError } = await supabase
+        .from('school_infos')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (schoolInfoError && schoolInfoError.code !== 'PGRST116') {
+        throw new Error(`학교 정보 조회 오류: ${schoolInfoError.message}`);
+      }
+
+      const saveResult = existingSchoolInfo
+        ? await supabase.from('school_infos').update(schoolData).eq('user_id', user.id)
+        : await supabase.from('school_infos').insert([schoolData]);
+
+      if (saveResult.error) {
+        throw new Error(`학교 정보 저장 오류: ${saveResult.error.message}`);
+      }
+
+      setUserSchool((prev) => ({
+        ...(prev || {}),
+        ...schoolData,
+        class: schoolData.class_number,
+        nickname: prev?.nickname || userSchool?.nickname || '익명',
+      } as any));
+      refreshUserSchool();
+
+      const effectiveDate = selectedDate || getCurrentDate();
+      fetchMealInfo(
+        payload.school.SD_SCHUL_CODE,
+        effectiveDate,
+        payload.school.ATPT_OFCDC_SC_CODE,
+      );
+
+      await addInterestSchool(payload.school);
+    }
+
+    alert(
+      payload.ownerType === 'self'
+        ? `${payload.school.SCHUL_NM} ${payload.grade}학년 ${payload.classNumber}반이 내 프로필에 저장되었습니다.`
+        : `${payload.school.SCHUL_NM} ${payload.grade}학년 ${payload.classNumber}반이 ${payload.ownerName} 프로필에 대리 등록되었습니다.`,
+    );
   };
 
   // 주말 체크 함수는 @/utils/DateUtils로 이동
@@ -858,17 +1040,6 @@ export default function MealClient() {
     return formattedInfo;
   };
 
-  // 비로그인 사용자인 경우 로그인 페이지로 리다이렉트
-  if (userError && (userError.includes('Auth session missing') || userError.includes('session missing'))) {
-    router.push('/login');
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-2xl mb-4">🍚</div>
-        <p className="text-gray-600">로그인 페이지로 이동 중...</p>
-      </div>
-    </div>;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8">
       {/* 디버그 패널 제거 */}
@@ -899,6 +1070,56 @@ export default function MealClient() {
       
       
       <div className="max-w-4xl mx-auto">
+        <div className="mb-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {registeredOwnerProfiles.map((profile) => {
+                const isSelected = selectedOwnerId === profile.id;
+                return (
+                  <button
+                    key={profile.id}
+                    type="button"
+                    onClick={() => setSelectedOwnerId(profile.id)}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors ${
+                      isSelected
+                        ? 'border-orange-400 bg-orange-500 text-white'
+                        : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                      isSelected ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {profile.avatar}
+                    </span>
+                    <span>{profile.name}</span>
+                  </button>
+                );
+              })}
+              {registeredOwnerProfiles.length === 0 && (
+                <p className="text-sm text-gray-500">등록된 학생 프로필이 없습니다</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSchoolRegister}
+              className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              + 학교등록
+            </button>
+          </div>
+        </div>
+
+        <p className="mb-4 text-sm text-gray-600">
+          {selectedSchoolLabel}
+          {selectedAssignment?.grade
+            ? ` · ${selectedAssignment.grade}학년`
+            : ''}
+          {selectedAssignment?.classNumber
+            ? ` ${selectedAssignment.classNumber}반`
+            : ''}
+        </p>
+
         {/* 학교 정보 표시 (현재 선택된 학교 기준) */}
 {schoolMode.currentSchoolInfo ? (
   <div className={`shadow-sm rounded p-2 mb-3 border-l-2 flex items-center justify-between relative overflow-visible ${
@@ -1154,14 +1375,16 @@ export default function MealClient() {
         />
         
         {/* 에러 메시지 */}
-        {(error || pageError || userError) && !meals.length && (
+        {(error || pageError || userError) &&
+          (error || pageError || userError) !== '해당 날짜의 급식 정보가 없습니다.' &&
+          !meals.length && (
           <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
             {error || pageError || userError}
           </div>
         )}
 
-        {/* 급식 정보 표시 - 사용자가 로그인했을 때 표시 (학교 정보 없어도 기본 화면 제공) */}
-        {!isLoading && !pageLoading && !userLoading && user && (
+        {/* 급식 정보 표시 - 로그인 여부와 무관하게 기본 UI 윤곽 표시 */}
+        {!isLoading && !pageLoading && !userLoading && (
           <>
             {meals.length > 0 ? (
               <div className="space-y-8">
@@ -1251,50 +1474,43 @@ export default function MealClient() {
                 )}
               </div>
             ) : (
-              <div className="bg-white shadow-md rounded-lg p-4 sm:p-6">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="bg-yellow-100 rounded-full p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+              <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-8">
+                <div className="lg:order-1">
+                  <div className="bg-white overflow-hidden rounded-lg shadow-sm p-2 sm:p-3">
+                    <MealImageUploader
+                      key={`fallback-uploader-${selectedDate}-${schoolMode.selectedInterestSchool?.school_code || userSchool?.school_code || 'none'}`}
+                      schoolCode={schoolMode.selectedInterestSchool?.school_code || userSchool?.school_code || ''}
+                      mealDate={selectedDate}
+                      mealType="중식"
+                      onUploadSuccess={() => setRefreshImageList((prev) => prev + 1)}
+                      onUploadError={(e) => {
+                        setPageError(e);
+                        setTimeout(() => setPageError(''), 3000);
+                      }}
+                    />
                   </div>
                 </div>
 
-                <h3 className="text-lg font-medium text-center mb-2 text-gray-900 dark:text-white">
-                  {schoolMode.currentSchoolInfo?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
-                </h3>
+                <div className="lg:order-2">
+                  <div className="bg-white shadow-sm rounded-lg p-4 h-full">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {schoolMode.currentSchoolInfo?.school_name || '학교'} {formatDisplayDate(selectedDate)} 급식 정보
+                    </h3>
 
-                <div className="bg-gray-50 p-3 sm:p-4 rounded-md text-center">
-                  {!schoolMode.currentSchoolInfo && !user?.db_profile?.is_student ? (
-                    <>
-                      <p className="text-gray-700 dark:text-white font-medium">
-                        급식 정보를 보려면 관심학교를 선택해주세요.
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
-                        우측 상단의 '관심학교' 버튼을 클릭하여 학교를 등록하세요.
-                      </p>
-                      <button
-                        onClick={() => setIsSchoolSearchOpen(true)}
-                        className="mt-3 px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
-                      >
-                        관심학교 등록하기
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-gray-700 dark:text-white font-medium">
+                    <div className="bg-gray-50 p-3 sm:p-4 rounded-md">
+                      <p className="text-gray-700 font-medium">
                         {(error || pageError || userError) || '해당 날짜의 급식 정보가 없습니다.'}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
+                      <p className="text-sm text-gray-500 mt-2">
                         다른 날짜를 선택해보세요.
                       </p>
                       {dataSource && (
-                        <p className="text-xs text-gray-500 dark:text-gray-300 mt-4">
+                        <p className="text-xs text-gray-500 mt-4">
                           데이터 소스: <span className="font-medium">{dataSource}</span>
                         </p>
                       )}
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1318,6 +1534,14 @@ export default function MealClient() {
         isOpen={isSchoolSearchOpen}
         onClose={() => setIsSchoolSearchOpen(false)}
         onSelectSchool={addInterestSchool}
+      />
+
+      <SchoolRegistrationFlowModal
+        isOpen={isSchoolRegistrationFlowOpen}
+        onClose={() => setIsSchoolRegistrationFlowOpen(false)}
+        familyMembers={ownerProfiles}
+        currentUserId={user?.id || 'me'}
+        onComplete={handleCompleteSchoolRegistrationFlow}
       />
       
       

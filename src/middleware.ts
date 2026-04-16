@@ -3,11 +3,11 @@ import { createClient } from '@/lib/supabase-server';
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
-  const protectedPaths = ['/profile', '/dashboard'];
+  const protectedPaths = ['/dashboard'];
   const isProtectedPath = protectedPaths.some(path => nextUrl.pathname.startsWith(path));
 
-  const supabase = createClient();
-    await supabase.auth.getSession(); // 세션 강제 동기화
+  const supabase = await createClient();
+  await supabase.auth.getSession(); // 세션 강제 동기화
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (isProtectedPath && (!user || error)) {
@@ -46,5 +46,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/dashboard/:path*'],
+  matcher: ['/dashboard/:path*'],
 };

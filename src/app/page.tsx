@@ -1,18 +1,23 @@
 import { Metadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import MealWrapper from './client-wrapper';
-import StructuredData from '@/components/StructuredData';
+import WhatEatApp from '@/components/whateat/WhatEatApp';
 
 type Props = {
-  searchParams: { school_code?: string; date?: string; school_name?: string }
+  searchParams: Promise<{ school_code?: string; date?: string; school_name?: string }> | { school_code?: string; date?: string; school_name?: string }
 }
 
+const resolveSearchParams = async (
+  searchParams: Props['searchParams']
+): Promise<{ school_code?: string; date?: string; school_name?: string }> => {
+  return await Promise.resolve(searchParams);
+};
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  console.log('🎯 급식 페이지 generateMetadata 실행! searchParams:', searchParams);
+  const resolvedSearchParams = await resolveSearchParams(searchParams);
   
-  const schoolCode = searchParams.school_code;
-  const date = searchParams.date || new Date().toISOString().split('T')[0];
-  const schoolNameParam = searchParams.school_name; // URL 파라미터의 학교명
+  const schoolCode = resolvedSearchParams.school_code;
+  const date = resolvedSearchParams.date || new Date().toISOString().split('T')[0];
+  const schoolNameParam = resolvedSearchParams.school_name; // URL 파라미터의 학교명
   
   console.log('📊 파라미터:', { schoolCode, date, schoolNameParam });
   
@@ -89,41 +94,6 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 
-export default function MealPage({ searchParams }: Props) {
-  console.log('🏁 MealPage 컴포넌트 렌더링 시작!');
-  
-  // 학교별 BreadcrumbList 스키마 생성
-  const schoolCode = searchParams.school_code;
-  const schoolName = searchParams.school_name;
-  
-  let breadcrumbSchema = null;
-  if (schoolCode && schoolName) {
-    breadcrumbSchema = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "급식배틀",
-          "item": "https://lunbat.com"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": `${schoolName} 급식`,
-          "item": `https://lunbat.com/?school_code=${schoolCode}&school_name=${encodeURIComponent(schoolName)}`
-        }
-      ]
-    };
-  }
-  
-  return (
-    <>
-      {breadcrumbSchema && (
-        <StructuredData type="breadcrumb" data={breadcrumbSchema} />
-      )}
-      <MealWrapper />
-    </>
-  );
+export default async function MealPage() {
+  return <WhatEatApp />;
 }

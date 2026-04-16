@@ -25,12 +25,13 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface FamilyMember {
+export interface FamilyMember {
   id: number
   name: string
   avatar: string
   role: "chef" | "member"
   isOnline: boolean
+  isStudent: boolean
 }
 
 interface SharedMeal {
@@ -88,11 +89,11 @@ interface TodayMenu {
   mealTime: "breakfast" | "lunch" | "dinner"
 }
 
-const familyMembers: FamilyMember[] = [
-  { id: 1, name: "엄마 (나)", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face", role: "chef", isOnline: true },
-  { id: 2, name: "아빠", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true },
-  { id: 3, name: "딸", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false },
-  { id: 4, name: "아들", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true },
+export const familyMembers: FamilyMember[] = [
+  { id: 1, name: "엄마 (나)", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face", role: "chef", isOnline: true, isStudent: false },
+  { id: 2, name: "아빠", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true, isStudent: false },
+  { id: 3, name: "딸", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: true },
+  { id: 4, name: "아들", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true, isStudent: true },
 ]
 
 const sharedMeals: SharedMeal[] = [

@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     );
     
     // 일반 클라이언트도 생성 (사용자 정보 확인용)
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // 1. 파일 이름 생성 (고유한 이름)
     const fileExt = file.name.split('.').pop();

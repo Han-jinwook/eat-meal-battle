@@ -4,8 +4,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // This client is for use in Server Components, Route Handlers, and Server Actions
-export const createClient = () => {
-  const cookieStore = cookies();
+export const createClient = async () => {
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,16 +15,16 @@ export const createClient = () => {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
             console.error('쿠키 설정 오류:', error);
           }
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options });
+            cookieStore.set({ name, value: '', ...options, maxAge: 0 });
           } catch (error) {
             console.error('쿠키 삭제 오류:', error);
           }

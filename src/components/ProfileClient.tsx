@@ -577,7 +577,10 @@ export default function ProfileClient({
                       setUserProfile(latestProfile)
                     }
 
-                    if (!resolvedProfile?.birth_date || resolvedProfile?.is_student == null) {
+                    const authProvider = authData.user.app_metadata?.provider
+                    const isEmailAuthUser = authProvider === 'email'
+
+                    if ((!resolvedProfile?.birth_date || resolvedProfile?.is_student == null) && !isEmailAuthUser) {
                       setShowBirthConsentModal(true)
                       return
                     }

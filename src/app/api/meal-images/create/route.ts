@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     console.log('API 호출: /api/meal-images/create');
     
     // 일반 클라이언트 생성 (사용자 인증 확인용)
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 사용자 인증 확인
     const { data: { user } } = await supabase.auth.getUser();

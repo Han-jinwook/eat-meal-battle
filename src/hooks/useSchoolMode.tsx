@@ -68,6 +68,16 @@ interface SchoolModeContextType {
 
 const SchoolModeContext = createContext<SchoolModeContextType | null>(null);
 
+const isMissingAuthSessionError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+
+  const maybeError = error as { name?: string; message?: string };
+  return (
+    maybeError.name === 'AuthSessionMissingError' ||
+    maybeError.message?.includes('Auth session missing') === true
+  );
+};
+
 // Context Provider 컴포넌트
 export function SchoolModeProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [selectedInterestSchool, setSelectedInterestSchool] = useState<InterestSchoolInfo | null>(null);
@@ -111,7 +121,9 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
           });
         }
       } catch (error) {
-        console.error('관심학교 상태 복원 오류:', error);
+        if (!isMissingAuthSessionError(error)) {
+          console.error('관심학교 상태 복원 오류:', error);
+        }
       } finally {
         setIsInitialized(true);
       }
@@ -136,7 +148,9 @@ export function SchoolModeProvider({ children }: { children: React.ReactNode }):
         }
       }
     } catch (error) {
-      console.error('관심학교 선택 저장 오류:', error);
+      if (!isMissingAuthSessionError(error)) {
+        console.error('관심학교 선택 저장 오류:', error);
+      }
     }
   }, []);
   

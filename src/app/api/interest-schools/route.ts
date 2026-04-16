@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase-server';
 // 관심학교 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 // 관심학교 추가
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 // 관심학교 삭제
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // 현재 사용자 확인
     const { data: { user }, error: authError } = await supabase.auth.getUser();

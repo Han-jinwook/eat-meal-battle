@@ -20,6 +20,10 @@ function LoginContent() {
   const [showParentVideoModal, setShowParentVideoModal] = useState(false)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [emailMode, setEmailMode] = useState<'signin' | 'signup'>('signin')
+  const [emailLoading, setEmailLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -52,6 +56,61 @@ function LoginContent() {
       subscription.unsubscribe()
     }
   }, [supabase, router])
+
+  const handleEmailAuth = async () => {
+    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedPassword = password.trim()
+
+    if (!normalizedEmail || !normalizedPassword) {
+      setError('이메일과 비밀번호를 입력해주세요.')
+      return
+    }
+
+    if (normalizedPassword.length < 6) {
+      setError('비밀번호는 6자 이상 입력해주세요.')
+      return
+    }
+
+    setError(null)
+    setEmailLoading(true)
+
+    try {
+      if (emailMode === 'signin') {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: normalizedPassword,
+        })
+
+        if (signInError) {
+          throw signInError
+        }
+
+        router.push('/')
+        return
+      }
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: normalizedPassword,
+      })
+
+      if (signUpError) {
+        throw signUpError
+      }
+
+      if (!data.session) {
+        alert('가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.')
+      } else {
+        alert('가입 및 로그인이 완료되었습니다.')
+        router.push('/')
+      }
+    } catch (authError: any) {
+      console.error('이메일 인증 오류:', authError)
+      setError(authError?.message || '이메일 로그인 처리 중 오류가 발생했습니다.')
+    } finally {
+      setEmailLoading(false)
+    }
+  }
 
   useEffect(() => {
     // URL 파라미터에서 오류 처리
@@ -183,6 +242,8 @@ function LoginContent() {
    * 새로운 OAuth 유틸리티를 활용하여 안정성 개선
    */
   const handleGoogleLogin = async () => {
+    setError('SNS 로그인은 종료되었습니다. 이메일 로그인/회원가입을 이용해주세요.')
+    return
     try {
       // 인앱브라우저 사전 안내는 제거 - 실제 실패 시에만 안내하도록 변경
 
@@ -313,6 +374,8 @@ function LoginContent() {
    * 새로운 OAuth 유틸리티를 활용하여 안정성 개선
    */
   const handleKakaoLogin = async () => {
+    setError('SNS 로그인은 종료되었습니다. 이메일 로그인/회원가입을 이용해주세요.')
+    return
     try {
       // 디바운스: 이미 요청 중이면 무시
       if (kakaoLoading) return
@@ -690,8 +753,8 @@ function LoginContent() {
             <div className="flex items-center justify-center order-2 lg:order-2 px-4 pb-8 lg:px-0 lg:pb-0">
               <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-6 lg:p-8 shadow-lg">
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-gray-900">간편 로그인</h2>
-                  <p className="mt-2 text-gray-600">소셜 계정으로 시작하세요</p>
+                  <h2 className="text-2xl font-bold text-gray-900">이메일 로그인</h2>
+                  <p className="mt-2 text-gray-600">이메일 인증 기반으로 시작하세요</p>
                 </div>
 
                 {error && (
@@ -701,37 +764,46 @@ function LoginContent() {
                 )}
 
                 <div className="space-y-4">
-                  <button
-                    onClick={handleKakaoLogin}
-                    disabled={kakaoLoading}
-                    className="flex w-full items-center justify-center rounded-lg bg-[#FEE500] px-4 py-3 text-gray-900 shadow-sm transition-colors hover:bg-[#F3D900] focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 3C7.03125 3 3 6.03125 3 9.75C3 12.3125 4.71875 14.5312 7.21875 15.5625L6.46875 18.5625C6.40625 18.7812 6.625 18.9688 6.84375 18.8438L10.6562 16.2812C11.0938 16.3438 11.5312 16.375 12 16.375C16.9688 16.375 21 13.3438 21 9.625C21 5.90625 16.9688 3 12 3Z"
-                        fill="black"
-                      />
-                    </svg>
-                    {kakaoLoading ? '로그인 중...' : '카카오로 로그인'}
-                  </button>
-
-                  <button
-                    onClick={handleGoogleLogin}
-                    disabled={googleLoading}
-                    className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
-                      <path
-                        d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"
-                        fill="#4285F4"
-                      />
-                    </svg>
-                    Google로 로그인
-                  </button>
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="이메일"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="비밀번호 (6자 이상)"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={handleEmailAuth}
+                      disabled={emailLoading}
+                      className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      {emailLoading
+                        ? '처리 중...'
+                        : emailMode === 'signin'
+                          ? '이메일 로그인'
+                          : '이메일 회원가입'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEmailMode((prev) => (prev === 'signin' ? 'signup' : 'signin'))}
+                      className="w-full text-xs text-indigo-600 hover:text-indigo-700"
+                    >
+                      {emailMode === 'signin'
+                        ? '처음이신가요? 이메일 회원가입'
+                        : '이미 계정이 있나요? 이메일 로그인'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="text-center text-sm text-gray-500">
-                  <span>계정이 없으신가요? 소셜 로그인으로 자동 가입됩니다.</span>
+                  <span>계정이 없으면 이메일 회원가입 후 인증 메일을 확인해주세요.</span>
                 </div>
               </div>
             </div>
@@ -761,7 +833,7 @@ function LoginContent() {
                   <span className="text-2xl">1️⃣</span>
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">회원가입</h3>
-                <p className="text-gray-600 text-sm">구글 또는 카카오 계정으로 간편하게 가입하세요</p>
+                <p className="text-gray-600 text-sm">이메일로 회원가입 후 인증을 완료하세요</p>
               </div>
 
               <div className="text-center">

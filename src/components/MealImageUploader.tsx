@@ -49,6 +49,7 @@ export default function MealImageUploader({
   const [isReporting, setIsReporting] = useState(false); // 신고 진행 상태
   const [hasReported, setHasReported] = useState(false); // 신고 완료 상태
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasApprovedImage = uploadedImage?.status === 'approved';
   
   // 등록오류 신고 핸들러
   const handleReportError = async () => {
@@ -494,6 +495,11 @@ export default function MealImageUploader({
   const handleAiImageGeneration = async () => {
     try {
       console.log('AI 이미지 생성 버튼 클릭!');
+
+      if (hasApprovedImage) {
+        setError('이미 등록된 급식 이미지가 있어 새로 생성할 수 없습니다.');
+        return;
+      }
       
       // 권한 확인
       if (!canUseAI) {
@@ -643,12 +649,11 @@ export default function MealImageUploader({
           onUploadSuccess();
         }
       }, 4000); // 4초 지연
-
-      const errorMessage = error ? (typeof error === 'object' && error.message ? error.message : 'AI 이미지 생성 중 오류가 발생했습니다.') : 'AI 이미지 생성 중 오류가 발생했습니다.';
+    } catch (generationError: any) {
+      const errorMessage = generationError?.message || 'AI 이미지 생성 중 오류가 발생했습니다.';
       setError(errorMessage);
       setImageStatus('error');
-      
-      // 오류 콜백
+
       if (onUploadError) {
         onUploadError(errorMessage);
       }
@@ -770,6 +775,11 @@ export default function MealImageUploader({
   };
 
   const handleUpload = async () => {
+    if (hasApprovedImage) {
+      setError('이미 등록된 급식 이미지가 있어 업로드할 수 없습니다.');
+      return;
+    }
+
     if (!fileInputRef.current?.files?.[0]) {
       setError('업로드할 이미지를 선택해주세요.');
       return;
@@ -1262,7 +1272,7 @@ export default function MealImageUploader({
         <>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              월~금까지 급식은 일요일까지 활동 가능합니다!
+              오늘의 급식 사진을 공유해보세요!
             </label>
             
             <input
@@ -1271,18 +1281,26 @@ export default function MealImageUploader({
               onChange={handleFileChange}
               ref={fileInputRef}
               className="hidden"
-              disabled={!canUploadImage}
+              disabled={!canUploadImage || hasApprovedImage}
             />
             <div className="flex space-x-3 items-center">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={!canUploadImage || !canUploadPhoto}
+                disabled={!canUploadImage || !canUploadPhoto || hasApprovedImage}
                 className={`px-6 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  canUploadImage && canUploadPhoto
+                  canUploadImage && canUploadPhoto && !hasApprovedImage
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
-                title={!canUploadPhoto ? '내 학교에서만 사진을 업로드할 수 있습니다.' : !canUploadImage ? getTimeConstraintMessage() : ''}
+                title={
+                  hasApprovedImage
+                    ? '이미 등록된 급식 이미지가 있어 업로드할 수 없습니다.'
+                    : !canUploadPhoto
+                      ? '내 학교에서만 사진을 업로드할 수 있습니다.'
+                      : !canUploadImage
+                        ? getTimeConstraintMessage()
+                        : ''
+                }
               >
                 파일 선택
               </button>
@@ -1484,13 +1502,21 @@ export default function MealImageUploader({
           <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <button
                 onClick={handleAiImageGeneration}
-                disabled={!canUploadImage || !canUseAI}
+                disabled={!canUploadImage || !canUseAI || hasApprovedImage}
                 className={`p-0 relative overflow-hidden w-full sm:w-auto ${
-                  canUploadImage && canUseAI 
+                  canUploadImage && canUseAI && !hasApprovedImage
                     ? 'hover:opacity-90' 
                     : 'opacity-50 cursor-not-allowed'
                 }`}
-                title={!canUseAI ? '내 학교에서만 AI 기능을 사용할 수 있습니다.' : !canUploadImage ? getTimeConstraintMessage() : ''}
+                title={
+                  hasApprovedImage
+                    ? '이미 등록된 급식 이미지가 있어 AI 생성을 사용할 수 없습니다.'
+                    : !canUseAI
+                      ? '내 학교에서만 AI 기능을 사용할 수 있습니다.'
+                      : !canUploadImage
+                        ? getTimeConstraintMessage()
+                        : ''
+                }
               >
                 {imageStatus === 'generating' ? (
                   <span className="flex items-center">

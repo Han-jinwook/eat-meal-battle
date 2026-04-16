@@ -21,8 +21,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: '급식', href: '/' },
-  { label: '배틀', href: '/battle' },
-  { label: '퀴즈', href: '/quiz' },
 ];
 
 export default function MainHeader() {

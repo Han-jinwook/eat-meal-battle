@@ -1,69 +1,90 @@
-# HELP
+# HELP (RESET)
 
-## 1) 해결 필요 이슈 (우선)
+## 현재 최우선 이슈
 
-### 패밀리 공유 카드의 민트 하이라이트 "퍼짐" 효과가 솔로 카드와 동일하게 보이지 않음
-- 대상 파일: `src/components/whateat/family-page.tsx`
-- 요구사항: 솔로 카드(`src/components/whateat/meal-log-tab.tsx`)의 하이라이트 느낌(라인 + 바깥 번짐)을 패밀리 "별점 평가중" 카드에 상시 적용
-- 현재 상태:
-  - 라인(ring/border)은 적용됨
-  - 번짐(glow) 체감이 약하거나 화면에서 기대 수준으로 보이지 않음
-  - 일부 조합에서 댓글 영역 경계 부근이 어둡게 보이는 아티팩트가 발생할 수 있었음
-- 시도한 접근(반영 이력):
-  1. 오버레이 레이어(`absolute`) + `border` + `animate-pulse`
-  2. 오버레이 + `ring` + 커스텀 shadow
-  3. 카드 컨테이너 직접 `ring-2 ring-cyan-400 shadow-cyan-100`
-  4. 카드 컨테이너 커스텀 shadow 강화 (`0_0_22px` 민트 글로우)
-- 다음 세션 권장 점검 포인트:
-  - DevTools에서 실제 적용 클래스와 계산된 `box-shadow` 확인
-  - 카드 상위/부모의 `overflow-hidden` 및 배경 대비가 글로우를 시각적으로 죽이는지 확인
-  - 솔로 카드와 동일 조합을 1:1 복사 후, 차이를 만드는 부모 레이아웃 속성 비교
+### 증상
+- 경로: `프로필 -> 학교설정`
+- 기존처럼 `/login` 강제 이동은 줄였지만, 현재는 **모달이 뜨지 않고 먹통처럼 보임**.
+
+### 사용자 확인 상태
+- 사용자 피드백: "로그인으로 튀진 않지만 학교설정 모달이 뜨지 않음"
+- 브라우저 주소 표시줄 캡처에서는 이전에 `/login`으로 튀는 현상도 있었음.
 
 ---
 
-## 2) 마지막 커밋/푸시 이후 작업 정리
+## 이번 세션에서 한 작업 요약
 
-- 마지막 커밋: `dc5c51d` (`fix: netlify 함수 빌드 오류 busboy 의존성 추가`)
-- 이후 주요 작업(패밀리 화면 중심):
+1) 프로필 학교설정 플로우 연결
+- 파일: `src/components/ProfileClient.tsx`
+- 변경:
+  - `SchoolRegistrationFlowModal` 연결
+  - `allowFamilyRegistration={false}`로 설정 (본인 등록 전용)
+  - 학교 저장 시 `school_infos` upsert 흐름 추가
+  - 관심학교 API(`/api/interest-schools`) 호출 추가
 
-1. 탭/헤더 UI 정리
-- 상단 탭 순서 조정 (`공유된 식사`, `오늘의 메뉴`, `투표`)
-- 공유 섹션 제목 행 제거 후 카테고리 필터 탭(`전체/집밥/배달/외식`) 추가
-- 가족 헤더 레이아웃 압축:
-  - 우측 끝 추가 아이콘 제거
-  - 가족 프로필을 `우리 가족` 옆으로 배치
-  - `우리 가족` 앞 아이콘을 연필 버튼으로 교체, 가족 대표 사진 업로드 연결
-- 탭 정렬 재조정:
-  - 최종적으로 3개 탭 모두 우측 그룹 정렬
+2) 클릭 시 로그인 튐 완화
+- 파일: `src/components/ProfileClient.tsx`
+- 변경:
+  - `학교설정` 버튼 클릭 핸들러를 `async`로 변경
+  - `supabase.auth.getUser()` 재확인 후 유저 있으면 모달 열도록 수정
+  - 인증 없음일 때 `/login` 강제 이동 제거(안내 문구만)
 
-2. 공유 카드 동작/문구 개선
-- `미평가` 제거
-- 상태 표기 변경:
-  - 평가중: `별점 평가중`
-  - 마감 후: 평균 별점 숫자만 표시
-- 댓글 버튼 항상 노출 (`댓글 N개`)
-- 댓글 버튼 클릭 동작 분기:
-  - 평가중: 카드 상세 모달 오픈
-  - 마감 후: 카드 내 댓글 섹션 펼침/접힘
+3) 라우팅/인증 관련 이전 변경(연속 작업 맥락)
+- `src/lib/supabase-server.ts`: Next.js 16 `cookies()` 비동기 대응
+- `src/middleware.ts`: 서버 Supabase 생성 `await` 반영, `/profile` 비보호 처리
+- `src/app/profile/page.tsx`: 강제 로그인 redirect 제거, 비로그인도 렌더 허용
 
-3. 맛통 게시(기존 맛톡 공유 표현 정리)
-- 용어 통일: `맛통 게시`
-- 메시지 문구 갱신:
-  - 전원 평가 완료 즉시 게시 메시지
-  - 마감 후 조건 충족 게시 메시지
-  - 진행중 메시지(`맛통 게시 중...`)
+---
 
-4. 게시 트리거 로직 변경
-- 기존: 마감 후 조건 충족 시만 게시
-- 변경: 아래 두 경우 게시 시도
-  - 마감 후 + 1명 이상 평가
-  - 마감 전이라도 가족 전원 평가 완료
-- 평균 5.0 이상 조건은 유지
-- 별점 입력 시 즉시 게시 판단 호출
+## 현재 의심 지점 (새 세션에서 바로 확인)
 
-5. 평가중 카드 하이라이트
-- 요구사항: 클릭 전까지 강조 유지, 클릭하면 해제
-- 구현:
-  - `dismissedMealHighlightIds` 상태로 해제 여부 관리
-  - 카드/댓글 버튼으로 모달 진입 시 해당 카드 하이라이트 해제
-- 미해결: 솔로와 완전히 동일한 "번짐 체감" 미흡(상단 1번 이슈)
+1) `ProfileClient`의 인증 상태 불일치
+- 서버에서 `initialUser`가 `null`로 들어오고, 클라이언트 세션과 타이밍이 어긋나는 경우
+- 클릭 핸들러에서 `getUser()` 재확인했지만 여전히 모달 오픈 상태 변경이 반영 안 될 가능성
+
+2) `BirthConsentModal` 진입 조건 분기
+- 조건: `!userProfile?.birth_date || userProfile?.is_student === null`
+- 이 분기에서 `setShowBirthConsentModal(true)`가 호출되지만 실제 렌더가 안 되는지 확인 필요
+
+3) `SchoolRegistrationFlowModal` 렌더 조건/스타일 충돌
+- `isOpen` 상태가 true로 바뀌는지 콘솔로 확인
+- 포털/오버레이 z-index, 부모 요소 스타일 충돌 여부 점검
+
+4) Supabase 브라우저 클라이언트 커스텀 fetch 영향
+- 파일: `src/lib/supabase.ts`
+- 전역 fetch 커스터마이징이 auth/user 조회에 간접 영향 없는지 점검
+
+---
+
+## 새 세션 디버깅 체크리스트 (권장 순서)
+
+1. `학교설정` 클릭 직후 로그 확인
+- `src/components/ProfileClient.tsx` 버튼 핸들러에 임시 로그 추가:
+  - `authData.user`
+  - `userProfile.birth_date`, `userProfile.is_student`
+  - `setShowBirthConsentModal` / `setIsSchoolRegistrationFlowOpen` 분기 도달 여부
+
+2. 실제 state 변경 확인
+- React DevTools로 다음 state가 true로 바뀌는지 확인:
+  - `showBirthConsentModal`
+  - `isSchoolRegistrationFlowOpen`
+
+3. 모달 컴포넌트 단독 강제 오픈 테스트
+- 임시로 `isOpen={true}` 하드코딩 후 렌더 확인
+- 보이면 상태/분기 문제, 안 보이면 스타일/레이아웃 충돌 문제
+
+4. `/profile` 최초 진입 사용자 정보 소스 점검
+- 서버 `initialUser`와 클라이언트 `supabase.auth.getUser()` 값 비교
+- 필요 시 마운트 시점에 클라이언트 auth hydrate 로직 추가
+
+---
+
+## 참고: 라우트 정리 계획 메모
+- `/whateat`는 모니터링 기간 후 제거 예정
+- 현재는 fallback 용도로 유지
+
+---
+
+## 이번 세션 마지막 상태
+- 사용자 요청에 따라 여기까지 기록 후 세션 종료.
+- 다음 세션은 **프로필 학교설정 모달 미표시(먹통) 원인 고정**부터 시작하면 됨.

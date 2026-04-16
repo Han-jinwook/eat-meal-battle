@@ -122,6 +122,19 @@ export default function useUserSchool(): UseUserSchoolReturn {
           setIsRegistrationRequired(false); // 로그인 안했으면 등록 불필요
         }
       } catch (err: any) {
+        const isMissingSession =
+          err?.name === 'AuthSessionMissingError' ||
+          err?.message?.includes('Auth session missing') ||
+          err?.message?.includes('session missing');
+
+        if (isMissingSession) {
+          setUser(null);
+          setUserSchool(null);
+          setIsRegistrationRequired(false);
+          setError('');
+          return;
+        }
+
         console.error('useUserSchool 오류:', err);
         setError(err.message || '사용자 정보를 불러오는 중 오류');
       } finally {
