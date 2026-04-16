@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: { region: string }
 }
@@ -40,16 +42,4 @@ export default async function RegionRankingPage({ params }: Props) {
   // 현재는 메인 페이지의 배틀 섹션으로 리다이렉트
   // 추후 지역별 랭킹 전용 페이지 구현 시 여기서 처리
   redirect('/battle')
-}
-
-// 주요 지역들 정적 생성
-export async function generateStaticParams() {
-  const regions = [
-    '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-    '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
-  ]
-
-  return regions.map(region => ({
-    region: encodeURIComponent(region)
-  }))
 }
