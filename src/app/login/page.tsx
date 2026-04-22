@@ -2,18 +2,12 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { compressAndEncode } from '@/lib/utils'
-import { createClient, signInWithRetry, clearSession } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-// OAuth 안정성 개선을 위한 유틸리티 임포트
-import { getOptimizedOAuthConfig, prepareForOAuthLogin, finalizeOAuthLogin } from '@/lib/oauth-utils'
-import { getBrowserInfo } from '@/lib/session-utils'
-
 // SearchParams를 사용하는 컴포넌트 분리 (useSearchParams는 반드시 Suspense로 감싸야 함)
 function LoginContent() {
-  const [kakaoLoading, setKakaoLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showGuideModal, setShowGuideModal] = useState(false)
   const [showVideoModal, setShowVideoModal] = useState(false)
@@ -128,7 +122,7 @@ function LoginContent() {
       setError('로그인이 취소되었습니다. 다시 시도해주세요.')
     } else if (errorType === 'oauth_error') {
       const detailMessage = errorDetail ? ` (상세: ${errorDetail})` : ''
-      setError(`OAuth 인증 중 오류가 발생했습니다${detailMessage}`)
+      setError(`인증 처리 중 오류가 발생했습니다${detailMessage}`)
     } else if (errorType === 'session_verification_failed') {
       setError('로그인 세션 검증에 실패했습니다. 브라우저를 새로고침하고 다시 시도해주세요.')
     } else if (errorType) {
@@ -152,7 +146,7 @@ function LoginContent() {
       try {
         console.log('🔍 로그인 페이지에서 세션 상태 확인 시작...')
         
-        // 여러 번 시도하여 세션 상태를 확인 (OAuth 콜백 후 세션 동기화 대기)
+        // 여러 번 시도하여 세션 상태를 확인 (콜백 후 세션 동기화 대기)
         let session = null
         let attempts = 0
         const maxAttempts = 3
@@ -189,7 +183,7 @@ function LoginContent() {
       }
     }
     
-    // 페이지 로드 후 약간의 지연을 주어 OAuth 콜백 완료 대기
+    // 페이지 로드 후 약간의 지연을 주어 콜백 완료 대기
     const timer = setTimeout(checkUser, 100)
     return () => clearTimeout(timer)
   }, [router, supabase])
@@ -229,274 +223,6 @@ function LoginContent() {
 
     setCurrentAudio(audio)
     setPlayingAudio(audioType)
-  }
-
-  // 디바운스 관리를 위한 상태
-  const [loginAttemptCounts, setLoginAttemptCounts] = useState({
-    google: 0,
-    kakao: 0
-  })
-  
-  /**
-   * 강화된 구글 로그인 함수
-   * 새로운 OAuth 유틸리티를 활용하여 안정성 개선
-   */
-  const handleGoogleLogin = async () => {
-    setError('SNS 로그인은 종료되었습니다. 이메일 로그인/회원가입을 이용해주세요.')
-    return
-    try {
-      // 인앱브라우저 사전 안내는 제거 - 실제 실패 시에만 안내하도록 변경
-
-      // 디바운스: 이미 요청 중이면 무시
-      if (googleLoading) return
-      
-      // 로그인 시도 횟수 증가
-      const newAttemptCount = loginAttemptCounts.google + 1
-      setLoginAttemptCounts(prev => ({ ...prev, google: newAttemptCount }))
-      
-      // 브라우저 환경 확인
-      const browserInfo = getBrowserInfo()
-      const isIOSSafari = browserInfo.isIOSSafari
-      
-      setGoogleLoading(true)
-      setError(null)
-      
-      console.log(`\n🔒 강화된 구글 로그인 시도 ${newAttemptCount}번째 시작...`)
-      
-      // OAuth 로그인 전 세션 초기화 및 준비
-      const isPrepared = await prepareForOAuthLogin('google')
-      if (!isPrepared) {
-        console.warn('⚠️ 구글 로그인 준비 실패 - 중복 요청 방지')
-        setGoogleLoading(false)
-        return
-      }
-      
-      // 현재 URL에서 공유 파라미터 추출
-      const currentUrl = new URL(window.location.href)
-      const schoolCode = currentUrl.searchParams.get('school_code')
-      const shareType = currentUrl.searchParams.get('share_type')
-      
-      // 기기 정보 로그
-      console.log('📱 브라우저 정보:', {
-        isMobile: browserInfo.isMobile,
-        isIOS: browserInfo.isIOS,
-        isSafari: browserInfo.isSafari, 
-        isIOSSafari,
-        screenWidth: browserInfo.width
-      })
-      
-      // OAuth state 데이터 구성
-      let stateData = {}
-      if (schoolCode) {
-        stateData = {
-          share_school_code: schoolCode,
-          ...(shareType && { share_type: shareType })
-        }
-      }
-      
-      console.log('🔗 OAuth state 데이터 구성:', stateData)
-      
-      // 영구 접근 권한을 위한 redirectTo 구성 (현재 페이지 URL 포함)
-      const callbackUrl = new URL('/auth/callback', window.location.origin);
-      
-      // 현재 페이지 URL을 next 파라미터로 전달
-      const currentPageUrl = window.location.pathname + window.location.search;
-      callbackUrl.searchParams.set('next', currentPageUrl);
-      
-      const redirectUrl = callbackUrl.toString();
-      
-      // 강화된 OAuth 설정 가져오기
-      const enhancedOptions = getOptimizedOAuthConfig('google', {
-        stateData,
-        redirectTo: redirectUrl
-      })
-      
-      // 재시도 횟수 조정 (iOS Safari에서는 더 많은 재시도)
-      const maxRetries = isIOSSafari ? 5 : 3
-      
-      console.log('🌐 구글 OAuth 요청 시작:', enhancedOptions)
-      
-      // 강화된 설정으로 로그인 시도
-      const { data, error } = await signInWithRetry('google', enhancedOptions, maxRetries)
-      
-      // 로그인 완료 처리 (OAuth 잠금 해제)
-      finalizeOAuthLogin('google', !error)
-      
-      if (error) {
-        console.error('❌ 구글 로그인 오류:', {
-          message: error.message,
-          status: error.status,
-          attemptCount: newAttemptCount
-        })
-        throw error
-      }
-      
-      console.log('✅ 로그인 요청 성공, 리다이렉트 대기 중...', {
-        hasUrl: !!data?.url,
-        urlStart: data?.url ? data.url.substring(0, 30) + '...' : '없음'
-      })
-    } catch (error: any) {
-      // 오류 발생 시 OAuth 잠금 해제
-      finalizeOAuthLogin('google', false)
-      
-      console.error(`💥 구글 로그인 시도 ${loginAttemptCounts.google}번째 실패:`, {
-        message: error?.message,
-        code: error?.status || error?.code,
-        timestamp: new Date().toISOString()
-      })
-      
-      // 오류 유형에 따른 사용자 프렌들리 메시지
-      if (loginAttemptCounts.google >= 2) {
-        setError('로그인이 어려워 보입니다. 다른 브라우저나 카카오 로그인을 사용해 보세요.')
-      } else if (error?.message?.includes('PKCE') || error?.message?.includes('cookie')) {
-        setError('브라우저 쿠키 또는 캐시 문제가 있습니다. 브라우저 설정에서 쿠키를 허용하고 다시 시도해보세요.')
-      } else if (error?.message?.includes('popup') || error?.message?.includes('window')) {
-        setError('팝업 창이 차단되었습니다. 팝업을 허용한 후 다시 시도해주세요.')
-      } else {
-        setError(error?.message || '구글 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      }
-      
-      setGoogleLoading(false)
-      
-      // 첫 번째 실패 시 5초 후 자동 재시도 옵션
-      if (loginAttemptCounts.google === 1) {
-        setTimeout(() => {
-          if (googleLoading) return // 이미 진행 중이면 무시
-          console.log('🔄 구글 로그인 자동 재시도 (사용자 편의를 위한 기능)...')
-          handleGoogleLogin()
-        }, 5000)
-      }
-    }
-  }
-
-  /**
-   * 강화된 카카오 로그인 함수
-   * 새로운 OAuth 유틸리티를 활용하여 안정성 개선
-   */
-  const handleKakaoLogin = async () => {
-    setError('SNS 로그인은 종료되었습니다. 이메일 로그인/회원가입을 이용해주세요.')
-    return
-    try {
-      // 디바운스: 이미 요청 중이면 무시
-      if (kakaoLoading) return
-      
-      // 로그인 시도 횟수 증가
-      const newAttemptCount = loginAttemptCounts.kakao + 1
-      setLoginAttemptCounts(prev => ({ ...prev, kakao: newAttemptCount }))
-      
-      // 브라우저 환경 확인
-      const browserInfo = getBrowserInfo()
-      const isIOSSafari = browserInfo.isIOSSafari
-      
-      setKakaoLoading(true)
-      setError(null)
-      
-      console.log(`\n🔒 강화된 카카오 로그인 시도 ${newAttemptCount}번째 시작...`)
-      
-      // OAuth 로그인 전 세션 초기화 및 준비
-      const isPrepared = await prepareForOAuthLogin('kakao')
-      if (!isPrepared) {
-        console.warn('⚠️ 카카오 로그인 준비 실패 - 중복 요청 또는 세션 초기화 문제')
-        setKakaoLoading(false)
-        return
-      }
-      
-      // 현재 URL에서 공유 파라미터 추출
-      const currentUrl = new URL(window.location.href)
-      const schoolCode = currentUrl.searchParams.get('school_code')
-      const shareType = currentUrl.searchParams.get('share_type')
-      
-      // 기기 정보 로그
-      console.log('📱 브라우저 정보:', {
-        isMobile: browserInfo.isMobile,
-        isIOS: browserInfo.isIOS,
-        isSafari: browserInfo.isSafari, 
-        isIOSSafari,
-        screenWidth: browserInfo.width
-      })
-      
-      // OAuth state 데이터 구성
-      let stateData = {}
-      if (schoolCode) {
-        stateData = {
-          share_school_code: schoolCode,
-          ...(shareType && { share_type: shareType })
-        }
-      }
-      
-      console.log('🔗 OAuth state 데이터 구성:', stateData)
-      
-      // 영구 접근 권한을 위한 redirectTo 구성 (현재 페이지 URL 포함)
-      const callbackUrl = new URL('/auth/callback', window.location.origin);
-      
-      // 현재 페이지 URL을 next 파라미터로 전달
-      const currentPageUrl = window.location.pathname + window.location.search;
-      callbackUrl.searchParams.set('next', currentPageUrl);
-      
-      const redirectUrl = callbackUrl.toString();
-      
-      // 강화된 OAuth 설정 가져오기
-      const enhancedOptions = getOptimizedOAuthConfig('kakao', {
-        stateData,
-        redirectTo: redirectUrl
-      })
-      
-      // 재시도 횟수 조정 (iOS Safari에서는 더 많은 재시도)
-      const maxRetries = isIOSSafari ? 5 : 3
-      
-      console.log('🌐 카카오 OAuth 요청 시작:', enhancedOptions)
-      
-      // 강화된 설정으로 로그인 시도
-      const { data, error } = await signInWithRetry('kakao', enhancedOptions, maxRetries)
-      
-      // 로그인 완료 처리 (OAuth 잠금 해제)
-      finalizeOAuthLogin('kakao', !error)
-      
-      if (error) {
-        console.error('❌ 카카오 로그인 오류:', {
-          message: error.message,
-          status: error.status,
-          attemptCount: newAttemptCount
-        })
-        throw error
-      }
-      
-      console.log('✅ 카카오 로그인 요청 성공, 리다이렉트 대기 중...', {
-        hasUrl: !!data?.url,
-        urlStart: data?.url ? data.url.substring(0, 30) + '...' : '없음'
-      })
-    } catch (error: any) {
-      // 오류 발생 시 OAuth 잠금 해제
-      finalizeOAuthLogin('kakao', false)
-      
-      console.error(`💥 카카오 로그인 시도 ${loginAttemptCounts.kakao}번째 실패:`, {
-        message: error?.message,
-        code: error?.status || error?.code,
-        timestamp: new Date().toISOString()
-      })
-      
-      // 오류 유형에 따른 사용자 프렌들리 메시지
-      if (loginAttemptCounts.kakao >= 2) {
-        setError('로그인이 어려워 보입니다. 다른 브라우저나 구글 로그인을 사용해 보세요.')
-      } else if (error?.message?.includes('PKCE') || error?.message?.includes('cookie')) {
-        setError('브라우저 쿠키 또는 캐시 문제가 있습니다. 브라우저 설정에서 쿠키를 허용하고 다시 시도해보세요.')
-      } else if (error?.message?.includes('popup') || error?.message?.includes('window')) {
-        setError('팝업 창이 차단되었습니다. 팝업을 허용한 후 다시 시도해주세요.')
-      } else {
-        setError(error?.message || '카카오 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      }
-      
-      setKakaoLoading(false)
-      
-      // 첫 번째 실패 시 5초 후 자동 재시도 옵션
-      if (loginAttemptCounts.kakao === 1) {
-        setTimeout(() => {
-          if (kakaoLoading) return // 이미 진행 중이면 무시
-          console.log('🔄 카카오 로그인 자동 재시도 (사용자 편의를 위한 기능)...')
-          handleKakaoLogin()
-        }, 5000)
-      }
-    }
   }
 
   return (

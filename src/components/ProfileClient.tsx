@@ -6,7 +6,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import BirthConsentModal from '@/components/BirthConsentModal'
 import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal'
 import { extractBattleRegion } from '@/utils/addressParser'
 
@@ -42,7 +41,6 @@ export default function ProfileClient({
   const [notice, setNotice] = useState<string | null>(null)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [schoolInfo, setSchoolInfo] = useState<any>(initialSchoolInfo)
-  const [showBirthConsentModal, setShowBirthConsentModal] = useState(false)
   const [isSchoolRegistrationFlowOpen, setIsSchoolRegistrationFlowOpen] = useState(false)
   const [isEditingNickname, setIsEditingNickname] = useState(false)
   const [newNickname, setNewNickname] = useState(initialUserProfile?.nickname || '')
@@ -577,14 +575,6 @@ export default function ProfileClient({
                       setUserProfile(latestProfile)
                     }
 
-                    const authProvider = authData.user.app_metadata?.provider
-                    const isEmailAuthUser = authProvider === 'email'
-
-                    if ((!resolvedProfile?.birth_date || resolvedProfile?.is_student == null) && !isEmailAuthUser) {
-                      setShowBirthConsentModal(true)
-                      return
-                    }
-
                     setIsSchoolRegistrationFlowOpen(true)
                   } catch (openError: any) {
                     setError(openError?.message || '학교설정 화면을 여는 중 오류가 발생했습니다.')
@@ -634,16 +624,6 @@ export default function ProfileClient({
         {deletingAccount && (
           <div className="mt-3 text-center text-xs text-amber-700">회원 탈퇴 처리 중입니다. 잠시만 기다려주세요.</div>
         )}
-
-        <BirthConsentModal
-          isOpen={showBirthConsentModal}
-          onClose={() => setShowBirthConsentModal(false)}
-          onSuccess={() => {
-            setShowBirthConsentModal(false)
-            setIsSchoolRegistrationFlowOpen(true)
-          }}
-          userId={user?.id || ''}
-        />
 
         <SchoolRegistrationFlowModal
           isOpen={isSchoolRegistrationFlowOpen}
