@@ -43,6 +43,9 @@ const getSchoolCharacterImage = (schoolType: string): string => {
 export default function MealClient() {
   const router = useRouter();
   const supabase = createClient();
+  const isMockSchoolMode =
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_USE_MOCK_SCHOOL === 'true';
   
   // 공유 모달 상태 관리
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
@@ -595,6 +598,38 @@ export default function MealClient() {
 
   // 관심학교 등록 함수
   const addInterestSchool = async (schoolData: any) => {
+    if (isMockSchoolMode) {
+      const mockSchool = {
+        id: 'mock-school-info',
+        user_id: 'mock-user',
+        school_code: schoolData.SD_SCHUL_CODE,
+        school_name: schoolData.SCHUL_NM,
+        office_code: schoolData.ATPT_OFCDC_SC_CODE,
+        school_type: schoolData.SCHUL_KND_SC_NM,
+        region: extractBattleRegion(schoolData.ORG_RDNMA || schoolData.LCTN_SC_NM),
+        grade: userSchool?.grade || '2',
+        class_number: userSchool?.class_number || userSchool?.class || '1',
+        class: userSchool?.class || userSchool?.class_number || '1',
+        nickname: '목업 사용자',
+        created_at: new Date().toISOString(),
+      };
+
+      setUserSchool(mockSchool as any);
+      schoolMode.returnToMySchool();
+      setInterestSchoolDataLoaded(null);
+
+      if (selectedDate) {
+        fetchMealInfo(
+          mockSchool.school_code,
+          selectedDate,
+          mockSchool.office_code || 'E10'
+        );
+      }
+
+      alert(`[목업모드] 테스트 학교가 ${mockSchool.school_name}로 변경되었습니다.`);
+      return;
+    }
+
     if (!user) {
       console.error('사용자 인증이 필요합니다');
       return;
@@ -712,6 +747,12 @@ export default function MealClient() {
 
   // 학교등록 버튼 클릭 핸들러
   const handleSchoolRegister = () => {
+    if (isMockSchoolMode) {
+      setIsSchoolSearchOpen(true);
+      setIsDropdownOpen(false);
+      return;
+    }
+
     if (interestSchools.length >= 10) {
       alert('최대 10개의 관심학교만 등록할 수 있습니다.');
       return;

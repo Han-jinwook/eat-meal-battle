@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import SupabaseProvider from '@/lib/supabase/supabase-provider';
+import { HubProvider, HubNotifier } from '@/services/merlin-hub-sdk/react';
+import { GlobalLoginModal } from '@/components/c-global-login-modal';
 
 import ConditionalMainHeader from '@/components/ConditionalMainHeader';
 import Footer from '@/components/Footer';
@@ -93,18 +95,23 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SupabaseProvider session={null}>
-          <SchoolModeProvider>
-            <ServiceWorkerRegistration />
-            <StructuredData type="organization" />
-            <StructuredData type="website" />
-            <ConditionalMainHeader />
-            {children}
+        <HubProvider appId="WhatEat">
+          <SupabaseProvider session={null}>
+            <SchoolModeProvider>
+              <ServiceWorkerRegistration />
+              <StructuredData type="organization" />
+              <StructuredData type="website" />
+              <ConditionalMainHeader />
+              {children}
 
-            <Toaster />
-            <Footer />
-          </SchoolModeProvider>
-        </SupabaseProvider>
+              <Toaster />
+              <Footer />
+            </SchoolModeProvider>
+          </SupabaseProvider>
+          {/* 허브 표준: 최상위에 단 1회만 배치 */}
+          <GlobalLoginModal />
+          <HubNotifier />
+        </HubProvider>
       </body>
     </html>
   );

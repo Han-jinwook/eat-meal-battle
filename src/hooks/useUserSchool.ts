@@ -57,6 +57,40 @@ export default function useUserSchool(): UseUserSchoolReturn {
         setLoading(true);
         setError('');
 
+        const shouldUseMockSchool =
+          process.env.NODE_ENV !== 'production' &&
+          process.env.NEXT_PUBLIC_USE_MOCK_SCHOOL === 'true';
+
+        if (shouldUseMockSchool) {
+          const mockSchoolCode = process.env.NEXT_PUBLIC_MOCK_SCHOOL_CODE || '7010569';
+          const mockSchoolName = process.env.NEXT_PUBLIC_MOCK_SCHOOL_NAME || '서울테스트중학교';
+          const mockOfficeCode = process.env.NEXT_PUBLIC_MOCK_OFFICE_CODE || 'B10';
+          const mockRegion = process.env.NEXT_PUBLIC_MOCK_REGION || '서울';
+          const mockSchoolType = process.env.NEXT_PUBLIC_MOCK_SCHOOL_TYPE || '중학교';
+          const mockGrade = process.env.NEXT_PUBLIC_MOCK_GRADE || '2';
+          const mockClassNumber = process.env.NEXT_PUBLIC_MOCK_CLASS_NUMBER || '1';
+          const nowIso = new Date().toISOString();
+
+          setUser(null);
+          setUserSchool({
+            id: 'mock-school-info',
+            user_id: 'mock-user',
+            school_code: mockSchoolCode,
+            school_name: mockSchoolName,
+            office_code: mockOfficeCode,
+            region: mockRegion,
+            school_type: mockSchoolType,
+            grade: mockGrade,
+            class_number: mockClassNumber,
+            class: mockClassNumber,
+            nickname: '목업 사용자',
+            created_at: nowIso,
+          });
+          setIsRegistrationRequired(false);
+          setError('');
+          return;
+        }
+
         const {
           data: { user },
           error: userError,

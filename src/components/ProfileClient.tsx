@@ -35,6 +35,10 @@ export default function ProfileClient({
   initialUserProfile, 
   initialSchoolInfo 
 }: ProfileClientProps) {
+  const isMockSchoolMode =
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_USE_MOCK_SCHOOL === 'true'
+
   const [user, setUser] = useState<any>(initialUser)
   const [userProfile, setUserProfile] = useState<any>(initialUserProfile)
   const [error, setError] = useState<string | null>(null)
@@ -261,6 +265,25 @@ export default function ProfileClient({
   }
 
   const handleCompleteSchoolRegistrationFlow = async (payload: SchoolRegistrationPayload) => {
+    if (isMockSchoolMode) {
+      const schoolData = {
+        user_id: 'mock-user',
+        school_code: payload.school.SD_SCHUL_CODE,
+        school_name: payload.school.SCHUL_NM,
+        school_type: payload.school.SCHUL_KND_SC_NM,
+        region: extractBattleRegion(payload.school.ORG_RDNMA || payload.school.LCTN_SC_NM),
+        address: payload.school.ORG_RDNMA,
+        office_code: payload.school.ATPT_OFCDC_SC_CODE,
+        grade: payload.grade,
+        class_number: payload.classNumber,
+        updated_at: new Date().toISOString(),
+      }
+
+      setSchoolInfo(schoolData)
+      setNotice('[목업모드] 학교정보가 로컬 상태로 저장되었습니다.')
+      return
+    }
+
     if (!user?.id) {
       setError('로그인이 필요합니다.')
       return
@@ -549,6 +572,13 @@ export default function ProfileClient({
             ) : (
               <button
                 onClick={async () => {
+                  if (isMockSchoolMode) {
+                    setShowEmailAuthPromptModal(false)
+                    setError(null)
+                    setIsSchoolRegistrationFlowOpen(true)
+                    return
+                  }
+
                   try {
                     const { data: authData, error: authError } = await supabase.auth.getUser()
 
