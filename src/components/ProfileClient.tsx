@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal'
 import { extractBattleRegion } from '@/utils/addressParser'
+import { HubProfileCard, HubNotificationCard, HubLogoutCard } from '@/services/merlin-hub-sdk/react'
 
 interface ProfileClientProps {
   initialUser: any
@@ -426,138 +427,18 @@ export default function ProfileClient({
     }
   }
   return (
-    <div className="fixed inset-0 z-40 h-dvh overflow-y-auto bg-black/35 backdrop-blur-[1px]">
-      <div className="flex min-h-full items-center justify-center px-4 py-6 sm:py-8">
-        <div className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="absolute right-4 top-4 text-2xl leading-none text-slate-400 transition hover:text-slate-700"
-          aria-label="프로필 닫기"
-        >
-          ×
-        </button>
-        <h1 className="mb-4 text-center text-2xl font-bold text-slate-900">프로필 설정</h1>
-
-        {error && <div className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-        {notice && <div className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</div>}
-
-        <section className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-3 h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow">
-              {newProfileImage || userProfile?.profile_image ? (
-                <img
-                  src={newProfileImage || userProfile?.profile_image}
-                  alt="프로필"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-cyan-100 to-cyan-200 text-2xl font-bold text-cyan-700">
-                  {(displayNickname || 'U').charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-
-            {isEditingNickname ? (
-              <div className="mb-2 flex w-full items-center justify-center gap-2">
-                <input
-                  type="text"
-                  value={newNickname}
-                  onChange={(e) => setNewNickname(e.target.value)}
-                  className="w-44 rounded-lg border border-slate-300 px-2 py-1 text-center text-lg font-bold"
-                  autoFocus
-                />
-                <button
-                  onClick={handleUpdateNickname}
-                  disabled={isUpdatingNickname}
-                  className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                >
-                  {isUpdatingNickname ? '저장중' : '저장'}
-                </button>
-              </div>
-            ) : (
-              <div className="mb-2 flex items-center gap-2">
-                <p className="text-2xl font-bold text-slate-900">{displayNickname}</p>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingNickname(true)}
-                  className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100"
-                >
-                  변경
-                </button>
-              </div>
-            )}
-
-            <p className="text-sm text-slate-600">{displayEmail}</p>
-          </div>
-
-          {isEditingProfileInfo ? (
-            <div className="mt-4 space-y-2">
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="이메일"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <input
-                type="text"
-                value={newProfileImage}
-                onChange={(e) => setNewProfileImage(e.target.value)}
-                placeholder="프로필 이미지 URL"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleUpdateProfileInfo}
-                  disabled={isUpdatingProfileInfo}
-                  className="flex-1 rounded-lg bg-cyan-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50"
-                >
-                  {isUpdatingProfileInfo ? '저장 중...' : '저장'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingProfileInfo(false)}
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  취소
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsEditingProfileInfo(true)}
-              className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              이메일 / 이미지 수정
-            </button>
-          )}
-        </section>
-
-        <div className="flex gap-2">
-          <button
-            onClick={handleSignOut}
-            className="flex-1 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            로그아웃
-          </button>
-          <button
-            onClick={handleDeleteAccount}
-            disabled={deletingAccount}
-            className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {deletingAccount ? '탈퇴 처리중...' : '회원 탈퇴'}
-          </button>
-        </div>
-
-        {deletingAccount && (
-          <div className="mt-3 text-center text-xs text-amber-700">회원 탈퇴 처리 중입니다. 잠시만 기다려주세요.</div>
-        )}
-
+    <main className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-4 py-8 max-w-xl">
+        <div className="w-full space-y-6">
+          <HubProfileCard />
+          <HubNotificationCard
+            title="알림 설정"
+            toggleLabel="🔔 스마트 알림"
+            description="급식 소식과 뭐먹지? 서비스의 새로운 기능·혜택 알림을 받아보세요."
+          />
+          <HubLogoutCard onLogout={() => router.push('/')} />
         </div>
       </div>
-    </div>
+    </main>
   )
 }
