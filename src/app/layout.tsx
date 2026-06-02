@@ -6,8 +6,7 @@ import SupabaseProvider from '@/lib/supabase/supabase-provider';
 import { HubProvider, HubNotifier } from '@/services/merlin-hub-sdk/react';
 import { GlobalLoginModal } from '@/components/c-global-login-modal';
 
-import ConditionalMainHeader from '@/components/ConditionalMainHeader';
-import Footer from '@/components/Footer';
+
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import StructuredData from '@/components/StructuredData';
 import { SchoolModeProvider } from '@/hooks/useSchoolMode';
@@ -102,11 +101,9 @@ export default function RootLayout({
               <ServiceWorkerRegistration />
               <StructuredData type="organization" />
               <StructuredData type="website" />
-              <ConditionalMainHeader />
               {children}
 
               <Toaster />
-              <Footer />
               <WhatEatTimer />
             </SchoolModeProvider>
           </SupabaseProvider>
