@@ -7,7 +7,7 @@ import MainHeader from '@/components/MainHeader';
 export default function ConditionalMainHeader() {
   const pathname = usePathname() || '';
 
-  if (pathname === '/' || pathname.startsWith('/whateat') || pathname.startsWith('/profile')) {
+  if (pathname === '/' || pathname.startsWith('/whateat') || pathname.startsWith('/profile') || pathname === '/login' || pathname.startsWith('/login')) {
     return null;
   }
 

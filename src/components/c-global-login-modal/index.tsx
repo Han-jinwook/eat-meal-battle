@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { HubAuthModal, HubBenefitModal } from "@/services/merlin-hub-sdk/react"
 
 /**
@@ -12,6 +13,8 @@ import { HubAuthModal, HubBenefitModal } from "@/services/merlin-hub-sdk/react"
  */
 export function GlobalLoginModal() {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname() || ""
 
   useEffect(() => {
     const handler = () => setOpen(true)
@@ -23,6 +26,14 @@ export function GlobalLoginModal() {
     }
   }, [])
 
+  const handleClose = () => {
+    setOpen(false)
+    // /login 페이지에서 모달을 닫고 나갈 경우, 홈으로 리다이렉트하여 로딩 루프 탈출
+    if (pathname === "/login" || pathname.startsWith("/login")) {
+      router.replace("/")
+    }
+  }
+
   return (
     <>
       <HubBenefitModal
@@ -32,7 +43,7 @@ export function GlobalLoginModal() {
       />
       <HubAuthModal
         isOpen={open}
-        onClose={() => setOpen(false)}
+        onClose={handleClose}
         onSuccess={async (email?: string) => {
           if (email) localStorage.setItem("userEmail", email)
           setOpen(false)

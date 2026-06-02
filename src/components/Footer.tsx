@@ -1,6 +1,15 @@
+'use client';
+
 import React from 'react';
+import { usePathname } from 'next/navigation';
 
 const Footer: React.FC = () => {
+  const pathname = usePathname() || '';
+
+  if (pathname === '/' || pathname.startsWith('/whateat') || pathname.startsWith('/profile') || pathname.startsWith('/login')) {
+    return null;
+  }
+
   return (
     <footer style={{ fontSize: '0.85rem', color: '#888', padding: '16px 0', textAlign: 'center', background: '#fafbfc', lineHeight: 1.7 }}>
       <div>
