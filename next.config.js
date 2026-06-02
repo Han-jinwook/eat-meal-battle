@@ -19,7 +19,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },      // Unsplash 이미지 (테스트용)
       { 
         protocol: 'https', 
-        hostname: 'izkumvvlkrkgiuuczffp.supabase.co',
+        hostname: 'ekyqxkmwtvwtiszopery.supabase.co',
         pathname: '/storage/v1/object/public/**', // Supabase Storage 패턴 정확히 일치
       },
     ],

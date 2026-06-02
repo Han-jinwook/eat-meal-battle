@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
   }
   
   // 수파베이스 직접 REST API 호출 감지
-  if (url.includes('izkumvvlkrkgiuuczffp.supabase.co/rest/v1/')) {
+  if (url.includes('ekyqxkmwtvwtiszopery.supabase.co/rest/v1/')) {
     // 예외 처리할 엔드포인트 정의
     const exemptEndpoints = [
       '/meal_images', 
@@ -111,7 +111,7 @@ export async function fetchWithAuth(
   const fetchFunc = typeof originalFetch !== 'undefined' ? originalFetch : fetch;
   try {
     // API 키가 필요한 Supabase REST API 호출인지 확인
-    if ((url.includes('/rest/v1/') || url.includes('izkumvvlkrkgiuuczffp.supabase.co/rest/v1/')) && !url.includes('apikey=')) {
+    if ((url.includes('/rest/v1/') || url.includes('ekyqxkmwtvwtiszopery.supabase.co/rest/v1/')) && !url.includes('apikey=')) {
       // 예외 처리할 엔드포인트 정의 (이미지, 프로필, 별점 관련)
       const exemptEndpoints = [
         '/meal_images', 
