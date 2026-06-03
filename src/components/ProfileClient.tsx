@@ -12,9 +12,13 @@ export default function ProfileClient() {
   const { isLoggedIn, isLoading } = useHub();
 
   useEffect(() => {
-    // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 로그인 페이지로 이동
+    // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 홈(/)으로 이동하고 로그인 모달 트리거
     if (!isLoading && !isLoggedIn) {
-      router.replace('/login');
+      router.replace('/');
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('openLoginModal'));
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [isLoggedIn, isLoading, router]);
 
