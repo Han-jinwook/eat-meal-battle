@@ -14,7 +14,16 @@ import { Footer } from "@/components/whateat/footer"
 import MealWrapper from "@/app/client-wrapper"
 
 export default function WhatEatApp() {
-  const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>("solo")
+  const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('activeNavTab') as HeaderNavTab;
+      if (saved) {
+        localStorage.removeItem('activeNavTab');
+        return saved;
+      }
+    }
+    return "solo";
+  })
   const [activeTab, setActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
   const [isLogModalOpen, setIsLogModalOpen] = useState(false)
