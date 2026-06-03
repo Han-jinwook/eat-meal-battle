@@ -48,7 +48,7 @@ export function GlobalLoginModal() {
         onSuccess={async (email?: string) => {
           if (email) localStorage.setItem("userEmail", email)
           setOpen(false)
-          window.location.reload() // 세션 동기화를 위해 리로딩 권장
+          window.dispatchEvent(new Event('profileUpdated')) // 비동기 세션 갱신 이벤트 트리거
         }}
         appName="뭐먹지?"
         appLogoUrl={whatEatLogo.src}
