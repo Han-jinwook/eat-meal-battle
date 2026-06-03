@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useHubSession } from '@/services/merlin-hub-sdk/react';
+import { useHub } from '@/services/merlin-hub-sdk/react';
 import { showToast } from '@/services/merlin-hub-sdk/react';
 
 const REQUIRED_SECONDS = 180; // 3분 (180초)
 const SYNC_INTERVAL = 10;     // 10초마다 DB와 동기화
 
 export default function WhatEatTimer() {
-  const { isLoggedIn, user, isLoading } = useHubSession();
+  const { isLoggedIn, user, isLoading } = useHub();
   const [accumulatedSeconds, setAccumulatedSeconds] = useState(0);
   const [isActivated, setIsActivated] = useState(false);
   const [isFetched, setIsFetched] = useState(false);

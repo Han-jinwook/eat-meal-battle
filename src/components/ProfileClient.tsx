@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useHubSession } from '@/services/merlin-hub-sdk/react';
+import { useHub } from '@/services/merlin-hub-sdk/react';
 import { HubProfileCard, HubNotificationCard, HubLogoutCard } from '@/services/merlin-hub-sdk/react';
 import { useEffect } from 'react';
 import { Header } from '@/components/whateat/header';
@@ -9,7 +9,7 @@ import { Footer } from '@/components/whateat/footer';
 
 export default function ProfileClient() {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useHubSession();
+  const { isLoggedIn, isLoading } = useHub();
 
   useEffect(() => {
     // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 로그인 페이지로 이동

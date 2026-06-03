@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Bell, MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { useHubSession, useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
+import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
 import whatEatLogo from "@/v0-migration/public/logo.png"
 
 export type HeaderNavTab = "solo" | "family" | "talk" | "meal"
@@ -23,8 +23,7 @@ const navItems = [
 
 export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
   const router = useRouter()
-  const { isLoggedIn, isLoading } = useHubSession()
-  const { user } = useHub()
+  const { user, isLoggedIn, isLoading } = useHub()
 
   const handleProfileClick = () => {
     if (isLoading) return

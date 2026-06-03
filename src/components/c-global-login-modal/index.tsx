@@ -29,6 +29,7 @@ export function GlobalLoginModal() {
 
   const handleClose = () => {
     setOpen(false)
+    window.dispatchEvent(new Event('loginModalClosed'))
     // /login 페이지에서 모달을 닫고 나갈 경우, 홈으로 리다이렉트하여 로딩 루프 탈출
     if (pathname === "/login" || pathname.startsWith("/login")) {
       router.replace("/")
@@ -48,6 +49,7 @@ export function GlobalLoginModal() {
         onSuccess={async (email?: string) => {
           if (email) localStorage.setItem("userEmail", email)
           setOpen(false)
+          window.dispatchEvent(new Event('loginModalClosed'))
           window.dispatchEvent(new Event('profileUpdated')) // 비동기 세션 갱신 이벤트 트리거
         }}
         appName="뭐먹지?"
