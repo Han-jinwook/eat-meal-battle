@@ -135,27 +135,6 @@ export default function WhatEatTimer() {
     };
   }, [isFetched, isLoggedIn, user?.id, isActivated]);
 
-  // Visual helper indicator (for development or user visibility)
-  if (!isLoggedIn || isActivated || !isFetched) return null;
-
-  const minutesLeft = Math.ceil((REQUIRED_SECONDS - accumulatedSeconds) / 60);
-  const percent = Math.min(100, Math.floor((accumulatedSeconds / REQUIRED_SECONDS) * 100));
-
-  return (
-    <div className="fixed bottom-20 right-4 z-50 flex flex-col items-center gap-1 rounded-full bg-slate-900/90 px-4 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-sm border border-slate-700 transition-all duration-300 hover:scale-105">
-      <div className="flex items-center gap-1.5">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-        </span>
-        <span>체류 혜택 활성화 중: {minutesLeft}분 남음</span>
-      </div>
-      <div className="h-1 w-full overflow-hidden rounded-full bg-slate-700">
-        <div 
-          className="h-full bg-indigo-500 transition-all duration-1000" 
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
-  );
+  // Visual helper indicator: Run in the background logic only (hide the UI indicator)
+  return null;
 }

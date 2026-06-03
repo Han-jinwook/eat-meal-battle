@@ -52,7 +52,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
               key={item.id}
               onClick={() => onNavTabChange?.(item.id)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap",
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
                 activeNavTab === item.id
                   ? "text-cyan-600 bg-cyan-50"
                   : "text-gray-400 hover:text-cyan-500"
@@ -65,13 +65,13 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
         </div>
         {/* 알림 + 프로필 */}
         <div className="flex shrink-0 items-center gap-2">
-          <button className="flex size-8 items-center justify-center rounded-full border border-cyan-100 bg-cyan-50 text-cyan-600 transition-colors hover:bg-cyan-100">
+          <button className="flex size-8 items-center justify-center rounded-full border border-cyan-100 bg-cyan-50 text-cyan-600 transition-colors hover:bg-cyan-100 cursor-pointer">
             <Bell className="size-4" />
           </button>
           <button
             type="button"
             onClick={handleProfileClick}
-            className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300 flex items-center justify-center"
+            className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300 flex items-center justify-center cursor-pointer"
             aria-label="프로필 설정 열기"
           >
             <HubAvatar

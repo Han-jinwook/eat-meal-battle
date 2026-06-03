@@ -11,6 +11,7 @@ import { TalkPage } from "@/components/whateat/talk-page"
 import { AddLogModal } from "@/components/whateat/add-log-modal"
 import { AddReservationModal } from "@/components/whateat/add-reservation-modal"
 import { Footer } from "@/components/whateat/footer"
+import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
 
 export default function WhatEatApp() {
@@ -78,49 +79,56 @@ export default function WhatEatApp() {
           </div>
 
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8">
-            {bottomNavTab === "solo" && (
-              <div className="px-5 lg:px-8 flex flex-col gap-5">
-                {activeTab === "log" && (
-                  <MealLogTab
-                    onAdd={() => setIsLogModalOpen(true)}
-                    jumpToDate={logJumpRequest}
-                    showBackToCalendar={showBackToCalendar}
-                    onBackToCalendar={() => {
-                      setActiveTab("calendar")
-                      setShowBackToCalendar(false)
-                    }}
-                  />
-                )}
-                {activeTab === "reservation" && (
-                  <ReservationTab
-                    jumpToDate={reservationJumpRequest}
-                    showBackToCalendar={showBackToCalendar}
-                    onBackToCalendar={() => {
-                      setActiveTab("calendar")
-                      setShowBackToCalendar(false)
-                    }}
-                  />
-                )}
-                {activeTab === "calendar" && (
-                  <MealCalendarTab
-                    onNavigateToLog={(date) => {
-                      setActiveTab("log")
-                      setLogJumpRequest({ date, key: Date.now() })
-                      setShowBackToCalendar(true)
-                    }}
-                    onNavigateToReservation={(date) => {
-                      setActiveTab("reservation")
-                      setReservationJumpRequest({ date, key: Date.now() })
-                      setShowBackToCalendar(true)
-                    }}
-                  />
-                )}
-                <Footer />
+            {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
+            <div className={cn("px-5 lg:px-8 flex flex-col gap-5", bottomNavTab !== "solo" && "hidden")}>
+              <div className={cn(activeTab !== "log" && "hidden")}>
+                <MealLogTab
+                  onAdd={() => setIsLogModalOpen(true)}
+                  jumpToDate={logJumpRequest}
+                  showBackToCalendar={showBackToCalendar}
+                  onBackToCalendar={() => {
+                    setActiveTab("calendar")
+                    setShowBackToCalendar(false)
+                  }}
+                />
               </div>
-            )}
-            {bottomNavTab === "family" && renderFamilyPage()}
-            {bottomNavTab === "talk" && renderTalkPage()}
-            {bottomNavTab === "meal" && <MealWrapper />}
+              <div className={cn(activeTab !== "reservation" && "hidden")}>
+                <ReservationTab
+                  jumpToDate={reservationJumpRequest}
+                  showBackToCalendar={showBackToCalendar}
+                  onBackToCalendar={() => {
+                    setActiveTab("calendar")
+                    setShowBackToCalendar(false)
+                  }}
+                />
+              </div>
+              <div className={cn(activeTab !== "calendar" && "hidden")}>
+                <MealCalendarTab
+                  onNavigateToLog={(date) => {
+                    setActiveTab("log")
+                    setLogJumpRequest({ date, key: Date.now() })
+                    setShowBackToCalendar(true)
+                  }}
+                  onNavigateToReservation={(date) => {
+                    setActiveTab("reservation")
+                    setReservationJumpRequest({ date, key: Date.now() })
+                    setShowBackToCalendar(true)
+                  }}
+                />
+              </div>
+              <Footer />
+            </div>
+
+            {/* Other main tabs (Always mounted, toggled by CSS hidden) */}
+            <div className={cn(bottomNavTab !== "family" && "hidden")}>
+              {renderFamilyPage()}
+            </div>
+            <div className={cn(bottomNavTab !== "talk" && "hidden")}>
+              {renderTalkPage()}
+            </div>
+            <div className={cn(bottomNavTab !== "meal" && "hidden")}>
+              <MealWrapper />
+            </div>
           </main>
 
           <div className="lg:hidden w-full h-[50px] bg-white/80 border-t border-muted/20 flex items-center justify-center text-muted-foreground/50 text-xs shrink-0">
