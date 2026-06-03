@@ -60,7 +60,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com;"
+    Content-Security-Policy = "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com https://os.sundreamer.app https://images.unsplash.com; img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://lh3.googleusercontent.com https://k.kakaocdn.net https://i.imgur.com;"
 
 # 존재하지 않는 함수 설정 제거 완료
 

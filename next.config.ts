@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const ContentSecurityPolicy = `
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com https://os.sundreamer.app https://images.unsplash.com;
+  img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://lh3.googleusercontent.com https://k.kakaocdn.net;
 `;
 
 const nextConfig: NextConfig = {
