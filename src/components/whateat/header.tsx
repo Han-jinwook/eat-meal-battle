@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Bell, MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { useHubSession } from "@/services/merlin-hub-sdk/react"
+import { useHubSession, useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
 import whatEatLogo from "@/v0-migration/public/logo.png"
 
 export type HeaderNavTab = "solo" | "family" | "talk" | "meal"
@@ -24,6 +24,7 @@ const navItems = [
 export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
   const router = useRouter()
   const { isLoggedIn, isLoading } = useHubSession()
+  const { user } = useHub()
 
   const handleProfileClick = () => {
     if (isLoading) return
@@ -71,9 +72,17 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           <button
             type="button"
             onClick={handleProfileClick}
-            className="size-8 shrink-0 rounded-full bg-gradient-to-br from-cyan-100 to-cyan-200 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300"
+            className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300 flex items-center justify-center"
             aria-label="프로필 설정 열기"
-          />
+          >
+            <HubAvatar
+              isLoggedIn={isLoggedIn}
+              avatarUrl={user?.avatar_url}
+              nickname={user?.nickname || user?.email?.split('@')[0]}
+              size="sm"
+              className="w-full h-full rounded-full"
+            />
+          </button>
         </div>
       </div>
     </header>
