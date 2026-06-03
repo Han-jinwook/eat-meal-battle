@@ -144,12 +144,7 @@ export const HubAuthModal: React.FC<HubAuthModalProps> = ({
                     <span className="shrink-0 whitespace-nowrap">{title}</span>
                   </h2>
                   <p className="mt-2 text-[15px] text-slate-400 font-bold tracking-tight flex items-center justify-center gap-1.5">
-                    지금 바로 
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-coins w-3.5 h-3.5"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>
-                      무료 코인
-                    </span> 
-                    받아 {subtitleActionText ? `${subtitleActionText} 사용하세요` : '사용하세요'}
+                    지금 바로 가입하고 즐거운 식사 생활을 시작하세요
                   </p>
                 </div>
               </div>

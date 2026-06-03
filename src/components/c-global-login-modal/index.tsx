@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { HubAuthModal, HubBenefitModal } from "@/services/merlin-hub-sdk/react"
+import whatEatLogo from "@/v0-migration/public/logo.png"
 
 /**
  * 전역 단일 로그인 모달 (허브 표준)
@@ -50,8 +51,7 @@ export function GlobalLoginModal() {
           window.location.reload() // 세션 동기화를 위해 리로딩 권장
         }}
         appName="뭐먹지?"
-        appLogoUrl="/icons/icon-192x192.png"
-        subtitleActionText="급식 퀴즈에"
+        appLogoUrl={whatEatLogo.src}
       />
     </>
   )
