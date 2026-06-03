@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Bell, MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useHubSession } from "@/services/merlin-hub-sdk/react"
 import whatEatLogo from "@/v0-migration/public/logo.png"
 
 export type HeaderNavTab = "solo" | "family" | "talk" | "meal"
@@ -22,6 +23,16 @@ const navItems = [
 
 export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
   const router = useRouter()
+  const { isLoggedIn, isLoading } = useHubSession()
+
+  const handleProfileClick = () => {
+    if (isLoading) return
+    if (isLoggedIn) {
+      router.push('/profile')
+    } else {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+    }
+  }
 
   return (
     <header className="bg-white border-b border-gray-100">
@@ -59,7 +70,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/profile')}
+            onClick={handleProfileClick}
             className="size-8 shrink-0 rounded-full bg-gradient-to-br from-cyan-100 to-cyan-200 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300"
             aria-label="프로필 설정 열기"
           />
