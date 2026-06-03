@@ -111,9 +111,9 @@ export default function WhatEatApp() {
             <div className={cn("px-5 lg:px-8 flex flex-col gap-5", bottomNavTab !== "solo" && "hidden")}>
               {!isLoggedIn && !isLoading ? (
                 <LoginNudge
-                  icon="✏️"
-                  title="나만의 먹로그 기록하기"
-                  desc="오늘 먹은 음식 평점과 나만의 레시피/꿀팁을 기록하고 캘린더로 관리해보세요. 로그인하시면 바로 시작할 수 있습니다."
+                  icon="🍔"
+                  title="배고픈 순간, 가장 먼저 꺼내는 맛집 서랍"
+                  desc="기억하고 싶은 맛, 다시 가고 싶은 곳. 우리 집만의 입맛을 기록하세요."
                 />
               ) : (
                 <>
@@ -162,8 +162,8 @@ export default function WhatEatApp() {
               {!isLoggedIn && !isLoading ? (
                 <LoginNudge
                   icon="🏡"
-                  title="우리 가족 식사 커뮤니티"
-                  desc="가족을 그룹에 초대하여 오늘 먹은 급식과 외식 정보를 나누고 따뜻한 한 끼 이야기를 함께 나누어보세요."
+                  title="나와 가족의 맛있는 기억들"
+                  desc="여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다."
                 />
               ) : (
                 renderFamilyPage()
