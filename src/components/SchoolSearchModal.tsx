@@ -44,7 +44,7 @@ export default function SchoolSearchModal({ isOpen, onClose, onSelectSchool }: S
       let apiUrl;
       
       // 프로덕션 환경에서는 Netlify Functions를 사용
-      if (baseUrl.includes('lunbat.com') || baseUrl.includes('netlify')) {
+      if (baseUrl.includes('lunbat.com') || baseUrl.includes('whateat.sundreamer.app') || baseUrl.includes('netlify')) {
         // Netlify Functions 경로로 호출
         apiUrl = `${baseUrl}/.netlify/functions/schools?keyword=${encodeURIComponent(keyword)}`;
       } else {

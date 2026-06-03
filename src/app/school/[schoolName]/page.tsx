@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: '급식배틀',
       images: [
         {
-          url: 'https://lunbat.com/og-image.png',
+          url: 'https://whateat.sundreamer.app/og-image.png',
           width: 1200,
           height: 630,
           alt: `${schoolName} 급식배틀`,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: `급식배틀 - ${schoolName} 급식 랭킹`,
       description: `${schoolName} 급식 평가 & AI 퀴즈! 전국 급식 배틀 참여하기`,
-      images: ['https://lunbat.com/og-image.png'],
+      images: ['https://whateat.sundreamer.app/og-image.png'],
     },
   }
 }

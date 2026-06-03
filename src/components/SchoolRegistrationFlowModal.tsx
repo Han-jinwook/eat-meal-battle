@@ -117,7 +117,7 @@ export default function SchoolRegistrationFlowModal({
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       let apiUrl = `${baseUrl}/api/schools?keyword=${encodeURIComponent(keyword)}`;
 
-      if (baseUrl.includes('lunbat.com') || baseUrl.includes('netlify')) {
+      if (baseUrl.includes('lunbat.com') || baseUrl.includes('whateat.sundreamer.app') || baseUrl.includes('netlify')) {
         apiUrl = `${baseUrl}/.netlify/functions/schools?keyword=${encodeURIComponent(keyword)}`;
       }
 

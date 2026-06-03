@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://lunbat.com'
+  const baseUrl = 'https://whateat.sundreamer.app'
   
   // 기본 정적 페이지들
   const staticPages: MetadataRoute.Sitemap = [

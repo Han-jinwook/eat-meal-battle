@@ -49,7 +49,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       const schoolData = schoolList?.[0];
       schoolName = schoolData?.school_name || '학교';
     }
-    const shareUrl = `https://lunbat.com/?date=${date}&school_code=${schoolCode}`;
+    const shareUrl = `https://whateat.sundreamer.app/?date=${date}&school_code=${schoolCode}`;
     
     console.log('✅ 학교 조회 성공:', { schoolName, shareUrl });
     
@@ -64,7 +64,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         siteName: '급식배틀',
         images: [
           {
-            url: 'https://lunbat.com/og-image.png',
+            url: 'https://whateat.sundreamer.app/og-image.png',
             width: 1200,
             height: 630,
             alt: `${schoolName} 급식배틀`,
@@ -75,7 +75,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         card: 'summary_large_image',
         title: `급식배틀 - ${schoolName} 급식 랭킹`,
         description: `${schoolName} 급식 평가 & 랭킹! 전국 급식 배틀 참여하고 우리 학교 순위 올리기`,
-        images: ['https://lunbat.com/og-image.png'],
+        images: ['https://whateat.sundreamer.app/og-image.png'],
       },
     };
   } catch (error) {

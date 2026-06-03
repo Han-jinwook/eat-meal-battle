@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/images/', '/icons/', '/public/'],
       disallow: ['/admin/', '/api/', '/auth/'],
     },
-    sitemap: 'https://lunbat.com/sitemap.xml',
+    sitemap: 'https://whateat.sundreamer.app/sitemap.xml',
   }
 }

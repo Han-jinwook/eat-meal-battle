@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   description: "전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!",
   keywords: "급식, 학교 급식, 급식 평가, 급식 랭킹, 급식 퀴즈, AI 급식퀴즈, 교과 연계 퀴즈, 학습 퀴즈, 급식배틀, 뭐먹지",
   alternates: {
-    canonical: "https://lunbat.com",
+    canonical: "https://whateat.sundreamer.app",
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -43,10 +43,10 @@ export const metadata: Metadata = {
     siteName: "급식배틀",
     title: "급식배틀 🍱 급식평가 + AI 급식퀴즈 도전",
     description: "오늘 급식 → 교과 연계 AI 퀴즈! 수학 · 영어 · 과학 · 사회 학습과 급식 랭킹까지!",
-    url: "https://lunbat.com",
+    url: "https://whateat.sundreamer.app",
     images: [
       {
-        url: "https://lunbat.com/og-image.png",
+        url: "https://whateat.sundreamer.app/og-image.png",
         width: 1200,
         height: 630,
         alt: "급식배틀 - 전국 학교 급식 랭킹",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "급식배틀 - AI 급식퀴즈 & 급식 랭킹",
     description: "오늘 급식으로 교과 연계 AI 퀴즈 도전! 수학·영어·과학·사회 학습과 전국 급식 랭킹 경쟁까지!",
-    images: ["https://lunbat.com/og-image.png"],
+    images: ["https://whateat.sundreamer.app/og-image.png"],
   },
 };
 
