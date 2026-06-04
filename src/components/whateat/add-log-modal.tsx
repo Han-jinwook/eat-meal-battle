@@ -62,6 +62,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
   const [deliveryStoreName, setDeliveryStoreName] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [nearbyPlaces, setNearbyPlaces] = useState<SelectedPlace[]>([])
 
@@ -72,6 +73,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
   const [deliverySearchQuery, setDeliverySearchQuery] = useState("")
   const [placeSearchQuery, setPlaceSearchQuery] = useState("")
   const dateInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return ""
@@ -145,6 +147,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
       setRecipeContent(editData.recipe || "")
       setRecipeInputType(editData.recipeType || "url")
       setLinkUrl(editData.linkUrl || "")
+      setImagePreview(editData.image || null)
     } else {
       // 새 기록 모드일 때 초기화
       setMealType("집밥")
@@ -155,8 +158,17 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
       setRecipeContent("")
       setRecipeInputType("url")
       setLinkUrl("")
+      setImagePreview(null)
     }
   }, [editData, isOpen])
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setImagePreview(url)
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -264,16 +276,36 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
             {/* 2. Image Upload */}
             <div className="flex flex-col gap-3">
               <label className="text-sm font-bold text-foreground">사진</label>
-              <div className="relative group cursor-pointer aspect-video w-full rounded-xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-orange-50/30 transition-all overflow-hidden">
-                <div className="flex flex-col items-center gap-2">
-                  <Camera className="size-8 text-muted-foreground/50 group-hover:text-orange-500 transition-colors" />
-                  <p className="text-xs font-medium text-muted-foreground text-center px-4">
-                    {mealType === "외식" 
-                      ? "식당에서 찍은 음식 사진을 추가해주세요" 
-                      : "음식 사진을 추가해주세요"}
-                  </p>
-                </div>
+              <div 
+                className="relative group cursor-pointer aspect-video w-full rounded-xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-orange-50/30 transition-all overflow-hidden"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {imagePreview ? (
+                  <>
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <Camera className="size-8 text-white" />
+                      <p className="text-xs font-medium text-white">사진 변경하기</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="size-8 text-muted-foreground/50 group-hover:text-orange-500 transition-colors" />
+                    <p className="text-xs font-medium text-muted-foreground text-center px-4">
+                      {mealType === "외식" 
+                        ? "식당에서 찍은 음식 사진을 추가해주세요" 
+                        : "음식 사진을 추가해주세요"}
+                    </p>
+                  </div>
+                )}
               </div>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                ref={fileInputRef}
+                onChange={handleImageChange}
+              />
             </div>
 
             {/* 3. Menu Name with AI */}
@@ -593,6 +625,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
                     recipe: recipeContent || undefined,
                     recipeType: recipeInputType,
                     linkUrl: linkUrl || undefined,
+                    image: imagePreview || undefined,
                   }
                   onSave?.(data)
                   onClose()
