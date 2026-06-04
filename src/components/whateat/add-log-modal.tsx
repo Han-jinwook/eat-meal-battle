@@ -63,6 +63,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
   const [deliveryStoreName, setDeliveryStoreName] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [nearbyPlaces, setNearbyPlaces] = useState<SelectedPlace[]>([])
 
@@ -162,11 +163,66 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
     }
   }, [editData, isOpen])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = new Image()
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 800
+          const MAX_HEIGHT = 800
+          let width = img.width
+          let height = img.height
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width
+              width = MAX_WIDTH
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height
+              height = MAX_HEIGHT
+            }
+          }
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', 0.7))
+        }
+        img.onerror = (error) => reject(error)
+      }
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const url = URL.createObjectURL(file)
       setImagePreview(url)
+
+      setIsAnalyzingAi(true)
+      try {
+        const compressedBase64 = await compressImage(file)
+        const response = await fetch('/api/ai/analyze-food-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: compressedBase64 })
+        })
+        const data = await response.json()
+        if (data.menuName) {
+          setMenuName(data.menuName)
+        }
+      } catch (error) {
+        console.error("AI Analysis failed:", error)
+      } finally {
+        setIsAnalyzingAi(false)
+      }
     }
   }
 
@@ -311,11 +367,20 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
             {/* 3. Menu Name with AI */}
             <div className="flex flex-col gap-3">
               <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Sparkles className="size-4 text-orange-500" />
+                {isAnalyzingAi ? (
+                  <Loader2 className="size-4 text-orange-500 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4 text-orange-500" />
+                )}
                 AI 메뉴명 추천
                 <span className="text-xs text-muted-foreground font-normal">(사진 기반)</span>
               </label>
               <div className="relative">
+                {isAnalyzingAi && (
+                  <div className="absolute inset-0 z-10 flex items-center px-4 bg-gray-50/80 rounded-xl border-2 border-gray-100">
+                    <span className="text-sm font-bold text-orange-500 animate-pulse">AI가 사진을 분석하고 있어요...</span>
+                  </div>
+                )}
                 <input
                   className="w-full px-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
                   placeholder="사진을 추가하면 AI가 메뉴를 입력해요"

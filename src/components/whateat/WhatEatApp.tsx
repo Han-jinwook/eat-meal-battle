@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header, type HeaderNavTab } from "@/components/whateat/header"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
 import { MealLogTab } from "@/components/whateat/meal-log-tab"
