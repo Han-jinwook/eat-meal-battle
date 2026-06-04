@@ -95,7 +95,7 @@ export default function WhatEatApp() {
           <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
 
           <div className="sticky top-0 z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-5 lg:px-8 pt-2 pb-1 border-b border-muted/10">
-            {bottomNavTab === "solo" && isLoggedIn && (
+            {bottomNavTab === "solo" && (
               <TabNavigation
                 activeTab={activeTab}
                 onTabChange={handleSoloTabChange}
@@ -108,79 +108,93 @@ export default function WhatEatApp() {
 
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8">
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
-            <div className={cn("px-5 lg:px-8 flex flex-col gap-5", bottomNavTab !== "solo" && "hidden")}>
-              {!isLoggedIn && !isLoading ? (
-                <LoginNudge
-                  icon="🍔"
-                  title="배고픈 순간, 가장 먼저 꺼내는 맛집 서랍"
-                  desc="기억하고 싶은 맛, 다시 가고 싶은 곳. 우리 집만의 입맛을 기록하세요."
-                />
-              ) : (
-                <>
-                  <div className={cn(activeTab !== "log" && "hidden")}>
-                    <MealLogTab
-                      onAdd={() => setIsLogModalOpen(true)}
-                      jumpToDate={logJumpRequest}
-                      showBackToCalendar={showBackToCalendar}
-                      onBackToCalendar={() => {
-                        setActiveTab("calendar")
-                        setShowBackToCalendar(false)
-                      }}
+            <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden")}>
+              <div className={cn("flex flex-col gap-5 transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
+                <div className={cn(activeTab !== "log" && "hidden")}>
+                  <MealLogTab
+                    onAdd={() => setIsLogModalOpen(true)}
+                    jumpToDate={logJumpRequest}
+                    showBackToCalendar={showBackToCalendar}
+                    onBackToCalendar={() => {
+                      setActiveTab("calendar")
+                      setShowBackToCalendar(false)
+                    }}
+                  />
+                </div>
+                <div className={cn(activeTab !== "reservation" && "hidden")}>
+                  <ReservationTab
+                    jumpToDate={reservationJumpRequest}
+                    showBackToCalendar={showBackToCalendar}
+                    onBackToCalendar={() => {
+                      setActiveTab("calendar")
+                      setShowBackToCalendar(false)
+                    }}
+                  />
+                </div>
+                <div className={cn(activeTab !== "calendar" && "hidden")}>
+                  <MealCalendarTab
+                    onNavigateToLog={(date) => {
+                      setActiveTab("log")
+                      setLogJumpRequest({ date, key: Date.now() })
+                      setShowBackToCalendar(true)
+                    }}
+                    onNavigateToReservation={(date) => {
+                      setActiveTab("reservation")
+                      setReservationJumpRequest({ date, key: Date.now() })
+                      setShowBackToCalendar(true)
+                    }}
+                  />
+                </div>
+                <Footer />
+              </div>
+
+              {!isLoggedIn && !isLoading && (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                    <LoginNudge
+                      icon="🍔"
+                      title="배고픈 순간, 가장 먼저 꺼내는 맛집 서랍"
+                      desc="기억하고 싶은 맛, 다시 가고 싶은 곳. 우리 집만의 입맛을 기록하세요."
                     />
                   </div>
-                  <div className={cn(activeTab !== "reservation" && "hidden")}>
-                    <ReservationTab
-                      jumpToDate={reservationJumpRequest}
-                      showBackToCalendar={showBackToCalendar}
-                      onBackToCalendar={() => {
-                        setActiveTab("calendar")
-                        setShowBackToCalendar(false)
-                      }}
-                    />
-                  </div>
-                  <div className={cn(activeTab !== "calendar" && "hidden")}>
-                    <MealCalendarTab
-                      onNavigateToLog={(date) => {
-                        setActiveTab("log")
-                        setLogJumpRequest({ date, key: Date.now() })
-                        setShowBackToCalendar(true)
-                      }}
-                      onNavigateToReservation={(date) => {
-                        setActiveTab("reservation")
-                        setReservationJumpRequest({ date, key: Date.now() })
-                        setShowBackToCalendar(true)
-                      }}
-                    />
-                  </div>
-                  <Footer />
-                </>
+                </div>
               )}
             </div>
 
             {/* Other main tabs (Always mounted, toggled by CSS hidden) */}
-            <div className={cn(bottomNavTab !== "family" && "hidden")}>
-              {!isLoggedIn && !isLoading ? (
-                <LoginNudge
-                  icon="🏡"
-                  title="나와 가족의 맛있는 기억들"
-                  desc="여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다."
-                />
-              ) : (
-                renderFamilyPage()
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden")}>
+              <div className={cn("transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
+                {renderFamilyPage()}
+              </div>
+              {!isLoggedIn && !isLoading && (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                    <LoginNudge
+                      icon="🏡"
+                      title="나와 가족의 맛있는 기억들"
+                      desc="여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다."
+                    />
+                  </div>
+                </div>
               )}
             </div>
             <div className={cn(bottomNavTab !== "talk" && "hidden")}>
               {renderTalkPage()}
             </div>
-            <div className={cn(bottomNavTab !== "meal" && "hidden")}>
-              {!isLoggedIn && !isLoading ? (
-                <LoginNudge
-                  icon="🍱"
-                  title="학교 급식 배틀 & 랭킹"
-                  desc="우리 학교 급식을 등록하고 매일 급식 평가와 교과 연계 AI 퀴즈 배틀에 참여하여 전국 학교 랭킹을 올려보세요."
-                />
-              ) : (
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden")}>
+              <div className={cn("transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
                 <MealWrapper />
+              </div>
+              {!isLoggedIn && !isLoading && (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                    <LoginNudge
+                      icon="🍱"
+                      title="학교 급식 배틀 & 랭킹"
+                      desc="우리 학교 급식을 등록하고 매일 급식 평가와 교과 연계 AI 퀴즈 배틀에 참여하여 전국 학교 랭킹을 올려보세요."
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </main>
