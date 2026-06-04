@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
 import whatEatLogo from "@/v0-migration/public/logo.png"
 
-export type HeaderNavTab = "solo" | "family" | "talk" | "meal"
+export type HeaderNavTab = "home" | "solo" | "family" | "talk" | "meal"
 
 interface HeaderProps {
   activeNavTab?: HeaderNavTab
@@ -43,7 +43,8 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           alt="뭐먹지?" 
           width={120}
           height={56}
-          className="mr-1 h-9 w-auto shrink-0 object-contain"
+          className="mr-1 h-9 w-auto shrink-0 object-contain cursor-pointer"
+          onClick={() => onNavTabChange?.("home")}
         />
         {/* Main Nav - 텍스트만, 아이콘 없음 */}
         <div className="flex flex-1 items-center gap-1">

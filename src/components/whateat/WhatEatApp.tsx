@@ -14,6 +14,7 @@ import { Footer } from "@/components/whateat/footer"
 import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { HomeOnboarding } from "@/components/whateat/home-onboarding"
 
 function LoginNudge({ 
   title, 
@@ -51,7 +52,7 @@ export default function WhatEatApp() {
         return saved;
       }
     }
-    return "solo";
+    return "home";
   })
   const [activeTab, setActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
@@ -94,7 +95,7 @@ export default function WhatEatApp() {
         <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
           <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
 
-          <div className="sticky top-0 z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-5 lg:px-8 pt-2 pb-1 border-b border-muted/10">
+          <div className={cn("sticky top-0 z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-5 lg:px-8 pt-2", bottomNavTab === "home" ? "pb-0" : "pb-1 border-b border-muted/10")}>
             {bottomNavTab === "solo" && (
               <TabNavigation
                 activeTab={activeTab}
@@ -106,7 +107,12 @@ export default function WhatEatApp() {
             {bottomNavTab === "meal" && <div className="h-1" />}
           </div>
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar pb-8">
+          <main className="flex-1 overflow-y-auto custom-scrollbar pb-8 relative">
+            {/* Home Onboarding Tab */}
+            <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-y-auto", bottomNavTab !== "home" && "hidden")}>
+              <HomeOnboarding onStart={() => setBottomNavTab("solo")} />
+            </div>
+
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
             <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden")}>
               <div className="flex flex-col gap-5">
