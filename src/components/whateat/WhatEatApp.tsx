@@ -54,6 +54,17 @@ export default function WhatEatApp() {
     }
     return "home";
   })
+  const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
+
+  useEffect(() => {
+    if (!isLoading && !hasAutoNavigated) {
+      setHasAutoNavigated(true)
+      if (isLoggedIn && bottomNavTab === "home") {
+        setBottomNavTab("solo")
+      }
+    }
+  }, [isLoading, isLoggedIn, bottomNavTab, hasAutoNavigated])
+
   const [activeTab, setActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
   const [isLogModalOpen, setIsLogModalOpen] = useState(false)
@@ -105,7 +116,7 @@ export default function WhatEatApp() {
 
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8 relative">
             {/* Home Onboarding Tab */}
-            <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-y-auto", bottomNavTab !== "home" && "hidden")}>
+            <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-y-auto", (bottomNavTab !== "home" || isLoading) && "hidden")}>
               <HomeOnboarding onStart={() => setBottomNavTab("solo")} />
             </div>
 
