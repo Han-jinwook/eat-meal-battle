@@ -90,10 +90,7 @@ interface TodayMenu {
 }
 
 export const familyMembers: FamilyMember[] = [
-  { id: 1, name: "엄마 (나)", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face", role: "chef", isOnline: true, isStudent: false },
-  { id: 2, name: "아빠", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true, isStudent: false },
-  { id: 3, name: "딸", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: true },
-  { id: 4, name: "아들", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true, isStudent: true },
+  { id: 1, name: "나", avatar: "", role: "chef", isOnline: true, isStudent: false },
 ]
 
 const sharedMeals: SharedMeal[] = []
@@ -161,9 +158,9 @@ export function FamilyPage() {
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
 
   const inviteLink = "https://whateat.app/invite/abc123xyz"
-  const currentFamilyMember = familyMembers.find((member) => member.name.includes("(나)")) ?? familyMembers[0]
+  const currentFamilyMember = familyMembers.find((member) => member.name === "나") ?? familyMembers[0]
   const currentFamilyMemberId = currentFamilyMember.id
-  const currentFamilyMemberName = currentFamilyMember.name.replace(" (나)", "")
+  const currentFamilyMemberName = currentFamilyMember.name
 
   const handleFamilyPhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -647,7 +644,7 @@ export function FamilyPage() {
 
           <div className="shrink-0 min-w-fit">
             <h2 className="font-bold text-foreground text-lg leading-tight">우리 가족</h2>
-            <p className="text-xs text-muted-foreground">4명의 구성원</p>
+            <p className="text-xs text-muted-foreground">{familyMembers.length}명의 구성원</p>
           </div>
 
           <div className="flex-1 flex items-center justify-center gap-3 ml-2 overflow-x-auto hide-scrollbar pb-1">
