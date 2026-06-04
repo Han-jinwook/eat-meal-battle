@@ -86,11 +86,7 @@ export default function WhatEatApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
       <div className="flex justify-center min-h-screen">
-        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center pt-20 sticky top-0 h-screen">
-          <div className="w-[140px] h-[400px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs">
-            AD BANNER
-          </div>
-        </aside>
+
 
         <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
           <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
@@ -196,8 +192,8 @@ export default function WhatEatApp() {
                   <div className="sticky top-32 flex justify-center pointer-events-auto">
                     <LoginNudge
                       icon="🍱"
-                      title="학교 급식 배틀 & 랭킹"
-                      desc="우리 학교 급식을 등록하고 매일 급식 평가와 교과 연계 AI 퀴즈 배틀에 참여하여 전국 학교 랭킹을 올려보세요."
+                      title="우리 아이 학교 급식 알리미"
+                      desc="오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요."
                     />
                   </div>
                 </div>

@@ -38,9 +38,9 @@ const features = [
   },
   {
     id: "meal",
-    title: "전국 급식 배틀",
-    desc: "우리 학교 급식을 평가하고, 매일매일 AI 퀴즈 배틀로 랭킹을 올려보세요!",
-    icon: Trophy,
+    title: "우리 아이 학교 급식",
+    desc: "오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요.",
+    icon: UtensilsCrossed,
     color: "from-purple-400 to-indigo-400",
     shadow: "shadow-indigo-200",
     bg: "bg-indigo-50",
