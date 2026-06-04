@@ -6,69 +6,7 @@ import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 
-const initialMealLogs = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=400&fit=crop",
-    date: "2026. 04. 10",
-    title: "프리미엄 채끝 스테이크",
-    rating: 5,
-    description: "미디엄 레어로 완벽하게 구워진 육즙이 일품입니다. 레드 와인 소스와의 조화가 매우 훌륭하며, 사이드로 나온 구운 야채들도 신선함이 느껴졌습니다. 양이 생각보다 넉넉해서 만족스러운 식사였습니다.",
-    tags: ["#육즙가득", "#데이트"],
-    type: "외식",
-    aiTag: true,
-    tips: [
-      "제공되는 세 가지 소금을 조금씩 얹어서 고기 본연의 맛을 비교해보세요.",
-      "함께 나오는 구운 마늘을 으깨서 스테이크 위에 발라 먹으면 풍미가 더 살아납니다.",
-      "식기 전에 레드 와인 소스를 듬뿍 찍어 드시는 것을 추천합니다."
-    ],
-    tipTitle: "레시피",
-    placeName: "강인국수제족발",
-    placeRating: 4.3,
-    linkUrl: "https://map.naver.com/p/smart-around/place/2029991254?c=15.00,0,0,0,dh&placePath=/home?from=map&fromPanelNum=2&timestamp=202602091121&locale=ko&svcName=map_pcv5",
-    linkThumbnail: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&h=200&fit=crop",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&h=400&fit=crop",
-    date: "2026. 03. 25",
-    title: "바질 페스토 링귀니",
-    rating: 4,
-    description: "직접 만든 바질 페스토의 향긋함이 입안 가득 퍼지는 맛. 잣의 고소함과 파마산 치즈의 짭조름함이 링귀니 면에 아주 잘 배어있습니다. 생바질을 듬뿍 넣어서 그런지 건강해지는 기분이에요.",
-    tags: ["#프레시", "#홈쿡"],
-    type: "집밥",
-    healthy: true,
-    tips: [
-      "생바질, 잣, 파마산 치즈, 마늘, 올리브유를 믹서에 갈아 페스토를 만듭니다.",
-      "링귀니 면을 알단테로 삶아내고 면수 한 국자를 따로 챙깁니다.",
-      "팬에 면과 페스토, 면수를 넣고 약불에서 빠르게 버무려 마무리합니다."
-    ],
-    tipTitle: "레시피",
-    linkUrl: "https://www.instagram.com/reel/DUX3akGCWTG/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==",
-    linkThumbnail: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400&h=400&fit=crop",
-    date: "2026. 03. 18",
-    title: "양념치킨 + 치즈볼",
-    rating: 4,
-    description: "바삭한 튀김옷에 매콤달콤한 양념이 골고루 묻어있어 한 입 베어물면 멈출 수가 없습니다. 사이드로 시킨 치즈볼도 겉바속촉에 치즈가 쭈욱 늘어나서 대만족이었어요.",
-    tags: ["#야식", "#치킨은사랑"],
-    type: "배달",
-    aiTag: false,
-    healthy: false,
-    tips: [
-      "양념치킨은 에어프라이어 170도에서 5분 돌리면 바삭함이 살아납니다.",
-      "치즈볼은 배달 오자마자 바로 먹어야 치즈가 잘 늘어납니다.",
-    ],
-    tipTitle: "꿀팁",
-    placeName: "교촌치킨 강남점",
-    placeRating: 4.5,
-    linkUrl: "https://map.naver.com/p/search/%EA%B5%90%EC%B4%8C%EC%B9%98%ED%82%A8/place/1871322367?c=15.00,0,0,0,dh&placePath=%3Fentry%253Dbmp",
-    linkThumbnail: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200&h=200&fit=crop",
-  }
-]
+const initialMealLogs: any[] = []
 
 const mealTypeOptions = [
   { id: "전체", label: "전체", icon: null },

@@ -96,58 +96,11 @@ export const familyMembers: FamilyMember[] = [
   { id: 4, name: "아들", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: true, isStudent: true },
 ]
 
-const sharedMeals: SharedMeal[] = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop",
-    title: "주말 브런치 팬케이크",
-    sharedBy: "엄마",
-    sharedAt: "오늘 10:30",
-    sharedAtIso: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
-    mealType: "homemade",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop",
-    title: "건강 샐러드",
-    sharedBy: "딸",
-    sharedAt: "어제",
-    sharedAtIso: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    mealType: "homemade",
-  }
-]
+const sharedMeals: SharedMeal[] = []
 
-const activeVote: ActiveVote = {
-  id: 1,
-  title: "오늘 저녁 뭐 먹을까요?",
-  createdBy: "엄마",
-  endsAt: "오후 5시까지",
-  isActive: true,
-  options: [
-    { id: 1, title: "삼겹살", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop", votes: 2, votedBy: ["아빠", "아들"] },
-    { id: 2, title: "치킨", image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200&h=200&fit=crop", votes: 1, votedBy: ["딸"] },
-    { id: 3, title: "파스타", image: "https://images.unsplash.com/photo-1563379926898-37aacf113fd9?w=200&h=200&fit=crop", votes: 0, votedBy: [] },
-  ]
-}
+const activeVote: ActiveVote | null = null
 
-const todayMenus: TodayMenu[] = [
-  {
-    id: 1,
-    title: "토스트와 스크램블 에그",
-    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&h=200&fit=crop",
-    decidedBy: "엄마",
-    decidedAt: "07:00",
-    mealTime: "breakfast"
-  },
-  {
-    id: 2,
-    title: "김치찌개",
-    image: "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=200&h=200&fit=crop",
-    decidedBy: "엄마",
-    decidedAt: "11:30",
-    mealTime: "lunch"
-  }
-]
+const todayMenus: TodayMenu[] = []
 
 type TabType = "shared" | "vote" | "menu"
 type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
@@ -985,7 +938,7 @@ export function FamilyPage() {
             </button>
           </div>
 
-          {vote.isActive ? (
+          {vote?.isActive ? (
             <div className="bg-white/80 rounded-3xl p-5 border border-white shadow-lg">
               <div className="flex items-center justify-between mb-4">
                 <div>

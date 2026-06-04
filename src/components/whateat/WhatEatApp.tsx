@@ -109,7 +109,7 @@ export default function WhatEatApp() {
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8">
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
             <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden")}>
-              <div className={cn("flex flex-col gap-5 transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
+              <div className="flex flex-col gap-5">
                 <div className={cn(activeTab !== "log" && "hidden")}>
                   <MealLogTab
                     onAdd={() => setIsLogModalOpen(true)}
@@ -163,7 +163,7 @@ export default function WhatEatApp() {
 
             {/* Other main tabs (Always mounted, toggled by CSS hidden) */}
             <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden")}>
-              <div className={cn("transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
+              <div>
                 {renderFamilyPage()}
               </div>
               {!isLoggedIn && !isLoading && (
@@ -182,7 +182,7 @@ export default function WhatEatApp() {
               {renderTalkPage()}
             </div>
             <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden")}>
-              <div className={cn("transition-all duration-500", (!isLoggedIn || isLoading) && "opacity-40 blur-[4px] pointer-events-none select-none")}>
+              <div>
                 <MealWrapper />
               </div>
               {!isLoggedIn && !isLoading && (

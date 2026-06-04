@@ -18,38 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 
-const mealPlans = [
-  {
-    id: 1,
-    date: "2026-03-15",
-    menu: "삼겹살",
-    mealType: "외식" as const,
-    place: "고기굽는집 강남점",
-    memo: "회식",
-    time: "점심",
-    thumbnail: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=100&h=100&fit=crop"
-  },
-  {
-    id: 2,
-    date: "2026-03-22",
-    menu: "파스타",
-    mealType: "집밥" as const,
-    place: null,
-    memo: "집에서 직접 만들기",
-    time: "저녁",
-    thumbnail: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=100&h=100&fit=crop"
-  },
-  {
-    id: 3,
-    date: "2026-04-05",
-    menu: "치킨",
-    mealType: "배달" as const,
-    place: "BHC치킨 강남점",
-    memo: "",
-    time: "저녁",
-    thumbnail: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=100&h=100&fit=crop"
-  }
-]
+const mealPlans: any[] = []
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
