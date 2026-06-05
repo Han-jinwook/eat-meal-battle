@@ -15,6 +15,8 @@ import {
   Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+
 
 export interface MealLogData {
   id?: number
@@ -54,7 +56,9 @@ interface SelectedPlace {
 }
 
 export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalProps) {
+  const { isLoggedIn } = useHub()
   const [mealType, setMealType] = useState<MealType>("집밥")
+
   const [date, setDate] = useState("")
   const [menuName, setMenuName] = useState("")
   const [recipeInputType, setRecipeInputType] = useState<RecipeInputType>("url")
@@ -239,6 +243,15 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
 
   if (!isOpen) return null
 
+  const handleInteraction = (e: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      e.preventDefault()
+      e.stopPropagation()
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+    }
+  }
+
+
   const mealTypes = [
     { id: "집밥" as MealType, label: "집밥", icon: ChefHat },
     { id: "배달" as MealType, label: "배달", icon: Bike },
@@ -272,7 +285,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-5">
+          <div className="space-y-5" onClickCapture={handleInteraction}>
             {/* 1. Meal Type - 제일 먼저 */}
             <div className="flex flex-col gap-3">
               
@@ -679,6 +692,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
                 취소하기
               </button>
               <button 
+                onClickCapture={handleInteraction}
                 onClick={() => {
                   const data: MealLogData = {
                     id: editData?.id,
