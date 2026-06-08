@@ -1,11 +1,21 @@
 "use client"
 
-import { Users, MessageSquare, UtensilsCrossed, Sparkles } from "lucide-react"
+import { User, Users, MessageSquare, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { useEffect, useState } from "react"
-
+ 
 const features = [
+  {
+    id: "solo",
+    title: "나만의 맛집 서랍장",
+    desc: "기억하고 싶은 맛, 다시 가고 싶은 곳. 흩어져 있던 나만의 입맛을 차곡차곡 기록하세요.",
+    icon: User,
+    color: "from-blue-400 to-cyan-400",
+    shadow: "shadow-cyan-200",
+    bg: "bg-cyan-50",
+    iconColor: "text-cyan-500",
+  },
   {
     id: "family",
     title: "가족 식탁의 즐거움",
@@ -37,11 +47,11 @@ const features = [
     iconColor: "text-indigo-500",
   },
 ]
-
+ 
 export function HomeOnboarding({ onStart }: { onStart: () => void }) {
   const { isLoggedIn, isLoading } = useHub()
   const [scrolled, setScrolled] = useState(false)
-
+ 
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 50
@@ -52,9 +62,9 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [scrolled])
-
+ 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-6 pb-12 relative overflow-hidden">
+    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-8 pb-12 relative overflow-hidden">
       
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
@@ -65,10 +75,6 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
         
         {/* Hero Section */}
         <div className="flex flex-col items-center text-center mt-6 mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-4">
-            <Sparkles className="size-4 text-orange-500" />
-            <span className="text-xs font-bold text-orange-600">당신의 맛집 서랍장</span>
-          </div>
           
           <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-[1.2] mb-4 drop-shadow-sm">
             배고픈 순간, <br />
@@ -87,21 +93,15 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
           {features.map((feature, idx) => (
             <div 
               key={feature.id} 
-              className={cn(
-                "bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-3",
-                idx === 2 ? "col-span-2 sm:flex-row sm:items-center sm:gap-6" : "col-span-1"
-              )}
+              className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-3"
             >
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3">
                 <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
                   <feature.icon className={cn("size-5", feature.iconColor)} strokeWidth={2.5} />
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight">{feature.title}</h3>
               </div>
-              <p className={cn(
-                "text-xs sm:text-[13px] text-slate-400 font-medium leading-relaxed",
-                idx === 2 ? "flex-1" : ""
-              )}>
+              <p className="text-xs sm:text-[13px] text-slate-400 font-medium leading-relaxed">
                 {feature.desc}
               </p>
               
@@ -134,7 +134,6 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
             </span>
           </button>
         </div>
-
       </div>
     </div>
   )
