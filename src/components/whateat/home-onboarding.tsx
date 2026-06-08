@@ -61,10 +61,10 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
       <div className="absolute top-[20%] right-[-10%] w-80 h-80 bg-cyan-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-10%] left-[20%] w-96 h-96 bg-pink-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
  
-      <div className="w-full max-w-2xl px-6 relative z-10 flex flex-col items-center">
+      <div className="w-full max-w-3xl px-8 relative z-10 flex flex-col items-center">
         
-        {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mt-2 mb-5">
+        {/* Hero Section (Reverted to compact size) */}
+        <div className="flex flex-col items-center text-center mt-2 mb-4">
           
           <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-[1.2] mb-3 drop-shadow-sm">
             배고픈 순간, <br />
@@ -86,33 +86,33 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
           </p>
         </div>
  
-        {/* Features Section */}
-        <div className="grid grid-cols-2 gap-3 w-full max-w-lg mx-auto mb-6">
+        {/* Features Section (Kept scaled up from ef73c2f) */}
+        <div className="grid grid-cols-2 gap-8 w-full max-w-3xl mx-auto mb-6">
           {features.map((feature, idx) => (
             <div 
               key={feature.id} 
-              className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-2"
+              className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-4"
             >
-              <div className="flex items-center gap-2">
-                <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
-                  <feature.icon className={cn("size-4", feature.iconColor)} strokeWidth={2.5} />
+              <div className="flex items-center gap-3">
+                <div className={cn("size-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
+                  <feature.icon className={cn("size-6", feature.iconColor)} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xs font-bold text-slate-800 tracking-tight">{feature.title}</h3>
+                <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">{feature.title}</h3>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium leading-normal">
+              <p className="text-sm sm:text-[15px] text-slate-400 font-semibold leading-relaxed">
                 {feature.desc}
               </p>
               
               {/* Card Decoration */}
               <div className={cn(
-                "absolute -right-12 -bottom-12 size-24 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
+                "absolute -right-8 -bottom-8 size-36 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
                 feature.color
               )} />
             </div>
           ))}
         </div>
  
-        {/* Bottom CTA */}
+        {/* Bottom CTA (Kept scaled up from ef73c2f) */}
         <div className="w-full text-center pb-4 flex flex-col items-center">
           <button
             onClick={() => {
@@ -124,7 +124,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
                 }
               }
             }}
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-base overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-xs"
+            className="group relative inline-flex items-center justify-center gap-2 px-12 py-5 bg-slate-900 text-white rounded-2xl font-bold text-lg overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-md"
           >
             <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
             <span className="relative z-10 flex items-center gap-2">
