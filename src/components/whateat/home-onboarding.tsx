@@ -74,7 +74,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
       <div className="w-full max-w-2xl px-6 relative z-10 flex flex-col items-center">
         
         {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mt-6 mb-10">
+        <div className="flex flex-col items-center text-center mt-6 mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-4">
             <Sparkles className="size-4 text-orange-500" />
             <span className="text-xs font-bold text-orange-600">당신의 맛집 서랍장</span>
@@ -87,33 +87,10 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
             </span>
           </h1>
           
-          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto mb-6">
+          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
             여기저기 흩어진 나와 가족의 맛있는 기억들. <br/>
             이제 밥 먹을 땐 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
           </p>
- 
-          <button
-            onClick={() => {
-              if (!isLoading) {
-                if (isLoggedIn) {
-                  onStart()
-                } else {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                }
-              }
-            }}
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_8px_rgba(249,115,22,0.3)] active:scale-95"
-          >
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
-            <span className="relative z-10 flex items-center gap-2">
-              {isLoading ? "로딩중..." : (isLoggedIn ? "내 맛집 서랍 열기" : "3초만에 시작하기 ⚡")}
-            </span>
-          </button>
- 
-          <div className="mt-8 flex flex-col items-center text-slate-400 animate-bounce">
-            <span className="text-xs font-semibold mb-2">어떤 기능이 있나요?</span>
-            <ChevronDown className="size-5" />
-          </div>
         </div>
  
         {/* Features Section */}
@@ -145,8 +122,8 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
         </div>
  
         {/* Bottom CTA */}
-        <div className="mt-10 w-full text-center pb-12">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">지금 바로 기록을 시작해보세요!</h3>
+        <div className="mt-12 w-full text-center pb-12 flex flex-col items-center gap-6">
+          <h3 className="text-xl font-bold text-slate-800">지금 바로 기록을 시작해보세요!</h3>
           <button
             onClick={() => {
               if (!isLoading) {
@@ -157,9 +134,12 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
                 }
               }
             }}
-            className="px-8 py-3.5 bg-white text-slate-800 border-2 border-slate-100 rounded-2xl font-bold shadow-lg shadow-slate-200/50 hover:border-orange-200 hover:text-orange-600 transition-all active:scale-95"
+            className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_8px_rgba(249,115,22,0.3)] active:scale-95"
           >
-            {isLoggedIn ? "솔로 탭으로 이동" : "이메일로 간편 가입하기"}
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
+            <span className="relative z-10 flex items-center gap-2">
+              {isLoading ? "로딩중..." : (isLoggedIn ? "내 맛집 서랍 열기" : "3초만에 시작하기 ⚡")}
+            </span>
           </button>
         </div>
 
