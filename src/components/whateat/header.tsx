@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Bell, MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
+import { MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
@@ -35,8 +35,11 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
   }
 
   return (
-    <header className="bg-white border-b border-gray-100">
-      <div className="flex min-h-[62px] items-center gap-2 px-4 py-3">
+    <header 
+      className="bg-white border-b border-gray-100"
+      style={{ '--app-header-height': '62px' } as React.CSSProperties}
+    >
+      <div className="max-w-[800px] mx-auto flex min-h-[62px] items-center gap-2 px-4 py-3">
         {/* Logo */}
         <Image 
           src={whatEatLogo}
@@ -64,11 +67,8 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
             </button>
           ))}
         </div>
-        {/* 알림 + 프로필 */}
+        {/* 프로필 */}
         <div className="flex shrink-0 items-center gap-2">
-          <button className="flex size-8 items-center justify-center rounded-full border border-cyan-100 bg-cyan-50 text-cyan-600 transition-colors hover:bg-cyan-100 cursor-pointer">
-            <Bell className="size-4" />
-          </button>
           <button
             type="button"
             onClick={handleProfileClick}
