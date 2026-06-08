@@ -36,30 +36,30 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
 
   return (
     <header 
-      className="bg-white border-b border-gray-100"
+      className="w-full bg-white border-b border-gray-100 flex justify-center"
       style={{ '--app-header-height': '62px' } as React.CSSProperties}
     >
-      <div className="max-w-[800px] mx-auto flex min-h-[62px] items-center gap-2 px-4 py-3">
+      <div className="w-full max-w-[800px] flex min-h-[62px] items-center px-4 py-3 justify-between">
         {/* Logo */}
         <Image 
           src={whatEatLogo}
           alt="뭐먹지?" 
           width={120}
           height={56}
-          className="mr-1 h-9 w-auto shrink-0 object-contain cursor-pointer"
+          className="h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
         />
-        {/* Main Nav - 텍스트만, 아이콘 없음 */}
-        <div className="flex flex-1 items-center gap-1">
+        {/* Main Nav - 텍스트만, 아이콘 없음 - 가운데 정렬 및 간격 확보 */}
+        <div className="flex items-center justify-center gap-4 flex-1 mx-4">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onNavTabChange?.(item.id)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
+                "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
                 activeNavTab === item.id
                   ? "text-cyan-600 bg-cyan-50"
-                  : "text-gray-400 hover:text-cyan-500"
+                  : "text-gray-500 hover:text-cyan-500"
               )}
             >
               <item.icon className="hidden size-3.5 md:inline-block" />
@@ -68,7 +68,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           ))}
         </div>
         {/* 프로필 */}
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center">
           <button
             type="button"
             onClick={handleProfileClick}
