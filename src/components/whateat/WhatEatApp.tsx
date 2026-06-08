@@ -96,11 +96,12 @@ export default function WhatEatApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
+      {/* Header를 본문 max-w 컨테이너 밖의 최상위로 올려서 전체 브라우저 가로폭을 차지하고 수평 정렬되도록 조정 */}
+      <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
+
       <div className="flex justify-center min-h-screen">
-
-
         <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
-          <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
+
 
           <div className={cn("sticky top-0 z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-5 lg:px-8 pt-2", bottomNavTab === "home" ? "pb-0" : "pb-1 border-b border-muted/10")}>
             {bottomNavTab === "solo" && (
