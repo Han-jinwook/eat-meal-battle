@@ -4,6 +4,8 @@ import { User, Users, MessageSquare, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { useEffect, useState } from "react"
+import Image from "next/image"
+import whatEatLogo from "@/v0-migration/public/logo.png"
  
 const features = [
   {
@@ -83,8 +85,16 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
             </span>
           </h1>
           
-          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
-            당신의 맛집 서랍장 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
+          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto flex items-center justify-center gap-1 flex-wrap">
+            <span>당신의 맛집 서랍장</span>
+            <Image 
+              src={whatEatLogo} 
+              alt="뭐먹지?" 
+              width={76} 
+              height={36} 
+              className="h-5.5 w-auto object-contain inline-block transform translate-y-[-2px] mx-0.5"
+            />
+            <span>하나면 충분합니다.</span>
           </p>
         </div>
  
