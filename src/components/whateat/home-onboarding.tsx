@@ -74,47 +74,44 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
       <div className="w-full max-w-2xl px-6 relative z-10 flex flex-col items-center">
         
         {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mt-6 mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-4">
-            <Sparkles className="size-4 text-orange-500" />
-            <span className="text-xs font-bold text-orange-600">당신의 맛집 서랍장</span>
+        <div className="flex flex-col items-center text-center mt-2 mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-3">
+            <Sparkles className="size-3.5 text-orange-500" />
+            <span className="text-[11px] font-bold text-orange-600">당신의 맛집 서랍장</span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-[1.15] mb-3 drop-shadow-sm">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-[1.2] mb-3 drop-shadow-sm">
             배고픈 순간, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-pink-500">
               가장 먼저 꺼내는
             </span>
           </h1>
           
-          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
-            여기저기 흩어진 나와 가족의 맛있는 기억들. <br/>
-            이제 밥 먹을 땐 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
+          <p className="text-[13px] sm:text-sm text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
+            당신의 맛집 서랍장 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
           </p>
         </div>
  
         {/* Features Section */}
-        <div className="w-full space-y-6">
+        <div className="grid grid-cols-2 gap-3 w-full max-w-lg mx-auto mb-6">
           {features.map((feature, idx) => (
             <div 
               key={feature.id} 
-              className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border border-white shadow-xl shadow-slate-200/40 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300"
+              className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-2"
             >
-              <div className="flex gap-5 relative z-10">
-                <div className={cn("size-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
-                  <feature.icon className={cn("size-7", feature.iconColor)} strokeWidth={2.5} />
+              <div className="flex items-center gap-2">
+                <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
+                  <feature.icon className={cn("size-4", feature.iconColor)} strokeWidth={2.5} />
                 </div>
-                <div className="flex-1 pt-1">
-                  <h3 className="text-lg font-black text-slate-800 mb-1.5 tracking-tight">{feature.title}</h3>
-                  <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                    {feature.desc}
-                  </p>
-                </div>
+                <h3 className="text-xs font-bold text-slate-800 tracking-tight">{feature.title}</h3>
               </div>
+              <p className="text-[11px] text-slate-400 font-medium leading-normal">
+                {feature.desc}
+              </p>
               
               {/* Card Decoration */}
               <div className={cn(
-                "absolute -right-8 -bottom-8 size-32 rounded-full opacity-10 bg-gradient-to-br blur-2xl group-hover:opacity-20 transition-opacity duration-500",
+                "absolute -right-12 -bottom-12 size-24 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
                 feature.color
               )} />
             </div>
@@ -122,8 +119,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
         </div>
  
         {/* Bottom CTA */}
-        <div className="mt-12 w-full text-center pb-12 flex flex-col items-center gap-6">
-          <h3 className="text-xl font-bold text-slate-800">지금 바로 기록을 시작해보세요!</h3>
+        <div className="w-full text-center pb-6 flex flex-col items-center">
           <button
             onClick={() => {
               if (!isLoading) {
@@ -134,7 +130,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
                 }
               }
             }}
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_40px_8px_rgba(249,115,22,0.3)] active:scale-95"
+            className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-base overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-xs"
           >
             <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
             <span className="relative z-10 flex items-center gap-2">
