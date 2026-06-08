@@ -24,6 +24,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+
 
 export interface FamilyMember {
   id: number
@@ -103,6 +105,7 @@ type TabType = "shared" | "vote" | "menu"
 type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
 export function FamilyPage() {
+  const { isLoggedIn } = useHub()
   const [activeTab, setActiveTab] = useState<TabType>("shared")
   const [meals, setMeals] = useState(sharedMeals)
   const [vote, setVote] = useState(activeVote)
@@ -617,8 +620,16 @@ export function FamilyPage() {
     { id: "vote" as TabType, label: "투표", icon: VoteIcon },
   ]
 
+  const handleInteraction = (e: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      e.preventDefault()
+      e.stopPropagation()
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-5 pb-4">
+    <div className="flex flex-col gap-5 pb-4" onClickCapture={handleInteraction}>
       {/* Family Header */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-lg">
         <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1">

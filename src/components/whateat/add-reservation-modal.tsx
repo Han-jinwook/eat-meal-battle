@@ -20,6 +20,8 @@ import {
   Moon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+
 
 export interface EditData {
   id: number
@@ -113,7 +115,9 @@ function formatDateDisplay(dateStr: string): string {
 }
 
 export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave }: AddReservationModalProps) {
+  const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
+
   const [date, setDate] = useState("")
   const [mealTime, setMealTime] = useState<MealTime>("")
   const [memo, setMemo] = useState("")
@@ -264,6 +268,15 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
 
   if (!isOpen) return null
 
+  const handleInteraction = (e: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      e.preventDefault()
+      e.stopPropagation()
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+    }
+  }
+
+
 const handleSubmit = () => {
     const resolvedMealType = (mealType || editData?.mealType || "집밥") as "집밥" | "배달" | "외식"
     const resolvedPlace =
@@ -328,7 +341,7 @@ const handleSubmit = () => {
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-5">
+          <div className="space-y-5" onClickCapture={handleInteraction}>
             {/* Meal Type - 유형 선택 (가장 위) */}
             <div className="flex flex-col gap-3">
               
@@ -593,6 +606,7 @@ const handleSubmit = () => {
   취소하기
   </button>
   <button
+  onClickCapture={handleInteraction}
   onClick={handleSubmit}
   className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-sm"
   >

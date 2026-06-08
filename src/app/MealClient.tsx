@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { useHub } from '@/services/merlin-hub-sdk/react';
+
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
 import useUserSchool from '@/hooks/useUserSchool';
@@ -41,6 +43,7 @@ const getSchoolCharacterImage = (schoolType: string): string => {
 
 
 export default function MealClient() {
+  const { isLoggedIn } = useHub();
   const router = useRouter();
   const supabase = createClient();
   const isMockSchoolMode =
@@ -1081,8 +1084,16 @@ export default function MealClient() {
     return formattedInfo;
   };
 
+  const handleInteraction = (e: React.MouseEvent) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.dispatchEvent(new CustomEvent('openLoginModal'));
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8" onClickCapture={handleInteraction}>
       {/* 디버그 패널 제거 */}
 
 
