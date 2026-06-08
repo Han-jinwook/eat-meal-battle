@@ -54,7 +54,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
   const { isLoggedIn, isLoading } = useHub()
  
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-4 relative overflow-hidden">
+    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-0 relative overflow-hidden">
       
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
@@ -64,7 +64,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
       <div className="w-full max-w-3xl px-8 relative z-10 flex flex-col items-center">
         
         {/* Hero Section (Reverted to compact size) */}
-        <div className="flex flex-col items-center text-center mt-2 mb-4">
+        <div className="flex flex-col items-center text-center mt-2 mb-8">
           
           <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-[1.2] mb-3 drop-shadow-sm">
             배고픈 순간, <br />
@@ -113,7 +113,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
         </div>
  
         {/* Bottom CTA (Kept scaled up from ef73c2f) */}
-        <div className="w-full text-center pb-4 flex flex-col items-center">
+        <div className="w-full text-center pb-0 flex flex-col items-center">
           <button
             onClick={() => {
               if (!isLoading) {
