@@ -116,7 +116,7 @@ export default function WhatEatApp() {
 
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8 relative">
             {/* Home Onboarding Tab */}
-            <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-y-auto hide-scrollbar", (bottomNavTab !== "home" || isLoading) && "hidden")}>
+            <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
               <HomeOnboarding onStart={() => setBottomNavTab("solo")} />
             </div>
 

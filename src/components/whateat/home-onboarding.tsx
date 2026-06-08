@@ -54,7 +54,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
   const { isLoggedIn, isLoading } = useHub()
  
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-0 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-between w-full h-full bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-4 relative overflow-hidden">
       
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
@@ -78,9 +78,9 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
             <Image 
               src={whatEatLogo} 
               alt="뭐먹지?" 
-              width={76} 
-              height={36} 
-              className="h-5.5 w-auto object-contain inline-block transform translate-y-[-2px] mx-0.5"
+              width={90} 
+              height={40} 
+              className="h-6.5 w-auto object-contain inline-block transform translate-y-[-2px] mx-0.5"
             />
             <span>하나면 충분합니다.</span>
           </p>
