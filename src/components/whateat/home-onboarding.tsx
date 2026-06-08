@@ -74,44 +74,44 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
       <div className="w-full max-w-2xl px-6 relative z-10 flex flex-col items-center">
         
         {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mt-2 mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-3">
-            <Sparkles className="size-3.5 text-orange-500" />
-            <span className="text-[11px] font-bold text-orange-600">당신의 맛집 서랍장</span>
+        <div className="flex flex-col items-center text-center mt-4 mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-4">
+            <Sparkles className="size-4 text-orange-500" />
+            <span className="text-xs font-bold text-orange-600">당신의 맛집 서랍장</span>
           </div>
           
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight leading-[1.2] mb-3 drop-shadow-sm">
+          <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-[1.2] mb-3 drop-shadow-sm">
             배고픈 순간, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-pink-500">
               가장 먼저 꺼내는
             </span>
           </h1>
           
-          <p className="text-[13px] sm:text-sm text-slate-500 font-medium leading-relaxed max-w-sm mx-auto">
+          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
             당신의 맛집 서랍장 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
           </p>
         </div>
  
         {/* Features Section */}
-        <div className="grid grid-cols-2 gap-3 w-full max-w-lg mx-auto mb-6">
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xl mx-auto mb-8">
           {features.map((feature, idx) => (
             <div 
               key={feature.id} 
-              className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-2"
+              className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-3"
             >
-              <div className="flex items-center gap-2">
-                <div className={cn("size-8 rounded-lg flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
-                  <feature.icon className={cn("size-4", feature.iconColor)} strokeWidth={2.5} />
+              <div className="flex items-center gap-3">
+                <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
+                  <feature.icon className={cn("size-5", feature.iconColor)} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xs font-bold text-slate-800 tracking-tight">{feature.title}</h3>
+                <h3 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight">{feature.title}</h3>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium leading-normal">
+              <p className="text-xs sm:text-[13px] text-slate-400 font-medium leading-relaxed">
                 {feature.desc}
               </p>
               
               {/* Card Decoration */}
               <div className={cn(
-                "absolute -right-12 -bottom-12 size-24 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
+                "absolute -right-10 -bottom-10 size-28 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
                 feature.color
               )} />
             </div>
@@ -119,7 +119,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
         </div>
  
         {/* Bottom CTA */}
-        <div className="w-full text-center pb-6 flex flex-col items-center">
+        <div className="w-full text-center pb-8 flex flex-col items-center">
           <button
             onClick={() => {
               if (!isLoading) {
@@ -130,7 +130,7 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
                 }
               }
             }}
-            className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-base overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-xs"
+            className="group relative inline-flex items-center justify-center gap-2 px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold text-base overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-sm"
           >
             <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
             <span className="relative z-10 flex items-center gap-2">
