@@ -64,34 +64,34 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
   }, [scrolled])
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-20 relative overflow-hidden">
+    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-4 pb-10 relative overflow-hidden">
       
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
       <div className="absolute top-[20%] right-[-10%] w-80 h-80 bg-cyan-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[-10%] left-[20%] w-96 h-96 bg-pink-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
-
+ 
       <div className="w-full max-w-2xl px-6 relative z-10 flex flex-col items-center">
         
         {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mt-12 mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-6">
+        <div className="flex flex-col items-center text-center mt-6 mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-orange-200 shadow-sm mb-4">
             <Sparkles className="size-4 text-orange-500" />
             <span className="text-xs font-bold text-orange-600">당신의 맛집 서랍장</span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-[1.15] mb-6 drop-shadow-sm">
+          <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-[1.15] mb-3 drop-shadow-sm">
             배고픈 순간, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-pink-500">
               가장 먼저 꺼내는
             </span>
           </h1>
           
-          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto mb-10">
+          <p className="text-[15px] sm:text-base text-slate-500 font-medium leading-relaxed max-w-md mx-auto mb-6">
             여기저기 흩어진 나와 가족의 맛있는 기억들. <br/>
             이제 밥 먹을 땐 <strong className="text-slate-700">"뭐먹지?"</strong> 하나면 충분합니다.
           </p>
-
+ 
           <button
             onClick={() => {
               if (!isLoading) {
@@ -109,13 +109,13 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
               {isLoading ? "로딩중..." : (isLoggedIn ? "내 맛집 서랍 열기" : "3초만에 시작하기 ⚡")}
             </span>
           </button>
-
-          <div className="mt-16 flex flex-col items-center text-slate-400 animate-bounce">
+ 
+          <div className="mt-8 flex flex-col items-center text-slate-400 animate-bounce">
             <span className="text-xs font-semibold mb-2">어떤 기능이 있나요?</span>
             <ChevronDown className="size-5" />
           </div>
         </div>
-
+ 
         {/* Features Section */}
         <div className="w-full space-y-6">
           {features.map((feature, idx) => (
@@ -143,9 +143,9 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
             </div>
           ))}
         </div>
-
+ 
         {/* Bottom CTA */}
-        <div className="mt-20 w-full text-center pb-12">
+        <div className="mt-10 w-full text-center pb-12">
           <h3 className="text-xl font-bold text-slate-800 mb-6">지금 바로 기록을 시작해보세요!</h3>
           <button
             onClick={() => {
