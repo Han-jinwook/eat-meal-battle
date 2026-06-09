@@ -37,7 +37,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 w-full bg-white/85 backdrop-blur-md border-b border-gray-100/80 flex justify-center z-50"
+      className="fixed top-0 left-0 right-0 w-full bg-white/70 backdrop-blur-md border-b border-gray-100/60 flex justify-center z-50"
       style={{ '--app-header-height': '62px' } as React.CSSProperties}
     >
       <div className="w-full max-w-[800px] flex min-h-[62px] items-center px-4 py-3 justify-between">
