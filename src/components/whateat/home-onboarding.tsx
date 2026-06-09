@@ -50,7 +50,13 @@ const features = [
   },
 ]
  
-export function HomeOnboarding({ onStart }: { onStart: () => void }) {
+export function HomeOnboarding({ 
+  onStart,
+  onHoverTab
+}: { 
+  onStart: () => void 
+  onHoverTab?: (tab: HeaderNavTab | null) => void
+}) {
   const { isLoggedIn, isLoading } = useHub()
  
   return (
@@ -86,26 +92,38 @@ export function HomeOnboarding({ onStart }: { onStart: () => void }) {
           </p>
         </div>
  
-        {/* Features Section (Kept scaled up from ef73c2f) */}
+        {/* Features Section (마우스오버 입체감 & 헤더 하이라이트 동기화) */}
         <div className="grid grid-cols-2 gap-8 w-full max-w-3xl mx-auto mb-6">
           {features.map((feature, idx) => (
             <div 
               key={feature.id} 
-              className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-white shadow-md relative overflow-hidden group hover:-translate-y-0.5 transition-transform duration-300 flex flex-col gap-4"
+              onMouseEnter={() => onHoverTab?.(feature.id as HeaderNavTab)}
+              onMouseLeave={() => onHoverTab?.(null)}
+              onClick={() => {
+                onHoverTab?.(null);
+                if (!isLoading) {
+                  if (isLoggedIn) {
+                    onStart();
+                  } else {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'));
+                  }
+                }
+              }}
+              className="bg-white/90 backdrop-blur-xl rounded-2xl p-8 border border-white/80 shadow-md relative overflow-hidden group hover:-translate-y-2 hover:shadow-xl hover:border-orange-200/50 active:scale-[0.98] transition-all duration-300 flex flex-col gap-4 cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className={cn("size-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner", feature.bg)}>
+                <div className={cn("size-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-300", feature.bg)}>
                   <feature.icon className={cn("size-6", feature.iconColor)} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">{feature.title}</h3>
+                <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight group-hover:text-slate-900 transition-colors">{feature.title}</h3>
               </div>
-              <p className="text-sm sm:text-[15px] text-slate-400 font-semibold leading-relaxed">
+              <p className="text-sm sm:text-[15px] text-slate-400 font-semibold leading-relaxed group-hover:text-slate-500 transition-colors">
                 {feature.desc}
               </p>
               
               {/* Card Decoration */}
               <div className={cn(
-                "absolute -right-8 -bottom-8 size-36 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-20 transition-opacity duration-500",
+                "absolute -right-8 -bottom-8 size-36 rounded-full opacity-10 bg-gradient-to-br blur-xl group-hover:opacity-25 transition-opacity duration-500",
                 feature.color
               )} />
             </div>

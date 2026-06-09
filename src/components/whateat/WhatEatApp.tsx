@@ -44,6 +44,7 @@ function LoginNudge({
 
 export default function WhatEatApp() {
   const { isLoggedIn, isLoading } = useHub()
+  const [hoveredTab, setHoveredTab] = useState<HeaderNavTab | null>(null)
   const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('activeNavTab') as HeaderNavTab;
@@ -97,7 +98,11 @@ export default function WhatEatApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
       {/* 고정(fixed) 헤더 */}
-      <Header activeNavTab={bottomNavTab} onNavTabChange={setBottomNavTab} />
+      <Header 
+        activeNavTab={bottomNavTab} 
+        onNavTabChange={setBottomNavTab} 
+        hoveredTab={hoveredTab}
+      />
 
       {/* 헤더 높이(62px)만큼 상단 여백을 주어 본문이 가려지지 않도록 하고, 화면 전체 중앙 정렬 */}
       <div className="relative flex justify-center min-h-screen pt-[62px]">
@@ -119,7 +124,10 @@ export default function WhatEatApp() {
           <main className="flex-1 overflow-y-auto custom-scrollbar pb-8 relative">
             {/* Home Onboarding Tab */}
             <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
-              <HomeOnboarding onStart={() => setBottomNavTab("solo")} />
+              <HomeOnboarding 
+                onStart={() => setBottomNavTab("solo")} 
+                onHoverTab={setHoveredTab}
+              />
             </div>
 
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}

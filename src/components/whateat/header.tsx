@@ -12,6 +12,7 @@ export type HeaderNavTab = "home" | "solo" | "family" | "talk" | "meal"
 interface HeaderProps {
   activeNavTab?: HeaderNavTab
   onNavTabChange?: (tab: HeaderNavTab) => void
+  hoveredTab?: HeaderNavTab | null
 }
 
 const navItems = [
@@ -21,7 +22,7 @@ const navItems = [
   { id: "meal" as HeaderNavTab, label: "급식", icon: UtensilsCrossed },
 ]
 
-export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
+export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = null }: HeaderProps) {
   const router = useRouter()
   const { user, isLoggedIn, isLoading } = useHub()
 
@@ -49,23 +50,28 @@ export function Header({ activeNavTab = "solo", onNavTabChange }: HeaderProps) {
           className="h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
         />
-        {/* Main Nav - 텍스트만, 아이콘 없음 - 가운데 정렬 및 간격 확보 */}
+        {/* Main Nav - 텍스트만, 가운데 정렬 및 온보딩 연동 하이라이트 효과 적용 */}
         <div className="flex items-center justify-center gap-4 flex-1 mx-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onNavTabChange?.(item.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
-                activeNavTab === item.id
-                  ? "text-cyan-600 bg-cyan-50"
-                  : "text-gray-500 hover:text-cyan-500"
-              )}
-            >
-              <item.icon className="hidden size-3.5 md:inline-block" />
-              {item.label}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isHovered = hoveredTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavTabChange?.(item.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
+                  activeNavTab === item.id
+                    ? "text-cyan-600 bg-cyan-50 shadow-sm"
+                    : isHovered
+                      ? "text-cyan-500 bg-cyan-50/70 animate-pulse ring-2 ring-cyan-400/30 scale-105"
+                      : "text-gray-500 hover:text-cyan-500 hover:scale-105"
+                )}
+              >
+                <item.icon className="hidden size-3.5 md:inline-block" />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
         {/* 프로필 */}
         <div className="flex shrink-0 items-center">
