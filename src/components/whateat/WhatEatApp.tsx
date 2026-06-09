@@ -45,23 +45,72 @@ function LoginNudge({
 export default function WhatEatApp() {
   const { isLoggedIn, isLoading } = useHub()
   const [hoveredTab, setHoveredTab] = useState<HeaderNavTab | null>(null)
-  const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>(() => {
+  const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>("home")
+  const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
+
+  // 1. 브라우저 뒤로가기/앞으로가기 및 마우스 뒤로가기 버튼 연동
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // 초기 상태 세팅 (URL 파라미터나 hash 또는 로컬스토리지 분석)
+    const handleInitialTab = () => {
+      const hash = window.location.hash.replace('#', '') as HeaderNavTab;
+      const validTabs: HeaderNavTab[] = ["home", "solo", "family", "talk", "meal"];
+      if (validTabs.includes(hash)) {
+        setBottomNavTab(hash);
+      } else {
+        const saved = localStorage.getItem('activeNavTab') as HeaderNavTab;
+        if (saved && validTabs.includes(saved)) {
+          localStorage.removeItem('activeNavTab');
+          setBottomNavTab(saved);
+        } else {
+          setBottomNavTab("home");
+        }
+      }
+    };
+
+    handleInitialTab();
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.tab) {
+        setBottomNavTab(event.state.tab);
+      } else {
+        // popstate에 state가 없으면 해시 분석 후 폴백
+        const hash = window.location.hash.replace('#', '') as HeaderNavTab;
+        const validTabs: HeaderNavTab[] = ["home", "solo", "family", "talk", "meal"];
+        if (validTabs.includes(hash)) {
+          setBottomNavTab(hash);
+        } else {
+          setBottomNavTab("home");
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // 2. 탭 상태가 변경될 때 브라우저 히스토리에 적재 (이중 적재 및 무한 뒤로가기 루프 방지)
+  const handleTabChange = (newTab: HeaderNavTab) => {
+    if (bottomNavTab === newTab) return;
+    setBottomNavTab(newTab);
+    
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('activeNavTab') as HeaderNavTab;
-      if (saved) {
-        localStorage.removeItem('activeNavTab');
-        return saved;
+      const targetHash = `#${newTab}`;
+      // 현재 브라우저의 state와 다를 때만 pushState 실행
+      if (window.history.state?.tab !== newTab) {
+        window.history.pushState({ tab: newTab }, '', targetHash);
       }
     }
-    return "home";
-  })
-  const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
+  };
 
   useEffect(() => {
     if (!isLoading && !hasAutoNavigated) {
       setHasAutoNavigated(true)
       if (isLoggedIn && bottomNavTab === "home") {
-        setBottomNavTab("solo")
+        handleTabChange("solo");
       }
     }
   }, [isLoading, isLoggedIn, bottomNavTab, hasAutoNavigated])
@@ -100,7 +149,7 @@ export default function WhatEatApp() {
       {/* 고정(fixed) 헤더 */}
       <Header 
         activeNavTab={bottomNavTab} 
-        onNavTabChange={setBottomNavTab} 
+        onNavTabChange={handleTabChange} 
         hoveredTab={hoveredTab}
       />
 
@@ -125,7 +174,7 @@ export default function WhatEatApp() {
             {/* Home Onboarding Tab */}
             <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
               <HomeOnboarding 
-                onStart={(target) => setBottomNavTab(target || "solo")} 
+                onStart={(target) => handleTabChange(target || "solo")} 
                 onHoverTab={setHoveredTab}
               />
             </div>
