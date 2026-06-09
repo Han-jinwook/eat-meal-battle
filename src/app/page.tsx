@@ -24,8 +24,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!schoolCode) {
     console.log('❌ school_code 없음, 기본 메타데이터 반환');
     return {
-      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈',
-      description: '전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!',
+      title: '뭐먹지? 나만의 맛집 서랍장',
+      description: '나와 가족을 위한 식생활 기록 플랫폼. 기억하고 싶은 맛과 다시 가고 싶은 곳, 아이들의 학교 급식까지 \'뭐먹지?\' 하나로 간편하게 기록하고 관리하세요.',
     };
   }
 
@@ -54,26 +54,26 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     console.log('✅ 학교 조회 성공:', { schoolName, shareUrl });
     
     return {
-      title: `급식배틀 🍱 ${schoolName} ${date} 급식 랭킹`,
+      title: `뭐먹지? 🍱 ${schoolName} ${date} 급식 랭킹`,
       description: `${schoolName} 급식 평가 & 랭킹 확인! 오늘 급식 점수는? 전국 학교 급식 배틀에 참여하고 우리 학교 순위를 올려보세요!`,
       openGraph: {
-        title: `급식배틀 🍱 ${schoolName} ${date} 급식 랭킹`,
+        title: `뭐먹지? 🍱 ${schoolName} ${date} 급식 랭킹`,
         description: `${schoolName} 급식 평가 & 랭킹! 오늘 급식 점수 확인하고 전국 급식 배틀에 참여하세요.`,
         type: 'website',
         url: shareUrl,
-        siteName: '급식배틀',
+        siteName: '뭐먹지?',
         images: [
           {
             url: 'https://whateat.sundreamer.app/og-image.png',
             width: 1200,
             height: 630,
-            alt: `${schoolName} 급식배틀`,
+            alt: `${schoolName} 뭐먹지?`,
           }
         ],
       },
       twitter: {
         card: 'summary_large_image',
-        title: `급식배틀 - ${schoolName} 급식 랭킹`,
+        title: `뭐먹지? - ${schoolName} 급식 랭킹`,
         description: `${schoolName} 급식 평가 & 랭킹! 전국 급식 배틀 참여하고 우리 학교 순위 올리기`,
         images: ['https://whateat.sundreamer.app/og-image.png'],
       },
@@ -82,8 +82,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     console.error('❌ 메타데이터 생성 오류:', error);
     console.error('❌ 에러 상세:', error instanceof Error ? error.message : String(error));
     return {
-      title: '급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈',
-      description: '전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!',
+      title: '뭐먹지? 나만의 맛집 서랍장',
+      description: '나와 가족을 위한 식생활 기록 플랫폼. 기억하고 싶은 맛과 다시 가고 싶은 곳, 아이들의 학교 급식까지 \'뭐먹지?\' 하나로 간편하게 기록하고 관리하세요.',
     };
   }
 }
