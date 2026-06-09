@@ -1,15 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useHub } from '@/services/merlin-hub-sdk/react';
-import { HubProfileCard, HubNotificationCard, HubLogoutCard } from '@/services/merlin-hub-sdk/react';
-import { useEffect } from 'react';
+import { 
+  useHub, 
+  HubProfileCard, 
+  HubNotificationCard, 
+  HubLogoutCard,
+  useHubReferral,
+  HubHistoryList,
+  HubShareSquare
+} from '@/services/merlin-hub-sdk/react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/whateat/header';
 import { Footer } from '@/components/whateat/footer';
 
 export default function ProfileClient() {
   const router = useRouter();
   const { isLoggedIn, isLoading } = useHub();
+  const { getReferralHistory, isLoading: isReferralsLoading } = useHubReferral();
+  const [referrals, setReferrals] = useState<any[]>([]);
 
   useEffect(() => {
     // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 홈(/)으로 이동하고 로그인 모달 트리거
@@ -21,6 +30,14 @@ export default function ProfileClient() {
       return () => clearTimeout(timer);
     }
   }, [isLoggedIn, isLoading, router]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      getReferralHistory().then((data) => {
+        if (data) setReferrals(data);
+      });
+    }
+  }, [isLoggedIn, getReferralHistory]);
 
   if (isLoading) {
     return (
@@ -37,40 +54,44 @@ export default function ProfileClient() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
-      <div className="flex justify-center min-h-screen">
-        {/* Left Ad Banner */}
-        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center pt-20 sticky top-0 h-screen">
-          <div className="w-[140px] h-[400px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs">
-            AD BANNER
-          </div>
-        </aside>
+      {/* 고정(fixed) 헤더 */}
+      <Header
+        activeNavTab="solo"
+        onNavTabChange={(tab) => {
+          localStorage.setItem('activeNavTab', tab);
+          router.push('/');
+        }}
+      />
 
-        {/* Main Content Area */}
-        <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] border-x border-gray-100/50">
-          {/* Header Integration */}
-          <Header
-            activeNavTab="solo"
-            onNavTabChange={(tab) => {
-              localStorage.setItem('activeNavTab', tab);
-              router.push('/');
-            }}
-          />
+      <div className="relative flex justify-center min-h-screen pt-[62px]">
+        {/* Main Content Area (800px 본문 정렬선 보장) */}
+        <div className="w-full max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] border-x border-gray-100/50 shrink-0 z-10">
+          
+          <main className="flex-1 overflow-y-auto custom-scrollbar pt-4 pb-8 px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+              {/* 좌측 컬럼: 앱 초대 실적 리스트 */}
+              <div className="space-y-6">
+                <HubHistoryList history={referrals} isLoading={isReferralsLoading} />
+              </div>
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar py-8 px-5 lg:px-8">
-            <div className="max-w-xl mx-auto space-y-6">
-              {/* 허브 통합 프로필 카드 */}
-              <HubProfileCard />
-              
-              {/* 허브 통합 알림 설정 카드 */}
-              <HubNotificationCard
-                title="알림 설정"
-                toggleLabel="🔔 스마트 알림"
-                description="급식 소식과 뭐먹지? 서비스의 새로운 기능·혜택 알림을 받아보세요."
-              />
-              
-              {/* 허브 통합 로그아웃 카드 */}
-              <HubLogoutCard onLogout={() => router.replace('/')} />
-
+              {/* 우측 컬럼: 프로필, 알림 설정, 로그아웃 */}
+              <div className="space-y-6">
+                {/* 허브 통합 프로필 카드 */}
+                <HubProfileCard />
+                
+                {/* 허브 통합 알림 설정 카드 */}
+                <HubNotificationCard
+                  title="알림 설정"
+                  toggleLabel="🔔 스마트 알림"
+                  description="급식 소식과 뭐먹지? 서비스의 새로운 기능·혜택 알림을 받아보세요."
+                />
+                
+                {/* 허브 통합 로그아웃 카드 */}
+                <HubLogoutCard onLogout={() => router.replace('/')} />
+              </div>
+            </div>
+            
+            <div className="mt-8">
               <Footer />
             </div>
           </main>
@@ -81,11 +102,17 @@ export default function ProfileClient() {
           </div>
         </div>
 
-        {/* Right Ad Banner */}
-        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center pt-20 sticky top-0 h-screen">
-          <div className="w-[140px] h-[400px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs">
-            AD BANNER
-          </div>
+        {/* 
+          우측 사이드 윙 (공유 카드 배치)
+          - absolute 포지셔닝으로 격리 배치하여 프로필 페이지의 800px 본문 정렬선이 정중앙에 올 수 있게 보장합니다.
+          - 가이드 공식: top-[var(--app-header-height)] left-[calc(50%+400px+8px)] h-[calc(100vh-var(--app-header-height))]
+        */}
+        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center pt-4 absolute top-[62px] left-[calc(50%+400px+8px)] h-[calc(100vh-62px)]">
+          <HubShareSquare 
+            className="sticky top-[78px]"
+            customTitle="식단 관리와 오늘 뭐 먹을지 고민될 땐? 뭐먹지! 🍕"
+            description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
+          />
         </aside>
       </div>
     </div>
