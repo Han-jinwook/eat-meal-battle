@@ -125,7 +125,7 @@ export default function WhatEatApp() {
             {/* Home Onboarding Tab */}
             <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
               <HomeOnboarding 
-                onStart={() => setBottomNavTab("solo")} 
+                onStart={(target) => setBottomNavTab(target || "solo")} 
                 onHoverTab={setHoveredTab}
               />
             </div>

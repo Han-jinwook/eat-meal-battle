@@ -54,7 +54,7 @@ export function HomeOnboarding({
   onStart,
   onHoverTab
 }: { 
-  onStart: () => void 
+  onStart: (targetTab?: HeaderNavTab) => void 
   onHoverTab?: (tab: HeaderNavTab | null) => void
 }) {
   const { isLoggedIn, isLoading } = useHub()
@@ -102,11 +102,8 @@ export function HomeOnboarding({
               onClick={() => {
                 onHoverTab?.(null);
                 if (!isLoading) {
-                  if (isLoggedIn) {
-                    onStart();
-                  } else {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'));
-                  }
+                  // 비로그인 상태여도 인증 모달을 띄우지 않고, 클릭한 탭 레이아웃을 구경할 수 있도록 다이렉트 점핑
+                  onStart(feature.id as HeaderNavTab);
                 }
               }}
               className="bg-white/90 backdrop-blur-xl rounded-2xl p-8 border border-white/80 shadow-md relative overflow-hidden group hover:-translate-y-2 hover:shadow-xl hover:border-orange-200/50 active:scale-[0.98] transition-all duration-300 flex flex-col gap-4 cursor-pointer"
