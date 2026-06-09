@@ -25,15 +25,15 @@ export function TabNavigation({
   return (
     <div className="flex flex-col">
       {/* Tab Row + Notification/Profile */}
-      <div className="flex items-center border-b border-cyan-100">
+      <div className="flex items-center gap-1 border-b border-cyan-100/80">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "px-4 py-3 text-[15px] font-bold transition-all duration-300 relative whitespace-nowrap rounded-t-lg cursor-pointer",
+              "px-6 py-3.5 text-base font-bold transition-all duration-300 relative whitespace-nowrap rounded-t-xl cursor-pointer",
               activeTab === tab.id
-                ? "text-cyan-600 bg-cyan-50/50 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-cyan-500 after:rounded-full"
+                ? "text-cyan-600 bg-cyan-50/50 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[3px] after:bg-cyan-500 after:rounded-full"
                 : "text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50/30"
             )}
           >

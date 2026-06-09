@@ -212,18 +212,18 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
   return (
     <div className="flex flex-col gap-3">
       {/* Sticky Search + Filter */}
-      <div className="sticky top-0 z-30 -mx-5 lg:-mx-8 px-5 lg:px-8 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col gap-2">
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col gap-2">
       {/* Search + Date Filter Row */}
       <div className="flex items-center gap-2">
         {/* Search Input */}
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="식당, 메뉴, 장소 검색"
-            className="w-full pl-11 pr-4 py-2.5 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
+            className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
           />
         </div>
 
@@ -232,7 +232,7 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border",
+              "flex items-center gap-2 px-5 py-3 rounded-xl text-base font-medium transition-all border cursor-pointer",
               sortOption !== "날짜순" || dateRangeStart || dateRangeEnd
                 ? "bg-cyan-500 text-white border-cyan-500 shadow-sm shadow-cyan-200"
                 : "bg-white/60 text-muted-foreground border-white/80 hover:border-primary/30"
@@ -340,7 +340,7 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
 
       {/* Meal Type Filter Buttons */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2.5">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
@@ -348,16 +348,16 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
                 key={option.id}
                 onClick={() => setMealTypeFilter(option.id)}
                 className={cn(
-                  "relative px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1 whitespace-nowrap",
+                  "relative px-4.5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
                   mealTypeFilter === option.id
                     ? "bg-orange-500 text-white shadow-md"
                     : "bg-white/70 text-muted-foreground hover:bg-white"
                 )}
               >
-                <span className="absolute -top-2 right-0 z-10 text-[11px] leading-none font-black text-cyan-600">
+                <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-cyan-600">
                   {getOptionCount(option.id)}
                 </span>
-                {Icon && <Icon className="size-3.5" />}
+                {Icon && <Icon className="size-4" />}
                 {option.label}
               </button>
             )
@@ -367,7 +367,7 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
           {showBackToCalendar && onBackToCalendar && (
             <button
               onClick={onBackToCalendar}
-              className="px-3 py-1.5 rounded-full text-[12px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors"
+              className="px-4 py-2.5 rounded-full text-sm font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors cursor-pointer"
             >
               ← 캘린더
             </button>
@@ -375,9 +375,9 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
           {onAdd && (
             <button
               onClick={onAdd}
-              className="size-10 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all"
+              className="size-11 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
-              <Plus className="size-5" strokeWidth={2.8} />
+              <Plus className="size-5.5" strokeWidth={2.8} />
             </button>
           )}
         </div>
