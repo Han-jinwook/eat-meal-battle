@@ -1,7 +1,7 @@
 {
-  "name": "급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈",
-  "short_name": "급식배틀",
-  "description": "전국 학교 급식 평가와 AI 학습형 급식퀴즈 플랫폼",
+  "name": "뭐먹지? 나만의 맛집 서랍장",
+  "short_name": "뭐먹지?",
+  "description": "기억하고 싶은 맛과 다시 가고 싶은 곳. 나와 가족을 위한 식생활 기록 플랫폼",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

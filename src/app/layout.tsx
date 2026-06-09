@@ -23,9 +23,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈",
-  description: "전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁. 지금 참여하고 우리학교 랭킹 올려보세요!",
-  keywords: "급식, 학교 급식, 급식 평가, 급식 랭킹, 급식 퀴즈, AI 급식퀴즈, 교과 연계 퀴즈, 학습 퀴즈, 급식배틀, 뭐먹지",
+  title: "뭐먹지? 나만의 맛집 서랍장",
+  description: "나와 가족을 위한 식생활 기록 플랫폼. 기억하고 싶은 맛과 다시 가고 싶은 곳, 아이들의 학교 급식까지 '뭐먹지?' 하나로 간편하게 기록하고 관리하세요.",
+  keywords: "뭐먹지, 맛집 서랍, 식사 기록, 급식 평가, 급식 퀴즈, AI 급식퀴즈, 맛톡, 맛집 일지, 식사 일기",
   alternates: {
     canonical: "https://whateat.sundreamer.app",
   },
@@ -33,30 +33,30 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "급식배틀",
+    title: "뭐먹지?",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "급식배틀",
-    title: "급식배틀 🍱 급식평가 + AI 급식퀴즈 도전",
-    description: "오늘 급식 → 교과 연계 AI 퀴즈! 수학 · 영어 · 과학 · 사회 학습과 급식 랭킹까지!",
+    siteName: "뭐먹지?",
+    title: "뭐먹지? 나만의 맛집 서랍장 🍱 식사 기록 & 학교 급식",
+    description: "기억하고 싶은 맛, 다시 가고 싶은 곳. 나와 가족을 위한 똑똑한 식생활 기록 서랍장!",
     url: "https://whateat.sundreamer.app",
     images: [
       {
         url: "https://whateat.sundreamer.app/og-image.png",
         width: 1200,
         height: 630,
-        alt: "급식배틀 - 전국 학교 급식 랭킹",
+        alt: "뭐먹지? 나만의 맛집 서랍장",
       }
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "급식배틀 - AI 급식퀴즈 & 급식 랭킹",
-    description: "오늘 급식으로 교과 연계 AI 퀴즈 도전! 수학·영어·과학·사회 학습과 전국 급식 랭킹 경쟁까지!",
+    title: "뭐먹지? 나만의 맛집 서랍장",
+    description: "나와 가족을 위한 똑똑한 식생활 기록 서랍장! 맛집 기록부터 아이들 학교 급식까지 한 번에 관리하세요.",
     images: ["https://whateat.sundreamer.app/og-image.png"],
   },
 };
