@@ -290,7 +290,7 @@ export default function WhatEatApp() {
               description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
             />
             {/* 2. 광고 배너 (우측 사이드) */}
-            <div className="w-[140px] h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
+            <div className="w-full h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
               AD BANNER
             </div>
           </div>

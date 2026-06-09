@@ -128,7 +128,7 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
 
         <button
           onClick={handleCopy}
-          className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all shadow-sm active:scale-[0.98] ${
+          className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold cursor-pointer transition-all shadow-sm active:scale-[0.98] ${
             isCopied 
               ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
               : 'bg-white text-blue-600 hover:bg-blue-50 shadow-white/10'
