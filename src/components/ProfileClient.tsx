@@ -122,6 +122,7 @@ export default function ProfileClient() {
             <HubShareSquare 
               customTitle="식단 관리와 오늘 뭐 먹을지 고민될 땐? 뭐먹지! 🍕"
               description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
+              customUrl={typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://whateat.sundreamer.app/'}
             />
             {/* 2. 광고 배너 (우측 사이드) */}
             <div className="w-full h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
