@@ -24,7 +24,12 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
 }) => {
   const [pathname, setPathname] = useState('');
   const { getMyReferralInfo, isLoading } = useHubReferral();
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userReferralCode') || '';
+    }
+    return '';
+  });
   const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
@@ -42,13 +47,12 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
 
   useEffect(() => {
     const fetchInfo = async () => {
-      if (typeof window !== 'undefined') {
-        const localCode = localStorage.getItem('userReferralCode');
-        if (localCode) setInviteCode(localCode);
-      }
       const info = await getMyReferralInfo();
       if (info?.code) {
         setInviteCode(info.code);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('userReferralCode', info.code);
+        }
       }
     };
     fetchInfo();

@@ -18,7 +18,13 @@ export default function ProfileClient() {
   const router = useRouter();
   const { isLoggedIn, isLoading } = useHub();
   const { getReferralHistory, isLoading: isReferralsLoading } = useHubReferral();
-  const [referrals, setReferrals] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('merlin_cached_referral_history');
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
 
   useEffect(() => {
     // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 홈(/)으로 이동하고 로그인 모달 트리거
@@ -34,7 +40,10 @@ export default function ProfileClient() {
   useEffect(() => {
     if (isLoggedIn) {
       getReferralHistory().then((data) => {
-        if (data) setReferrals(data);
+        if (data) {
+          setReferrals(data);
+          localStorage.setItem('merlin_cached_referral_history', JSON.stringify(data));
+        }
       });
     }
   }, [isLoggedIn, getReferralHistory]);
@@ -71,7 +80,7 @@ export default function ProfileClient() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
               {/* 좌측 컬럼: 앱 초대 실적 리스트 */}
               <div className="space-y-6">
-                <HubHistoryList history={referrals} isLoading={isReferralsLoading} />
+                <HubHistoryList history={referrals} isLoading={isReferralsLoading && referrals.length === 0} />
               </div>
 
               {/* 우측 컬럼: 프로필, 알림 설정, 로그아웃 */}
