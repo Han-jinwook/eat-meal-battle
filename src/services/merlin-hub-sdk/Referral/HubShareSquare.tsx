@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useHubReferral } from './useHubReferral';
+import { useHub } from '../HubProvider';
 
 interface HubShareSquareProps {
   className?: string;
@@ -24,6 +25,7 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
 }) => {
   const [pathname, setPathname] = useState('');
   const { getMyReferralInfo, isLoading } = useHubReferral();
+  const { isLoggedIn } = useHub();
   const [inviteCode, setInviteCode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('userReferralCode') || '';
@@ -53,10 +55,12 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
         if (typeof window !== 'undefined') {
           localStorage.setItem('userReferralCode', info.code);
         }
+      } else {
+        setInviteCode('');
       }
     };
     fetchInfo();
-  }, [getMyReferralInfo]);
+  }, [getMyReferralInfo, isLoggedIn]);
 
   // 페이지 이동(또는 customUrl 변경) 시 복사 완료 상태 초기화
   useEffect(() => {
