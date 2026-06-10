@@ -13,11 +13,11 @@ export default function StructuredData({ type = 'organization', data }: Structur
     const organizationSchema = {
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "급식배틀",
-      "alternateName": "뭐먹지?",
+      "name": "뭐먹지?",
+      "alternateName": "뭐먹지? 나만의 맛집 서랍장",
       "url": "https://whateat.sundreamer.app",
       "logo": "https://whateat.sundreamer.app/icons/icon-512x512.png",
-      "description": "전국 학교 급식 평가와 AI 학습형 급식퀴즈 플랫폼",
+      "description": "기억하고 싶은 맛, 다시 가고 싶은 곳. 나와 가족을 위한 똑똑한 식생활 기록 서랍장",
       "foundingDate": "2024",
       "sameAs": [
         "https://whateat.sundreamer.app"
@@ -33,14 +33,14 @@ export default function StructuredData({ type = 'organization', data }: Structur
     const websiteSchema = {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "급식배틀",
-      "alternateName": "뭐먹지?",
+      "name": "뭐먹지?",
+      "alternateName": "뭐먹지? 나만의 맛집 서랍장",
       "url": "https://whateat.sundreamer.app",
-      "description": "전국 학교 급식 평가와 AI 학습형 급식퀴즈! 오늘 급식으로 배우는 교과 연계형 퀴즈와 전국 급식 순위 경쟁.",
+      "description": "기억하고 싶은 맛, 다시 가고 싶은 곳. 나와 가족을 위한 똑똑한 식생활 기록 서랍장!",
       "inLanguage": "ko-KR",
       "publisher": {
         "@type": "Organization",
-        "name": "급식배틀",
+        "name": "뭐먹지?",
         "logo": "https://whateat.sundreamer.app/icons/icon-512x512.png"
       },
       "potentialAction": {

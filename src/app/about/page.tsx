@@ -45,7 +45,7 @@ export default function AboutPage() {
         heightLeft -= pageHeight
       }
       
-      pdf.save('급식배틀_앱소개.pdf')
+      pdf.save('뭐먹지_앱소개.pdf')
     } catch (error) {
       console.error('PDF 생성 오류:', error)
       alert('PDF 생성 중 오류가 발생했습니다.')
@@ -60,7 +60,7 @@ export default function AboutPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/images/sublogo.png" alt="급식배틀" className="h-8" />
+            <img src="/images/sublogo.png" alt="뭐먹지?" className="h-8" />
           </Link>
           <button
             onClick={generatePDF}
@@ -88,8 +88,8 @@ export default function AboutPage() {
       <div id="about-content" className="max-w-6xl mx-auto px-4 py-8">
         {/* 타이틀 섹션 */}
         <div className="text-center mb-12">
-          <img src="/images/sublogo.png" alt="급식배틀" className="mx-auto mb-6 w-48" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">급식배틀 앱 소개</h1>
+          <img src="/images/sublogo.png" alt="뭐먹지?" className="mx-auto mb-6 w-48" />
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">뭐먹지? 앱 소개</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             500만 학생의 목소리로 만드는 새로운 급식 문화
           </p>
@@ -164,7 +164,7 @@ export default function AboutPage() {
               </div>
               
               <div>
-                <h3 className="text-xl font-semibold text-green-600 mb-4">✅ 급식배틀의 해결 방안</h3>
+                <h3 className="text-xl font-semibold text-green-600 mb-4">✅ 뭐먹지?의 해결 방안</h3>
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">1. 실시간 학생 의견 수집</h4>
@@ -693,7 +693,7 @@ export default function AboutPage() {
       {/* 푸터 */}
       <footer className="bg-gray-900 text-white py-8 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p>&copy; 2024 급식배틀. All rights reserved.</p>
+          <p>&copy; 2024 뭐먹지?. All rights reserved.</p>
         </div>
       </footer>
     </div>

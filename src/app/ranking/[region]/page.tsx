@@ -11,26 +11,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const region = decodeURIComponent(params.region)
   
   return {
-    title: `급식배틀 🏆 ${region} 지역 급식 랭킹 | 뭐먹지?`,
-    description: `${region} 지역 학교 급식 평가 순위! AI 급식퀴즈와 함께하는 전국 급식 배틀에서 우리 지역 순위를 확인하세요.`,
+    title: `뭐먹지? 🏆 ${region} 지역 급식 랭킹`,
+    description: `${region} 지역 학교 급식 평가 순위! '뭐먹지?'에서 우리 지역 급식 순위를 확인하고 맛집 서랍장을 관리해보세요.`,
     openGraph: {
-      title: `급식배틀 🏆 ${region} 지역 급식 랭킹`,
-      description: `${region} 지역 급식 평가 순위 & AI 퀴즈! 우리 지역이 전국 몇 위?`,
+      title: `뭐먹지? 🏆 ${region} 지역 급식 랭킹`,
+      description: `${region} 지역 급식 평가 순위! 우리 지역 급식 순위는 몇 위?`,
       type: 'website',
-      siteName: '급식배틀',
+      siteName: '뭐먹지?',
       images: [
         {
           url: 'https://whateat.sundreamer.app/og-image.png',
           width: 1200,
           height: 630,
-          alt: `${region} 지역 급식배틀 랭킹`,
+          alt: `${region} 지역 뭐먹지? 급식 랭킹`,
         }
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `급식배틀 - ${region} 지역 랭킹`,
-      description: `${region} 지역 급식 평가 순위! AI 퀴즈와 함께하는 급식 배틀`,
+      title: `뭐먹지? - ${region} 지역 급식 랭킹`,
+      description: `${region} 지역 급식 평가 순위! 우리 지역 급식 순위 확인하기`,
       images: ['https://whateat.sundreamer.app/og-image.png'],
     },
   }

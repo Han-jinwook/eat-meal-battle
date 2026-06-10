@@ -73,6 +73,9 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
       const urlObj = new URL(base);
       // Private/internal pages shouldn't be shared. Redirect invitees to the root onboarding page.
       const privatePaths = [
+        '/profile',
+        '/whateat/profile',
+        '/admin7878',
         '/p-settings',
         '/p-my-page',
         '/p-notification',

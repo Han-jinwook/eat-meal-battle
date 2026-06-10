@@ -2,16 +2,14 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: '사이트맵 | 급식배틀 - 전국 학교 급식 랭킹 & AI 급식퀴즈',
-  description: '급식배틀의 모든 페이지를 한눈에! 전국 학교별 급식 평가, 지역별 랭킹, AI 급식퀴즈 등 모든 서비스를 찾아보세요.',
+  title: '사이트맵 | 뭐먹지? - 나만의 맛집 서랍장 & 학교 급식',
+  description: '뭐먹지?의 모든 페이지를 한눈에! 전국 학교별 급식 평가, 지역별 랭킹 등 모든 서비스를 찾아보세요.',
 }
 
 export default function SitemapPage() {
   const mainPages = [
-    { href: '/', title: '메인 페이지', desc: '급식배틀 홈' },
-    { href: '/quiz', title: 'AI 급식퀴즈', desc: '교과 연계 학습 퀴즈' },
-    { href: '/battle', title: '급식 랭킹', desc: '전국 급식 순위' },
-    { href: '/about', title: '서비스 소개', desc: '급식배틀 안내' },
+    { href: '/', title: '메인 페이지', desc: '뭐먹지? 홈' },
+    { href: '/about', title: '서비스 소개', desc: '뭐먹지? 안내' },
   ]
 
   const popularSchools = [
@@ -30,10 +28,10 @@ export default function SitemapPage() {
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-sm p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🗺️ 급식배틀 사이트맵
+            🗺️ 뭐먹지? 사이트맵
           </h1>
           <p className="text-gray-600 mb-8">
-            급식배틀의 모든 페이지를 한눈에 확인하세요!
+            뭐먹지?의 모든 페이지를 한눈에 확인하세요!
           </p>
 
           {/* 주요 서비스 */}

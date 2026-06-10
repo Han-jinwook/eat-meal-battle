@@ -10,26 +10,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const schoolName = decodeURIComponent(params.schoolName)
   
   return {
-    title: `급식배틀 🍱 ${schoolName} 급식 랭킹 | 뭐먹지?`,
-    description: `${schoolName} 급식 평가 & AI 급식퀴즈! 오늘 급식 점수 확인하고 전국 급식 배틀에 참여하세요.`,
+    title: `뭐먹지? 🍱 ${schoolName} 급식 랭킹`,
+    description: `${schoolName} 급식 평가 순위! 오늘 급식 점수를 확인하고 나와 가족을 위한 똑똑한 식생활 기록 서랍장 '뭐먹지?'를 시작해보세요.`,
     openGraph: {
-      title: `급식배틀 🍱 ${schoolName} 급식 랭킹`,
-      description: `${schoolName} 급식 평가 & AI 퀴즈 도전! 우리 학교 순위는?`,
+      title: `뭐먹지? 🍱 ${schoolName} 급식 랭킹`,
+      description: `${schoolName} 급식 평가 확인! 우리 학교 급식 순위는 몇 위?`,
       type: 'website',
-      siteName: '급식배틀',
+      siteName: '뭐먹지?',
       images: [
         {
           url: 'https://whateat.sundreamer.app/og-image.png',
           width: 1200,
           height: 630,
-          alt: `${schoolName} 급식배틀`,
+          alt: `${schoolName} 뭐먹지?`,
         }
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `급식배틀 - ${schoolName} 급식 랭킹`,
-      description: `${schoolName} 급식 평가 & AI 퀴즈! 전국 급식 배틀 참여하기`,
+      title: `뭐먹지? - ${schoolName} 급식 랭킹`,
+      description: `${schoolName} 급식 평가 순위! 우리 학교 급식 순위 확인하기`,
       images: ['https://whateat.sundreamer.app/og-image.png'],
     },
   }
