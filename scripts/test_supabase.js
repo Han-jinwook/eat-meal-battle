@@ -21,16 +21,17 @@ async function testConnection() {
       console.log('Success fetching from users table. Found:', users.length);
     }
 
-    // family_users 테이블에서 1건 조회
+    // family_users 테이블에서 sundream7879@gmail.com 유저 조회
     const { data: familyUsers, error: err2 } = await supabase
       .from('family_users')
       .select('*')
-      .limit(1);
+      .eq('email', 'sundream7879@gmail.com')
+      .maybeSingle();
       
     if (err2) {
       console.log('Error fetching from family_users table:', err2.message);
     } else {
-      console.log('Success fetching from family_users table. Found:', familyUsers.length);
+      console.log('Success fetching from family_users table. Data:', familyUsers);
     }
 
   } catch (error) {
