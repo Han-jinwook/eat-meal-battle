@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
 import { useHub, HubShareSquare } from "@/services/merlin-hub-sdk/react"
 import { HomeOnboarding } from "@/components/whateat/home-onboarding"
+import PWAInstallPrompt from "@/components/PWAInstallPrompt"
 
 function LoginNudge({ 
   title, 
@@ -156,7 +157,7 @@ export default function WhatEatApp() {
       {/* 헤더 높이(62px)만큼 상단 여백을 주어 본문이 가려지지 않도록 하고, 화면 전체 중앙 정렬 */}
       <div className="relative flex justify-center min-h-screen pt-[62px]">
         {/* 본문 콘텐츠 컨테이너: 최대 가로폭 800px 고정 및 헤더 내부 컨테이너와 동일한 정렬선 확보 */}
-        <div className="w-full max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] shrink-0 z-10">
+        <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] shrink-0 z-10">
           
           <div className={cn("sticky top-[62px] z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-4 pt-2", bottomNavTab === "home" ? "pb-0" : "pb-1 border-b border-muted/10")}>
             {bottomNavTab === "solo" && (
@@ -180,7 +181,7 @@ export default function WhatEatApp() {
             </div>
 
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
-            <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden")}>
+            <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden", !isLoggedIn && "min-h-[800px]")}>
               <div className="flex flex-col gap-5">
                 <div className={cn(activeTab !== "log" && "hidden")}>
                   <MealLogTab
@@ -234,7 +235,7 @@ export default function WhatEatApp() {
             </div>
 
             {/* Other main tabs (Always mounted, toggled by CSS hidden) */}
-            <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden")}>
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden", !isLoggedIn && "min-h-[800px]")}>
               <div>
                 {renderFamilyPage()}
               </div>
@@ -253,7 +254,7 @@ export default function WhatEatApp() {
             <div className={cn(bottomNavTab !== "talk" && "hidden")}>
               {renderTalkPage()}
             </div>
-            <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden")}>
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden", !isLoggedIn && "min-h-[800px]")}>
               <div>
                 <MealWrapper />
               </div>
@@ -299,6 +300,7 @@ export default function WhatEatApp() {
 
       <AddLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} />
       <AddReservationModal isOpen={isReservationModalOpen} onClose={() => setIsReservationModalOpen(false)} />
+      <PWAInstallPrompt />
     </div>
   )
 }

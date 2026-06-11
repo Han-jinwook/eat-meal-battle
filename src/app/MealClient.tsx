@@ -19,7 +19,6 @@ import ShareButton from '@/components/ShareButton';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal';
 import ShareModal from '@/components/ShareModal';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import ChromeRedirectHandler from '@/components/ChromeRedirectHandler';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
 import { extractBattleRegion } from '@/utils/addressParser';
@@ -1595,11 +1594,6 @@ export default function MealClient() {
         currentUserId={user?.id || 'me'}
         onComplete={handleCompleteSchoolRegistrationFlow}
       />
-      
-      
-      
-      {/* PWA 설치 프롬프트 */}
-      <PWAInstallPrompt />
     </div>
   );
 }
