@@ -631,7 +631,7 @@ export function FamilyPage() {
   return (
     <div className="flex flex-col gap-5 pb-4" onClickCapture={handleInteraction}>
       {/* Family Header */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-lg">
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl py-3 px-5 border border-white shadow-lg">
         <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1">
           <>
             <button
