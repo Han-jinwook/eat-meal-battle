@@ -88,12 +88,7 @@ export default function ProfileClient() {
                 {/* 허브 통합 프로필 카드 */}
                 <HubProfileCard />
                 
-                {/* 허브 통합 알림 설정 카드 */}
-                <HubNotificationCard
-                  title="알림 설정"
-                  toggleLabel="🔔 스마트 알림"
-                  description="급식 소식과 뭐먹지? 서비스의 새로운 기능·혜택 알림을 받아보세요."
-                />
+                <HubNotificationCard />
                 
                 {/* 허브 통합 로그아웃 카드 */}
                 <HubLogoutCard onLogout={() => router.replace('/')} />
