@@ -1,6 +1,6 @@
 /**
- * Version: v1.0.5
- * Last Updated: 2026-06-10
+ * Version: v1.0.6
+ * Last Updated: 2026-06-11
  */
 import React, { useState, useEffect } from 'react';
 import { useHubReferral } from './useHubReferral';
@@ -58,9 +58,13 @@ export const HubShareSquare: React.FC<HubShareSquareProps> = ({
       }
     };
 
+    // 토큰 존재 여부 확인 (로컬스토리지 안전 장치)
+    const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('merlin_session_token');
+
     if (isLoggedIn) {
       fetchInfo();
-    } else if (!isSessionLoading) {
+    } else if (!isSessionLoading && !hasToken) {
+      // 세션 로딩이 완전히 종료되었고, 세션 토큰도 없는 명백한 비로그인 상태일 때만 지운다.
       setInviteCode('');
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userReferralCode');
