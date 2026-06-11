@@ -29,10 +29,17 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
     const storedNickname = localStorage.getItem('userNickname');
     const storedProfileImage = localStorage.getItem('userProfileImage');
 
-    setNickname(storedNickname || '게스트');
+    const currentEmail = user?.email || storedEmail || '';
+    const emailId = currentEmail ? currentEmail.split('@')[0] : '회원';
+    
+    // 로컬스토리지의 닉네임이 '회원' 또는 '가족회원'이면 이메일 ID로 즉시 보정하여 UI 깜빡임 방지
+    const initNickname = (storedNickname && storedNickname !== '회원' && storedNickname !== '가족회원')
+      ? storedNickname
+      : (emailId !== '회원' ? emailId : '게스트');
+
+    setNickname(initNickname);
     setProfileImage(storedProfileImage || '');
-    // isLoggedIn 상태이거나 user.email이 있거나 storedEmail이 있으면 세팅
-    setEmail(user?.email || storedEmail || '');
+    setEmail(currentEmail);
 
     if (isLoggedIn) {
       // 서버에서 최신 프로필 정보 갱신
@@ -41,7 +48,7 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
           if (result.success) {
             const dbNickname = (result.nickname && result.nickname !== '회원' && result.nickname !== '가족회원') 
               ? result.nickname 
-              : (storedEmail?.split('@')[0] || '회원');
+              : emailId;
             const dbImage = result.avatar_url || '';
             setNickname(dbNickname);
             setProfileImage(dbImage);
