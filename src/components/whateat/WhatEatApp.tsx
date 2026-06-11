@@ -27,7 +27,7 @@ function LoginNudge({
   icon: string 
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white rounded-3xl border border-cyan-100/50 shadow-md space-y-6 mx-5 lg:mx-8 my-10 max-w-xl md:mx-auto">
+    <div className="w-full flex flex-col items-center justify-center py-10 px-6 text-center bg-white rounded-3xl border border-cyan-100/50 shadow-xl space-y-5 max-w-xl mx-auto">
       <div className="text-5xl animate-bounce duration-1000 select-none">{icon}</div>
       <div className="space-y-2 max-w-sm">
         <h3 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h3>
@@ -181,7 +181,7 @@ export default function WhatEatApp() {
             </div>
 
             {/* Solo Tab Content (Always mounted, toggled by CSS hidden) */}
-            <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden", !isLoggedIn && "min-h-[800px]")}>
+            <div className={cn("relative px-5 lg:px-8 min-h-[500px]", bottomNavTab !== "solo" && "hidden")}>
               <div className="flex flex-col gap-5">
                 <div className={cn(activeTab !== "log" && "hidden")}>
                   <MealLogTab
@@ -220,55 +220,21 @@ export default function WhatEatApp() {
                 </div>
                 <Footer />
               </div>
-
-              {!isLoggedIn && !isLoading && (
-                <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-[400px] flex justify-center pointer-events-auto">
-                    <LoginNudge
-                      icon="🍔"
-                      title="배고픈 순간, 가장 먼저 꺼내는 맛집 서랍"
-                      desc="기억하고 싶은 맛, 다시 가고 싶은 곳. 우리 집만의 입맛을 기록하세요."
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Other main tabs (Always mounted, toggled by CSS hidden) */}
-            <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden", !isLoggedIn && "min-h-[800px]")}>
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "family" && "hidden")}>
               <div>
                 {renderFamilyPage()}
               </div>
-              {!isLoggedIn && !isLoading && (
-                <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-[400px] flex justify-center pointer-events-auto">
-                    <LoginNudge
-                      icon="🏡"
-                      title="나와 가족의 맛있는 기억들"
-                      desc="여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다."
-                    />
-                  </div>
-                </div>
-              )}
             </div>
             <div className={cn(bottomNavTab !== "talk" && "hidden")}>
               {renderTalkPage()}
             </div>
-            <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden", !isLoggedIn && "min-h-[800px]")}>
+            <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden")}>
               <div>
                 <MealWrapper />
               </div>
-              {!isLoggedIn && !isLoading && (
-                <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-[400px] flex justify-center pointer-events-auto">
-                    <LoginNudge
-                      icon="🍱"
-                      title="우리 아이 학교 급식 알리미"
-                      desc="오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요."
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </main>
 
@@ -300,6 +266,30 @@ export default function WhatEatApp() {
 
       <AddLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} />
       <AddReservationModal isOpen={isReservationModalOpen} onClose={() => setIsReservationModalOpen(false)} />
+
+      {/* Global Login Nudge for Guest Users */}
+      {!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none flex justify-center pb-6 px-4">
+          <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] px-5 lg:px-8 flex justify-center pointer-events-auto">
+            <LoginNudge
+              icon={
+                bottomNavTab === "solo" ? "🍔" :
+                bottomNavTab === "family" ? "🏡" : "🍱"
+              }
+              title={
+                bottomNavTab === "solo" ? "배고픈 순간, 가장 먼저 꺼내는 맛집 서랍" :
+                bottomNavTab === "family" ? "나와 가족의 맛있는 기억들" : "우리 아이 학교 급식 알리미"
+              }
+              desc={
+                bottomNavTab === "solo" ? "기억하고 싶은 맛, 다시 가고 싶은 곳. 우리 집만의 입맛을 기록하세요." :
+                bottomNavTab === "family" ? "여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다." :
+                "오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요."
+              }
+            />
+          </div>
+        </div>
+      )}
+
       <PWAInstallPrompt />
     </div>
   )
