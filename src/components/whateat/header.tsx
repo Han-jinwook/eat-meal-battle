@@ -78,16 +78,23 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           <button
             type="button"
             onClick={handleProfileClick}
-            className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors hover:ring-cyan-300 flex items-center justify-center cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer group"
             aria-label="프로필 설정 열기"
           >
-            <HubAvatar
-              isLoggedIn={isLoggedIn}
-              avatarUrl={user?.avatar_url}
-              nickname={user?.nickname || user?.email?.split('@')[0]}
-              size="sm"
-              className="w-full h-full rounded-full"
-            />
+            <div className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors group-hover:ring-cyan-300 flex items-center justify-center">
+              <HubAvatar
+                isLoggedIn={isLoggedIn}
+                avatarUrl={user?.avatar_url}
+                nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '회원')}
+                size="sm"
+                className="w-full h-full rounded-full"
+              />
+            </div>
+            {isLoggedIn && (
+              <span className="hidden sm:inline-block text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[120px] truncate">
+                {((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || ''))}
+              </span>
+            )}
           </button>
         </div>
       </div>

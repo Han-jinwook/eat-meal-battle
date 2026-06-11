@@ -39,7 +39,9 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
       MerlinHub.auth.getProfile()
         .then(result => {
           if (result.success) {
-            const dbNickname = result.nickname || storedEmail?.split('@')[0] || '회원';
+            const dbNickname = (result.nickname && result.nickname !== '회원' && result.nickname !== '가족회원') 
+              ? result.nickname 
+              : (storedEmail?.split('@')[0] || '회원');
             const dbImage = result.avatar_url || '';
             setNickname(dbNickname);
             setProfileImage(dbImage);

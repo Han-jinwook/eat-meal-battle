@@ -123,7 +123,9 @@ export const HubProfileWidget: React.FC<HubProfileWidgetProps> = ({
   }
 
   // 로그인 상태 (회원 프로필)
-  const displayId = user?.nickname || user?.email?.split('@')[0] || '회원';
+  const displayId = (user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') 
+    ? user.nickname 
+    : (user?.email?.split('@')[0] || '회원');
 
   return (
     <button
