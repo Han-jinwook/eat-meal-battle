@@ -222,7 +222,7 @@ export default function WhatEatApp() {
 
               {!isLoggedIn && !isLoading && (
                 <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                  <div className="sticky top-[280px] flex justify-center pointer-events-auto">
                     <LoginNudge
                       icon="🍔"
                       title="배고픈 순간, 가장 먼저 꺼내는 맛집 서랍"
@@ -240,7 +240,7 @@ export default function WhatEatApp() {
               </div>
               {!isLoggedIn && !isLoading && (
                 <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                  <div className="sticky top-[280px] flex justify-center pointer-events-auto">
                     <LoginNudge
                       icon="🏡"
                       title="나와 가족의 맛있는 기억들"
@@ -259,7 +259,7 @@ export default function WhatEatApp() {
               </div>
               {!isLoggedIn && !isLoading && (
                 <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="sticky top-32 flex justify-center pointer-events-auto">
+                  <div className="sticky top-[280px] flex justify-center pointer-events-auto">
                     <LoginNudge
                       icon="🍱"
                       title="우리 아이 학교 급식 알리미"
