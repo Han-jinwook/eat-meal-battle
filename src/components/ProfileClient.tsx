@@ -74,7 +74,7 @@ export default function ProfileClient() {
 
       <div className="relative flex justify-center min-h-screen pt-[62px]">
         {/* Main Content Area (800px 본문 정렬선 보장) */}
-        <div className="w-full max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] border-x border-gray-100/50 shrink-0 z-10">
+        <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] border-x border-gray-100/50 shrink-0 z-10">
           
           <main className="flex-1 overflow-y-auto custom-scrollbar pt-4 pb-8 px-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
