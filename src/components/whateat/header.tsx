@@ -81,7 +81,8 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             className="flex items-center gap-2 cursor-pointer group"
             aria-label="프로필 설정 열기"
           >
-            <div className="size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors group-hover:ring-cyan-300 flex items-center justify-center">
+            {/* 프로필 이미지 - 모바일에서는 숨기고 PC(sm 이상)에서만 노출 */}
+            <div className="hidden sm:flex size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors group-hover:ring-cyan-300 items-center justify-center">
               <HubAvatar
                 isLoggedIn={isLoggedIn}
                 avatarUrl={user?.avatar_url}
@@ -90,11 +91,12 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                 className="w-full h-full rounded-full"
               />
             </div>
-            {isLoggedIn && (
-              <span className="hidden sm:inline-block text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[120px] truncate">
-                {((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || ''))}
-              </span>
-            )}
+            {/* 닉네임 - 모바일과 PC 모두 노출 (모바일에서는 이미지 없이 텍스트만 노출) */}
+            <span className="text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[120px] truncate">
+              {isLoggedIn 
+                ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || ''))
+                : '게스트'}
+            </span>
           </button>
         </div>
       </div>
