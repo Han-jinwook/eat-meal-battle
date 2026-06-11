@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import whatEatLogo from "@/v0-migration/public/logo.png"
+import whatEatLogo from "../../../public/images/logo.png"
  
 const features = [
   {

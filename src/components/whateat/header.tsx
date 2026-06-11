@@ -5,7 +5,7 @@ import { MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
-import whatEatLogo from "@/v0-migration/public/logo.png"
+import whatEatLogo from "../../../public/images/logo.png"
 
 export type HeaderNavTab = "home" | "solo" | "family" | "talk" | "meal"
 

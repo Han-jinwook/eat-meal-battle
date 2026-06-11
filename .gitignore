@@ -145,3 +145,7 @@ temp/
 temp_backup/
 *.backup
 *.backup.gz
+
+# Local migration backup
+/v0-migration-backup
+

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { HubAuthModal, HubBenefitModal } from "@/services/merlin-hub-sdk/react"
-import whatEatLogo from "@/v0-migration/public/logo.png"
+import whatEatLogo from "../../../public/images/logo.png"
 
 /**
  * 전역 단일 로그인 모달 (허브 표준)
