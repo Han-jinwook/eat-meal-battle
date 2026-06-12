@@ -18,7 +18,38 @@ import {
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 
-const mealPlans: any[] = []
+const defaultMealPlans = [
+  {
+    id: 1,
+    date: "2026-04-05",
+    time: "19:00",
+    mealType: "배달",
+    menu: "치킨",
+    place: "도미노피자 역삼점",
+    memo: "가족들과 주말 저녁 배달 치맥",
+    thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=100&h=100&fit=crop"
+  },
+  {
+    id: 2,
+    date: "2026-03-22",
+    time: "12:30",
+    mealType: "집밥",
+    menu: "파스타",
+    place: "집",
+    memo: "집에서 직접 만들기 실습",
+    thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop"
+  },
+  {
+    id: 3,
+    date: "2026-03-15",
+    time: "18:30",
+    mealType: "외식",
+    menu: "삼겹살",
+    place: "우미학 청담점",
+    memo: "주말 저녁 외식 패밀리 데이",
+    thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop"
+  }
+]
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
@@ -45,11 +76,32 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [currentMonth, setCurrentMonth] = useState({ year: 2025, month: 2 })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [urlForModal, setUrlForModal] = useState("")
-  const [plans, setPlans] = useState(mealPlans)
+  const [plans, setPlans] = useState<any[]>(defaultMealPlans)
   const [mealTypeFilter, setMealTypeFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
-  const [editingPlan, setEditingPlan] = useState<typeof mealPlans[number] | null>(null)
+  const [editingPlan, setEditingPlan] = useState<any | null>(null)
+
+  // Load initial plans from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("whateat_reservation_plans")
+    if (saved) {
+      try {
+        setPlans(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to parse saved reservation plans", e)
+      }
+    } else {
+      localStorage.setItem("whateat_reservation_plans", JSON.stringify(defaultMealPlans))
+    }
+  }, [])
+
+  // Save plans to localStorage on changes
+  useEffect(() => {
+    if (plans !== defaultMealPlans) {
+      localStorage.setItem("whateat_reservation_plans", JSON.stringify(plans))
+    }
+  }, [plans])
   const calendarRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 

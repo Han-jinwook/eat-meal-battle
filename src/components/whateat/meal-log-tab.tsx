@@ -6,7 +6,45 @@ import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 
-const initialMealLogs: any[] = []
+const defaultMealLogs = [
+  {
+    id: 1,
+    date: "2026. 04. 10",
+    type: "외식",
+    title: "채끝 스테이크",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&fit=crop",
+    rating: 5,
+    tips: ["미디움 레어로 굽기가 딱 좋음", "소금과 와사비 조합 추천"],
+    tipTitle: "추천 메뉴",
+    linkUrl: "https://naver.me/placeholder1",
+    linkThumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&fit=crop",
+    placeName: "아웃백 스테이크하우스"
+  },
+  {
+    id: 2,
+    date: "2026. 03. 25",
+    type: "집밥",
+    title: "바질 페스토 파스타",
+    image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=500&fit=crop",
+    rating: 4,
+    tips: ["면수는 버리지 말고 농도 맞출 때 사용", "생 바질 잎을 고명으로 얹으면 향이 배가됨"],
+    tipTitle: "조리 팁",
+    healthy: true
+  },
+  {
+    id: 3,
+    date: "2026. 03. 18",
+    type: "배달",
+    title: "반반 치킨 (후라이드/양념)",
+    image: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=500&fit=crop",
+    rating: 5,
+    tips: ["리뷰 이벤트로 감자튀김 받기", "양념 소스가 매콤달콤해서 밥이랑 어울림"],
+    tipTitle: "추천 메뉴",
+    linkUrl: "https://naver.me/placeholder2",
+    linkThumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=100&fit=crop",
+    placeName: "처갓집 양념치킨"
+  }
+]
 
 const mealTypeOptions = [
   { id: "전체", label: "전체", icon: null },
@@ -23,7 +61,28 @@ interface MealLogTabProps {
 
 export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCalendar }: MealLogTabProps) {
   const [viewerImage, setViewerImage] = useState<string | null>(null)
-  const [mealLogs, setMealLogs] = useState(initialMealLogs)
+  const [mealLogs, setMealLogs] = useState<any[]>(defaultMealLogs)
+
+  // Load initial logs from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("whateat_meal_logs")
+    if (saved) {
+      try {
+        setMealLogs(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to parse saved meal logs", e)
+      }
+    } else {
+      localStorage.setItem("whateat_meal_logs", JSON.stringify(defaultMealLogs))
+    }
+  }, [])
+
+  // Save logs to localStorage on changes
+  useEffect(() => {
+    if (mealLogs !== defaultMealLogs) {
+      localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
+    }
+  }, [mealLogs])
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
   const [expandedMemoId, setExpandedMemoId] = useState<number | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
