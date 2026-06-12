@@ -109,7 +109,7 @@ type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
 export function FamilyPage() {
   const { isLoggedIn, user } = useHub()
-  const { getReferralHistory } = useHubReferral()
+  const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
   const [showChefModal, setShowChefModal] = useState(false)
 
@@ -243,7 +243,42 @@ export function FamilyPage() {
   const [familyPhoto, setFamilyPhoto] = useState<string | null>(null)
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
 
-  const inviteLink = "https://whateat.app/invite/abc123xyz"
+  const [inviteLink, setInviteLink] = useState("")
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    async function buildInviteLink() {
+      let base = window.location.origin + window.location.pathname;
+      try {
+        const urlObj = new URL(base);
+        const privatePaths = ['/profile', '/payment', '/login'];
+        if (privatePaths.some(p => urlObj.pathname.startsWith(p))) {
+          urlObj.pathname = '/';
+          urlObj.search = '';
+        }
+        base = urlObj.toString();
+      } catch (e) {}
+
+      if (isLoggedIn) {
+        const info = await getMyReferralInfo();
+        if (info?.code) {
+          try {
+            const urlObj = new URL(base);
+            urlObj.searchParams.set('ref', info.code);
+            setInviteLink(urlObj.toString());
+            return;
+          } catch (e) {
+            setInviteLink(`${base}${base.includes('?') ? '&' : '?'}ref=${info.code}`);
+            return;
+          }
+        }
+      }
+      setInviteLink(base);
+    }
+    buildInviteLink();
+  }, [isLoggedIn, user, getMyReferralInfo]);
+
   const currentFamilyMember = members.find((member) => member.name === "나") ?? members[0]
   const currentFamilyMemberId = currentFamilyMember.id
   const currentFamilyMemberName = currentFamilyMember.name
