@@ -139,11 +139,18 @@ export function HomeOnboarding({
                 }
               }
             }}
-            className="group relative inline-flex items-center justify-center gap-2 px-12 py-5 bg-slate-900 text-white rounded-2xl font-bold text-lg overflow-hidden transition-all hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)] active:scale-95 w-full max-w-md"
+            className={cn(
+              "group relative inline-flex items-center justify-center gap-2 px-12 py-5 rounded-2xl font-bold text-lg overflow-hidden transition-all active:scale-95 w-full max-w-md cursor-pointer",
+              isLoggedIn 
+                ? "bg-slate-900 text-white hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(249,115,22,0.25)]"
+                : "bg-cyan-500 hover:bg-cyan-600 text-white hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/20"
+            )}
           >
-            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
+            {isLoggedIn && (
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_auto] animate-gradient" />
+            )}
             <span className="relative z-10 flex items-center gap-2">
-              {isLoading ? "로딩중..." : (isLoggedIn ? "내 맛집 서랍 열기" : "3초만에 시작하기 ⚡")}
+              {isLoading ? "로딩중..." : (isLoggedIn ? "내 맛집 서랍 열기" : "이메일로 3초 로그인하기 ⚡")}
             </span>
           </button>
         </div>
