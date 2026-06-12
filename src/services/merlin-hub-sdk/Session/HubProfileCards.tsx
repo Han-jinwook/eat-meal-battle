@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Camera, Mail, User, Edit2, Save, X, LogOut, Bell } from 'lucide-react';
+import { Camera, Mail, User, Edit2, Save, UserX, LogOut, Bell } from 'lucide-react';
 import { MerlinHub } from '../index';
 import { HubAvatar } from './HubProfileWidget';
 import { useHub } from '../HubProvider';
@@ -160,7 +160,7 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
         {!isEditing && (
           <button
             onClick={handleEdit}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mt-0.5"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mt-0.5 cursor-pointer"
           >
             <Edit2 className="h-3.5 w-3.5" />
             수정하기
@@ -247,13 +247,13 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
           <div className="flex gap-3 pt-4 border-t border-slate-100 mt-6">
             <button
               onClick={handleCancel}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
             >
               취소
             </button>
             <button
               onClick={handleSave}
-              className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+              className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 cursor-pointer"
             >
               <Save className="h-4 w-4" />
               저장하기
@@ -341,7 +341,7 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
               disabled={!isLoggedIn}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
                 !isLoggedIn ? 'bg-slate-200 cursor-not-allowed opacity-50' :
-                isToggled ? 'bg-blue-600' : 'bg-slate-200'
+                isToggled ? 'bg-blue-600 cursor-pointer' : 'bg-slate-200 cursor-pointer'
               }`}
             >
               <span
@@ -365,7 +365,7 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
 
 
 // -----------------------------------------
-// 3. HubLogoutCard (하단 섹션: 로그아웃)
+// 3. HubLogoutCard (하단 섹션: 로그아웃 및 회원탈퇴)
 // -----------------------------------------
 export interface HubLogoutCardProps {
   onLogout?: () => void;
@@ -385,21 +385,77 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
       });
   };
 
+  const handleWithdraw = async () => {
+    const configModule = await import('../CoreLogic/config');
+    const { hubFetch } = await import('../CoreLogic/client');
+    const appId = configModule.getConfig().appId;
+
+    if (!appId) {
+      alert('앱 ID가 설정되지 않았습니다.');
+      return;
+    }
+
+    try {
+      const checkRes = await hubFetch(`/api/auth/withdraw/check?appId=${appId}`);
+      if (!checkRes.ok || !checkRes.data?.success) {
+        alert(checkRes.data?.message || '탈퇴 상태 점검에 실패했습니다.');
+        return;
+      }
+      const checkData = checkRes.data;
+
+      let confirmMsg = `정말 이 앱에서 탈퇴하시겠습니까?\n(다른 허브 앱 데이터는 유지됩니다.)`;
+      
+      if (checkData.isLastCoinApp && checkData.refundableBalance > 0) {
+        alert(`고객님, 환불 가능한 유료 코인 ${checkData.refundableBalance}C가 남아있습니다.\n코인 정산을 위해 우측 하단 고객센터로 먼저 문의해주세요.\n(정산 전에는 탈퇴하실 수 없습니다.)`);
+        return;
+      } else if (checkData.isLastCoinApp) {
+        confirmMsg = `이 앱은 회원님의 마지막 코인 연동 앱입니다.\n잔여 무료 코인은 모두 소멸됩니다. 정말 탈퇴하시겠습니까?`;
+      } else if (checkData.isFinalWithdrawal) {
+        confirmMsg = `이 앱을 탈퇴하시면 등록된 모든 앱에서 탈퇴됩니다.\n계정은 30일간 보관 후 영구 삭제됩니다. 정말 탈퇴하시겠습니까?`;
+      }
+
+      if (window.confirm(confirmMsg)) {
+        const res = await hubFetch('/api/auth/withdraw', {
+          method: 'POST',
+          body: JSON.stringify({ appId })
+        });
+        
+        if (res.ok && res.data?.success) {
+          alert('정상적으로 탈퇴 처리되었습니다.');
+          handleLogout();
+        } else {
+          alert(res.data?.message || '탈퇴에 실패했습니다.');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    }
+  };
+
   if (!isLoggedIn) return null;
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden ${className}`}>
-      <div className="p-6 sm:p-8">
-        <p className="text-sm text-slate-500 mb-4">
-          로그아웃하면 메인 페이지로 이동합니다.
+    <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
+      <div className="p-6 sm:p-8 flex flex-col gap-4">
+        <p className="text-sm text-slate-500 text-center mb-2">
+          계정 관리에 대한 상세 작업입니다.
         </p>
 
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           로그아웃
+        </button>
+
+        <button
+          onClick={handleWithdraw}
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-sm mt-2 cursor-pointer"
+        >
+          <UserX className="h-4 w-4" />
+          앱 탈퇴하기
         </button>
       </div>
     </div>

@@ -102,7 +102,7 @@ export const HubProfileWidget: React.FC<HubProfileWidgetProps> = ({
     return (
       <div className={`flex flex-col items-center gap-1.5 animate-pulse ${className}`}>
         <div className="w-10 h-10 rounded-2xl bg-slate-100" />
-        {showNickname && <div className="w-10 h-2 bg-slate-50 rounded-full" />}
+        {showNickname && <div className="w-10 h-2 bg-slate-50 rounded-full hidden sm:block" />}
       </div>
     );
   }
@@ -112,11 +112,11 @@ export const HubProfileWidget: React.FC<HubProfileWidgetProps> = ({
     return (
       <button
         onClick={onLoginClick}
-        className={`flex flex-col items-center gap-1 group hover:opacity-80 transition-all ${className}`}
+        className={`flex flex-col items-center gap-1 group hover:opacity-80 transition-all cursor-pointer ${className}`}
       >
         <HubAvatar isLoggedIn={false} className="group-hover:scale-105 transition-transform" />
         {showNickname && (
-          <span className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">게스트</span>
+          <span className="hidden sm:block text-[10px] sm:text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">게스트</span>
         )}
       </button>
     );
@@ -130,7 +130,7 @@ export const HubProfileWidget: React.FC<HubProfileWidgetProps> = ({
   return (
     <button
       onClick={onProfileClick}
-      className={`flex flex-col items-center gap-1 group hover:opacity-80 transition-all ${className}`}
+      className={`flex flex-col items-center gap-1 group hover:opacity-80 transition-all cursor-pointer ${className}`}
     >
       <HubAvatar 
         isLoggedIn={true} 
@@ -139,7 +139,7 @@ export const HubProfileWidget: React.FC<HubProfileWidgetProps> = ({
         className="group-hover:scale-105 transition-transform" 
       />
       {showNickname && (
-        <span className="text-xs font-semibold text-gray-700 group-hover:text-blue-600">
+        <span className="hidden sm:block text-[10px] sm:text-xs font-semibold text-gray-700 group-hover:text-blue-600">
           {displayId}
         </span>
       )}
