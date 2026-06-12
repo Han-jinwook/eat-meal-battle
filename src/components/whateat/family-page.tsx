@@ -784,7 +784,7 @@ export function FamilyPage() {
               <button
                 onClick={() => {
                   if (!isLoggedIn) {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                    setShowInviteModal(true)
                   } else {
                     setShowChefModal(true)
                   }
@@ -832,11 +832,7 @@ export function FamilyPage() {
             ))}
             <button 
               onClick={() => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  setShowInviteModal(true)
-                }
+                setShowInviteModal(true)
               }}
               className="flex flex-col items-center gap-1.5 shrink-0"
             >
