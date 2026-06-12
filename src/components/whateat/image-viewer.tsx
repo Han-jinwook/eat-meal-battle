@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react"
 
 interface ImageViewerProps {
@@ -16,11 +17,17 @@ export function ImageViewer({ src, alt = "이미지", isOpen, onClose }: ImageVi
   const [isDragging, setIsDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0 })
   const positionRef = useRef({ x: 0, y: 0 })
+  const [mounted, setMounted] = useState(false)
 
   const reset = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
     positionRef.current = { x: 0, y: 0 }
+  }, [])
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
   }, [])
 
   useEffect(() => {
@@ -85,44 +92,48 @@ export function ImageViewer({ src, alt = "이미지", isOpen, onClose }: ImageVi
   }
   const handleTouchEnd = () => { lastTouchDist.current = null }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+      className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       {/* Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         <button
           onClick={() => setScale(prev => Math.min(5, prev + 0.5))}
-          className="size-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+          className="size-10 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 text-white flex items-center justify-center transition-all shadow-md"
+          title="확대"
         >
-          <ZoomIn className="size-4" />
+          <ZoomIn className="size-5" />
         </button>
         <button
           onClick={() => setScale(prev => Math.max(0.5, prev - 0.5))}
-          className="size-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+          className="size-10 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 text-white flex items-center justify-center transition-all shadow-md"
+          title="축소"
         >
-          <ZoomOut className="size-4" />
+          <ZoomOut className="size-5" />
         </button>
         <button
           onClick={reset}
-          className="size-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+          className="size-10 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 text-white flex items-center justify-center transition-all shadow-md"
+          title="초기화"
         >
-          <RotateCcw className="size-4" />
+          <RotateCcw className="size-5" />
         </button>
         <button
           onClick={onClose}
-          className="size-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
+          className="size-11 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center transition-all shadow-lg border-2 border-orange-100/50"
+          title="닫기"
         >
-          <X className="size-5" />
+          <X className="size-6" strokeWidth={2.5} />
         </button>
       </div>
 
       {/* Zoom indicator */}
       {scale !== 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-white text-xs font-medium">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 border border-white/10 backdrop-blur-sm rounded-full text-white text-xs font-bold shadow-md">
           {Math.round(scale * 100)}%
         </div>
       )}
@@ -130,6 +141,7 @@ export function ImageViewer({ src, alt = "이미지", isOpen, onClose }: ImageVi
       {/* Image */}
       <div
         className="w-full h-full flex items-center justify-center overflow-hidden"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -144,12 +156,13 @@ export function ImageViewer({ src, alt = "이미지", isOpen, onClose }: ImageVi
           src={src}
           alt={alt}
           draggable={false}
-          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg select-none transition-transform duration-100"
+          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg select-none transition-transform duration-100 shadow-2xl"
           style={{
             transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
           }}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
