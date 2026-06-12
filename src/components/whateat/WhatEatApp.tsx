@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { X } from "lucide-react"
 import { Header, type HeaderNavTab } from "@/components/whateat/header"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
 import { MealLogTab } from "@/components/whateat/meal-log-tab"
@@ -20,14 +21,25 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt"
 function LoginNudge({ 
   title, 
   desc, 
-  icon 
+  icon,
+  onClose
 }: { 
   title: string 
   desc: string 
   icon: string 
+  onClose?: () => void
 }) {
   return (
-    <div className="w-full flex flex-col items-center justify-center py-10 px-6 text-center bg-white rounded-3xl border border-cyan-100/50 shadow-xl space-y-5 max-w-xl mx-auto">
+    <div className="relative w-full flex flex-col items-center justify-center py-10 px-6 text-center bg-white rounded-3xl border border-cyan-100/50 shadow-xl space-y-5 max-w-xl mx-auto">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          aria-label="닫기"
+        >
+          <X className="size-5" />
+        </button>
+      )}
       <div className="text-5xl animate-bounce duration-1000 select-none">{icon}</div>
       <div className="space-y-2 max-w-sm">
         <h3 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h3>
@@ -51,6 +63,20 @@ export default function WhatEatApp() {
   const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
   const [showFamilyJoinConfirm, setShowFamilyJoinConfirm] = useState(false)
   const [pendingRefCode, setPendingRefCode] = useState("")
+  const [isNudgeDismissed, setIsNudgeDismissed] = useState(false)
+
+  // 0. 오늘 세션 동안 넛지 닫힘 상태 로드
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const dismissed = sessionStorage.getItem('login_nudge_dismissed') === 'true'
+      setIsNudgeDismissed(dismissed)
+    }
+  }, [])
+
+  const handleDismissNudge = () => {
+    sessionStorage.setItem('login_nudge_dismissed', 'true')
+    setIsNudgeDismissed(true)
+  }
 
   // 1. URL의 ref 파라미터 감지 및 캐싱 & 주소창 정돈
   useEffect(() => {
@@ -232,7 +258,7 @@ export default function WhatEatApp() {
 
           <main className={cn(
             "flex-1 overflow-y-auto custom-scrollbar relative",
-            (!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk") ? "pb-[300px]" : "pb-8"
+            (!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && !isNudgeDismissed) ? "pb-[300px]" : "pb-8"
           )}>
             {/* Home Onboarding Tab */}
             <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
@@ -330,7 +356,7 @@ export default function WhatEatApp() {
       <AddReservationModal isOpen={isReservationModalOpen} onClose={() => setIsReservationModalOpen(false)} />
 
       {/* Global Login Nudge for Guest Users */}
-      {!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && (
+      {!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && !isNudgeDismissed && (
         <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none flex justify-center pb-6 px-4">
           <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] px-5 lg:px-8 flex justify-center pointer-events-auto">
             <LoginNudge
@@ -347,6 +373,7 @@ export default function WhatEatApp() {
                 bottomNavTab === "family" ? "여기저기 흩어진 나와 가족의 맛있는 기억들, 밥 먹을 땐 '뭐먹지?' 하나면 충분합니다." :
                 "오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요."
               }
+              onClose={handleDismissNudge}
             />
           </div>
         </div>
