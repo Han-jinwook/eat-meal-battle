@@ -783,11 +783,7 @@ export function FamilyPage() {
               <p className="text-[10px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
               <button
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowInviteModal(true)
-                  } else {
-                    setShowChefModal(true)
-                  }
+                  setShowChefModal(true)
                 }}
                 className="text-[9px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
               >
@@ -1283,7 +1279,13 @@ export function FamilyPage() {
               <p className="text-xs text-muted-foreground break-all">{inviteLink}</p>
             </div>
             <button
-              onClick={handleCopyInviteLink}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  handleCopyInviteLink()
+                }
+              }}
               className={cn(
                 "w-full py-3 text-white font-bold rounded-xl transition-colors",
                 isInviteLinkCopied ? "bg-emerald-500" : "bg-orange-500 hover:bg-orange-600",
@@ -1360,12 +1362,16 @@ export function FamilyPage() {
             
             <button
               onClick={() => {
-                if (selectedChefId) {
-                  setMembers(prev => prev.map(m => ({
-                    ...m,
-                    role: m.id === selectedChefId ? 'chef' : 'member'
-                  })))
-                  setShowChefModal(false)
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  if (selectedChefId) {
+                    setMembers(prev => prev.map(m => ({
+                      ...m,
+                      role: m.id === selectedChefId ? 'chef' : 'member'
+                    })))
+                    setShowChefModal(false)
+                  }
                 }
               }}
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/20"
