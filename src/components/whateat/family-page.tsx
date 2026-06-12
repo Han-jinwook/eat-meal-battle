@@ -24,7 +24,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useHub } from "@/services/merlin-hub-sdk/react"
+import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
 
 
 export interface FamilyMember {
@@ -105,7 +105,7 @@ type TabType = "shared" | "vote" | "menu"
 type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
 export function FamilyPage() {
-  const { isLoggedIn } = useHub()
+  const { isLoggedIn, user } = useHub()
   const [activeTab, setActiveTab] = useState<TabType>("shared")
   const [meals, setMeals] = useState(sharedMeals)
   const [vote, setVote] = useState(activeVote)
@@ -662,11 +662,21 @@ export function FamilyPage() {
             {familyMembers.map((member) => (
               <div key={member.id} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="relative">
-                  <img
-                    src={member.avatar || "/placeholder.svg"}
-                    alt={member.name}
-                    className="size-14 rounded-2xl object-cover border-2 border-white shadow-md"
-                  />
+                  {member.name === "나" ? (
+                    <HubAvatar
+                      isLoggedIn={isLoggedIn}
+                      avatarUrl={user?.avatar_url}
+                      nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
+                      size="sm"
+                      className="!w-14 !h-14 rounded-2xl border-2 border-white shadow-md"
+                    />
+                  ) : (
+                    <img
+                      src={member.avatar || "/placeholder.svg"}
+                      alt={member.name}
+                      className="size-14 rounded-2xl object-cover border-2 border-white shadow-md"
+                    />
+                  )}
                   {member.role === "chef" && (
                     <div className="absolute -top-1 -right-1 size-5 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
                       <Crown className="size-3 text-white" />
