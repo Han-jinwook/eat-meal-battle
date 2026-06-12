@@ -10,7 +10,7 @@ import whatEatLogo from "../../../public/images/logo.png"
 export type HeaderNavTab = "home" | "solo" | "family" | "talk" | "meal"
 
 interface HeaderProps {
-  activeNavTab?: HeaderNavTab
+  activeNavTab?: HeaderNavTab | null
   onNavTabChange?: (tab: HeaderNavTab) => void
   hoveredTab?: HeaderNavTab | null
 }
