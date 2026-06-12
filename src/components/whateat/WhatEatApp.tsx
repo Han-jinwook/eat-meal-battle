@@ -173,8 +173,19 @@ export default function WhatEatApp() {
     };
 
     window.addEventListener('popstate', handlePopState);
+    
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '') as HeaderNavTab;
+      const validTabs: HeaderNavTab[] = ["home", "solo", "family", "talk", "meal"];
+      if (validTabs.includes(hash)) {
+        setBottomNavTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 

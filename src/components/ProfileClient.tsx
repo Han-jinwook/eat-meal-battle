@@ -65,10 +65,9 @@ export default function ProfileClient() {
     <div className="min-h-screen bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2]">
       {/* 고정(fixed) 헤더 */}
       <Header
-        activeNavTab="solo"
+        activeNavTab={undefined}
         onNavTabChange={(tab) => {
-          localStorage.setItem('activeNavTab', tab);
-          router.push('/');
+          router.push('/#' + tab);
         }}
       />
 
