@@ -13,7 +13,7 @@ import { AddReservationModal } from "@/components/whateat/add-reservation-modal"
 import { Footer } from "@/components/whateat/footer"
 import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
-import { useHub, HubShareSquare } from "@/services/merlin-hub-sdk/react"
+import { useHub, HubShareSquare, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { HomeOnboarding } from "@/components/whateat/home-onboarding"
 import PWAInstallPrompt from "@/components/PWAInstallPrompt"
 
@@ -45,9 +45,68 @@ function LoginNudge({
 
 export default function WhatEatApp() {
   const { isLoggedIn, isLoading } = useHub()
+  const { registerInviter } = useHubReferral()
   const [hoveredTab, setHoveredTab] = useState<HeaderNavTab | null>(null)
   const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>("home")
   const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
+  const [showFamilyJoinConfirm, setShowFamilyJoinConfirm] = useState(false)
+  const [pendingRefCode, setPendingRefCode] = useState("")
+
+  // 1. URL의 ref 파라미터 감지 및 캐싱
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+
+    if (refCode) {
+      localStorage.setItem('pending_family_ref', refCode);
+    }
+  }, []);
+
+  // 2. 로그인 완료 감지 시 가족 합류 컨펌 노출
+  useEffect(() => {
+    if (isLoggedIn && !isLoading) {
+      const pendingRef = localStorage.getItem('pending_family_ref');
+      if (pendingRef) {
+        const processed = localStorage.getItem(`processed_family_ref_${pendingRef}`);
+        if (!processed) {
+          setPendingRefCode(pendingRef);
+          setShowFamilyJoinConfirm(true);
+        }
+      }
+    }
+  }, [isLoggedIn, isLoading]);
+
+  const handleAcceptFamilyJoin = async () => {
+    if (!pendingRefCode) return;
+    
+    const success = await registerInviter(pendingRefCode);
+    
+    if (success) {
+      localStorage.setItem(`processed_family_ref_${pendingRefCode}`, 'accepted');
+      localStorage.removeItem('pending_family_ref');
+      setShowFamilyJoinConfirm(false);
+      
+      alert("가족으로 성공적으로 연동되었습니다! 🏡");
+      
+      handleTabChange("family");
+      
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+      }
+    } else {
+      alert("가족 연동에 실패했습니다. 다시 시도해 주세요.");
+    }
+  };
+
+  const handleDeclineFamilyJoin = () => {
+    if (pendingRefCode) {
+      localStorage.setItem(`processed_family_ref_${pendingRefCode}`, 'declined');
+      localStorage.removeItem('pending_family_ref');
+    }
+    setShowFamilyJoinConfirm(false);
+  };
 
   // 1. 브라우저 뒤로가기/앞으로가기 및 마우스 뒤로가기 버튼 연동
   useEffect(() => {
@@ -289,6 +348,39 @@ export default function WhatEatApp() {
                 "오늘 메뉴는 뭘까? 아이의 급식 평가를 확인하고, 식단과 연계된 재미있는 AI 퀴즈도 즐겨보세요."
               }
             />
+          </div>
+        </div>
+      )}
+
+      {/* 가족 합류 컨펌 모달 */}
+      {showFamilyJoinConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-gray-100 shadow-2xl space-y-5 transform transition-all scale-100">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="size-16 rounded-2xl bg-orange-50 flex items-center justify-center text-4xl animate-bounce">
+                🏡
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 tracking-tight font-sans">우리가족으로 함께할까요?</h3>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                초대 코드를 통해 방문하셨습니다.<br/>
+                가족 그룹으로 합류하시면 함께 식사를 기록하고, 투표를 통해 식단을 결정할 수 있습니다.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={handleAcceptFamilyJoin}
+                className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all text-xs cursor-pointer"
+              >
+                수락하고 가족 합류하기 🧡
+              </button>
+              <button
+                onClick={handleDeclineFamilyJoin}
+                className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs cursor-pointer"
+              >
+                그냥 일반 모드로 둘러보기
+              </button>
+            </div>
           </div>
         </div>
       )}
