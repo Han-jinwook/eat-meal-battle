@@ -171,7 +171,10 @@ export default function WhatEatApp() {
             {bottomNavTab === "meal" && <div className="h-1" />}
           </div>
 
-          <main className="flex-1 overflow-y-auto custom-scrollbar pb-8 relative">
+          <main className={cn(
+            "flex-1 overflow-y-auto custom-scrollbar relative",
+            (!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk") ? "pb-[300px]" : "pb-8"
+          )}>
             {/* Home Onboarding Tab */}
             <div className={cn("absolute inset-0 z-50 bg-white/50 backdrop-blur-md overflow-hidden", (bottomNavTab !== "home" || isLoading) && "hidden")}>
               <HomeOnboarding 

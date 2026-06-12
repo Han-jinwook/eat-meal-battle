@@ -749,6 +749,11 @@ export default function MealClient() {
 
   // 학교등록 버튼 클릭 핸들러
   const handleSchoolRegister = () => {
+    if (!isLoggedIn) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'));
+      return;
+    }
+
     if (isMockSchoolMode) {
       setIsSchoolSearchOpen(true);
       setIsDropdownOpen(false);
@@ -1092,7 +1097,7 @@ export default function MealClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8" onClickCapture={handleInteraction}>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-6 lg:p-8">
       {/* 디버그 패널 제거 */}
 
 

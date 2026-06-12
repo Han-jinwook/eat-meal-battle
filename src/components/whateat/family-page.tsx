@@ -629,13 +629,19 @@ export function FamilyPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-4" onClickCapture={handleInteraction}>
+    <div className="flex flex-col gap-5 pb-4">
       {/* Family Header */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl pt-3 pb-2 px-5 border border-white shadow-lg">
         <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
           <>
             <button
-              onClick={() => familyPhotoInputRef.current?.click()}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  familyPhotoInputRef.current?.click()
+                }
+              }}
               className="size-12 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
             >
               {familyPhoto ? (
@@ -692,7 +698,13 @@ export function FamilyPage() {
               </div>
             ))}
             <button 
-              onClick={() => setShowInviteModal(true)}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  setShowInviteModal(true)
+                }
+              }}
               className="flex flex-col items-center gap-1.5 shrink-0"
             >
               <div className="size-14 rounded-2xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
@@ -948,7 +960,13 @@ export function FamilyPage() {
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">진행 중인 투표</h3>
             <button 
-              onClick={() => setShowCreateVoteModal(true)}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  setShowCreateVoteModal(true)
+                }
+              }}
               className="flex items-center gap-1 text-xs text-orange-500 font-bold"
             >
               <Plus className="size-3.5" />
@@ -1035,7 +1053,13 @@ export function FamilyPage() {
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">{"Chef's Choice"}</h3>
             <button 
-              onClick={() => setShowDecideMenuModal(true)}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  setShowDecideMenuModal(true)
+                }
+              }}
               className="flex items-center gap-1 text-xs text-orange-500 font-bold"
             >
               <ChefHat className="size-3.5" />
