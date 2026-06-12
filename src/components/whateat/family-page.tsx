@@ -631,8 +631,8 @@ export function FamilyPage() {
   return (
     <div className="flex flex-col gap-5 pb-4" onClickCapture={handleInteraction}>
       {/* Family Header */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl py-3 px-5 border border-white shadow-lg">
-        <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1">
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl pt-3 pb-2 px-5 border border-white shadow-lg">
+        <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
           <>
             <button
               onClick={() => familyPhotoInputRef.current?.click()}
@@ -658,7 +658,7 @@ export function FamilyPage() {
             <p className="text-xs text-muted-foreground">{familyMembers.length}명의 구성원</p>
           </div>
 
-          <div className="flex-1 flex items-center justify-center gap-3 ml-2 overflow-x-auto hide-scrollbar pb-1">
+          <div className="flex-1 flex items-center justify-center gap-3 ml-2 overflow-x-auto hide-scrollbar">
             {familyMembers.map((member) => (
               <div key={member.id} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="relative">
