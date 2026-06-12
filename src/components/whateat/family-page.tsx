@@ -117,7 +117,9 @@ export function FamilyPage() {
     async function loadRealFamily() {
       if (isLoggedIn) {
         const history = await getReferralHistory()
-        if (history && history.length > 0) {
+        const acceptedHistory = (history || []).filter((item: any) => item.status === 'REWARDED')
+
+        if (acceptedHistory.length > 0) {
           const avatarPresets = [
             "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
@@ -136,7 +138,7 @@ export function FamilyPage() {
               isStudent: false
             }
 
-            const realMembers: FamilyMember[] = history.map((item: any, index: number) => ({
+            const realMembers: FamilyMember[] = acceptedHistory.map((item: any, index: number) => ({
               id: index + 2,
               name: item.inviteeNickname || "가족",
               avatar: avatarPresets[index % avatarPresets.length],
