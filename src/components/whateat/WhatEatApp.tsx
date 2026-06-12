@@ -52,7 +52,7 @@ export default function WhatEatApp() {
   const [showFamilyJoinConfirm, setShowFamilyJoinConfirm] = useState(false)
   const [pendingRefCode, setPendingRefCode] = useState("")
 
-  // 1. URL의 ref 파라미터 감지 및 캐싱 & 주소창 정돈 (새로운 링크 진입 시 이전 캐시 무력화)
+  // 1. URL의 ref 파라미터 감지 및 캐싱 & 주소창 정돈
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -60,8 +60,6 @@ export default function WhatEatApp() {
     const refCode = urlParams.get('ref');
 
     if (refCode) {
-      // 새로운 초대 링크 진입 시 이전 가입 거절/수락 기록을 초기화하여 다시 물어보도록 강제함
-      localStorage.removeItem(`processed_family_ref_${refCode}`);
       localStorage.setItem('pending_family_ref', refCode);
 
       // 주소창에서 ?ref=... 파라미터를 조용히 제거하여 새로고침 시 무한 팝업 방지
@@ -78,11 +76,8 @@ export default function WhatEatApp() {
     if (isLoggedIn && !isLoading) {
       const pendingRef = localStorage.getItem('pending_family_ref');
       if (pendingRef) {
-        const processed = localStorage.getItem(`processed_family_ref_${pendingRef}`);
-        if (!processed) {
-          setPendingRefCode(pendingRef);
-          setShowFamilyJoinConfirm(true);
-        }
+        setPendingRefCode(pendingRef);
+        setShowFamilyJoinConfirm(true);
       }
     }
   }, [isLoggedIn, isLoading]);
@@ -93,7 +88,6 @@ export default function WhatEatApp() {
     const success = await registerInviter(pendingRefCode);
     
     if (success) {
-      localStorage.setItem(`processed_family_ref_${pendingRefCode}`, 'accepted');
       localStorage.removeItem('pending_family_ref');
       setShowFamilyJoinConfirm(false);
       
@@ -110,10 +104,7 @@ export default function WhatEatApp() {
   };
 
   const handleDeclineFamilyJoin = () => {
-    if (pendingRefCode) {
-      localStorage.setItem(`processed_family_ref_${pendingRefCode}`, 'declined');
-      localStorage.removeItem('pending_family_ref');
-    }
+    localStorage.removeItem('pending_family_ref');
     setShowFamilyJoinConfirm(false);
   };
 
