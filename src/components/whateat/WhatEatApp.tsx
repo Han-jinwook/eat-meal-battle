@@ -9,7 +9,6 @@ import { ReservationTab } from "@/components/whateat/reservation-tab"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 import { FamilyPage } from "@/components/whateat/family-page"
 import { TalkPage } from "@/components/whateat/talk-page"
-import { AddLogModal } from "@/components/whateat/add-log-modal"
 import { AddReservationModal } from "@/components/whateat/add-reservation-modal"
 import { Footer } from "@/components/whateat/footer"
 import { cn } from "@/lib/utils"
@@ -214,7 +213,6 @@ export default function WhatEatApp() {
 
   const [activeTab, setActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
-  const [isLogModalOpen, setIsLogModalOpen] = useState(false)
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false)
   const [logJumpRequest, setLogJumpRequest] = useState<{ date: string; key: number } | null>(null)
   const [reservationJumpRequest, setReservationJumpRequest] = useState<{ date: string; key: number } | null>(null)
@@ -284,7 +282,6 @@ export default function WhatEatApp() {
               <div className="flex flex-col gap-5">
                 <div className={cn(activeTab !== "log" && "hidden")}>
                   <MealLogTab
-                    onAdd={() => setIsLogModalOpen(true)}
                     jumpToDate={logJumpRequest}
                     showBackToCalendar={showBackToCalendar}
                     onBackToCalendar={() => {
@@ -363,7 +360,6 @@ export default function WhatEatApp() {
         </aside>
       </div>
 
-      <AddLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} />
       <AddReservationModal isOpen={isReservationModalOpen} onClose={() => setIsReservationModalOpen(false)} />
 
       {/* Global Login Nudge for Guest Users */}

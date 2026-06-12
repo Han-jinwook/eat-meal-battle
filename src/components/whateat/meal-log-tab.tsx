@@ -16,13 +16,12 @@ const mealTypeOptions = [
 ] as const
 
 interface MealLogTabProps {
-  onAdd?: () => void
   jumpToDate?: { date: string; key: number } | null
   showBackToCalendar?: boolean
   onBackToCalendar?: () => void
 }
 
-export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBackToCalendar }: MealLogTabProps) {
+export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCalendar }: MealLogTabProps) {
   const [viewerImage, setViewerImage] = useState<string | null>(null)
   const [mealLogs, setMealLogs] = useState(initialMealLogs)
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
@@ -200,10 +199,26 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
                 type: data.mealType,
                 tips: data.recipe?.split("\n").filter(t => t.trim()) || log.tips,
                 linkUrl: data.linkUrl || log.linkUrl,
+                image: data.image || log.image,
               }
             : log
         )
       )
+    } else {
+      const newLog = {
+        id: Date.now(),
+        date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
+        title: data.menuName,
+        type: data.mealType,
+        image: data.image || "/images/placeholder-food.jpg",
+        rating: data.rating || 5,
+        tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
+        tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
+        linkUrl: data.linkUrl,
+        aiTag: !!data.image,
+        healthy: data.mealType === "집밥",
+      }
+      setMealLogs(logs => [newLog, ...logs])
     }
     setEditModalOpen(false)
     setEditingMeal(null)
@@ -372,14 +387,15 @@ export function MealLogTab({ onAdd, jumpToDate, showBackToCalendar = false, onBa
               ← 캘린더
             </button>
           )}
-          {onAdd && (
-            <button
-              onClick={onAdd}
-              className="size-11 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-            >
-              <Plus className="size-5.5" strokeWidth={2.8} />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setEditingMeal(null)
+              setEditModalOpen(true)
+            }}
+            className="size-11 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="size-5.5" strokeWidth={2.8} />
+          </button>
         </div>
       </div>
       </div>{/* end sticky */}
