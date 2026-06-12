@@ -24,7 +24,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
+import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 
 
 export interface FamilyMember {
@@ -109,8 +109,75 @@ type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
 export function FamilyPage() {
   const { isLoggedIn, user } = useHub()
+  const { getReferralHistory } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
   const [showChefModal, setShowChefModal] = useState(false)
+
+  useEffect(() => {
+    async function loadRealFamily() {
+      if (isLoggedIn) {
+        const history = await getReferralHistory()
+        if (history && history.length > 0) {
+          const avatarPresets = [
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
+            "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face",
+            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+          ]
+
+          setMembers(prev => {
+            const currentChef = prev.find(m => m.role === 'chef')
+            const meMember: FamilyMember = {
+              id: 1,
+              name: "나",
+              avatar: user?.avatar_url || "",
+              role: (currentChef && currentChef.name === "나") ? "chef" : "member",
+              isOnline: true,
+              isStudent: false
+            }
+
+            const realMembers: FamilyMember[] = history.map((item: any, index: number) => ({
+              id: index + 2,
+              name: item.inviteeNickname || "가족",
+              avatar: avatarPresets[index % avatarPresets.length],
+              role: "member" as const,
+              isOnline: false,
+              isStudent: false
+            }))
+
+            const updatedMembers = [meMember, ...realMembers]
+
+            if (currentChef && currentChef.name !== "나") {
+              const foundRealChef = updatedMembers.find(m => m.name === currentChef.name)
+              if (foundRealChef) {
+                foundRealChef.role = 'chef'
+                meMember.role = 'member'
+              }
+            }
+
+            return updatedMembers
+          })
+        } else {
+          setMembers(prev => {
+            const hasVirtual = prev.some(m => m.name === "엄마" || m.name === "아빠" || m.name === "동생")
+            const baseList = hasVirtual ? prev : familyMembers
+            return baseList.map(m => {
+              if (m.name === "나") {
+                return {
+                  ...m,
+                  avatar: user?.avatar_url || ""
+                }
+              }
+              return m
+            })
+          })
+        }
+      } else {
+        setMembers(familyMembers)
+      }
+    }
+    loadRealFamily()
+  }, [isLoggedIn, user, getReferralHistory])
   const [selectedChefId, setSelectedChefId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -1211,7 +1278,7 @@ export function FamilyPage() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground mb-4 leading-normal">
-              가족들의 식사를 결정할 주방 책임자(셰프)를 지정하세요. 셰프는 식단 등록 및 메뉴 결정 권한을 가집니다.
+              가족들의 식사를 결정할 주방 책임자(셰프)를 지정하세요. 셰프는 메뉴 결정 권한을 가집니다.
             </p>
             
             <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
