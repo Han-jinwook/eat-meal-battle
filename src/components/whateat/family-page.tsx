@@ -93,6 +93,9 @@ interface TodayMenu {
 
 export const familyMembers: FamilyMember[] = [
   { id: 1, name: "나", avatar: "", role: "chef", isOnline: true, isStudent: false },
+  { id: 2, name: "엄마", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: false },
+  { id: 3, name: "아빠", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: false },
+  { id: 4, name: "동생", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: true },
 ]
 
 const sharedMeals: SharedMeal[] = []
@@ -106,6 +109,19 @@ type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
 export function FamilyPage() {
   const { isLoggedIn, user } = useHub()
+  const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
+  const [showChefModal, setShowChefModal] = useState(false)
+  const [selectedChefId, setSelectedChefId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (showChefModal) {
+      const currentChef = members.find((m) => m.role === "chef")
+      if (currentChef) {
+        setSelectedChefId(currentChef.id)
+      }
+    }
+  }, [showChefModal, members])
+
   const [activeTab, setActiveTab] = useState<TabType>("shared")
   const [meals, setMeals] = useState(sharedMeals)
   const [vote, setVote] = useState(activeVote)
@@ -161,7 +177,7 @@ export function FamilyPage() {
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
 
   const inviteLink = "https://whateat.app/invite/abc123xyz"
-  const currentFamilyMember = familyMembers.find((member) => member.name === "나") ?? familyMembers[0]
+  const currentFamilyMember = members.find((member) => member.name === "나") ?? members[0]
   const currentFamilyMemberId = currentFamilyMember.id
   const currentFamilyMemberName = currentFamilyMember.name
 
@@ -254,7 +270,7 @@ export function FamilyPage() {
     const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
     const ratedCount = scores.length
     const isRatingOpen = isMealRatingOpen(targetMeal)
-    const allFamilyRated = ratedCount >= familyMembers.length
+    const allFamilyRated = ratedCount >= members.length
     const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
 
     if (!canPromoteNow) {
@@ -661,11 +677,26 @@ export function FamilyPage() {
 
           <div className="shrink-0 min-w-fit">
             <h2 className="font-bold text-foreground text-lg leading-tight">우리 가족</h2>
-            <p className="text-xs text-muted-foreground">{familyMembers.length}명의 구성원</p>
+            <div className="flex flex-col gap-1 mt-1">
+              <p className="text-[10px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    setShowChefModal(true)
+                  }
+                }}
+                className="text-[9px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+              >
+                <ChefHat className="size-2.5" />
+                우리가족 셰프는?
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 flex items-center justify-center gap-3 ml-2 overflow-x-auto hide-scrollbar">
-            {familyMembers.map((member) => (
+            {members.map((member) => (
               <div key={member.id} className="flex flex-col items-center gap-1.5 shrink-0">
                 <div className="relative">
                   {member.name === "나" ? (
@@ -685,7 +716,7 @@ export function FamilyPage() {
                   )}
                   {member.role === "chef" && (
                     <div className="absolute -top-1 -right-1 size-5 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
-                      <Crown className="size-3 text-white" />
+                      <ChefHat className="size-3 text-white" />
                     </div>
                   )}
                   {member.isOnline && (
@@ -899,7 +930,7 @@ export function FamilyPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {familyMembers.map((member) => {
+                  {members.map((member) => {
                     const score = mealRatings[selectedMeal.id]?.[member.id] ?? 0
                     const isSelf = member.id === currentFamilyMemberId
                     const canRate = isSelf && isMealRatingOpen(selectedMeal)
@@ -1161,6 +1192,87 @@ export function FamilyPage() {
               )}
             >
               {isInviteLinkCopied ? "복사 완료!" : "링크 복사하기"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Chef Selection Bottom Sheet (Pull-up Modal) */}
+      {showChefModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-3xl w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">우리가족 셰프 지정 🍳</h3>
+              <button 
+                onClick={() => setShowChefModal(false)} 
+                className="size-8 rounded-full hover:bg-muted flex items-center justify-center"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4 leading-normal">
+              가족들의 식사를 결정할 주방 책임자(셰프)를 지정하세요. 셰프는 식단 등록 및 메뉴 결정 권한을 가집니다.
+            </p>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
+              {members.map((member) => {
+                const isSelected = selectedChefId === member.id
+                return (
+                  <button
+                    key={member.id}
+                    onClick={() => setSelectedChefId(member.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3 rounded-2xl border transition-all",
+                      isSelected 
+                        ? "border-orange-500 bg-orange-50/50" 
+                        : "border-gray-100 hover:bg-gray-50"
+                    )}
+                  >
+                    {member.name === "나" ? (
+                      <HubAvatar
+                        isLoggedIn={isLoggedIn}
+                        avatarUrl={user?.avatar_url}
+                        nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
+                        size="sm"
+                        className="!w-10 !h-10 rounded-xl"
+                      />
+                    ) : (
+                      <img 
+                        src={member.avatar || "/placeholder.svg"} 
+                        alt={member.name} 
+                        className="size-10 rounded-xl object-cover"
+                      />
+                    )}
+                    <div className="flex-1 text-left">
+                      <span className="font-bold text-sm text-foreground">{member.name}</span>
+                      {member.role === 'chef' && (
+                        <span className="ml-2 text-[10px] font-bold text-orange-500 bg-orange-100 px-1.5 py-0.5 rounded-md">현재 셰프</span>
+                      )}
+                    </div>
+                    <div className={cn(
+                      "size-5 rounded-full border flex items-center justify-center",
+                      isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300"
+                    )}>
+                      {isSelected && <Check className="size-3 stroke-[3]" />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            
+            <button
+              onClick={() => {
+                if (selectedChefId) {
+                  setMembers(prev => prev.map(m => ({
+                    ...m,
+                    role: m.id === selectedChefId ? 'chef' : 'member'
+                  })))
+                  setShowChefModal(false)
+                }
+              }}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/20"
+            >
+              셰프 변경 완료
             </button>
           </div>
         </div>
