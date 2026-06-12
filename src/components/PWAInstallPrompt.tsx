@@ -13,6 +13,12 @@ export default function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // 모바일 기기 여부 확인 (PC/데스크톱에서는 설치 권장 안내를 띄우지 않음)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) {
+      return;
+    }
+
     // PWA가 이미 설치되었는지 확인
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -27,12 +33,12 @@ export default function PWAInstallPrompt() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // 로컬스토리지 확인 후 표시
+      // 로컬스토리지 확인 후 표시 (최근 거절 시 7일 동안 표시하지 않음)
       const installDismissed = localStorage.getItem('pwa-install-dismissed');
       if (installDismissed) {
         const dismissedTime = parseInt(installDismissed);
-        const oneDayInMs = 24 * 60 * 60 * 1000;
-        if (Date.now() - dismissedTime < oneDayInMs) {
+        const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < sevenDaysInMs) {
           return;
         }
       }
@@ -55,8 +61,8 @@ export default function PWAInstallPrompt() {
       const installDismissed = localStorage.getItem('pwa-install-dismissed');
       if (installDismissed) {
         const dismissedTime = parseInt(installDismissed);
-        const oneDayInMs = 24 * 60 * 60 * 1000;
-        if (Date.now() - dismissedTime < oneDayInMs) {
+        const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < sevenDaysInMs) {
           return;
         }
       }
