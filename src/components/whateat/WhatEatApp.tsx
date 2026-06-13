@@ -345,15 +345,15 @@ export default function WhatEatApp() {
           - 이를 통해 브라우저 크기에 상관없이 본문 800px 컨테이너가 항상 독립적인 탭 중앙에 위치하도록 보장합니다.
           - 가이드 공식: top-[62px] left-[calc(50%+400px+8px)] h-[calc(100vh-62px)]
         */}
-        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center pt-4 absolute top-[62px] left-[calc(50%+400px+8px)] h-[calc(100vh-62px)]">
-          <div className="flex flex-col gap-4 w-full items-center sticky top-[78px]">
+        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center absolute left-[calc(50%+400px+8px)]" style={{ top: '62px' }}>
+          <div className="flex flex-col gap-4 w-full items-center fixed top-[78px] w-[160px] h-[calc(100vh-78px)] overflow-y-auto custom-scrollbar pb-4">
             {/* 1. 공유 카드 */}
             <HubShareSquare 
               customTitle="식단 관리와 오늘 뭐 먹을지 고민될 땐? 뭐먹지! 🍕"
               description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
             />
             {/* 2. 광고 배너 (우측 사이드) */}
-            <div className="w-full h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
+            <div className="w-full shrink-0 h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
               AD BANNER
             </div>
           </div>
