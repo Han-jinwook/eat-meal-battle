@@ -110,17 +110,21 @@ export default function ProfileClient() {
           - absolute 포지셔닝으로 격리 배치하여 프로필 페이지의 800px 본문 정렬선이 정중앙에 올 수 있게 보장합니다.
           - 가이드 공식: top-[62px] left-[calc(50%+400px+8px)] h-[calc(100vh-62px)]
         */}
-        <aside className="hidden lg:flex w-[160px] shrink-0 items-start justify-center absolute left-[calc(50%+400px+8px)]" style={{ top: '62px' }}>
-          <div className="flex flex-col gap-4 w-full items-center fixed top-[78px] w-[160px] h-[calc(100vh-78px)] overflow-y-auto custom-scrollbar pb-4">
-            {/* 1. 공유 카드 */}
-            <HubShareSquare 
-              customTitle="식단 관리와 오늘 뭐 먹을지 고민될 땐? 뭐먹지! 🍕"
-              description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
-            />
-            {/* 2. 광고 배너 (우측 사이드) */}
-            <div className="w-full shrink-0 h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
-              AD BANNER
-            </div>
+        <aside 
+          className="hidden min-[1120px]:flex flex-col gap-4 w-[160px] shrink-0 items-center fixed bottom-[16px] overflow-y-auto custom-scrollbar pr-2 pb-4" 
+          style={{ 
+            top: 'calc(62px + 16px)',
+            left: 'calc(50% + 400px + 6px)' 
+          }}
+        >
+          {/* 1. 공유 카드 */}
+          <HubShareSquare 
+            customTitle="식단 관리와 오늘 뭐 먹을지 고민될 땐? 뭐먹지! 🍕"
+            description="우리 가족과 함께 매일의 급식 소식과 맛있는 레시피를 즐겨보세요."
+          />
+          {/* 2. 광고 배너 (우측 사이드) */}
+          <div className="w-full shrink-0 h-[300px] bg-white/50 border border-dashed border-muted/30 rounded-2xl flex items-center justify-center text-muted-foreground/50 text-xs shadow-sm">
+            AD BANNER
           </div>
         </aside>
       </div>
