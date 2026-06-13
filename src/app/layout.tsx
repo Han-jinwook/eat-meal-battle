@@ -11,6 +11,7 @@ import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import StructuredData from '@/components/StructuredData';
 import { SchoolModeProvider } from '@/hooks/useSchoolMode';
 import WhatEatTimer from '@/components/whateat/WhatEatTimer';
+import { WhatEatBottomBanner } from '@/components/WhatEatBottomBanner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -110,6 +111,7 @@ export default function RootLayout({
           {/* 허브 표준: 최상위에 단 1회만 배치 */}
           <GlobalLoginModal />
           <HubNotifier />
+          <WhatEatBottomBanner />
         </HubProvider>
       </body>
     </html>
