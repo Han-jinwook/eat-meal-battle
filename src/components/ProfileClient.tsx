@@ -111,7 +111,7 @@ export default function ProfileClient() {
           - 가이드 공식: top-[62px] left-[calc(50%+400px+8px)] h-[calc(100vh-62px)]
         */}
         <aside 
-          className="hidden min-[1120px]:flex flex-col gap-4 w-[160px] shrink-0 items-center fixed bottom-[16px] overflow-y-auto custom-scrollbar pr-2 pb-4" 
+          className="hidden min-[1120px]:flex flex-col gap-4 w-[160px] shrink-0 items-center fixed bottom-[16px] overflow-y-auto overflow-x-hidden custom-scrollbar pb-4" 
           style={{ 
             top: 'calc(62px + 16px)',
             left: 'calc(50% + 400px + 6px)' 
