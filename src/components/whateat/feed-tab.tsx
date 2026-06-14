@@ -465,29 +465,56 @@ export function FeedTab() {
       {/* Feed Posts */}
       <div className="flex flex-col gap-5">
         {filteredPosts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <div className="size-20 rounded-full bg-orange-50 flex items-center justify-center mb-5">
-              {feedFilter === "subscribed" ? (
-                <UserPlus className="size-9 text-primary/40" />
-              ) : (
-                <Heart className="size-9 text-primary/40" />
-              )}
+          <div className="relative overflow-hidden bg-white rounded-[2rem] shadow-[0_10px_25px_rgba(0,0,0,0.04)] opacity-80 pointer-events-none">
+            {/* 샘플 리본 */}
+            <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10">
+              <div className="absolute top-4 -right-8 w-32 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
+                💡 SAMPLE
+              </div>
             </div>
-            {feedFilter === "subscribed" ? (
-              <>
-                <p className="text-[15px] font-bold text-foreground">아직 구독한 레시퍼가 없어요</p>
-                <p className="text-[13px] mt-2 text-muted-foreground text-center leading-relaxed">
-                  먹톡에서, 마음에 드는 레시퍼를 구독해보세요
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-[15px] font-bold text-foreground">좋아요한 게시글이 없습니다</p>
-                <p className="text-[13px] mt-2 text-muted-foreground">
-                  마음에 드는 게시글에 좋아요를 눌러보세요!
-                </p>
-              </>
-            )}
+            
+            {/* Author Header */}
+            <div className="flex items-center justify-between p-4 pb-3">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="size-10 rounded-full bg-cover bg-center ring-2 ring-orange-100 bg-slate-200"
+                />
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[14px] font-bold text-foreground">허브 매니저</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-600">
+                      공식
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium text-muted-foreground">1시간 전</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-4 pb-3">
+              <p className="text-[14px] font-medium leading-relaxed text-foreground whitespace-pre-line">
+                {feedFilter === "subscribed" 
+                  ? "아직 구독한 레시퍼가 없습니다.\n먹톡에서 마음에 드는 레시퍼를 구독해보세요!"
+                  : "아직 좋아요한 게시글이 없습니다.\n마음에 드는 게시글에 좋아요를 눌러보세요!"}
+              </p>
+            </div>
+
+            {/* Image placeholder */}
+            <div className="relative w-full aspect-square bg-slate-100 flex items-center justify-center">
+               <div className="size-20 rounded-full bg-orange-50 flex items-center justify-center mb-5">
+                 {feedFilter === "subscribed" ? (
+                   <UserPlus className="size-9 text-primary/40" />
+                 ) : (
+                   <Heart className="size-9 text-primary/40" />
+                 )}
+               </div>
+               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent flex items-end justify-center pb-4">
+                 <span className="text-xs font-black text-slate-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                   실제 활동을 시작하면 샘플은 사라져요!
+                 </span>
+               </div>
+            </div>
           </div>
         ) : (
           filteredPosts.map((post) => (
