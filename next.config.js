@@ -44,6 +44,9 @@ const nextConfig = {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;
   },
+
+  // Next.js 16 Turbopack 호환성을 위한 빈 설정 추가
+  turbopack: {},
 }
 
 module.exports = withPWA(nextConfig);
