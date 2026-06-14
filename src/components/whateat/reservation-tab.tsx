@@ -373,10 +373,19 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   cardRefs.current[plan.id] = el
                 }}
                 className={cn(
-                  "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100",
-                  focusedPlanId === plan.id && "ring-2 ring-cyan-400 shadow-cyan-100"
+                  "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100 relative overflow-hidden",
+                  focusedPlanId === plan.id && "ring-2 ring-cyan-400 shadow-cyan-100",
+                  (plan.id === 1 || plan.id === 2 || plan.id === 3) && "opacity-90"
                 )}
               >
+                {/* 샘플 리본 */}
+                {(plan.id === 1 || plan.id === 2 || plan.id === 3) && (
+                  <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+                    <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
+                      💡 SAMPLE
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   {/* Meal Type Badge */}
                   <div className="size-11 rounded-xl bg-orange-50 flex flex-col items-center justify-center shrink-0">

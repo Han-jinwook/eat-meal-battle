@@ -468,10 +468,19 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               cardRefs.current[meal.id] = el
             }}
             className={cn(
-              "bg-white rounded-[2rem] overflow-hidden shadow-[0_10px_25px_rgba(0,0,0,0.04)] transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100",
-              focusedMealId === meal.id && "ring-2 ring-cyan-400 shadow-cyan-100"
+              "bg-white rounded-[2rem] overflow-hidden shadow-[0_10px_25px_rgba(0,0,0,0.04)] transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100 relative",
+              focusedMealId === meal.id && "ring-2 ring-cyan-400 shadow-cyan-100",
+              (meal.id === 1 || meal.id === 2 || meal.id === 3) && "opacity-90"
             )}
           >
+            {/* 샘플 리본 */}
+            {(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
+              <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
+                <div className="absolute top-4 -right-8 w-32 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
+                  💡 SAMPLE
+                </div>
+              </div>
+            )}
             {/* Card Content */}
             <div className="flex h-[200px]">
               {/* Image Section */}

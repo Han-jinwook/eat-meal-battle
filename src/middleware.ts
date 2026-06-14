@@ -22,11 +22,11 @@ export async function middleware(request: NextRequest) {
   // Content-Security-Policy 설정
   response.headers.set('Content-Security-Policy', 
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseio.com https://*.googleapis.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.googleapis.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "img-src 'self' data: https: blob:; " +
     "font-src 'self' https://fonts.gstatic.com; " +
-    "connect-src 'self' https://*.supabase.co https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://firestore.googleapis.com https://os.sundreamer.app https://images.unsplash.com; " +
+    "connect-src 'self' https://*.supabase.co https://*.googleapis.com https://os.sundreamer.app https://images.unsplash.com; " +
     "frame-src 'self' https://*.googleapis.com;"
   );
   

@@ -25,7 +25,7 @@ export function BottomNav({ activeTab = "solo", onTabChange }: BottomNavProps) {
           key={item.id}
           onClick={() => onTabChange?.(item.id)}
           className={cn(
-            "flex flex-col items-center justify-center gap-1.5 flex-1 py-2 rounded-xl transition-all",
+            "flex flex-col items-center justify-center gap-1.5 flex-1 py-2 rounded-xl transition-all cursor-pointer select-none active:scale-[0.98]",
             activeTab === item.id 
               ? "text-cyan-600 bg-cyan-50" 
               : "text-gray-400 hover:text-cyan-500"
