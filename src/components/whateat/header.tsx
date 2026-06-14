@@ -5,6 +5,7 @@ import { MessageSquare, User, Users, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useHub, HubAvatar } from "@/services/merlin-hub-sdk/react"
+import { HubAppSwitcher } from "@/services/merlin-hub-sdk/Navigation/HubAppSwitcher"
 import whatEatLogo from "../../../public/images/logo.png"
 
 export type HeaderNavTab = "home" | "solo" | "family" | "talk" | "meal"
@@ -73,8 +74,9 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             );
           })}
         </div>
-        {/* 프로필 */}
-        <div className="flex shrink-0 items-center">
+        {/* 프로필 및 스위처 */}
+        <div className="flex shrink-0 items-center gap-2">
+          <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
           <button
             type="button"
             onClick={handleProfileClick}
