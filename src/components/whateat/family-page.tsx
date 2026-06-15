@@ -105,23 +105,110 @@ export const familyMembers: FamilyMember[] = [
 const defaultSharedMeals: SharedMeal[] = [
   {
     id: "sample-1",
-    image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop",
-    title: "주말 브런치 팬케이크",
-    sharedBy: "엄마",
-    sharedAt: "오늘 10:30",
-    sharedAtIso: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    image: "https://images.unsplash.com/photo-1563379926898-37aacf113fd9?w=500&fit=crop",
+    title: "아빠표 수제 라구 파스타 🍝",
+    sharedBy: "아빠",
+    sharedAt: "오늘 12:30",
+    sharedAtIso: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     mealType: "homemade",
   },
   {
     id: "sample-2",
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop",
-    title: "건강 샐러드",
+    image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=500&fit=crop",
+    title: "첫 알바 첫 월급 턱! 동생이 쏜 수제 도넛 🍩",
     sharedBy: "동생",
     sharedAt: "어제",
-    sharedAtIso: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    sharedAtIso: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+    mealType: "homemade",
+  },
+  {
+    id: "sample-3",
+    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&fit=crop",
+    title: "엄마표 특제 매콤달콤 떡볶이 & 모듬 튀김 🍡",
+    sharedBy: "엄마",
+    sharedAt: "3일 전",
+    sharedAtIso: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     mealType: "homemade",
   }
 ]
+
+const defaultMealComments: Record<string | number, MealComment[]> = {
+  "sample-1": [
+    {
+      id: "comment-s1-1",
+      author: "엄마",
+      content: "오늘 아침 파스타 진짜 맛있었어! 소스가 레스토랑 급이네 🍝",
+      createdAt: "오전 11:20",
+      likes: 2,
+      isLiked: false,
+      replies: [
+        {
+          id: "reply-s1-1-1",
+          author: "나",
+          content: "맞아 아빠 요리 실력이 점점 늘어나는 것 같아 ㅎㅎ",
+          createdAt: "오전 11:22",
+          likes: 1,
+          isLiked: false
+        }
+      ]
+    },
+    {
+      id: "comment-s1-2",
+      author: "동생",
+      content: "아빠 내일 아침에도 파스타 해주면 안 돼요? 😋",
+      createdAt: "오전 11:30",
+      likes: 1,
+      isLiked: false,
+      replies: []
+    }
+  ],
+  "sample-2": [
+    {
+      id: "comment-s2-1",
+      author: "엄마",
+      content: "동생이 웬일로 줄 서서 도넛을 사왔네~ 달콤하게 잘 먹었어 🍩",
+      createdAt: "어제 17:40",
+      likes: 1,
+      isLiked: false,
+      replies: []
+    },
+    {
+      id: "comment-s2-2",
+      author: "아빠",
+      content: "크림이 꽉 차서 맛있더구나. 고생했다 우리 아들!",
+      createdAt: "어제 18:00",
+      likes: 1,
+      isLiked: false,
+      replies: []
+    }
+  ],
+  "sample-3": [
+    {
+      id: "comment-s3-1",
+      author: "나",
+      content: "엄마표 떡볶이는 언제 먹어도 넘사벽 최고존엄.. 🌶️",
+      createdAt: "3일 전",
+      likes: 2,
+      isLiked: false,
+      replies: []
+    },
+    {
+      id: "comment-s3-2",
+      author: "동생",
+      content: "깻잎 향이 솔솔 나서 진짜 맛있게 먹었음! 튀김과의 조합 굿 👍",
+      createdAt: "3일 전",
+      likes: 1,
+      isLiked: false,
+      replies: []
+    }
+  ]
+}
+
+const defaultMealRatings: Record<string | number, Record<number, number>> = {
+  "sample-1": { 1: 5, 2: 5, 3: 5, 4: 5 },
+  "sample-2": { 1: 5, 2: 5, 3: 5, 4: 5 },
+  "sample-3": { 1: 5, 2: 5, 3: 5, 4: 5 }
+}
 
 const defaultActiveVote: ActiveVote = {
   id: "sample-vote",
@@ -317,6 +404,39 @@ export function FamilyPage() {
   const [expandedMealCommentsId, setExpandedMealCommentsId] = useState<string | number | null>(null)
   const [mealComments, setMealComments] = useState<Record<string | number, MealComment[]>>({})
   const [mealRatings, setMealRatings] = useState<Record<string | number, Record<number, number>>>({})
+  
+  // 1회 온보딩 미션 상태 선언
+  const [familyRatedOnce, setFamilyRatedOnce] = useState(false)
+  const [familyCommentedOnce, setFamilyCommentedOnce] = useState(false)
+  const [familyExperienceCompleted, setFamilyExperienceCompleted] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setFamilyRatedOnce(localStorage.getItem("whateat_family_rated_once") === "true")
+      setFamilyCommentedOnce(localStorage.getItem("whateat_family_commented_once") === "true")
+      setFamilyExperienceCompleted(localStorage.getItem("whateat_family_experience_completed") === "true")
+    }
+  }, [])
+
+  // 샘플 데이터일 때 초기 댓글과 평점을 로컬 상태에 주입
+  useEffect(() => {
+    if (meals.length === 0 || !familyExperienceCompleted) {
+      setMealComments(defaultMealComments)
+      setMealRatings(defaultMealRatings)
+    }
+  }, [meals, familyExperienceCompleted])
+
+  const checkFamilyMissionCompletion = (rated: boolean, commented: boolean) => {
+    if (rated && commented && !familyExperienceCompleted) {
+      localStorage.setItem("whateat_family_experience_completed", "true")
+      setFamilyExperienceCompleted(true)
+      alert("🎉 축하합니다! 가족 식탁 1회 체험 온보딩 미션을 완수하셨습니다! 이제 실제 가족 공유 데이터가 표시됩니다. 🏡")
+    }
+  }
+
+  const displayComments = (meals.length === 0 || !familyExperienceCompleted) ? defaultMealComments : mealComments
+  const displayRatings = (meals.length === 0 || !familyExperienceCompleted) ? defaultMealRatings : mealRatings
+
   const [promotedMealIds, setPromotedMealIds] = useState<any[]>([])
   const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
   const [isPromotingMealId, setIsPromotingMealId] = useState<string | number | null>(null)
@@ -616,7 +736,8 @@ export function FamilyPage() {
     { id: "dining" as SharedMealFilterType, label: "외식", icon: UtensilsCrossed },
   ]
 
-  const filteredMeals = meals.filter((meal) => {
+  const baseMeals = (meals.length === 0 || !familyExperienceCompleted) ? defaultSharedMeals : meals
+  const filteredMeals = baseMeals.filter((meal) => {
     if (sharedMealFilter === "all") {
       return true
     }
@@ -655,7 +776,7 @@ export function FamilyPage() {
   }
 
   const getMealAverageRating = (mealId: number) => {
-    const ratingMap = mealRatings[mealId] ?? {}
+    const ratingMap = displayRatings[mealId] ?? {}
     const ratedScores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
 
     if (ratedScores.length === 0) {
@@ -695,7 +816,7 @@ export function FamilyPage() {
     try {
       setIsPromotingMealId(mealId)
 
-      const comments = (mealComments[mealId] ?? []).map((comment) => ({
+      const comments = (displayComments[mealId] ?? []).map((comment) => ({
         id: comment.id,
         author: comment.author,
         content: comment.content,
@@ -822,7 +943,19 @@ export function FamilyPage() {
   }
 
   const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
-    const targetMeal = meals.find((meal) => meal.id === mealId)
+    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
+      setMealRatings((prev) => {
+        const next = { ...prev }
+        next[mealId] = { ...(next[mealId] ?? {}), [memberId]: score }
+        return next
+      })
+      localStorage.setItem("whateat_family_rated_once", "true")
+      setFamilyRatedOnce(true)
+      checkFamilyMissionCompletion(true, familyCommentedOnce)
+      return
+    }
+
+    const targetMeal = baseMeals.find((meal) => meal.id === mealId)
     if (!targetMeal || memberId !== currentFamilyMemberId || !isMealRatingOpen(targetMeal)) {
       return
     }
@@ -921,7 +1054,29 @@ export function FamilyPage() {
     const content = mealCommentInput.trim()
     if (!content) return
 
-    const targetMeal = meals.find(m => m.id === mealId)
+    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
+      setMealComments((prev) => {
+        const next = { ...prev }
+        const newComment: MealComment = {
+          id: `comment-virtual-${Date.now()}`,
+          author: "나",
+          content: content,
+          createdAt: "방금 전",
+          likes: 0,
+          isLiked: false,
+          replies: []
+        }
+        next[mealId] = [...(next[mealId] ?? []), newComment]
+        return next
+      })
+      setMealCommentInput("")
+      localStorage.setItem("whateat_family_commented_once", "true")
+      setFamilyCommentedOnce(true)
+      checkFamilyMissionCompletion(familyRatedOnce, true)
+      return
+    }
+
+    const targetMeal = baseMeals.find(m => m.id === mealId)
     if (!targetMeal || !targetMeal.mealMenuId) return
 
     if (!isLoggedIn || !user?.id) {
@@ -1081,14 +1236,14 @@ export function FamilyPage() {
       <div className={cn("flex items-center gap-2 mb-3", variant === "card" && "mb-2")}>
         <MessageCircle className="size-4 text-orange-500" />
         <h4 className="font-bold text-sm text-foreground">댓글</h4>
-        <span className="text-xs text-muted-foreground">{(mealComments[mealId] ?? []).length}개</span>
+        <span className="text-xs text-muted-foreground">{(displayComments[mealId] ?? []).length}개</span>
       </div>
 
       <div className={cn("space-y-2 pr-1", variant === "modal" ? "max-h-64 overflow-y-auto" : "max-h-48 overflow-y-auto")}>
-        {(mealComments[mealId] ?? []).length === 0 ? (
+        {(displayComments[mealId] ?? []).length === 0 ? (
           <p className="text-xs text-muted-foreground">아직 댓글이 없어요. 첫 댓글을 남겨보세요.</p>
         ) : (
-          (mealComments[mealId] ?? []).map((comment) => (
+          (displayComments[mealId] ?? []).map((comment) => (
             <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-foreground">{comment.author}</span>
@@ -1357,6 +1512,32 @@ export function FamilyPage() {
               )
             })}
           </div>
+
+          {!familyExperienceCompleted && (
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50/70 border border-orange-200 rounded-3xl p-4.5 mb-2 shadow-sm animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Sparkles className="size-4 text-orange-500 animate-pulse" />
+                <h4 className="font-extrabold text-sm text-foreground">🏡 우리가족 식탁 1회 체험 미션</h4>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+                아래 샘플 식사를 선택하여 별점을 주고 댓글을 달아보세요! 두 미션을 완료하면 실제 가족 방으로 전환됩니다.
+              </p>
+              <div className="flex gap-4 text-[11px] font-bold">
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("size-4 rounded-md flex items-center justify-center border text-[9px] transition-colors", familyRatedOnce ? "bg-orange-500 border-orange-500 text-white" : "border-gray-300 bg-white")}>
+                    {familyRatedOnce && "✓"}
+                  </span>
+                  식사 평점 주기
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className={cn("size-4 rounded-md flex items-center justify-center border text-[9px] transition-colors", familyCommentedOnce ? "bg-orange-500 border-orange-500 text-white" : "border-gray-300 bg-white")}>
+                    {familyCommentedOnce && "✓"}
+                  </span>
+                  한 줄 댓글 남기기
+                </span>
+              </div>
+            </div>
+          )}
           
           {filteredMeals.length === 0 ? (
             <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
@@ -1433,7 +1614,7 @@ export function FamilyPage() {
                         className="w-full rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-2 text-[11px] font-bold text-orange-600 flex items-center justify-center gap-1"
                       >
                         <MessageCircle className="size-3.5" />
-                        댓글 {(mealComments[meal.id] ?? []).length}개
+                        댓글 {(displayComments[meal.id] ?? []).length}개
                       </button>
 
                       {!isOpen && isExpanded && (
@@ -1498,7 +1679,7 @@ export function FamilyPage() {
 
                 <div className="space-y-2.5">
                   {members.map((member) => {
-                    const score = mealRatings[selectedMeal.id]?.[member.id] ?? 0
+                    const score = displayRatings[selectedMeal.id]?.[member.id] ?? 0
                     const isSelf = member.id === currentFamilyMemberId
                     const canRate = isSelf && isMealRatingOpen(selectedMeal)
 

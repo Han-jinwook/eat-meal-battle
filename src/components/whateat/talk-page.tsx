@@ -66,9 +66,146 @@ interface Comment {
 }
 
 // 더미 데이터
-const dummyPosts: TalkPost[] = []
+const dummyPosts: TalkPost[] = [
+  {
+    id: 1,
+    type: "dineout",
+    title: "청라 찐 맛집 [인생 소갈비살] 육즙 폭발 숯불구이 🥩",
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&fit=crop",
+    description: "웨이팅이 전혀 아깝지 않은 인생 갈비살 맛집이에요! 참숯 향이 고기에 그대로 배어 있어서 소금만 콕 찍어 먹어도 감칠맛이 폭발합니다. 육즙이 뚝뚝 떨어지는 극강의 부드러움.. 가족 모임 장소로 강력 추천해요! 💯",
+    region: { dong: "청라동", gu: "서구", city: "인천" },
+    restaurant: { name: "인생 갈비살 청라점", address: "인천 서구 청라라임로 85" },
+    author: { id: 101, nickname: "청라동 멀린님", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face", region: "청라동" },
+    createdAt: "방금 전",
+    rating: { average: 4.9, count: 18 },
+    likes: 12,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
+  },
+  {
+    id: 2,
+    type: "homemade",
+    title: "에어프라이어로 뚝딱! 마늘 통삼겹 겉바속촉 오븐구이 🥓",
+    image: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=600&fit=crop",
+    description: "에어프라이어 180도에서 20분 뒤집어서 15분 구웠더니 겉은 과자처럼 바삭하고 속은 육즙 가득 촉촉하게 구워졌어요. 통마늘이랑 아스파라거스도 같이 구워 쌈장에 찍어 먹으면 밥 한 공기 뚝딱입니다! 초간단 영양 만점 메뉴 😋",
+    region: { dong: "논현동", gu: "강남구", city: "서울" },
+    author: { id: 102, nickname: "집밥 백선생", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face", region: "논현동" },
+    createdAt: "30분 전",
+    rating: { average: 5.0, count: 22 },
+    likes: 24,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
+  },
+  {
+    id: 3,
+    type: "delivery",
+    title: "꾸덕함의 끝판왕! 매콤 투움바 떡볶이 & 바삭 크리스피 치킨 세트 🍗",
+    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&fit=crop",
+    description: "오늘 야식은 투움바 로제 떡볶이에 크리스피 순살 치킨입니다! 꾸덕하고 매콤한 소스에 바삭한 치킨을 푹 찍어 먹으면 스트레스가 다 날아가요. 넙적당면이랑 치즈 핫도그 토핑 추가는 선택이 아닌 필수입니다.. 강력 추천! 👍",
+    region: { dong: "송도동", gu: "연수구", city: "인천" },
+    restaurant: { name: "삼첩분식 송도점", address: "인천 연수구 송도동 23-4" },
+    author: { id: 103, nickname: "송도 배달요정", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face", region: "송도동" },
+    createdAt: "2시간 전",
+    rating: { average: 4.8, count: 14 },
+    likes: 15,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
+  },
+  {
+    id: 4,
+    type: "dineout",
+    title: "달콤 쌉싸름함의 극치! 프리미엄 수제 녹차 빙수 🍧",
+    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&fit=crop",
+    description: "제주도 말차 가루를 아낌없이 뿌린 수제 우유 빙수예요. 팥도 매장에서 직접 졸였다고 하는데 과하게 달지 않고 쌉싸름한 녹차와 부드러운 우유 얼음 조화가 정말 대박입니다. 쫄깃한 녹차 찰떡 고명까지 완벽한 웰빙 디저트예요!",
+    region: { dong: "역삼동", gu: "강남구", city: "서울" },
+    restaurant: { name: "설빙 강남역삼점", address: "서울 강남구 테헤란로 123" },
+    author: { id: 104, nickname: "디저트 매니아", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face", region: "역삼동" },
+    createdAt: "5시간 전",
+    rating: { average: 5.0, count: 29 },
+    likes: 31,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
+  }
+]
 
-const dummyComments: Comment[] = []
+const dummyComments: Record<number, Comment[]> = {
+  1: [
+    {
+      id: 11,
+      author: { nickname: "고기러버", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "와.. 고기 윤기 흐르는 거 대박이네요. 오늘 저녁 여기로 결정합니다!",
+      createdAt: "방금 전",
+      likes: 3,
+      isLiked: false
+    },
+    {
+      id: 12,
+      author: { nickname: "동네주민", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "여기 된장찌개도 예술이에요! 꼭 밥 말아서 된장술밥으로 드셔보세요.",
+      createdAt: "10분 전",
+      likes: 2,
+      isLiked: false
+    }
+  ],
+  2: [
+    {
+      id: 21,
+      author: { nickname: "요리초보", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=50&h=50&fit=crop&crop=face", region: "서초동" },
+      content: "에어프라이어 온도 정보 완전 꿀팁이네요! 오늘 밤에 바로 도전해볼게요.",
+      createdAt: "20분 전",
+      likes: 1,
+      isLiked: false
+    },
+    {
+      id: 22,
+      author: { nickname: "다이어터", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face", region: "논현동" },
+      content: "삼겹살에 구운 마늘 조합은 참을 수 없죠.. 정말 잘 구우셨네요 👍",
+      createdAt: "25분 전",
+      likes: 1,
+      isLiked: false
+    }
+  ],
+  3: [
+    {
+      id: 31,
+      author: { nickname: "배달매니아", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50&h=50&fit=crop&crop=face", region: "송도동" },
+      content: "투움바 로제 떡볶이에 소스 가득 묻힌 순살 치킨.. 역시 먹잘알이십니다!",
+      createdAt: "1시간 전",
+      likes: 2,
+      isLiked: false
+    },
+    {
+      id: 32,
+      author: { nickname: "야식유혹", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=50&h=50&fit=crop&crop=face", region: "송도동" },
+      content: "이 글 보고 결국 배달앱 켰습니다.. 책임지세요 ㅠㅠ ㅋㅋ",
+      createdAt: "1.5시간 전",
+      likes: 4,
+      isLiked: false
+    }
+  ],
+  4: [
+    {
+      id: 41,
+      author: { nickname: "달달구리", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&h=50&fit=crop&crop=face", region: "대치동" },
+      content: "우유 얼음이라 부드럽고 쌉싸름해서 물리지 않고 먹기 정말 좋겠어요!",
+      createdAt: "4시간 전",
+      likes: 1,
+      isLiked: false
+    },
+    {
+      id: 42,
+      author: { nickname: "녹차덕후", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face", region: "역삼동" },
+      content: "강남역 삼겹살 먹고 후식으로 무조건 들르는 녹차빙수 성지죠~ 완전 공감!",
+      createdAt: "4.5시간 전",
+      likes: 2,
+      isLiked: false
+    }
+  ]
+}
 
 // 카테고리 옵션
 const categoryOptions = [
@@ -457,7 +594,13 @@ export function TalkPage() {
       {/* Posts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {visiblePosts.map((post) => (
-          <div key={post.id} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
+          <div key={post.id} className="relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
+            {/* 샘플 리본 */}
+            <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+              <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
+                💡 SAMPLE
+              </div>
+            </div>
             {/* Author Header */}
             <div className="flex items-center justify-between p-4 pb-3">
               <div className="flex items-center gap-3">
@@ -573,7 +716,7 @@ export function TalkPage() {
               <div className="border-t border-muted/30">
                 {/* Comment List */}
                 <div className="divide-y divide-muted/20">
-                  {dummyComments.map((comment) => (
+                  {(dummyComments[post.id] || []).map((comment) => (
                     <div key={comment.id} className="p-4 flex gap-3">
                       <img
                         src={comment.author.avatar}

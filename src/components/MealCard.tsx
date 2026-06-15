@@ -35,7 +35,7 @@ interface MealCardProps {
 }
 
 // 별점 지정/표시 컴포넌트
-function MenuItemWithRating({ item, interactive = true, mealDate }: { item: MealMenuItem; interactive?: boolean; mealDate?: string }) {
+function MenuItemWithRating({ item, interactive = true, mealDate, schoolCode }: { item: MealMenuItem; interactive?: boolean; mealDate?: string; schoolCode?: string }) {
   // iOS Safari 호환성을 위해 useUserSchool 훅 사용 (일관된 사용자 상태 관리)
   const { user, userSchool, loading: userLoading } = useUserSchool();
   
@@ -58,7 +58,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   
   // 실시간 구독 설정: menu_item_rating_stats 테이블 변경 감지
   useEffect(() => {
-    if (!item || !item.id) return;
+    if (!item || !item.id || schoolCode === 'sample') return;
     
     console.log('🔌 menu_item_rating_stats 테이블 실시간 구독 설정 - 아이템 ID:', item.id);
     
@@ -90,7 +90,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
       console.log('🔌 menu_item_rating_stats 테이블 구독 해제 - 아이템 ID:', item.id);
       supabase.removeChannel(channel);
     };
-  }, [item?.id]); // 아이템 ID가 변경될 때만 재실행
+  }, [item?.id, schoolCode]); // 아이템 ID가 변경될 때만 재실행
   // iOS Safari 호환성을 위한 강화된 상태 관리
   const [rating, setRating] = useState<number | null>(() => {
     // 초기값을 더 안전하게 설정
@@ -306,6 +306,17 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
     const initializeState = async () => {
       if (!item?.id) return;
       
+      if (schoolCode === 'sample') {
+        const userRating = localStorage.getItem(`rating_sample_${item.id}`) ? Number(localStorage.getItem(`rating_sample_${item.id}`)) : null;
+        const avgRating = item.avg_rating ?? null;
+        const ratingCount = item.rating_count ?? 0;
+        setRating(userRating);
+        setAvgRating(avgRating);
+        setRatingCount(ratingCount);
+        setIsLoading(false);
+        return;
+      }
+      
       console.log(`[State Init] 🏁 시작: ${item.id}`);
       setIsLoading(true);
 
@@ -424,55 +435,110 @@ function MenuItemWithRating({ item, interactive = true, mealDate }: { item: Meal
   // 별점 클릭 이벤트 처리 함수 - 별 사라짐 문제 해결 + 별점 취소(삭제) 지원
   const handleRating = async (value: number) => {
     try {
-      // 상세 로그인 상태 디버깅
-      if (userLoading) {
-        alert(`⏳ 로딩 중입니다. 잠시만 기다려주세요.`);
-        return;
-      }
+      const isSample = schoolCode === 'sample';
+      
+      if (!isSample) {
+        // 상세 로그인 상태 디버깅
+        if (userLoading) {
+          alert(`⏳ 로딩 중입니다. 잠시만 기다려주세요.`);
+          return;
+        }
 
-      // 상세 로그인 상태 디버깅
-      console.log('🎯 별점 클릭 디버깅:', {
-        value,
-        hasUser: !!user,
-        userId: user?.id,
-        userEmail: user?.email,
-        itemId: item?.id,
-        itemName: item?.item_name,
-        currentRating: rating,
-        timestamp: new Date().toISOString()
-      });
-      
-      // 로그인 확인
-      if (!user) {
-        alert(`❌ 로그인이 필요합니다!\n\n다시 로그인해주세요.`);
-        return;
+        // 상세 로그인 상태 디버깅
+        console.log('🎯 별점 클릭 디버깅:', {
+          value,
+          hasUser: !!user,
+          userId: user?.id,
+          userEmail: user?.email,
+          itemId: item?.id,
+          itemName: item?.item_name,
+          currentRating: rating,
+          timestamp: new Date().toISOString()
+        });
+        
+        // 로그인 확인
+        if (!user) {
+          alert(`❌ 로그인이 필요합니다!\n\n다시 로그인해주세요.`);
+          return;
+        }
+        
+        // 권한 확인
+        console.log('🔒 별점 클릭 시 권한 체크:', {
+          canRate,
+          currentMode: schoolMode.currentMode,
+          isStudentMode: schoolMode.isStudentMode,
+          userId: user?.id
+        });
+        
+        if (!canRate) {
+          console.log('❌ 별점 권한 없음 - 방문자 모드');
+          alert('내 학교에서만 별점을 남길 수 있습니다.');
+          return;
+        }
       }
       
-      // 권한 확인
-      console.log('🔒 별점 클릭 시 권한 체크:', {
-        canRate,
-        currentMode: schoolMode.currentMode,
-        isStudentMode: schoolMode.isStudentMode,
-        userId: user?.id
-      });
-      
-      if (!canRate) {
-        console.log('❌ 별점 권한 없음 - 방문자 모드');
-        alert('내 학교에서만 별점을 남길 수 있습니다.');
-        return;
-      }
       if (!item.id) {
         console.error('메뉴 아이템 ID가 없습니다');
         return;
       }
       
       // 시간 제한 체크 - 개발자 도구 등으로 UI 조작 우회 방지
-      if (mealDate && !canRateAtCurrentTime(mealDate)) {
+      if (!isSample && mealDate && !canRateAtCurrentTime(mealDate)) {
         // 조용히 차단 (메시지 없이)
         return;
       }
+      
       setIsLoading(true);
       const previousRating = rating;
+
+      // 샘플 데이터 처리 분기
+      if (isSample) {
+        if (rating === value) {
+          setRating(null);
+          localStorage.removeItem(`rating_sample_${item.id}`);
+          
+          if (avgRating && ratingCount) {
+            const oldSum = avgRating * ratingCount;
+            const newCount = Math.max(0, ratingCount - 1);
+            const newAvg = newCount > 0 ? (oldSum - previousRating!) / newCount : 0;
+            setAvgRating(newCount > 0 ? Math.round(newAvg * 10) / 10 : null);
+            setRatingCount(newCount);
+          } else {
+            setAvgRating(null);
+            setRatingCount(0);
+          }
+          setIsLoading(false);
+          
+          const event = new CustomEvent('menu-item-rating-change', {
+            detail: { menuItemId: item.id, deleted: true, previousRating }
+          });
+          window.dispatchEvent(event);
+        } else {
+          setRating(value);
+          localStorage.setItem(`rating_sample_${item.id}`, String(value));
+          localStorage.setItem('whateat_school_rated_once', 'true');
+          
+          if (avgRating !== null && ratingCount) {
+            const oldSum = avgRating * ratingCount;
+            const newCount = previousRating === null ? ratingCount + 1 : ratingCount;
+            const newSum = previousRating === null ? oldSum + value : oldSum - previousRating + value;
+            const newAvg = newSum / newCount;
+            setAvgRating(Math.round(newAvg * 10) / 10);
+            setRatingCount(newCount);
+          } else {
+            setAvgRating(value);
+            setRatingCount(1);
+          }
+          setIsLoading(false);
+          
+          const event = new CustomEvent('menu-item-rating-change', {
+            detail: { menuItemId: item.id, newRating: value, previousRating }
+          });
+          window.dispatchEvent(event);
+          window.dispatchEvent(new CustomEvent('whateat_school_rated'));
+        }
+        return;
+      }
 
       // 이미 선택된 별을 다시 클릭하면 별점 삭제
       if (rating === value) {
@@ -764,10 +830,11 @@ export default function MealCard({
                     key={item.id}
                     item={item}
                     mealDate={meal.meal_date}
+                    schoolCode={meal.school_code}
                     interactive={
                       (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
                         ? false
-                        : canRateAtCurrentTime(meal.meal_date)
+                        : (meal.school_code === 'sample' ? true : canRateAtCurrentTime(meal.meal_date))
                     }
                   />
                 ))
@@ -778,10 +845,11 @@ export default function MealCard({
                     key={idx}
                     item={{ id: `${meal.id}-${idx}`, item_name: item }}
                     mealDate={meal.meal_date}
+                    schoolCode={meal.school_code}
                     interactive={
                       (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
                         ? false
-                        : canRateAtCurrentTime(meal.meal_date)
+                        : (meal.school_code === 'sample' ? true : canRateAtCurrentTime(meal.meal_date))
                     }
                   />
                 ))
@@ -855,10 +923,11 @@ export default function MealCard({
                   key={item.id}
                   item={item}
                   mealDate={meal.meal_date}
+                  schoolCode={meal.school_code}
                   interactive={
                     (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
                       ? false
-                      : canRateAtCurrentTime(meal.meal_date)
+                      : (meal.school_code === 'sample' ? true : canRateAtCurrentTime(meal.meal_date))
                   }
                 />
               ))
@@ -869,10 +938,11 @@ export default function MealCard({
                   key={idx}
                   item={{ id: `${meal.id}-${idx}`, item_name: item }}
                   mealDate={meal.meal_date}
+                  schoolCode={meal.school_code}
                   interactive={
                     (Array.isArray(meal.menu_items) && meal.menu_items.length === 1 && meal.menu_items[0] === '급식 정보가 없습니다')
                       ? false
-                      : canRateAtCurrentTime(meal.meal_date)
+                      : (meal.school_code === 'sample' ? true : canRateAtCurrentTime(meal.meal_date))
                   }
                 />
               ))

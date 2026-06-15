@@ -49,6 +49,57 @@ export default function MealClient() {
     process.env.NODE_ENV !== 'production' &&
     process.env.NEXT_PUBLIC_USE_MOCK_SCHOOL === 'true';
   
+  // 급식 온보딩 미션 상태
+  const [schoolRated, setSchoolRated] = useState(false);
+  const [schoolCommented, setSchoolCommented] = useState(false);
+  const [schoolQuizCompleted, setSchoolQuizCompleted] = useState(false);
+  
+  // 퀴즈 관련 상태
+  const [quizState, setQuizState] = useState<'none' | 'generated' | 'solved'>('none');
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [quizResult, setQuizResult] = useState<boolean | null>(null);
+  
+  // 온보딩 완료 축하 오버레이
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSchoolRated(localStorage.getItem('whateat_school_rated_once') === 'true');
+      setSchoolCommented(localStorage.getItem('whateat_school_commented_once') === 'true');
+      setSchoolQuizCompleted(localStorage.getItem('whateat_school_quiz_completed') === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleRated = () => setSchoolRated(true);
+    const handleCommented = () => setSchoolCommented(true);
+
+    window.addEventListener('whateat_school_rated', handleRated);
+    window.addEventListener('whateat_school_commented', handleCommented);
+
+    return () => {
+      window.removeEventListener('whateat_school_rated', handleRated);
+      window.removeEventListener('whateat_school_commented', handleCommented);
+    };
+  }, []);
+
+  const schoolExperienceCompleted = schoolRated && schoolCommented && schoolQuizCompleted;
+
+  // 3가지 미션이 모두 완료되는 순간 축하 팝업/효과 띄우기
+  useEffect(() => {
+    if (schoolRated && schoolCommented && schoolQuizCompleted) {
+      const isAlreadyCompleted = localStorage.getItem('whateat_school_experience_completed') === 'true';
+      if (!isAlreadyCompleted) {
+        localStorage.setItem('whateat_school_experience_completed', 'true');
+        setShowCelebration(true);
+        // 4초 후 축하 팝업 닫기
+        setTimeout(() => {
+          setShowCelebration(false);
+        }, 4000);
+      }
+    }
+  }, [schoolRated, schoolCommented, schoolQuizCompleted]);
+
   // 공유 모달 상태 관리
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [currentMeal, setCurrentMeal] = useState<MealInfo | null>(null);
@@ -155,6 +206,32 @@ export default function MealClient() {
     dataSource,
     fetchMealInfo,
   } = useMeals();
+
+  const mockSampleMeal = useMemo((): MealInfo => ({
+    id: 'sample-school-meal-id',
+    school_code: 'sample',
+    school_name: schoolMode.currentSchoolInfo?.school_name || '맛나고등학교',
+    meal_date: selectedDate || getCurrentDate(),
+    meal_type: '중식',
+    menu_items: ['눈꽃치즈돈까스', '미니 츄러스', '바삭 양배추 샐러드', '얼큰 김치우동', '수제 망고에이드'],
+    menuItems: [
+      { id: 'sample-menu-1', item_name: '눈꽃치즈돈까스 🍛', avg_rating: 4.8, rating_count: 120 },
+      { id: 'sample-menu-2', item_name: '미니 츄러스 🥨', avg_rating: 4.7, rating_count: 95 },
+      { id: 'sample-menu-3', item_name: '바삭 양배추 샐러드 🥗', avg_rating: 3.5, rating_count: 40 },
+      { id: 'sample-menu-4', item_name: '얼큰 김치우동 🍜', avg_rating: 4.3, rating_count: 85 },
+      { id: 'sample-menu-5', item_name: '수제 망고에이드 🍹', avg_rating: 4.9, rating_count: 150 },
+    ],
+    kcal: '850',
+    ntr_info: '탄수화물: 110g<br/>단백질: 35g<br/>지방: 25g<br/>비타민C: 15mg',
+    origin_info: '돼지고기(돈까스): 국내산<br/>닭고기: 국내산<br/>쌀: 국내산<br/>김치: 국내산',
+  }), [selectedDate, schoolMode.currentSchoolInfo?.school_name]);
+
+  const displayMeals = useMemo(() => {
+    if (!schoolExperienceCompleted) {
+      return [mockSampleMeal];
+    }
+    return meals;
+  }, [schoolExperienceCompleted, meals, mockSampleMeal]);
 
   // userError 발생 시 오류 처리 - 비로그인 사용자는 대시보드 표시
   useEffect(() => {
@@ -1433,18 +1510,181 @@ export default function MealClient() {
         {/* 에러 메시지 */}
         {(error || pageError || userError) &&
           (error || pageError || userError) !== '해당 날짜의 급식 정보가 없습니다.' &&
-          !meals.length && (
+          !displayMeals.length && (
           <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
             {error || pageError || userError}
+          </div>
+        )}
+
+        {/* 온보딩 완료 축하 팝업 */}
+        {showCelebration && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-yellow-100 animate-bounce">
+              <div className="text-5xl mb-4">🎉</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">온보딩 체험 완수!</h3>
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                축하합니다! 급식 평가, 소통, 영양 퀴즈 체험을 모두 마치셨습니다.<br/>
+                이제부터는 실제 진짜 급식 정보를 마음껏 즐겨보세요!
+              </p>
+              <div className="text-xs text-orange-500 font-semibold">
+                실제 급식 데이터 모드로 전환 중...
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 급식 온보딩 미션 가이드 카드 */}
+        {!isLoading && !pageLoading && !userLoading && !schoolExperienceCompleted && (
+          <div className="mb-6 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 p-0.5 shadow-lg animate-fade-in">
+            <div className="rounded-[15px] bg-white p-5 dark:bg-gray-900">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">💡</span>
+                <div>
+                  <h4 className="font-bold text-gray-900 dark:text-white text-lg">급식 1회 체험 온보딩 미션</h4>
+                  <p className="text-xs text-gray-500">핵심 기능 3가지를 체험하고 나만의 진짜 급식 정보를 확인해 보세요!</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                {/* 미션 1: 별점 평가 */}
+                <div className={`flex items-center justify-between p-3 rounded-xl border ${schoolRated ? 'bg-green-50 border-green-200 text-green-800 font-medium' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⭐</span>
+                    <span className="text-sm font-semibold">급식 메뉴 별점 주기</span>
+                  </div>
+                  <span className="text-xs font-bold">{schoolRated ? '✅ 완료' : '⬜ 대기'}</span>
+                </div>
+
+                {/* 미션 2: 댓글 달기 */}
+                <div className={`flex items-center justify-between p-3 rounded-xl border ${schoolCommented ? 'bg-green-50 border-green-200 text-green-800 font-medium' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">💬</span>
+                    <span className="text-sm font-semibold">급식 댓글 달기</span>
+                  </div>
+                  <span className="text-xs font-bold">{schoolCommented ? '✅ 완료' : '⬜ 대기'}</span>
+                </div>
+
+                {/* 미션 3: 영양 퀴즈 */}
+                <div className={`flex items-center justify-between p-3 rounded-xl border ${schoolQuizCompleted ? 'bg-green-50 border-green-200 text-green-800 font-medium' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🦊</span>
+                    <span className="text-sm font-semibold">AI 영양 퀴즈 풀기</span>
+                  </div>
+                  <span className="text-xs font-bold">{schoolQuizCompleted ? '✅ 완료' : '⬜ 대기'}</span>
+                </div>
+              </div>
+
+              {/* 퀴즈 영역 */}
+              {!schoolQuizCompleted && (
+                <div className="border-t border-gray-100 pt-4 mt-2">
+                  {quizState === 'none' ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-600 mb-3 font-medium">오늘 식단의 영양 정보를 바탕으로 AI 영양 퀴즈를 풀어보세요!</p>
+                      <button
+                        onClick={() => setQuizState('generated')}
+                        className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-full text-sm font-bold shadow-md hover:opacity-90 transition-opacity"
+                      >
+                        🦊 AI 영양 퀴즈 생성하기
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">AI NUTRITION QUIZ</span>
+                        <span className="text-xs text-gray-500">정답을 맞추면 미션이 완료됩니다!</span>
+                      </div>
+                      
+                      <h5 className="font-bold text-gray-900 text-sm mb-4 leading-relaxed">
+                        눈꽃치즈돈까스에 올라간 치즈와 돈까스의 돼지고기는 성장기 학생들에게 아주 중요한 영양소를 많이 포함하고 있습니다. 이 음식들의 주된 영양소이자 근육 형성에 필수적인 성분은 무엇일까요?
+                      </h5>
+                      
+                      <div className="space-y-2 mb-4">
+                        {[
+                          '탄수화물 (활동 에너지원)',
+                          '단백질 (근육 및 면조직 형성)',
+                          '지방 (체온 유지 및 에너지 저장)',
+                          '비타민 C (면역력 강화)'
+                        ].map((option, idx) => {
+                          const isSelected = selectedAnswer === idx;
+                          const isCorrect = idx === 1; // 2번 단백질이 정답
+                          let optionStyle = 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50';
+                          
+                          if (quizState === 'solved') {
+                            if (isCorrect) {
+                              optionStyle = 'bg-green-100 border-green-400 text-green-800 font-bold';
+                            } else if (isSelected) {
+                              optionStyle = 'bg-red-100 border-red-400 text-red-800';
+                            } else {
+                              optionStyle = 'bg-gray-50 border-gray-200 text-gray-400 opacity-60';
+                            }
+                          } else if (isSelected) {
+                            optionStyle = 'bg-purple-100 border-purple-400 text-purple-800 font-semibold';
+                          }
+                          
+                          return (
+                            <button
+                              key={idx}
+                              disabled={quizState === 'solved'}
+                              onClick={() => setSelectedAnswer(idx)}
+                              className={`w-full text-left p-3 rounded-lg border text-sm transition-all flex items-center justify-between ${optionStyle}`}
+                            >
+                              <span>{idx + 1}. {option}</span>
+                              {quizState === 'solved' && isCorrect && <span className="text-green-600">✓ 정답</span>}
+                              {quizState === 'solved' && isSelected && !isCorrect && <span className="text-red-600">✗ 오답</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {quizState === 'generated' && (
+                        <div className="text-right">
+                          <button
+                            disabled={selectedAnswer === null}
+                            onClick={() => {
+                              if (selectedAnswer === 1) {
+                                setQuizResult(true);
+                                setQuizState('solved');
+                                localStorage.setItem('whateat_school_quiz_completed', 'true');
+                                setTimeout(() => {
+                                  setSchoolQuizCompleted(true);
+                                }, 1500);
+                              } else {
+                                setQuizResult(false);
+                                alert('다시 한번 생각해보세요! 힌트: 고기와 치즈에 가장 많은 성분입니다.');
+                              }
+                            }}
+                            className={`px-5 py-2 rounded-lg text-sm font-bold shadow-sm ${selectedAnswer === null ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
+                          >
+                            제출하기
+                          </button>
+                        </div>
+                      )}
+
+                      {quizState === 'solved' && (
+                        <div className="bg-white rounded-lg p-3.5 border border-green-200 mt-2">
+                          <div className="flex gap-2 text-sm text-green-800 font-semibold mb-1">
+                            <span>💡</span>
+                            <span>AI 영양 정보 해설</span>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            돼지고기와 치즈는 풍부한 단백질 공급원입니다! 단백질은 세포를 구성하고 근육을 성장시키는 데 필수적이므로 성장기 청소년 급식에서 매우 중요한 영양소입니다. 오늘도 든든하게 먹고 건강해지세요! 🦊
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* 급식 정보 표시 - 로그인 여부와 무관하게 기본 UI 윤곽 표시 */}
         {!isLoading && !pageLoading && !userLoading && (
           <>
-            {meals.length > 0 ? (
+            {displayMeals.length > 0 ? (
               <div className="space-y-8">
-                {meals.map((meal) => (
+                {displayMeals.map((meal) => (
                   <div key={meal.id} className="meal-wrapper">
                     {/* PC: 2x2 그리드 배치, 모바일: 세로 배치 */}
                     <div className="space-y-6 lg:space-y-0">

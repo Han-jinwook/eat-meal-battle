@@ -85,6 +85,34 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [viewerImage, setViewerImage] = useState<string | null>(null)
   const [mealLogs, setMealLogs] = useState<any[]>([])
 
+  // 솔로 온보딩 미션 상태
+  const [soloLogged, setSoloLogged] = useState(false)
+  const [soloRated, setSoloRated] = useState(false)
+  const [showSoloCelebration, setShowSoloCelebration] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSoloLogged(localStorage.getItem("whateat_solo_logged_once") === "true")
+      setSoloRated(localStorage.getItem("whateat_solo_rated_once") === "true")
+    }
+  }, [])
+
+  const soloExperienceCompleted = soloLogged && soloRated
+
+  // 미션 완료 시 축하 및 고정
+  useEffect(() => {
+    if (soloLogged && soloRated) {
+      const isAlreadyCompleted = localStorage.getItem("whateat_solo_experience_completed") === "true"
+      if (!isAlreadyCompleted) {
+        localStorage.setItem("whateat_solo_experience_completed", "true")
+        setShowSoloCelebration(true)
+        setTimeout(() => {
+          setShowSoloCelebration(false)
+        }, 4000)
+      }
+    }
+  }, [soloLogged, soloRated])
+
   // Google Drive Sync States
   const [isDriveConnected, setIsDriveConnected] = useState(false)
   const [lastBackupAt, setLastBackupAt] = useState<number | null>(null)
@@ -352,7 +380,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }, [expandedMemoId])
 
-  const displayLogs = mealLogs.length === 0 ? defaultMealLogs : mealLogs
+  const displayLogs = !soloExperienceCompleted
+    ? [...mealLogs, ...defaultMealLogs]
+    : mealLogs
 
   // Filter and sort logs
   const filteredLogs = displayLogs
@@ -393,11 +423,23 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleRatingChange = async (mealId: number, newRating: number) => {
+    const isSample = mealId === 1 || mealId === 2 || mealId === 3
+    
+    if (isSample) {
+      localStorage.setItem("whateat_solo_rated_once", "true")
+      setSoloRated(true)
+      // 샘플 데이터 별점 클릭 시 별도의 상태 저장 없이 온보딩 미션만 완료
+      return
+    }
+
     const updatedLogs = mealLogs.map(log => 
       log.id === mealId ? { ...log, rating: newRating } : log
     )
     setMealLogs(updatedLogs)
     localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+
+    localStorage.setItem("whateat_solo_rated_once", "true")
+    setSoloRated(true)
 
     const targetLog = updatedLogs.find(log => log.id === mealId)
     if (targetLog && newRating === 5) {
@@ -497,6 +539,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         healthy: data.mealType === "집밥",
       }
       updatedLogs = [newLog, ...mealLogs]
+      
+      localStorage.setItem("whateat_solo_logged_once", "true")
+      setSoloLogged(true)
     }
 
     setMealLogs(updatedLogs)
@@ -761,6 +806,58 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         </div>
       </div>
       </div>{/* end sticky */}
+
+      {/* 솔로 1회 체험 온보딩 미션 가이드 카드 */}
+      {!soloExperienceCompleted && (
+        <div className="mb-6 rounded-2xl bg-gradient-to-r from-orange-400 via-pink-500 to-red-500 p-0.5 shadow-lg animate-fade-in">
+          <div className="rounded-[15px] bg-white p-5 dark:bg-gray-900">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">💡</span>
+              <div>
+                <h4 className="font-bold text-gray-900 dark:text-white text-lg">솔로 식사 일지 1회 체험 온보딩 미션</h4>
+                <p className="text-xs text-gray-500">두 가지 미션을 모두 성공하여 나만의 식사 피드를 시작해보세요!</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* 미션 1: 일지 작성 */}
+              <div className={`flex items-center justify-between p-3.5 rounded-xl border ${soloLogged ? 'bg-green-50 border-green-200 text-green-800 font-medium' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">✍️</span>
+                  <span className="text-sm font-semibold">식사 일지 등록하기</span>
+                </div>
+                <span className="text-xs font-bold">{soloLogged ? '✅ 완료' : '⬜ 대기'}</span>
+              </div>
+
+              {/* 미션 2: 별점 기입 */}
+              <div className={`flex items-center justify-between p-3.5 rounded-xl border ${soloRated ? 'bg-green-50 border-green-200 text-green-800 font-medium' : 'bg-gray-50 border-gray-100 text-gray-800'}`}>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">⭐</span>
+                  <span className="text-sm font-semibold">식사 별점 기입하기</span>
+                </div>
+                <span className="text-xs font-bold">{soloRated ? '✅ 완료' : '⬜ 대기'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 솔로 온보딩 완료 축하 팝업 */}
+      {showSoloCelebration && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-yellow-100 animate-bounce">
+            <div className="text-5xl mb-4">🎉</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">온보딩 체험 완수!</h3>
+            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+              축하합니다! 솔로 식사 일지 등록과 별점 기입 체험을 완수하셨습니다.<br/>
+              이제 나만의 식사 기록을 보관하고 자유롭게 관리해보세요!
+            </p>
+            <div className="text-xs text-orange-500 font-semibold">
+              나만의 식사 피드로 전환 중...
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Meal Cards - PC에서 2열 그리드 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
