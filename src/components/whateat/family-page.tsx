@@ -46,6 +46,8 @@ interface SharedMeal {
   sharedAtIso: string
   mealType: "homemade" | "delivery" | "dining" | "other"
   mealMenuId?: string
+  doNotPromote?: boolean
+  rawExplanation?: string
 }
 
 interface MealReply {
@@ -471,7 +473,9 @@ export function FamilyPage() {
           sharedAt: formattedDate,
           sharedAtIso: img.created_at,
           mealType: meta.mealType || "homemade",
-          mealMenuId: img.meal_id
+          mealMenuId: img.meal_id,
+          doNotPromote: meta.doNotPromote || false,
+          rawExplanation: img.explanation || ''
         }
       })
 
@@ -668,7 +672,7 @@ export function FamilyPage() {
     }
 
     const targetMeal = meals.find((meal) => meal.id === mealId)
-    if (!targetMeal) {
+    if (!targetMeal || targetMeal.doNotPromote) {
       return
     }
 
@@ -767,7 +771,57 @@ export function FamilyPage() {
     return () => window.clearInterval(intervalId)
   }, [meals, mealRatings, promotedMealIds, isPromotingMealId])
 
-  const handleMealRating = async (mealId: string | number, memberId: number, score: number) => {
+  const [shareConsentModalOpen, setShareConsentModalOpen] = useState(false)
+  const [pendingFamilyRating, setPendingFamilyRating] = useState<{
+    mealId: string | number
+    memberId: number
+    score: number
+  } | null>(null)
+  const [rememberSharePref, setRememberSharePref] = useState(false)
+
+  const updateMealDoNotPromote = async (mealId: string | number, rawExplanation: string) => {
+    try {
+      const supabase = createClient()
+      let meta: any = {}
+      try {
+        meta = rawExplanation ? JSON.parse(rawExplanation) : {}
+      } catch (e) {
+        meta = { title: rawExplanation || "식사" }
+      }
+      meta.doNotPromote = true
+      
+      await supabase
+        .from('meal_images')
+        .update({ explanation: JSON.stringify(meta) })
+        .eq('id', mealId)
+    } catch (err) {
+      console.error("Failed to update doNotPromote flag", err)
+    }
+  }
+
+  const checkFamilyConsentAndRate = async (mealId: string | number, memberId: number, score: number) => {
+    const targetMeal = meals.find((meal) => meal.id === mealId)
+    if (!targetMeal) return
+    
+    if (score === 5) {
+      const pref = localStorage.getItem("whateat_auto_share_5star")
+      if (pref === "approved") {
+        await saveFamilyRating(mealId, memberId, score)
+      } else if (pref === "rejected") {
+        await saveFamilyRating(mealId, memberId, score)
+        await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        await fetchFamilyData(familyUserIds)
+      } else {
+        setPendingFamilyRating({ mealId, memberId, score })
+        setShareConsentModalOpen(true)
+      }
+    } else {
+      await saveFamilyRating(mealId, memberId, score)
+    }
+  }
+
+  const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
     const targetMeal = meals.find((meal) => meal.id === mealId)
     if (!targetMeal || memberId !== currentFamilyMemberId || !isMealRatingOpen(targetMeal)) {
       return
@@ -1455,7 +1509,7 @@ export function FamilyPage() {
                           {[1, 2, 3, 4, 5].map((value) => (
                             <button
                               key={value}
-                              onClick={() => canRate && handleMealRating(selectedMeal.id, member.id, value)}
+                              onClick={() => canRate && checkFamilyConsentAndRate(selectedMeal.id, member.id, value)}
                               disabled={!canRate}
                               className="p-0.5"
                             >
@@ -1928,6 +1982,65 @@ export function FamilyPage() {
               >
                 <Bell className="size-4" />
                 결정 및 알림 보내기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5-Star Share Consent Modal */}
+      {shareConsentModalOpen && pendingFamilyRating && (
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-base font-bold text-foreground mb-2">맛톡 공개 동의</h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
+              5점 평점을 받은 식사는 '맛톡'(동네 피드)에 공개됩니다. 공개하시겠습니까?
+            </p>
+            
+            <label className="flex items-center gap-2 mb-6 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberSharePref}
+                onChange={(e) => setRememberSharePref(e.target.checked)}
+                className="rounded border-gray-300 text-orange-500 focus:ring-orange-500 size-4 cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground">이후 항상 이 선택 적용 (자동 처리)</span>
+            </label>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (rememberSharePref) {
+                    localStorage.setItem("whateat_auto_share_5star", "approved")
+                  }
+                  setShareConsentModalOpen(false)
+                  if (pendingFamilyRating) {
+                    await saveFamilyRating(pendingFamilyRating.mealId, pendingFamilyRating.memberId, pendingFamilyRating.score)
+                  }
+                  setPendingFamilyRating(null)
+                }}
+                className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                승낙 (공개)
+              </button>
+              <button
+                onClick={async () => {
+                  if (rememberSharePref) {
+                    localStorage.setItem("whateat_auto_share_5star", "rejected")
+                  }
+                  setShareConsentModalOpen(false)
+                  if (pendingFamilyRating) {
+                    await saveFamilyRating(pendingFamilyRating.mealId, pendingFamilyRating.memberId, pendingFamilyRating.score)
+                    const targetMeal = meals.find(m => m.id === pendingFamilyRating.mealId)
+                    if (targetMeal) {
+                      await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
+                    }
+                  }
+                  setPendingFamilyRating(null)
+                }}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                거절 (비공개)
               </button>
             </div>
           </div>

@@ -232,6 +232,26 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       logs.map((log) => (log.id === data.id ? { ...log, supabaseId: uuid } : log))
     )
   }
+
+  const [shareConsentModalOpen, setShareConsentModalOpen] = useState(false)
+  const [pendingShareData, setPendingShareData] = useState<{
+    logData: MealLogData
+    imageUrl: string
+  } | null>(null)
+  const [rememberSharePref, setRememberSharePref] = useState(false)
+
+  const checkConsentAndUpload = async (data: MealLogData, imageUrl: string) => {
+    const pref = localStorage.getItem("whateat_auto_share_5star")
+    if (pref === "approved") {
+      await upload5StarMealToSupabase(data, imageUrl)
+    } else if (pref === "rejected") {
+      console.log("User rejected auto-sharing of 5-star meals.")
+    } else {
+      setPendingShareData({ logData: data, imageUrl })
+      setShareConsentModalOpen(true)
+    }
+  }
+
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
   const [expandedMemoId, setExpandedMemoId] = useState<number | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -382,7 +402,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const targetLog = updatedLogs.find(log => log.id === mealId)
     if (targetLog && newRating === 5) {
       try {
-        await upload5StarMealToSupabase({
+        await checkConsentAndUpload({
           id: targetLog.id,
           mealType: targetLog.type,
           menuName: targetLog.title,
@@ -486,7 +506,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const savedLog = data.id ? updatedLogs.find(l => l.id === data.id) : updatedLogs[0]
     if (savedLog && savedLog.rating === 5) {
       try {
-        await upload5StarMealToSupabase({
+        await checkConsentAndUpload({
           id: savedLog.id,
           mealType: savedLog.type,
           menuName: savedLog.title,
@@ -944,6 +964,58 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         isOpen={viewerImage !== null}
         onClose={() => setViewerImage(null)}
       />
+
+      {/* 5-Star Share Consent Modal */}
+      {shareConsentModalOpen && pendingShareData && (
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-base font-bold text-foreground mb-2">맛톡 공개 동의</h3>
+            <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
+              5점 평점을 받은 식사는 '맛톡'(동네 피드)에 공개됩니다. 공개하시겠습니까?
+            </p>
+            
+            <label className="flex items-center gap-2 mb-6 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberSharePref}
+                onChange={(e) => setRememberSharePref(e.target.checked)}
+                className="rounded border-gray-300 text-orange-500 focus:ring-orange-500 size-4 cursor-pointer"
+              />
+              <span className="text-xs text-muted-foreground">이후 항상 이 선택 적용 (자동 처리)</span>
+            </label>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (rememberSharePref) {
+                    localStorage.setItem("whateat_auto_share_5star", "approved")
+                  }
+                  setShareConsentModalOpen(false)
+                  if (pendingShareData) {
+                    await upload5StarMealToSupabase(pendingShareData.logData, pendingShareData.imageUrl)
+                  }
+                  setPendingShareData(null)
+                }}
+                className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                승낙 (공개)
+              </button>
+              <button
+                onClick={() => {
+                  if (rememberSharePref) {
+                    localStorage.setItem("whateat_auto_share_5star", "rejected")
+                  }
+                  setShareConsentModalOpen(false)
+                  setPendingShareData(null)
+                }}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                거절 (비공개)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
