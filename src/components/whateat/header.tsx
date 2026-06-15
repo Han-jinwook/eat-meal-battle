@@ -18,7 +18,7 @@ interface HeaderProps {
 
 const navItems = [
   { id: "solo" as HeaderNavTab, label: "솔로", icon: User },
-  { id: "family" as HeaderNavTab, label: "패밀리", icon: Users },
+  { id: "family" as HeaderNavTab, label: "가족/모임", icon: Users },
   { id: "talk" as HeaderNavTab, label: "맛톡", icon: MessageSquare },
   { id: "meal" as HeaderNavTab, label: "급식", icon: UtensilsCrossed },
 ]
