@@ -213,6 +213,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
       setIsAnalyzingAi(true)
       try {
         const compressedBase64 = await compressImage(file)
+        setImagePreview(compressedBase64)
         const response = await fetch('/api/ai/analyze-food-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

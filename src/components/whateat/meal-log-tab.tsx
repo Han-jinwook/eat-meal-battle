@@ -1,10 +1,20 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Cloud } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
+import { createClient } from "@/lib/supabase"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+import {
+  getDriveBackupStatus,
+  connectDriveBackup,
+  disconnectDriveBackup,
+  uploadDoubleBackup,
+  uploadImageToDrive,
+  downloadLatestBackup
+} from "@/lib/googleDriveSync"
 
 const defaultMealLogs = [
   {
@@ -14,7 +24,7 @@ const defaultMealLogs = [
     title: "채끝 스테이크",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&fit=crop",
     rating: 5,
-    tips: ["미디움 레어로 굽기가 딱 좋음", "소금과 와사비 조합 추천"],
+    tips: ["미디움 레어로 굽기가 딱 좋음", "소금 and 와사비 조합 추천"],
     tipTitle: "추천 메뉴",
     linkUrl: "https://naver.me/placeholder1",
     linkThumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&fit=crop",
@@ -59,9 +69,27 @@ interface MealLogTabProps {
   onBackToCalendar?: () => void
 }
 
+function generateUUID() {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCalendar }: MealLogTabProps) {
+  const { isLoggedIn, user } = useHub()
   const [viewerImage, setViewerImage] = useState<string | null>(null)
-  const [mealLogs, setMealLogs] = useState<any[]>(defaultMealLogs)
+  const [mealLogs, setMealLogs] = useState<any[]>([])
+
+  // Google Drive Sync States
+  const [isDriveConnected, setIsDriveConnected] = useState(false)
+  const [lastBackupAt, setLastBackupAt] = useState<number | null>(null)
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false)
+  const [isDriveLoading, setIsDriveLoading] = useState(true)
 
   // Load initial logs from localStorage
   useEffect(() => {
@@ -73,16 +101,137 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         console.error("Failed to parse saved meal logs", e)
       }
     } else {
-      localStorage.setItem("whateat_meal_logs", JSON.stringify(defaultMealLogs))
+      localStorage.setItem("whateat_meal_logs", JSON.stringify([]))
     }
   }, [])
 
   // Save logs to localStorage on changes
   useEffect(() => {
-    if (mealLogs !== defaultMealLogs) {
-      localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
-    }
+    localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
   }, [mealLogs])
+
+  // Google Drive Connection check
+  useEffect(() => {
+    async function checkStatus() {
+      try {
+        const status = await getDriveBackupStatus()
+        setIsDriveConnected(status.connected)
+        setLastBackupAt(status.lastBackupAt)
+      } catch (e) {
+        console.error("Failed to check Google Drive backup status", e)
+      } finally {
+        setIsDriveLoading(false)
+      }
+    }
+    checkStatus()
+  }, [])
+
+  const syncLocalDataToDrive = async (connected: boolean, currentLogs = mealLogs) => {
+    if (!connected) return
+    setIsSyncingDrive(true)
+    try {
+      let mergedLogs = [...currentLogs]
+
+      // 1. Google Drive 백업 다운로드 및 로컬 병합
+      try {
+        const driveBackup = (await downloadLatestBackup()) as any[]
+        if (Array.isArray(driveBackup)) {
+          const localIds = new Set(mergedLogs.map((l) => l.id))
+          const driveOnly = driveBackup.filter((l) => !localIds.has(l.id))
+          mergedLogs = [...mergedLogs, ...driveOnly]
+        }
+      } catch (err) {
+        console.log("No existing backup on Google Drive or failed to download", err)
+      }
+
+      // 2. 로컬 Base64 이미지 파일 구글 드라이브 일괄 업로드
+      let hasChanges = false
+      const updatedLogs = await Promise.all(
+        mergedLogs.map(async (log) => {
+          if (log.image && log.image.startsWith("data:image/")) {
+            try {
+              const driveUrl = await uploadImageToDrive(log.image, `food_${log.id}.jpg`)
+              hasChanges = true
+              return { ...log, image: driveUrl }
+            } catch (imgErr) {
+              console.error(`Failed to upload image for log ${log.id} to Google Drive`, imgErr)
+            }
+          }
+          return log
+        })
+      )
+
+      setMealLogs(updatedLogs)
+
+      // 3. 드라이브에 이중 백업 업로드
+      const result = await uploadDoubleBackup(updatedLogs)
+      setLastBackupAt(new Date(result.modifiedTime).getTime())
+    } catch (e) {
+      console.error("Failed to sync local data to Google Drive", e)
+    } finally {
+      setIsSyncingDrive(false)
+    }
+  }
+
+  const handleConnectDrive = async () => {
+    try {
+      setIsDriveLoading(true)
+      const status = await connectDriveBackup()
+      setIsDriveConnected(status.connected)
+      setLastBackupAt(status.lastBackupAt)
+      await syncLocalDataToDrive(status.connected)
+    } catch (e: any) {
+      alert(e.message || "구글 드라이브 연결에 실패했습니다.")
+    } finally {
+      setIsDriveLoading(false)
+    }
+  }
+
+  const handleDisconnectDrive = async () => {
+    if (confirm("구글 드라이브 연결을 해제하시겠습니까? (로컬 데이터는 유지됩니다.)")) {
+      await disconnectDriveBackup()
+      setIsDriveConnected(false)
+      setLastBackupAt(null)
+    }
+  }
+
+  const upload5StarMealToSupabase = async (data: MealLogData, imageUrl: string) => {
+    if (!isLoggedIn || !user?.id) {
+      console.log("User not logged in. Cannot upload 5-star meal to Supabase.")
+      return
+    }
+
+    const supabase = createClient()
+    const metadata = {
+      title: data.menuName,
+      mealType: data.mealType,
+      rating: data.rating || 5,
+      tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+      placeName: data.linkUrl ? "식사 공유 상세" : "식사 일지",
+    }
+
+    // Generate supabaseId if not already present on local log
+    const uuid = (data as any).supabaseId || generateUUID()
+
+    const { error } = await supabase.from("meal_images").upsert({
+      id: uuid,
+      image_url: imageUrl || "/images/placeholder-food.jpg",
+      uploaded_by: user.id,
+      explanation: JSON.stringify(metadata),
+      source: "solo-5star",
+      status: "approved",
+    })
+
+    if (error) {
+      throw error
+    }
+    console.log("Successfully uploaded 5-star meal to Supabase!")
+    
+    // 로컬 로그에 supabaseId 필드 업데이트 처리
+    setMealLogs((logs) =>
+      logs.map((log) => (log.id === data.id ? { ...log, supabaseId: uuid } : log))
+    )
+  }
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
   const [expandedMemoId, setExpandedMemoId] = useState<number | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -183,8 +332,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }, [expandedMemoId])
 
+  const displayLogs = mealLogs.length === 0 ? defaultMealLogs : mealLogs
+
   // Filter and sort logs
-  const filteredLogs = mealLogs
+  const filteredLogs = displayLogs
     .filter(log => {
       const matchesSearch = !searchQuery || 
         log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -217,19 +368,50 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     })
 
   const getOptionCount = (optionId: (typeof mealTypeOptions)[number]["id"]) => {
-    if (optionId === "전체") return mealLogs.length
-    return mealLogs.filter((log) => log.type === optionId).length
+    if (optionId === "전체") return displayLogs.length
+    return displayLogs.filter((log) => log.type === optionId).length
   }
 
-  const handleRatingChange = (mealId: number, newRating: number) => {
-    setMealLogs(logs => 
-      logs.map(log => 
-        log.id === mealId ? { ...log, rating: newRating } : log
-      )
+  const handleRatingChange = async (mealId: number, newRating: number) => {
+    const updatedLogs = mealLogs.map(log => 
+      log.id === mealId ? { ...log, rating: newRating } : log
     )
+    setMealLogs(updatedLogs)
+    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+
+    const targetLog = updatedLogs.find(log => log.id === mealId)
+    if (targetLog && newRating === 5) {
+      try {
+        await upload5StarMealToSupabase({
+          id: targetLog.id,
+          mealType: targetLog.type,
+          menuName: targetLog.title,
+          rating: 5,
+          recipe: targetLog.tips?.join("\n"),
+          linkUrl: targetLog.linkUrl,
+          description: targetLog.description,
+          image: targetLog.image,
+          supabaseId: targetLog.supabaseId,
+        }, targetLog.image)
+      } catch (err) {
+        console.error("Failed to upload 5-star meal on rating change", err)
+      }
+    }
+
+    if (isDriveConnected) {
+      try {
+        setIsSyncingDrive(true)
+        const result = await uploadDoubleBackup(updatedLogs)
+        setLastBackupAt(new Date(result.modifiedTime).getTime())
+      } catch (err) {
+        console.error("Failed to sync on rating change", err)
+      } finally {
+        setIsSyncingDrive(false)
+      }
+    }
   }
 
-  const handleEditClick = (meal: typeof initialMealLogs[0]) => {
+  const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
     const editData: MealLogData = {
       id: meal.id,
       date: toIsoDate(parseDateString(meal.date)),
@@ -246,22 +428,38 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     setEditModalOpen(true)
   }
 
-  const handleEditSave = (data: MealLogData) => {
+  const handleEditSave = async (data: MealLogData) => {
+    let finalImageUrl = data.image || "/images/placeholder-food.jpg"
+
+    // 1. Google Drive 연동 상태일 경우 이미지 업로드
+    if (isDriveConnected && finalImageUrl.startsWith("data:image/")) {
+      try {
+        setIsSyncingDrive(true)
+        const driveUrl = await uploadImageToDrive(finalImageUrl, `food_${data.id || Date.now()}.jpg`)
+        finalImageUrl = driveUrl
+      } catch (err) {
+        console.error("Failed to upload image to Google Drive", err)
+      } finally {
+        setIsSyncingDrive(false)
+      }
+    }
+
+    let updatedLogs: any[]
     if (data.id) {
-      setMealLogs(logs =>
-        logs.map(log =>
-          log.id === data.id
-            ? {
-                ...log,
-                date: data.date ? toDisplayDate(data.date) : log.date,
-                title: data.menuName,
-                type: data.mealType,
-                tips: data.recipe?.split("\n").filter(t => t.trim()) || log.tips,
-                linkUrl: data.linkUrl || log.linkUrl,
-                image: data.image || log.image,
-              }
-            : log
-        )
+      updatedLogs = mealLogs.map(log =>
+        log.id === data.id
+          ? {
+              ...log,
+              date: data.date ? toDisplayDate(data.date) : log.date,
+              title: data.menuName,
+              type: data.mealType,
+              tips: data.recipe?.split("\n").filter(t => t.trim()) || log.tips,
+              linkUrl: data.linkUrl || log.linkUrl,
+              image: finalImageUrl,
+              rating: data.rating ?? log.rating,
+              description: data.description ?? log.description,
+            }
+          : log
       )
     } else {
       const newLog = {
@@ -269,16 +467,54 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
         title: data.menuName,
         type: data.mealType,
-        image: data.image || "/images/placeholder-food.jpg",
+        image: finalImageUrl,
         rating: data.rating || 5,
         tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
         tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
         linkUrl: data.linkUrl,
+        description: data.description,
         aiTag: !!data.image,
         healthy: data.mealType === "집밥",
       }
-      setMealLogs(logs => [newLog, ...logs])
+      updatedLogs = [newLog, ...mealLogs]
     }
+
+    setMealLogs(updatedLogs)
+    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+
+    // 2. 만약 평점이 5점이고 로그인이 되어 있다면 Supabase에 공유/업로드
+    const savedLog = data.id ? updatedLogs.find(l => l.id === data.id) : updatedLogs[0]
+    if (savedLog && savedLog.rating === 5) {
+      try {
+        await upload5StarMealToSupabase({
+          id: savedLog.id,
+          mealType: savedLog.type,
+          menuName: savedLog.title,
+          rating: 5,
+          recipe: savedLog.tips?.join("\n"),
+          linkUrl: savedLog.linkUrl,
+          description: savedLog.description,
+          image: savedLog.image,
+          supabaseId: savedLog.supabaseId,
+        }, savedLog.image)
+      } catch (err) {
+        console.error("Failed to upload 5-star meal to Supabase", err)
+      }
+    }
+
+    // 3. 구글 드라이브 백업 동기화 트리거
+    if (isDriveConnected) {
+      try {
+        setIsSyncingDrive(true)
+        const result = await uploadDoubleBackup(updatedLogs)
+        setLastBackupAt(new Date(result.modifiedTime).getTime())
+      } catch (err) {
+        console.error("Failed to upload double backup", err)
+      } finally {
+        setIsSyncingDrive(false)
+      }
+    }
+
     setEditModalOpen(false)
     setEditingMeal(null)
   }
@@ -408,6 +644,53 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </button>
               </div>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Google Drive Backup Status Banner */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-white/80 backdrop-blur-md rounded-2xl border border-orange-100 shadow-sm text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Cloud className={cn("size-4 shrink-0", isDriveConnected ? "text-green-500 fill-green-500" : "text-muted-foreground")} />
+          <div className="flex flex-col">
+            <span className="font-bold text-foreground">
+              {isDriveConnected ? "구글 드라이브 백업 활성화됨" : "구글 드라이브 비연동 상태"}
+            </span>
+            <span className="text-[10px] text-muted-foreground/80">
+              {isDriveConnected 
+                ? (lastBackupAt 
+                    ? `마지막 백업: ${new Date(lastBackupAt).toLocaleString()}` 
+                    : "백업 진행 필요")
+                : "로컬 저장소에 백업 보관 중"}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {isDriveConnected ? (
+            <>
+              <button
+                disabled={isSyncingDrive}
+                onClick={() => syncLocalDataToDrive(true)}
+                className="px-3 py-1.5 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {isSyncingDrive ? "동기화 중..." : "지금 동기화"}
+              </button>
+              <button
+                disabled={isSyncingDrive}
+                onClick={handleDisconnectDrive}
+                className="px-3 py-1.5 bg-gray-100 text-muted-foreground font-bold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                연결 해제
+              </button>
+            </>
+          ) : (
+            <button
+              disabled={isDriveLoading}
+              onClick={handleConnectDrive}
+              className="px-3 py-1.5 bg-cyan-500 text-white font-bold rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {isDriveLoading ? "로드 중..." : "구글 백업 연동"}
+            </button>
           )}
         </div>
       </div>

@@ -25,7 +25,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
-
+import { createClient } from "@/lib/supabase"
 
 export interface FamilyMember {
   id: number
@@ -34,20 +34,22 @@ export interface FamilyMember {
   role: "chef" | "member"
   isOnline: boolean
   isStudent: boolean
+  userId?: string
 }
 
 interface SharedMeal {
-  id: number
+  id: string | number
   image: string
   title: string
   sharedBy: string
   sharedAt: string
   sharedAtIso: string
   mealType: "homemade" | "delivery" | "dining" | "other"
+  mealMenuId?: string
 }
 
 interface MealReply {
-  id: number
+  id: string | number
   author: string
   content: string
   createdAt: string
@@ -56,7 +58,7 @@ interface MealReply {
 }
 
 interface MealComment {
-  id: number
+  id: string | number
   author: string
   content: string
   createdAt: string
@@ -66,7 +68,7 @@ interface MealComment {
 }
 
 interface VoteOption {
-  id: number
+  id: string | number
   title: string
   image: string
   votes: number
@@ -74,7 +76,7 @@ interface VoteOption {
 }
 
 interface ActiveVote {
-  id: number
+  id: string | number
   title: string
   createdBy: string
   endsAt: string
@@ -83,7 +85,7 @@ interface ActiveVote {
 }
 
 interface TodayMenu {
-  id: number
+  id: string | number
   title: string
   image: string
   decidedBy: string
@@ -98,14 +100,76 @@ export const familyMembers: FamilyMember[] = [
   { id: 4, name: "동생", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: true },
 ]
 
+const defaultSharedMeals: SharedMeal[] = [
+  {
+    id: "sample-1",
+    image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop",
+    title: "주말 브런치 팬케이크",
+    sharedBy: "엄마",
+    sharedAt: "오늘 10:30",
+    sharedAtIso: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    mealType: "homemade",
+  },
+  {
+    id: "sample-2",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop",
+    title: "건강 샐러드",
+    sharedBy: "동생",
+    sharedAt: "어제",
+    sharedAtIso: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    mealType: "homemade",
+  }
+]
+
+const defaultActiveVote: ActiveVote = {
+  id: "sample-vote",
+  title: "오늘 저녁 뭐 먹을까요?",
+  createdBy: "엄마",
+  endsAt: "오후 5시까지",
+  isActive: true,
+  options: [
+    { id: 1, title: "삼겹살", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop", votes: 2, votedBy: ["아빠", "동생"] },
+    { id: 2, title: "치킨", image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200&h=200&fit=crop", votes: 1, votedBy: ["나"] },
+    { id: 3, title: "파스타", image: "https://images.unsplash.com/photo-1563379926898-37aacf113fd9?w=200&h=200&fit=crop", votes: 0, votedBy: [] },
+  ]
+}
+
+const defaultTodayMenus: TodayMenu[] = [
+  {
+    id: "sample-menu-1",
+    title: "토스트와 스크램블 에그",
+    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&h=200&fit=crop",
+    decidedBy: "엄마",
+    decidedAt: "07:00",
+    mealTime: "breakfast"
+  },
+  {
+    id: "sample-menu-2",
+    title: "김치찌개",
+    image: "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=200&h=200&fit=crop",
+    decidedBy: "엄마",
+    decidedAt: "11:30",
+    mealTime: "lunch"
+  }
+]
+
 const sharedMeals: SharedMeal[] = []
-
 const activeVote: ActiveVote | null = null
-
 const todayMenus: TodayMenu[] = []
 
 type TabType = "shared" | "vote" | "menu"
 type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
+
+function generateUUID() {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 export function FamilyPage() {
   const { isLoggedIn, user } = useHub()
@@ -135,7 +199,8 @@ export function FamilyPage() {
               avatar: user?.avatar_url || "",
               role: (currentChef && currentChef.name === "나") ? "chef" : "member",
               isOnline: true,
-              isStudent: false
+              isStudent: false,
+              userId: user?.id
             }
 
             const realMembers: FamilyMember[] = acceptedHistory.map((item: any, index: number) => ({
@@ -144,7 +209,8 @@ export function FamilyPage() {
               avatar: avatarPresets[index % avatarPresets.length],
               role: "member" as const,
               isOnline: false,
-              isStudent: false
+              isStudent: false,
+              userId: item.inviteeId || item.id
             }))
 
             const updatedMembers = [meMember, ...realMembers]
@@ -180,6 +246,53 @@ export function FamilyPage() {
     }
     loadRealFamily()
   }, [isLoggedIn, user, getReferralHistory])
+
+  // Resolve database user UUIDs for family members
+  useEffect(() => {
+    async function resolveMemberUserIds() {
+      if (!isLoggedIn || !user?.id) return
+
+      // Filter members who are not '나' and don't have a userId yet
+      const needsResolution = members.filter(m => m.name !== "나" && !m.userId)
+      if (needsResolution.length === 0) return
+
+      try {
+        const supabase = createClient()
+        const history = await getReferralHistory()
+        const acceptedHistory = (history || []).filter((item: any) => item.status === 'REWARDED')
+        const emails = acceptedHistory.map((h: any) => h.inviteeEmail).filter(Boolean)
+        const nicknames = acceptedHistory.map((h: any) => h.inviteeNickname).filter(Boolean)
+
+        let dbUsers: any[] = []
+        if (emails.length > 0) {
+          const { data } = await supabase.from('users').select('id, email, nickname').in('email', emails)
+          if (data) dbUsers = [...dbUsers, ...data]
+        }
+        if (nicknames.length > 0) {
+          const { data } = await supabase.from('users').select('id, email, nickname').in('nickname', nicknames)
+          if (data) dbUsers = [...dbUsers, ...data]
+        }
+
+        setMembers(prev => prev.map(m => {
+          if (m.name === "나") return { ...m, userId: user.id }
+          
+          const matched = dbUsers.find(u => {
+            const ref = acceptedHistory.find((h: any) => h.inviteeNickname === m.name)
+            return u.email === ref?.inviteeEmail || u.nickname === m.name
+          })
+
+          if (matched) {
+            return { ...m, userId: matched.id }
+          }
+          return m
+        }))
+      } catch (err) {
+        console.error("Failed to resolve member user IDs:", err)
+      }
+    }
+    resolveMemberUserIds()
+  }, [isLoggedIn, user, getReferralHistory])
+
   const [selectedChefId, setSelectedChefId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -192,52 +305,31 @@ export function FamilyPage() {
   }, [showChefModal, members])
 
   const [activeTab, setActiveTab] = useState<TabType>("shared")
-  const [meals, setMeals] = useState(sharedMeals)
-  const [vote, setVote] = useState(activeVote)
-  const [selectedMealId, setSelectedMealId] = useState<number | null>(null)
+  const [meals, setMeals] = useState<SharedMeal[]>(sharedMeals)
+  const [vote, setVote] = useState<ActiveVote | null>(activeVote)
+  const [selectedMealId, setSelectedMealId] = useState<string | number | null>(null)
   const [mealCommentInput, setMealCommentInput] = useState("")
   const [mealReplyInput, setMealReplyInput] = useState("")
   const [sharedMealFilter, setSharedMealFilter] = useState<SharedMealFilterType>("all")
-  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: number; commentId: number } | null>(null)
-  const [expandedMealCommentsId, setExpandedMealCommentsId] = useState<number | null>(null)
-  const [mealComments, setMealComments] = useState<Record<number, MealComment[]>>({
-    1: [
-      {
-        id: 101,
-        author: "아빠",
-        content: "비주얼 최고! 다음에 또 해줘요 😋",
-        createdAt: "30분 전",
-        likes: 2,
-        isLiked: false,
-        replies: [
-          {
-            id: 1001,
-            author: "엄마",
-            content: "좋아~ 다음엔 블루베리도 넣어볼게",
-            createdAt: "25분 전",
-            likes: 1,
-            isLiked: false,
-          },
-        ],
-      },
-    ],
-    2: [
-      {
-        id: 201,
-        author: "엄마",
-        content: "소스 조합이 정말 깔끔했어요",
-        createdAt: "어제",
-        likes: 1,
-        isLiked: false,
-        replies: [],
-      },
-    ],
-  })
-  const [mealRatings, setMealRatings] = useState<Record<number, Record<number, number>>>({})
-  const [promotedMealIds, setPromotedMealIds] = useState<number[]>([])
-  const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<number, "all-rated" | "deadline">>({})
-  const [isPromotingMealId, setIsPromotingMealId] = useState<number | null>(null)
-  const [dismissedMealHighlightIds, setDismissedMealHighlightIds] = useState<number[]>([])
+  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: string | number; commentId: string | number } | null>(null)
+  const [expandedMealCommentsId, setExpandedMealCommentsId] = useState<string | number | null>(null)
+  const [mealComments, setMealComments] = useState<Record<string | number, MealComment[]>>({})
+  const [mealRatings, setMealRatings] = useState<Record<string | number, Record<number, number>>>({})
+  const [promotedMealIds, setPromotedMealIds] = useState<any[]>([])
+  const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
+  const [isPromotingMealId, setIsPromotingMealId] = useState<string | number | null>(null)
+  const [dismissedMealHighlightIds, setDismissedMealHighlightIds] = useState<any[]>([])
+
+  // Decided Menu States
+  const [decidedMealTime, setDecidedMealTime] = useState<"breakfast" | "lunch" | "dinner">("breakfast")
+  const [decidedMenuName, setDecidedMenuName] = useState("")
+  const [todayDecidedMenus, setTodayDecidedMenus] = useState<TodayMenu[]>([])
+
+  // Vote Creation States
+  const [voteTitle, setVoteTitle] = useState("")
+  const [voteOption1, setVoteOption1] = useState("")
+  const [voteOption2, setVoteOption2] = useState("")
+  const [voteOption3, setVoteOption3] = useState("")
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [isInviteLinkCopied, setIsInviteLinkCopied] = useState(false)
   const [showCreateVoteModal, setShowCreateVoteModal] = useState(false)
@@ -279,7 +371,216 @@ export function FamilyPage() {
       setInviteLink(base);
     }
     buildInviteLink();
-  }, [isLoggedIn, user, getMyReferralInfo]);
+  }, [isLoggedIn, user, getMyReferralInfo])
+
+  const fetchFamilyData = async (familyUserIds: string[]) => {
+    try {
+      const supabase = createClient()
+      
+      // 1. Fetch shared meals (meal_images)
+      const { data: imgData, error: imgError } = await supabase
+        .from('meal_images')
+        .select('*')
+        .in('uploaded_by', familyUserIds)
+        .in('source', ['family-shared', 'solo-5star'])
+        .order('created_at', { ascending: false })
+
+      if (imgError) throw imgError
+
+      if (!imgData || imgData.length === 0) {
+        setMeals([])
+        return
+      }
+
+      // Extract mealMenuIds
+      const mealMenuIds = imgData.map(img => img.meal_id).filter(Boolean)
+
+      // 2. Fetch comments for these mealMenuIds
+      let allComments: any[] = []
+      if (mealMenuIds.length > 0) {
+        const { data: commentsData } = await supabase
+          .from('comments')
+          .select('*')
+          .in('meal_id', mealMenuIds)
+          .eq('is_deleted', false)
+        allComments = commentsData || []
+      }
+
+      // Extract comment IDs to fetch replies
+      const commentIds = allComments.map(c => c.id)
+      let allReplies: any[] = []
+      if (commentIds.length > 0) {
+        const { data: repliesData } = await supabase
+          .from('comment_replies')
+          .select('*')
+          .in('comment_id', commentIds)
+          .eq('is_deleted', false)
+        allReplies = repliesData || []
+      }
+
+      // 3. Fetch ratings for these mealMenuIds
+      let allRatings: any[] = []
+      if (mealMenuIds.length > 0) {
+        const { data: ratingsData } = await supabase
+          .from('meal_ratings')
+          .select('*')
+          .in('meal_id', mealMenuIds)
+        allRatings = ratingsData || []
+      }
+
+      // 4. Load users list to map user_id to nicknames/avatars
+      const allUserIds = Array.from(new Set([
+        ...imgData.map(img => img.uploaded_by),
+        ...allComments.map(c => c.user_id),
+        ...allReplies.map(r => r.user_id),
+        ...allRatings.map(rt => rt.user_id)
+      ]))
+      let dbUsers: any[] = []
+      if (allUserIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, nickname, email, profile_image')
+          .in('id', allUserIds)
+        dbUsers = usersData || []
+      }
+      const userMap = new Map(dbUsers.map(u => [u.id, u]))
+
+      // 5. Map to UI State structures
+      const formattedMeals: SharedMeal[] = imgData.map(img => {
+        let meta: any = {}
+        try {
+          meta = img.explanation ? JSON.parse(img.explanation) : {}
+        } catch (e) {
+          meta = { title: img.explanation || "식사" }
+        }
+
+        const u = userMap.get(img.uploaded_by)
+        const uploaderName = u?.nickname || "가족"
+        const formattedDate = new Date(img.created_at).toLocaleDateString('ko-KR', {
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+
+        return {
+          id: img.id,
+          image: img.image_url,
+          title: meta.title || "맛있는 식사",
+          sharedBy: img.uploaded_by === user?.id ? "나" : uploaderName,
+          sharedAt: formattedDate,
+          sharedAtIso: img.created_at,
+          mealType: meta.mealType || "homemade",
+          mealMenuId: img.meal_id
+        }
+      })
+
+      // Map comments & replies
+      const commentsByMealId: Record<string, MealComment[]> = {}
+      imgData.forEach(img => {
+        const mealMenuId = img.meal_id
+        const imgId = img.id
+
+        const mealCommentsList = allComments
+          .filter(c => c.meal_id === mealMenuId)
+          .map(c => {
+            const u = userMap.get(c.user_id)
+            const cAuthor = c.user_id === user?.id ? "나" : (u?.nickname || "가족")
+            const cReplies = allReplies
+              .filter(r => r.comment_id === c.id)
+              .map(r => {
+                const ru = userMap.get(r.user_id)
+                return {
+                  id: r.id,
+                  author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
+                  content: r.content,
+                  createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                  likes: 0,
+                  isLiked: false
+                }
+              })
+
+            return {
+              id: c.id,
+              author: cAuthor,
+              content: c.content,
+              createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+              likes: 0,
+              isLiked: false,
+              replies: cReplies
+            }
+          })
+
+        commentsByMealId[imgId] = mealCommentsList
+      })
+
+      // Map ratings
+      const ratingsByMealId: Record<string, Record<number, number>> = {}
+      imgData.forEach(img => {
+        const mealMenuId = img.meal_id
+        const imgId = img.id
+        const mealRatingsMap: Record<number, number> = {}
+
+        allRatings
+          .filter(rt => rt.meal_id === mealMenuId)
+          .forEach(rt => {
+            const foundMember = members.find(m => m.userId === rt.user_id)
+            if (foundMember) {
+              mealRatingsMap[foundMember.id] = rt.rating
+            }
+          })
+
+        ratingsByMealId[imgId] = mealRatingsMap
+      })
+
+      setMeals(formattedMeals)
+      setMealComments(commentsByMealId)
+      setMealRatings(ratingsByMealId)
+
+    } catch (e) {
+      console.error("Failed to fetch family shared data:", e)
+    }
+  }
+
+  const fetchDecidedMenus = async () => {
+    try {
+      const supabase = createClient()
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('meal_menus')
+        .select('*')
+        .eq('school_code', 'family')
+        .eq('meal_date', todayStr)
+        .eq('is_temporary', false)
+
+      if (error) throw error
+
+      if (data) {
+        const formatted: TodayMenu[] = data.map(m => ({
+          id: m.id,
+          title: m.menu_items?.[0] || "결정된 메뉴",
+          image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop",
+          decidedBy: m.kcal || "셰프",
+          decidedAt: new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          mealTime: m.meal_type as "breakfast" | "lunch" | "dinner"
+        }))
+        setTodayDecidedMenus(formatted)
+      }
+    } catch (err) {
+      console.error("Failed to fetch decided menus", err)
+    }
+  }
+
+  // Trigger sync of family data and decided menus
+  useEffect(() => {
+    if (isLoggedIn && user?.id) {
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      if (familyUserIds.length > 0) {
+        fetchFamilyData(familyUserIds)
+      }
+      fetchDecidedMenus()
+    }
+  }, [members, isLoggedIn, user])
 
   const currentFamilyMember = members.find((member) => member.name === "나") ?? members[0]
   const currentFamilyMemberId = currentFamilyMember.id
@@ -466,27 +767,58 @@ export function FamilyPage() {
     return () => window.clearInterval(intervalId)
   }, [meals, mealRatings, promotedMealIds, isPromotingMealId])
 
-  const handleMealRating = (mealId: number, memberId: number, score: number) => {
+  const handleMealRating = async (mealId: string | number, memberId: number, score: number) => {
     const targetMeal = meals.find((meal) => meal.id === mealId)
     if (!targetMeal || memberId !== currentFamilyMemberId || !isMealRatingOpen(targetMeal)) {
       return
     }
 
-    const nextMealRatings = {
-      ...(mealRatings[mealId] ?? {}),
-      [memberId]: score,
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
     }
 
-    setMealRatings((prev) => {
-      const nextState = {
-        ...prev,
-        [mealId]: nextMealRatings,
+    try {
+      const supabase = createClient()
+      const mealMenuId = targetMeal.mealMenuId
+
+      if (!mealMenuId) {
+        console.error("Cannot rate meal without a valid mealMenuId")
+        return
       }
 
-      return nextState
-    })
+      // Check if user already rated this meal
+      const { data: existing } = await supabase
+        .from('meal_ratings')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('meal_id', mealMenuId)
+        .limit(1)
 
-    void tryPromoteMealToTalk(mealId, nextMealRatings)
+      if (existing && existing.length > 0) {
+        const { error } = await supabase
+          .from('meal_ratings')
+          .update({ rating: score })
+          .eq('id', existing[0].id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('meal_ratings')
+          .insert({
+            id: generateUUID(),
+            user_id: user.id,
+            meal_id: mealMenuId,
+            rating: score
+          })
+        if (error) throw error
+      }
+
+      // Sync state by reloading family data
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+    } catch (err) {
+      console.error("Failed to save rating to Supabase", err)
+    }
   }
 
   const handleOpenMealCardDetail = (mealId: number) => {
@@ -531,54 +863,130 @@ export function FamilyPage() {
     }))
   }
 
-  const handleAddMealComment = (mealId: number) => {
+  const handleAddMealComment = async (mealId: string | number) => {
     const content = mealCommentInput.trim()
     if (!content) return
 
-    const newComment: MealComment = {
-      id: Date.now(),
-      author: currentFamilyMemberName,
-      content,
-      createdAt: "방금 전",
-      likes: 0,
-      isLiked: false,
-      replies: [],
+    const targetMeal = meals.find(m => m.id === mealId)
+    if (!targetMeal || !targetMeal.mealMenuId) return
+
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
     }
 
-    setMealComments((prev) => ({
-      ...prev,
-      [mealId]: [...(prev[mealId] ?? []), newComment],
-    }))
-    setMealCommentInput("")
+    try {
+      const supabase = createClient()
+      const commentUuid = generateUUID()
+      const { error } = await supabase.from('comments').insert({
+        id: commentUuid,
+        meal_id: targetMeal.mealMenuId,
+        user_id: user.id,
+        content: content,
+        is_deleted: false
+      })
+
+      if (error) throw error
+
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+      setMealCommentInput("")
+    } catch (err) {
+      console.error("Failed to add comment to Supabase", err)
+    }
   }
 
-  const handleAddMealReply = (mealId: number, commentId: number) => {
+  const handleAddMealReply = async (mealId: string | number, commentId: string | number) => {
     const content = mealReplyInput.trim()
     if (!content) return
 
-    const newReply: MealReply = {
-      id: Date.now(),
-      author: currentFamilyMemberName,
-      content,
-      createdAt: "방금 전",
-      likes: 0,
-      isLiked: false,
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
     }
 
-    setMealComments((prev) => ({
-      ...prev,
-      [mealId]: (prev[mealId] ?? []).map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              replies: [...(comment.replies ?? []), newReply],
-            }
-          : comment,
-      ),
-    }))
+    try {
+      const supabase = createClient()
+      const replyUuid = generateUUID()
+      const { error } = await supabase.from('comment_replies').insert({
+        id: replyUuid,
+        comment_id: commentId,
+        user_id: user.id,
+        content: content,
+        is_deleted: false
+      })
 
-    setMealReplyInput("")
-    setActiveReplyTarget(null)
+      if (error) throw error
+
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+      setMealReplyInput("")
+      setActiveReplyTarget(null)
+    } catch (err) {
+      console.error("Failed to add reply to Supabase", err)
+    }
+  }
+
+  const handleDecideMenu = async () => {
+    if (!decidedMenuName.trim()) return
+
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { error } = await supabase.from('meal_menus').insert({
+        id: generateUUID(),
+        school_code: 'family',
+        meal_date: todayStr,
+        meal_type: decidedMealTime === "breakfast" ? "아침" : decidedMealTime === "lunch" ? "점심" : "저녁",
+        menu_items: [decidedMenuName.trim()],
+        kcal: currentFamilyMemberName, // storing decidedBy in kcal
+        is_temporary: false,
+        is_empty_result: false,
+        office_code: 'E10'
+      })
+
+      if (error) throw error
+
+      await fetchDecidedMenus()
+      setShowDecideMenuModal(false)
+      setDecidedMenuName("")
+    } catch (err) {
+      console.error("Failed to decide menu in Supabase", err)
+    }
+  }
+
+  const handleCreateVote = () => {
+    if (!voteTitle.trim() || !voteOption1.trim() || !voteOption2.trim()) return
+
+    const options: VoteOption[] = [
+      { id: 1, title: voteOption1.trim(), image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop", votes: 0, votedBy: [] },
+      { id: 2, title: voteOption2.trim(), image: "https://images.unsplash.com/photo-1563379926898-37aacf113fd9?w=200&h=200&fit=crop", votes: 0, votedBy: [] }
+    ]
+
+    if (voteOption3.trim()) {
+      options.push({ id: 3, title: voteOption3.trim(), image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=200&h=200&fit=crop", votes: 0, votedBy: [] })
+    }
+
+    const newVote: ActiveVote = {
+      id: Date.now().toString(),
+      title: voteTitle.trim(),
+      createdBy: currentFamilyMemberName,
+      endsAt: "오늘 오후 6시까지",
+      isActive: true,
+      options
+    }
+
+    setVote(newVote)
+    setShowCreateVoteModal(false)
+    setVoteTitle("")
+    setVoteOption1("")
+    setVoteOption2("")
+    setVoteOption3("")
   }
 
   const castVote = (optionId: number) => {
@@ -870,10 +1278,11 @@ export function FamilyPage() {
           <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
             {sharedFilterTabs.map((filterTab) => {
               const Icon = filterTab.icon
+              const displayMeals = meals.length === 0 ? defaultSharedMeals : meals
               const count =
                 filterTab.id === "all"
-                  ? meals.length
-                  : meals.filter((meal) => getSharedMealCategory(meal) === filterTab.id).length
+                  ? displayMeals.length
+                  : displayMeals.filter((meal) => getSharedMealCategory(meal) === filterTab.id).length
 
               return (
                 <div key={filterTab.id} className="flex flex-col items-center gap-1 shrink-0">
@@ -917,6 +1326,14 @@ export function FamilyPage() {
                       shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
                     )}
                   >
+                    {/* 샘플 리본 */}
+                    {meals.length === 0 && (
+                      <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+                        <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
+                          💡 SAMPLE
+                        </div>
+                      </div>
+                    )}
                     <button
                       onClick={() => isOpen && handleOpenMealCardDetail(meal.id)}
                       className={cn(
@@ -1101,77 +1518,88 @@ export function FamilyPage() {
             </button>
           </div>
 
-          {vote?.isActive ? (
-            <div className="bg-white/80 rounded-3xl p-5 border border-white shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="font-bold text-foreground">{vote.title}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">{vote.createdBy}님이 생성</span>
-                    <span className="text-xs text-orange-500 font-bold flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {vote.endsAt}
-                    </span>
+          {(() => {
+            const displayVote = vote || defaultActiveVote
+            return displayVote?.isActive ? (
+              <div className="bg-white/80 rounded-3xl p-5 border border-white shadow-lg relative overflow-hidden">
+                {/* 샘플 리본 */}
+                {!vote && (
+                  <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+                    <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
+                      💡 SAMPLE
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="font-bold text-foreground">{displayVote.title}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">{displayVote.createdBy}님이 생성</span>
+                      <span className="text-xs text-orange-500 font-bold flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {displayVote.endsAt}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-2.5 py-1 bg-green-100 rounded-full">
+                    <span className="text-[10px] font-bold text-green-600">진행중</span>
                   </div>
                 </div>
-                <div className="px-2.5 py-1 bg-green-100 rounded-full">
-                  <span className="text-[10px] font-bold text-green-600">진행중</span>
+
+                <div className="flex flex-col gap-3">
+                  {displayVote.options.map((option) => {
+                    const totalVotes = displayVote.options.reduce((sum, o) => sum + o.votes, 0)
+                    const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0
+                    const hasVoted = option.votedBy.includes("나")
+
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => !hasVoted && vote && castVote(option.id as number)}
+                        disabled={hasVoted || !vote}
+                        className={cn(
+                          "relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all overflow-hidden cursor-pointer",
+                          hasVoted 
+                            ? "border-orange-400 bg-orange-50" 
+                            : "border-muted hover:border-orange-300 bg-white"
+                        )}
+                      >
+                        {/* Progress bar background */}
+                        <div 
+                          className="absolute inset-0 bg-orange-100/50 transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                        
+                        <img 
+                          src={option.image || "/placeholder.svg"} 
+                          alt={option.title} 
+                          className="relative size-12 rounded-xl object-cover shrink-0"
+                        />
+                        <div className="relative flex-1 text-left">
+                          <span className="font-bold text-sm">{option.title}</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-xs text-muted-foreground">
+                              {option.votedBy.length > 0 ? option.votedBy.join(", ") : "아직 투표 없음"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="relative flex items-center gap-2">
+                          <span className="font-bold text-orange-500">{option.votes}</span>
+                          {hasVoted && <Check className="size-4 text-orange-500" />}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-
-              <div className="flex flex-col gap-3">
-                {vote.options.map((option) => {
-                  const totalVotes = vote.options.reduce((sum, o) => sum + o.votes, 0)
-                  const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0
-                  const hasVoted = option.votedBy.includes("나")
-
-                  return (
-                    <button
-                      key={option.id}
-                      onClick={() => !hasVoted && castVote(option.id)}
-                      disabled={hasVoted}
-                      className={cn(
-                        "relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all overflow-hidden",
-                        hasVoted 
-                          ? "border-orange-400 bg-orange-50" 
-                          : "border-muted hover:border-orange-300 bg-white"
-                      )}
-                    >
-                      {/* Progress bar background */}
-                      <div 
-                        className="absolute inset-0 bg-orange-100/50 transition-all"
-                        style={{ width: `${percentage}%` }}
-                      />
-                      
-                      <img 
-                        src={option.image || "/placeholder.svg"} 
-                        alt={option.title} 
-                        className="relative size-12 rounded-xl object-cover shrink-0"
-                      />
-                      <div className="relative flex-1 text-left">
-                        <span className="font-bold text-sm">{option.title}</span>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-xs text-muted-foreground">
-                            {option.votedBy.length > 0 ? option.votedBy.join(", ") : "아직 투표 없음"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="relative flex items-center gap-2">
-                        <span className="font-bold text-orange-500">{option.votes}</span>
-                        {hasVoted && <Check className="size-4 text-orange-500" />}
-                      </div>
-                    </button>
-                  )
-                })}
+            ) : (
+              <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                <VoteIcon className="size-12 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">진행 중인 투표가 없어요</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">가족들과 메뉴를 정해보세요!</p>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-              <VoteIcon className="size-12 text-muted-foreground/30 mb-3" />
-              <p className="text-sm text-muted-foreground">진행 중인 투표가 없어요</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">가족들과 메뉴를 정해보세요!</p>
-            </div>
-          )}
+            )
+          })()}
         </div>
       )}
 
@@ -1196,7 +1624,8 @@ export function FamilyPage() {
 
           <div className="flex flex-col gap-3">
             {["breakfast", "lunch", "dinner"].map((mealTime) => {
-              const menu = todayMenus.find(m => m.mealTime === mealTime)
+              const displayTodayMenus = todayDecidedMenus.length === 0 ? defaultTodayMenus : todayDecidedMenus
+              const menu = displayTodayMenus.find(m => m.mealTime === mealTime)
               const label = mealTime === "breakfast" ? "아침" : mealTime === "lunch" ? "점심" : "저녁"
               const timeRange = mealTime === "breakfast" ? "06:00 - 09:00" : mealTime === "lunch" ? "11:00 - 14:00" : "17:00 - 20:00"
 
@@ -1204,10 +1633,18 @@ export function FamilyPage() {
                 <div 
                   key={mealTime}
                   className={cn(
-                    "bg-white/80 rounded-2xl p-4 border border-white shadow-md",
+                    "bg-white/80 rounded-2xl p-4 border border-white shadow-md relative overflow-hidden",
                     !menu && "opacity-60"
                   )}
                 >
+                  {/* 샘플 리본 */}
+                  {todayDecidedMenus.length === 0 && menu && (
+                    <div className="absolute top-0 right-0 overflow-hidden w-16 h-16 z-10 pointer-events-none">
+                      <div className="absolute top-2 -right-6 w-20 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
+                        💡 SAMPLE
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "size-12 rounded-xl flex items-center justify-center shrink-0",
@@ -1399,6 +1836,8 @@ export function FamilyPage() {
                 <label className="text-xs font-bold text-muted-foreground mb-1.5 block">투표 제목</label>
                 <input 
                   type="text" 
+                  value={voteTitle}
+                  onChange={(e) => setVoteTitle(e.target.value)}
                   placeholder="오늘 저녁 뭐 먹을까요?" 
                   className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300"
                 />
@@ -1406,12 +1845,33 @@ export function FamilyPage() {
               <div>
                 <label className="text-xs font-bold text-muted-foreground mb-1.5 block">후보 메뉴 (2-3개)</label>
                 <div className="flex flex-col gap-2">
-                  <input type="text" placeholder="메뉴 1" className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" />
-                  <input type="text" placeholder="메뉴 2" className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" />
-                  <input type="text" placeholder="메뉴 3 (선택)" className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" />
+                  <input 
+                    type="text" 
+                    value={voteOption1}
+                    onChange={(e) => setVoteOption1(e.target.value)}
+                    placeholder="메뉴 1" 
+                    className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" 
+                  />
+                  <input 
+                    type="text" 
+                    value={voteOption2}
+                    onChange={(e) => setVoteOption2(e.target.value)}
+                    placeholder="메뉴 2" 
+                    className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" 
+                  />
+                  <input 
+                    type="text" 
+                    value={voteOption3}
+                    onChange={(e) => setVoteOption3(e.target.value)}
+                    placeholder="메뉴 3 (선택)" 
+                    className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300" 
+                  />
                 </div>
               </div>
-              <button className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl mt-2">
+              <button 
+                onClick={handleCreateVote}
+                className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl mt-2 cursor-pointer hover:bg-orange-600 transition-colors"
+              >
                 투표 시작하기
               </button>
             </div>
@@ -1433,22 +1893,39 @@ export function FamilyPage() {
               <div>
                 <label className="text-xs font-bold text-muted-foreground mb-1.5 block">식사 시간</label>
                 <div className="flex gap-2">
-                  {["아침", "점심", "저녁"].map((time) => (
-                    <button key={time} className="flex-1 py-2 px-3 rounded-xl border-2 border-muted text-sm font-medium hover:border-orange-400 hover:text-orange-500 transition-colors">
-                      {time}
-                    </button>
-                  ))}
+                  {["아침", "점심", "저녁"].map((time) => {
+                    const timeType = time === "아침" ? "breakfast" : time === "점심" ? "lunch" : "dinner"
+                    return (
+                      <button 
+                        key={time} 
+                        onClick={() => setDecidedMealTime(timeType)}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-xl border-2 text-sm font-medium transition-colors cursor-pointer",
+                          decidedMealTime === timeType 
+                            ? "border-orange-500 text-orange-500 bg-orange-50/50 font-bold" 
+                            : "border-muted text-muted-foreground hover:border-orange-400"
+                        )}
+                      >
+                        {time}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-muted-foreground mb-1.5 block">메뉴 이름</label>
                 <input 
                   type="text" 
+                  value={decidedMenuName}
+                  onChange={(e) => setDecidedMenuName(e.target.value)}
                   placeholder="오늘의 메뉴를 입력하세요" 
                   className="w-full px-4 py-3 bg-muted rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300"
                 />
               </div>
-              <button className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl mt-2 flex items-center justify-center gap-2">
+              <button 
+                onClick={handleDecideMenu}
+                className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl mt-2 flex items-center justify-center gap-2 cursor-pointer hover:bg-orange-600 transition-colors"
+              >
                 <Bell className="size-4" />
                 결정 및 알림 보내기
               </button>
