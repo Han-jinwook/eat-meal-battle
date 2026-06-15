@@ -381,7 +381,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }, [expandedMemoId])
 
   const displayLogs = !soloExperienceCompleted
-    ? [...mealLogs, ...defaultMealLogs]
+    ? [
+        ...mealLogs,
+        ...defaultMealLogs.filter((defaultLog) => !mealLogs.some((log) => log.id === defaultLog.id))
+      ]
     : mealLogs
 
   // Filter and sort logs

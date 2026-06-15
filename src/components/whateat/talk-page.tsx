@@ -129,6 +129,37 @@ const dummyPosts: TalkPost[] = [
     isLiked: false,
     commentCount: 2,
     isSubscribed: false
+  },
+  {
+    id: 5,
+    type: "homemade",
+    title: "바삭바삭 소리까지 맛있는 청라동 수제 돈까스 🍛",
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&fit=crop",
+    description: "집에서 직접 빵가루 묻혀 튀겨낸 겉바속촉 등심 돈까스예요! 시판 소스에 양파와 버섯을 볶아 얹었더니 사 먹는 것보다 훨씬 맛있네요. 아이들도 정말 잘 먹고, 집밥 느낌 물씬 나는 든든한 저녁이었습니다. 😋",
+    region: { dong: "청라동", gu: "서구", city: "인천" },
+    author: { id: 105, nickname: "청라 집밥러", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face", region: "청라동" },
+    createdAt: "6시간 전",
+    rating: { average: 4.9, count: 12 },
+    likes: 18,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
+  },
+  {
+    id: 6,
+    type: "delivery",
+    title: "치즈 쭈욱 늘어나는 청라 인생 피자 배달 🍕",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&fit=crop",
+    description: "주말 저녁엔 역시 피자 배달이죠! 청라동에 새로 생긴 피자집인데 토핑도 정말 아낌없이 풍성하게 올라가고 도우가 끝내주게 쫄깃해요. 갈릭 소스에 푹 찍어 맥주와 곁들이면 스트레스가 싹 풀려요! 🍕🍺",
+    region: { dong: "청라동", gu: "서구", city: "인천" },
+    restaurant: { name: "인생 피자 청라점", address: "인천 서구 청라라임로 100" },
+    author: { id: 106, nickname: "청라 배달요정", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face", region: "청라동" },
+    createdAt: "7시간 전",
+    rating: { average: 4.8, count: 15 },
+    likes: 14,
+    isLiked: false,
+    commentCount: 2,
+    isSubscribed: false
   }
 ]
 
@@ -202,6 +233,42 @@ const dummyComments: Record<number, Comment[]> = {
       content: "강남역 삼겹살 먹고 후식으로 무조건 들르는 녹차빙수 성지죠~ 완전 공감!",
       createdAt: "4.5시간 전",
       likes: 2,
+      isLiked: false
+    }
+  ],
+  5: [
+    {
+      id: 51,
+      author: { nickname: "이웃사촌", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "와 튀김옷 두께랑 바삭함이 눈으로도 느껴지네요. 비법 소스 알고 싶어요!",
+      createdAt: "5시간 전",
+      likes: 3,
+      isLiked: false
+    },
+    {
+      id: 52,
+      author: { nickname: "집밥매니아", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "역시 사 먹는 것보다 직접 정성 들여 만든 수제 돈까스가 최고죠!",
+      createdAt: "5.5시간 전",
+      likes: 2,
+      isLiked: false
+    }
+  ],
+  6: [
+    {
+      id: 61,
+      author: { nickname: "동네주민", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "여기 새로 오픈한 거기군요! 핫소스 잔뜩 뿌려 먹으면 진짜 맛있겠어요.",
+      createdAt: "6시간 전",
+      likes: 1,
+      isLiked: false
+    },
+    {
+      id: 62,
+      author: { nickname: "피자러버", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face", region: "청라동" },
+      content: "맥주 안주로 피자라니 완전 대찬성입니다! 오늘 야식 메뉴는 피맥이네요 🍕🍺",
+      createdAt: "6.5시간 전",
+      likes: 3,
       isLiked: false
     }
   ]

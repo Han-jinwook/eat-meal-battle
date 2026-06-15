@@ -105,7 +105,7 @@ export const familyMembers: FamilyMember[] = [
 const defaultSharedMeals: SharedMeal[] = [
   {
     id: "sample-1",
-    image: "https://images.unsplash.com/photo-1563379926898-37aacf113fd9?w=500&fit=crop",
+    image: "https://images.unsplash.com/photo-1546549032-9571cd6b27df?w=500&fit=crop",
     title: "아빠표 수제 라구 파스타 🍝",
     sharedBy: "아빠",
     sharedAt: "오늘 12:30",

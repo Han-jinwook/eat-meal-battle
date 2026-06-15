@@ -716,7 +716,12 @@ function MenuItemWithRating({ item, interactive = true, mealDate, schoolCode }: 
         <div className="text-gray-700">{item.item_name}</div>
       </div>
       
-
+      {/* 평균 별점 표시 - 소수점 첫째자리까지만 표시 */}
+      {avgRating && ratingCount ? (
+        <div className="text-sm text-gray-500">
+          {avgRating.toFixed(1)} ({ratingCount}명)
+        </div>
+      ) : null}
     </li>
   );
 };
