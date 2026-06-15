@@ -717,9 +717,9 @@ function MenuItemWithRating({ item, interactive = true, mealDate, schoolCode }: 
       </div>
       
       {/* 평균 별점 표시 - 소수점 첫째자리까지만 표시 */}
-      {avgRating && ratingCount ? (
-        <div className="text-sm text-gray-500">
-          {avgRating.toFixed(1)} ({ratingCount}명)
+      {avgRating ? (
+        <div className="text-sm text-gray-500 font-bold">
+          {avgRating.toFixed(1)}
         </div>
       ) : null}
     </li>
