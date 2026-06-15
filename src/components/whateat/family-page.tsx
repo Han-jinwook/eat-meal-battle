@@ -114,21 +114,21 @@ const defaultSharedMeals: SharedMeal[] = [
   },
   {
     id: "sample-2",
-    image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=500&fit=crop",
-    title: "첫 알바 첫 월급 턱! 동생이 쏜 수제 도넛 🍩",
+    image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&fit=crop",
+    title: "첫 알바 첫 월급 턱! 동생이 쏜 맛있는 모둠 스시 🍣",
     sharedBy: "동생",
     sharedAt: "어제",
     sharedAtIso: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    mealType: "homemade",
+    mealType: "dining",
   },
   {
     id: "sample-3",
-    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=500&fit=crop",
-    title: "엄마표 특제 매콤달콤 떡볶이 & 모듬 튀김 🍡",
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=500&fit=crop",
+    title: "엄마가 불금 야식으로 배달 주문해준 바삭한 반반 치킨 🍗",
     sharedBy: "엄마",
     sharedAt: "3일 전",
     sharedAtIso: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    mealType: "homemade",
+    mealType: "delivery",
   }
 ]
 
@@ -166,7 +166,7 @@ const defaultMealComments: Record<string | number, MealComment[]> = {
     {
       id: "comment-s2-1",
       author: "엄마",
-      content: "동생이 웬일로 줄 서서 도넛을 사왔네~ 달콤하게 잘 먹었어 🍩",
+      content: "동생이 첫 월급 탔다고 스시를 사왔네~ 입에서 살살 녹아 🍣",
       createdAt: "어제 17:40",
       likes: 1,
       isLiked: false,
@@ -175,7 +175,7 @@ const defaultMealComments: Record<string | number, MealComment[]> = {
     {
       id: "comment-s2-2",
       author: "아빠",
-      content: "크림이 꽉 차서 맛있더구나. 고생했다 우리 아들!",
+      content: "회가 엄청 신선하더구나. 고생했다 우리 아들!",
       createdAt: "어제 18:00",
       likes: 1,
       isLiked: false,
@@ -186,7 +186,7 @@ const defaultMealComments: Record<string | number, MealComment[]> = {
     {
       id: "comment-s3-1",
       author: "나",
-      content: "엄마표 떡볶이는 언제 먹어도 넘사벽 최고존엄.. 🌶️",
+      content: "역시 치킨은 브랜드 반반 치킨이 진리..! 양념이 짱이야 🍗",
       createdAt: "3일 전",
       likes: 2,
       isLiked: false,
@@ -195,7 +195,7 @@ const defaultMealComments: Record<string | number, MealComment[]> = {
     {
       id: "comment-s3-2",
       author: "동생",
-      content: "깻잎 향이 솔솔 나서 진짜 맛있게 먹었음! 튀김과의 조합 굿 👍",
+      content: "바삭바삭해서 맥주 안주로 최고였음! 닭다리 양보해줘서 고마워요 엄마 👍",
       createdAt: "3일 전",
       likes: 1,
       isLiked: false,

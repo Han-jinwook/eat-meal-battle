@@ -6,7 +6,6 @@ import StarRating from '@/components/StarRating';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { createClient } from '@/lib/supabase';
 import MyMealRating from '@/components/MyMealRating';
-import SchoolRating from './SchoolRating';
 // battleCalculator 제거됨
 import useUserSchool from '../hooks/useUserSchool';
 import { useSchoolMode } from '../hooks/useSchoolMode';
@@ -717,12 +716,7 @@ function MenuItemWithRating({ item, interactive = true, mealDate, schoolCode }: 
         <div className="text-gray-700">{item.item_name}</div>
       </div>
       
-      {/* 평균 별점 표시 - 소수점 첨째자리까지만 표시 */}
-      {avgRating && ratingCount ? (
-        <div className="text-sm text-gray-500">
-          {avgRating.toFixed(1)} ({ratingCount}명)
-        </div>
-      ) : null}
+
     </li>
   );
 };
@@ -786,8 +780,7 @@ export default function MealCard({
     return (
       <div className="bg-white overflow-hidden rounded-lg shadow-sm h-full">
         <div className="p-4 h-full flex flex-col">
-          {/* 학교 별점 */}
-          <SchoolRating schoolCode={meal.school_code} mealId={meal.id} className="mb-4" />
+
 
           {/* 원산지/영양정보 버튼 */}
           <div className="flex justify-between items-center mb-4 text-xs">
@@ -868,8 +861,7 @@ export default function MealCard({
       {/* 본문 */}
       <div className="p-2">
 
-        {/* 학교 별점 */}
-        <SchoolRating schoolCode={meal.school_code} mealId={meal.id} className="mb-2" />
+
 
         {/* 이미지 업로더 */}
         <MealImageUploader

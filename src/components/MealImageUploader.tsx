@@ -351,7 +351,7 @@ export default function MealImageUploader({
     if (schoolCode === 'sample') {
       const mockImage = {
         id: 'sample-approved-image',
-        image_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&fit=crop',
+        image_url: '/images/sample-tray.jpg',
         status: 'approved',
         explanation: '샘플 급식 이미지',
         uploaded_by: 'mock-uploader-id',
