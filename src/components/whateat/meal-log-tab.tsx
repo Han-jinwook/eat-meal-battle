@@ -654,14 +654,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           <Cloud className={cn("size-4 shrink-0", isDriveConnected ? "text-green-500 fill-green-500" : "text-muted-foreground")} />
           <div className="flex flex-col">
             <span className="font-bold text-foreground">
-              {isDriveConnected ? "구글 드라이브 백업 활성화됨" : "구글 드라이브 비연동 상태"}
+              {isDriveConnected ? "구글 드라이브 백업 활성화됨" : "개인 기기에 프라이빗 보관 중"}
             </span>
             <span className="text-[10px] text-muted-foreground/80">
               {isDriveConnected 
                 ? (lastBackupAt 
                     ? `마지막 백업: ${new Date(lastBackupAt).toLocaleString()}` 
                     : "백업 진행 필요")
-                : "로컬 저장소에 백업 보관 중"}
+                : "서버에 저장되지 않는 프라이빗 데이터입니다. 백업을 연동해보세요."}
             </span>
           </div>
         </div>

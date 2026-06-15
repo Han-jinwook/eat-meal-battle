@@ -151,7 +151,7 @@ async function requestDriveAccessToken(interactive = false) {
       error_callback: (error: any) => {
         const type = error?.type || 'unknown'
         if (type === 'popup_closed') {
-          rejectOnce(new Error('Google 로그인 팝업이 닫혀 백업금고 연결이 취소되었습니다.'))
+          rejectOnce(new Error('백업 연동이 취소되었습니다. 왓잇의 개인 식사 일지는 서버에 저장되지 않는 프라이빗 데이터로, 안전한 보관을 위해 구글 드라이브 연결을 권장합니다.'))
           return
         }
         if (type === 'popup_failed_to_open') {
