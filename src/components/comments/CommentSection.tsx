@@ -61,49 +61,6 @@ export default function CommentSection({ mealId, className = '', schoolCode, mea
   const loadComments = async (reset = false) => {
     if (!mealId) return;
     
-    if (mealId === 'sample-school-meal-id') {
-      const dummySchoolComments: Comment[] = [
-        {
-          id: 'sample-comment-1',
-          content: '눈꽃치즈돈까스 진짜 맛있어요! 치즈가 폭포처럼 흘러내려요 🍛',
-          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          user_id: 'mock-user-1',
-          user: {
-            id: 'mock-user-1',
-            email: 'student1@school.edu',
-            user_metadata: {
-              name: '급식조아',
-              avatar_url: ''
-            }
-          },
-          likes_count: 5,
-          user_has_liked: false,
-          replies_count: 0
-        },
-        {
-          id: 'sample-comment-2',
-          content: '츄러스 갓 튀겨서 나온 것처럼 바삭바삭하고 달콤해요! 🥨 망고에이드랑 꿀조합임',
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          user_id: 'mock-user-2',
-          user: {
-            id: 'mock-user-2',
-            email: 'student2@school.edu',
-            user_metadata: {
-              name: '초코쿠키',
-              avatar_url: ''
-            }
-          },
-          likes_count: 3,
-          user_has_liked: false,
-          replies_count: 0
-        }
-      ];
-      setComments(dummySchoolComments);
-      setLoading(false);
-      setHasMore(false);
-      return;
-    }
-    
     try {
       setLoading(true);
       const currentPage = reset ? 0 : page;
@@ -462,33 +419,7 @@ export default function CommentSection({ mealId, className = '', schoolCode, mea
 
   // 댓글 추가 함수 - CommentForm에서 사용
   const addComment = async (content: string): Promise<boolean> => {
-    if (!mealId || !content.trim()) return false;
-    
-    if (mealId === 'sample-school-meal-id') {
-      const newComment: Comment = {
-        id: `comment-virtual-${Date.now()}`,
-        content: content.trim(),
-        created_at: new Date().toISOString(),
-        user_id: user?.id || 'mock-current-user',
-        user: {
-          id: user?.id || 'mock-current-user',
-          email: user?.email || 'guest@example.com',
-          user_metadata: {
-            name: userSchool?.nickname || '나',
-            avatar_url: ''
-          }
-        },
-        likes_count: 0,
-        user_has_liked: false,
-        replies_count: 0
-      };
-      setComments(prev => [newComment, ...prev]);
-      localStorage.setItem('whateat_school_commented_once', 'true');
-      window.dispatchEvent(new CustomEvent('whateat_school_commented'));
-      return true;
-    }
-    
-    if (!user || !user.id || !content.trim()) return false;
+    if (!user || !user.id || !mealId || !content.trim()) return false;
     
     try {
       console.log('댓글 추가 시도:', { mealId, userId: user.id, content: content.trim() });

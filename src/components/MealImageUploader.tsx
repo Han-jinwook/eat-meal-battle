@@ -348,21 +348,6 @@ export default function MealImageUploader({
       return;
     }
     
-    if (schoolCode === 'sample') {
-      const mockImage = {
-        id: 'sample-approved-image',
-        image_url: '/images/sample-tray.jpg',
-        status: 'approved',
-        explanation: '샘플 급식 이미지',
-        uploaded_by: 'mock-uploader-id',
-        uploader_nickname: '급식왕'
-      };
-      setUploadedImage(mockImage);
-      setImageStatus('approved');
-      setIsButtonReady(false);
-      return;
-    }
-    
     console.log('승인된 이미지 조회 시작:', { mealDate, schoolCode });
     
     // 1. mealDate + 학교 코드로 급식 찾기

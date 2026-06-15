@@ -15,6 +15,7 @@ import useModal from '@/hooks/useModal';
 import { MealInfo } from '@/types'; // types.ts에서 가져오도록 수정
 import { CommentSection } from '@/components/comments';
 import DateNavigator from '@/components/DateNavigator';
+import ShareButton from '@/components/ShareButton';
 import SchoolSearchModal from '@/components/SchoolSearchModal';
 import SchoolRegistrationFlowModal from '@/components/SchoolRegistrationFlowModal';
 import ShareModal from '@/components/ShareModal';
@@ -48,57 +49,6 @@ export default function MealClient() {
     process.env.NODE_ENV !== 'production' &&
     process.env.NEXT_PUBLIC_USE_MOCK_SCHOOL === 'true';
   
-  // 급식 온보딩 미션 상태
-  const [schoolRated, setSchoolRated] = useState(false);
-  const [schoolCommented, setSchoolCommented] = useState(false);
-  const [schoolQuizCompleted, setSchoolQuizCompleted] = useState(false);
-  
-  // 퀴즈 관련 상태
-  const [quizState, setQuizState] = useState<'none' | 'generated' | 'solved'>('none');
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [quizResult, setQuizResult] = useState<boolean | null>(null);
-  
-  // 온보딩 완료 축하 오버레이
-  const [showCelebration, setShowCelebration] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setSchoolRated(localStorage.getItem('whateat_school_rated_once') === 'true');
-      setSchoolCommented(localStorage.getItem('whateat_school_commented_once') === 'true');
-      setSchoolQuizCompleted(localStorage.getItem('whateat_school_quiz_completed') === 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleRated = () => setSchoolRated(true);
-    const handleCommented = () => setSchoolCommented(true);
-
-    window.addEventListener('whateat_school_rated', handleRated);
-    window.addEventListener('whateat_school_commented', handleCommented);
-
-    return () => {
-      window.removeEventListener('whateat_school_rated', handleRated);
-      window.removeEventListener('whateat_school_commented', handleCommented);
-    };
-  }, []);
-
-  const schoolExperienceCompleted = schoolRated && schoolCommented;
-
-  // 2가지 미션이 모두 완료되는 순간 축하 팝업/효과 띄우기
-  useEffect(() => {
-    if (schoolRated && schoolCommented) {
-      const isAlreadyCompleted = localStorage.getItem('whateat_school_experience_completed') === 'true';
-      if (!isAlreadyCompleted) {
-        localStorage.setItem('whateat_school_experience_completed', 'true');
-        setShowCelebration(true);
-        // 4초 후 축하 팝업 닫기
-        setTimeout(() => {
-          setShowCelebration(false);
-        }, 4000);
-      }
-    }
-  }, [schoolRated, schoolCommented]);
-
   // 공유 모달 상태 관리
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [currentMeal, setCurrentMeal] = useState<MealInfo | null>(null);
@@ -205,32 +155,6 @@ export default function MealClient() {
     dataSource,
     fetchMealInfo,
   } = useMeals();
-
-  const mockSampleMeal = useMemo((): MealInfo => ({
-    id: 'sample-school-meal-id',
-    school_code: 'sample',
-    school_name: schoolMode.currentSchoolInfo?.school_name || '맛나고등학교',
-    meal_date: selectedDate || getCurrentDate(),
-    meal_type: '중식',
-    menu_items: ['눈꽃치즈돈까스', '미니 츄러스', '바삭 양배추 샐러드', '얼큰 김치우동', '수제 망고에이드'],
-    menuItems: [
-      { id: 'sample-menu-1', item_name: '눈꽃치즈돈까스 🍛', avg_rating: 4.8, rating_count: 120 },
-      { id: 'sample-menu-2', item_name: '미니 츄러스 🥨', avg_rating: 4.7, rating_count: 95 },
-      { id: 'sample-menu-3', item_name: '바삭 양배추 샐러드 🥗', avg_rating: 3.5, rating_count: 40 },
-      { id: 'sample-menu-4', item_name: '얼큰 김치우동 🍜', avg_rating: 4.3, rating_count: 85 },
-      { id: 'sample-menu-5', item_name: '수제 망고에이드 🍹', avg_rating: 4.9, rating_count: 150 },
-    ],
-    kcal: '850',
-    ntr_info: '탄수화물: 110g<br/>단백질: 35g<br/>지방: 25g<br/>비타민C: 15mg',
-    origin_info: '돼지고기(돈까스): 국내산<br/>닭고기: 국내산<br/>쌀: 국내산<br/>김치: 국내산',
-  }), [selectedDate, schoolMode.currentSchoolInfo?.school_name]);
-
-  const displayMeals = useMemo(() => {
-    if (!schoolExperienceCompleted) {
-      return [mockSampleMeal];
-    }
-    return meals;
-  }, [schoolExperienceCompleted, meals, mockSampleMeal]);
 
   // userError 발생 시 오류 처리 - 비로그인 사용자는 대시보드 표시
   useEffect(() => {
@@ -1509,37 +1433,18 @@ export default function MealClient() {
         {/* 에러 메시지 */}
         {(error || pageError || userError) &&
           (error || pageError || userError) !== '해당 날짜의 급식 정보가 없습니다.' &&
-          !displayMeals.length && (
+          !meals.length && (
           <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
             {error || pageError || userError}
           </div>
         )}
 
-        {/* 온보딩 완료 축하 팝업 */}
-        {showCelebration && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl border border-yellow-100 animate-bounce">
-              <div className="text-5xl mb-4">🎉</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">온보딩 체험 완수!</h3>
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                축하합니다! 급식 평가, 소통, 영양 퀴즈 체험을 모두 마치셨습니다.<br/>
-                이제부터는 실제 진짜 급식 정보를 마음껏 즐겨보세요!
-              </p>
-              <div className="text-xs text-orange-500 font-semibold">
-                실제 급식 데이터 모드로 전환 중...
-              </div>
-            </div>
-          </div>
-        )}
-
-
-
         {/* 급식 정보 표시 - 로그인 여부와 무관하게 기본 UI 윤곽 표시 */}
         {!isLoading && !pageLoading && !userLoading && (
           <>
-            {displayMeals.length > 0 ? (
+            {meals.length > 0 ? (
               <div className="space-y-8">
-                {displayMeals.map((meal) => (
+                {meals.map((meal) => (
                   <div key={meal.id} className="meal-wrapper">
                     {/* PC: 2x2 그리드 배치, 모바일: 세로 배치 */}
                     <div className="space-y-6 lg:space-y-0">
@@ -1584,10 +1489,16 @@ export default function MealClient() {
                         </div>
                       </div>
                       
-                      {/* 2단: 댓글 섹션 */}
+                      {/* 2단: 공유 버튼 + 댓글 섹션 */}
                       <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-6 lg:space-y-0 lg:mt-8">
-                        {/* 왼쪽 영역 비움 */}
+                        {/* 공유 버튼 영역 - PC에서 왼쪽 */}
                         <div className="lg:order-1">
+                          <ShareButton 
+                            mealDate={meal.meal_date}
+                            schoolName={userSchool?.school_name || meal.school_name || '학교정보 없음'}
+                            schoolCode={meal.school_code}
+                            rating={4.1}
+                          />
                           
                           {/* 광고 배너 예비 영역 - 향후 사용 예정 */}
                           {/* <div className="hidden lg:block mt-4">
