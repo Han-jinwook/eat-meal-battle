@@ -48,6 +48,28 @@ export default function ProfileClient() {
     }
   }, [isLoggedIn, getReferralHistory]);
 
+  const [autoSharePref, setAutoSharePref] = useState<'ask' | 'approved' | 'rejected'>('ask');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pref = localStorage.getItem('whateat_auto_share_5star');
+      if (pref === 'approved') setAutoSharePref('approved');
+      else if (pref === 'rejected') setAutoSharePref('rejected');
+      else setAutoSharePref('ask');
+    }
+  }, []);
+
+  const handlePrefChange = (newPref: 'ask' | 'approved' | 'rejected') => {
+    setAutoSharePref(newPref);
+    if (typeof window !== 'undefined') {
+      if (newPref === 'ask') {
+        localStorage.removeItem('whateat_auto_share_5star');
+      } else {
+        localStorage.setItem('whateat_auto_share_5star', newPref);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fffaf5]">
@@ -88,6 +110,53 @@ export default function ProfileClient() {
                 <HubProfileCard />
                 
                 <HubNotificationCard />
+
+                {/* 왓잇 식단 공개 범위 설정 카드 */}
+                <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm space-y-3.5">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <span className="text-orange-500">✨</span> 왓잇 식단 설정
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="text-xs text-muted-foreground leading-relaxed">
+                      5점 평점을 받은 식사의 맛톡(동네 맛집 피드) 공개 여부를 설정합니다.
+                    </div>
+                    
+                    <div className="flex flex-col gap-2.5 pt-1">
+                      <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="autoShare5Star"
+                          checked={autoSharePref === 'ask'}
+                          onChange={() => handlePrefChange('ask')}
+                          className="text-orange-500 focus:ring-orange-500 size-4 border-gray-300 cursor-pointer"
+                        />
+                        <span>매번 승낙 여부 물어보기 (기본값)</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="autoShare5Star"
+                          checked={autoSharePref === 'approved'}
+                          onChange={() => handlePrefChange('approved')}
+                          className="text-orange-500 focus:ring-orange-500 size-4 border-gray-300 cursor-pointer"
+                        />
+                        <span>5점 부여 시 항상 자동 공개</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
+                        <input
+                          type="radio"
+                          name="autoShare5Star"
+                          checked={autoSharePref === 'rejected'}
+                          onChange={() => handlePrefChange('rejected')}
+                          className="text-orange-500 focus:ring-orange-500 size-4 border-gray-300 cursor-pointer"
+                        />
+                        <span>5점 부여 시 항상 비공개 (기기/가족방만 보관)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
                 
                 {/* 허브 통합 로그아웃 카드 */}
                 <HubLogoutCard onLogout={() => router.replace('/')} />
