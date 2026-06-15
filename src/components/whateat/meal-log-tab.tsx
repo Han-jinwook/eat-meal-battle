@@ -7,7 +7,6 @@ import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-moda
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
 import { useHub } from "@/services/merlin-hub-sdk/react"
-import { toast } from "react-hot-toast"
 import {
   getDriveBackupStatus,
   connectDriveBackup,
@@ -429,13 +428,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (isSample) {
       localStorage.setItem("whateat_solo_rated_once", "true")
       setSoloRated(true)
-      
-      if (newRating === 5) {
-        toast.error("💡 온보딩 체험 중에는 맛톡(가족방) 자동 공유가 제한됩니다. 진짜 일지를 등록해 공유해보세요!", {
-          duration: 4000,
-          position: "top-center"
-        })
-      }
       return
     }
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { toast } from 'react-hot-toast';
 
 interface ShareButtonProps {
   mealDate: string;
@@ -24,14 +23,6 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleShare = async () => {
-    if (schoolCode === 'sample') {
-      toast.error('💡 온보딩 체험 중에는 급식 평가 공유가 제한됩니다. 내 학교를 등록하고 실시간 급식을 공유해보세요!', {
-        duration: 4000,
-        position: 'top-center',
-      });
-      return;
-    }
-
     if (isSharing) return;
     setIsSharing(true);
     
