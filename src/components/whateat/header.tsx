@@ -102,7 +102,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             </span>
           </button>
           
-          <div className="ml-2">
+          <div className="ml-2 shrink-0">
             <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
           </div>
         </div>
