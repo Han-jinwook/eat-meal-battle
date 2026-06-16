@@ -76,7 +76,6 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
         </div>
         {/* 프로필 및 스위처 */}
         <div className="flex shrink-0 items-center gap-2">
-          <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
           <button
             type="button"
             onClick={handleProfileClick}
@@ -100,6 +99,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                 : '게스트'}
             </span>
           </button>
+          <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
         </div>
       </div>
     </header>
