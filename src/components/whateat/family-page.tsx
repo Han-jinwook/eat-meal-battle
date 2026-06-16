@@ -405,37 +405,16 @@ export function FamilyPage() {
   const [mealComments, setMealComments] = useState<Record<string | number, MealComment[]>>({})
   const [mealRatings, setMealRatings] = useState<Record<string | number, Record<number, number>>>({})
   
-  // 1회 온보딩 미션 상태 선언
-  const [familyRatedOnce, setFamilyRatedOnce] = useState(false)
-  const [familyCommentedOnce, setFamilyCommentedOnce] = useState(false)
-  const [familyExperienceCompleted, setFamilyExperienceCompleted] = useState(false)
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setFamilyRatedOnce(localStorage.getItem("whateat_family_rated_once") === "true")
-      setFamilyCommentedOnce(localStorage.getItem("whateat_family_commented_once") === "true")
-      setFamilyExperienceCompleted(localStorage.getItem("whateat_family_experience_completed") === "true")
-    }
-  }, [])
-
   // 샘플 데이터일 때 초기 댓글과 평점을 로컬 상태에 주입
   useEffect(() => {
-    if (meals.length === 0 || !familyExperienceCompleted) {
+    if (meals.length === 0) {
       setMealComments(defaultMealComments)
       setMealRatings(defaultMealRatings)
     }
-  }, [meals, familyExperienceCompleted])
+  }, [meals])
 
-  const checkFamilyMissionCompletion = (rated: boolean, commented: boolean) => {
-    if (rated && commented && !familyExperienceCompleted) {
-      localStorage.setItem("whateat_family_experience_completed", "true")
-      setFamilyExperienceCompleted(true)
-      alert("🎉 축하합니다! 가족 식탁 1회 체험 온보딩 미션을 완수하셨습니다! 이제 실제 가족 공유 데이터가 표시됩니다. 🏡")
-    }
-  }
-
-  const displayComments = (meals.length === 0 || !familyExperienceCompleted) ? defaultMealComments : mealComments
-  const displayRatings = (meals.length === 0 || !familyExperienceCompleted) ? defaultMealRatings : mealRatings
+  const displayComments = meals.length === 0 ? defaultMealComments : mealComments
+  const displayRatings = meals.length === 0 ? defaultMealRatings : mealRatings
 
   const [promotedMealIds, setPromotedMealIds] = useState<any[]>([])
   const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
@@ -736,7 +715,7 @@ export function FamilyPage() {
     { id: "dining" as SharedMealFilterType, label: "외식", icon: UtensilsCrossed },
   ]
 
-  const baseMeals = (meals.length === 0 || !familyExperienceCompleted) ? defaultSharedMeals : meals
+  const baseMeals = meals.length === 0 ? defaultSharedMeals : meals
   const filteredMeals = baseMeals.filter((meal) => {
     if (sharedMealFilter === "all") {
       return true
@@ -949,9 +928,6 @@ export function FamilyPage() {
         next[mealId] = { ...(next[mealId] ?? {}), [memberId]: score }
         return next
       })
-      localStorage.setItem("whateat_family_rated_once", "true")
-      setFamilyRatedOnce(true)
-      checkFamilyMissionCompletion(true, familyCommentedOnce)
       return
     }
 
@@ -1070,9 +1046,6 @@ export function FamilyPage() {
         return next
       })
       setMealCommentInput("")
-      localStorage.setItem("whateat_family_commented_once", "true")
-      setFamilyCommentedOnce(true)
-      checkFamilyMissionCompletion(familyRatedOnce, true)
       return
     }
 
@@ -1513,31 +1486,7 @@ export function FamilyPage() {
             })}
           </div>
 
-          {!familyExperienceCompleted && (
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50/70 border border-orange-200 rounded-3xl p-4.5 mb-2 shadow-sm animate-in fade-in duration-300">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Sparkles className="size-4 text-orange-500 animate-pulse" />
-                <h4 className="font-extrabold text-sm text-foreground">🏡 우리가족 식탁 1회 체험 미션</h4>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-                아래 샘플 식사를 선택하여 별점을 주고 댓글을 달아보세요! 두 미션을 완료하면 실제 가족 방으로 전환됩니다.
-              </p>
-              <div className="flex gap-4 text-[11px] font-bold">
-                <span className="flex items-center gap-1.5">
-                  <span className={cn("size-4 rounded-md flex items-center justify-center border text-[9px] transition-colors", familyRatedOnce ? "bg-orange-500 border-orange-500 text-white" : "border-gray-300 bg-white")}>
-                    {familyRatedOnce && "✓"}
-                  </span>
-                  식사 평점 주기
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className={cn("size-4 rounded-md flex items-center justify-center border text-[9px] transition-colors", familyCommentedOnce ? "bg-orange-500 border-orange-500 text-white" : "border-gray-300 bg-white")}>
-                    {familyCommentedOnce && "✓"}
-                  </span>
-                  한 줄 댓글 남기기
-                </span>
-              </div>
-            </div>
-          )}
+
           
           {filteredMeals.length === 0 ? (
             <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
