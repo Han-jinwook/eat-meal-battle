@@ -51,8 +51,8 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           className="h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
         />
-        {/* Main Nav - 수평 스크롤 가능하게 변경 (모바일에서 넘칠 때 스와이프) */}
-        <div className="flex-1 overflow-x-auto no-scrollbar mx-2 sm:mx-4">
+        {/* Main Nav - 수평 스크롤 가능하게 변경 (모바일에서 넘칠 때 스와이프, 세로 스크롤 화살표 방지) */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden no-scrollbar mx-2 sm:mx-4">
           <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 min-w-max px-2">
             {navItems.map((item) => {
               const isHovered = hoveredTab === item.id;
