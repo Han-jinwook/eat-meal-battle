@@ -51,31 +51,33 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           className="h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
         />
-        {/* Main Nav - 텍스트만, 가운데 정렬 및 온보딩 연동 하이라이트 효과 적용 */}
-        <div className="flex items-center justify-center gap-4 flex-1 mx-4">
-          {navItems.map((item) => {
-            const isHovered = hoveredTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavTabChange?.(item.id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
-                  activeNavTab === item.id
-                    ? "text-cyan-600 bg-cyan-50 shadow-sm"
-                    : isHovered
-                      ? "text-cyan-500 bg-cyan-50/70 animate-pulse ring-2 ring-cyan-400/30 scale-105"
-                      : "text-gray-500 hover:text-cyan-500 hover:scale-105"
-                )}
-              >
-                <item.icon className="hidden size-3.5 md:inline-block" />
-                {item.label}
-              </button>
-            );
-          })}
+        {/* Main Nav - 수평 스크롤 가능하게 변경 (모바일에서 넘칠 때 스와이프) */}
+        <div className="flex-1 overflow-x-auto no-scrollbar mx-2 sm:mx-4">
+          <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 min-w-max px-2">
+            {navItems.map((item) => {
+              const isHovered = hoveredTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavTabChange?.(item.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-2 text-[14px] sm:text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
+                    activeNavTab === item.id
+                      ? "text-cyan-600 bg-cyan-50 shadow-sm"
+                      : isHovered
+                        ? "text-cyan-500 bg-cyan-50/70 animate-pulse ring-2 ring-cyan-400/30 scale-105"
+                        : "text-gray-500 hover:text-cyan-500 hover:scale-105"
+                  )}
+                >
+                  <item.icon className="hidden size-3.5 md:inline-block" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        {/* 프로필 및 스위처 */}
-        <div className="flex shrink-0 items-center gap-2">
+        {/* 프로필과 패밀리 앱 스위처(F)를 바짝 붙인 그룹 */}
+        <div className="flex items-center bg-slate-50/50 rounded-2xl p-1 border border-slate-100/50 shrink-0">
           <button
             type="button"
             onClick={handleProfileClick}
@@ -92,14 +94,17 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                 className="w-full h-full rounded-full"
               />
             </div>
-            {/* 닉네임 - 모바일과 PC 모두 노출 (모바일에서는 이미지 없이 텍스트만 노출) */}
-            <span className="text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[120px] truncate">
+            {/* 닉네임 - 모바일과 PC 모두 노출 (모바일에서는 텍스트만 노출) */}
+            <span className="text-[13px] sm:text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[80px] sm:max-w-[120px] truncate ml-1 sm:ml-0">
               {isLoggedIn 
                 ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || ''))
                 : '게스트'}
             </span>
           </button>
-          <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
+          
+          <div className="ml-2">
+            <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
+          </div>
         </div>
       </div>
     </header>
