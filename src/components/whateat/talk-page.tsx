@@ -380,6 +380,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         }
 
         const uploaderIds = Array.from(new Set(imgData.map(img => img.uploaded_by).filter(Boolean)))
+        const mealIds = imgData.map(img => img.meal_id).filter(Boolean)
         
         // Fetch users
         let dbUsers: any[] = []
@@ -402,6 +403,38 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           dbSchools = schoolsData || []
         }
         const schoolMap = new Map(dbSchools.map(s => [s.user_id, s]))
+
+        // Fetch all ratings for these meals to display real-time accumulated rating
+        let dbRatings: any[] = []
+        if (mealIds.length > 0) {
+          const { data: ratingsData } = await supabase
+            .from("meal_ratings")
+            .select("meal_id, rating")
+            .in("meal_id", mealIds)
+          dbRatings = ratingsData || []
+        }
+
+        // Aggregate ratings by meal_id
+        const mealRatingStatsMap = new Map<string, { sum: number; count: number }>()
+        dbRatings.forEach((rt) => {
+          const mId = rt.meal_id
+          const current = mealRatingStatsMap.get(mId) || { sum: 0, count: 0 }
+          mealRatingStatsMap.set(mId, {
+            sum: current.sum + rt.rating,
+            count: current.count + 1
+          })
+        })
+
+        const getRatingStats = (mId: string) => {
+          const stats = mealRatingStatsMap.get(mId)
+          if (!stats || stats.count === 0) {
+            return { average: 5, count: 0 }
+          }
+          return {
+            average: Math.round((stats.sum / stats.count) * 10) / 10,
+            count: stats.count
+          }
+        }
 
         const parsedPosts: TalkPost[] = imgData.map((img: any) => {
           let meta: any = {}
@@ -452,11 +485,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
               region: parsedRegion.dong
             },
-            createdAt: img.created_at,
-            rating: {
-              average: meta.rating || 5,
-              count: 1
-            },
+            createdAt: meta.promotedAt || img.created_at,
+            rating: img.meal_id ? getRatingStats(img.meal_id) : { average: 5, count: 0 },
             likes: 0,
             isLiked: false,
             commentCount: 0,

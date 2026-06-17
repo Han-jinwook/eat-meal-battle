@@ -640,29 +640,6 @@ export function FamilyPage() {
       setMealComments(commentsByMealId)
       setMealRatings(ratingsByMealId)
 
-      // 실시간 맛톡 승격 체크 및 대기
-      const promotePromises = formattedMeals.map(async (meal) => {
-        if (promotedMealIds.includes(meal.id) || isPromotingMealId === meal.id) {
-          return
-        }
-
-        const ratingMap = ratingsByMealId[meal.id] ?? {}
-        const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
-        const ratedCount = scores.length
-        if (ratedCount < 1) {
-          return
-        }
-
-        const isRatingOpen = isMealRatingOpen(meal)
-        const allFamilyRated = ratedCount >= members.length
-        const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
-
-        if (canPromoteNow) {
-          await tryPromoteMealToTalk(meal.id, ratingMap, formattedMeals)
-        }
-      })
-      await Promise.all(promotePromises)
-
     } catch (e) {
       console.error("Failed to fetch family shared data:", e)
     }
@@ -805,40 +782,14 @@ export function FamilyPage() {
     }
 
     const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
-    const ratedCount = scores.length
-    const isRatingOpen = isMealRatingOpen(targetMeal)
-    const allFamilyRated = ratedCount >= members.length
-    const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
+    const has5Star = scores.some((score) => score === 5)
 
-    if (!canPromoteNow) {
-      return
-    }
-
-    const average = scores.reduce((sum, score) => sum + score, 0) / scores.length
-
-    if (average < 5) {
+    if (!has5Star) {
       return
     }
 
     try {
       setIsPromotingMealId(mealId)
-
-      const comments = (displayComments[mealId] ?? []).map((comment) => ({
-        id: comment.id,
-        author: comment.author,
-        content: comment.content,
-        createdAt: comment.createdAt,
-        likes: comment.likes,
-        isLiked: comment.isLiked,
-        replies: (comment.replies ?? []).map((reply) => ({
-          id: reply.id,
-          author: reply.author,
-          content: reply.content,
-          createdAt: reply.createdAt,
-          likes: reply.likes,
-          isLiked: reply.isLiked,
-        })),
-      }))
 
       const supabase = createClient()
       let meta: any = {}
@@ -848,8 +799,8 @@ export function FamilyPage() {
         meta = { title: targetMeal.title }
       }
       
-      meta.rating = average
-      meta.ratingCount = scores.length
+      // 맛톡 승격 일시 기록
+      meta.promotedAt = new Date().toISOString()
       meta.mealType = meta.mealType || targetMeal.mealType
 
       const { error } = await supabase
@@ -863,45 +814,14 @@ export function FamilyPage() {
       if (error) throw error
 
       setPromotedMealIds((prev) => prev.includes(mealId) ? prev : [...prev, mealId])
-      setPromotionReasonByMealId((prev) => ({
-        ...prev,
-        [mealId]: allFamilyRated && isRatingOpen ? "all-rated" : "deadline",
-      }))
     } catch (error) {
-      console.error("[FamilyPage] 맛통 게시 실패:", error)
+      console.error("[FamilyPage] 맛톡 게시 실패:", error)
     } finally {
       setIsPromotingMealId(null)
     }
   }
 
-  useEffect(() => {
-    const promoteClosedMeals = () => {
-      meals.forEach((meal) => {
-        if (promotedMealIds.includes(meal.id) || isPromotingMealId === meal.id) {
-          return
-        }
 
-        const ratingMap = mealRatings[meal.id] ?? {}
-        const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
-        const ratedCount = scores.length
-        if (ratedCount < 1) {
-          return
-        }
-
-        const isRatingOpen = isMealRatingOpen(meal)
-        const allFamilyRated = ratedCount >= members.length
-        const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
-
-        if (canPromoteNow) {
-          void tryPromoteMealToTalk(meal.id, ratingMap)
-        }
-      })
-    }
-
-    promoteClosedMeals()
-    const intervalId = window.setInterval(promoteClosedMeals, 30 * 1000)
-    return () => window.clearInterval(intervalId)
-  }, [meals, mealRatings, promotedMealIds, isPromotingMealId])
 
   const [shareConsentModalOpen, setShareConsentModalOpen] = useState(false)
   const [pendingFamilyRating, setPendingFamilyRating] = useState<{
@@ -939,6 +859,8 @@ export function FamilyPage() {
       const pref = localStorage.getItem("whateat_auto_share_5star")
       if (pref === "approved") {
         await saveFamilyRating(mealId, memberId, score)
+        const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
+        await tryPromoteMealToTalk(mealId, currentRatingMap)
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent("navigateToTalk"))
         }, 100)
@@ -2180,7 +2102,10 @@ export function FamilyPage() {
                   }
                   setShareConsentModalOpen(false)
                   if (pendingFamilyRating) {
-                    await saveFamilyRating(pendingFamilyRating.mealId, pendingFamilyRating.memberId, pendingFamilyRating.score)
+                    const { mealId, memberId, score } = pendingFamilyRating
+                    await saveFamilyRating(mealId, memberId, score)
+                    const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
+                    await tryPromoteMealToTalk(mealId, currentRatingMap)
                     setTimeout(() => {
                       window.dispatchEvent(new CustomEvent("navigateToTalk"))
                     }, 100)
