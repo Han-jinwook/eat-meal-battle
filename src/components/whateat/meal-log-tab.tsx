@@ -638,8 +638,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           >
             {/* 샘플 리본 */}
              {(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
-               <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
-                 <div className="absolute top-7 -right-4 w-32 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
+               <div className="absolute top-0 right-0 overflow-hidden w-32 h-32 z-10 pointer-events-none">
+                 <div className="absolute top-6.5 -right-6 w-44 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
                    💡 SAMPLE
                  </div>
                </div>
@@ -671,10 +671,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {/* Edit Button - 항상 노출 (배경 상시 활성화하여 시인성 확보, 샘플 띠와 겹치지 않게 top-0 right-0 귀퉁이에 배치) */}
+                {/* Edit Button - 항상 노출 (배경 상시 활성화하여 시인성 확보, 샘플 띠와 겹치지 않게 top-1.5 right-1.5에 배치) */}
                 <button 
                   onClick={() => handleEditClick(meal)}
-                  className="absolute top-0 right-0 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
+                  className="absolute top-1.5 right-1.5 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
                   title="수정"
                 >
                   <Pencil className="size-3.5" />
