@@ -278,7 +278,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete }: Add
               onClick={() => {
                 if (editData.id === 1 || editData.id === 2 || editData.id === 3) {
                   onDelete?.(editData.id)
-                  onClose()
                   return
                 }
                 if (confirm("이 식사 기록을 정말 삭제하시겠습니까?")) {
