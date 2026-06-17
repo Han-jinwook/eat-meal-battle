@@ -638,7 +638,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           >
             {/* 샘플 리본 */}
              {(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
-               <div className="absolute top-5 -right-8 w-72 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
+               <div className="absolute top-4.5 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
                  💡 SAMPLE
                </div>
              )}
