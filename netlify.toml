@@ -1,6 +1,6 @@
 [build]
   base = "."
-  command = "npm ci --legacy-peer-deps --no-audit --no-fund && npm run build"
+  command = "npm cache clean --force && npm ci --legacy-peer-deps --no-audit --no-fund && npm run build"
   publish = ".next"
   functions = "netlify/functions"
   # 변경사항 없으면 빌드 스킵 (임시 비활성화)
