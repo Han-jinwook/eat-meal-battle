@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
@@ -331,6 +331,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
   }
 
+  const handleDeleteClick = (mealId: number) => {
+    if (confirm("이 식사 기록을 정말 삭제하시겠습니까?")) {
+      const updatedLogs = mealLogs.filter((log) => log.id !== mealId)
+      setMealLogs(updatedLogs)
+      localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+    }
+  }
+
   const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
     const editData: MealLogData = {
       id: meal.id,
@@ -377,7 +385,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         title: data.menuName,
         type: data.mealType,
         image: finalImageUrl,
-        rating: data.rating || 5,
+        rating: data.rating || 0,
         tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
         tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
         linkUrl: data.linkUrl,
@@ -645,13 +653,25 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {/* Edit Button */}
-                <button 
-                  onClick={() => handleEditClick(meal)}
-                  className="absolute top-2 right-2 size-6 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/80 rounded-md transition-all z-10"
-                >
-                  <Pencil className="size-3" />
-                </button>
+                {/* Action Buttons (Edit & Delete) - 샘플 데이터가 아닐 경우에만 노출 */}
+                {!(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
+                  <div className="absolute top-2 right-2 flex gap-1 z-10">
+                    <button 
+                      onClick={() => handleEditClick(meal)}
+                      className="size-6 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/80 rounded-md transition-all"
+                      title="수정"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(meal.id)}
+                      className="size-6 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-white/80 rounded-md transition-all"
+                      title="삭제"
+                    >
+                      <Trash2 className="size-3" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Case 1: linkUrl 있음 -> 썸네일만 (레시피 내용 없음) */}
                 {meal.linkUrl && meal.linkThumbnail ? (
