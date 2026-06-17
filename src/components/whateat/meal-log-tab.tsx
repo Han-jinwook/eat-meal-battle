@@ -85,7 +85,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const saved = localStorage.getItem("whateat_meal_logs")
     if (saved) {
       try {
-        setMealLogs(JSON.parse(saved))
+        const parsed = JSON.parse(saved)
+        // Filter out any stale default logs with ID 1, 2, or 3
+        const filtered = parsed.filter((log: any) => log.id !== 1 && log.id !== 2 && log.id !== 3)
+        setMealLogs(filtered)
       } catch (e) {
         console.error("Failed to parse saved meal logs", e)
       }
@@ -356,6 +359,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
+    if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
+      toast("샘플이라 수정이 되지 않습니다.", {
+        icon: "💡",
+        duration: 3000
+      })
+      return
+    }
+
     const editData: MealLogData = {
       id: meal.id,
       date: toIsoDate(parseDateString(meal.date)),
@@ -376,9 +387,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
     let updatedLogs: any[]
-    let isNewLog = false
-
-    if (data.id && mealLogs.some(log => log.id === data.id)) {
+    if (data.id) {
       updatedLogs = mealLogs.map(log =>
         log.id === data.id
           ? {
@@ -395,7 +404,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           : log
       )
     } else {
-      isNewLog = true
       const newLog = {
         id: Date.now(),
         date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
@@ -417,7 +425,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
 
     // 2. 만약 평점이 5점이고 로그인이 되어 있다면 Supabase에 공유/업로드
-    const savedLog = isNewLog ? updatedLogs[0] : updatedLogs.find(l => l.id === data.id)
+    const savedLog = data.id ? updatedLogs.find(l => l.id === data.id) : updatedLogs[0]
     if (savedLog && savedLog.rating === 5) {
       try {
         await checkConsentAndUpload({
