@@ -158,6 +158,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const pref = localStorage.getItem("whateat_auto_share_5star")
     if (pref === "approved") {
       await upload5StarMealToSupabase(data, imageUrl)
+      window.dispatchEvent(new CustomEvent("navigateToTalk"))
     } else if (pref === "rejected") {
       console.log("User rejected auto-sharing of 5-star meals.")
     } else {
@@ -858,6 +859,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   setShareConsentModalOpen(false)
                   if (pendingShareData) {
                     await upload5StarMealToSupabase(pendingShareData.logData, pendingShareData.imageUrl)
+                    window.dispatchEvent(new CustomEvent("navigateToTalk"))
                   }
                   setPendingShareData(null)
                 }}

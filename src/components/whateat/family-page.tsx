@@ -812,26 +812,27 @@ export function FamilyPage() {
         })),
       }))
 
-      const response = await fetch("/api/whateat/talk-posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          source: "family-shared",
-          mealId: targetMeal.id,
-          title: targetMeal.title,
-          image: targetMeal.image,
-          sharedBy: targetMeal.sharedBy,
-          comments,
-          ratingAverage: Number(average.toFixed(1)),
-          ratingCount: scores.length,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`status ${response.status}`)
+      const supabase = createClient()
+      let meta: any = {}
+      try {
+        meta = targetMeal.rawExplanation ? JSON.parse(targetMeal.rawExplanation) : {}
+      } catch (e) {
+        meta = { title: targetMeal.title }
       }
+      
+      meta.rating = average
+      meta.ratingCount = scores.length
+      meta.mealType = meta.mealType || targetMeal.mealType
+
+      const { error } = await supabase
+        .from('meal_images')
+        .update({
+          status: 'approved',
+          explanation: JSON.stringify(meta)
+        })
+        .eq('id', targetMeal.id)
+
+      if (error) throw error
 
       setPromotedMealIds((prev) => [...prev, mealId])
       setPromotionReasonByMealId((prev) => ({
@@ -907,6 +908,7 @@ export function FamilyPage() {
       const pref = localStorage.getItem("whateat_auto_share_5star")
       if (pref === "approved") {
         await saveFamilyRating(mealId, memberId, score)
+        window.dispatchEvent(new CustomEvent("navigateToTalk"))
       } else if (pref === "rejected") {
         await saveFamilyRating(mealId, memberId, score)
         await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
@@ -2146,6 +2148,7 @@ export function FamilyPage() {
                   setShareConsentModalOpen(false)
                   if (pendingFamilyRating) {
                     await saveFamilyRating(pendingFamilyRating.mealId, pendingFamilyRating.memberId, pendingFamilyRating.score)
+                    window.dispatchEvent(new CustomEvent("navigateToTalk"))
                   }
                   setPendingFamilyRating(null)
                 }}

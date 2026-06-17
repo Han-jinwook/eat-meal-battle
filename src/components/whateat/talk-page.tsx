@@ -316,7 +316,7 @@ function parseRegionFromAddress(address: string, defaultCity = "인천", default
   return { city, gu, dong }
 }
 
-export function TalkPage() {
+export function TalkPage({ isActive }: { isActive?: boolean }) {
   const PAGE_SIZE = 12
   const [posts, setPosts] = useState<TalkPost[]>(() => dummyPosts.map(p => ({ ...p, isSample: true })))
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
@@ -374,6 +374,8 @@ export function TalkPage() {
         if (imgError) throw imgError
 
         if (!imgData || imgData.length === 0) {
+          // If no database posts, ensure we show all default samples
+          setPosts(dummyPosts.map(p => ({ ...p, isSample: true })))
           return
         }
 
@@ -481,8 +483,10 @@ export function TalkPage() {
       }
     }
 
-    fetchDbPosts()
-  }, [])
+    if (isActive !== false) {
+      fetchDbPosts()
+    }
+  }, [isActive])
 
   const userAddress = {
     dong: userRegion,

@@ -202,6 +202,17 @@ export default function WhatEatApp() {
     }
   };
 
+  // Listen for navigation requests to Talk tab
+  useEffect(() => {
+    const handleNavigateToTalk = () => {
+      handleTabChange("talk");
+    };
+    window.addEventListener("navigateToTalk", handleNavigateToTalk);
+    return () => {
+      window.removeEventListener("navigateToTalk", handleNavigateToTalk);
+    };
+  }, [bottomNavTab]);
+
   useEffect(() => {
     if (!isLoading && !hasAutoNavigated) {
       setHasAutoNavigated(true)
@@ -234,7 +245,7 @@ export default function WhatEatApp() {
 
   const renderTalkPage = () => (
     <div className="px-5 pt-4 flex flex-col gap-5">
-      <TalkPage />
+      <TalkPage isActive={bottomNavTab === "talk"} />
       <Footer />
     </div>
   )
