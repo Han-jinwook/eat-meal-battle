@@ -122,6 +122,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       placeName: data.place?.name || data.deliveryStoreName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
       placeAddress: data.place?.address || "",
       description: data.description || data.recipe || "",
+      promotedAt: new Date().toISOString() // 맛톡 승격 시점의 일시 저장
     }
 
     // Generate supabaseId if not already present on local log
@@ -158,7 +159,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const pref = localStorage.getItem("whateat_auto_share_5star")
     if (pref === "approved") {
       await upload5StarMealToSupabase(data, imageUrl)
-      window.dispatchEvent(new CustomEvent("navigateToTalk"))
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("navigateToTalk"))
+      }, 100)
     } else if (pref === "rejected") {
       console.log("User rejected auto-sharing of 5-star meals.")
     } else {
@@ -859,7 +862,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   setShareConsentModalOpen(false)
                   if (pendingShareData) {
                     await upload5StarMealToSupabase(pendingShareData.logData, pendingShareData.imageUrl)
-                    window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                    }, 100)
                   }
                   setPendingShareData(null)
                 }}
