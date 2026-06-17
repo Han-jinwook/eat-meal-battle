@@ -15,10 +15,12 @@ import {
   Send
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase"
+import { useHub } from "@/services/merlin-hub-sdk/react"
 
 // 타입 정의
 interface TalkPost {
-  id: number
+  id: number | string
   type: "homemade" | "delivery" | "dineout"
   title: string
   image: string
@@ -34,7 +36,7 @@ interface TalkPost {
     address: string
   }
   author: {
-    id: number
+    id: number | string
     nickname: string
     avatar: string
     region: string
@@ -50,6 +52,7 @@ interface TalkPost {
   commentCount: number
   // 집밥만 구독 가능
   isSubscribed?: boolean
+  isSample?: boolean
 }
 
 interface Comment {
@@ -163,7 +166,7 @@ const dummyPosts: TalkPost[] = [
   }
 ]
 
-const dummyComments: Record<number, Comment[]> = {
+const dummyComments: Record<string | number, Comment[]> = {
   1: [
     {
       id: 11,
@@ -282,9 +285,40 @@ const categoryOptions = [
   { id: "dineout", label: "외식" },
 ]
 
+function parseRegionFromAddress(address: string, defaultCity = "인천", defaultGu = "서구", defaultDong = "청라동") {
+  if (!address) return { city: defaultCity, gu: defaultGu, dong: defaultDong }
+  const parts = address.split(/\s+/)
+  let city = defaultCity
+  let gu = defaultGu
+  let dong = defaultDong
+
+  if (parts.length > 0) {
+    const p0 = parts[0]
+    if (p0.endsWith("시") || p0.endsWith("도")) {
+      city = p0.substring(0, 2)
+    } else {
+      city = p0
+    }
+  }
+  if (parts.length > 1) {
+    const p1 = parts[1]
+    if (p1.endsWith("구") || p1.endsWith("군")) {
+      gu = p1
+    }
+  }
+  for (const part of parts) {
+    if (part.endsWith("동") || part.endsWith("읍") || part.endsWith("면")) {
+      dong = part
+      break
+    }
+  }
+
+  return { city, gu, dong }
+}
+
 export function TalkPage() {
   const PAGE_SIZE = 12
-  const [posts, setPosts] = useState(dummyPosts)
+  const [posts, setPosts] = useState<TalkPost[]>(() => dummyPosts.map(p => ({ ...p, isSample: true })))
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [userRegion, setUserRegion] = useState<string>("청라동") // 사용자 기본 지역
@@ -295,10 +329,160 @@ export function TalkPage() {
   const [showOnlyNew, setShowOnlyNew] = useState(true)
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
   const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
-  const [expandedComments, setExpandedComments] = useState<number | null>(null)
+  const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
   const [commentInput, setCommentInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  const { isLoggedIn, user } = useHub()
+
+  // Fetch user region dynamically from school_infos
+  useEffect(() => {
+    if (isLoggedIn && user?.id) {
+      const fetchUserRegion = async () => {
+        try {
+          const supabase = createClient()
+          const { data: schoolInfo } = await supabase
+            .from("school_infos")
+            .select("region, address")
+            .eq("user_id", user.id)
+            .single()
+          
+          if (schoolInfo) {
+            const parsed = parseRegionFromAddress(schoolInfo.address || "", schoolInfo.region || "인천")
+            setUserRegion(parsed.dong)
+          }
+        } catch (err) {
+          console.warn("Failed to fetch user school region", err)
+        }
+      }
+      fetchUserRegion()
+    }
+  }, [isLoggedIn, user?.id])
+
+  // Load real posts from Supabase and merge with dummy samples
+  useEffect(() => {
+    const fetchDbPosts = async () => {
+      try {
+        const supabase = createClient()
+        const { data: imgData, error: imgError } = await supabase
+          .from("meal_images")
+          .select("*")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+
+        if (imgError) throw imgError
+
+        if (!imgData || imgData.length === 0) {
+          return
+        }
+
+        const uploaderIds = Array.from(new Set(imgData.map(img => img.uploaded_by).filter(Boolean)))
+        
+        // Fetch users
+        let dbUsers: any[] = []
+        if (uploaderIds.length > 0) {
+          const { data: usersData } = await supabase
+            .from("users")
+            .select("id, nickname, profile_image")
+            .in("id", uploaderIds)
+          dbUsers = usersData || []
+        }
+        const userMap = new Map(dbUsers.map(u => [u.id, u]))
+
+        // Fetch school_infos
+        let dbSchools: any[] = []
+        if (uploaderIds.length > 0) {
+          const { data: schoolsData } = await supabase
+            .from("school_infos")
+            .select("user_id, region, school_name, address")
+            .in("user_id", uploaderIds)
+          dbSchools = schoolsData || []
+        }
+        const schoolMap = new Map(dbSchools.map(s => [s.user_id, s]))
+
+        const parsedPosts: TalkPost[] = imgData.map((img: any) => {
+          let meta: any = {}
+          try {
+            meta = img.explanation ? JSON.parse(img.explanation) : {}
+          } catch (e) {
+            meta = { title: img.explanation || "식사" }
+          }
+
+          const u = userMap.get(img.uploaded_by)
+          const school = schoolMap.get(img.uploaded_by)
+
+          const parsedRegion = parseRegionFromAddress(
+            school?.address || "",
+            school?.region || "인천",
+            "서구",
+            "청라동"
+          )
+
+          let mappedType: "homemade" | "delivery" | "dineout" = "homemade"
+          const rawType = meta.mealType || ""
+          if (rawType === "집밥" || rawType === "homemade") {
+            mappedType = "homemade"
+          } else if (rawType === "배달" || rawType === "delivery") {
+            mappedType = "delivery"
+          } else if (rawType === "외식" || rawType === "dineout") {
+            mappedType = "dineout"
+          }
+
+          return {
+            id: img.id,
+            type: mappedType,
+            title: meta.title || "맛있는 식사",
+            image: img.image_url || "/images/placeholder-food.jpg",
+            description: meta.description || meta.recipe || img.explanation || "별점 5점 식사 기록입니다. 😋",
+            region: {
+              dong: parsedRegion.dong,
+              gu: parsedRegion.gu,
+              city: parsedRegion.city
+            },
+            restaurant: (mappedType === "dineout" || mappedType === "delivery") ? {
+              name: meta.placeName || "맛집",
+              address: meta.placeAddress || ""
+            } : undefined,
+            author: {
+              id: img.uploaded_by,
+              nickname: u?.nickname || "익명 회원",
+              avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
+              region: parsedRegion.dong
+            },
+            createdAt: img.created_at,
+            rating: {
+              average: meta.rating || 5,
+              count: 1
+            },
+            likes: 0,
+            isLiked: false,
+            commentCount: 0,
+            isSubscribed: false,
+            isSample: false
+          }
+        })
+
+        // Filter dummy posts based on loaded real types
+        const hasRealHomemade = parsedPosts.some(p => p.type === "homemade")
+        const hasRealDelivery = parsedPosts.some(p => p.type === "delivery")
+        const hasRealDineout = parsedPosts.some(p => p.type === "dineout")
+
+        const activeDummyPosts = dummyPosts.map(p => ({ ...p, isSample: true })).filter(p => {
+          if (p.type === "homemade" && hasRealHomemade) return false
+          if (p.type === "delivery" && hasRealDelivery) return false
+          if (p.type === "dineout" && hasRealDineout) return false
+          return true
+        })
+
+        setPosts([...parsedPosts, ...activeDummyPosts])
+      } catch (err) {
+        console.error("Failed to fetch posts from Supabase", err)
+      }
+    }
+
+    fetchDbPosts()
+  }, [])
 
   const userAddress = {
     dong: userRegion,
@@ -316,7 +500,7 @@ export function TalkPage() {
     : [{ id: "all", label: "전국" }]
 
   // 좋아요 토글
-  const toggleLike = (postId: number) => {
+  const toggleLike = (postId: number | string) => {
     setPosts(posts.map(p => 
       p.id === postId 
         ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 }
@@ -325,7 +509,7 @@ export function TalkPage() {
   }
 
   // 구독 토글 (집밥만)
-  const toggleSubscribe = (postId: number) => {
+  const toggleSubscribe = (postId: number | string) => {
     setPosts(posts.map(p => 
       p.id === postId && p.type === "homemade"
         ? { ...p, isSubscribed: !p.isSubscribed }
@@ -428,8 +612,8 @@ export function TalkPage() {
   }
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
-    const aTs = getPostTimestamp(a.createdAt, a.id)
-    const bTs = getPostTimestamp(b.createdAt, b.id)
+    const aTs = getPostTimestamp(a.createdAt, typeof a.id === "number" ? a.id : 0)
+    const bTs = getPostTimestamp(b.createdAt, typeof b.id === "number" ? b.id : 0)
     return sortOrder === "latest" ? bTs - aTs : aTs - bTs
   })
 
@@ -663,11 +847,13 @@ export function TalkPage() {
         {visiblePosts.map((post) => (
           <div key={post.id} className="relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
             {/* 샘플 리본 */}
-            <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-              <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
-                💡 SAMPLE
+            {post.isSample && (
+              <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+                <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
+                  💡 SAMPLE
+                </div>
               </div>
-            </div>
+            )}
             {/* Author Header */}
             <div className="flex items-center justify-between p-4 pb-3">
               <div className="flex items-center gap-3">

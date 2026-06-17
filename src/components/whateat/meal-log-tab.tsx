@@ -119,7 +119,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       mealType: data.mealType,
       rating: data.rating || 5,
       tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
-      placeName: data.linkUrl ? "식사 공유 상세" : "식사 일지",
+      placeName: data.place?.name || data.deliveryStoreName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
+      placeAddress: data.place?.address || "",
+      description: data.description || data.recipe || "",
     }
 
     // Generate supabaseId if not already present on local log
