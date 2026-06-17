@@ -268,7 +268,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar mb-20">
+      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-160px)] overflow-y-auto hide-scrollbar">
         {/* Close Button */}
         <button 
           onClick={onClose}
