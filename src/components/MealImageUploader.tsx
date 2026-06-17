@@ -107,7 +107,7 @@ export default function MealImageUploader({
     }
   };
 
-  // 이미지 리사이징 함수
+  // 이미지 리사이징 함수 (1024px WebP 변환 및 압축)
   const resizeImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
@@ -138,15 +138,19 @@ export default function MealImageUploader({
         
         canvas.toBlob((blob) => {
           if (blob) {
-            const resizedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
+            // 파일명 확장자를 .webp로 변경
+            const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            const webpFileName = `${baseName}.webp`;
+
+            const resizedFile = new File([blob], webpFileName, {
+              type: 'image/webp',
               lastModified: Date.now()
             });
             resolve(resizedFile);
           } else {
             resolve(file);
           }
-        }, 'image/jpeg', 0.85);
+        }, 'image/webp', 0.75);
       };
       
       img.src = URL.createObjectURL(file);

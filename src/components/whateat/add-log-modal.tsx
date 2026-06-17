@@ -176,8 +176,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
         img.src = event.target?.result as string
         img.onload = () => {
           const canvas = document.createElement('canvas')
-          const MAX_WIDTH = 800
-          const MAX_HEIGHT = 800
+          const MAX_WIDTH = 1024
+          const MAX_HEIGHT = 1024
           let width = img.width
           let height = img.height
 
@@ -196,7 +196,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
           canvas.height = height
           const ctx = canvas.getContext('2d')
           ctx?.drawImage(img, 0, 0, width, height)
-          resolve(canvas.toDataURL('image/jpeg', 0.7))
+          resolve(canvas.toDataURL('image/webp', 0.75))
         }
         img.onerror = (error) => reject(error)
       }
