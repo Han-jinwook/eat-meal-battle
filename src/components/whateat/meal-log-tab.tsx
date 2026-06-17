@@ -359,14 +359,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
-    if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
-      toast("샘플이라 수정이 되지 않습니다.", {
-        icon: "💡",
-        duration: 3000
-      })
-      return
-    }
-
     const editData: MealLogData = {
       id: meal.id,
       date: toIsoDate(parseDateString(meal.date)),
@@ -384,6 +376,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleEditSave = async (data: MealLogData) => {
+    if (data.id === 1 || data.id === 2 || data.id === 3) {
+      return
+    }
+
     let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
     let updatedLogs: any[]

@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { toast } from "react-hot-toast"
 
 
 export interface MealLogData {
@@ -717,6 +718,13 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete }: Add
               <button 
                 onClickCapture={handleInteraction}
                 onClick={() => {
+                  if (editData?.id === 1 || editData?.id === 2 || editData?.id === 3) {
+                    toast("샘플이라 수정이 되지 않습니다.", {
+                      icon: "💡",
+                      duration: 3000
+                    })
+                    return
+                  }
                   const data: MealLogData = {
                     id: editData?.id,
                     date,
