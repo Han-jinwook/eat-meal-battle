@@ -629,11 +629,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           >
             {/* 샘플 리본 */}
             {(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
-              <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
-                <div className="absolute top-4 -right-8 w-32 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
-                  💡 SAMPLE
-                </div>
-              </div>
+               <div className="absolute top-0 right-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
+                 <div className="absolute top-2.5 -right-11 w-32 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md">
+                   💡 SAMPLE
+                 </div>
+               </div>
             )}
             {/* Card Content */}
             <div className="flex h-[200px]">
@@ -662,27 +662,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {/* Action Buttons (Edit & Delete) */}
-                <div className="absolute top-2 right-2 flex gap-1 z-10">
-                  {/* 수정 버튼 - 샘플이 아닐 경우에만 노출 */}
-                  {!(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
-                    <button 
-                      onClick={() => handleEditClick(meal)}
-                      className="size-6 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/80 rounded-md transition-all"
-                      title="수정"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                  )}
-                  {/* 삭제 버튼 - 항상 노출 (샘플일 땐 토스트 알림) */}
-                  <button 
-                    onClick={() => handleDeleteClick(meal.id)}
-                    className="size-6 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-white/80 rounded-md transition-all"
-                    title="삭제"
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
-                </div>
+                {/* Edit Button - 항상 노출 (배경 상시 활성화하여 시인성 확보, 샘플 띠 침범 최소화 위해 top-3 right-3에 배치) */}
+                <button 
+                  onClick={() => handleEditClick(meal)}
+                  className="absolute top-3 right-3 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
+                  title="수정"
+                >
+                  <Pencil className="size-3.5" />
+                </button>
 
                 {/* Case 1: linkUrl 있음 -> 썸네일만 (레시피 내용 없음) */}
                 {meal.linkUrl && meal.linkThumbnail ? (
@@ -821,6 +808,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         }}
         editData={editingMeal}
         onSave={handleEditSave}
+        onDelete={handleDeleteClick}
       />
 
       {/* Image Viewer */}

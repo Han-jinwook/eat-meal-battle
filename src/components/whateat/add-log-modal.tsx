@@ -13,6 +13,7 @@ import {
   MapPin,
   Navigation,
   Loader2,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
@@ -43,6 +44,7 @@ interface AddLogModalProps {
   onClose: () => void
   editData?: MealLogData | null
   onSave?: (data: MealLogData) => void
+  onDelete?: (id: number) => void
 }
 
 type MealType = "집밥" | "배달" | "외식"
@@ -55,7 +57,7 @@ interface SelectedPlace {
   distance?: string
 }
 
-export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalProps) {
+export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete }: AddLogModalProps) {
   const { isLoggedIn } = useHub()
   const [mealType, setMealType] = useState<MealType>("집밥")
 
@@ -269,13 +271,34 @@ export function AddLogModal({ isOpen, onClose, editData, onSave }: AddLogModalPr
       
       {/* Modal */}
       <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-160px)] overflow-y-auto hide-scrollbar">
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-5 right-5 z-10 size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors"
-        >
-          <X className="size-4" />
-        </button>
+        {/* Close Button & Delete Button in Edit Mode */}
+        <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
+          {isEditMode && editData?.id && (
+            <button
+              onClick={() => {
+                if (editData.id === 1 || editData.id === 2 || editData.id === 3) {
+                  onDelete?.(editData.id)
+                  onClose()
+                  return
+                }
+                if (confirm("이 식사 기록을 정말 삭제하시겠습니까?")) {
+                  onDelete?.(editData.id)
+                  onClose()
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <Trash2 className="size-3" />
+              삭제
+            </button>
+          )}
+          <button 
+            onClick={onClose}
+            className="size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
 
         <div className="p-6 sm:p-8">
           {/* Header */}
