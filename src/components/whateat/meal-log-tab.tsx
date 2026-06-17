@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2 } from "lucide-react"
+import { toast } from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
@@ -332,6 +333,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleDeleteClick = (mealId: number) => {
+    if (mealId === 1 || mealId === 2 || mealId === 3) {
+      toast("식사를 등록하면 샘플은 바로 사라집니다.", {
+        icon: "💡",
+        duration: 3000
+      })
+      return
+    }
+
     if (confirm("이 식사 기록을 정말 삭제하시겠습니까?")) {
       const updatedLogs = mealLogs.filter((log) => log.id !== mealId)
       setMealLogs(updatedLogs)
@@ -653,9 +662,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {/* Action Buttons (Edit & Delete) - 샘플 데이터가 아닐 경우에만 노출 */}
-                {!(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
-                  <div className="absolute top-2 right-2 flex gap-1 z-10">
+                {/* Action Buttons (Edit & Delete) */}
+                <div className="absolute top-2 right-2 flex gap-1 z-10">
+                  {/* 수정 버튼 - 샘플이 아닐 경우에만 노출 */}
+                  {!(meal.id === 1 || meal.id === 2 || meal.id === 3) && (
                     <button 
                       onClick={() => handleEditClick(meal)}
                       className="size-6 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-white/80 rounded-md transition-all"
@@ -663,15 +673,16 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     >
                       <Pencil className="size-3" />
                     </button>
-                    <button 
-                      onClick={() => handleDeleteClick(meal.id)}
-                      className="size-6 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-white/80 rounded-md transition-all"
-                      title="삭제"
-                    >
-                      <Trash2 className="size-3" />
-                    </button>
-                  </div>
-                )}
+                  )}
+                  {/* 삭제 버튼 - 항상 노출 (샘플일 땐 토스트 알림) */}
+                  <button 
+                    onClick={() => handleDeleteClick(meal.id)}
+                    className="size-6 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-white/80 rounded-md transition-all"
+                    title="삭제"
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                </div>
 
                 {/* Case 1: linkUrl 있음 -> 썸네일만 (레시피 내용 없음) */}
                 {meal.linkUrl && meal.linkThumbnail ? (
