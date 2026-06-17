@@ -77,6 +77,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [urlForModal, setUrlForModal] = useState("")
   const [plans, setPlans] = useState<any[]>(defaultMealPlans)
+  const [isLoaded, setIsLoaded] = useState(false)
   const [mealTypeFilter, setMealTypeFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
@@ -94,14 +95,15 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     } else {
       localStorage.setItem("whateat_reservation_plans", JSON.stringify(defaultMealPlans))
     }
+    setIsLoaded(true)
   }, [])
 
   // Save plans to localStorage on changes
   useEffect(() => {
-    if (plans !== defaultMealPlans) {
+    if (isLoaded) {
       localStorage.setItem("whateat_reservation_plans", JSON.stringify(plans))
     }
-  }, [plans])
+  }, [plans, isLoaded])
   const calendarRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 

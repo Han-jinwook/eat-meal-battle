@@ -78,10 +78,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const { isLoggedIn, user } = useHub()
   const [viewerImage, setViewerImage] = useState<string | null>(null)
   const [mealLogs, setMealLogs] = useState<any[]>([])
-
-
-
-
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Load initial logs from localStorage
   useEffect(() => {
@@ -95,12 +92,15 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     } else {
       localStorage.setItem("whateat_meal_logs", JSON.stringify([]))
     }
+    setIsLoaded(true)
   }, [])
 
   // Save logs to localStorage on changes
   useEffect(() => {
-    localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
-  }, [mealLogs])
+    if (isLoaded) {
+      localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
+    }
+  }, [mealLogs, isLoaded])
 
 
 
