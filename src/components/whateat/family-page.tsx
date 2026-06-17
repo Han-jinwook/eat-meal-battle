@@ -640,6 +640,29 @@ export function FamilyPage() {
       setMealComments(commentsByMealId)
       setMealRatings(ratingsByMealId)
 
+      // 실시간 맛톡 승격 체크 및 대기
+      const promotePromises = formattedMeals.map(async (meal) => {
+        if (promotedMealIds.includes(meal.id) || isPromotingMealId === meal.id) {
+          return
+        }
+
+        const ratingMap = ratingsByMealId[meal.id] ?? {}
+        const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
+        const ratedCount = scores.length
+        if (ratedCount < 1) {
+          return
+        }
+
+        const isRatingOpen = isMealRatingOpen(meal)
+        const allFamilyRated = ratedCount >= members.length
+        const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
+
+        if (canPromoteNow) {
+          await tryPromoteMealToTalk(meal.id, ratingMap, formattedMeals)
+        }
+      })
+      await Promise.all(promotePromises)
+
     } catch (e) {
       console.error("Failed to fetch family shared data:", e)
     }
@@ -766,12 +789,17 @@ export function FamilyPage() {
     return total / ratedScores.length
   }
 
-  const tryPromoteMealToTalk = async (mealId: number, ratingMap: Record<number, number>) => {
+  const tryPromoteMealToTalk = async (
+    mealId: string | number,
+    ratingMap: Record<number, number>,
+    passedMeals?: SharedMeal[]
+  ) => {
     if (promotedMealIds.includes(mealId) || isPromotingMealId === mealId) {
       return
     }
 
-    const targetMeal = meals.find((meal) => meal.id === mealId)
+    const currentMeals = passedMeals || meals
+    const targetMeal = currentMeals.find((meal) => meal.id === mealId)
     if (!targetMeal || targetMeal.doNotPromote) {
       return
     }
@@ -834,7 +862,7 @@ export function FamilyPage() {
 
       if (error) throw error
 
-      setPromotedMealIds((prev) => [...prev, mealId])
+      setPromotedMealIds((prev) => prev.includes(mealId) ? prev : [...prev, mealId])
       setPromotionReasonByMealId((prev) => ({
         ...prev,
         [mealId]: allFamilyRated && isRatingOpen ? "all-rated" : "deadline",
@@ -853,17 +881,20 @@ export function FamilyPage() {
           return
         }
 
-        if (isMealRatingOpen(meal)) {
-          return
-        }
-
         const ratingMap = mealRatings[meal.id] ?? {}
-        const ratedCount = Object.values(ratingMap).filter((score) => typeof score === "number").length
+        const scores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
+        const ratedCount = scores.length
         if (ratedCount < 1) {
           return
         }
 
-        void tryPromoteMealToTalk(meal.id, ratingMap)
+        const isRatingOpen = isMealRatingOpen(meal)
+        const allFamilyRated = ratedCount >= members.length
+        const canPromoteNow = (!isRatingOpen && ratedCount >= 1) || allFamilyRated
+
+        if (canPromoteNow) {
+          void tryPromoteMealToTalk(meal.id, ratingMap)
+        }
       })
     }
 
@@ -908,7 +939,9 @@ export function FamilyPage() {
       const pref = localStorage.getItem("whateat_auto_share_5star")
       if (pref === "approved") {
         await saveFamilyRating(mealId, memberId, score)
-        window.dispatchEvent(new CustomEvent("navigateToTalk"))
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("navigateToTalk"))
+        }, 100)
       } else if (pref === "rejected") {
         await saveFamilyRating(mealId, memberId, score)
         await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
@@ -2148,7 +2181,9 @@ export function FamilyPage() {
                   setShareConsentModalOpen(false)
                   if (pendingFamilyRating) {
                     await saveFamilyRating(pendingFamilyRating.mealId, pendingFamilyRating.memberId, pendingFamilyRating.score)
-                    window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                    }, 100)
                   }
                   setPendingFamilyRating(null)
                 }}
