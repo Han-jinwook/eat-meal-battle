@@ -1,20 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Cloud } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
 import { useHub } from "@/services/merlin-hub-sdk/react"
-import {
-  getDriveBackupStatus,
-  connectDriveBackup,
-  disconnectDriveBackup,
-  uploadDoubleBackup,
-  uploadImageToDrive,
-  downloadLatestBackup
-} from "@/lib/googleDriveSync"
+
 
 const defaultMealLogs = [
   {
@@ -87,11 +80,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
 
 
-  // Google Drive Sync States
-  const [isDriveConnected, setIsDriveConnected] = useState(false)
-  const [lastBackupAt, setLastBackupAt] = useState<number | null>(null)
-  const [isSyncingDrive, setIsSyncingDrive] = useState(false)
-  const [isDriveLoading, setIsDriveLoading] = useState(true)
+
 
   // Load initial logs from localStorage
   useEffect(() => {
@@ -112,90 +101,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
   }, [mealLogs])
 
-  // Google Drive Connection check
-  useEffect(() => {
-    async function checkStatus() {
-      try {
-        const status = await getDriveBackupStatus()
-        setIsDriveConnected(status.connected)
-        setLastBackupAt(status.lastBackupAt)
-      } catch (e) {
-        console.error("Failed to check Google Drive backup status", e)
-      } finally {
-        setIsDriveLoading(false)
-      }
-    }
-    checkStatus()
-  }, [])
 
-  const syncLocalDataToDrive = async (connected: boolean, currentLogs = mealLogs) => {
-    if (!connected) return
-    setIsSyncingDrive(true)
-    try {
-      let mergedLogs = [...currentLogs]
-
-      // 1. Google Drive 백업 다운로드 및 로컬 병합
-      try {
-        const driveBackup = (await downloadLatestBackup()) as any[]
-        if (Array.isArray(driveBackup)) {
-          const localIds = new Set(mergedLogs.map((l) => l.id))
-          const driveOnly = driveBackup.filter((l) => !localIds.has(l.id))
-          mergedLogs = [...mergedLogs, ...driveOnly]
-        }
-      } catch (err) {
-        console.log("No existing backup on Google Drive or failed to download", err)
-      }
-
-      // 2. 로컬 Base64 이미지 파일 구글 드라이브 일괄 업로드
-      let hasChanges = false
-      const updatedLogs = await Promise.all(
-        mergedLogs.map(async (log) => {
-          if (log.image && log.image.startsWith("data:image/")) {
-            try {
-              const driveUrl = await uploadImageToDrive(log.image, `food_${log.id}.jpg`)
-              hasChanges = true
-              return { ...log, image: driveUrl }
-            } catch (imgErr) {
-              console.error(`Failed to upload image for log ${log.id} to Google Drive`, imgErr)
-            }
-          }
-          return log
-        })
-      )
-
-      setMealLogs(updatedLogs)
-
-      // 3. 드라이브에 이중 백업 업로드
-      const result = await uploadDoubleBackup(updatedLogs)
-      setLastBackupAt(new Date(result.modifiedTime).getTime())
-    } catch (e) {
-      console.error("Failed to sync local data to Google Drive", e)
-    } finally {
-      setIsSyncingDrive(false)
-    }
-  }
-
-  const handleConnectDrive = async () => {
-    try {
-      setIsDriveLoading(true)
-      const status = await connectDriveBackup()
-      setIsDriveConnected(status.connected)
-      setLastBackupAt(status.lastBackupAt)
-      await syncLocalDataToDrive(status.connected)
-    } catch (e: any) {
-      alert(e.message || "구글 드라이브 연결에 실패했습니다.")
-    } finally {
-      setIsDriveLoading(false)
-    }
-  }
-
-  const handleDisconnectDrive = async () => {
-    if (confirm("구글 드라이브 연결을 해제하시겠습니까? (로컬 데이터는 유지됩니다.)")) {
-      await disconnectDriveBackup()
-      setIsDriveConnected(false)
-      setLastBackupAt(null)
-    }
-  }
 
   const upload5StarMealToSupabase = async (data: MealLogData, imageUrl: string) => {
     if (!isLoggedIn || !user?.id) {
@@ -422,17 +328,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       }
     }
 
-    if (isDriveConnected) {
-      try {
-        setIsSyncingDrive(true)
-        const result = await uploadDoubleBackup(updatedLogs)
-        setLastBackupAt(new Date(result.modifiedTime).getTime())
-      } catch (err) {
-        console.error("Failed to sync on rating change", err)
-      } finally {
-        setIsSyncingDrive(false)
-      }
-    }
+
   }
 
   const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
@@ -455,18 +351,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const handleEditSave = async (data: MealLogData) => {
     let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
-    // 1. Google Drive 연동 상태일 경우 이미지 업로드
-    if (isDriveConnected && finalImageUrl.startsWith("data:image/")) {
-      try {
-        setIsSyncingDrive(true)
-        const driveUrl = await uploadImageToDrive(finalImageUrl, `food_${data.id || Date.now()}.jpg`)
-        finalImageUrl = driveUrl
-      } catch (err) {
-        console.error("Failed to upload image to Google Drive", err)
-      } finally {
-        setIsSyncingDrive(false)
-      }
-    }
+
 
     let updatedLogs: any[]
     if (data.id) {
@@ -526,18 +411,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       }
     }
 
-    // 3. 구글 드라이브 백업 동기화 트리거
-    if (isDriveConnected) {
-      try {
-        setIsSyncingDrive(true)
-        const result = await uploadDoubleBackup(updatedLogs)
-        setLastBackupAt(new Date(result.modifiedTime).getTime())
-      } catch (err) {
-        console.error("Failed to upload double backup", err)
-      } finally {
-        setIsSyncingDrive(false)
-      }
-    }
+
 
     setEditModalOpen(false)
     setEditingMeal(null)
@@ -672,52 +546,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         </div>
       </div>
 
-      {/* Google Drive Backup Status Banner */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white/80 backdrop-blur-md rounded-2xl border border-orange-100 shadow-sm text-xs">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Cloud className={cn("size-4 shrink-0", isDriveConnected ? "text-green-500 fill-green-500" : "text-muted-foreground")} />
-          <div className="flex flex-col">
-            <span className="font-bold text-foreground">
-              {isDriveConnected ? "구글 드라이브 백업 활성화됨" : "솔로 자료만 개인 기기에 프라이빗 보관 중"}
-            </span>
-            <span className="text-[10px] text-muted-foreground/80">
-              {isDriveConnected 
-                ? (lastBackupAt 
-                    ? `마지막 백업: ${new Date(lastBackupAt).toLocaleString()}` 
-                    : "백업 진행 필요")
-                : "구글계정에 백업해두면 다른 기기와도 연동됩니다."}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {isDriveConnected ? (
-            <>
-              <button
-                disabled={isSyncingDrive}
-                onClick={() => syncLocalDataToDrive(true)}
-                className="px-3 py-1.5 bg-orange-500 text-white font-bold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                {isSyncingDrive ? "동기화 중..." : "지금 동기화"}
-              </button>
-              <button
-                disabled={isSyncingDrive}
-                onClick={handleDisconnectDrive}
-                className="px-3 py-1.5 bg-gray-100 text-muted-foreground font-bold rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
-              >
-                연결 해제
-              </button>
-            </>
-          ) : (
-            <button
-              disabled={isDriveLoading}
-              onClick={handleConnectDrive}
-              className="px-3 py-1.5 bg-cyan-500 text-white font-bold rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {isDriveLoading ? "로드 중..." : "구글 백업 연동"}
-            </button>
-          )}
-        </div>
-      </div>
+
 
       {/* Meal Type Filter Buttons */}
       <div className="flex items-center justify-between">
