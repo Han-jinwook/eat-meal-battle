@@ -350,11 +350,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
-    if (confirm("이 식사 기록을 정말 삭제하시겠습니까?")) {
-      const updatedLogs = mealLogs.filter((log) => log.id !== mealId)
-      setMealLogs(updatedLogs)
-      localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
-    }
+    const updatedLogs = mealLogs.filter((log) => log.id !== mealId)
+    setMealLogs(updatedLogs)
+    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
   }
 
   const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
@@ -377,10 +375,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const handleEditSave = async (data: MealLogData) => {
     let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
-
-
     let updatedLogs: any[]
-    if (data.id) {
+    let isNewLog = false
+
+    if (data.id && mealLogs.some(log => log.id === data.id)) {
       updatedLogs = mealLogs.map(log =>
         log.id === data.id
           ? {
@@ -397,6 +395,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           : log
       )
     } else {
+      isNewLog = true
       const newLog = {
         id: Date.now(),
         date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
@@ -418,7 +417,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
 
     // 2. 만약 평점이 5점이고 로그인이 되어 있다면 Supabase에 공유/업로드
-    const savedLog = data.id ? updatedLogs.find(l => l.id === data.id) : updatedLogs[0]
+    const savedLog = isNewLog ? updatedLogs[0] : updatedLogs.find(l => l.id === data.id)
     if (savedLog && savedLog.rating === 5) {
       try {
         await checkConsentAndUpload({
