@@ -1,6 +1,6 @@
 [build]
   base = "."
-  command = "npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
+  command = "npm ci --legacy-peer-deps --no-audit --no-fund && npm run build"
   publish = ".next"
   functions = "netlify/functions"
   # 변경사항 없으면 빌드 스킵 (임시 비활성화)
@@ -52,7 +52,7 @@
   NETLIFY_FUNCTIONS_DEBUG = "true"
   # Node.js 20 강제 설정
   NODE_VERSION = "20.x"
-  NPM_FLAGS = "--prefer-offline --no-audit --no-fund --include=optional"
+  NPM_FLAGS = "--no-audit --no-fund --include=optional"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
