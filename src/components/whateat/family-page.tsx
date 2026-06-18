@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
+import { toast } from "react-hot-toast"
 
 export interface FamilyMember {
   id: number
@@ -420,6 +421,62 @@ export function FamilyPage() {
   const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
   const [isPromotingMealId, setIsPromotingMealId] = useState<string | number | null>(null)
   const [dismissedMealHighlightIds, setDismissedMealHighlightIds] = useState<any[]>([])
+
+  // 거주 지역 등록 모달 관련 상태 변수
+  const [regionModalOpen, setRegionModalOpen] = useState(false)
+  const [inputCity, setInputCity] = useState("")
+  const [inputGu, setInputGu] = useState("")
+  const [inputDong, setInputDong] = useState("")
+  const [isRegionSaving, setIsRegionSaving] = useState(false)
+
+  const handleSaveRegionAndUpload = async () => {
+    if (!inputCity.trim() || !inputGu.trim() || !inputDong.trim()) {
+      toast.error("거주 지역(시도, 시군구, 읍면동)을 모두 입력해 주세요.")
+      return
+    }
+
+    if (!user?.id) return
+
+    try {
+      setIsRegionSaving(true)
+      const supabase = createClient()
+
+      const regionData = {
+        city: inputCity.trim(),
+        gu: inputGu.trim(),
+        dong: inputDong.trim()
+      }
+
+      // users 테이블에 region 저장
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ region: JSON.stringify(regionData) })
+        .eq('id', user.id)
+
+      if (userError) throw userError
+
+      setRegionModalOpen(false)
+      toast.success("거주 지역이 등록되었습니다!")
+
+      // 대기 중인 패밀리 식사 업로드 속행
+      if (pendingFamilyRating) {
+        const { mealId, memberId, score } = pendingFamilyRating
+        await saveFamilyRating(mealId, memberId, score)
+        const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
+        await tryPromoteMealToTalk(mealId, currentRatingMap)
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("navigateToTalk"))
+        }, 100)
+      }
+      setPendingFamilyRating(null)
+
+    } catch (err) {
+      console.error("Failed to save user region on family 5star promotion:", err)
+      toast.error("지역 저장에 실패했습니다. 다시 시도해 주세요.")
+    } finally {
+      setIsRegionSaving(false)
+    }
+  }
 
   // Decided Menu States
   const [decidedMealTime, setDecidedMealTime] = useState<"breakfast" | "lunch" | "dinner">("breakfast")
@@ -856,6 +913,29 @@ export function FamilyPage() {
     if (!targetMeal) return
     
     if (score === 5) {
+      const supabase = createClient()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('region')
+        .eq('id', user?.id)
+        .single()
+
+      const hasRegion = userData?.region ? (() => {
+        try {
+          const parsed = JSON.parse(userData.region)
+          return Boolean(parsed.city && parsed.gu && parsed.dong)
+        } catch (e) {
+          return false
+        }
+      })() : false
+
+      // 지역 설정이 없다면 모달 오픈
+      if (!hasRegion) {
+        setPendingFamilyRating({ mealId, memberId, score })
+        setRegionModalOpen(true)
+        return
+      }
+
       const pref = localStorage.getItem("whateat_auto_share_5star")
       if (pref === "approved") {
         await saveFamilyRating(mealId, memberId, score)
@@ -2103,14 +2183,35 @@ export function FamilyPage() {
                   setShareConsentModalOpen(false)
                   if (pendingFamilyRating) {
                     const { mealId, memberId, score } = pendingFamilyRating
-                    await saveFamilyRating(mealId, memberId, score)
-                    const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
-                    await tryPromoteMealToTalk(mealId, currentRatingMap)
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent("navigateToTalk"))
-                    }, 100)
+                    
+                    const supabase = createClient()
+                    const { data: userData } = await supabase
+                      .from('users')
+                      .select('region')
+                      .eq('id', user?.id)
+                      .single()
+
+                    const hasRegion = userData?.region ? (() => {
+                      try {
+                        const parsed = JSON.parse(userData.region)
+                        return Boolean(parsed.city && parsed.gu && parsed.dong)
+                      } catch (e) {
+                        return false
+                      }
+                    })() : false
+
+                    if (!hasRegion) {
+                      setRegionModalOpen(true)
+                    } else {
+                      await saveFamilyRating(mealId, memberId, score)
+                      const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
+                      await tryPromoteMealToTalk(mealId, currentRatingMap)
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                      }, 100)
+                      setPendingFamilyRating(null)
+                    }
                   }
-                  setPendingFamilyRating(null)
                 }}
                 className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
@@ -2134,6 +2235,65 @@ export function FamilyPage() {
                 className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 거절 (비공개)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 거주 지역 등록 모달 (최초 맛톡 공유 시 강제 수집) */}
+      {regionModalOpen && (
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                <span className="text-orange-500">📍</span> 거주 지역 등록
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                맛톡(동네 맛집 피드)에 식사 기록을 연동하기 위해 회원님의 거주 지역(동) 정보를 등록해 주세요.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">시/도</label>
+                  <input
+                    type="text"
+                    placeholder="예: 인천"
+                    value={inputCity}
+                    onChange={(e) => setInputCity(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">시/군/구</label>
+                  <input
+                    type="text"
+                    placeholder="예: 서구"
+                    value={inputGu}
+                    onChange={(e) => setInputGu(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">읍/면/동</label>
+                  <input
+                    type="text"
+                    placeholder="예: 청라동"
+                    value={inputDong}
+                    onChange={(e) => setInputDong(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveRegionAndUpload}
+                disabled={isRegionSaving}
+                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:bg-orange-300 flex items-center justify-center"
+              >
+                {isRegionSaving ? "저장 중..." : "거주 지역 등록 및 맛톡 공유"}
               </button>
             </div>
           </div>

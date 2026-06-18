@@ -13,10 +13,11 @@ import {
 import { useEffect, useState } from 'react';
 import { Header } from '@/components/whateat/header';
 import { Footer } from '@/components/whateat/footer';
+import { createClient } from '@/lib/supabase';
 
 export default function ProfileClient() {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useHub();
+  const { isLoggedIn, isLoading, user } = useHub();
   const { getReferralHistory, isLoading: isReferralsLoading } = useHubReferral();
   const [referrals, setReferrals] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
@@ -25,6 +26,109 @@ export default function ProfileClient() {
     }
     return [];
   });
+
+  // 거주 지역(시도, 시군구, 읍면동) 및 학교 상태 관리
+  const [regionCity, setRegionCity] = useState("");
+  const [regionGu, setRegionGu] = useState("");
+  const [regionDong, setRegionDong] = useState("");
+  const [schoolName, setSchoolName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) return;
+      try {
+        const supabase = createClient();
+        
+        // users 테이블에서 region 조회
+        const { data: userData } = await supabase
+          .from('users')
+          .select('region')
+          .eq('id', user.id)
+          .single();
+          
+        if (userData && userData.region) {
+          try {
+            const parsedRegion = JSON.parse(userData.region);
+            setRegionCity(parsedRegion.city || "");
+            setRegionGu(parsedRegion.gu || "");
+            setRegionDong(parsedRegion.dong || "");
+          } catch (e) {
+            setRegionDong(userData.region || "");
+          }
+        }
+
+        // school_infos 테이블에서 school_name 조회 (읽기 전용 매핑)
+        const { data: schoolData } = await supabase
+          .from('school_infos')
+          .select('school_name')
+          .eq('user_id', user.id)
+          .single();
+
+        if (schoolData) {
+          setSchoolName(schoolData.school_name || "");
+        }
+      } catch (err) {
+        console.error("Failed to load profile region/school info:", err);
+      }
+    };
+
+    if (isLoggedIn && user?.id) {
+      fetchUserData();
+    }
+  }, [isLoggedIn, user]);
+
+  const handleSaveSettings = async () => {
+    if (!user?.id) return;
+    try {
+      setIsSaving(true);
+      const supabase = createClient();
+
+      const regionData = {
+        city: regionCity.trim(),
+        gu: regionGu.trim(),
+        dong: regionDong.trim()
+      };
+
+      // 1. users 테이블의 region 컬럼 업데이트
+      const { error: userError } = await supabase
+        .from('users')
+        .update({ region: JSON.stringify(regionData) })
+        .eq('id', user.id);
+
+      if (userError) throw userError;
+
+      // 2. school_infos 테이블의 school_name 업데이트 (자녀들의 급식용 기초 데이터)
+      const { data: existingSchool } = await supabase
+        .from('school_infos')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingSchool) {
+        const { error: schoolError } = await supabase
+          .from('school_infos')
+          .update({ school_name: schoolName.trim() })
+          .eq('user_id', user.id);
+        if (schoolError) throw schoolError;
+      } else {
+        const { error: schoolError } = await supabase
+          .from('school_infos')
+          .insert({
+            user_id: user.id,
+            school_name: schoolName.trim(),
+          });
+        if (schoolError) throw schoolError;
+      }
+
+      alert("지역 및 학교 정보가 성공적으로 저장되었습니다!");
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+      alert("정보 저장에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     // 세션 로딩이 완료된 시점에 로그인되어 있지 않다면 홈(/)으로 이동하고 로그인 모달 트리거
@@ -109,6 +213,69 @@ export default function ProfileClient() {
                 {/* 허브 통합 프로필 카드 */}
                 <HubProfileCard />
                 
+                {/* 왓잇 거주지역 및 학교 설정 */}
+                <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm space-y-4">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                    <span className="text-orange-500">📍</span> 왓잇 지역 및 학교 설정
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {/* 지역 설정 (시도 / 시군구 / 읍면동) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground block">거주 지역 (맛톡 범위 설정용)</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="시/도 (예: 인천)"
+                            value={regionCity}
+                            onChange={(e) => setRegionCity(e.target.value)}
+                            className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="시/군/구 (예: 서구)"
+                            value={regionGu}
+                            onChange={(e) => setRegionGu(e.target.value)}
+                            className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="읍/면/동 (예: 청라동)"
+                            value={regionDong}
+                            onChange={(e) => setRegionDong(e.target.value)}
+                            className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 학교 설정 */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-muted-foreground block">학교 이름 (자녀 급식용)</label>
+                      <input
+                        type="text"
+                        placeholder="학교명 (예: 청라초등학교)"
+                        value={schoolName}
+                        onChange={(e) => setSchoolName(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={isSaving}
+                      className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:bg-orange-300 flex items-center justify-center gap-1.5"
+                    >
+                      {isSaving ? "저장 중..." : "지역 및 학교 정보 저장"}
+                    </button>
+                  </div>
+                </div>
+
                 <HubNotificationCard />
 
                 {/* 왓잇 식단 공개 범위 설정 카드 */}

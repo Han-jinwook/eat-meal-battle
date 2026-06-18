@@ -322,7 +322,16 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [userRegion, setUserRegion] = useState<string>("청라동") // 사용자 기본 지역
-  const [scopeFilter, setScopeFilter] = useState<string>("dong") // 범위: dong/gu/city/all
+  const [userAddressState, setUserAddressState] = useState<{
+    city: string
+    gu: string
+    dong: string
+  }>({
+    city: "인천",
+    gu: "서구",
+    dong: "청라동"
+  })
+  const [scopeFilter, setScopeFilter] = useState<string>("all") // 범위: dong/gu/city/all
   const [searchRegion, setSearchRegion] = useState<string>("") // 검색 지역
   const [showScopeDropdown, setShowScopeDropdown] = useState(false)
   const [showRegionSearch, setShowRegionSearch] = useState(false)
@@ -336,24 +345,40 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
   const { isLoggedIn, user } = useHub()
 
-  // Fetch user region dynamically from school_infos
+  // Fetch user region dynamically from users
   useEffect(() => {
     if (isLoggedIn && user?.id) {
       const fetchUserRegion = async () => {
         try {
           const supabase = createClient()
-          const { data: schoolInfo } = await supabase
-            .from("school_infos")
-            .select("region, address")
-            .eq("user_id", user.id)
+          const { data: userData } = await supabase
+            .from("users")
+            .select("region")
+            .eq("id", user.id)
             .single()
           
-          if (schoolInfo) {
-            const parsed = parseRegionFromAddress(schoolInfo.address || "", schoolInfo.region || "인천")
-            setUserRegion(parsed.dong)
+          if (userData && userData.region) {
+            try {
+              const parsed = JSON.parse(userData.region)
+              if (parsed.dong) {
+                setUserRegion(parsed.dong)
+                setUserAddressState({
+                  city: parsed.city || "인천",
+                  gu: parsed.gu || "서구",
+                  dong: parsed.dong
+                })
+              }
+            } catch (e) {
+              setUserRegion(userData.region)
+              setUserAddressState({
+                city: "인천",
+                gu: "서구",
+                dong: userData.region
+              })
+            }
           }
         } catch (err) {
-          console.warn("Failed to fetch user school region", err)
+          console.warn("Failed to fetch user region from users", err)
         }
       }
       fetchUserRegion()
@@ -382,27 +407,16 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         const uploaderIds = Array.from(new Set(imgData.map(img => img.uploaded_by).filter(Boolean)))
         const mealIds = imgData.map(img => img.meal_id).filter(Boolean)
         
-        // Fetch users
+        // Fetch users (region 컬럼 포함)
         let dbUsers: any[] = []
         if (uploaderIds.length > 0) {
           const { data: usersData } = await supabase
             .from("users")
-            .select("id, nickname, profile_image")
+            .select("id, nickname, profile_image, region")
             .in("id", uploaderIds)
           dbUsers = usersData || []
         }
         const userMap = new Map(dbUsers.map(u => [u.id, u]))
-
-        // Fetch school_infos
-        let dbSchools: any[] = []
-        if (uploaderIds.length > 0) {
-          const { data: schoolsData } = await supabase
-            .from("school_infos")
-            .select("user_id, region, school_name, address")
-            .in("user_id", uploaderIds)
-          dbSchools = schoolsData || []
-        }
-        const schoolMap = new Map(dbSchools.map(s => [s.user_id, s]))
 
         // Fetch all ratings for these meals to display real-time accumulated rating
         let dbRatings: any[] = []
@@ -445,14 +459,21 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
 
           const u = userMap.get(img.uploaded_by)
-          const school = schoolMap.get(img.uploaded_by)
 
-          const parsedRegion = parseRegionFromAddress(
-            school?.address || "",
-            school?.region || "인천",
-            "서구",
-            "청라동"
-          )
+          let parsedCity = "인천"
+          let parsedGu = "서구"
+          let parsedDong = "청라동"
+
+          if (u && u.region) {
+            try {
+              const r = JSON.parse(u.region)
+              parsedCity = r.city || "인천"
+              parsedGu = r.gu || "서구"
+              parsedDong = r.dong || "청라동"
+            } catch (e) {
+              parsedDong = u.region
+            }
+          }
 
           let mappedType: "homemade" | "delivery" | "dineout" = "homemade"
           const rawType = meta.mealType || ""
@@ -471,9 +492,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             image: img.image_url || "/images/placeholder-food.jpg",
             description: meta.description || meta.recipe || img.explanation || "별점 5점 식사 기록입니다. 😋",
             region: {
-              dong: parsedRegion.dong,
-              gu: parsedRegion.gu,
-              city: parsedRegion.city
+              dong: parsedDong,
+              gu: parsedGu,
+              city: parsedCity
             },
             restaurant: (mappedType === "dineout" || mappedType === "delivery") ? {
               name: meta.placeName || "맛집",
@@ -483,7 +504,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               id: img.uploaded_by,
               nickname: u?.nickname || "익명 회원",
               avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-              region: parsedRegion.dong
+              region: parsedDong
             },
             createdAt: meta.promotedAt || img.created_at,
             rating: img.meal_id ? getRatingStats(img.meal_id) : { average: 5, count: 0 },
@@ -519,9 +540,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }, [isActive])
 
   const userAddress = {
-    dong: userRegion,
-    gu: "서구",
-    city: "인천",
+    dong: userAddressState.dong,
+    gu: userAddressState.gu,
+    city: userAddressState.city,
   }
   const hasProfileAddress = Boolean(userAddress.dong && userAddress.gu && userAddress.city)
   const regionScopeOptions = hasProfileAddress
