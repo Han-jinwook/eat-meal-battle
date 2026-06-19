@@ -239,7 +239,7 @@ export default function WhatEatApp() {
 
   const renderFamilyPage = () => (
     <div className="px-5 pt-4 flex flex-col gap-5">
-      <FamilyPage activeMainTab={familyActiveTab} />
+      <FamilyPage activeMainTab={familyActiveTab} onTabChange={setFamilyActiveTab} />
       <Footer />
     </div>
   )
@@ -265,21 +265,13 @@ export default function WhatEatApp() {
         {/* 본문 콘텐츠 컨테이너: 최대 가로폭 800px 고정 및 헤더 내부 컨테이너와 동일한 정렬선 확보 */}
         <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] min-h-screen flex flex-col relative shadow-2xl shadow-black/5 bg-gradient-to-br from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] shrink-0 z-10">
           
-          <div className={cn("sticky top-[62px] z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-4 pt-2", bottomNavTab === "home" ? "pb-0" : "pb-1 border-b border-muted/10")}>
+          <div className={cn("sticky top-[62px] z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] px-4 pt-2", bottomNavTab === "home" ? "pb-0" : "pb-1 border-b border-muted/10", bottomNavTab === "family" && "hidden")}>
             {bottomNavTab === "solo" && (
               <TabNavigation
                 activeTab={activeTab}
                 onTabChange={handleSoloTabChange}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-              />
-            )}
-            {bottomNavTab === "family" && (
-              <TabNavigation
-                activeTab={familyActiveTab}
-                onTabChange={setFamilyActiveTab}
-                searchQuery=""
-                onSearchChange={() => {}}
               />
             )}
             {bottomNavTab === "meal" && <div className="h-1" />}

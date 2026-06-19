@@ -101,6 +101,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
+  const [visibleMemoInputs, setVisibleMemoInputs] = useState<Record<string | number, boolean>>({})
 
   // Supabase Storage에 파일 업로드하는 함수
   const uploadImageToStorage = async (base64Image: string): Promise<string> => {
@@ -1378,18 +1379,19 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               <h3 className="font-bold text-foreground text-lg mb-2">{meal.title}</h3>
               {/* Comment Section (기존 Memo Section 전면 대체) */}
               <div className="mt-4 pt-3 border-t border-muted/30">
-                <div className="flex items-center gap-1.5 mb-2.5">
+                <div 
+                  className="flex items-center gap-1.5 mb-2.5 cursor-pointer"
+                  onClick={() => setVisibleMemoInputs(prev => ({ ...prev, [meal.id]: !prev[meal.id] }))}
+                >
                   <MessageSquare className="size-3.5 text-orange-500" />
-                  <span className="text-xs font-bold text-foreground">댓글</span>
+                  <span className="text-xs font-bold text-foreground select-none">메모</span>
                   <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
                     {(meal.comments || []).length}
                   </span>
                 </div>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {(meal.comments || []).length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground">아직 댓글이 없어요. 첫 댓글(메모)을 남겨보세요.</p>
-                  ) : (
+                  {(meal.comments || []).length === 0 ? null : (
                     (meal.comments || []).map((comment: any) => (
                       <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
                         <div className="flex items-center justify-between">
@@ -1468,26 +1470,28 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </div>
 
                 {/* 댓글 입력창 - 패밀리 스타일 통일 */}
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={commentInputs[meal.id] || ""}
-                    onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddComment(meal.id)
-                      }
-                    }}
-                    placeholder="댓글을 입력해 메모를 추가하거나 소통해 보세요"
-                    className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
-                  />
-                  <button
-                    onClick={() => handleAddComment(meal.id)}
-                    className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
-                  >
-                    <Send className="size-4" />
-                  </button>
-                </div>
+                {visibleMemoInputs[meal.id] && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={commentInputs[meal.id] || ""}
+                      onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddComment(meal.id)
+                        }
+                      }}
+                      placeholder="메모를 입력하거나 소통해 보세요"
+                      className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
+                    />
+                    <button
+                      onClick={() => handleAddComment(meal.id)}
+                      className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
+                    >
+                      <Send className="size-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

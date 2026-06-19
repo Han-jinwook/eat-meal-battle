@@ -28,6 +28,7 @@ import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/rea
 import { createClient } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
+import { TabNavigation } from "@/components/whateat/tab-navigation"
 
 export interface FamilyMember {
   id: number
@@ -262,7 +263,13 @@ function generateUUID() {
   })
 }
 
-export function FamilyPage({ activeMainTab = "log" }: { activeMainTab?: "log" | "reservation" | "calendar" }) {
+export function FamilyPage({ 
+  activeMainTab = "log",
+  onTabChange
+}: { 
+  activeMainTab?: "log" | "reservation" | "calendar"
+  onTabChange?: (tab: "log" | "reservation" | "calendar") => void
+}) {
   const { isLoggedIn, user } = useHub()
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
@@ -1468,7 +1475,14 @@ export function FamilyPage({ activeMainTab = "log" }: { activeMainTab?: "log" | 
         </div>
       </div>
 
-
+      <div className="sticky top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-2 pb-1 border-b border-muted/10">
+        <TabNavigation
+          activeTab={activeMainTab as "log" | "reservation" | "calendar"}
+          onTabChange={onTabChange || (() => {})}
+          searchQuery=""
+          onSearchChange={() => {}}
+        />
+      </div>
 
       {/* Tab Content */}
       {activeMainTab === "log" && (
