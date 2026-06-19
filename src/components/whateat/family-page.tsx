@@ -12,8 +12,8 @@ import {
   Bell, 
   Check, 
   X, 
-  Plus,
-  Clock,
+  ArrowUpDown,
+  ChevronDown,
   Utensils,
   MoreVertical,
   Settings,
@@ -22,6 +22,8 @@ import {
   Heart,
   Send,
   Sparkles,
+  MapPin,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
@@ -51,6 +53,9 @@ interface SharedMeal {
   mealMenuId?: string
   doNotPromote?: boolean
   rawExplanation?: string
+  linkUrl?: string
+  linkThumbnail?: string
+  placeName?: string
 }
 
 interface MealReply {
@@ -424,6 +429,21 @@ export function FamilyPage({
   const displayComments = meals.length === 0 ? defaultMealComments : mealComments
   const displayRatings = meals.length === 0 ? defaultMealRatings : mealRatings
 
+  const [sortOption, setSortOption] = useState<"날짜순" | "별점순" | "기간">("날짜순")
+  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc")
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+        setShowSortDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
   const [promotedMealIds, setPromotedMealIds] = useState<any[]>([])
   const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
   const [isPromotingMealId, setIsPromotingMealId] = useState<string | number | null>(null)
@@ -640,7 +660,10 @@ export function FamilyPage({
           mealType: meta.mealType || "homemade",
           mealMenuId: img.meal_id,
           doNotPromote: meta.doNotPromote || false,
-          rawExplanation: img.explanation || ''
+          rawExplanation: img.explanation || '',
+          linkUrl: meta.linkUrl,
+          linkThumbnail: meta.linkThumbnail,
+          placeName: meta.placeName
         }
       })
 
@@ -1487,33 +1510,91 @@ export function FamilyPage({
       {/* Tab Content */}
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-4">
-          <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
-            {sharedFilterTabs.map((filterTab) => {
-              const Icon = filterTab.icon
-              const displayMeals = meals.length === 0 ? defaultSharedMeals : meals
-              const count =
-                filterTab.id === "all"
-                  ? displayMeals.length
-                  : displayMeals.filter((meal) => getSharedMealCategory(meal) === filterTab.id).length
+          <div className="flex items-center justify-end">
+            <div className="relative" ref={sortRef}>
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all"
+              >
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+                  }}
+                  className="inline-flex"
+                >
+                  <ArrowUpDown className="size-3.5" />
+                </span>
+                <span>{sortOption}</span>
+                <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
+                <ChevronDown className="size-3" />
+              </button>
 
-              return (
-                <div key={filterTab.id} className="flex flex-col items-center gap-1 shrink-0">
-                  <span className="text-[11px] font-black leading-none text-sky-500">{count}</span>
-                  <button
-                    onClick={() => setSharedMealFilter(filterTab.id)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1 whitespace-nowrap",
-                      sharedMealFilter === filterTab.id
-                        ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
-                        : "bg-white/70 text-muted-foreground hover:bg-white",
-                    )}
-                  >
-                    {Icon && <Icon className="size-3.5" />}
-                    {filterTab.label}
-                  </button>
+              {showSortDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                  {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setSortOption(option)
+                        setShowSortDropdown(false)
+                      }}
+                      className={cn(
+                        "w-full px-4 py-2.5 text-left text-sm transition-all",
+                        sortOption === option
+                          ? "bg-orange-50 text-primary font-bold"
+                          : "text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
                 </div>
-              )
-            })}
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
+              {sharedFilterTabs.map((filterTab) => {
+                const Icon = filterTab.icon
+                const displayMeals = meals.length === 0 ? defaultSharedMeals : meals
+                const count =
+                  filterTab.id === "all"
+                    ? displayMeals.length
+                    : displayMeals.filter((meal) => getSharedMealCategory(meal) === filterTab.id).length
+
+                return (
+                  <div key={filterTab.id} className="flex flex-col items-center gap-1 shrink-0">
+                    <span className="text-[11px] font-black leading-none text-sky-500">{count}</span>
+                    <button
+                      onClick={() => setSharedMealFilter(filterTab.id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1 whitespace-nowrap",
+                        sharedMealFilter === filterTab.id
+                          ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
+                          : "bg-white/70 text-muted-foreground hover:bg-white",
+                      )}
+                    >
+                      {Icon && <Icon className="size-3.5" />}
+                      {filterTab.label}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <button
+              onClick={() => {
+                if (!isLoggedIn) {
+                  window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else {
+                  // Todo: Add family meal
+                }
+              }}
+              className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
+            >
+              <Plus className="size-5" />
+            </button>
           </div>
 
 
@@ -1570,22 +1651,70 @@ export function FamilyPage({
                           </div>
                         </div>
 
-                        {/* 오른쪽: 식사 정보 */}
-                        <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col p-3 overflow-hidden">
-                          <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-3">{meal.title}</h4>
-                          <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                            <span>{meal.sharedBy}</span>
-                            {meal.mealType === "homemade" && (
-                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
-                            )}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground/70 mt-0.5">{meal.sharedAt}</p>
-                          <div className="mt-auto flex items-center gap-1 text-orange-500">
-                            <Star className="size-3 fill-orange-400 text-orange-400" />
-                            <span className="text-[10px] font-bold">
-                              {isOpen ? "평가중" : averageRating.toFixed(1)}
-                            </span>
-                          </div>
+                        {/* 오른쪽: 식사 정보 또는 식당 링크 */}
+                        <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col overflow-hidden relative">
+                          {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.linkUrl && meal.linkThumbnail ? (
+                            <a
+                              href={meal.linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full h-full relative group overflow-hidden block"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                                style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
+                              />
+                              <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+                              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                                <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
+                                  <span className="text-white text-[7px] font-black">N</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-foreground">Place</span>
+                              </div>
+                            </a>
+                          ) : (meal.mealType === "dining" || meal.mealType === "delivery") && meal.linkUrl && meal.placeName ? (
+                            <a
+                              href={meal.linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] hover:bg-gray-100 transition-colors p-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="size-10 rounded-full bg-[#03C75A]/10 flex items-center justify-center mb-2">
+                                <MapPin className="size-5 text-[#03C75A]" />
+                              </div>
+                              <span className="text-[11px] font-bold text-foreground text-center line-clamp-2 leading-tight">
+                                {meal.placeName}
+                              </span>
+                            </a>
+                          ) : (meal.mealType === "dining" || meal.mealType === "delivery") ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
+                              <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
+                                <ExternalLink className="size-5" />
+                              </div>
+                              <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
+                                등록된 식당/배달 정보가<br/>없습니다.
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col p-3 h-full w-full">
+                              <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-3">{meal.title}</h4>
+                              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                                <span>{meal.sharedBy}</span>
+                                {meal.mealType === "homemade" && (
+                                  <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
+                                )}
+                              </p>
+                              <p className="text-[9px] text-muted-foreground/70 mt-0.5">{meal.sharedAt}</p>
+                              <div className="mt-auto flex items-center gap-1 text-orange-500">
+                                <Star className="size-3 fill-orange-400 text-orange-400" />
+                                <span className="text-[10px] font-bold">
+                                  {isOpen ? "평가중" : averageRating.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -1844,21 +1973,80 @@ export function FamilyPage({
 
       {activeMainTab === "reservation" && (
         <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-end">
+            <div className="relative">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all"
+              >
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+                  }}
+                  className="inline-flex"
+                >
+                  <ArrowUpDown className="size-3.5" />
+                </span>
+                <span>{sortOption}</span>
+                <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
+                <ChevronDown className="size-3" />
+              </button>
+
+              {showSortDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                  {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setSortOption(option)
+                        setShowSortDropdown(false)
+                      }}
+                      className={cn(
+                        "w-full px-4 py-2.5 text-left text-sm transition-all",
+                        sortOption === option
+                          ? "bg-orange-50 text-primary font-bold"
+                          : "text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">{"Chef's Choice"}</h3>
-            <button 
-              onClick={() => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  setShowDecideMenuModal(true)
-                }
-              }}
-              className="flex items-center gap-1 text-xs text-orange-500 font-bold"
-            >
-              <ChefHat className="size-3.5" />
-              메뉴 결정하기
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    setShowDecideMenuModal(true)
+                  }
+                }}
+                className="flex items-center gap-1 text-xs text-orange-500 font-bold"
+              >
+                <ChefHat className="size-3.5" />
+                메뉴 결정하기
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    // Todo: Add family reservation
+                  }
+                }}
+                className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
+              >
+                <Plus className="size-5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
