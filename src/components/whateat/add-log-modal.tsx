@@ -21,7 +21,7 @@ import { toast } from "react-hot-toast"
 
 
 export interface MealLogData {
-  id?: number
+  id?: string | number
   date?: string
   mealType: "집밥" | "배달" | "외식"
   menuName: string

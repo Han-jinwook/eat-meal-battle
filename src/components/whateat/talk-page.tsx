@@ -303,9 +303,318 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
   const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
-  const [commentInput, setCommentInput] = useState("")
+  const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
+  const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
+  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  function generateUUID() {
+    if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+      return window.crypto.randomUUID()
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0
+      const v = c === "x" ? r : (r & 0x3) | 0x8
+      return v.toString(16)
+    })
+  }
+
+  // 댓글창이 확장될 때 실시간 댓글 및 대댓글 로드
+  useEffect(() => {
+    if (!expandedComments) return
+
+    const fetchCommentsForPost = async () => {
+      // 샘플 포스트(숫자 ID 1, 2, 3)인 경우 더미 댓글 사용
+      if (typeof expandedComments === "number" && expandedComments <= 3) {
+        setPostComments(prev => ({
+          ...prev,
+          [expandedComments]: dummyComments[expandedComments] || []
+        }))
+        return
+      }
+
+      try {
+        const supabase = createClient()
+        // 1. comments 조회
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("*")
+          .eq("meal_id", expandedComments)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: true })
+
+        const dbComments = commentsData || []
+
+        // 2. 대댓글 조회
+        const commentIds = dbComments.map(c => c.id)
+        let dbReplies: any[] = []
+        if (commentIds.length > 0) {
+          const { data: repliesData } = await supabase
+            .from("comment_replies")
+            .select("*")
+            .in("comment_id", commentIds)
+            .eq("is_deleted", false)
+            .order("created_at", { ascending: true })
+          dbReplies = repliesData || []
+        }
+
+        // 3. 유저 프로필 조회
+        const uids = Array.from(new Set([
+          ...dbComments.map(c => c.user_id),
+          ...dbReplies.map(r => r.user_id)
+        ].filter(Boolean)))
+
+        let dbUsers: any[] = []
+        if (uids.length > 0) {
+          const { data: usersData } = await supabase
+            .from("users")
+            .select("id, nickname, profile_image, region")
+            .in("id", uids)
+          dbUsers = usersData || []
+        }
+        const userMap = new Map(dbUsers.map(u => [u.id, u]))
+
+        // Map replies by comment_id
+        const repliesMap = new Map<string, any[]>()
+        dbReplies.forEach(r => {
+          const arr = repliesMap.get(r.comment_id) || []
+          const rUser = userMap.get(r.user_id)
+          let parsedDong = "동네"
+          if (rUser?.region) {
+            try {
+              const regionParsed = JSON.parse(rUser.region)
+              parsedDong = regionParsed.dong || "동네"
+            } catch (e) {
+              parsedDong = rUser.region
+            }
+          }
+          arr.push({
+            id: r.id,
+            userId: r.user_id,
+            author: {
+              nickname: rUser?.nickname || "익명 회원",
+              avatar: rUser?.profile_image || "",
+              region: parsedDong
+            },
+            content: r.content,
+            createdAt: new Date(r.created_at).toLocaleDateString("ko-KR"),
+            likes: 0,
+            isLiked: false
+          })
+          repliesMap.set(r.comment_id, arr)
+        })
+
+        // Map comments
+        const mappedComments = dbComments.map(c => {
+          const cUser = userMap.get(c.user_id)
+          let parsedDong = "동네"
+          if (cUser?.region) {
+            try {
+              const regionParsed = JSON.parse(cUser.region)
+              parsedDong = regionParsed.dong || "동네"
+            } catch (e) {
+              parsedDong = cUser.region
+            }
+          }
+          return {
+            id: c.id,
+            userId: c.user_id,
+            author: {
+              nickname: cUser?.nickname || "익명 회원",
+              avatar: cUser?.profile_image || "",
+              region: parsedDong
+            },
+            content: c.content,
+            createdAt: new Date(c.created_at).toLocaleDateString("ko-KR"),
+            likes: 0,
+            isLiked: false,
+            replies: repliesMap.get(c.id) || []
+          }
+        })
+
+        setPostComments(prev => ({
+          ...prev,
+          [expandedComments]: mappedComments
+        }))
+
+      } catch (err) {
+        console.error("Failed to fetch comments for post:", err)
+      }
+    }
+
+    fetchCommentsForPost()
+  }, [expandedComments])
+
+  // 댓글 등록 처리 함수
+  const handleAddComment = async (postId: string | number) => {
+    const inputVal = commentInputs[postId]?.trim()
+    if (!inputVal) return
+
+    if (typeof postId === "number" && postId <= 3) {
+      const newComment = {
+        id: Date.now(),
+        author: {
+          nickname: user?.nickname || "나",
+          avatar: user?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+          region: "내 동네"
+        },
+        content: inputVal,
+        createdAt: "방금 전",
+        likes: 0,
+        isLiked: false,
+        replies: []
+      }
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), newComment]
+      }))
+      setCommentInputs(prev => ({ ...prev, [postId]: "" }))
+      return
+    }
+
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const newCommentId = generateUUID()
+      const { error } = await supabase.from("comments").insert({
+        id: newCommentId,
+        meal_id: postId,
+        user_id: user.id,
+        content: inputVal,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_deleted: false
+      })
+
+      if (error) throw error
+
+      const newComment = {
+        id: newCommentId,
+        userId: user.id,
+        author: {
+          nickname: user.nickname || "나",
+          avatar: user.profile_image || "",
+          region: "내 동네"
+        },
+        content: inputVal,
+        createdAt: new Date().toLocaleDateString("ko-KR"),
+        likes: 0,
+        isLiked: false,
+        replies: []
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), newComment]
+      }))
+      setCommentInputs(prev => ({ ...prev, [postId]: "" }))
+      
+      // 상위 포스트 목록의 댓글 수 업데이트
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p))
+      
+      toast.success("댓글이 등록되었습니다.")
+    } catch (err) {
+      console.error("Failed to insert comment:", err)
+      toast.error("댓글 등록에 실패했습니다.")
+    }
+  }
+
+  // 대댓글(답글) 등록 처리 함수
+  const handleAddReply = async (postId: string | number, commentId: string) => {
+    const inputVal = replyInputs[commentId]?.trim()
+    if (!inputVal) return
+
+    if (typeof postId === "number" && postId <= 3) {
+      const newReply = {
+        id: Date.now(),
+        author: {
+          nickname: user?.nickname || "나",
+          avatar: user?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+          region: "내 동네"
+        },
+        content: inputVal,
+        createdAt: "방금 전",
+        likes: 0,
+        isLiked: false
+      }
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).map((c: any) => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), newReply]
+            }
+          }
+          return c
+        })
+      }))
+      setReplyInputs(prev => ({ ...prev, [commentId]: "" }))
+      setActiveReplyTarget(null)
+      return
+    }
+
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const newReplyId = generateUUID()
+      const { error } = await supabase.from("comment_replies").insert({
+        id: newReplyId,
+        comment_id: commentId,
+        user_id: user.id,
+        content: inputVal,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_deleted: false
+      })
+
+      if (error) throw error
+
+      const newReply = {
+        id: newReplyId,
+        userId: user.id,
+        author: {
+          nickname: user.nickname || "나",
+          avatar: user.profile_image || "",
+          region: "내 동네"
+        },
+        content: inputVal,
+        createdAt: new Date().toLocaleDateString("ko-KR"),
+        likes: 0,
+        isLiked: false
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).map((c: any) => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), newReply]
+            }
+          }
+          return c
+        })
+      }))
+      setReplyInputs(prev => ({ ...prev, [commentId]: "" }))
+      setActiveReplyTarget(null)
+      
+      toast.success("답글이 등록되었습니다.")
+    } catch (err) {
+      console.error("Failed to insert reply:", err)
+      toast.error("답글 등록에 실패했습니다.")
+    }
+  }
 
   const { isLoggedIn, user } = useHub()
 
@@ -1032,46 +1341,107 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
             {/* Comments Section */}
             {expandedComments === post.id && (
-              <div className="border-t border-muted/30">
+              <div className="border-t border-muted/30 p-4 space-y-3">
                 {/* Comment List */}
-                <div className="divide-y divide-muted/20">
-                  {(dummyComments[post.id] || []).map((comment) => (
-                    <div key={comment.id} className="p-4 flex gap-3">
-                      <img
-                        src={comment.author.avatar}
-                        alt={comment.author.nickname}
-                        className="size-8 rounded-lg object-cover shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground">{comment.author.nickname}</span>
-                          <span className="text-[10px] text-muted-foreground">{comment.author.region}</span>
-                          <span className="text-[10px] text-muted-foreground">·</span>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {(postComments[post.id] || []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">아직 댓글이 없어요. 첫 댓글을 남겨보세요.</p>
+                  ) : (
+                    (postComments[post.id] || []).map((comment) => (
+                      <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-foreground">{comment.author.nickname}</span>
+                            <span className="text-[9px] text-muted-foreground">{comment.author.region}</span>
+                          </div>
                           <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
                         </div>
-                        <p className="text-sm text-foreground mt-1">{comment.content}</p>
-                        <button className="flex items-center gap-1 mt-1.5 text-muted-foreground">
-                          <Heart className={cn(
-                            "size-3",
-                            comment.isLiked && "fill-red-500 text-red-500"
-                          )} />
-                          <span className="text-[10px]">{comment.likes}</span>
-                        </button>
+                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+
+                        <div className="flex items-center gap-3 mt-2">
+                          <button
+                            onClick={() => {
+                              const isSameTarget =
+                                activeReplyTarget?.mealId === post.id &&
+                                activeReplyTarget.commentId === comment.id
+
+                              if (isSameTarget) {
+                                setActiveReplyTarget(null)
+                                return
+                              }
+                              setActiveReplyTarget({ mealId: post.id, commentId: comment.id })
+                            }}
+                            className="text-[10px] text-orange-500 font-bold hover:underline"
+                          >
+                            답글 쓰기
+                          </button>
+                        </div>
+
+                        {/* 대댓글(답글) 리스트 */}
+                        {(comment.replies || []).length > 0 && (
+                          <div className="mt-2.5 pl-2 border-l-2 border-orange-200 space-y-1.5">
+                            {(comment.replies || []).map((reply: any) => (
+                              <div key={reply.id} className="bg-white/70 rounded-lg px-2 py-1.5 border border-orange-50">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-foreground">{reply.author.nickname}</span>
+                                    <span className="text-[8px] text-muted-foreground">{reply.author.region}</span>
+                                  </div>
+                                  <span className="text-[9px] text-muted-foreground">{reply.createdAt}</span>
+                                </div>
+                                <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 대댓글 입력창 */}
+                        {activeReplyTarget?.mealId === post.id && activeReplyTarget.commentId === comment.id && (
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={replyInputs[comment.id] || ""}
+                              onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleAddReply(post.id, comment.id)
+                                }
+                              }}
+                              placeholder="답글을 입력하세요"
+                              className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-[10px] outline-none focus:ring-2 focus:ring-orange-300"
+                            />
+                            <button
+                              onClick={() => handleAddReply(post.id, comment.id)}
+                              className="size-7 rounded-lg bg-orange-500 text-white flex items-center justify-center shrink-0"
+                            >
+                              <Send className="size-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
+
                 {/* Comment Input */}
-                <div className="p-4 pt-3 border-t border-muted/30 flex items-center gap-3">
+                <div className="pt-2 border-t border-muted/20 flex items-center gap-2">
                   <input
                     type="text"
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
+                    value={commentInputs[post.id] || ""}
+                    onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleAddComment(post.id)
+                      }
+                    }}
                     placeholder="댓글을 입력하세요..."
-                    className="flex-1 px-4 py-2.5 bg-muted/30 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-300/40"
+                    className="flex-1 px-3 py-2 bg-orange-50/20 border border-orange-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
                   />
-                  <button className="size-10 bg-orange-500 text-white rounded-xl flex items-center justify-center hover:bg-orange-600 transition-colors">
-                    <Send className="size-4" />
+                  <button
+                    onClick={() => handleAddComment(post.id)}
+                    className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors shrink-0"
+                  >
+                    등록
                   </button>
                 </div>
               </div>

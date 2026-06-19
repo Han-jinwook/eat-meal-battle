@@ -74,6 +74,17 @@ function generateUUID() {
   })
 }
 
+// Base64 데이터를 Blob으로 변환하는 헬퍼 함수
+function base64ToBlob(base64Data: string, contentType = "image/webp") {
+  const byteString = atob(base64Data.split(",")[1])
+  const ab = new ArrayBuffer(byteString.length)
+  const ia = new Uint8Array(ab)
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i)
+  }
+  return new Blob([ab], { type: contentType })
+}
+
 export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCalendar }: MealLogTabProps) {
   const { isLoggedIn, user } = useHub()
   const [viewerImage, setViewerImage] = useState<string | null>(null)
@@ -85,6 +96,158 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [inputGu, setInputGu] = useState("")
   const [inputDong, setInputDong] = useState("")
   const [isRegionSaving, setIsRegionSaving] = useState(false)
+
+  // 댓글 및 대댓글 관련 상태
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
+  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
+
+  // Supabase Storage에 파일 업로드하는 함수
+  const uploadImageToStorage = async (base64Image: string): Promise<string> => {
+    if (!user?.id) throw new Error("User not logged in")
+    const supabase = createClient()
+    const blob = base64ToBlob(base64Image)
+    const fileName = `solo_${user.id}_${Date.now()}.webp`
+
+    const { data, error } = await supabase.storage
+      .from("meal-images")
+      .upload(fileName, blob, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+        upsert: false
+      })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from("meal-images")
+      .getPublicUrl(fileName)
+
+    return urlData.publicUrl
+  }
+
+  // 댓글 등록 처리 함수
+  const handleAddComment = async (mealId: any) => {
+    const inputContent = commentInputs[mealId]?.trim()
+    if (!inputContent) return
+
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const newCommentId = generateUUID()
+      const newComment = {
+        id: newCommentId,
+        meal_id: mealId,
+        user_id: user.id,
+        content: inputContent,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_deleted: false
+      }
+
+      const { error } = await supabase.from("comments").insert(newComment)
+      if (error) throw error
+
+      setMealLogs(prev => prev.map(log => {
+        if (log.id === mealId) {
+          const updatedComments = [
+            ...(log.comments || []),
+            {
+              id: newCommentId,
+              userId: user.id,
+              author: user.nickname || "나",
+              avatar: user.profile_image || "",
+              content: inputContent,
+              createdAt: new Date().toLocaleDateString("ko-KR"),
+              likes: 0,
+              isLiked: false,
+              replies: []
+            }
+          ]
+          const firstComment = updatedComments.find(c => c.userId === log.uploaded_by)
+          return {
+            ...log,
+            description: firstComment?.content || log.description,
+            comments: updatedComments
+          }
+        }
+        return log
+      }))
+
+      setCommentInputs(prev => ({ ...prev, [mealId]: "" }))
+      toast.success("댓글이 등록되었습니다.")
+    } catch (err) {
+      console.error("Failed to add comment:", err)
+      toast.error("댓글 등록에 실패했습니다.")
+    }
+  }
+
+  // 대댓글(답글) 등록 처리 함수
+  const handleAddReply = async (mealId: any, commentId: string) => {
+    const inputContent = replyInputs[commentId]?.trim()
+    if (!inputContent) return
+
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const newReplyId = generateUUID()
+      const newReply = {
+        id: newReplyId,
+        comment_id: commentId,
+        user_id: user.id,
+        content: inputContent,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_deleted: false
+      }
+
+      const { error } = await supabase.from("comment_replies").insert(newReply)
+      if (error) throw error
+
+      setMealLogs(prev => prev.map(log => {
+        if (log.id === mealId) {
+          const updatedComments = (log.comments || []).map((c: any) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                replies: [
+                  ...(c.replies || []),
+                  {
+                    id: newReplyId,
+                    userId: user.id,
+                    author: user.nickname || "나",
+                    avatar: user.profile_image || "",
+                    content: inputContent,
+                    createdAt: new Date().toLocaleDateString("ko-KR"),
+                    likes: 0,
+                    isLiked: false
+                  }
+                ]
+              }
+            }
+            return c
+          })
+          return { ...log, comments: updatedComments }
+        }
+        return log
+      }))
+
+      setReplyInputs(prev => ({ ...prev, [commentId]: "" }))
+      setActiveReplyTarget(null)
+      toast.success("답글이 등록되었습니다.")
+    } catch (err) {
+      console.error("Failed to add reply:", err)
+      toast.error("답글 등록에 실패했습니다.")
+    }
+  }
 
   const handleSaveRegionAndUpload = async () => {
     if (!inputCity.trim() || !inputGu.trim() || !inputDong.trim()) {
@@ -133,30 +296,173 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load initial logs from localStorage
+  // DB에서 식사 및 댓글 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem("whateat_meal_logs")
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        // Filter out any stale default logs with ID 1, 2, or 3
-        const filtered = parsed.filter((log: any) => log.id !== 1 && log.id !== 2 && log.id !== 3)
-        setMealLogs(filtered)
-      } catch (e) {
-        console.error("Failed to parse saved meal logs", e)
+    const fetchDbLogs = async () => {
+      if (!isLoggedIn || !user?.id) {
+        // 비로그인이면 기본 샘플 3개 표시
+        setMealLogs(defaultMealLogs)
+        setIsLoaded(true)
+        return
       }
-    } else {
-      localStorage.setItem("whateat_meal_logs", JSON.stringify([]))
-    }
-    setIsLoaded(true)
-  }, [])
 
-  // Save logs to localStorage on changes
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("whateat_meal_logs", JSON.stringify(mealLogs))
+      try {
+        const supabase = createClient()
+        // 1. meal_images 조회
+        const { data: imgData, error: imgError } = await supabase
+          .from("meal_images")
+          .select("*")
+          .eq("uploaded_by", user.id)
+          .order("created_at", { ascending: false })
+
+        if (imgError) throw imgError
+
+        if (!imgData || imgData.length === 0) {
+          setMealLogs(defaultMealLogs)
+          setIsLoaded(true)
+          return
+        }
+
+        const mealIds = imgData.map(img => img.id)
+
+        // 2. comments 및 대댓글 조회
+        let dbComments: any[] = []
+        let dbCommentUsers: any[] = []
+        let dbReplies: any[] = []
+        if (mealIds.length > 0) {
+          const { data: commentsData } = await supabase
+            .from("comments")
+            .select("*")
+            .in("meal_id", mealIds)
+            .eq("is_deleted", false)
+            .order("created_at", { ascending: true })
+          dbComments = commentsData || []
+
+          const commentIds = dbComments.map(c => c.id)
+          if (commentIds.length > 0) {
+            const { data: repliesData } = await supabase
+              .from("comment_replies")
+              .select("*")
+              .in("comment_id", commentIds)
+              .eq("is_deleted", false)
+              .order("created_at", { ascending: true })
+            dbReplies = repliesData || []
+          }
+
+          const commentUserIds = Array.from(new Set([
+            ...dbComments.map(c => c.user_id),
+            ...dbReplies.map(r => r.user_id)
+          ].filter(Boolean)))
+
+          if (commentUserIds.length > 0) {
+            const { data: usersData } = await supabase
+              .from("users")
+              .select("id, nickname, profile_image")
+              .in("id", commentUserIds)
+            dbCommentUsers = usersData || []
+          }
+        }
+        const commentUserMap = new Map(dbCommentUsers.map(u => [u.id, u]))
+
+        // Map replies by comment_id
+        const repliesMap = new Map<string, any[]>()
+        dbReplies.forEach(r => {
+          const arr = repliesMap.get(r.comment_id) || []
+          const rUser = commentUserMap.get(r.user_id)
+          arr.push({
+            id: r.id,
+            userId: r.user_id,
+            author: rUser?.nickname || (r.user_id === user.id ? (user.nickname || "나") : "익명 회원"),
+            avatar: rUser?.profile_image || "",
+            content: r.content,
+            createdAt: new Date(r.created_at).toLocaleDateString("ko-KR"),
+            likes: 0,
+            isLiked: false
+          })
+          repliesMap.set(r.comment_id, arr)
+        })
+
+        // Map comments by meal_id
+        const commentsMap = new Map<string, any[]>()
+        dbComments.forEach(c => {
+          const arr = commentsMap.get(c.meal_id) || []
+          const cUser = commentUserMap.get(c.user_id)
+          arr.push({
+            id: c.id,
+            userId: c.user_id,
+            author: cUser?.nickname || (c.user_id === user.id ? (user.nickname || "나") : "익명 회원"),
+            avatar: cUser?.profile_image || "",
+            content: c.content,
+            createdAt: new Date(c.created_at).toLocaleDateString("ko-KR"),
+            likes: 0,
+            isLiked: false,
+            replies: repliesMap.get(c.id) || []
+          })
+          commentsMap.set(c.meal_id, arr)
+        })
+
+        // 3. mealLogs 매핑
+        const mappedLogs = imgData.map((img: any) => {
+          let meta: any = {}
+          try {
+            meta = img.explanation ? JSON.parse(img.explanation) : {}
+          } catch (e) {
+            meta = { title: img.explanation || "식사" }
+          }
+
+          let mappedType: "집밥" | "배달" | "외식" = "집밥"
+          const rawType = img.meal_type || meta.mealType || ""
+          if (rawType === "집밥" || rawType === "homemade") {
+            mappedType = "집밥"
+          } else if (rawType === "배달" || rawType === "delivery") {
+            mappedType = "배달"
+          } else if (rawType === "외식" || rawType === "dineout") {
+            mappedType = "외식"
+          }
+
+          // Format Date YYYY. MM. DD
+          const formattedDate = img.created_at 
+            ? new Date(img.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "").slice(0, -1)
+            : new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\s/g, "").slice(0, -1)
+
+          // 해당 meal의 comments 목록
+          const cardComments = commentsMap.get(img.id) || []
+          // 이 식사 작성자가 남긴 첫 번째 댓글을 description(메모)으로 사용하도록 함
+          const firstComment = cardComments.find(c => c.userId === img.uploaded_by)
+          const displayDescription = img.description || meta.description || firstComment?.content || ""
+
+          return {
+            id: img.id, // UUID
+            date: formattedDate,
+            type: mappedType,
+            title: img.title || meta.title || "맛있는 식사",
+            image: img.image_url || "/images/placeholder-food.jpg",
+            rating: img.rating || meta.rating || 5,
+            tips: meta.tips || [],
+            tipTitle: mappedType === "집밥" ? "조리 팁" : "추천 메뉴",
+            linkUrl: img.link_url || meta.linkUrl || "",
+            linkThumbnail: img.link_thumbnail || meta.linkThumbnail || "",
+            placeName: img.place_name || meta.placeName || "",
+            aiTag: img.source === "solo-5star" || img.source === "solo",
+            healthy: mappedType === "집밥",
+            status: img.status,
+            description: displayDescription,
+            comments: cardComments
+          }
+        })
+
+        setMealLogs(mappedLogs)
+      } catch (err) {
+        console.error("Failed to load logs from Supabase:", err)
+        toast.error("식사 기록을 불러오는데 실패했습니다.")
+        setMealLogs(defaultMealLogs)
+      } finally {
+        setIsLoaded(true)
+      }
     }
-  }, [mealLogs, isLoaded])
+
+    fetchDbLogs()
+  }, [isLoggedIn, user?.id])
 
 
 
@@ -180,8 +486,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       linkThumbnail: data.linkThumbnail || ""
     }
 
-    // Generate supabaseId if not already present on local log
-    const uuid = (data as any).supabaseId || generateUUID()
+    // Generate supabaseId if not already present
+    const uuid = data.id || (data as any).supabaseId || generateUUID()
 
     const { error } = await supabase.from("meal_images").upsert({
       id: uuid,
@@ -190,13 +496,52 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       explanation: JSON.stringify(metadata),
       source: "solo-5star",
       status: "approved",
+      title: data.menuName,
+      rating: data.rating || 5,
+      meal_type: data.mealType,
+      link_url: data.linkUrl || "",
+      link_thumbnail: data.linkThumbnail || "",
+      place_name: data.place?.name || data.deliveryStoreName || "",
+      place_address: data.place?.address || "",
+      description: data.description || ""
     })
 
     if (error) {
       throw error
     }
     console.log("Successfully uploaded 5-star meal to Supabase!")
-    
+
+    // comments 테이블에 첫 댓글로 저장
+    if (data.description) {
+      const { data: existingComments } = await supabase
+        .from("comments")
+        .select("id")
+        .eq("meal_id", uuid)
+        .eq("user_id", user.id)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: true })
+
+      if (existingComments && existingComments.length > 0) {
+        await supabase
+          .from("comments")
+          .update({
+            content: data.description,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingComments[0].id)
+      } else {
+        await supabase.from("comments").insert({
+          id: generateUUID(),
+          meal_id: uuid,
+          user_id: user.id,
+          content: data.description,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        })
+      }
+    }
+
     // 로컬 로그에 supabaseId 필드 업데이트 처리
     setMealLogs((logs) =>
       logs.map((log) => (log.id === data.id ? { ...log, supabaseId: uuid } : log))
@@ -402,16 +747,67 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     return displayLogs.filter((log) => log.type === optionId).length
   }
 
-  const handleRatingChange = async (mealId: number, newRating: number) => {
-    const updatedLogs = mealLogs.map(log => 
-      log.id === mealId ? { ...log, rating: newRating } : log
-    )
-    setMealLogs(updatedLogs)
-    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+  const handleRatingChange = async (mealId: any, newRating: number) => {
+    if (mealId === 1 || mealId === 2 || mealId === 3) {
+      return
+    }
 
-    const targetLog = updatedLogs.find(log => log.id === mealId)
-    if (targetLog && newRating === 5) {
-      try {
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      
+      const targetLog = mealLogs.find(log => log.id === mealId)
+      if (!targetLog) return
+
+      let status = "pending"
+      let source = "solo"
+      if (newRating === 5) {
+        const pref = localStorage.getItem("whateat_auto_share_5star")
+        if (pref === "approved") {
+          status = "approved"
+          source = "solo-5star"
+        } else {
+          status = "pending"
+          source = "solo-5star"
+        }
+      }
+
+      const metadata = {
+        title: targetLog.title,
+        mealType: targetLog.type,
+        rating: newRating,
+        tips: targetLog.tips || [],
+        placeName: targetLog.placeName || "",
+        linkUrl: targetLog.linkUrl || "",
+        linkThumbnail: targetLog.linkThumbnail || "",
+        description: targetLog.description || "",
+        promotedAt: status === "approved" ? new Date().toISOString() : undefined
+      }
+
+      const { error } = await supabase
+        .from("meal_images")
+        .update({
+          rating: newRating,
+          status: status,
+          source: source,
+          explanation: JSON.stringify(metadata)
+        })
+        .eq("id", mealId)
+        .eq("uploaded_by", user.id)
+
+      if (error) throw error
+
+      setMealLogs(prev => prev.map(log => 
+        log.id === mealId ? { ...log, rating: newRating, status: status } : log
+      ))
+
+      toast.success("평점이 변경되었습니다.")
+
+      if (newRating === 5) {
         await checkConsentAndUpload({
           id: targetLog.id,
           mealType: targetLog.type,
@@ -421,17 +817,16 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           linkUrl: targetLog.linkUrl,
           description: targetLog.description,
           image: targetLog.image,
-          supabaseId: targetLog.supabaseId,
+          supabaseId: targetLog.id
         }, targetLog.image)
-      } catch (err) {
-        console.error("Failed to upload 5-star meal on rating change", err)
       }
+    } catch (err) {
+      console.error("Failed to update rating on Supabase:", err)
+      toast.error("평점 저장에 실패했습니다.")
     }
-
-
   }
 
-  const handleDeleteClick = (mealId: number) => {
+  const handleDeleteClick = async (mealId: any) => {
     if (mealId === 1 || mealId === 2 || mealId === 3) {
       toast("식사를 등록하면 샘플은 바로 사라집니다.", {
         icon: "💡",
@@ -440,12 +835,38 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
-    const updatedLogs = mealLogs.filter((log) => log.id !== mealId)
-    setMealLogs(updatedLogs)
-    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      
+      const { error: commentError } = await supabase
+        .from("comments")
+        .delete()
+        .eq("meal_id", mealId)
+
+      if (commentError) console.warn("Failed to delete comments for meal:", commentError)
+
+      const { error: mealError } = await supabase
+        .from("meal_images")
+        .delete()
+        .eq("id", mealId)
+        .eq("uploaded_by", user.id)
+
+      if (mealError) throw mealError
+
+      setMealLogs(prev => prev.filter(log => log.id !== mealId))
+      toast.success("식사 기록이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete meal from Supabase:", err)
+      toast.error("식사 기록 삭제에 실패했습니다.")
+    }
   }
 
-  const handleEditClick = (meal: typeof defaultMealLogs[0]) => {
+  const handleEditClick = (meal: any) => {
     const editData: MealLogData = {
       id: meal.id,
       date: toIsoDate(parseDateString(meal.date)),
@@ -467,70 +888,158 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
-    let finalImageUrl = data.image || "/images/placeholder-food.jpg"
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
 
-    let updatedLogs: any[]
-    if (data.id) {
-      updatedLogs = mealLogs.map(log =>
-        log.id === data.id
-          ? {
-              ...log,
-              date: data.date ? toDisplayDate(data.date) : log.date,
-              title: data.menuName,
-              type: data.mealType,
-              tips: data.recipe?.split("\n").filter(t => t.trim()) || log.tips,
-              linkUrl: data.linkUrl || log.linkUrl,
-              image: finalImageUrl,
-              rating: data.rating ?? log.rating,
-              description: data.description ?? log.description,
-            }
-          : log
-      )
-    } else {
-      const newLog = {
-        id: Date.now(),
-        date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
+    try {
+      let finalImageUrl = data.image || "/images/placeholder-food.jpg"
+
+      if (data.image && data.image.startsWith("data:image")) {
+        const uploadToast = toast.loading("이미지를 업로드하고 있어요...")
+        try {
+          finalImageUrl = await uploadImageToStorage(data.image)
+          toast.dismiss(uploadToast)
+        } catch (uploadErr) {
+          toast.dismiss(uploadToast)
+          console.error("Image upload failed:", uploadErr)
+          toast.error("이미지 업로드에 실패했습니다. 기본 이미지로 진행합니다.")
+          finalImageUrl = "/images/placeholder-food.jpg"
+        }
+      }
+
+      const mealUuid = data.id || generateUUID()
+      const rating = data.rating || 0
+      let status = "pending"
+      let source = "solo"
+
+      if (rating === 5) {
+        const pref = localStorage.getItem("whateat_auto_share_5star")
+        if (pref === "approved") {
+          status = "approved"
+          source = "solo-5star"
+        } else {
+          status = "pending"
+          source = "solo-5star"
+        }
+      }
+
+      const metadata = {
+        title: data.menuName,
+        mealType: data.mealType,
+        rating: rating,
+        tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+        placeName: data.place?.name || data.deliveryStoreName || (data.linkUrl ? "식사 공유 상세" : ""),
+        placeAddress: data.place?.address || "",
+        description: data.description || "",
+        promotedAt: status === "approved" ? new Date().toISOString() : undefined,
+        linkUrl: data.linkUrl || "",
+        linkThumbnail: data.linkThumbnail || ""
+      }
+
+      const supabase = createClient()
+      const { error: mealError } = await supabase.from("meal_images").upsert({
+        id: mealUuid,
+        image_url: finalImageUrl,
+        uploaded_by: user.id,
+        explanation: JSON.stringify(metadata),
+        source: source,
+        status: status,
+        title: data.menuName,
+        rating: rating,
+        meal_type: data.mealType,
+        link_url: data.linkUrl || "",
+        link_thumbnail: data.linkThumbnail || "",
+        place_name: data.place?.name || data.deliveryStoreName || "",
+        place_address: data.place?.address || "",
+        description: data.description || ""
+      })
+
+      if (mealError) throw mealError
+
+      if (data.description !== undefined) {
+        const { data: existingComments } = await supabase
+          .from("comments")
+          .select("id")
+          .eq("meal_id", mealUuid)
+          .eq("user_id", user.id)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: true })
+
+        if (existingComments && existingComments.length > 0) {
+          const firstCommentId = existingComments[0].id
+          await supabase
+            .from("comments")
+            .update({
+              content: data.description,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", firstCommentId)
+        } else {
+          await supabase.from("comments").insert({
+            id: generateUUID(),
+            meal_id: mealUuid,
+            user_id: user.id,
+            content: data.description,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_deleted: false
+          })
+        }
+      }
+
+      toast.success(data.id ? "식사 기록이 수정되었습니다." : "식사 기록이 저장되었습니다.")
+
+      const formattedDate = data.date 
+        ? toDisplayDate(data.date) 
+        : toDisplayDate(toIsoDate(new Date()))
+
+      const updatedLog = {
+        id: mealUuid,
+        date: formattedDate,
         title: data.menuName,
         type: data.mealType,
         image: finalImageUrl,
-        rating: data.rating || 0,
+        rating: rating,
         tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
         tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
-        linkUrl: data.linkUrl,
-        description: data.description,
-        aiTag: !!data.image,
+        linkUrl: data.linkUrl || "",
+        linkThumbnail: data.linkThumbnail || "",
+        placeName: data.place?.name || data.deliveryStoreName || "",
+        aiTag: true,
         healthy: data.mealType === "집밥",
+        status: status,
+        description: data.description || "",
+        comments: []
       }
-      updatedLogs = [newLog, ...mealLogs]
-    }
 
-    setMealLogs(updatedLogs)
-    localStorage.setItem("whateat_meal_logs", JSON.stringify(updatedLogs))
+      if (data.id) {
+        setMealLogs(prev => prev.map(log => log.id === data.id ? { ...updatedLog, comments: log.comments } : log))
+      } else {
+        setMealLogs(prev => [updatedLog, ...prev])
+      }
 
-    // 2. 만약 평점이 5점이고 로그인이 되어 있다면 Supabase에 공유/업로드
-    const savedLog = data.id ? updatedLogs.find(l => l.id === data.id) : updatedLogs[0]
-    if (savedLog && savedLog.rating === 5) {
-      try {
+      if (rating === 5) {
         await checkConsentAndUpload({
-          id: savedLog.id,
-          mealType: savedLog.type,
-          menuName: savedLog.title,
+          id: mealUuid,
+          mealType: data.mealType,
+          menuName: data.menuName,
           rating: 5,
-          recipe: savedLog.tips?.join("\n"),
-          linkUrl: savedLog.linkUrl,
-          description: savedLog.description,
-          image: savedLog.image,
-          supabaseId: savedLog.supabaseId,
-        }, savedLog.image)
-      } catch (err) {
-        console.error("Failed to upload 5-star meal to Supabase", err)
+          recipe: data.recipe,
+          linkUrl: data.linkUrl,
+          description: data.description,
+          image: finalImageUrl,
+          supabaseId: mealUuid
+        }, finalImageUrl)
       }
+
+      setEditModalOpen(false)
+      setEditingMeal(null)
+    } catch (err) {
+      console.error("Failed to save meal on Supabase:", err)
+      toast.error("식사 기록 저장에 실패했습니다.")
     }
-
-
-
-    setEditModalOpen(false)
-    setEditingMeal(null)
   }
 
   return (
@@ -866,31 +1375,112 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </div>
               </div>
               <h3 className="font-bold text-foreground text-lg mb-2">{meal.title}</h3>
-              {/* Memo Section */}
-              {meal.description ? (
-                <button
-                  onClick={() => setExpandedMemoId(expandedMemoId === meal.id ? null : meal.id)}
-                  data-memo-box={meal.id}
-                  className="w-full text-left bg-gray-50/50 p-3 rounded-xl border border-muted/50 hover:border-primary/30 hover:bg-white transition-all"
-                >
-                  <p
-                    className={cn(
-                      "text-[13px] leading-[22px] text-muted-foreground",
-                      expandedMemoId === meal.id ? "line-clamp-none" : "line-clamp-3"
-                    )}
+              {/* Comment Section (기존 Memo Section 전면 대체) */}
+              <div className="mt-4 pt-3 border-t border-muted/30">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <MessageSquare className="size-3.5 text-orange-500" />
+                  <span className="text-xs font-bold text-foreground">댓글</span>
+                  <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
+                    {(meal.comments || []).length}
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {(meal.comments || []).length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">아직 댓글이 없어요. 첫 댓글(메모)을 남겨보세요.</p>
+                  ) : (
+                    (meal.comments || []).map((comment: any) => (
+                      <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-foreground">{comment.author}</span>
+                          <span className="text-[9px] text-muted-foreground">{comment.createdAt}</span>
+                        </div>
+                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+
+                        <div className="flex items-center gap-3 mt-2">
+                          <button
+                            onClick={() => {
+                              const isSameTarget =
+                                activeReplyTarget?.mealId === meal.id &&
+                                activeReplyTarget.commentId === comment.id
+
+                              if (isSameTarget) {
+                                setActiveReplyTarget(null)
+                                return
+                              }
+                              setActiveReplyTarget({ mealId: meal.id, commentId: comment.id })
+                            }}
+                            className="text-[10px] text-orange-500 font-bold hover:underline"
+                          >
+                            답글 쓰기
+                          </button>
+                        </div>
+
+                        {/* 대댓글(답글) 리스트 */}
+                        {(comment.replies || []).length > 0 && (
+                          <div className="mt-2 pl-2 border-l-2 border-orange-200 space-y-1.5">
+                            {(comment.replies || []).map((reply: any) => (
+                              <div key={reply.id} className="bg-white/70 rounded-lg px-2 py-1.5 border border-orange-50">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[9px] font-bold text-foreground">{reply.author}</span>
+                                  <span className="text-[8px] text-muted-foreground">{reply.createdAt}</span>
+                                </div>
+                                <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 대댓글 입력창 */}
+                        {activeReplyTarget?.mealId === meal.id && activeReplyTarget.commentId === comment.id && (
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={replyInputs[comment.id] || ""}
+                              onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleAddReply(meal.id, comment.id)
+                                }
+                              }}
+                              placeholder="답글을 입력하세요"
+                              className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-[10px] outline-none focus:ring-2 focus:ring-orange-300"
+                            />
+                            <button
+                              onClick={() => handleAddReply(meal.id, comment.id)}
+                              className="px-2.5 py-1 rounded-lg bg-orange-500 text-white flex items-center justify-center text-[10px] font-bold"
+                            >
+                              전송
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* 댓글 입력창 */}
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={commentInputs[meal.id] || ""}
+                    onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleAddComment(meal.id)
+                      }
+                    }}
+                    placeholder="댓글을 입력해 메모를 추가하거나 소통해 보세요"
+                    className="flex-1 px-3 py-2 bg-orange-50/20 border border-orange-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
+                  />
+                  <button
+                    onClick={() => handleAddComment(meal.id)}
+                    className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors"
                   >
-                    {meal.description}
-                  </p>
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleEditClick(meal)}
-                  className="w-full py-3 flex items-center justify-center gap-2 text-muted-foreground/50 hover:text-muted-foreground bg-gray-50/50 rounded-xl border border-dashed border-muted/50 hover:border-primary/30 transition-all"
-                >
-                  <MessageSquare className="size-4" />
-                  <span className="text-sm">메모 추가하기</span>
-                </button>
-              )}
+                    등록
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ))}

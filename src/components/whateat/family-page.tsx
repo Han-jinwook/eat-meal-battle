@@ -550,16 +550,18 @@ export function FamilyPage() {
         return
       }
 
-      // Extract mealMenuIds
+      // Extract mealMenuIds and mealImageIds (both can be targets for comments)
       const mealMenuIds = imgData.map(img => img.meal_id).filter(Boolean)
+      const mealImageIds = imgData.map(img => img.id).filter(Boolean)
+      const allTargetIds = Array.from(new Set([...mealMenuIds, ...mealImageIds]))
 
-      // 2. Fetch comments for these mealMenuIds
+      // 2. Fetch comments for these target IDs
       let allComments: any[] = []
-      if (mealMenuIds.length > 0) {
+      if (allTargetIds.length > 0) {
         const { data: commentsData } = await supabase
           .from('comments')
           .select('*')
-          .in('meal_id', mealMenuIds)
+          .in('meal_id', allTargetIds)
           .eq('is_deleted', false)
         allComments = commentsData || []
       }
@@ -642,7 +644,7 @@ export function FamilyPage() {
         const imgId = img.id
 
         const mealCommentsList = allComments
-          .filter(c => c.meal_id === mealMenuId)
+          .filter(c => c.meal_id === mealMenuId || c.meal_id === imgId)
           .map(c => {
             const u = userMap.get(c.user_id)
             const cAuthor = c.user_id === user?.id ? "나" : (u?.nickname || "가족")
