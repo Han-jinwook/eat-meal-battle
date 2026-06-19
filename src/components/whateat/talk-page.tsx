@@ -12,11 +12,13 @@ import {
   Search,
   ArrowUpDown,
   X,
-  Send
+  Send,
+  ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { ImageViewer } from "@/components/whateat/image-viewer"
 
 // 타입 정의
 interface TalkPost {
@@ -53,6 +55,8 @@ interface TalkPost {
   // 집밥만 구독 가능
   isSubscribed?: boolean
   isSample?: boolean
+  linkUrl?: string
+  linkThumbnail?: string
 }
 
 interface Comment {
@@ -84,7 +88,9 @@ const dummyPosts: TalkPost[] = [
     likes: 12,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false
+    isSubscribed: false,
+    linkUrl: "https://map.naver.com",
+    linkThumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&fit=crop"
   },
   {
     id: 2,
@@ -99,7 +105,9 @@ const dummyPosts: TalkPost[] = [
     likes: 24,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false
+    isSubscribed: false,
+    linkUrl: "https://www.10000recipe.com",
+    linkThumbnail: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&fit=crop"
   },
   {
     id: 3,
@@ -115,54 +123,9 @@ const dummyPosts: TalkPost[] = [
     likes: 15,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false
-  },
-  {
-    id: 4,
-    type: "dineout",
-    title: "달콤 쌉싸름함의 극치! 프리미엄 수제 녹차 빙수 🍧",
-    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&fit=crop",
-    description: "제주도 말차 가루를 아낌없이 뿌린 수제 우유 빙수예요. 팥도 매장에서 직접 졸였다고 하는데 과하게 달지 않고 쌉싸름한 녹차와 부드러운 우유 얼음 조화가 정말 대박입니다. 쫄깃한 녹차 찰떡 고명까지 완벽한 웰빙 디저트예요!",
-    region: { dong: "역삼동", gu: "강남구", city: "서울" },
-    restaurant: { name: "설빙 강남역삼점", address: "서울 강남구 테헤란로 123" },
-    author: { id: 104, nickname: "디저트 매니아", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face", region: "역삼동" },
-    createdAt: "5시간 전",
-    rating: { average: 5.0, count: 29 },
-    likes: 31,
-    isLiked: false,
-    commentCount: 2,
-    isSubscribed: false
-  },
-  {
-    id: 5,
-    type: "homemade",
-    title: "바삭바삭 소리까지 맛있는 청라동 수제 돈까스 🍛",
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&fit=crop",
-    description: "집에서 직접 빵가루 묻혀 튀겨낸 겉바속촉 등심 돈까스예요! 시판 소스에 양파와 버섯을 볶아 얹었더니 사 먹는 것보다 훨씬 맛있네요. 아이들도 정말 잘 먹고, 집밥 느낌 물씬 나는 든든한 저녁이었습니다. 😋",
-    region: { dong: "청라동", gu: "서구", city: "인천" },
-    author: { id: 105, nickname: "청라 집밥러", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face", region: "청라동" },
-    createdAt: "6시간 전",
-    rating: { average: 4.9, count: 12 },
-    likes: 18,
-    isLiked: false,
-    commentCount: 2,
-    isSubscribed: false
-  },
-  {
-    id: 6,
-    type: "delivery",
-    title: "치즈 쭈욱 늘어나는 청라 인생 피자 배달 🍕",
-    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&fit=crop",
-    description: "주말 저녁엔 역시 피자 배달이죠! 청라동에 새로 생긴 피자집인데 토핑도 정말 아낌없이 풍성하게 올라가고 도우가 끝내주게 쫄깃해요. 갈릭 소스에 푹 찍어 맥주와 곁들이면 스트레스가 싹 풀려요! 🍕🍺",
-    region: { dong: "청라동", gu: "서구", city: "인천" },
-    restaurant: { name: "인생 피자 청라점", address: "인천 서구 청라라임로 100" },
-    author: { id: 106, nickname: "청라 배달요정", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face", region: "청라동" },
-    createdAt: "7시간 전",
-    rating: { average: 4.8, count: 15 },
-    likes: 14,
-    isLiked: false,
-    commentCount: 2,
-    isSubscribed: false
+    isSubscribed: false,
+    linkUrl: "https://map.naver.com",
+    linkThumbnail: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=100&fit=crop"
   }
 ]
 
@@ -322,6 +285,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
   const [userRegion, setUserRegion] = useState<string>("청라동") // 사용자 기본 지역
+  const [viewerImage, setViewerImage] = useState<string | null>(null) // 이미지 뷰어 상태 추가
   const [userAddressState, setUserAddressState] = useState<{
     city: string
     gu: string
@@ -512,7 +476,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             isLiked: false,
             commentCount: 0,
             isSubscribed: false,
-            isSample: false
+            isSample: false,
+            linkUrl: meta.linkUrl || "",
+            linkThumbnail: meta.linkThumbnail || ""
           }
         })
 
@@ -956,29 +922,74 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               </div>
             </div>
 
-            {/* Image */}
-            <div className="relative aspect-[4/3] bg-muted/20 overflow-hidden">
-              {post.image ? (
-                <img 
-                  src={post.image} 
-                  alt={post.title} 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : null}
-              {post.restaurant && (
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2">
-                  <span className="font-bold text-white text-sm">{post.restaurant.name}</span>
-                </div>
-              )}
-            </div>
+            {/* Card Content (flex h-[200px] 구조) */}
+            <div className="flex h-[200px] border-y border-muted/20">
+              {/* Left Section: 요리 대표 사진 */}
+              <div
+                className="w-1/2 relative overflow-hidden cursor-zoom-in"
+                onClick={() => setViewerImage(post.image)}
+              >
+                {post.image ? (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                    style={{ backgroundImage: `url("${post.image}")` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-muted/20" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                
+                {post.restaurant && (
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 z-10">
+                    <span className="font-bold text-white text-[10px]">{post.restaurant.name}</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Content */}
-            <div className="p-4">
-              <h3 className="font-bold text-foreground mb-1">{post.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{post.description}</p>
+              {/* Right Section: 레시피 썸네일 or 텍스트 설명 */}
+              <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
+                {post.linkUrl && post.linkThumbnail ? (
+                  <a
+                    href={post.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-full relative group overflow-hidden"
+                  >
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                      style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
+                    />
+                    <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
+                      {(post.type === "외식" || post.type === "배달") ? (
+                        <>
+                          <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
+                            <span className="text-white text-[7px] font-black">N</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-foreground">Place</span>
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="size-3 text-orange-500" />
+                          <span className="text-[10px] font-bold text-foreground">recipe</span>
+                        </>
+                      )}
+                    </div>
+                  </a>
+                ) : (
+                  <div className="p-4 flex flex-col justify-between h-full w-full">
+                    <div className="overflow-hidden">
+                      <h4 className="font-bold text-xs text-foreground mb-1 line-clamp-1">{post.title}</h4>
+                      <p className="text-[11px] text-muted-foreground leading-normal line-clamp-4">{post.description}</p>
+                    </div>
+                    {/* 평점 표시 */}
+                    <div className="text-[10px] font-bold text-orange-500 flex items-center gap-1 mt-1">
+                      <Star className="size-3 fill-orange-400 text-orange-400" />
+                      {post.rating.average.toFixed(1)} ({post.rating.count}명)
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Stats & Actions */}
@@ -1079,6 +1090,12 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           </button>
         </div>
       )}
+
+      <ImageViewer
+        src={viewerImage ?? ""}
+        isOpen={viewerImage !== null}
+        onClose={() => setViewerImage(null)}
+      />
     </div>
   )
 }

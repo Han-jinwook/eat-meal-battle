@@ -175,7 +175,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       placeName: data.place?.name || data.deliveryStoreName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
       placeAddress: data.place?.address || "",
       description: data.description || data.recipe || "",
-      promotedAt: new Date().toISOString() // 맛톡 승격 시점의 일시 저장
+      promotedAt: new Date().toISOString(), // 맛톡 승격 시점의 일시 저장
+      linkUrl: data.linkUrl || "",
+      linkThumbnail: data.linkThumbnail || ""
     }
 
     // Generate supabaseId if not already present on local log
