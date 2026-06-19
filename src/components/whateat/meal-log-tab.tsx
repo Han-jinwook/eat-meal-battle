@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2 } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
@@ -599,6 +599,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
   const [expandedMemoId, setExpandedMemoId] = useState<number | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [soloCommentLikes, setSoloCommentLikes] = useState<Record<string, boolean>>({})
   const [editingMeal, setEditingMeal] = useState<MealLogData | null>(null)
   const [mealTypeFilter, setMealTypeFilter] = useState("전체")
   const [searchQuery, setSearchQuery] = useState("")
@@ -1399,6 +1400,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
                         <div className="flex items-center gap-3 mt-2">
                           <button
+                            onClick={() => setSoloCommentLikes(prev => ({ ...prev, [String(comment.id)]: !prev[String(comment.id)] }))}
+                            className="text-[11px] text-muted-foreground flex items-center gap-1"
+                          >
+                            <Heart className={cn("size-3.5", soloCommentLikes[String(comment.id)] && "fill-orange-500 text-orange-500")} />
+                            {soloCommentLikes[String(comment.id)] ? 1 : 0}
+                          </button>
+                          <button
                             onClick={() => {
                               const isSameTarget =
                                 activeReplyTarget?.mealId === meal.id &&
@@ -1410,9 +1418,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                               }
                               setActiveReplyTarget({ mealId: meal.id, commentId: comment.id })
                             }}
-                            className="text-[10px] text-orange-500 font-bold hover:underline"
+                            className="text-[11px] text-muted-foreground"
                           >
-                            답글 쓰기
+                            답글
                           </button>
                         </div>
 
@@ -1459,7 +1467,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   )}
                 </div>
 
-                {/* 댓글 입력창 */}
+                {/* 댓글 입력창 - 패밀리 스타일 통일 */}
                 <div className="mt-3 flex items-center gap-2">
                   <input
                     type="text"
@@ -1471,13 +1479,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                       }
                     }}
                     placeholder="댓글을 입력해 메모를 추가하거나 소통해 보세요"
-                    className="flex-1 px-3 py-2 bg-orange-50/20 border border-orange-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
+                    className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
                   />
                   <button
                     onClick={() => handleAddComment(meal.id)}
-                    className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors"
+                    className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
                   >
-                    등록
+                    <Send className="size-4" />
                   </button>
                 </div>
               </div>

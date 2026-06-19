@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
+import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 
 export interface FamilyMember {
   id: number
@@ -261,7 +262,7 @@ function generateUUID() {
   })
 }
 
-export function FamilyPage() {
+export function FamilyPage({ activeMainTab = "log" }: { activeMainTab?: "log" | "reservation" | "calendar" }) {
   const { isLoggedIn, user } = useHub()
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
@@ -394,7 +395,6 @@ export function FamilyPage() {
     }
   }, [showChefModal, members])
 
-  const [activeTab, setActiveTab] = useState<TabType>("shared")
   const [meals, setMeals] = useState<SharedMeal[]>(sharedMeals)
   const [vote, setVote] = useState<ActiveVote | null>(activeVote)
   const [selectedMealId, setSelectedMealId] = useState<string | number | null>(null)
@@ -540,7 +540,7 @@ export function FamilyPage() {
         .from('meal_images')
         .select('*')
         .in('uploaded_by', familyUserIds)
-        .in('source', ['family-shared', 'solo-5star'])
+        .eq('source', 'family-shared')
         .order('created_at', { ascending: false })
 
       if (imgError) throw imgError
@@ -1363,11 +1363,7 @@ export function FamilyPage() {
     </>
   )
 
-  const tabs = [
-    { id: "shared" as TabType, label: "공유된 식사", icon: Share2 },
-    { id: "menu" as TabType, label: "오늘의 메뉴", icon: ChefHat },
-    { id: "vote" as TabType, label: "투표", icon: VoteIcon },
-  ]
+
 
   const handleInteraction = (e: React.MouseEvent) => {
     if (!isLoggedIn) {
@@ -1472,29 +1468,10 @@ export function FamilyPage() {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2">
-        <div className="ml-auto flex items-center gap-2">
-          {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all",
-                  activeTab === tab.id
-                    ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
-                    : "bg-white/70 text-muted-foreground hover:bg-white"
-                )}
-              >
-                <tab.icon className="size-4" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-        </div>
-      </div>
+
 
       {/* Tab Content */}
-      {activeTab === "shared" && (
+      {activeMainTab === "log" && (
         <div className="flex flex-col gap-4">
           <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
             {sharedFilterTabs.map((filterTab) => {
@@ -1534,7 +1511,7 @@ export function FamilyPage() {
               <p className="text-xs text-muted-foreground/70 mt-1">먹로그에서 가족에게 공유해보세요!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredMeals.map((meal) => {
                 const isOpen = isMealRatingOpen(meal)
                 const isExpanded = expandedMealCommentsId === meal.id
@@ -1545,47 +1522,61 @@ export function FamilyPage() {
                   <div
                     key={meal.id}
                     className={cn(
-                      "relative bg-white/80 rounded-2xl overflow-hidden border border-white shadow-md",
+                      "relative bg-white/80 rounded-[2rem] overflow-hidden border border-white shadow-md",
                       shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
                     )}
                   >
-                    {/* 샘플 리본 */}
+                    {/* 샘플 리본 - 솔로 스타일과 동일 */}
                     {meals.length === 0 && (
-                      <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-                        <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
-                          💡 SAMPLE
-                        </div>
+                      <div className="absolute top-4 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
+                        💡 SAMPLE
                       </div>
                     )}
+
+                    {/* 좌우 분할 카드 - 솔로 스타일 동일 적용 */}
                     <button
                       onClick={() => isOpen && handleOpenMealCardDetail(meal.id)}
                       className={cn(
-                        "w-full text-left",
-                        isOpen ? "hover:shadow-lg transition-shadow" : "cursor-default",
+                        "w-full text-left block",
+                        isOpen ? "hover:opacity-95 transition-opacity" : "cursor-default",
                       )}
                     >
-                      <div className="aspect-square">
-                        <img src={meal.image || "/placeholder.svg"} alt={meal.title} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="p-3">
-                        <h4 className="font-bold text-sm text-foreground truncate">{meal.title}</h4>
-                        <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                      <div className="flex h-[190px]">
+                        {/* 왼쪽: 이미지 */}
+                        <div className="w-1/2 relative overflow-hidden">
+                          <div
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                            style={{ backgroundImage: `url("${meal.image || '/placeholder.svg'}")` }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                          <div className="absolute top-3 left-3">
+                            <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
+                              {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 오른쪽: 식사 정보 */}
+                        <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col p-3 overflow-hidden">
+                          <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-3">{meal.title}</h4>
+                          <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
                             <span>{meal.sharedBy}</span>
                             {meal.mealType === "homemade" && (
-                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">홈쉐퍼</span>
+                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
                             )}
-                            <span>{meal.sharedAt}</span>
-                          </span>
-                          <span className="text-[10px] text-orange-500 font-bold flex items-center gap-1">
+                          </p>
+                          <p className="text-[9px] text-muted-foreground/70 mt-0.5">{meal.sharedAt}</p>
+                          <div className="mt-auto flex items-center gap-1 text-orange-500">
                             <Star className="size-3 fill-orange-400 text-orange-400" />
-                            {isOpen ? "별점 평가중" : averageRating.toFixed(1)}
-                          </span>
+                            <span className="text-[10px] font-bold">
+                              {isOpen ? "평가중" : averageRating.toFixed(1)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </button>
 
-                    <div className="px-3 pb-3">
+                    <div className="px-4 pb-3 pt-2">
                       <button
                         onClick={() => {
                           if (isOpen) {
@@ -1722,8 +1713,19 @@ export function FamilyPage() {
         </div>
       )}
 
-      {activeTab === "vote" && (
+      {activeMainTab === "reservation" && (
         <div className="flex flex-col gap-4">
+          {/* 투표 배지 - 먹예약 탭 상단 강조 표시 */}
+          <div className="bg-gradient-to-r from-orange-100 to-amber-50 border border-orange-200 rounded-2xl p-3.5 flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+              <VoteIcon className="size-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-black text-orange-700">🗳️ 이번주 식사 투표!</p>
+              <p className="text-[10px] text-orange-600 mt-0.5">{(vote || defaultActiveVote)?.title ?? "메뉴를 함께 정해보세요"}</p>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">진행 중인 투표</h3>
             <button 
@@ -1826,7 +1828,7 @@ export function FamilyPage() {
         </div>
       )}
 
-      {activeTab === "menu" && (
+      {activeMainTab === "reservation" && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-foreground">{"Chef's Choice"}</h3>
@@ -1923,6 +1925,13 @@ export function FamilyPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 패밀리 먹캘린더 탭 */}
+      {activeMainTab === "calendar" && (
+        <div className="flex flex-col gap-4">
+          <MealCalendarTab />
         </div>
       )}
 

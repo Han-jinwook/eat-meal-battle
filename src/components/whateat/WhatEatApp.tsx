@@ -223,6 +223,7 @@ export default function WhatEatApp() {
   }, [isLoading, isLoggedIn, bottomNavTab, hasAutoNavigated])
 
   const [activeTab, setActiveTab] = useState<"log" | "reservation" | "calendar">("log")
+  const [familyActiveTab, setFamilyActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false)
   const [logJumpRequest, setLogJumpRequest] = useState<{ date: string; key: number } | null>(null)
@@ -238,7 +239,7 @@ export default function WhatEatApp() {
 
   const renderFamilyPage = () => (
     <div className="px-5 pt-4 flex flex-col gap-5">
-      <FamilyPage />
+      <FamilyPage activeMainTab={familyActiveTab} />
       <Footer />
     </div>
   )
@@ -271,6 +272,14 @@ export default function WhatEatApp() {
                 onTabChange={handleSoloTabChange}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
+              />
+            )}
+            {bottomNavTab === "family" && (
+              <TabNavigation
+                activeTab={familyActiveTab}
+                onTabChange={setFamilyActiveTab}
+                searchQuery=""
+                onSearchChange={() => {}}
               />
             )}
             {bottomNavTab === "meal" && <div className="h-1" />}
