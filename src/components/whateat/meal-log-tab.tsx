@@ -132,7 +132,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (!inputContent) return
 
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플 데이터에는 댓글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
+      toast("샘플 데이터라 메모를 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -196,7 +196,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (!inputContent) return
 
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플 데이터에는 답글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
+      toast("샘플 데이터라 메모를 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -759,7 +759,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
   const handleRatingChange = async (mealId: any, newRating: number) => {
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플 데이터에는 별점을 남길 수 없습니다.", { icon: "💡", duration: 3000 })
+      toast("샘플 데이터라 별점을 남길 수 없습니다.", { icon: "💡", duration: 3000 })
       return
     }
 
