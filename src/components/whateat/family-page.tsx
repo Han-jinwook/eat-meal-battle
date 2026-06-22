@@ -1710,24 +1710,36 @@ export function FamilyPage({
                               </span>
                             </div>
                           ) : (
-                            <div className="flex flex-col p-3 h-full w-full">
-                              <h4 className="font-bold text-sm text-foreground leading-snug line-clamp-3">{meal.title}</h4>
-                              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                                <span>{meal.sharedBy}</span>
-                                {meal.mealType === "homemade" && (
-                                  <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
-                                )}
-                              </p>
-                              <p className="text-[9px] text-muted-foreground/70 mt-0.5">{meal.sharedAt}</p>
-                              <div className="mt-auto flex items-center gap-1 text-orange-500">
-                                <Star className="size-3 fill-orange-400 text-orange-400" />
-                                <span className="text-[10px] font-bold">
-                                  {isOpen ? "평가중" : averageRating.toFixed(1)}
-                                </span>
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
+                              <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
+                                <BookOpen className="size-5" />
                               </div>
+                              <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
+                                등록된 레시피/조리 팁이<br/>없습니다.
+                              </span>
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Card Footer: Title, Date, Average Rating */}
+                      <div className="px-5 pt-4 pb-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase flex items-center gap-1.5">
+                            {meal.sharedAt}
+                            {meal.mealType === "homemade" && (
+                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-0.5 text-orange-500">
+                            <Star className="size-4 fill-orange-400 text-orange-400" />
+                            <span className="text-xs font-bold ml-0.5">
+                              {isOpen ? "평가중" : `${averageRating.toFixed(1)} (${Object.keys(mealRatings[meal.id] || {}).length}명)`}
+                            </span>
+                          </div>
+                        </div>
+                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
+                        <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
                       </div>
                     </button>
 
