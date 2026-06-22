@@ -61,6 +61,7 @@ interface SharedMeal {
   linkUrl?: string
   linkThumbnail?: string
   placeName?: string
+  status?: string
 }
 
 interface MealReply {
@@ -271,6 +272,34 @@ function generateUUID() {
     const v = c === "x" ? r : (r & 0x3) | 0x8
     return v.toString(16)
   })
+}
+
+const getFamilyName = async (supabase: any, uploadedBy: string) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const currentUserId = session?.user?.id || uploadedBy
+
+    const { data: referralData } = await supabase
+      .from("referrals")
+      .select("referrer_id")
+      .eq("referee_id", currentUserId)
+      .maybeSingle()
+
+    const hostId = referralData?.referrer_id || currentUserId
+
+    const { data: hostUser } = await supabase
+      .from("users")
+      .select("nickname")
+      .eq("id", hostId)
+      .single()
+
+    if (hostUser?.nickname) {
+      return `${hostUser.nickname} 가족`
+    }
+  } catch (e) {
+    console.error("getFamilyName error:", e)
+  }
+  return "우리 가족"
 }
 
 export function FamilyPage({ 
@@ -796,7 +825,8 @@ export function FamilyPage({
           rawExplanation: img.explanation || '',
           linkUrl: meta.linkUrl,
           linkThumbnail: meta.linkThumbnail,
-          placeName: meta.placeName
+          placeName: meta.placeName,
+          status: img.status
         }
       })
 
@@ -999,7 +1029,7 @@ export function FamilyPage({
 
     const currentMeals = passedMeals || meals
     const targetMeal = currentMeals.find((meal) => meal.id === mealId)
-    if (!targetMeal || targetMeal.doNotPromote) {
+    if (!targetMeal || targetMeal.doNotPromote || targetMeal.status === 'approved') {
       return
     }
 
@@ -1024,6 +1054,19 @@ export function FamilyPage({
       // 맛톡 승격 일시 기록
       meta.promotedAt = new Date().toISOString()
       meta.mealType = meta.mealType || targetMeal.mealType
+
+      // 패밀리 공유 식사인 경우 가족 이름 연동 처리
+      if (!meta.familyName) {
+        const { data: imgData } = await supabase
+          .from("meal_images")
+          .select("uploaded_by")
+          .eq("id", targetMeal.id)
+          .single()
+        
+        if (imgData?.uploaded_by) {
+          meta.familyName = await getFamilyName(supabase, imgData.uploaded_by)
+        }
+      }
 
       const { error } = await supabase
         .from('meal_images')
@@ -1871,8 +1914,7 @@ export function FamilyPage({
                             </span>
                           </div>
                         </div>
-                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
-                        <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
+                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-2 truncate">{meal.title}</h3>
                       </div>
                     </button>
 

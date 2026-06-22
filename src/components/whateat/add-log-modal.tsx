@@ -46,6 +46,7 @@ interface AddLogModalProps {
   editData?: MealLogData | null
   onSave?: (data: MealLogData) => void
   onDelete?: (id: number) => void
+  mode?: "solo" | "family"
 }
 
 type MealType = "집밥" | "배달" | "외식"
@@ -58,7 +59,7 @@ interface SelectedPlace {
   distance?: string
 }
 
-export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete }: AddLogModalProps) {
+export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo" }: AddLogModalProps) {
   const { isLoggedIn } = useHub()
   const [mealType, setMealType] = useState<MealType>("집밥")
 
@@ -304,7 +305,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete }: Add
           {/* Header */}
           <div className="mb-6">
             <h2 className="text-2xl font-extrabold tracking-tight text-foreground mb-2">
-              {isEditMode ? "먹로그 수정하기" : "먹로그 기록하기"}
+              {mode === "family"
+                ? (isEditMode ? "(패밀리) 먹로그 수정하기" : "(패밀리) 먹로그 기록하기")
+                : (isEditMode ? "(솔로) 먹로그 수정하기" : "(솔로) 먹로그 기록하기")
+              }
             </h2>
           </div>
 
