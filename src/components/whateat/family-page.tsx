@@ -35,6 +35,7 @@ import { createClient } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
+import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 
 export interface FamilyMember {
   id: number
@@ -412,6 +413,7 @@ export function FamilyPage({
   }, [showChefModal, members])
 
   const [meals, setMeals] = useState<SharedMeal[]>(sharedMeals)
+  const [addModalOpen, setAddModalOpen] = useState(false)
   const [vote, setVote] = useState<ActiveVote | null>(activeVote)
   const [selectedMealId, setSelectedMealId] = useState<string | number | null>(null)
   const [mealCommentInput, setMealCommentInput] = useState("")
@@ -507,6 +509,132 @@ export function FamilyPage({
       toast.error("지역 저장에 실패했습니다. 다시 시도해 주세요.")
     } finally {
       setIsRegionSaving(false)
+    }
+  }
+
+  // Base64 데이터를 Blob으로 변환하는 헬퍼 함수
+  const base64ToBlob = (base64Data: string, contentType = "image/webp") => {
+    const byteString = atob(base64Data.split(",")[1])
+    const ab = new ArrayBuffer(byteString.length)
+    const ia = new Uint8Array(ab)
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i)
+    }
+    return new Blob([ab], { type: contentType })
+  }
+
+  // Supabase Storage에 파일 업로드하는 함수
+  const uploadImageToStorage = async (base64Image: string): Promise<string> => {
+    if (!user?.id) throw new Error("User not logged in")
+    const supabase = createClient()
+    const blob = base64ToBlob(base64Image)
+    const fileName = `family_${user.id}_${Date.now()}.webp`
+
+    const { data, error } = await supabase.storage
+      .from("meal-images")
+      .upload(fileName, blob, {
+        contentType: "image/webp",
+        cacheControl: "3600",
+        upsert: false
+      })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from("meal-images")
+      .getPublicUrl(fileName)
+
+    return urlData.publicUrl
+  }
+
+  const handleAddMealSave = async (data: MealLogData) => {
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      let finalImageUrl = data.image || "/images/placeholder-food.jpg"
+
+      if (data.image && data.image.startsWith("data:image")) {
+        const uploadToast = toast.loading("이미지를 업로드하고 있어요...")
+        try {
+          finalImageUrl = await uploadImageToStorage(data.image)
+          toast.dismiss(uploadToast)
+        } catch (uploadErr) {
+          toast.dismiss(uploadToast)
+          console.error("Image upload failed:", uploadErr)
+          toast.error("이미지 업로드에 실패했습니다. 기본 이미지로 진행합니다.")
+          finalImageUrl = "/images/placeholder-food.jpg"
+        }
+      }
+
+      const mealUuid = generateUUID()
+      let status = "pending"
+      let source = "family-shared"
+
+      const mealTypeMap = {
+        "집밥": "homemade" as const,
+        "배달": "delivery" as const,
+        "외식": "dining" as const
+      }
+      const mappedMealType = mealTypeMap[data.mealType] || "homemade"
+
+      const metadata = {
+        title: data.menuName,
+        mealType: mappedMealType,
+        rating: 0,
+        tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+        placeName: data.place?.name || data.deliveryStoreName || "",
+        placeAddress: data.place?.address || "",
+        description: data.description || "",
+        linkUrl: data.linkUrl || "",
+        linkThumbnail: ""
+      }
+
+      const supabase = createClient()
+      const { error: mealError } = await supabase.from("meal_images").insert({
+        id: mealUuid,
+        meal_id: mealUuid,
+        image_url: finalImageUrl,
+        uploaded_by: user.id,
+        explanation: JSON.stringify(metadata),
+        source: source,
+        status: status,
+        title: data.menuName,
+        rating: 0,
+        meal_type: data.mealType,
+        link_url: data.linkUrl || "",
+        place_name: data.place?.name || data.deliveryStoreName || "",
+        place_address: data.place?.address || "",
+        description: data.description || ""
+      })
+
+      if (mealError) throw mealError
+
+      if (data.description) {
+        await supabase.from("comments").insert({
+          id: generateUUID(),
+          meal_id: mealUuid,
+          user_id: user.id,
+          content: data.description,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        })
+      }
+
+      toast.success("식사가 성공적으로 공유되었습니다!")
+      
+      // Refresh family shared meals
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      if (familyUserIds.length > 0) {
+        await fetchFamilyData(familyUserIds)
+      }
+      
+    } catch (err) {
+      console.error("Failed to save meal shared to Supabase:", err)
+      toast.error("식사 공유 저장에 실패했습니다.")
     }
   }
 
@@ -1605,7 +1733,7 @@ export function FamilyPage({
                 if (!isLoggedIn) {
                   window.dispatchEvent(new CustomEvent('openLoginModal'))
                 } else {
-                  alert("가족/모임 먹로그 추가 기능은 준비 중입니다.")
+                  setAddModalOpen(true)
                 }
               }}
               className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
@@ -2554,6 +2682,12 @@ export function FamilyPage({
           </div>
         </div>
       )}
+      {/* Add Meal Log Modal */}
+      <AddLogModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSave={handleAddMealSave}
+      />
     </div>
   )
 }
