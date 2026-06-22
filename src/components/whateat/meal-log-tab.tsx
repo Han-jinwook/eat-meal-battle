@@ -132,7 +132,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (!inputContent) return
 
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플이라 메모 작성이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -196,7 +196,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (!inputContent) return
 
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플이라 메모 작성이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -758,7 +758,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
   const handleRatingChange = async (mealId: any, newRating: number) => {
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플이라 별점 수정이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 별점 수정 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -838,7 +838,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
   const handleDeleteClick = async (mealId: any) => {
     if (mealId === 1 || mealId === 2 || mealId === 3) {
-      toast("샘플은 삭제가 불가능하며, 식사를 등록하면 샘플은 사라집니다.", {
+      toast("샘플이라 삭제 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
         icon: "💡",
         duration: 3000,
       })

@@ -946,7 +946,7 @@ export function FamilyPage({
 
   const checkFamilyConsentAndRate = async (mealId: string | number, memberId: number, score: number) => {
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 별점 수정이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 별점 수정 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -1109,7 +1109,7 @@ export function FamilyPage({
     if (!content) return
 
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 메모 작성이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -1147,7 +1147,7 @@ export function FamilyPage({
     if (!content) return
 
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 메모 작성이 불가능하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
