@@ -238,7 +238,7 @@ export default function WhatEatApp() {
   }
 
   const renderFamilyPage = () => (
-    <div className="px-5 pt-4 flex flex-col gap-5">
+    <div className="px-5 pt-1.5 flex flex-col gap-3">
       <FamilyPage activeMainTab={familyActiveTab} onTabChange={setFamilyActiveTab} />
       <Footer />
     </div>
@@ -278,7 +278,8 @@ export default function WhatEatApp() {
           </div>
 
           <main className={cn(
-            "flex-1 overflow-y-auto custom-scrollbar relative",
+            "flex-1 custom-scrollbar relative",
+            bottomNavTab !== "family" && "overflow-y-auto",
             (!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && !isNudgeDismissed) ? "pb-[300px]" : "pb-8"
           )}>
             {/* Home Onboarding Tab */}
