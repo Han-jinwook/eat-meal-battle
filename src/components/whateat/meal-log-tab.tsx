@@ -463,7 +463,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         setMealLogs(mappedLogs)
       } catch (err) {
         console.error("Failed to load logs from Supabase:", err)
-        toast.error("식사 기록을 불러오는데 실패했습니다.")
         setMealLogs(defaultMealLogs)
       } finally {
         setIsLoaded(true)
