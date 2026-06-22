@@ -945,6 +945,11 @@ export function FamilyPage({
   }
 
   const checkFamilyConsentAndRate = async (mealId: string | number, memberId: number, score: number) => {
+    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
+      toast("샘플 데이터에는 별점을 남길 수 없습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+
     const targetMeal = meals.find((meal) => meal.id === mealId)
     if (!targetMeal) return
     
@@ -1104,21 +1109,7 @@ export function FamilyPage({
     if (!content) return
 
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      setMealComments((prev) => {
-        const next = { ...prev }
-        const newComment: MealComment = {
-          id: `comment-virtual-${Date.now()}`,
-          author: "나",
-          content: content,
-          createdAt: "방금 전",
-          likes: 0,
-          isLiked: false,
-          replies: []
-        }
-        next[mealId] = [...(next[mealId] ?? []), newComment]
-        return next
-      })
-      setMealCommentInput("")
+      toast("샘플 데이터에는 댓글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -1154,6 +1145,11 @@ export function FamilyPage({
   const handleAddMealReply = async (mealId: string | number, commentId: string | number) => {
     const content = mealReplyInput.trim()
     if (!content) return
+
+    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
+      toast("샘플 데이터에는 답글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
 
     if (!isLoggedIn || !user?.id) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))

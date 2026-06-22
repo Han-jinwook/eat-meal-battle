@@ -127,10 +127,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     return urlData.publicUrl
   }
 
-  // 댓글 등록 처리 함수
   const handleAddComment = async (mealId: any) => {
     const inputContent = commentInputs[mealId]?.trim()
     if (!inputContent) return
+
+    if (mealId === 1 || mealId === 2 || mealId === 3) {
+      toast("샘플 데이터에는 댓글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
 
     if (!isLoggedIn || !user?.id) {
       toast.error("로그인이 필요한 작업입니다.")
@@ -187,10 +191,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }
 
-  // 대댓글(답글) 등록 처리 함수
   const handleAddReply = async (mealId: any, commentId: string) => {
     const inputContent = replyInputs[commentId]?.trim()
     if (!inputContent) return
+
+    if (mealId === 1 || mealId === 2 || mealId === 3) {
+      toast("샘플 데이터에는 답글을 작성할 수 없습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
 
     if (!isLoggedIn || !user?.id) {
       toast.error("로그인이 필요한 작업입니다.")
@@ -751,6 +759,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
   const handleRatingChange = async (mealId: any, newRating: number) => {
     if (mealId === 1 || mealId === 2 || mealId === 3) {
+      toast("샘플 데이터에는 별점을 남길 수 없습니다.", { icon: "💡", duration: 3000 })
       return
     }
 
