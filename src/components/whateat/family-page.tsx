@@ -25,6 +25,7 @@ import {
   Send,
   Sparkles,
   MapPin,
+  Search,
   ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -434,6 +435,7 @@ export function FamilyPage({
   const [sortOption, setSortOption] = useState<"날짜순" | "별점순" | "기간">("날짜순")
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc")
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const sortRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -1504,19 +1506,31 @@ export function FamilyPage({
         <TabNavigation
           activeTab={activeMainTab as "log" | "reservation" | "calendar"}
           onTabChange={onTabChange || (() => {})}
-          searchQuery=""
-          onSearchChange={() => {}}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
       </div>
 
       {/* Tab Content */}
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-end">
-            <div className="relative" ref={sortRef}>
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="식당, 메뉴, 장소 검색"
+                className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
+              />
+            </div>
+            
+            <div className="relative shrink-0" ref={sortRef}>
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-3 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[46px]"
               >
                 <span
                   onClick={(e) => {
@@ -1590,7 +1604,7 @@ export function FamilyPage({
                 if (!isLoggedIn) {
                   window.dispatchEvent(new CustomEvent('openLoginModal'))
                 } else {
-                  // Todo: Add family meal
+                  alert("가족/모임 먹로그 추가 기능은 준비 중입니다.")
                 }
               }}
               className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
@@ -1975,11 +1989,23 @@ export function FamilyPage({
 
       {activeMainTab === "reservation" && (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-end">
-            <div className="relative">
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="식당, 메뉴, 장소 검색"
+                className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
+              />
+            </div>
+
+            <div className="relative shrink-0">
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-3 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[46px]"
               >
                 <span
                   onClick={(e) => {
@@ -2041,7 +2067,7 @@ export function FamilyPage({
                   if (!isLoggedIn) {
                     window.dispatchEvent(new CustomEvent('openLoginModal'))
                   } else {
-                    // Todo: Add family reservation
+                    alert("가족/모임 먹예약 추가 기능은 준비 중입니다.")
                   }
                 }}
                 className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
