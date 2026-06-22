@@ -27,6 +27,7 @@ import {
   MapPin,
   Search,
   ExternalLink,
+  BookOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
