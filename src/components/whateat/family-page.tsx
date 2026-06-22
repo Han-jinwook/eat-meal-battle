@@ -1405,112 +1405,116 @@ export function FamilyPage({
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
-      {/* Family Header */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl pt-3 pb-2 px-5 border border-white shadow-lg">
-        <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
-          <>
-            <button
-              onClick={() => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  familyPhotoInputRef.current?.click()
-                }
-              }}
-              className="size-12 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
-            >
-              {familyPhoto ? (
-                <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-              ) : (
-                <Pencil className="size-5" />
-              )}
-            </button>
-            <input
-              ref={familyPhotoInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFamilyPhotoChange}
-              className="hidden"
-            />
-          </>
-
-          <div className="shrink-0 min-w-fit">
-            <h2 className="font-bold text-foreground text-lg leading-tight">우리 가족</h2>
-            <div className="flex flex-col gap-1 mt-1">
-              <p className="text-[10px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
+    <div className="flex flex-col pb-4">
+      {/* Sticky Header Container */}
+      <div className="sticky top-[52px] sm:top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
+        {/* Family Header */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm">
+          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
+            <>
               <button
                 onClick={() => {
-                  setShowChefModal(true)
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    familyPhotoInputRef.current?.click()
+                  }
                 }}
-                className="text-[9px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+                className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
               >
-                <ChefHat className="size-2.5" />
-                우리가족 셰프는?
+                {familyPhoto ? (
+                  <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                ) : (
+                  <Pencil className="size-4" />
+                )}
+              </button>
+              <input
+                ref={familyPhotoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFamilyPhotoChange}
+                className="hidden"
+              />
+            </>
+
+            <div className="shrink-0 min-w-fit pr-1">
+              <h2 className="font-bold text-foreground text-base leading-tight">우리 가족</h2>
+              <div className="flex flex-col gap-0.5 mt-0.5">
+                <p className="text-[9px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
+                <button
+                  onClick={() => {
+                    setShowChefModal(true)
+                  }}
+                  className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+                >
+                  <ChefHat className="size-2" />
+                  우리가족 셰프는?
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
+              {members.map((member) => (
+                <div key={member.id} className="flex flex-col items-center gap-1 shrink-0">
+                  <div className="relative">
+                    {member.name === "나" ? (
+                      <HubAvatar
+                        isLoggedIn={isLoggedIn}
+                        avatarUrl={user?.avatar_url}
+                        nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
+                        size="sm"
+                        className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
+                      />
+                    ) : (
+                      <img
+                        src={member.avatar || "/placeholder.svg"}
+                        alt={member.name}
+                        className="size-11 rounded-xl object-cover border-2 border-white shadow-sm"
+                      />
+                    )}
+                    {member.role === "chef" && (
+                      <div className="absolute -top-1 -right-1 size-4 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
+                        <ChefHat className="size-2.5 text-white" />
+                      </div>
+                    )}
+                    {member.isOnline && (
+                      <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-400 border-2 border-white" />
+                    )}
+                  </div>
+                  <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                    {member.name}
+                  </span>
+                </div>
+              ))}
+              <button 
+                onClick={() => {
+                  setShowInviteModal(true)
+                }}
+                className="flex flex-col items-center gap-1 shrink-0 ml-1"
+              >
+                <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                  <Plus className="size-4 text-muted-foreground/50" />
+                </div>
+                <span className="text-[9px] font-medium text-muted-foreground">초대</span>
               </button>
             </div>
           </div>
+        </div>
 
-          <div className="flex-1 flex items-center justify-center gap-3 ml-2 overflow-x-auto hide-scrollbar">
-            {members.map((member) => (
-              <div key={member.id} className="flex flex-col items-center gap-1.5 shrink-0">
-                <div className="relative">
-                  {member.name === "나" ? (
-                    <HubAvatar
-                      isLoggedIn={isLoggedIn}
-                      avatarUrl={user?.avatar_url}
-                      nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
-                      size="sm"
-                      className="!w-14 !h-14 rounded-2xl border-2 border-white shadow-md"
-                    />
-                  ) : (
-                    <img
-                      src={member.avatar || "/placeholder.svg"}
-                      alt={member.name}
-                      className="size-14 rounded-2xl object-cover border-2 border-white shadow-md"
-                    />
-                  )}
-                  {member.role === "chef" && (
-                    <div className="absolute -top-1 -right-1 size-5 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
-                      <ChefHat className="size-3 text-white" />
-                    </div>
-                  )}
-                  {member.isOnline && (
-                    <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-green-400 border-2 border-white" />
-                  )}
-                </div>
-                <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                  {member.name}
-                </span>
-              </div>
-            ))}
-            <button 
-              onClick={() => {
-                setShowInviteModal(true)
-              }}
-              className="flex flex-col items-center gap-1.5 shrink-0"
-            >
-              <div className="size-14 rounded-2xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                <Plus className="size-5 text-muted-foreground/50" />
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground">초대</span>
-            </button>
-          </div>
+        <div>
+          <TabNavigation
+            activeTab={activeMainTab as "log" | "reservation" | "calendar"}
+            onTabChange={onTabChange || (() => {})}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
         </div>
       </div>
 
-      <div className="sticky top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-2 pb-1 border-b border-muted/10">
-        <TabNavigation
-          activeTab={activeMainTab as "log" | "reservation" | "calendar"}
-          onTabChange={onTabChange || (() => {})}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-      </div>
-
       {/* Tab Content */}
+      <div className="pt-3 flex flex-col gap-3">
       {activeMainTab === "log" && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             {/* Search Input */}
             <div className="flex-1 relative">
@@ -2173,6 +2177,7 @@ export function FamilyPage({
           <MealCalendarTab />
         </div>
       )}
+      </div>
 
       {/* Invite Modal */}
       {showInviteModal && (
