@@ -926,7 +926,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         } catch (uploadErr) {
           toast.dismiss(uploadToast)
           console.error("Image upload failed:", uploadErr)
-          toast.error("이미지 업로드에 실패했습니다. 기본 이미지로 진행합니다.")
+          const errMsg = uploadErr instanceof Error ? uploadErr.message : "이미지 업로드에 실패했습니다.";
+          toast.error(`${errMsg} 기본 이미지로 진행합니다.`)
           finalImageUrl = "/images/placeholder-food.jpg"
         }
       }
@@ -1068,7 +1069,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       setEditingMeal(null)
     } catch (err) {
       console.error("Failed to save meal on Supabase:", err)
-      toast.error("식사 기록 저장에 실패했습니다.")
+      const errMsg = err instanceof Error ? err.message : "식사 기록 저장에 실패했습니다.";
+      toast.error(errMsg)
     }
   }
 
