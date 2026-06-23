@@ -663,23 +663,20 @@ export default function MealClient() {
     try {
       console.log('관심학교 등록 시작:', schoolData);
       
-      const { data, error } = await supabase
-        .from('interest_schools')
-        .insert({
+      const writeResult = await secureWrite({
+        table: 'interest_schools',
+        action: 'insert',
+        data: {
           user_id: user.id,
           school_name: schoolData.SCHUL_NM,
           school_code: schoolData.SD_SCHUL_CODE,
           office_code: schoolData.ATPT_OFCDC_SC_CODE,
           school_type: schoolData.SCHUL_KND_SC_NM,
           region: extractBattleRegion(schoolData.ORG_RDNMA || schoolData.LCTN_SC_NM)
-        })
-        .select();
+        }
+      });
       
-      if (error) {
-        console.error('관심학교 등록 오류:', error);
-        alert('관심학교 등록에 실패했습니다.');
-        return;
-      }
+      const data = writeResult.data;
       
       console.log('관심학교 등록 성공:', data);
       
@@ -713,17 +710,11 @@ export default function MealClient() {
     }
 
     try {
-      const { error } = await supabase
-        .from('interest_schools')
-        .delete()
-        .eq('id', schoolId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('관심학교 삭제 오류:', error);
-        alert('관심학교 삭제에 실패했습니다.');
-        return;
-      }
+      await secureWrite({
+        table: 'interest_schools',
+        action: 'delete',
+        filters: { id: schoolId }
+      });
 
       // 로컬 상태 업데이트
       setInterestSchools(prev => prev.filter(school => school.id !== schoolId));

@@ -77,7 +77,10 @@ export async function POST(request: Request) {
       'meal_ratings',
       'school_infos',
       'meal_menus',
-      'quiz_viewers'
+      'quiz_viewers',
+      'users',
+      'interest_schools',
+      'notification_recipients'
     ];
 
     if (!ALLOWED_TABLES.includes(table)) {
@@ -95,7 +98,7 @@ export async function POST(request: Request) {
         if (table === 'meal_images' && rec.uploaded_by && rec.uploaded_by !== userId) {
           return NextResponse.json({ error: '본인의 업로드 정보만 저장할 수 있습니다.' }, { status: 403 });
         }
-        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'school_infos'].includes(table)) {
+        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'school_infos', 'interest_schools'].includes(table)) {
           const recUserId = rec.user_id;
           if (recUserId && recUserId !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 작성할 수 있습니다.' }, { status: 403 });
@@ -109,6 +112,14 @@ export async function POST(request: Request) {
           }
           if (table === 'meal_ratings' && !rec.user_id) {
             rec.user_id = userId;
+          }
+        }
+        if (table === 'users') {
+          if (rec.id && rec.id !== userId) {
+            return NextResponse.json({ error: '본인의 회원 정보만 생성할 수 있습니다.' }, { status: 403 });
+          }
+          if (!rec.id) {
+            rec.id = userId;
           }
         }
         if (table === 'quiz_viewers') {
@@ -136,32 +147,43 @@ export async function POST(request: Request) {
     
     if (action === 'update') {
       // filters 유효성 검증
-      if (!filters || (!filters.id && !filters.user_id)) {
+      if (!filters || (!filters.id && !filters.user_id && !filters.recipient_id)) {
         return NextResponse.json({ error: '업데이트 대상 식별자가 누락되었습니다.' }, { status: 400 });
       }
 
       // 업데이트 대상 권한 검증
-      const recordId = filters.id || filters.user_id;
-      const idField = filters.user_id ? 'user_id' : 'id';
-      const { data: existing, error: selectError } = await supabaseAdmin
-        .from(table)
-        .select('*')
-        .eq(idField, recordId)
-        .single();
+      const recordId = filters.id || filters.user_id || filters.recipient_id;
+      const idField = filters.user_id ? 'user_id' : (filters.recipient_id ? 'recipient_id' : 'id');
 
-      if (selectError || !existing) {
-        return NextResponse.json({ error: '수정할 대상을 찾을 수 없거나 조회가 실패했습니다.' }, { status: 404 });
-      }
+      // 알림 읽음 처리와 같이 recipient_id 기반 일괄 업데이트인 경우, 수신자가 본인인지 바로 검사
+      if (table === 'notification_recipients') {
+        if (recordId !== userId) {
+          return NextResponse.json({ error: '본인의 알림 정보만 수정할 수 있습니다.' }, { status: 403 });
+        }
+      } else {
+        const { data: existing, error: selectError } = await supabaseAdmin
+          .from(table)
+          .select('*')
+          .eq(idField, recordId)
+          .single();
 
-      // 소유권 확인
-      if (table === 'meal_images' && existing.uploaded_by !== userId) {
-        return NextResponse.json({ error: '본인의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
-      }
-      if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings'].includes(table) && existing.user_id !== userId) {
-        return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
-      }
-      if (table === 'school_infos' && existing.user_id !== userId) {
-        return NextResponse.json({ error: '본인의 소속 정보만 수정할 수 있습니다.' }, { status: 403 });
+        if (selectError || !existing) {
+          return NextResponse.json({ error: '수정할 대상을 찾을 수 없거나 조회가 실패했습니다.' }, { status: 404 });
+        }
+
+        // 소유권 확인
+        if (table === 'users' && existing.id !== userId) {
+          return NextResponse.json({ error: '본인의 회원 정보만 수정할 수 있습니다.' }, { status: 403 });
+        }
+        if (table === 'meal_images' && existing.uploaded_by !== userId) {
+          return NextResponse.json({ error: '본인의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
+        }
+        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools'].includes(table) && existing.user_id !== userId) {
+          return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
+        }
+        if (table === 'school_infos' && existing.user_id !== userId) {
+          return NextResponse.json({ error: '본인의 소속 정보만 수정할 수 있습니다.' }, { status: 403 });
+        }
       }
 
       // 업데이트 실행
@@ -195,7 +217,7 @@ export async function POST(request: Request) {
           if (table === 'meal_images' && existing.uploaded_by !== userId) {
             return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
           }
-          if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings'].includes(table) && existing.user_id !== userId) {
+          if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools'].includes(table) && existing.user_id !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
           }
           if (table === 'school_infos' && existing.user_id !== userId) {

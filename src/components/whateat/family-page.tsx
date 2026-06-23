@@ -513,12 +513,12 @@ export function FamilyPage({
       }
 
       // users 테이블에 region 저장
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ region: JSON.stringify(regionData) })
-        .eq('id', user.id)
-
-      if (userError) throw userError
+      await secureWrite({
+        table: 'users',
+        action: 'update',
+        data: { region: JSON.stringify(regionData) },
+        filters: { id: user.id }
+      })
 
       setRegionModalOpen(false)
       toast.success("거주 지역이 등록되었습니다!")
@@ -1073,15 +1073,15 @@ export function FamilyPage({
         }
       }
 
-      const { error } = await supabase
-        .from('meal_images')
-        .update({
+      await secureWrite({
+        table: 'meal_images',
+        action: 'update',
+        data: {
           status: 'approved',
           explanation: JSON.stringify(meta)
-        })
-        .eq('id', targetMeal.id)
-
-      if (error) throw error
+        },
+        filters: { id: targetMeal.id }
+      })
 
       setPromotedMealIds((prev) => prev.includes(mealId) ? prev : [...prev, mealId])
     } catch (error) {
@@ -1112,10 +1112,12 @@ export function FamilyPage({
       }
       meta.doNotPromote = true
       
-      await supabase
-        .from('meal_images')
-        .update({ explanation: JSON.stringify(meta) })
-        .eq('id', mealId)
+      await secureWrite({
+        table: 'meal_images',
+        action: 'update',
+        data: { explanation: JSON.stringify(meta) },
+        filters: { id: mealId }
+      })
     } catch (err) {
       console.error("Failed to update doNotPromote flag", err)
     }
@@ -1214,21 +1216,23 @@ export function FamilyPage({
         .limit(1)
 
       if (existing && existing.length > 0) {
-        const { error } = await supabase
-          .from('meal_ratings')
-          .update({ rating: score })
-          .eq('id', existing[0].id)
-        if (error) throw error
+        await secureWrite({
+          table: 'meal_ratings',
+          action: 'update',
+          data: { rating: score },
+          filters: { id: existing[0].id }
+        })
       } else {
-        const { error } = await supabase
-          .from('meal_ratings')
-          .insert({
+        await secureWrite({
+          table: 'meal_ratings',
+          action: 'insert',
+          data: {
             id: generateUUID(),
             user_id: user.id,
             meal_id: mealMenuId,
             rating: score
-          })
-        if (error) throw error
+          }
+        })
       }
 
       // Sync state by reloading family data

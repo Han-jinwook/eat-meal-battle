@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { Header } from '@/components/whateat/header';
 import { Footer } from '@/components/whateat/footer';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 
 export default function ProfileClient() {
   const router = useRouter();
@@ -91,34 +92,36 @@ export default function ProfileClient() {
       };
 
       // 1. users 테이블의 region 컬럼 업데이트
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ region: JSON.stringify(regionData) })
-        .eq('id', user.id);
-
-      if (userError) throw userError;
+      await secureWrite({
+        table: 'users',
+        action: 'update',
+        data: { region: JSON.stringify(regionData) },
+        filters: { id: user.id }
+      });
 
       // 2. school_infos 테이블의 school_name 업데이트 (자녀들의 급식용 기초 데이터)
       const { data: existingSchool } = await supabase
         .from('school_infos')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingSchool) {
-        const { error: schoolError } = await supabase
-          .from('school_infos')
-          .update({ school_name: schoolName.trim() })
-          .eq('user_id', user.id);
-        if (schoolError) throw schoolError;
+        await secureWrite({
+          table: 'school_infos',
+          action: 'update',
+          data: { school_name: schoolName.trim() },
+          filters: { user_id: user.id }
+        });
       } else {
-        const { error: schoolError } = await supabase
-          .from('school_infos')
-          .insert({
+        await secureWrite({
+          table: 'school_infos',
+          action: 'insert',
+          data: {
             user_id: user.id,
             school_name: schoolName.trim(),
-          });
-        if (schoolError) throw schoolError;
+          }
+        });
       }
 
       alert("지역 및 학교 정보가 성공적으로 저장되었습니다!");

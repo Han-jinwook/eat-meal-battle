@@ -9,8 +9,8 @@ import useUserSchool from '../../hooks/useUserSchool';
 import { useSchoolMode } from '../../hooks/useSchoolMode';
 import { isWithinAllowedTime, getTimeConstraintMessage } from '../../utils/timeConstraints';
 
-// 순환 참조를 피하기 위해 동적 임포트 대신 타입 단언을 사용
 import CommentItem from './CommentItem';
+import { secureWrite } from '@/lib/supabase-safe';
 
 interface CommentSectionProps {
   mealId: string;
@@ -424,18 +424,15 @@ export default function CommentSection({ mealId, className = '', schoolCode, mea
     try {
       console.log('댓글 추가 시도:', { mealId, userId: user.id, content: content.trim() });
       
-      const { error } = await supabase
-        .from('comments')
-        .insert({
+      await secureWrite({
+        table: 'comments',
+        action: 'insert',
+        data: {
           meal_id: mealId,
           user_id: user.id,
           content: content.trim()
-        });
-        
-      if (error) {
-        console.error('댓글 추가 SQL 오류:', error);
-        throw error;
-      }
+        }
+      });
       
       console.log('댓글 추가 성공, 새로고침 시도');
       // 데이터를 수동으로 다시 불러옴

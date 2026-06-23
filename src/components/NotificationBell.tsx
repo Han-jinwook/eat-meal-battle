@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
+import { secureWrite } from '@/lib/supabase-safe';
 
 /**
  * 사용자 알림을 표시하는 벨 아이콘 및 드롭다운 컴포넌트
@@ -248,19 +249,15 @@ export default function NotificationBell() {
       }
       
       // 직접 Supabase 업데이트 실행
-      const { error } = await supabase
-        .from('notification_recipients')
-        .update({
+      await secureWrite({
+        table: 'notification_recipients',
+        action: 'update',
+        data: {
           is_read: true,
           read_at: new Date().toISOString()
-        })
-        .eq('recipient_id', session.user.id)
-        .eq('is_read', false);
-      
-      if (error) {
-        console.error('모든 알림 읽음 처리 실패:', error);
-        throw new Error('모든 알림 읽음 처리 실패');
-      }
+        },
+        filters: { recipient_id: session.user.id }
+      });
       
       // 로컬 상태 업데이트
       setNotifications(current => 

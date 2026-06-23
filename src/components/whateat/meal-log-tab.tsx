@@ -283,12 +283,12 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       }
 
       // users 테이블에 region 저장
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ region: JSON.stringify(regionData) })
-        .eq('id', user.id)
-
-      if (userError) throw userError
+      await secureWrite({
+        table: 'users',
+        action: 'update',
+        data: { region: JSON.stringify(regionData) },
+        filters: { id: user.id }
+      })
 
       setRegionModalOpen(false)
       toast.success("거주 지역이 등록되었습니다!")
@@ -810,18 +810,17 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         promotedAt: status === "approved" ? new Date().toISOString() : undefined
       }
 
-      const { error } = await supabase
-        .from("meal_images")
-        .update({
+      await secureWrite({
+        table: 'meal_images',
+        action: 'update',
+        data: {
           rating: newRating,
           status: status,
           source: source,
           explanation: JSON.stringify(metadata)
-        })
-        .eq("id", mealId)
-        .eq("uploaded_by", user.id)
-
-      if (error) throw error
+        },
+        filters: { id: mealId }
+      })
 
       setMealLogs(prev => prev.map(log => 
         log.id === mealId ? { ...log, rating: newRating, status: status } : log
