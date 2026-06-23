@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 
 interface DateNavigatorProps {
   selectedDate: string;
@@ -41,19 +42,18 @@ export default function DateNavigator({
   // AI 검증 실패 이미지 삭제 함수
   const deleteRejectedImage = async () => {
     try {
-      const supabase = createClient();
       const rejectedImageId = (window as any)?.rejectedImageId;
       
       if (rejectedImageId) {
-        const { error } = await supabase
-          .from('meal_images')
-          .delete()
-          .eq('id', rejectedImageId);
-        
-        if (error) {
-          console.error('이미지 삭제 오류:', error);
-        } else {
+        try {
+          await secureWrite({
+            table: 'meal_images',
+            action: 'delete',
+            filters: { id: rejectedImageId }
+          });
           console.log('✅ AI 검증 실패 이미지 삭제 완료:', rejectedImageId);
+        } catch (error) {
+          console.error('이미지 삭제 오류:', error);
         }
       }
       

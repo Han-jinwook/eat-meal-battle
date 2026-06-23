@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
+import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 
@@ -480,19 +481,19 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
 
     try {
-      const supabase = createClient()
-      const newCommentId = generateUUID()
-      const { error } = await supabase.from("comments").insert({
-        id: newCommentId,
-        meal_id: postId,
-        user_id: user.id,
-        content: inputVal,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_deleted: false
+      await secureWrite({
+        table: "comments",
+        action: "insert",
+        data: {
+          id: newCommentId,
+          meal_id: postId,
+          user_id: user.id,
+          content: inputVal,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        }
       })
-
-      if (error) throw error
 
       const newComment = {
         id: newCommentId,
@@ -566,19 +567,19 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
 
     try {
-      const supabase = createClient()
-      const newReplyId = generateUUID()
-      const { error } = await supabase.from("comment_replies").insert({
-        id: newReplyId,
-        comment_id: commentId,
-        user_id: user.id,
-        content: inputVal,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_deleted: false
+      await secureWrite({
+        table: "comment_replies",
+        action: "insert",
+        data: {
+          id: newReplyId,
+          comment_id: commentId,
+          user_id: user.id,
+          content: inputVal,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_deleted: false
+        }
       })
-
-      if (error) throw error
 
       const newReply = {
         id: newReplyId,

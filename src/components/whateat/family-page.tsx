@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
+import { secureWrite } from "@/lib/supabase-safe"
 import { toast } from "react-hot-toast"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
@@ -621,35 +622,40 @@ export function FamilyPage({
         linkThumbnail: ""
       }
 
-      const supabase = createClient()
-      const { error: mealError } = await supabase.from("meal_images").insert({
-        id: mealUuid,
-        meal_id: mealUuid,
-        image_url: finalImageUrl,
-        uploaded_by: user.id,
-        explanation: JSON.stringify(metadata),
-        source: source,
-        status: status,
-        title: data.menuName,
-        rating: 0,
-        meal_type: data.mealType,
-        link_url: data.linkUrl || "",
-        place_name: data.place?.name || data.deliveryStoreName || "",
-        place_address: data.place?.address || "",
-        description: data.description || ""
+      await secureWrite({
+        table: "meal_images",
+        action: "insert",
+        data: {
+          id: mealUuid,
+          meal_id: mealUuid,
+          image_url: finalImageUrl,
+          uploaded_by: user.id,
+          explanation: JSON.stringify(metadata),
+          source: source,
+          status: status,
+          title: data.menuName,
+          rating: 0,
+          meal_type: data.mealType,
+          link_url: data.linkUrl || "",
+          place_name: data.place?.name || data.deliveryStoreName || "",
+          place_address: data.place?.address || "",
+          description: data.description || ""
+        }
       })
 
-      if (mealError) throw mealError
-
       if (data.description) {
-        await supabase.from("comments").insert({
-          id: generateUUID(),
-          meal_id: mealUuid,
-          user_id: user.id,
-          content: data.description,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          is_deleted: false
+        await secureWrite({
+          table: "comments",
+          action: "insert",
+          data: {
+            id: generateUUID(),
+            meal_id: mealUuid,
+            user_id: user.id,
+            content: data.description,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_deleted: false
+          }
         })
       }
 
@@ -1294,17 +1300,18 @@ export function FamilyPage({
     }
 
     try {
-      const supabase = createClient()
       const commentUuid = generateUUID()
-      const { error } = await supabase.from('comments').insert({
-        id: commentUuid,
-        meal_id: targetMeal.mealMenuId,
-        user_id: user.id,
-        content: content,
-        is_deleted: false
+      await secureWrite({
+        table: 'comments',
+        action: 'insert',
+        data: {
+          id: commentUuid,
+          meal_id: targetMeal.mealMenuId,
+          user_id: user.id,
+          content: content,
+          is_deleted: false
+        }
       })
-
-      if (error) throw error
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
@@ -1329,17 +1336,18 @@ export function FamilyPage({
     }
 
     try {
-      const supabase = createClient()
       const replyUuid = generateUUID()
-      const { error } = await supabase.from('comment_replies').insert({
-        id: replyUuid,
-        comment_id: commentId,
-        user_id: user.id,
-        content: content,
-        is_deleted: false
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'insert',
+        data: {
+          id: replyUuid,
+          comment_id: commentId,
+          user_id: user.id,
+          content: content,
+          is_deleted: false
+        }
       })
-
-      if (error) throw error
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
@@ -1359,21 +1367,22 @@ export function FamilyPage({
     }
 
     try {
-      const supabase = createClient()
       const todayStr = new Date().toISOString().split('T')[0]
-      const { error } = await supabase.from('meal_menus').insert({
-        id: generateUUID(),
-        school_code: 'family',
-        meal_date: todayStr,
-        meal_type: decidedMealTime === "breakfast" ? "아침" : decidedMealTime === "lunch" ? "점심" : "저녁",
-        menu_items: [decidedMenuName.trim()],
-        kcal: currentFamilyMemberName, // storing decidedBy in kcal
-        is_temporary: false,
-        is_empty_result: false,
-        office_code: 'E10'
+      await secureWrite({
+        table: 'meal_menus',
+        action: 'insert',
+        data: {
+          id: generateUUID(),
+          school_code: 'family',
+          meal_date: todayStr,
+          meal_type: decidedMealTime === "breakfast" ? "아침" : decidedMealTime === "lunch" ? "점심" : "저녁",
+          menu_items: [decidedMenuName.trim()],
+          kcal: currentFamilyMemberName, // storing decidedBy in kcal
+          is_temporary: false,
+          is_empty_result: false,
+          office_code: 'E10'
+        }
       })
-
-      if (error) throw error
 
       await fetchDecidedMenus()
       setShowDecideMenuModal(false)

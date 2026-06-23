@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 // 배틀 계산 함수들 제거 - 더 이상 사용하지 않음
 
@@ -184,11 +185,11 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         if (!ratings || ratings.length === 0) {
           // 메뉴 별점이 없어서 meal_ratings 삭제
           // 별점이 없으면 meal_ratings에서 삭제
-          await supabase
-            .from('meal_ratings')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('meal_id', mealId);
+          await secureWrite({
+            table: 'meal_ratings',
+            action: 'delete',
+            filters: { meal_id: mealId }
+          });
           return;
         }
         
@@ -197,15 +198,20 @@ const MyMealRating: React.FC<MyMealRatingProps> = ({ mealId }) => {
         // 평균 계산 완료
         
         // meal_ratings에 upsert (올바른 문법 사용)
-        const { error: upsertError } = await supabase
-          .from('meal_ratings')
-          .upsert({
-            meal_id: mealId,
-            user_id: user.id,
-            rating: avg,
-          }, {
-            onConflict: 'user_id,meal_id'
+        let upsertError = null;
+        try {
+          await secureWrite({
+            table: 'meal_ratings',
+            action: 'upsert',
+            data: {
+              meal_id: mealId,
+              user_id: user.id,
+              rating: avg,
+            }
           });
+        } catch (err: any) {
+          upsertError = err;
+        }
           
         if (upsertError) {
           console.error('meal_ratings upsert 오류:', upsertError);

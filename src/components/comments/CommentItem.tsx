@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 import { Comment, CommentReply } from './types';
 import useUserSchool from '@/hooks/useUserSchool';
 import { useSchoolMode } from '@/hooks/useSchoolMode';
@@ -221,13 +222,13 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
       
       if (isLiked) {
         // 좋아요 취소
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .eq('comment_id', comment.id)
-          .eq('user_id', user.id);
-          
-        if (error) {
+        try {
+          await secureWrite({
+            table: 'comment_likes',
+            action: 'delete',
+            filters: { comment_id: comment.id }
+          });
+        } catch (error) {
           // 에러 발생 시 UI 롤백
           setIsLiked(!newIsLiked);
           setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
@@ -235,14 +236,16 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
         }
       } else {
         // 좋아요 추가
-        const { error } = await supabase
-          .from('comment_likes')
-          .insert({
-            comment_id: comment.id,
-            user_id: user.id
+        try {
+          await secureWrite({
+            table: 'comment_likes',
+            action: 'insert',
+            data: {
+              comment_id: comment.id,
+              user_id: user.id
+            }
           });
-          
-        if (error) {
+        } catch (error) {
           // 에러 발생 시 UI 롤백
           setIsLiked(!newIsLiked);
           setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
@@ -261,12 +264,12 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     if (!isAuthor || !editContent.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from('comments')
-        .update({ content: editContent.trim(), updated_at: new Date().toISOString() })
-        .eq('id', comment.id);
-
-      if (error) throw error;
+      await secureWrite({
+        table: 'comments',
+        action: 'update',
+        data: { content: editContent.trim(), updated_at: new Date().toISOString() },
+        filters: { id: comment.id }
+      });
 
       setIsEditing(false);
       onCommentChange();
@@ -282,12 +285,11 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     if (!window.confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
 
     try {
-      const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', comment.id);
-
-      if (error) throw error;
+      await secureWrite({
+        table: 'comments',
+        action: 'delete',
+        filters: { id: comment.id }
+      });
 
       onCommentChange();
     } catch (err) {
@@ -417,16 +419,15 @@ export default function CommentItem({ comment, onCommentChange, schoolCode }: Co
     if (!user || !content.trim()) return false;
     
     try {
-      const { error } = await supabase
-        .from('comment_replies')
-        .insert({
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'insert',
+        data: {
           comment_id: comment.id,
           user_id: user.id,
-          content: content.trim(),
-          // 1차 답글이므로 reply_to_user_id를 지정하지 않음
-        });
-        
-      if (error) throw error;
+          content: content.trim()
+        }
+      });
       
       // 답글 목록 새로고침
       await loadReplies();

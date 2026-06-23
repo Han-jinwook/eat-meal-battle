@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CommentReply } from './types';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 import useUserSchool from '@/hooks/useUserSchool';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -112,13 +113,13 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     if (!editContent.trim() || !user || !isAuthor) return;
     
     try {
-      const { error } = await supabase
-        .from('comment_replies')
-        .update({ content: editContent.trim(), updated_at: new Date().toISOString() })
-        .eq('id', reply.id);
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'update',
+        data: { content: editContent.trim(), updated_at: new Date().toISOString() },
+        filters: { id: reply.id }
+      });
         
-      if (error) throw error;
-      
       setIsEditing(false);
       onReplyChange();
     } catch (err) {
@@ -133,12 +134,11 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     if (!window.confirm('정말로 이 답글을 삭제하시겠습니까?')) return;
     
     try {
-      const { error } = await supabase
-        .from('comment_replies')
-        .delete()
-        .eq('id', reply.id);
-        
-      if (error) throw error;
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'delete',
+        filters: { id: reply.id }
+      });
       
       onReplyChange();
     } catch (err) {
@@ -192,13 +192,13 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
       
       if (isLiked) {
         // 좋아요 취소
-        const { error } = await supabase
-          .from('reply_likes')
-          .delete()
-          .eq('reply_id', reply.id)
-          .eq('user_id', user.id);
-          
-        if (error) {
+        try {
+          await secureWrite({
+            table: 'reply_likes',
+            action: 'delete',
+            filters: { reply_id: reply.id }
+          });
+        } catch (error) {
           // 에러 발생 시 UI 롤백
           setIsLiked(!newIsLiked);
           setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : prevCount - 1);
@@ -206,14 +206,16 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
         }
       } else {
         // 좋아요 추가
-        const { error } = await supabase
-          .from('reply_likes')
-          .insert({
-            reply_id: reply.id,
-            user_id: user.id
+        try {
+          await secureWrite({
+            table: 'reply_likes',
+            action: 'insert',
+            data: {
+              reply_id: reply.id,
+              user_id: user.id
+            }
           });
-          
-        if (error) {
+        } catch (error) {
           // 에러 발생 시 UI 롤백
           setIsLiked(!newIsLiked);
           setLikesCount(prevCount => !newIsLiked ? prevCount + 1 : prevCount - 1);
@@ -233,16 +235,16 @@ export default function ReplyItem({ reply, onReplyChange, schoolCode }: ReplyIte
     
     try {
       // 답글에 대한 답글 작성 시 reply_to_user_id를 현재 답글 작성자로 설정
-      const { error } = await supabase
-        .from('comment_replies')
-        .insert({
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'insert',
+        data: {
           comment_id: reply.comment_id, // 원래 댓글 ID
           user_id: user.id,
           content: content.trim(),
           reply_to_user_id: reply.user_id // 현재 답글 작성자를 대상으로 설정
-        });
-        
-      if (error) throw error;
+        }
+      });
       
       // 성공 시 부모 컴포넌트에 알림
       onReplyChange();

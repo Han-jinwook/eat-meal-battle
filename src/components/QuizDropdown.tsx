@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import { secureWrite } from '@/lib/supabase-safe';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -185,16 +186,11 @@ const QuizDropdown: React.FC<QuizDropdownProps> = ({ userId: propUserId, classNa
   // 공유한 퀴즈에서 특정 관람자 제거
   const removeSharedViewer = async (relationId: string, viewerNickname: string) => {
     try {
-      const { error } = await supabase
-        .from('quiz_viewers')
-        .delete()
-        .eq('id', relationId);
-
-      if (error) {
-        console.error('공유 관람자 제거 오류:', error);
-        toast.error('관람자 제거에 실패했습니다.');
-        return;
-      }
+      await secureWrite({
+        table: 'quiz_viewers',
+        action: 'delete',
+        filters: { id: relationId }
+      });
 
       toast.success(`${viewerNickname}님의 퀴즈 관람을 차단했습니다.`);
       loadQuizRelations(); // 데이터 새로고침

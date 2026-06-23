@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
+import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 
 
@@ -154,8 +155,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         is_deleted: false
       }
 
-      const { error } = await supabase.from("comments").insert(newComment)
-      if (error) throw error
+      await secureWrite({
+        table: "comments",
+        action: "insert",
+        data: newComment
+      })
 
       setMealLogs(prev => prev.map(log => {
         if (log.id === mealId) {
@@ -218,8 +222,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         is_deleted: false
       }
 
-      const { error } = await supabase.from("comment_replies").insert(newReply)
-      if (error) throw error
+      await secureWrite({
+        table: "comment_replies",
+        action: "insert",
+        data: newReply
+      })
 
       setMealLogs(prev => prev.map(log => {
         if (log.id === mealId) {
@@ -497,26 +504,26 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     // Generate supabaseId if not already present
     const uuid = data.id || (data as any).supabaseId || generateUUID()
 
-    const { error } = await supabase.from("meal_images").upsert({
-      id: uuid,
-      image_url: imageUrl || "/images/placeholder-food.jpg",
-      uploaded_by: user.id,
-      explanation: JSON.stringify(metadata),
-      source: "solo-5star",
-      status: "approved",
-      title: data.menuName,
-      rating: data.rating || 5,
-      meal_type: data.mealType,
-      link_url: data.linkUrl || "",
-      link_thumbnail: data.linkThumbnail || "",
-      place_name: data.place?.name || data.deliveryStoreName || "",
-      place_address: data.place?.address || "",
-      description: data.description || ""
+    await secureWrite({
+      table: "meal_images",
+      action: "upsert",
+      data: {
+        id: uuid,
+        image_url: imageUrl || "/images/placeholder-food.jpg",
+        uploaded_by: user.id,
+        explanation: JSON.stringify(metadata),
+        source: "solo-5star",
+        status: "approved",
+        title: data.menuName,
+        rating: data.rating || 5,
+        meal_type: data.mealType,
+        link_url: data.linkUrl || "",
+        link_thumbnail: data.linkThumbnail || "",
+        place_name: data.place?.name || data.deliveryStoreName || "",
+        place_address: data.place?.address || "",
+        description: data.description || ""
+      }
     })
-
-    if (error) {
-      throw error
-    }
     console.log("Successfully uploaded 5-star meal to Supabase!")
 
     // comments 테이블에 첫 댓글로 저장
@@ -530,22 +537,28 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         .order("created_at", { ascending: true })
 
       if (existingComments && existingComments.length > 0) {
-        await supabase
-          .from("comments")
-          .update({
+        await secureWrite({
+          table: "comments",
+          action: "update",
+          data: {
             content: data.description,
             updated_at: new Date().toISOString()
-          })
-          .eq("id", existingComments[0].id)
+          },
+          filters: { id: existingComments[0].id }
+        })
       } else {
-        await supabase.from("comments").insert({
-          id: generateUUID(),
-          meal_id: uuid,
-          user_id: user.id,
-          content: data.description,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          is_deleted: false
+        await secureWrite({
+          table: "comments",
+          action: "insert",
+          data: {
+            id: generateUUID(),
+            meal_id: uuid,
+            user_id: user.id,
+            content: data.description,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_deleted: false
+          }
         })
       }
     }
@@ -853,20 +866,21 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     try {
       const supabase = createClient()
       
-      const { error: commentError } = await supabase
-        .from("comments")
-        .delete()
-        .eq("meal_id", mealId)
+      try {
+        await secureWrite({
+          table: "comments",
+          action: "delete",
+          filters: { meal_id: mealId }
+        })
+      } catch (commentError) {
+        console.warn("Failed to delete comments for meal:", commentError)
+      }
 
-      if (commentError) console.warn("Failed to delete comments for meal:", commentError)
-
-      const { error: mealError } = await supabase
-        .from("meal_images")
-        .delete()
-        .eq("id", mealId)
-        .eq("uploaded_by", user.id)
-
-      if (mealError) throw mealError
+      await secureWrite({
+        table: "meal_images",
+        action: "delete",
+        filters: { id: mealId }
+      })
 
       setMealLogs(prev => prev.filter(log => log.id !== mealId))
       toast.success("식사 기록이 삭제되었습니다.")
@@ -949,24 +963,26 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       }
 
       const supabase = createClient()
-      const { error: mealError } = await supabase.from("meal_images").upsert({
-        id: mealUuid,
-        image_url: finalImageUrl,
-        uploaded_by: user.id,
-        explanation: JSON.stringify(metadata),
-        source: source,
-        status: status,
-        title: data.menuName,
-        rating: rating,
-        meal_type: data.mealType,
-        link_url: data.linkUrl || "",
-        link_thumbnail: data.linkThumbnail || "",
-        place_name: data.place?.name || data.deliveryStoreName || "",
-        place_address: data.place?.address || "",
-        description: data.description || ""
+      await secureWrite({
+        table: "meal_images",
+        action: "upsert",
+        data: {
+          id: mealUuid,
+          image_url: finalImageUrl,
+          uploaded_by: user.id,
+          explanation: JSON.stringify(metadata),
+          source: source,
+          status: status,
+          title: data.menuName,
+          rating: rating,
+          meal_type: data.mealType,
+          link_url: data.linkUrl || "",
+          link_thumbnail: data.linkThumbnail || "",
+          place_name: data.place?.name || data.deliveryStoreName || "",
+          place_address: data.place?.address || "",
+          description: data.description || ""
+        }
       })
-
-      if (mealError) throw mealError
 
       if (data.description !== undefined) {
         const { data: existingComments } = await supabase
@@ -979,22 +995,28 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
         if (existingComments && existingComments.length > 0) {
           const firstCommentId = existingComments[0].id
-          await supabase
-            .from("comments")
-            .update({
+          await secureWrite({
+            table: "comments",
+            action: "update",
+            data: {
               content: data.description,
               updated_at: new Date().toISOString()
-            })
-            .eq("id", firstCommentId)
+            },
+            filters: { id: firstCommentId }
+          })
         } else {
-          await supabase.from("comments").insert({
-            id: generateUUID(),
-            meal_id: mealUuid,
-            user_id: user.id,
-            content: data.description,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            is_deleted: false
+          await secureWrite({
+            table: "comments",
+            action: "insert",
+            data: {
+              id: generateUUID(),
+              meal_id: mealUuid,
+              user_id: user.id,
+              content: data.description,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_deleted: false
+            }
           })
         }
       }

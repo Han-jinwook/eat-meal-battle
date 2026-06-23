@@ -5,6 +5,7 @@ import { useHub } from '@/services/merlin-hub-sdk/react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase'; // 아직 일부 로직에서 사용
+import { secureWrite } from '@/lib/supabase-safe';
 import useUserSchool from '@/hooks/useUserSchool';
 import Link from 'next/link';
 import MealCard from '@/components/MealCard';
@@ -897,12 +898,23 @@ export default function MealClient() {
         throw new Error(`학교 정보 조회 오류: ${schoolInfoError.message}`);
       }
 
-      const saveResult = existingSchoolInfo
-        ? await supabase.from('school_infos').update(schoolData).eq('user_id', user.id)
-        : await supabase.from('school_infos').insert([schoolData]);
-
-      if (saveResult.error) {
-        throw new Error(`학교 정보 저장 오류: ${saveResult.error.message}`);
+      try {
+        if (existingSchoolInfo) {
+          await secureWrite({
+            table: 'school_infos',
+            action: 'update',
+            data: schoolData,
+            filters: { user_id: user.id }
+          });
+        } else {
+          await secureWrite({
+            table: 'school_infos',
+            action: 'insert',
+            data: [schoolData]
+          });
+        }
+      } catch (saveError: any) {
+        throw new Error(`학교 정보 저장 오류: ${saveError.message}`);
       }
 
       setUserSchool((prev) => ({

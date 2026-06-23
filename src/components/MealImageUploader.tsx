@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase';
+import { secureWrite } from '@/lib/supabase-safe';
 import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import useUserSchool from '@/hooks/useUserSchool';
@@ -1106,14 +1107,11 @@ export default function MealImageUploader({
       }
 
       // DB에서 이미지 레코드 삭제
-      const { error: deleteError } = await supabase
-        .from('meal_images')
-        .delete()
-        .eq('id', uploadedImage.id);
-
-      if (deleteError) {
-        throw deleteError;
-      }
+      await secureWrite({
+        table: 'meal_images',
+        action: 'delete',
+        filters: { id: uploadedImage.id }
+      });
 
       // 스토리지의 이미지 삭제 시도
       try {
