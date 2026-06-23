@@ -6,8 +6,20 @@ import { getConfig } from '@/services/merlin-hub-sdk/CoreLogic/config';
 async function verifyMerlinSession(token: string) {
   // KCP 심사관용 테스트 토큰 예외 처리
   if (token === 'test-session-token') {
+    let testUserId = '00000000-0000-4000-8000-000000000001';
+    // 로컬 개발 환경에서 해당 테스트 유저가 auth.users에 없을 경우 첫 번째 사용자의 ID를 사용
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        const { data: firstUser } = await createAdminClient().from('users').select('id').limit(1).maybeSingle();
+        if (firstUser) {
+          testUserId = firstUser.id;
+        }
+      } catch (err) {
+        console.error('[verifyMerlinSession] Fallback user resolution failed:', err);
+      }
+    }
     return {
-      id: '00000000-0000-4000-8000-000000000001',
+      id: testUserId,
       email: 'test@aggrofilter.com',
       nickname: 'KCP심사관'
     };
@@ -46,11 +58,11 @@ export async function POST(request: Request) {
 
     const token = authHeader.substring(7);
     const user = await verifyMerlinSession(token);
-    if (!user || !user.id) {
+    if (!user || (!user.id && !user.userId)) {
       return NextResponse.json({ error: '유효하지 않은 세션입니다. 다시 로그인해주세요.' }, { status: 401 });
     }
 
-    const userId = user.id;
+    const userId = user.userId || user.id;
 
     // 2. 요청 바디 데이터 파싱
     const { table, action, data, filters } = await request.json();

@@ -9,6 +9,7 @@ import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 
 
 const defaultMealLogs = [
@@ -107,25 +108,23 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   // Supabase Storage에 파일 업로드하는 함수
   const uploadImageToStorage = async (base64Image: string): Promise<string> => {
     if (!user?.id) throw new Error("User not logged in")
-    const supabase = createClient()
-    const blob = base64ToBlob(base64Image)
+    const token = getSessionToken();
     const fileName = `solo_${user.id}_${Date.now()}.webp`
 
-    const { data, error } = await supabase.storage
-      .from("meal-images")
-      .upload(fileName, blob, {
-        contentType: "image/webp",
-        cacheControl: "3600",
-        upsert: false
-      })
+    const res = await fetch('/api/db/upload-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: JSON.stringify({ image: base64Image, fileName })
+    });
 
-    if (error) throw error
-
-    const { data: urlData } = supabase.storage
-      .from("meal-images")
-      .getPublicUrl(fileName)
-
-    return urlData.publicUrl
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || 'Image upload failed');
+    }
+    return result.publicUrl;
   }
 
   const handleAddComment = async (mealId: any) => {
