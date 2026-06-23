@@ -1914,7 +1914,8 @@ export function FamilyPage({
                             </span>
                           </div>
                         </div>
-                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-2 truncate">{meal.title}</h3>
+                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
+                        <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
                       </div>
                     </button>
 
