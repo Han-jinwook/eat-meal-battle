@@ -2730,6 +2730,7 @@ export function FamilyPage({
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddMealSave}
+        mode="family"
       />
     </div>
   )
