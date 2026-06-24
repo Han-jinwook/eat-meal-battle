@@ -343,14 +343,19 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           }
           new (window as any).daum.Postcode({
             oncomplete: (data: any) => {
-              const city = data.sido
-              const gu = data.sigungu
-              const dong = cleanDongName(data.bname || data.bname1 || data.bname2)
-              
-              setInputCity(city)
-              setInputGu(gu)
-              setInputDong(dong)
-              setPostcodeOpen(false)
+              try {
+                const city = data.sido || ""
+                const gu = data.sigungu || ""
+                const dong = cleanDongName(data.bname || data.bname1 || data.bname2 || "")
+                
+                setInputCity(city)
+                setInputGu(gu)
+                setInputDong(dong)
+              } catch (e) {
+                console.error("Error parsing address in oncomplete:", e)
+              } finally {
+                setPostcodeOpen(false)
+              }
             },
             width: "100%",
             height: "100%"

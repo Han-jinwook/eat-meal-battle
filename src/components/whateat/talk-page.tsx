@@ -56,6 +56,7 @@ interface TalkPost {
   // 집밥만 구독 가능
   isSubscribed?: boolean
   isSample?: boolean
+  isExplicit?: boolean
   linkUrl?: string
   linkThumbnail?: string
 }
@@ -749,14 +750,18 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             }
           }
 
+          const rawType = img.meal_type || meta.mealType || ""
           let mappedType: "homemade" | "delivery" | "dineout" = "homemade"
-          const rawType = meta.mealType || ""
+          let isExplicit = false
           if (rawType === "집밥" || rawType === "homemade") {
             mappedType = "homemade"
+            isExplicit = true
           } else if (rawType === "배달" || rawType === "delivery") {
             mappedType = "delivery"
+            isExplicit = true
           } else if (rawType === "외식" || rawType === "dineout") {
             mappedType = "dineout"
+            isExplicit = true
           }
 
           return {
@@ -787,15 +792,16 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             commentCount: 0,
             isSubscribed: false,
             isSample: false,
+            isExplicit,
             linkUrl: meta.linkUrl || "",
             linkThumbnail: meta.linkThumbnail || ""
           }
         })
 
         // Filter dummy posts based on loaded real types
-        const hasRealHomemade = parsedPosts.some(p => p.type === "homemade")
-        const hasRealDelivery = parsedPosts.some(p => p.type === "delivery")
-        const hasRealDineout = parsedPosts.some(p => p.type === "dineout")
+        const hasRealHomemade = parsedPosts.some(p => p.type === "homemade" && p.isExplicit)
+        const hasRealDelivery = parsedPosts.some(p => p.type === "delivery" && p.isExplicit)
+        const hasRealDineout = parsedPosts.some(p => p.type === "dineout" && p.isExplicit)
 
         const activeDummyPosts = dummyPosts.map(p => ({ ...p, isSample: true })).filter(p => {
           if (p.type === "homemade" && hasRealHomemade) return false
