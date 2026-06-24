@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
@@ -10,6 +10,17 @@ import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
+
+
+const cleanDongName = (dong: string) => {
+  if (!dong) return ""
+  let cleaned = dong.trim()
+  // Remove "제[0-9]동", "제 [0-9]동", or trailing numbers like "청라1동" -> "청라동"
+  cleaned = cleaned.replace(/제?\s*\d+([·\d]+)?동$/, "동")
+  cleaned = cleaned.replace(/\d+동$/, "동")
+  cleaned = cleaned.replace(/제\d+/, "")
+  return cleaned
+}
 
 
 const defaultMealLogs = [
@@ -98,6 +109,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [inputGu, setInputGu] = useState("")
   const [inputDong, setInputDong] = useState("")
   const [isRegionSaving, setIsRegionSaving] = useState(false)
+  const [postcodeOpen, setPostcodeOpen] = useState(true)
+  const embedRef = useRef<HTMLDivElement | null>(null)
 
   // 댓글 및 대댓글 관련 상태
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
@@ -309,6 +322,54 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       setIsRegionSaving(false)
     }
   }
+
+  // 거주 지역 등록 모달 오픈 시 검색창 오픈 및 지역 초기화
+  useEffect(() => {
+    if (regionModalOpen) {
+      setPostcodeOpen(true)
+      setInputCity("")
+      setInputGu("")
+      setInputDong("")
+    }
+  }, [regionModalOpen])
+
+  // 다음 우편번호 API 연동 및 임베드
+  useEffect(() => {
+    if (regionModalOpen && postcodeOpen) {
+      const initPostcode = () => {
+        if (embedRef.current && (window as any).daum?.Postcode) {
+          if (embedRef.current) {
+            embedRef.current.innerHTML = ""
+          }
+          new (window as any).daum.Postcode({
+            oncomplete: (data: any) => {
+              const city = data.sido
+              const gu = data.sigungu
+              const dong = cleanDongName(data.bname || data.bname1 || data.bname2)
+              
+              setInputCity(city)
+              setInputGu(gu)
+              setInputDong(dong)
+              setPostcodeOpen(false)
+            },
+            width: "100%",
+            height: "100%"
+          }).embed(embedRef.current)
+        }
+      }
+
+      if (!(window as any).daum?.Postcode) {
+        const script = document.createElement("script")
+        script.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+        script.async = true
+        script.onload = () => initPostcode()
+        document.body.appendChild(script)
+      } else {
+        setTimeout(initPostcode, 0)
+      }
+    }
+  }, [regionModalOpen, postcodeOpen])
+
   const [isLoaded, setIsLoaded] = useState(false)
 
   // DB에서 식사 및 댓글 불러오기
@@ -1642,7 +1703,18 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       {/* 거주 지역 등록 모달 (최초 맛톡 공유 시 강제 수집) */}
       {regionModalOpen && (
         <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200 space-y-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200 relative space-y-4">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setRegionModalOpen(false)
+                setPendingShareData(null)
+              }}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
+
             <div>
               <h3 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <span className="text-orange-500">📍</span> 거주 지역 등록
@@ -1652,48 +1724,38 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               </p>
             </div>
 
-            <div className="space-y-3 pt-1">
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">시/도</label>
-                  <input
-                    type="text"
-                    placeholder="예: 인천"
-                    value={inputCity}
-                    onChange={(e) => setInputCity(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
-                  />
+            {postcodeOpen ? (
+              <div ref={embedRef} className="w-full h-[360px] border border-slate-100 rounded-xl overflow-hidden mt-3 shadow-inner bg-slate-50" />
+            ) : (
+              <div className="space-y-4 pt-1">
+                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5 text-center mt-2 space-y-2 animate-in fade-in zoom-in duration-200">
+                  <span className="text-3xl">📍</span>
+                  <div className="text-[11px] text-orange-600 font-semibold uppercase tracking-wider">선택하신 거주 지역</div>
+                  <div className="text-base font-extrabold text-foreground">
+                    {inputCity} {inputGu} {inputDong}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground leading-relaxed">
+                    * 동 정보는 맛톡 동네 맛집 피드 매칭에 사용되며,<br />상세 주소는 일절 수집하지 않습니다.
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">시/군/구</label>
-                  <input
-                    type="text"
-                    placeholder="예: 서구"
-                    value={inputGu}
-                    onChange={(e) => setInputGu(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-muted-foreground mb-1 block">읍/면/동</label>
-                  <input
-                    type="text"
-                    placeholder="예: 청라동"
-                    value={inputDong}
-                    onChange={(e) => setInputDong(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
-                  />
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPostcodeOpen(true)}
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    다른 지역 검색
+                  </button>
+                  <button
+                    onClick={handleSaveRegionAndUpload}
+                    disabled={isRegionSaving}
+                    className="flex-[2] py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:bg-orange-300 flex items-center justify-center"
+                  >
+                    {isRegionSaving ? "저장 중..." : "등록 및 공유 완료"}
+                  </button>
                 </div>
               </div>
-
-              <button
-                onClick={handleSaveRegionAndUpload}
-                disabled={isRegionSaving}
-                className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:bg-orange-300 flex items-center justify-center"
-              >
-                {isRegionSaving ? "저장 중..." : "거주 지역 등록 및 맛톡 공유"}
-              </button>
-            </div>
+            )}
           </div>
         </div>
       )}
