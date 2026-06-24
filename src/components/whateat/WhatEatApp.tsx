@@ -342,7 +342,7 @@ export default function WhatEatApp() {
             </div>
             <div className={cn("relative min-h-[500px]", bottomNavTab !== "meal" && "hidden")}>
               <div>
-                <MealWrapper />
+                {bottomNavTab === "meal" && <MealWrapper />}
               </div>
             </div>
           </main>

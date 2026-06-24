@@ -12,6 +12,7 @@ import StructuredData from '@/components/StructuredData';
 import { SchoolModeProvider } from '@/hooks/useSchoolMode';
 import WhatEatTimer from '@/components/whateat/WhatEatTimer';
 import { WhatEatResponsiveWing } from '@/components/WhatEatResponsiveWing';
+import UserSync from '@/components/UserSync';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,6 +113,7 @@ export default function RootLayout({
           <GlobalLoginModal />
           <HubNotifier />
           <WhatEatResponsiveWing />
+          <UserSync />
         </HubProvider>
       </body>
     </html>
