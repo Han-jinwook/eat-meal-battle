@@ -316,7 +316,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const fetchDbLogs = async () => {
       if (!isLoggedIn || !user?.id) {
         // 비로그인이면 기본 샘플 3개 표시
-        setMealLogs(defaultMealLogs)
+        setMealLogs([])
         setIsLoaded(true)
         return
       }
@@ -333,7 +333,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         if (imgError) throw imgError
 
         if (!imgData || imgData.length === 0) {
-          setMealLogs(defaultMealLogs)
+          setMealLogs([])
           setIsLoaded(true)
           return
         }
@@ -452,7 +452,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             type: mappedType,
             title: img.title || meta.title || "맛있는 식사",
             image: img.image_url || "/images/placeholder-food.jpg",
-            rating: img.rating || meta.rating || 5,
+            rating: img.rating ?? meta.rating ?? 0,
             tips: meta.tips || [],
             tipTitle: mappedType === "집밥" ? "조리 팁" : "추천 메뉴",
             linkUrl: img.link_url || meta.linkUrl || "",
@@ -469,7 +469,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         setMealLogs(mappedLogs)
       } catch (err) {
         console.error("Failed to load logs from Supabase:", err)
-        setMealLogs(defaultMealLogs)
+        setMealLogs([])
       } finally {
         setIsLoaded(true)
       }

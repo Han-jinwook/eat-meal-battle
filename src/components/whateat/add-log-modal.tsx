@@ -740,6 +740,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     recipeType: recipeInputType,
                     linkUrl: linkUrl || undefined,
                     image: imagePreview || undefined,
+                    rating: editData?.rating,
+                    description: editData?.description,
                   }
                   onSave?.(data)
                   onClose()
