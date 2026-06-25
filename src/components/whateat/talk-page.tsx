@@ -958,30 +958,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return true
   })
 
-  // 샘플 카드 개별 소멸 여부 판단 (지역 범위 및 실제 카드 등록 여부 매칭)
+  // 샘플 카드 개별 소멸 여부 판단 (타입별 일치 여부 확인)
   const shouldHideSample = (sample: TalkPost, realPosts: TalkPost[]) => {
-    const isSameCityA = (c1?: string, c2?: string) => {
-      if (!c1 || !c2) return false
-      return c1.substring(0, 2) === c2.substring(0, 2)
-    }
-
-    return realPosts.some(real => {
-      const cityMatch = isSameCityA(real.region.city, sample.region.city)
-      const guMatch = cityMatch && real.region.gu === sample.region.gu
-      const realDong = real.author?.region || real.region?.dong || ""
-      const dongMatch = guMatch && realDong === sample.region.dong
-
-      if (scopeFilter === "dong") {
-        return dongMatch
-      } else if (scopeFilter === "gu") {
-        return guMatch
-      } else if (scopeFilter === "city") {
-        return cityMatch
-      } else {
-        // all (전국): 동일한 동에 실제 카드가 있는 경우에만 해당 샘플 소멸
-        return dongMatch
-      }
-    })
+    return realPosts.some(real => real.type === sample.type && real.isExplicit)
   }
 
   // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
