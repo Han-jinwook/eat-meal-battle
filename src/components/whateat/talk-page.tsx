@@ -849,17 +849,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         })
 
-        // Filter dummy posts based on loaded real types
-        const hasRealHomemade = parsedPosts.some(p => p.type === "homemade" && p.isExplicit)
-        const hasRealDelivery = parsedPosts.some(p => p.type === "delivery" && p.isExplicit)
-        const hasRealDineout = parsedPosts.some(p => p.type === "dineout" && p.isExplicit)
-
-        const activeDummyPosts = dummyPosts.map(p => ({ ...p, isSample: true })).filter(p => {
-          if (p.type === "homemade" && hasRealHomemade) return false
-          if (p.type === "delivery" && hasRealDelivery) return false
-          if (p.type === "dineout" && hasRealDineout) return false
-          return true
-        })
+        // Keep all dummy posts as samples. Individual hiding is handled by shouldHideSample
+        const activeDummyPosts = dummyPosts.map(p => ({ ...p, isSample: true }))
 
         setPosts([...parsedPosts, ...activeDummyPosts])
       } catch (err) {
@@ -967,17 +958,43 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return true
   })
 
-  // 샘플 카드 개수 제한 (실제 포스트가 1개라도 존재한다면 샘플은 0개로 소멸)
-  const getSampleLimit = (realCount: number) => {
-    if (realCount > 0) return 0
+  // 샘플 카드 개별 소멸 여부 판단 (지역 범위 및 실제 카드 등록 여부 매칭)
+  const shouldHideSample = (sample: TalkPost, realPosts: TalkPost[]) => {
+    const isSameCityA = (c1?: string, c2?: string) => {
+      if (!c1 || !c2) return false
+      return c1.substring(0, 2) === c2.substring(0, 2)
+    }
 
+    return realPosts.some(real => {
+      const cityMatch = isSameCityA(real.region.city, sample.region.city)
+      const guMatch = cityMatch && real.region.gu === sample.region.gu
+      const realDong = real.author?.region || real.region?.dong || ""
+      const dongMatch = guMatch && realDong === sample.region.dong
+
+      if (scopeFilter === "dong") {
+        return dongMatch
+      } else if (scopeFilter === "gu") {
+        return guMatch
+      } else if (scopeFilter === "city") {
+        return cityMatch
+      } else {
+        // all (전국): 동일한 동에 실제 카드가 있는 경우에만 해당 샘플 소멸
+        return dongMatch
+      }
+    })
+  }
+
+  // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
+  const getSampleLimit = () => {
     if (scopeFilter === "dong") return 1
     if (scopeFilter === "gu") return 2
     return 3
   }
 
   const realPostsFiltered = filteredPostsRaw.filter(p => !p.isSample)
-  const samplePostsFiltered = filteredPostsRaw.filter(p => p.isSample).slice(0, getSampleLimit(realPostsFiltered.length))
+  const samplePostsFiltered = filteredPostsRaw
+    .filter(p => p.isSample && !shouldHideSample(p, realPostsFiltered))
+    .slice(0, getSampleLimit())
   const filteredPosts = [...realPostsFiltered, ...samplePostsFiltered]
 
   const getCategoryCount = (categoryId: string) => {
@@ -1010,7 +1027,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     })
 
     const realFiltered = rawFiltered.filter(p => !p.isSample)
-    const sampleFiltered = rawFiltered.filter(p => p.isSample).slice(0, getSampleLimit(realFiltered.length))
+    const sampleFiltered = rawFiltered
+      .filter(p => p.isSample && !shouldHideSample(p, realFiltered))
+      .slice(0, getSampleLimit())
 
     return realFiltered.length + sampleFiltered.length
   }
