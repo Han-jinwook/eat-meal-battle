@@ -109,8 +109,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [inputGu, setInputGu] = useState("")
   const [inputDong, setInputDong] = useState("")
   const [isRegionSaving, setIsRegionSaving] = useState(false)
-  const [postcodeOpen, setPostcodeOpen] = useState(true)
-  const embedRef = useRef<HTMLDivElement | null>(null)
+  const [regionList, setRegionList] = useState<string[]>([])
+  const [addressSearchQuery, setAddressSearchQuery] = useState("")
+  const [filteredRegions, setFilteredRegions] = useState<string[]>([])
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
 
   // 댓글 및 대댓글 관련 상태
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
@@ -414,47 +416,51 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }, [regionModalOpen])
 
-  // 다음 우편번호 API 연동 및 임베드
+  // 1. regions.json 주소 데이터베이스 로드
   useEffect(() => {
-    if (regionModalOpen && postcodeOpen) {
-      const initPostcode = () => {
-        if (embedRef.current && (window as any).daum?.Postcode) {
-          if (embedRef.current) {
-            embedRef.current.innerHTML = ""
-          }
-          new (window as any).daum.Postcode({
-            oncomplete: (data: any) => {
-              try {
-                const city = data.sido || ""
-                const gu = data.sigungu || ""
-                const dong = cleanDongName(data.bname || data.bname1 || data.bname2 || "")
-                
-                setInputCity(city)
-                setInputGu(gu)
-                setInputDong(dong)
-              } catch (e) {
-                console.error("Error parsing address in oncomplete:", e)
-              } finally {
-                setPostcodeOpen(false)
-              }
-            },
-            width: "100%",
-            height: "100%"
-          }).embed(embedRef.current)
+    const loadRegions = async () => {
+      try {
+        const res = await fetch("/data/regions.json")
+        if (res.ok) {
+          const list = await res.json()
+          setRegionList(list)
         }
-      }
-
-      if (!(window as any).daum?.Postcode) {
-        const script = document.createElement("script")
-        script.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
-        script.async = true
-        script.onload = () => initPostcode()
-        document.body.appendChild(script)
-      } else {
-        setTimeout(initPostcode, 0)
+      } catch (err) {
+        console.error("Failed to load regions database:", err)
       }
     }
-  }, [regionModalOpen, postcodeOpen])
+    loadRegions()
+  }, [])
+
+  // 2. 검색어에 따른 읍면동 리스트 실시간 필터링 (최대 10개)
+  useEffect(() => {
+    const query = addressSearchQuery.trim()
+    if (!query) {
+      setFilteredRegions([])
+      return
+    }
+    const filtered = regionList
+      .filter((r) => r.includes(query))
+      .slice(0, 10)
+    setFilteredRegions(filtered)
+  }, [addressSearchQuery, regionList])
+
+  const handleSelectRegionItem = (regionStr: string) => {
+    setSelectedRegion(regionStr)
+    setAddressSearchQuery("")
+    setFilteredRegions([])
+    
+    const parts = regionStr.split(/\s+/)
+    if (parts.length >= 3) {
+      setInputCity(parts[0])
+      setInputGu(parts[1])
+      setInputDong(parts[parts.length - 1])
+    } else if (parts.length === 2) {
+      setInputCity(parts[0])
+      setInputGu("")
+      setInputDong(parts[1])
+    }
+  }
 
   const [isLoaded, setIsLoaded] = useState(false)
 
@@ -1791,6 +1797,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               onClick={() => {
                 setRegionModalOpen(false)
                 setPendingShareData(null)
+                setSelectedRegion(null)
+                setAddressSearchQuery("")
               }}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
@@ -1806,15 +1814,49 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               </p>
             </div>
 
-            {postcodeOpen ? (
-              <div ref={embedRef} className="w-full h-[360px] border border-slate-100 rounded-xl overflow-hidden mt-3 shadow-inner bg-slate-50" />
+            {!selectedRegion ? (
+              <div className="space-y-3 pt-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+                  <input
+                    type="text"
+                    value={addressSearchQuery}
+                    onChange={(e) => setAddressSearchQuery(e.target.value)}
+                    placeholder="예: 청라동, 화곡동, 삼평동"
+                    className="w-full pl-9 pr-4 h-[38px] bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50 text-foreground"
+                    autoFocus
+                  />
+                </div>
+
+                {/* 검색 결과 자동완성 리스트 */}
+                {addressSearchQuery.trim() && (
+                  <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-xl bg-white divide-y divide-gray-50 shadow-inner">
+                    {filteredRegions.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        검색 결과가 없습니다.
+                      </div>
+                    ) : (
+                      filteredRegions.map((region) => (
+                        <button
+                          key={region}
+                          onClick={() => handleSelectRegionItem(region)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-orange-50/50 text-xs text-foreground transition-colors font-medium flex items-center gap-1.5"
+                        >
+                          <span className="text-orange-400">📍</span>
+                          {region}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-4 pt-1">
                 <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5 text-center mt-2 space-y-2 animate-in fade-in zoom-in duration-200">
                   <span className="text-3xl">📍</span>
                   <div className="text-[11px] text-orange-600 font-semibold uppercase tracking-wider">선택하신 거주 지역</div>
                   <div className="text-base font-extrabold text-foreground">
-                    {inputCity} {inputGu} {inputDong}
+                    {selectedRegion}
                   </div>
                   <div className="text-[10px] text-muted-foreground leading-relaxed">
                     * 동 정보는 맛톡 동네 맛집 피드 매칭에 사용되며,<br />상세 주소는 일절 수집하지 않습니다.
@@ -1823,7 +1865,12 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setPostcodeOpen(true)}
+                    onClick={() => {
+                      setSelectedRegion(null)
+                      setInputCity("")
+                      setInputGu("")
+                      setInputDong("")
+                    }}
                     className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
                   >
                     다른 지역 검색
