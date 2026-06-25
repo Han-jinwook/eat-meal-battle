@@ -1500,15 +1500,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                         </div>
                         <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
 
-                        <div className="flex items-center gap-3 mt-2">
-                          <button
-                            onClick={() => setSoloCommentLikes(prev => ({ ...prev, [String(comment.id)]: !prev[String(comment.id)] }))}
-                            className="text-[11px] text-muted-foreground flex items-center gap-1"
-                          >
-                            <Heart className={cn("size-3.5", soloCommentLikes[String(comment.id)] && "fill-orange-500 text-orange-500")} />
-                            {soloCommentLikes[String(comment.id)] ? 1 : 0}
-                          </button>
-                        </div>
                       </div>
                     ))
                   )}
