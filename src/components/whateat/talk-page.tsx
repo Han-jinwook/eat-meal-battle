@@ -1099,7 +1099,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* 지역 필터 */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="relative">
+            <div className="relative z-50">
               <button
                 onClick={() => setShowScopeDropdown(!showScopeDropdown)}
                 className={cn(
@@ -1120,6 +1120,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                       onClick={() => {
                         setScopeFilter(scope.id)
                         setSearchRegion("")
+                        setShowRegionSearch(false)
                         setShowScopeDropdown(false)
                       }}
                       className={cn(
