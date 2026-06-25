@@ -200,7 +200,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       }))
 
       setCommentInputs(prev => ({ ...prev, [mealId]: "" }))
-      toast.success("댓글이 등록되었습니다.")
     } catch (err) {
       console.error("Failed to add comment:", err)
       toast.error("댓글 등록에 실패했습니다.")
@@ -270,7 +269,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
       setReplyInputs(prev => ({ ...prev, [commentId]: "" }))
       setActiveReplyTarget(null)
-      toast.success("답글이 등록되었습니다.")
     } catch (err) {
       console.error("Failed to add reply:", err)
       toast.error("답글 등록에 실패했습니다.")
@@ -415,20 +413,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             .from("comments")
             .select("*")
             .in("meal_id", mealIds)
+            .eq("user_id", user.id)
             .eq("is_deleted", false)
             .order("created_at", { ascending: true })
           dbComments = commentsData || []
 
           const commentIds = dbComments.map(c => c.id)
-          if (commentIds.length > 0) {
-            const { data: repliesData } = await supabase
-              .from("comment_replies")
-              .select("*")
-              .in("comment_id", commentIds)
-              .eq("is_deleted", false)
-              .order("created_at", { ascending: true })
-            dbReplies = repliesData || []
-          }
+          dbReplies = []
 
           const commentUserIds = Array.from(new Set([
             ...dbComments.map(c => c.user_id),
@@ -909,8 +900,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         log.id === mealId ? { ...log, rating: newRating, status: status } : log
       ))
 
-      toast.success("평점이 변경되었습니다.")
-
       if (newRating === 5) {
         await checkConsentAndUpload({
           id: targetLog.id,
@@ -1102,8 +1091,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           })
         }
       }
-
-      toast.success(data.id ? "식사 기록이 수정되었습니다." : "식사 기록이 저장되었습니다.")
 
       const formattedDate = data.date 
         ? toDisplayDate(data.date) 
@@ -1521,62 +1508,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                             <Heart className={cn("size-3.5", soloCommentLikes[String(comment.id)] && "fill-orange-500 text-orange-500")} />
                             {soloCommentLikes[String(comment.id)] ? 1 : 0}
                           </button>
-                          <button
-                            onClick={() => {
-                              const isSameTarget =
-                                activeReplyTarget?.mealId === meal.id &&
-                                activeReplyTarget.commentId === comment.id
-
-                              if (isSameTarget) {
-                                setActiveReplyTarget(null)
-                                return
-                              }
-                              setActiveReplyTarget({ mealId: meal.id, commentId: comment.id })
-                            }}
-                            className="text-[11px] text-muted-foreground"
-                          >
-                            답글
-                          </button>
                         </div>
-
-                        {/* 대댓글(답글) 리스트 */}
-                        {(comment.replies || []).length > 0 && (
-                          <div className="mt-2 pl-2 border-l-2 border-orange-200 space-y-1.5">
-                            {(comment.replies || []).map((reply: any) => (
-                              <div key={reply.id} className="bg-white/70 rounded-lg px-2 py-1.5 border border-orange-50">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[9px] font-bold text-foreground">{reply.author}</span>
-                                  <span className="text-[8px] text-muted-foreground">{reply.createdAt}</span>
-                                </div>
-                                <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* 대댓글 입력창 */}
-                        {activeReplyTarget?.mealId === meal.id && activeReplyTarget.commentId === comment.id && (
-                          <div className="mt-2 flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={replyInputs[comment.id] || ""}
-                              onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  handleAddReply(meal.id, comment.id)
-                                }
-                              }}
-                              placeholder="답글을 입력하세요"
-                              className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-[10px] outline-none focus:ring-2 focus:ring-orange-300"
-                            />
-                            <button
-                              onClick={() => handleAddReply(meal.id, comment.id)}
-                              className="px-2.5 py-1 rounded-lg bg-orange-500 text-white flex items-center justify-center text-[10px] font-bold"
-                            >
-                              전송
-                            </button>
-                          </div>
-                        )}
                       </div>
                     ))
                   )}

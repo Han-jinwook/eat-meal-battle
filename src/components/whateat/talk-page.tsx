@@ -519,8 +519,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       
       // 상위 포스트 목록의 댓글 수 업데이트
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p))
-      
-      toast.success("댓글이 등록되었습니다.")
     } catch (err) {
       console.error("Failed to insert comment:", err)
       toast.error("댓글 등록에 실패했습니다.")
@@ -610,8 +608,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       }))
       setReplyInputs(prev => ({ ...prev, [commentId]: "" }))
       setActiveReplyTarget(null)
-      
-      toast.success("답글이 등록되었습니다.")
     } catch (err) {
       console.error("Failed to insert reply:", err)
       toast.error("답글 등록에 실패했습니다.")
