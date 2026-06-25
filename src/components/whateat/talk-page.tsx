@@ -13,8 +13,7 @@ import {
   ArrowUpDown,
   X,
   Send,
-  ExternalLink,
-  Bookmark
+  ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -1268,75 +1267,72 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               </div>
             </div>
 
-            {/* Card Content (flex h-[200px] 구조) */}
-            <div className="flex h-[200px] border-y border-muted/20">
-              {/* Left Section: 요리 대표 사진 */}
-              <div
-                className="w-1/2 relative overflow-hidden cursor-zoom-in"
-                onClick={() => setViewerImage(post.image)}
-              >
-                {post.image ? (
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
-                    style={{ backgroundImage: `url("${post.image}")` }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-muted/20" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                
-                {post.restaurant && (
-                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 z-10">
-                    <span className="font-bold text-white text-[10px]">{post.restaurant.name}</span>
-                  </div>
-                )}
-              </div>
+            {/* Card Content — 풀와이드 이미지 + 하단 정보 (솔로/패밀리 스타일) */}
+            {/* 이미지 영역 */}
+            <div
+              className="relative h-[200px] overflow-hidden cursor-zoom-in"
+              onClick={() => setViewerImage(post.image)}
+            >
+              {post.image ? (
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                  style={{ backgroundImage: `url("${post.image}")` }}
+                />
+              ) : (
+                <div className="absolute inset-0 bg-muted/20" />
+              )}
+              {/* 하단 그라데이션 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-              {/* Right Section: 레시피 썸네일 or 텍스트 설명 */}
-              <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {post.linkUrl && post.linkThumbnail ? (
-                  <a
-                    href={post.linkUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full h-full relative group overflow-hidden"
-                  >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                      style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
-                    />
-                    <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
-                      {(post.type === "외식" || post.type === "배달") ? (
-                        <>
-                          <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
-                            <span className="text-white text-[7px] font-black">N</span>
-                          </div>
-                          <span className="text-[10px] font-bold text-foreground">Place</span>
-                        </>
-                      ) : (
-                        <>
-                          <ExternalLink className="size-3 text-orange-500" />
-                          <span className="text-[10px] font-bold text-foreground">recipe</span>
-                        </>
-                      )}
-                    </div>
-                  </a>
-                ) : (
-                  <div className="p-4 flex flex-col justify-between h-full w-full">
-                    <div className="overflow-hidden">
-                      <h4 className="font-bold text-xs text-foreground mb-1 line-clamp-1">{post.title}</h4>
-                      <p className="text-[11px] text-muted-foreground leading-normal line-clamp-4">{post.description}</p>
-                    </div>
-                    {/* 평점 표시 */}
-                    <div className="text-[10px] font-bold text-orange-500 flex items-center gap-1 mt-1">
-                      <Star className="size-3 fill-orange-400 text-orange-400" />
-                      {post.rating.average.toFixed(1)} ({post.rating.count}명)
-                    </div>
+              {/* 우상단: Place/recipe 배지 */}
+              {post.linkUrl && post.linkThumbnail && (
+                <a
+                  href={post.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm z-10 hover:bg-white transition-colors"
+                >
+                  {(post.type === "dineout" || post.type === "delivery") ? (
+                    <>
+                      <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
+                        <span className="text-white text-[7px] font-black">N</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-foreground">Place</span>
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="size-3 text-orange-500" />
+                      <span className="text-[10px] font-bold text-foreground">recipe</span>
+                    </>
+                  )}
+                </a>
+              )}
+            </div>
+
+            {/* 하단 정보 영역 */}
+            <div className="px-4 pt-3 pb-1">
+              {/* 식당명 + 별점 한 줄 */}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[11px] text-muted-foreground font-medium truncate">
+                  {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
+                </span>
+                {post.rating.count > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Star className="size-3 fill-orange-400 text-orange-400" />
+                    <span className="text-[11px] font-bold text-orange-500">
+                      {post.rating.average.toFixed(1)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      ({post.rating.count}명)
+                    </span>
                   </div>
                 )}
               </div>
+              {/* 메뉴명 */}
+              <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-2">{post.title}</h4>
             </div>
+
 
             {/* Stats & Actions */}
             <div className="px-4 pb-3 flex items-center justify-between">
@@ -1378,11 +1374,16 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   }}
                   className="flex items-center gap-1.5 text-muted-foreground hover:text-orange-500 transition-colors"
                 >
-                  <Bookmark className={cn(
+                  <MapPin className={cn(
                     "size-4 transition-all",
-                    saveDropdownPostId === post.id ? "fill-orange-400 text-orange-500" : ""
+                    saveDropdownPostId === post.id
+                      ? "fill-red-500 text-red-500 scale-110"
+                      : "text-muted-foreground"
                   )} />
-                  <span className="text-xs font-bold">담기</span>
+                  <span className={cn(
+                    "text-xs font-bold",
+                    saveDropdownPostId === post.id ? "text-red-500" : ""
+                  )}>담기</span>
                 </button>
                 {saveDropdownPostId === post.id && (
                   <div className="absolute bottom-8 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
