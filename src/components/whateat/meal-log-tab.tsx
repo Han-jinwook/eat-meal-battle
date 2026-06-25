@@ -934,25 +934,34 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
+    const targetLog = mealLogs.find(log => log.id === mealId)
+    if (!targetLog) return
+
+    // 기존 값 백업 (에러 시 롤백용)
+    const oldRating = targetLog.rating
+    const oldStatus = targetLog.status
+
+    let status = "pending"
+    let source = "solo"
+    if (newRating === 5) {
+      const pref = localStorage.getItem("whateat_auto_share_5star")
+      if (pref === "approved") {
+        status = "approved"
+        source = "solo-5star"
+      } else {
+        status = "pending"
+        source = "solo-5star"
+      }
+    }
+
+    // 1. UI 상태 즉각 업데이트 (낙관적 업데이트)
+    setMealLogs(prev => prev.map(log => 
+      log.id === mealId ? { ...log, rating: newRating, status: status } : log
+    ))
+
     try {
       const supabase = createClient()
       
-      const targetLog = mealLogs.find(log => log.id === mealId)
-      if (!targetLog) return
-
-      let status = "pending"
-      let source = "solo"
-      if (newRating === 5) {
-        const pref = localStorage.getItem("whateat_auto_share_5star")
-        if (pref === "approved") {
-          status = "approved"
-          source = "solo-5star"
-        } else {
-          status = "pending"
-          source = "solo-5star"
-        }
-      }
-
       const metadata = {
         title: targetLog.title,
         mealType: targetLog.type,
@@ -965,6 +974,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         promotedAt: status === "approved" ? new Date().toISOString() : undefined
       }
 
+      // 2. 백그라운드 DB 업데이트
       await secureWrite({
         table: 'meal_images',
         action: 'update',
@@ -976,10 +986,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         },
         filters: { id: mealId }
       })
-
-      setMealLogs(prev => prev.map(log => 
-        log.id === mealId ? { ...log, rating: newRating, status: status } : log
-      ))
 
       if (newRating === 5) {
         await checkConsentAndUpload({
@@ -997,6 +1003,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     } catch (err) {
       console.error("Failed to update rating on Supabase:", err)
       toast.error("평점 저장에 실패했습니다.")
+      // 3. 실패 시 원래 상태로 복구 (롤백)
+      setMealLogs(prev => prev.map(log => 
+        log.id === mealId ? { ...log, rating: oldRating, status: oldStatus } : log
+      ))
     }
   }
 
