@@ -754,7 +754,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         const getRatingStats = (mId: string) => {
           const stats = mealRatingStatsMap.get(mId)
           if (!stats || stats.count === 0) {
-            return { average: 5, count: 0 }
+            return { average: 5, count: 1 }
           }
           return {
             average: Math.round((stats.sum / stats.count) * 10) / 10,
@@ -801,9 +801,23 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             isExplicit = true
           }
 
+          const rawSource = img.source || ""
+          let mappedSource: "solo" | "family" | "group" = "solo"
+          if (rawSource === "family-shared") {
+            mappedSource = "family"
+          } else if (rawSource === "group") {
+            mappedSource = "group"
+          }
+
+          // 솔로는 항상 5점 고정(박제), 가족/모임은 DB 누계 통계 활용 (디폴트 1명)
+          const finalRating = mappedSource === "solo"
+            ? { average: 5, count: 1 }
+            : (img.meal_id ? getRatingStats(img.meal_id) : { average: 5, count: 1 })
+
           return {
             id: img.id,
             type: mappedType,
+            source: mappedSource,
             title: meta.title || "맛있는 식사",
             image: img.image_url || "/images/placeholder-food.jpg",
             description: meta.description || meta.recipe || img.explanation || "별점 5점 식사 기록입니다. 😋",
@@ -823,7 +837,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               region: parsedDong
             },
             createdAt: meta.promotedAt || img.created_at,
-            rating: img.meal_id ? getRatingStats(img.meal_id) : { average: 5, count: 0 },
+            rating: finalRating,
             likes: 0,
             isLiked: false,
             commentCount: 0,
