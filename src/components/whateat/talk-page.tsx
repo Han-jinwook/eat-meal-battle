@@ -1055,96 +1055,97 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     <div className="flex flex-col gap-4 pb-4">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-lg">
-        {/* 1줄: 지역 필터 */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="relative">
-            <button
-              onClick={() => setShowScopeDropdown(!showScopeDropdown)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-extrabold transition-all whitespace-nowrap border",
-                scopeFilter === "all" && !searchRegion
-                  ? "bg-white text-foreground border-gray-300 hover:border-orange-200"
-                  : "bg-orange-50 text-orange-600 border-orange-200"
+        {/* 지역 필터 + 타이틀 + 식당/메뉴 검색 통합 한 줄 바 */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          {/* 지역 필터 */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <button
+                onClick={() => setShowScopeDropdown(!showScopeDropdown)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-extrabold transition-all whitespace-nowrap border",
+                  scopeFilter === "all" && !searchRegion
+                    ? "bg-white text-foreground border-gray-300 hover:border-orange-200"
+                    : "bg-orange-50 text-orange-600 border-orange-200"
+                )}
+              >
+                {getDropdownButtonLabel()}
+                <ChevronDown className="size-3" />
+              </button>
+              {showScopeDropdown && (
+                <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                  {regionScopeOptions.map((scope) => (
+                    <button
+                      key={scope.id}
+                      onClick={() => {
+                        setScopeFilter(scope.id)
+                        setSearchRegion("")
+                        setShowScopeDropdown(false)
+                      }}
+                      className={cn(
+                        "w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between gap-2",
+                        scopeFilter === scope.id && !searchRegion
+                          ? "bg-orange-50 text-orange-500 font-bold"
+                          : "text-muted-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      <span>{scope.label}</span>
+                      {scopeFilter === scope.id && !searchRegion && <span className="text-[10px]">선택된 항목</span>}
+                    </button>
+                  ))}
+                </div>
               )}
+            </div>
+
+            {/* 지역 검색 토글 돋보기 버튼 */}
+            <button
+              onClick={() => {
+                const nextState = !showRegionSearch
+                setShowRegionSearch(nextState)
+                if (!nextState) {
+                  setSearchRegion("")
+                }
+              }}
+              className={cn(
+                "flex items-center justify-center size-9 rounded-xl border transition-all shrink-0",
+                showRegionSearch
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "bg-white border-gray-300 text-muted-foreground hover:border-orange-200"
+              )}
+              title="지역 검색"
             >
-              {getDropdownButtonLabel()}
-              <ChevronDown className="size-3" />
+              <Search className="size-4" />
             </button>
-            {showScopeDropdown && (
-              <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
-                {regionScopeOptions.map((scope) => (
-                  <button
-                    key={scope.id}
-                    onClick={() => {
-                      setScopeFilter(scope.id)
-                      setSearchRegion("")
-                      setShowScopeDropdown(false)
-                    }}
-                    className={cn(
-                      "w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between gap-2",
-                      scopeFilter === scope.id && !searchRegion
-                        ? "bg-orange-50 text-orange-500 font-bold"
-                        : "text-muted-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <span>{scope.label}</span>
-                    {scopeFilter === scope.id && !searchRegion && <span className="text-[10px]">선택된 항목</span>}
-                  </button>
-                ))}
-              </div>
+
+            {/* 1/3 너비 지역 검색창 */}
+            {showRegionSearch && (
+              <input
+                type="text"
+                autoFocus
+                placeholder="동/구/시 입력"
+                value={searchRegion}
+                onChange={(e) => {
+                  setSearchRegion(e.target.value)
+                  if (e.target.value.trim() !== "") {
+                    setScopeFilter("dong")
+                  } else {
+                    setScopeFilter("all")
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setShowRegionSearch(false)
+                    setSearchRegion("")
+                    setScopeFilter("all")
+                  }
+                }}
+                className="w-36 px-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none placeholder:text-muted-foreground/50 animate-in slide-in-from-left-2 duration-200 h-9"
+              />
             )}
           </div>
 
-          {/* 지역 검색 토글 돋보기 버튼 */}
-          <button
-            onClick={() => {
-              const nextState = !showRegionSearch
-              setShowRegionSearch(nextState)
-              if (!nextState) {
-                setSearchRegion("")
-              }
-            }}
-            className={cn(
-              "flex items-center justify-center size-9 rounded-xl border transition-all shrink-0",
-              showRegionSearch
-                ? "bg-orange-500 text-white border-orange-500"
-                : "bg-white border-gray-300 text-muted-foreground hover:border-orange-200"
-            )}
-            title="지역 검색"
-          >
-            <Search className="size-4" />
-          </button>
-
-          {/* 1/3 너비 지역 검색창 */}
-          {showRegionSearch && (
-            <input
-              type="text"
-              autoFocus
-              placeholder="동/구/시 입력"
-              value={searchRegion}
-              onChange={(e) => {
-                setSearchRegion(e.target.value)
-                if (e.target.value.trim() !== "") {
-                  setScopeFilter("dong")
-                } else {
-                  setScopeFilter("all")
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setShowRegionSearch(false)
-                  setSearchRegion("")
-                  setScopeFilter("all")
-                }
-              }}
-              className="w-36 px-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none placeholder:text-muted-foreground/50 animate-in slide-in-from-left-2 duration-200 h-9"
-            />
-          )}
-        </div>
-
-        {/* 2줄: 타이틀 + 식당/메뉴 검색 */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* 우리동네 5점 맛집 모음 타이틀 */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-1">
             <p className="text-xs font-semibold text-cyan-500 whitespace-nowrap">우리 동네 5점 맛집 모음</p>
             <div className="relative group">
               <button
@@ -1160,7 +1161,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             </div>
           </div>
 
-          <div className="flex-1 relative md:max-w-md w-full">
+          {/* 메인 레시피/식당 검색바 */}
+          <div className="flex-1 min-w-[200px] relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
             <input
               type="text"
