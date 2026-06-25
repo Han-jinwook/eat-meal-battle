@@ -9,7 +9,7 @@ import { ReservationTab } from "@/components/whateat/reservation-tab"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 import { FamilyPage } from "@/components/whateat/family-page"
 import { TalkPage } from "@/components/whateat/talk-page"
-import { AddReservationModal } from "@/components/whateat/add-reservation-modal"
+import { AddReservationModal, type ReservationPrefillData } from "@/components/whateat/add-reservation-modal"
 import { Footer } from "@/components/whateat/footer"
 import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
@@ -226,9 +226,30 @@ export default function WhatEatApp() {
   const [familyActiveTab, setFamilyActiveTab] = useState<"log" | "reservation" | "calendar">("log")
   const [searchQuery, setSearchQuery] = useState("")
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false)
+  const [reservationPrefill, setReservationPrefill] = useState<ReservationPrefillData | null>(null)
   const [logJumpRequest, setLogJumpRequest] = useState<{ date: string; key: number } | null>(null)
   const [reservationJumpRequest, setReservationJumpRequest] = useState<{ date: string; key: number } | null>(null)
   const [showBackToCalendar, setShowBackToCalendar] = useState(false)
+
+  // 맛톡 담기 이벤트 수신: 솔로 or 가족 먹예약으로 탭 전환 + 모달 오픈
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent
+      const { target, menuName, mealType, placeName } = ev.detail
+      setReservationPrefill({ menuName, mealType, placeName: placeName || undefined })
+      if (target === "solo") {
+        handleTabChange("solo")
+        setActiveTab("reservation")
+      } else {
+        handleTabChange("family")
+        setFamilyActiveTab("reservation")
+      }
+      // 조금 다음 틱에 모달 오픈 (탭 전환 애니메이션 뒤)
+      setTimeout(() => setIsReservationModalOpen(true), 200)
+    }
+    window.addEventListener("openReservationFromTalk", handler)
+    return () => window.removeEventListener("openReservationFromTalk", handler)
+  }, [])
 
   const handleSoloTabChange = (tab: "log" | "reservation" | "calendar") => {
     setActiveTab(tab)
@@ -350,7 +371,14 @@ export default function WhatEatApp() {
         </div>
       </div>
 
-      <AddReservationModal isOpen={isReservationModalOpen} onClose={() => setIsReservationModalOpen(false)} />
+      <AddReservationModal
+        isOpen={isReservationModalOpen}
+        onClose={() => {
+          setIsReservationModalOpen(false)
+          setReservationPrefill(null)
+        }}
+        prefillData={reservationPrefill}
+      />
 
       {/* Global Login Nudge for Guest Users */}
       {!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && !isNudgeDismissed && (

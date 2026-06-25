@@ -34,12 +34,19 @@ export interface EditData {
   thumbnail?: string
 }
 
+export interface ReservationPrefillData {
+  menuName: string
+  mealType: "집밥" | "배달" | "외식"
+  placeName?: string
+}
+
 interface AddReservationModalProps {
   isOpen: boolean
   onClose: () => void
   initialUrl?: string
   editData?: EditData | null
   onSave?: (data: EditData) => void
+  prefillData?: ReservationPrefillData | null
 }
 
 type MealType = "집밥" | "외식" | "배달" | ""
@@ -114,7 +121,7 @@ function formatDateDisplay(dateStr: string): string {
   return `${month}월 ${day}일 (${weekday})`
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, prefillData }: AddReservationModalProps) {
   const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
 
@@ -163,18 +170,35 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       }
     } else if (!editData && !initialUrl) {
       // Reset form when opening fresh
-      setMenuName("")
       setDate("")
       setMemo("")
-      setMealType("")
       setDateOption("")
-      setSelectedPlace(null)
-      setDeliveryStoreName("")
       setMealTime("")
       setRecipeUrl("")
       setUrlPreview(null)
+
+      if (prefillData) {
+        // 맛톡 담기 — 메뉴명/식사유형/장소 자동 채움
+        setMenuName(prefillData.menuName)
+        setMealType(prefillData.mealType)
+        if (prefillData.placeName) {
+          if (prefillData.mealType === "외식") {
+            setSelectedPlace({ name: prefillData.placeName, address: "", category: "" })
+          } else if (prefillData.mealType === "배달") {
+            setDeliveryStoreName(prefillData.placeName)
+          }
+        } else {
+          setSelectedPlace(null)
+          setDeliveryStoreName("")
+        }
+      } else {
+        setMenuName("")
+        setMealType("")
+        setSelectedPlace(null)
+        setDeliveryStoreName("")
+      }
     }
-  }, [editData, isOpen, initialUrl])
+  }, [editData, isOpen, initialUrl, prefillData])
 
   // URL 유효성 검사 함수
   const isValidUrl = (url: string) => {

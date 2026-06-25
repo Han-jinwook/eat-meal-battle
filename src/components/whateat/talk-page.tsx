@@ -13,7 +13,8 @@ import {
   ArrowUpDown,
   X,
   Send,
-  ExternalLink
+  ExternalLink,
+  Bookmark
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -311,6 +312,39 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
+
+  // 맛톡 담기: 좋아요 자동 처리 + WhatEatApp으로 이벤트 발신
+  const handleSaveToReservation = (post: TalkPost, target: "solo" | "family") => {
+    // 1. 좋아요 자동 처리 (아직 누르지 않은 경우)
+    if (!post.isLiked) {
+      setPosts(prev => prev.map(p =>
+        p.id === post.id
+          ? { ...p, isLiked: true, likes: p.likes + 1 }
+          : p
+      ))
+    }
+    // 2. 담기 드롭다운 닫기
+    setSaveDropdownPostId(null)
+
+    // 3. 식사유형 매핑
+    const mealTypeMap: Record<string, "집밥" | "배달" | "외식"> = {
+      homemade: "집밥",
+      delivery: "배달",
+      dineout: "외식",
+    }
+    const mealType = mealTypeMap[post.type] ?? "외식"
+
+    // 4. WhatEatApp으로 이벤트 발신
+    window.dispatchEvent(new CustomEvent("openReservationFromTalk", {
+      detail: {
+        target,
+        menuName: post.title,
+        mealType,
+        placeName: post.restaurant?.name ?? "",
+      }
+    }))
+  }
 
   function generateUUID() {
     if (typeof window !== "undefined" && window.crypto?.randomUUID) {
@@ -1333,12 +1367,40 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   <span className="text-sm font-bold text-muted-foreground">{post.commentCount}</span>
                 </button>
               </div>
-              {/* 별점 */}
-              <div className="flex items-center gap-2">
-                {renderStars(post.rating.average)}
-                <span className="text-xs text-muted-foreground">
-                  {post.rating.average.toFixed(1)} ({post.rating.count}명)
-                </span>
+              {/* 담기 버튼 (별점 자리 대체) */}
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSaveDropdownPostId(
+                      saveDropdownPostId === post.id ? null : post.id
+                    )
+                  }}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-orange-500 transition-colors"
+                >
+                  <Bookmark className={cn(
+                    "size-4 transition-all",
+                    saveDropdownPostId === post.id ? "fill-orange-400 text-orange-500" : ""
+                  )} />
+                  <span className="text-xs font-bold">담기</span>
+                </button>
+                {saveDropdownPostId === post.id && (
+                  <div className="absolute bottom-8 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+                    <button
+                      onClick={() => handleSaveToReservation(post, "solo")}
+                      className="w-full text-left px-4 py-3 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                    >
+                      <span>👤</span> 솔로 먹예약
+                    </button>
+                    <div className="h-px bg-orange-50" />
+                    <button
+                      onClick={() => handleSaveToReservation(post, "family")}
+                      className="w-full text-left px-4 py-3 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                    >
+                      <span>👨‍👩‍👧</span> 가족 먹예약
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
