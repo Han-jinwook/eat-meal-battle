@@ -406,10 +406,12 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }
 
-  // 거주 지역 등록 모달 오픈 시 검색창 오픈 및 지역 초기화
+  // 거주 지역 등록 모달 오픈 시 검색어 및 선택 정보 초기화
   useEffect(() => {
     if (regionModalOpen) {
-      setPostcodeOpen(true)
+      setAddressSearchQuery("")
+      setSelectedRegion(null)
+      setFilteredRegions([])
       setInputCity("")
       setInputGu("")
       setInputDong("")
