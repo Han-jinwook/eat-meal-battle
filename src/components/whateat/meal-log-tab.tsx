@@ -117,6 +117,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
   const [visibleMemoInputs, setVisibleMemoInputs] = useState<Record<string | number, boolean>>({})
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentText, setEditCommentText] = useState<string>("")
 
   // Supabase Storage에 파일 업로드하는 함수
   const uploadImageToStorage = async (base64Image: string): Promise<string> => {
@@ -203,6 +205,85 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     } catch (err) {
       console.error("Failed to add comment:", err)
       toast.error("댓글 등록에 실패했습니다.")
+    }
+  }
+
+  const handleEditComment = (commentId: string, currentContent: string) => {
+    setEditingCommentId(commentId)
+    setEditCommentText(currentContent)
+  }
+
+  const handleUpdateComment = async (mealId: any, commentId: string) => {
+    const trimmed = editCommentText.trim()
+    if (!trimmed) return
+
+    try {
+      const supabase = createClient()
+      await secureWrite({
+        table: "comments",
+        action: "update",
+        data: {
+          content: trimmed,
+          updated_at: new Date().toISOString()
+        },
+        filters: { id: commentId }
+      })
+
+      setMealLogs(prev => prev.map(log => {
+        if (log.id === mealId) {
+          const updatedComments = (log.comments || []).map((c: any) => 
+            c.id === commentId ? { ...c, content: trimmed } : c
+          )
+          const firstComment = updatedComments.find(c => c.userId === log.uploaded_by)
+          return {
+            ...log,
+            description: firstComment?.content || log.description,
+            comments: updatedComments
+          }
+        }
+        return log
+      }))
+
+      setEditingCommentId(null)
+      setEditCommentText("")
+    } catch (err) {
+      console.error("Failed to update comment:", err)
+      toast.error("메모 수정에 실패했습니다.")
+    }
+  }
+
+  const handleDeleteComment = async (mealId: any, commentId: string) => {
+    if (!confirm("메모를 삭제하시겠습니까?")) return
+
+    try {
+      const supabase = createClient()
+      await secureWrite({
+        table: "comments",
+        action: "update",
+        data: {
+          is_deleted: true,
+          updated_at: new Date().toISOString()
+        },
+        filters: { id: commentId }
+      })
+
+      setMealLogs(prev => prev.map(log => {
+        if (log.id === mealId) {
+          const updatedComments = (log.comments || []).filter((c: any) => c.id !== commentId)
+          const firstComment = updatedComments.find(c => c.userId === log.uploaded_by)
+          return {
+            ...log,
+            description: firstComment?.content || "",
+            comments: updatedComments
+          }
+        }
+        return log
+      }))
+      
+      toast.success("메모가 deleted되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete comment:", err)
+      toast.error("메모 삭제에 실패했습니다.")
     }
   }
 
@@ -1495,18 +1576,72 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     (meal.comments || []).map((comment: any) => (
                       <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black text-foreground">{comment.author}</span>
-                          <span className="text-[9px] text-muted-foreground">{comment.createdAt}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-black text-foreground">{comment.author}</span>
+                            <span className="text-[9px] text-muted-foreground">{comment.createdAt}</span>
+                          </div>
+                          {comment.userId === user?.id && (
+                            <div className="flex items-center gap-1.5">
+                              {editingCommentId === comment.id ? (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateComment(meal.id, comment.id)}
+                                    className="text-[9px] font-bold text-orange-600 hover:underline"
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingCommentId(null)}
+                                    className="text-[9px] font-bold text-muted-foreground hover:underline"
+                                  >
+                                    취소
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleEditComment(comment.id, comment.content)}
+                                    className="text-muted-foreground hover:text-orange-500 transition-colors"
+                                    title="수정"
+                                  >
+                                    <Pencil className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteComment(meal.id, comment.id)}
+                                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
-
+                        {editingCommentId === comment.id ? (
+                          <div className="mt-2 flex gap-1.5">
+                            <input
+                              type="text"
+                              value={editCommentText}
+                              onChange={(e) => setEditCommentText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleUpdateComment(meal.id, comment.id)
+                                }
+                              }}
+                              className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                        )}
                       </div>
                     ))
                   )}
                 </div>
 
-                {/* 댓글 입력창 - 패밀리 스타일 통일 */}
-                {visibleMemoInputs[meal.id] && (
+                {/* 댓글 입력창 - 패밀리 스타일 통일 (이미 댓글이 있는 경우는 숨김) */}
+                {visibleMemoInputs[meal.id] && (meal.comments || []).length === 0 && (
                   <div className="mt-3 flex items-center gap-2">
                     <input
                       type="text"
