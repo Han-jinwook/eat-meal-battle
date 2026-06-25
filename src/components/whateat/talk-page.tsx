@@ -967,15 +967,17 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return true
   })
 
-  // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
-  const getSampleLimit = () => {
+  // 샘플 카드 개수 제한 (실제 포스트가 1개라도 존재한다면 샘플은 0개로 소멸)
+  const getSampleLimit = (realCount: number) => {
+    if (realCount > 0) return 0
+
     if (scopeFilter === "dong") return 1
     if (scopeFilter === "gu") return 2
     return 3
   }
 
   const realPostsFiltered = filteredPostsRaw.filter(p => !p.isSample)
-  const samplePostsFiltered = filteredPostsRaw.filter(p => p.isSample).slice(0, getSampleLimit())
+  const samplePostsFiltered = filteredPostsRaw.filter(p => p.isSample).slice(0, getSampleLimit(realPostsFiltered.length))
   const filteredPosts = [...realPostsFiltered, ...samplePostsFiltered]
 
   const getCategoryCount = (categoryId: string) => {
@@ -1008,7 +1010,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     })
 
     const realFiltered = rawFiltered.filter(p => !p.isSample)
-    const sampleFiltered = rawFiltered.filter(p => p.isSample).slice(0, getSampleLimit())
+    const sampleFiltered = rawFiltered.filter(p => p.isSample).slice(0, getSampleLimit(realFiltered.length))
 
     return realFiltered.length + sampleFiltered.length
   }
