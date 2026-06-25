@@ -1810,7 +1810,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 <span className="text-orange-500">📍</span> 거주 지역 등록
               </h3>
               <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                맛톡(동네 맛집 피드)에 식사 기록을 연동하기 위해 회원님의 거주 지역(동) 정보를 등록해 주세요.
+                맛톡(동네 맛집 피드)에 '5점' 식사 기록을 연동하기 위해,<br />회원님의 거주 주소 중 '동' 정보까지만 등록해 주세요 ^^
               </p>
             </div>
 
