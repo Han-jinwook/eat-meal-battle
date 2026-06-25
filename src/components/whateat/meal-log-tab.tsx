@@ -119,6 +119,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [visibleMemoInputs, setVisibleMemoInputs] = useState<Record<string | number, boolean>>({})
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentText, setEditCommentText] = useState<string>("")
+  const [userRegion, setUserRegion] = useState<string | null>(null)
 
   // Supabase Storage에 파일 업로드하는 함수
   const uploadImageToStorage = async (base64Image: string): Promise<string> => {
@@ -382,6 +383,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         filters: { id: user.id }
       })
 
+      setUserRegion(JSON.stringify(regionData))
       setRegionModalOpen(false)
       toast.success("거주 지역이 등록되었습니다!")
 
@@ -605,6 +607,16 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         })
 
         setMealLogs(mappedLogs)
+
+        // 4. 유저의 region 정보 조회 및 캐싱
+        if (user?.id) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('region')
+            .eq('id', user.id)
+            .single()
+          setUserRegion(userData?.region || null)
+        }
       } catch (err) {
         console.error("Failed to load logs from Supabase:", err)
         setMealLogs([])
@@ -716,16 +728,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const checkConsentAndUpload = async (data: MealLogData, imageUrl: string) => {
     if (!isLoggedIn || !user?.id) return
 
-    const supabase = createClient()
-    const { data: userData } = await supabase
-      .from('users')
-      .select('region')
-      .eq('id', user.id)
-      .single()
-
-    const hasRegion = userData?.region ? (() => {
+    // Supabase DB 비동기 조회 제거! 캐시된 userRegion 사용
+    const hasRegion = userRegion ? (() => {
       try {
-        const parsed = JSON.parse(userData.region)
+        const parsed = JSON.parse(userRegion)
         return Boolean(parsed.city && parsed.gu && parsed.dong)
       } catch (e) {
         return false
@@ -974,8 +980,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         promotedAt: status === "approved" ? new Date().toISOString() : undefined
       }
 
-      // 2. 백그라운드 DB 업데이트
-      await secureWrite({
+      // 2. 백그라운드 DB 업데이트 (await을 마지막에 대기하여 병렬 처리)
+      const savePromise = secureWrite({
         table: 'meal_images',
         action: 'update',
         data: {
@@ -988,6 +994,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       })
 
       if (newRating === 5) {
+        // DB 쓰기 완료를 기다리지 않고 즉시 모달 판단(오픈) 로직 실행
         await checkConsentAndUpload({
           id: targetLog.id,
           mealType: targetLog.type,
@@ -1000,6 +1007,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           supabaseId: targetLog.id
         }, targetLog.image)
       }
+
+      await savePromise
     } catch (err) {
       console.error("Failed to update rating on Supabase:", err)
       toast.error("평점 저장에 실패했습니다.")
