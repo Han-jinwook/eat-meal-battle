@@ -86,7 +86,7 @@ const dummyPosts: TalkPost[] = [
     title: "청라 찐 맛집 [인생 소갈비살] 육즙 폭발 숯불구이 🥩",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&fit=crop",
     description: "웨이팅이 전혀 아깝지 않은 인생 갈비살 맛집이에요! 참숯 향이 고기에 그대로 배어 있어서 소금만 콕 찍어 먹어도 감칠맛이 폭발합니다. 육즙이 뚝뚝 떨어지는 극강의 부드러움.. 가족 모임 장소로 강력 추천해요! 💯",
-    region: { dong: "청라동", gu: "서구", city: "인천" },
+    region: { dong: "청라동", gu: "서구", city: "인천광역시" },
     restaurant: { name: "인생 갈비살 청라점", address: "인천 서구 청라라임로 85" },
     author: { id: 101, nickname: "청라동 멀린님", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face", region: "청라동" },
     createdAt: "방금 전",
@@ -105,7 +105,7 @@ const dummyPosts: TalkPost[] = [
     title: "에어프라이어로 뚝딱! 마늘 통삼겹 겉바속촉 오븐구이 🥓",
     image: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=600&fit=crop",
     description: "에어프라이어 180도에서 20분 뒤집어서 15분 구웠더니 겉은 과자처럼 바삭하고 속은 육즙 가득 촉촉하게 구워졌어요. 통마늘이랑 아스파라거스도 같이 구워 쌈장에 찍어 먹으면 밥 한 공기 뚝딱입니다! 초간단 영양 만점 메뉴 😋",
-    region: { dong: "논현동", gu: "강남구", city: "서울" },
+    region: { dong: "논현동", gu: "강남구", city: "서울특별시" },
     author: { id: 102, nickname: "집밥 백선생", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face", region: "논현동" },
     createdAt: "30분 전",
     rating: { average: 5.0, count: 22 },
@@ -123,7 +123,7 @@ const dummyPosts: TalkPost[] = [
     title: "꾸덕함의 끝판왕! 매콤 투움바 떡볶이 & 바삭 크리스피 치킨 세트 🍗",
     image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&fit=crop",
     description: "오늘 야식은 투움바 로제 떡볶이에 크리스피 순살 치킨입니다! 꾸덕하고 매콤한 소스에 바삭한 치킨을 푹 찍어 먹으면 스트레스가 다 날아가요. 넙적당면이랑 치즈 핫도그 토핑 추가는 선택이 아닌 필수입니다.. 강력 추천! 👍",
-    region: { dong: "송도동", gu: "연수구", city: "인천" },
+    region: { dong: "송도동", gu: "연수구", city: "인천광역시" },
     restaurant: { name: "삼첩분식 송도점", address: "인천 연수구 송도동 23-4" },
     author: { id: 103, nickname: "송도 배달요정", avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face", region: "송도동" },
     createdAt: "2시간 전",
@@ -932,47 +932,85 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return false
   }
 
-  const filteredPosts = posts.filter(post => {
+  const isSameCity = (c1?: string, c2?: string) => {
+    if (!c1 || !c2) return false
+    return c1.substring(0, 2) === c2.substring(0, 2)
+  }
+
+  const filteredPostsRaw = posts.filter(post => {
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
     if (showOnlyNew && !isTodayPost(post.createdAt)) return false
     if (showOnlyLiked && !post.isLiked) return false
     if (showOnlySubscribed && !post.isSubscribed) return false
     
+    // 샘플 카데고리 카드는 필터를 타지 않고 항상 통과
+    if (post.isSample) return true
+
     // 지역 필터: 검색 지역이 있으면 우선, 없으면 내 지역 + 범위
     const targetRegion = searchRegion || userRegion
     const postRegion = post.author?.region || post.region?.dong || ""
     
     if (scopeFilter === "dong") {
-      return postRegion === targetRegion
+      if (searchRegion) {
+        return postRegion === targetRegion
+      } else {
+        return isSameCity(post.region.city, userAddress.city) &&
+               post.region.gu === userAddress.gu &&
+               postRegion === targetRegion
+      }
     } else if (scopeFilter === "gu") {
-      return post.region.gu === userAddress.gu
+      return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
     } else if (scopeFilter === "city") {
-      return post.region.city === userAddress.city
+      return isSameCity(post.region.city, userAddress.city)
     }
     // all: 모든 지역
     return true
   })
 
+  // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
+  const getSampleLimit = () => {
+    if (scopeFilter === "dong") return 1
+    if (scopeFilter === "gu") return 2
+    return 3
+  }
+
+  const realPostsFiltered = filteredPostsRaw.filter(p => !p.isSample)
+  const samplePostsFiltered = filteredPostsRaw.filter(p => p.isSample).slice(0, getSampleLimit())
+  const filteredPosts = [...realPostsFiltered, ...samplePostsFiltered]
+
   const getCategoryCount = (categoryId: string) => {
-    return posts.filter((post) => {
+    const rawFiltered = posts.filter((post) => {
       if (categoryId !== "all" && post.type !== categoryId) return false
       if (showOnlyNew && !isTodayPost(post.createdAt)) return false
       if (showOnlyLiked && !post.isLiked) return false
       if (showOnlySubscribed && !post.isSubscribed) return false
 
+      if (post.isSample) return true
+
       const targetRegion = searchRegion || userRegion
       const postRegion = post.author?.region || post.region?.dong || ""
 
       if (scopeFilter === "dong") {
-        return postRegion === targetRegion
+        if (searchRegion) {
+          return postRegion === targetRegion
+        } else {
+          return isSameCity(post.region.city, userAddress.city) &&
+                 post.region.gu === userAddress.gu &&
+                 postRegion === targetRegion
+        }
       } else if (scopeFilter === "gu") {
-        return post.region.gu === userAddress.gu
+        return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
       } else if (scopeFilter === "city") {
-        return post.region.city === userAddress.city
+        return isSameCity(post.region.city, userAddress.city)
       }
 
       return true
-    }).length
+    })
+
+    const realFiltered = rawFiltered.filter(p => !p.isSample)
+    const sampleFiltered = rawFiltered.filter(p => p.isSample).slice(0, getSampleLimit())
+
+    return realFiltered.length + sampleFiltered.length
   }
 
   const getPostTimestamp = (createdAt: string, fallbackId: number) => {
