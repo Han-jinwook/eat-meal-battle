@@ -13,7 +13,8 @@ import {
   ArrowUpDown,
   X,
   Send,
-  ExternalLink
+  ExternalLink,
+  Pin
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -25,6 +26,8 @@ import { ImageViewer } from "@/components/whateat/image-viewer"
 interface TalkPost {
   id: number | string
   type: "homemade" | "delivery" | "dineout"
+  // 등록 출처: 솔로 / 가족 / 모임
+  source: "solo" | "family" | "group"
   title: string
   image: string
   description: string
@@ -79,6 +82,7 @@ const dummyPosts: TalkPost[] = [
   {
     id: 1,
     type: "dineout",
+    source: "group",
     title: "청라 찐 맛집 [인생 소갈비살] 육즙 폭발 숯불구이 🥩",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&fit=crop",
     description: "웨이팅이 전혀 아깝지 않은 인생 갈비살 맛집이에요! 참숯 향이 고기에 그대로 배어 있어서 소금만 콕 찍어 먹어도 감칠맛이 폭발합니다. 육즙이 뚝뚝 떨어지는 극강의 부드러움.. 가족 모임 장소로 강력 추천해요! 💯",
@@ -97,6 +101,7 @@ const dummyPosts: TalkPost[] = [
   {
     id: 2,
     type: "homemade",
+    source: "solo",
     title: "에어프라이어로 뚝딱! 마늘 통삼겹 겉바속촉 오븐구이 🥓",
     image: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=600&fit=crop",
     description: "에어프라이어 180도에서 20분 뒤집어서 15분 구웠더니 겉은 과자처럼 바삭하고 속은 육즙 가득 촉촉하게 구워졌어요. 통마늘이랑 아스파라거스도 같이 구워 쌈장에 찍어 먹으면 밥 한 공기 뚝딱입니다! 초간단 영양 만점 메뉴 😋",
@@ -114,6 +119,7 @@ const dummyPosts: TalkPost[] = [
   {
     id: 3,
     type: "delivery",
+    source: "family",
     title: "꾸덕함의 끝판왕! 매콤 투움바 떡볶이 & 바삭 크리스피 치킨 세트 🍗",
     image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&fit=crop",
     description: "오늘 야식은 투움바 로제 떡볶이에 크리스피 순살 치킨입니다! 꾸덕하고 매콤한 소스에 바삭한 치킨을 푹 찍어 먹으면 스트레스가 다 날아가요. 넙적당면이랑 치즈 핫도그 토핑 추가는 선택이 아닌 필수입니다.. 강력 추천! 👍",
@@ -515,6 +521,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
 
     try {
+      const newCommentId = generateUUID()
       await secureWrite({
         table: "comments",
         action: "insert",
@@ -599,6 +606,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
 
     try {
+      const newReplyId = generateUUID()
       await secureWrite({
         table: "comment_replies",
         action: "insert",
@@ -1267,50 +1275,63 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               </div>
             </div>
 
-            {/* Card Content — 풀와이드 이미지 + 하단 정보 (솔로/패밀리 스타일) */}
-            {/* 이미지 영역 */}
-            <div
-              className="relative h-[200px] overflow-hidden cursor-zoom-in"
-              onClick={() => setViewerImage(post.image)}
-            >
-              {post.image ? (
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
-                  style={{ backgroundImage: `url("${post.image}")` }}
-                />
-              ) : (
-                <div className="absolute inset-0 bg-muted/20" />
-              )}
-              {/* 하단 그라데이션 */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            {/* Card Content — 좌우 분할 (좌: 음식사진, 우: 레시피/Place 썸네일) */}
+            <div className="flex h-[200px]">
+              {/* Left: 음식 대표 사진 */}
+              <div
+                className="w-1/2 relative overflow-hidden cursor-zoom-in"
+                onClick={() => setViewerImage(post.image)}
+              >
+                {post.image ? (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                    style={{ backgroundImage: `url("${post.image}")` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-muted/20" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+              </div>
 
-              {/* 우상단: Place/recipe 배지 */}
-              {post.linkUrl && post.linkThumbnail && (
-                <a
-                  href={post.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm z-10 hover:bg-white transition-colors"
-                >
-                  {(post.type === "dineout" || post.type === "delivery") ? (
-                    <>
-                      <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
-                        <span className="text-white text-[7px] font-black">N</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-foreground">Place</span>
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink className="size-3 text-orange-500" />
-                      <span className="text-[10px] font-bold text-foreground">recipe</span>
-                    </>
-                  )}
-                </a>
-              )}
+              {/* Right: 레시피 / Place 썸네일 or 텍스트 설명 */}
+              <div className="w-1/2 bg-gray-50/80 flex overflow-hidden relative">
+                {post.linkUrl && post.linkThumbnail ? (
+                  <a
+                    href={post.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-full relative group overflow-hidden"
+                  >
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                      style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
+                    />
+                    <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
+                      {(post.type === "dineout" || post.type === "delivery") ? (
+                        <>
+                          <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
+                            <span className="text-white text-[7px] font-black">N</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-foreground">Place</span>
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="size-3 text-orange-500" />
+                          <span className="text-[10px] font-bold text-foreground">recipe</span>
+                        </>
+                      )}
+                    </div>
+                  </a>
+                ) : (
+                  <div className="p-4 flex flex-col justify-center h-full w-full">
+                    <p className="text-[11px] text-muted-foreground leading-normal line-clamp-5">{post.description}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* 하단 정보 영역 */}
+            {/* 하단 정보 영역: 식당명 + 별점 / 메뉴명 */}
             <div className="px-4 pt-3 pb-1">
               {/* 식당명 + 별점 한 줄 */}
               <div className="flex items-center justify-between gap-2 mb-1">
@@ -1326,13 +1347,19 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     <span className="text-[10px] text-muted-foreground">
                       ({post.rating.count}명)
                     </span>
+                    <span className={cn(
+                      "text-[10px] font-bold",
+                      post.source === "solo" ? "text-cyan-500" :
+                      post.source === "family" ? "text-orange-500" : "text-purple-500"
+                    )}>
+                      {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"}
+                    </span>
                   </div>
                 )}
               </div>
               {/* 메뉴명 */}
               <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-2">{post.title}</h4>
             </div>
-
 
             {/* Stats & Actions */}
             <div className="px-4 pb-3 flex items-center justify-between">
@@ -1372,10 +1399,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                       saveDropdownPostId === post.id ? null : post.id
                     )
                   }}
-                  className="flex items-center gap-1.5 text-muted-foreground hover:text-orange-500 transition-colors"
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors"
                 >
-                  <MapPin className={cn(
-                    "size-4 transition-all",
+                  <Pin className={cn(
+                    "size-4 transition-all rotate-45",
                     saveDropdownPostId === post.id
                       ? "fill-red-500 text-red-500 scale-110"
                       : "text-muted-foreground"
