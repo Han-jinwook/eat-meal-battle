@@ -1703,20 +1703,20 @@ export function FamilyPage({
           <div className="flex items-center gap-2">
             {/* Search Input */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="식당, 메뉴, 장소 검색"
-                className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
+                className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
               />
             </div>
             
             <div className="relative shrink-0" ref={sortRef}>
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-3 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[46px]"
+                className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
               >
                 <span
                   onClick={(e) => {
@@ -1725,11 +1725,11 @@ export function FamilyPage({
                   }}
                   className="inline-flex"
                 >
-                  <ArrowUpDown className="size-3.5" />
+                  <ArrowUpDown className="size-3" />
                 </span>
                 <span>{sortOption}</span>
                 <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-                <ChevronDown className="size-3" />
+                <ChevronDown className="size-2.5" />
               </button>
 
               {showSortDropdown && (
@@ -2190,20 +2190,20 @@ export function FamilyPage({
           <div className="flex items-center gap-2">
             {/* Search Input */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="식당, 메뉴, 장소 검색"
-                className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
+                className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
               />
             </div>
 
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 px-4 py-3 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[46px]"
+                className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
               >
                 <span
                   onClick={(e) => {
@@ -2212,11 +2212,11 @@ export function FamilyPage({
                   }}
                   className="inline-flex"
                 >
-                  <ArrowUpDown className="size-3.5" />
+                  <ArrowUpDown className="size-3" />
                 </span>
                 <span>{sortOption}</span>
                 <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-                <ChevronDown className="size-3" />
+                <ChevronDown className="size-2.5" />
               </button>
 
               {showSortDropdown && (

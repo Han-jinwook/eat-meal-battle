@@ -1152,13 +1152,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       <div className="flex items-center gap-2">
         {/* Search Input */}
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4.5" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="식당, 메뉴, 장소 검색"
-            className="w-full pl-12 pr-4 py-3 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-base placeholder:text-muted-foreground/50"
+            className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
           />
         </div>
 
@@ -1167,7 +1167,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
             className={cn(
-              "flex items-center gap-2 px-5 py-3 rounded-xl text-base font-medium transition-all border cursor-pointer",
+              "flex items-center gap-1.5 px-3.5 h-[38px] rounded-xl text-sm font-medium transition-all border cursor-pointer",
               sortOption !== "날짜순" || dateRangeStart || dateRangeEnd
                 ? "bg-cyan-500 text-white border-cyan-500 shadow-sm shadow-cyan-200"
                 : "bg-white/60 text-muted-foreground border-white/80 hover:border-primary/30"
@@ -1180,11 +1180,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               }}
               className="inline-flex"
             >
-              <ArrowUpDown className="size-4" />
+              <ArrowUpDown className="size-3" />
             </span>
             <span>{sortOption}</span>
-            <span className="text-[11px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-            <ChevronDown className="size-3" />
+            <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
+            <ChevronDown className="size-2.5" />
           </button>
 
           {/* Sort Dropdown Menu */}
