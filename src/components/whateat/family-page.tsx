@@ -2601,7 +2601,7 @@ export function FamilyPage({
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl animate-in fade-in zoom-in duration-200">
             <h3 className="text-base font-bold text-foreground mb-2">맛톡 공개 동의</h3>
             <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
-              5점 평점을 받은 식사는 '맛톡'(동네 피드)에 공개됩니다. 공개하시겠습니까?
+              5점 별점을 준 식사는 '맛톡'(동네 피드)에 공개됩니다. 공개하시겠습니까?
             </p>
             
             <label className="flex items-center gap-2 mb-6 cursor-pointer select-none">

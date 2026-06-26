@@ -288,7 +288,7 @@ export default function ProfileClient() {
                   </h3>
                   <div className="space-y-3">
                     <div className="text-xs text-muted-foreground leading-relaxed">
-                      5점 평점을 받은 식사의 맛톡(동네 맛집 피드) 공개 여부를 설정합니다.
+                      5점 별점을 준 식사의 맛톡(동네 맛집 피드) 공개 여부를 설정합니다.
                     </div>
                     
                     <div className="flex flex-col gap-2.5 pt-1">
