@@ -549,6 +549,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         const commentsMap = new Map<string, any[]>()
         dbComments.forEach(c => {
           const arr = commentsMap.get(c.meal_id) || []
+          if (arr.length > 0) return // 솔로 탭은 단일 메모만 유지하므로 최초 1개만 바인딩
           const cUser = commentUserMap.get(c.user_id)
           arr.push({
             id: c.id,
@@ -1652,7 +1653,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                               value={editCommentText}
                               onChange={(e) => setEditCommentText(e.target.value)}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") {
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                  e.preventDefault()
                                   handleUpdateComment(meal.id, comment.id)
                                 }
                               }}
@@ -1675,7 +1677,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                       value={commentInputs[meal.id] || ""}
                       onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                          e.preventDefault()
                           handleAddComment(meal.id)
                         }
                       }}

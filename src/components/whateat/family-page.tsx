@@ -9,6 +9,7 @@ import {
   Bike,
   UtensilsCrossed,
   Pencil,
+  Trash2,
   Bell, 
   Check, 
   X, 
@@ -68,6 +69,7 @@ interface SharedMeal {
 
 interface MealReply {
   id: string | number
+  userId?: string
   author: string
   content: string
   createdAt: string
@@ -77,6 +79,7 @@ interface MealReply {
 
 interface MealComment {
   id: string | number
+  userId?: string
   author: string
   content: string
   createdAt: string
@@ -451,6 +454,10 @@ export function FamilyPage({
   const [mealReplyInput, setMealReplyInput] = useState("")
   const [sharedMealFilter, setSharedMealFilter] = useState<SharedMealFilterType>("all")
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: string | number; commentId: string | number } | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null)
+  const [editCommentText, setEditCommentText] = useState("")
+  const [editingReplyId, setEditingReplyId] = useState<string | number | null>(null)
+  const [editReplyText, setEditReplyText] = useState("")
   const [expandedMealCommentsId, setExpandedMealCommentsId] = useState<string | number | null>(null)
   const [mealComments, setMealComments] = useState<Record<string | number, MealComment[]>>({})
   const [mealRatings, setMealRatings] = useState<Record<string | number, Record<number, number>>>({})
@@ -854,6 +861,7 @@ export function FamilyPage({
                 const ru = userMap.get(r.user_id)
                 return {
                   id: r.id,
+                  userId: r.user_id,
                   author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
                   content: r.content,
                   createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
@@ -864,6 +872,7 @@ export function FamilyPage({
 
             return {
               id: c.id,
+              userId: c.user_id,
               author: cAuthor,
               content: c.content,
               createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
@@ -1363,6 +1372,122 @@ export function FamilyPage({
     }
   }
 
+  const handleEditMealComment = (commentId: string | number, currentContent: string) => {
+    setEditingCommentId(commentId)
+    setEditCommentText(currentContent)
+  }
+
+  const handleUpdateMealComment = async (commentId: string | number) => {
+    const trimmed = editCommentText.trim()
+    if (!trimmed) return
+
+    try {
+      if (typeof commentId !== "number" && !String(commentId).startsWith("comment-")) {
+        await secureWrite({
+          table: "comments",
+          action: "update",
+          data: {
+            content: trimmed,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: commentId }
+        })
+      }
+
+      setEditingCommentId(null)
+      setEditCommentText("")
+      
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+    } catch (err) {
+      console.error("Failed to update comment:", err)
+      toast.error("댓글 수정에 실패했습니다.")
+    }
+  }
+
+  const handleDeleteMealComment = async (commentId: string | number) => {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return
+
+    try {
+      if (typeof commentId !== "number" && !String(commentId).startsWith("comment-")) {
+        await secureWrite({
+          table: "comments",
+          action: "update",
+          data: {
+            is_deleted: true,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: commentId }
+        })
+      }
+
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+      toast.success("댓글이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete comment:", err)
+      toast.error("댓글 삭제에 실패했습니다.")
+    }
+  }
+
+  const handleEditMealReply = (replyId: string | number, currentContent: string) => {
+    setEditingReplyId(replyId)
+    setEditReplyText(currentContent)
+  }
+
+  const handleUpdateMealReply = async (replyId: string | number) => {
+    const trimmed = editReplyText.trim()
+    if (!trimmed) return
+
+    try {
+      if (typeof replyId !== "number") {
+        await secureWrite({
+          table: "comment_replies",
+          action: "update",
+          data: {
+            content: trimmed,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: replyId }
+        })
+      }
+
+      setEditingReplyId(null)
+      setEditReplyText("")
+
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+    } catch (err) {
+      console.error("Failed to update reply:", err)
+      toast.error("답글 수정에 실패했습니다.")
+    }
+  }
+
+  const handleDeleteMealReply = async (replyId: string | number) => {
+    if (!confirm("답글을 삭제하시겠습니까?")) return
+
+    try {
+      if (typeof replyId !== "number") {
+        await secureWrite({
+          table: "comment_replies",
+          action: "update",
+          data: {
+            is_deleted: true,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: replyId }
+        })
+      }
+
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      await fetchFamilyData(familyUserIds)
+      toast.success("답글이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete reply:", err)
+      toast.error("답글 삭제에 실패했습니다.")
+    }
+  }
+
   const handleDecideMenu = async () => {
     if (!decidedMenuName.trim()) return
 
@@ -1459,125 +1584,244 @@ export function FamilyPage({
     }
   }
 
-  const renderMealCommentsSection = (mealId: number, variant: "modal" | "card" = "modal") => (
-    <>
-      <div className={cn("flex items-center gap-2 mb-3", variant === "card" && "mb-2")}>
-        <MessageCircle className="size-4 text-orange-500" />
-        <h4 className="font-bold text-sm text-foreground">댓글</h4>
-        <span className="text-xs text-muted-foreground">{(displayComments[mealId] ?? []).length}개</span>
-      </div>
+  const renderMealCommentsSection = (mealId: number, variant: "modal" | "card" = "modal") => {
+    const commentsList = displayComments[mealId] ?? []
+    const totalCommentsCount = commentsList.reduce((acc, c) => acc + 1 + (c.replies ?? []).length, 0)
 
-      <div className={cn("space-y-2 pr-1", variant === "modal" ? "max-h-64 overflow-y-auto" : "max-h-48 overflow-y-auto")}>
-        {(displayComments[mealId] ?? []).length === 0 ? (
-          <p className="text-xs text-muted-foreground">아직 댓글이 없어요. 첫 댓글을 남겨보세요.</p>
-        ) : (
-          (displayComments[mealId] ?? []).map((comment) => (
-            <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-foreground">{comment.author}</span>
-                <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
-              </div>
-              <p className="text-xs text-foreground mt-1">{comment.content}</p>
+    return (
+      <>
+        <div className={cn("flex items-center gap-2 mb-3", variant === "card" && "mb-2")}>
+          <MessageCircle className="size-4 text-orange-500" />
+          <h4 className="font-bold text-sm text-foreground">댓글</h4>
+          <span className="text-xs text-muted-foreground">{totalCommentsCount}개</span>
+        </div>
 
-              <div className="flex items-center gap-3 mt-2">
-                <button
-                  onClick={() => toggleMealCommentLike(mealId, comment.id)}
-                  className="text-[11px] text-muted-foreground flex items-center gap-1"
-                >
-                  <Heart className={cn("size-3.5", comment.isLiked && "fill-orange-500 text-orange-500")} />
-                  {comment.likes}
-                </button>
-                <button
-                  onClick={() => {
-                    const isSameTarget =
-                      activeReplyTarget?.mealId === mealId &&
-                      activeReplyTarget.commentId === comment.id
-
-                    if (isSameTarget) {
-                      setActiveReplyTarget(null)
-                      setMealReplyInput("")
-                      return
-                    }
-
-                    setActiveReplyTarget({ mealId, commentId: comment.id })
-                    setMealReplyInput("")
-                  }}
-                  className="text-[11px] text-muted-foreground"
-                >
-                  답글
-                </button>
-              </div>
-
-              {(comment.replies ?? []).length > 0 && (
-                <div className="mt-2.5 pl-2 border-l border-orange-200 space-y-1.5">
-                  {(comment.replies ?? []).map((reply) => (
-                    <div key={reply.id} className="bg-white/70 rounded-lg px-2 py-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-foreground">{reply.author}</span>
-                        <span className="text-[10px] text-muted-foreground">{reply.createdAt}</span>
-                      </div>
-                      <p className="text-[11px] text-foreground mt-0.5">{reply.content}</p>
-                      <button
-                        onClick={() => toggleMealReplyLike(mealId, comment.id, reply.id)}
-                        className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1"
-                      >
-                        <Heart className={cn("size-3", reply.isLiked && "fill-orange-500 text-orange-500")} />
-                        {reply.likes}
-                      </button>
+        <div className={cn("space-y-2 pr-1", variant === "modal" ? "max-h-64 overflow-y-auto" : "max-h-48 overflow-y-auto")}>
+          {commentsList.length === 0 ? (
+            <p className="text-xs text-muted-foreground">아직 댓글이 없어요. 첫 댓글을 남겨보세요.</p>
+          ) : (
+            commentsList.map((comment) => (
+              <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-foreground">{comment.author}</span>
+                    <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
+                  </div>
+                  {comment.userId === user?.id && (
+                    <div className="flex items-center gap-1.5">
+                      {editingCommentId === comment.id ? (
+                        <>
+                          <button
+                            onClick={() => handleUpdateMealComment(comment.id)}
+                            className="text-[9px] font-bold text-orange-600 hover:underline"
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setEditingCommentId(null)}
+                            className="text-[9px] font-bold text-muted-foreground hover:underline"
+                          >
+                            취소
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditMealComment(comment.id, comment.content)}
+                            className="text-muted-foreground hover:text-orange-500 transition-colors"
+                            title="수정"
+                          >
+                            <Pencil className="size-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMealComment(comment.id)}
+                            className="text-muted-foreground hover:text-red-500 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
+                {editingCommentId === comment.id ? (
+                  <div className="mt-2 flex gap-1.5">
+                    <input
+                      type="text"
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                          e.preventDefault()
+                          handleUpdateMealComment(comment.id)
+                        }
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded bg-white border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                )}
 
-              {activeReplyTarget?.mealId === mealId && activeReplyTarget.commentId === comment.id && (
-                <div className="mt-2 flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={mealReplyInput}
-                    onChange={(e) => setMealReplyInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddMealReply(mealId, comment.id)
-                      }
-                    }}
-                    placeholder="답글을 입력하세요"
-                    className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-[11px] outline-none focus:ring-2 focus:ring-orange-300"
-                  />
+                <div className="flex items-center gap-3 mt-2">
                   <button
-                    onClick={() => handleAddMealReply(mealId, comment.id)}
-                    className="size-7 rounded-lg bg-orange-500 text-white flex items-center justify-center"
+                    onClick={() => toggleMealCommentLike(mealId, comment.id)}
+                    className="text-[11px] text-muted-foreground flex items-center gap-1"
                   >
-                    <Send className="size-3.5" />
+                    <Heart className={cn("size-3.5", comment.isLiked && "fill-orange-500 text-orange-500")} />
+                    {comment.likes}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const isSameTarget =
+                        activeReplyTarget?.mealId === mealId &&
+                        activeReplyTarget.commentId === comment.id
+
+                      if (isSameTarget) {
+                        setActiveReplyTarget(null)
+                        setMealReplyInput("")
+                        return
+                      }
+
+                      setActiveReplyTarget({ mealId, commentId: comment.id })
+                      setMealReplyInput("")
+                    }}
+                    className="text-[11px] text-muted-foreground hover:underline"
+                  >
+                    답글
                   </button>
                 </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <input
-          type="text"
-          value={mealCommentInput}
-          onChange={(e) => setMealCommentInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleAddMealComment(mealId)
-            }
-          }}
-          placeholder="가족에게 코멘트를 남겨보세요"
-          className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300"
-        />
-        <button
-          onClick={() => handleAddMealComment(mealId)}
-          className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
-        >
-          <Send className="size-4" />
-        </button>
-      </div>
-    </>
-  )
+                {(comment.replies ?? []).length > 0 && (
+                  <div className="mt-2.5 pl-2 border-l border-orange-200 space-y-1.5">
+                    {(comment.replies ?? []).map((reply) => (
+                      <div key={reply.id} className="bg-white/70 rounded-lg px-2 py-1.5 border border-orange-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold text-foreground">{reply.author}</span>
+                            <span className="text-[10px] text-muted-foreground">{reply.createdAt}</span>
+                          </div>
+                          {reply.userId === user?.id && (
+                            <div className="flex items-center gap-1.5">
+                              {editingReplyId === reply.id ? (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateMealReply(reply.id)}
+                                    className="text-[9px] font-bold text-orange-600 hover:underline"
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingReplyId(null)}
+                                    className="text-[9px] font-bold text-muted-foreground hover:underline"
+                                  >
+                                    취소
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleEditMealReply(reply.id, reply.content)}
+                                    className="text-muted-foreground hover:text-orange-500 transition-colors"
+                                    title="수정"
+                                  >
+                                    <Pencil className="size-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMealReply(reply.id)}
+                                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="size-2.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {editingReplyId === reply.id ? (
+                          <div className="mt-1 flex gap-1.5">
+                            <input
+                              type="text"
+                              value={editReplyText}
+                              onChange={(e) => setEditReplyText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                  e.preventDefault()
+                                  handleUpdateMealReply(reply.id)
+                                }
+                              }}
+                              className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-[10px] outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                        )}
+                        <button
+                          onClick={() => toggleMealReplyLike(mealId, comment.id, reply.id)}
+                          className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1 hover:text-orange-500"
+                        >
+                          <Heart className={cn("size-3", reply.isLiked && "fill-orange-500 text-orange-500")} />
+                          {reply.likes}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeReplyTarget?.mealId === mealId && activeReplyTarget.commentId === comment.id && (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={mealReplyInput}
+                      onChange={(e) => setMealReplyInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                          e.preventDefault()
+                          handleAddMealReply(mealId, comment.id)
+                        }
+                      }}
+                      placeholder="답글을 입력하세요"
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-[11px] outline-none focus:ring-2 focus:ring-orange-300"
+                    />
+                    <button
+                      onClick={() => handleAddMealReply(mealId, comment.id)}
+                      className="size-7 rounded-lg bg-orange-500 text-white flex items-center justify-center"
+                    >
+                      <Send className="size-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            value={mealCommentInput}
+            onChange={(e) => setMealCommentInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                handleAddMealComment(mealId)
+              }
+            }}
+            placeholder="가족에게 코멘트를 남겨보세요"
+            className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300"
+          />
+          <button
+            onClick={() => handleAddMealComment(mealId)}
+            className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
+          >
+            <Send className="size-4" />
+          </button>
+        </div>
+      </>
+    )
+  }
 
 
 

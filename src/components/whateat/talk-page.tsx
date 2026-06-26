@@ -14,7 +14,9 @@ import {
   X,
   Send,
   ExternalLink,
-  Pin
+  Pin,
+  Pencil,
+  Trash2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -315,6 +317,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null)
+  const [editCommentText, setEditCommentText] = useState("")
+  const [editingReplyId, setEditingReplyId] = useState<string | number | null>(null)
+  const [editReplyText, setEditReplyText] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
@@ -655,6 +661,156 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
   }
 
+  const handleEditComment = (commentId: string | number, currentContent: string) => {
+    setEditingCommentId(commentId)
+    setEditCommentText(currentContent)
+  }
+
+  const handleUpdateComment = async (postId: string | number, commentId: string | number) => {
+    const trimmed = editCommentText.trim()
+    if (!trimmed) return
+
+    try {
+      if (typeof commentId !== "number") {
+        await secureWrite({
+          table: "comments",
+          action: "update",
+          data: {
+            content: trimmed,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: commentId }
+        })
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).map((c: any) =>
+          c.id === commentId ? { ...c, content: trimmed } : c
+        )
+      }))
+
+      setEditingCommentId(null)
+      setEditCommentText("")
+    } catch (err) {
+      console.error("Failed to update comment:", err)
+      toast.error("댓글 수정에 실패했습니다.")
+    }
+  }
+
+  const handleDeleteComment = async (postId: string | number, commentId: string | number) => {
+    if (!confirm("댓글을 삭제하시겠습니까?")) return
+
+    try {
+      if (typeof commentId !== "number") {
+        await secureWrite({
+          table: "comments",
+          action: "update",
+          data: {
+            is_deleted: true,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: commentId }
+        })
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).filter((c: any) => c.id !== commentId)
+      }))
+
+      // 상위 포스트 목록의 댓글 수 업데이트
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p))
+      toast.success("댓글이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete comment:", err)
+      toast.error("댓글 삭제에 실패했습니다.")
+    }
+  }
+
+  const handleEditReply = (replyId: string | number, currentContent: string) => {
+    setEditingReplyId(replyId)
+    setEditReplyText(currentContent)
+  }
+
+  const handleUpdateReply = async (postId: string | number, commentId: string | number, replyId: string | number) => {
+    const trimmed = editReplyText.trim()
+    if (!trimmed) return
+
+    try {
+      if (typeof replyId !== "number") {
+        await secureWrite({
+          table: "comment_replies",
+          action: "update",
+          data: {
+            content: trimmed,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: replyId }
+        })
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).map((c: any) => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              replies: (c.replies || []).map((r: any) =>
+                r.id === replyId ? { ...r, content: trimmed } : r
+              )
+            }
+          }
+          return c
+        })
+      }))
+
+      setEditingReplyId(null)
+      setEditReplyText("")
+    } catch (err) {
+      console.error("Failed to update reply:", err)
+      toast.error("답글 수정에 실패했습니다.")
+    }
+  }
+
+  const handleDeleteReply = async (postId: string | number, commentId: string | number, replyId: string | number) => {
+    if (!confirm("답글을 삭제하시겠습니까?")) return
+
+    try {
+      if (typeof replyId !== "number") {
+        await secureWrite({
+          table: "comment_replies",
+          action: "update",
+          data: {
+            is_deleted: true,
+            updated_at: new Date().toISOString()
+          },
+          filters: { id: replyId }
+        })
+      }
+
+      setPostComments(prev => ({
+        ...prev,
+        [postId]: (prev[postId] || []).map((c: any) => {
+          if (c.id === commentId) {
+            return {
+              ...c,
+              replies: (c.replies || []).filter((r: any) => r.id !== replyId)
+            }
+          }
+          return c
+        })
+      }))
+
+      // 상위 포스트 목록의 댓글 수 업데이트
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentCount: Math.max(0, p.commentCount - 1) } : p))
+      toast.success("답글이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete reply:", err)
+      toast.error("답글 삭제에 실패했습니다.")
+    }
+  }
+
   const { isLoggedIn, user } = useHub()
 
   // Fetch user region dynamically from users
@@ -762,6 +918,45 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         }
 
+        // Fetch comment counts (comments + replies)
+        const commentCountMap = new Map<string, number>()
+        const postIds = imgData.map((img: any) => img.id)
+        if (postIds.length > 0) {
+          const { data: commentsData } = await supabase
+            .from("comments")
+            .select("id, meal_id")
+            .in("meal_id", postIds)
+            .eq("is_deleted", false)
+          
+          const dbComments = commentsData || []
+          const commentIds = dbComments.map(c => c.id)
+          
+          dbComments.forEach(c => {
+            commentCountMap.set(c.meal_id, (commentCountMap.get(c.meal_id) || 0) + 1)
+          })
+          
+          if (commentIds.length > 0) {
+            const { data: repliesData } = await supabase
+              .from("comment_replies")
+              .select("comment_id")
+              .in("comment_id", commentIds)
+              .eq("is_deleted", false)
+            
+            const dbReplies = repliesData || []
+            const commentToPostMap = new Map<string, string>()
+            dbComments.forEach(c => {
+              commentToPostMap.set(c.id, c.meal_id)
+            })
+            
+            dbReplies.forEach(r => {
+              const postId = commentToPostMap.get(r.comment_id)
+              if (postId) {
+                commentCountMap.set(postId, (commentCountMap.get(postId) || 0) + 1)
+              }
+            })
+          }
+        }
+
         const parsedPosts: TalkPost[] = imgData.map((img: any) => {
           let meta: any = {}
           try {
@@ -840,7 +1035,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             rating: finalRating,
             likes: 0,
             isLiked: false,
-            commentCount: 0,
+            commentCount: commentCountMap.get(img.id) || 0,
             isSubscribed: false,
             isSample: false,
             isExplicit,
@@ -1537,10 +1732,64 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-bold text-foreground">{comment.author.nickname}</span>
                             <span className="text-[9px] text-muted-foreground">{comment.author.region}</span>
+                            <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{comment.createdAt}</span>
+                          {comment.userId === user?.id && (
+                            <div className="flex items-center gap-1.5">
+                              {editingCommentId === comment.id ? (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateComment(post.id, comment.id)}
+                                    className="text-[9px] font-bold text-orange-600 hover:underline"
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingCommentId(null)}
+                                    className="text-[9px] font-bold text-muted-foreground hover:underline"
+                                  >
+                                    취소
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleEditComment(comment.id, comment.content)}
+                                    className="text-muted-foreground hover:text-orange-500 transition-colors"
+                                    title="수정"
+                                  >
+                                    <Pencil className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteComment(post.id, comment.id)}
+                                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                        {editingCommentId === comment.id ? (
+                          <div className="mt-2 flex gap-1.5">
+                            <input
+                              type="text"
+                              value={editCommentText}
+                              onChange={(e) => setEditCommentText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                  e.preventDefault()
+                                  handleUpdateComment(post.id, comment.id)
+                                }
+                              }}
+                              className="flex-1 px-2.5 py-1.5 rounded bg-white border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                        )}
 
                         <div className="flex items-center gap-3 mt-2">
                           <button
@@ -1570,10 +1819,64 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-[10px] font-bold text-foreground">{reply.author.nickname}</span>
                                     <span className="text-[8px] text-muted-foreground">{reply.author.region}</span>
+                                    <span className="text-[9px] text-muted-foreground">{reply.createdAt}</span>
                                   </div>
-                                  <span className="text-[9px] text-muted-foreground">{reply.createdAt}</span>
+                                  {reply.userId === user?.id && (
+                                    <div className="flex items-center gap-1.5">
+                                      {editingReplyId === reply.id ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleUpdateReply(post.id, comment.id, reply.id)}
+                                            className="text-[9px] font-bold text-orange-600 hover:underline"
+                                          >
+                                            저장
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingReplyId(null)}
+                                            className="text-[9px] font-bold text-muted-foreground hover:underline"
+                                          >
+                                            취소
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={() => handleEditReply(reply.id, reply.content)}
+                                            className="text-muted-foreground hover:text-orange-500 transition-colors"
+                                            title="수정"
+                                          >
+                                            <Pencil className="size-2.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteReply(post.id, comment.id, reply.id)}
+                                            className="text-muted-foreground hover:text-red-500 transition-colors"
+                                            title="삭제"
+                                          >
+                                            <Trash2 className="size-2.5" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                                <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                                {editingReplyId === reply.id ? (
+                                  <div className="mt-1 flex gap-1.5">
+                                    <input
+                                      type="text"
+                                      value={editReplyText}
+                                      onChange={(e) => setEditReplyText(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                          e.preventDefault()
+                                          handleUpdateReply(post.id, comment.id, reply.id)
+                                        }
+                                      }}
+                                      className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-[10px] outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                                    />
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-foreground mt-0.5 leading-relaxed">{reply.content}</p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1587,7 +1890,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                               value={replyInputs[comment.id] || ""}
                               onChange={(e) => setReplyInputs(prev => ({ ...prev, [comment.id]: e.target.value }))}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") {
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                  e.preventDefault()
                                   handleAddReply(post.id, comment.id)
                                 }
                               }}
@@ -1614,7 +1918,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     value={commentInputs[post.id] || ""}
                     onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                        e.preventDefault()
                         handleAddComment(post.id)
                       }
                     }}
