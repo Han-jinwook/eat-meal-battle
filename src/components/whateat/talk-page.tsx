@@ -965,8 +965,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
   // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
   const getSampleLimit = () => {
-    if (scopeFilter === "dong") return 1
-    if (scopeFilter === "gu") return 2
     return 3
   }
 
@@ -1099,10 +1097,17 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative z-50">
               <button
-                onClick={() => setShowScopeDropdown(!showScopeDropdown)}
+                onClick={() => {
+                  const nextState = !showScopeDropdown
+                  setShowScopeDropdown(nextState)
+                  if (nextState) {
+                    setShowRegionSearch(false)
+                    setSearchRegion("")
+                  }
+                }}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-extrabold transition-all whitespace-nowrap border",
-                  scopeFilter === "all" && !searchRegion
+                  (scopeFilter === "all" && !searchRegion)
                     ? "bg-white text-foreground border-gray-300 hover:border-orange-200"
                     : "bg-orange-50 text-orange-600 border-orange-200"
                 )}
@@ -1141,8 +1146,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               onClick={() => {
                 const nextState = !showRegionSearch
                 setShowRegionSearch(nextState)
-                if (!nextState) {
+                if (nextState) {
+                  setShowScopeDropdown(false)
+                } else {
                   setSearchRegion("")
+                  setScopeFilter("all")
                 }
               }}
               className={cn(
