@@ -1742,16 +1742,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   }
                   setShareConsentModalOpen(false)
                   if (pendingShareData) {
-                    const supabase = createClient()
-                    const { data: userData } = await supabase
-                      .from('users')
-                      .select('region')
-                      .eq('id', user.id)
-                      .single()
-
-                    const hasRegion = userData?.region ? (() => {
+                    const hasRegion = userRegion ? (() => {
                       try {
-                        const parsed = JSON.parse(userData.region)
+                        const parsed = JSON.parse(userRegion)
                         return Boolean(parsed.city && parsed.gu && parsed.dong)
                       } catch (e) {
                         return false

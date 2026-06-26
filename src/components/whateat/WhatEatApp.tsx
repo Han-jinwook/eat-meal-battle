@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { X } from "lucide-react"
 import { Header, type HeaderNavTab } from "@/components/whateat/header"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
@@ -189,18 +189,20 @@ export default function WhatEatApp() {
   }, []);
 
   // 2. 탭 상태가 변경될 때 브라우저 히스토리에 적재 (이중 적재 및 무한 뒤로가기 루프 방지)
-  const handleTabChange = (newTab: HeaderNavTab) => {
-    if (bottomNavTab === newTab) return;
-    setBottomNavTab(newTab);
-    
-    if (typeof window !== 'undefined') {
-      const targetHash = `#${newTab}`;
-      // 현재 브라우저의 state와 다를 때만 pushState 실행
-      if (window.history.state?.tab !== newTab) {
-        window.history.pushState({ tab: newTab }, '', targetHash);
+  // 2. 탭 상태가 변경될 때 브라우저 히스토리에 적재 (이중 적재 및 무한 뒤로가기 루프 방지)
+  const handleTabChange = useCallback((newTab: HeaderNavTab) => {
+    setBottomNavTab((prev) => {
+      if (prev === newTab) return prev;
+      
+      if (typeof window !== 'undefined') {
+        const targetHash = `#${newTab}`;
+        if (window.history.state?.tab !== newTab) {
+          window.history.pushState({ tab: newTab }, '', targetHash);
+        }
       }
-    }
-  };
+      return newTab;
+    });
+  }, []);
 
   // Listen for navigation requests to Talk tab
   useEffect(() => {
@@ -211,7 +213,7 @@ export default function WhatEatApp() {
     return () => {
       window.removeEventListener("navigateToTalk", handleNavigateToTalk);
     };
-  }, [bottomNavTab]);
+  }, [handleTabChange]);
 
   useEffect(() => {
     if (!isLoading && !hasAutoNavigated) {
