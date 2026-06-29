@@ -319,6 +319,9 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   }
 
   const handleModalSave = (saved: EditData) => {
+    if (saved.id === 1 || saved.id === 2 || saved.id === 3) {
+      return
+    }
     const nextPlan = {
       ...saved,
       thumbnail: saved.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop",

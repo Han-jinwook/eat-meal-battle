@@ -21,6 +21,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { toast } from "react-hot-toast"
+
+
 
 
 export interface EditData {
@@ -302,6 +305,13 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
 
 
 const handleSubmit = () => {
+    if (editData?.id === 1 || editData?.id === 2 || editData?.id === 3) {
+      toast("샘플이라 수정이 되지 않습니다.", {
+        icon: "💡",
+        duration: 3000
+      })
+      return
+    }
     const resolvedMealType = (mealType || editData?.mealType || "집밥") as "집밥" | "배달" | "외식"
     const resolvedPlace =
       resolvedMealType === "외식"
