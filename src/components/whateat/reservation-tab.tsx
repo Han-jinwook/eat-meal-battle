@@ -18,38 +18,75 @@ import {
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 
-const defaultMealPlans = [
-  {
-    id: 1,
-    date: "2026-04-05",
-    time: "19:00",
-    mealType: "배달",
-    menu: "치킨",
-    place: "도미노피자 역삼점",
-    memo: "가족들과 주말 저녁 배달 치맥",
-    thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=100&h=100&fit=crop"
-  },
-  {
-    id: 2,
-    date: "2026-03-22",
-    time: "12:30",
-    mealType: "집밥",
-    menu: "파스타",
-    place: "집",
-    memo: "집에서 직접 만들기 실습",
-    thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop"
-  },
-  {
-    id: 3,
-    date: "2026-03-15",
-    time: "18:30",
-    mealType: "외식",
-    menu: "삼겹살",
-    place: "우미학 청담점",
-    memo: "주말 저녁 외식 패밀리 데이",
-    thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop"
+const getDynamicDefaultPlans = () => {
+  const today = new Date()
+  let targetYear = today.getFullYear()
+  let targetMonth = today.getMonth() + 1 // Next month (0-indexed, so today.getMonth() + 1)
+  if (targetMonth > 11) {
+    targetMonth = 0
+    targetYear += 1
   }
-]
+
+  // 1. 파스타 (집밥) - 다음 달 초 주중 (5일 기준 가장 가까운 주중)
+  const dateHomemade = new Date(targetYear, targetMonth, 5)
+  while (dateHomemade.getDay() === 0 || dateHomemade.getDay() === 6) {
+    dateHomemade.setDate(dateHomemade.getDate() + 1)
+  }
+
+  // 2. 치킨 (배달) - 다음 달 중순 주중 (12일 기준 가장 가까운 주중)
+  const dateDelivery = new Date(targetYear, targetMonth, 12)
+  while (dateDelivery.getDay() === 0 || dateDelivery.getDay() === 6) {
+    dateDelivery.setDate(dateDelivery.getDate() + 1)
+  }
+
+  // 3. 삼겹살 (외식) - 다음 달 초/중순 주말 (10일 기준 가장 가까운 주말)
+  const dateDineout = new Date(targetYear, targetMonth, 10)
+  while (dateDineout.getDay() !== 0 && dateDineout.getDay() !== 6) {
+    dateDineout.setDate(dateDineout.getDate() + 1)
+  }
+
+  const formatDate = (d: Date) => {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const date = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${date}`
+  }
+
+  return [
+    {
+      id: 1,
+      date: formatDate(dateDelivery),
+      time: "19:00",
+      mealType: "배달",
+      menu: "치킨",
+      place: "도미노피자 역삼점",
+      memo: "가족들과 저녁 배달 치맥",
+      thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=100&h=100&fit=crop"
+    },
+    {
+      id: 2,
+      date: formatDate(dateHomemade),
+      time: "12:30",
+      mealType: "집밥",
+      menu: "파스타",
+      place: "집",
+      memo: "집에서 직접 만들기 실습",
+      thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop"
+    },
+    {
+      id: 3,
+      date: formatDate(dateDineout),
+      time: "18:30",
+      mealType: "외식",
+      menu: "삼겹살",
+      place: "우미학 청담점",
+      memo: "주말 저녁 외식 패밀리 데이",
+      thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop"
+    }
+  ]
+}
+
+const defaultMealPlans = getDynamicDefaultPlans()
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
@@ -73,7 +110,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showCalendar, setShowCalendar] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState({ year: 2025, month: 2 })
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const today = new Date()
+    return { year: today.getFullYear(), month: today.getMonth() + 1 }
+  })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [urlForModal, setUrlForModal] = useState("")
   const [plans, setPlans] = useState<any[]>(defaultMealPlans)
