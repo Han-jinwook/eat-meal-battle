@@ -272,7 +272,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-160px)] overflow-y-auto hide-scrollbar">
+      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-180px)] overflow-y-auto hide-scrollbar mt-12">
         {/* Close Button & Delete Button in Edit Mode */}
         <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
           {isEditMode && editData?.id && (
