@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn } from "@/lib/utils"
@@ -102,6 +102,26 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const { isLoggedIn, user } = useHub()
   const [viewerImage, setViewerImage] = useState<string | null>(null)
   const [mealLogs, setMealLogs] = useState<any[]>([])
+
+  // 기등록된 배달 식당 목록 추출
+  const registeredDeliveryStores = useMemo(() => {
+    const storesMap = new Map<string, any>()
+    mealLogs.forEach(log => {
+      if ((log.type === "배달" || log.mealType === "delivery") && log.placeName) {
+        const address = log.placeAddress || ""
+        const dongMatch = address.match(/([가-힣\d]+동)/)
+        const dong = dongMatch ? dongMatch[1] : "역삼동"
+        storesMap.set(log.placeName, {
+          name: log.placeName,
+          address: address,
+          category: "배달음식",
+          dong: dong,
+          lastOrderedAt: log.date || "최근"
+        })
+      }
+    })
+    return Array.from(storesMap.values())
+  }, [mealLogs])
 
   // 거주 지역 등록 모달 관련 상태 변수
   const [regionModalOpen, setRegionModalOpen] = useState(false)
@@ -1096,36 +1116,70 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
+    const mealUuid = data.id || generateUUID()
+    const rating = data.rating || 0
+    let status = "pending"
+    let source = "solo"
+
+    if (rating === 5) {
+      const pref = localStorage.getItem("whateat_auto_share_5star")
+      if (pref === "approved") {
+        status = "approved"
+        source = "solo-5star"
+      } else {
+        status = "pending"
+        source = "solo-5star"
+      }
+    }
+
+    const formattedDate = data.date 
+      ? toDisplayDate(data.date) 
+      : toDisplayDate(toIsoDate(new Date()))
+
+    // 1. 낙관적 업데이트 생성
+    const optimisticLog = {
+      id: mealUuid,
+      date: formattedDate,
+      title: data.menuName,
+      type: data.mealType,
+      image: data.image || "/images/placeholder-food.jpg",
+      rating: rating,
+      tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
+      tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
+      linkUrl: data.linkUrl || "",
+      linkThumbnail: data.linkThumbnail || "",
+      placeName: data.place?.name || data.deliveryStoreName || "",
+      placeAddress: data.place?.address || "",
+      aiTag: true,
+      healthy: data.mealType === "집밥",
+      status: status,
+      description: data.description || "",
+      comments: []
+    }
+
+    // 로컬 상태 즉각 반영 (렉 없이 피드에 카드 표시!)
+    if (data.id) {
+      setMealLogs(prev => prev.map(log => log.id === data.id ? { ...optimisticLog, comments: log.comments } : log))
+    } else {
+      setMealLogs(prev => [optimisticLog, ...prev])
+    }
+
+    // 모달 즉각 닫기
+    setEditModalOpen(false)
+    setEditingMeal(null)
+
+    // 2. 백그라운드 비동기 저장 수행
     try {
       let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
       if (data.image && data.image.startsWith("data:image")) {
-        const uploadToast = toast.loading("이미지를 업로드하고 있어요...")
         try {
           finalImageUrl = await uploadImageToStorage(data.image)
-          toast.dismiss(uploadToast)
+          setMealLogs(prev => prev.map(log => log.id === mealUuid ? { ...log, image: finalImageUrl } : log))
         } catch (uploadErr) {
-          toast.dismiss(uploadToast)
           console.error("Image upload failed:", uploadErr)
-          const errMsg = uploadErr instanceof Error ? uploadErr.message : "이미지 업로드에 실패했습니다.";
-          toast.error(`${errMsg} 기본 이미지로 진행합니다.`)
           finalImageUrl = "/images/placeholder-food.jpg"
-        }
-      }
-
-      const mealUuid = data.id || generateUUID()
-      const rating = data.rating || 0
-      let status = "pending"
-      let source = "solo"
-
-      if (rating === 5) {
-        const pref = localStorage.getItem("whateat_auto_share_5star")
-        if (pref === "approved") {
-          status = "approved"
-          source = "solo-5star"
-        } else {
-          status = "pending"
-          source = "solo-5star"
+          setMealLogs(prev => prev.map(log => log.id === mealUuid ? { ...log, image: finalImageUrl } : log))
         }
       }
 
@@ -1201,35 +1255,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         }
       }
 
-      const formattedDate = data.date 
-        ? toDisplayDate(data.date) 
-        : toDisplayDate(toIsoDate(new Date()))
-
-      const updatedLog = {
-        id: mealUuid,
-        date: formattedDate,
-        title: data.menuName,
-        type: data.mealType,
-        image: finalImageUrl,
-        rating: rating,
-        tips: data.recipe?.split("\n").filter(t => t.trim()) || [],
-        tipTitle: data.mealType === "집밥" ? "조리 팁" : "추천 메뉴",
-        linkUrl: data.linkUrl || "",
-        linkThumbnail: data.linkThumbnail || "",
-        placeName: data.place?.name || data.deliveryStoreName || "",
-        aiTag: true,
-        healthy: data.mealType === "집밥",
-        status: status,
-        description: data.description || "",
-        comments: []
-      }
-
-      if (data.id) {
-        setMealLogs(prev => prev.map(log => log.id === data.id ? { ...updatedLog, comments: log.comments } : log))
-      } else {
-        setMealLogs(prev => [updatedLog, ...prev])
-      }
-
       if (rating === 5) {
         await checkConsentAndUpload({
           id: mealUuid,
@@ -1243,13 +1268,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           supabaseId: mealUuid
         }, finalImageUrl)
       }
-
-      setEditModalOpen(false)
-      setEditingMeal(null)
     } catch (err) {
-      console.error("Failed to save meal on Supabase:", err)
-      const errMsg = err instanceof Error ? err.message : "식사 기록 저장에 실패했습니다.";
-      toast.error(errMsg)
+      console.error("Background save failed on Supabase:", err)
+      toast.error("백그라운드 저장 중 오류가 발생했습니다.")
     }
   }
 
@@ -1719,6 +1740,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         editData={editingMeal}
         onSave={handleEditSave}
         onDelete={handleDeleteClick}
+        registeredDeliveryStores={registeredDeliveryStores}
       />
 
       {/* Image Viewer */}

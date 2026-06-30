@@ -50,6 +50,7 @@ interface AddLogModalProps {
   onSave?: (data: MealLogData) => void
   onDelete?: (id: number) => void
   mode?: "solo" | "family"
+  registeredDeliveryStores?: SelectedPlace[]
 }
 
 type MealType = "집밥" | "배달" | "외식"
@@ -62,9 +63,10 @@ interface SelectedPlace {
   distance?: string
   dong?: string
   lastOrderedAt?: string
+  isSample?: boolean
 }
 
-export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo" }: AddLogModalProps) {
+export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo", registeredDeliveryStores = [] }: AddLogModalProps) {
   const { isLoggedIn } = useHub()
   const [mealType, setMealType] = useState<MealType>("집밥")
 
@@ -125,19 +127,26 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
             { name: "우미학 청담점", address: "서울 강남구 청담동 123-45", category: "한식", distance: "200m" },
           ])
         } else if (mealType === "배달") {
-          setNearbyDeliveryStores([
-            { name: "BHC치킨 강남점", address: "서울 강남구 역삼동 111-22", category: "치킨", dong: "역삼동", lastOrderedAt: "6월 28일" },
-            { name: "도미노피자 역삼점", address: "서울 강남구 역삼동 222-33", category: "피자", dong: "역삼동", lastOrderedAt: "6월 25일" },
-            { name: "맘스터치 강남역점", address: "서울 강남구 역삼동 333-44", category: "버거", dong: "역삼동", lastOrderedAt: "6월 22일" },
-            { name: "족발야시장 강남점", address: "서울 강남구 논현동 444-55", category: "족발", dong: "논현동", lastOrderedAt: "6월 18일" },
-            { name: "교촌치킨 역삼점", address: "서울 강남구 역삼동 555-66", category: "치킨", dong: "역삼동", lastOrderedAt: "6월 15일" },
-          ])
+          if (registeredDeliveryStores && registeredDeliveryStores.length > 0) {
+            setNearbyDeliveryStores(registeredDeliveryStores)
+          } else {
+            setNearbyDeliveryStores([
+              { 
+                name: "BHC치킨 강남점", 
+                address: "서울 강남구 역삼동 111-22", 
+                category: "치킨", 
+                dong: "역삼동", 
+                lastOrderedAt: "6월 28일",
+                isSample: true 
+              }
+            ])
+          }
         }
         setIsLoadingLocation(false)
       }, 1000)
       return () => clearTimeout(timer)
     }
-  }, [mealType, isOpen])
+  }, [mealType, isOpen, registeredDeliveryStores])
 
   // 배달 식당 필터링
   const filteredDeliveryStores = (() => {
@@ -604,11 +613,13 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         className="w-full px-3 py-2 bg-gray-50 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
                       />
                     </div>
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        {deliverySearchQuery ? `검색 결과 ${filteredDeliveryStores.length}개` : "배달 히스토리"}
-                      </p>
-                    </div>
+                    {deliverySearchQuery && (
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          검색 결과 {filteredDeliveryStores.length}개
+                        </p>
+                      </div>
+                    )}
                     <div>
                       {filteredDeliveryStores.length > 0 ? (
                         filteredDeliveryStores.map((store, idx) => (
@@ -618,7 +629,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               setDeliveryStoreName(store.name)
                               setDeliverySearchQuery("")
                             }}
-                            className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0"
+                            className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0 relative"
                           >
                             <div className="size-8 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
                               <Bike className="size-4 text-muted-foreground" />
@@ -627,8 +638,13 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               <h4 className="font-bold text-xs text-foreground truncate">{store.name}</h4>
                               <p className="text-[10px] text-muted-foreground truncate">{store.category}</p>
                             </div>
+                            {store.isSample && (
+                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold shadow-sm pointer-events-none tracking-widest">
+                                샘플
+                              </span>
+                            )}
                             <span className="text-[10px] text-muted-foreground shrink-0 font-medium">
-                              {store.dong} | {store.lastOrderedAt}
+                              {store.isSample ? "가상 주문" : `${store.dong} | ${store.lastOrderedAt}`}
                             </span>
                           </button>
                         ))
@@ -828,14 +844,47 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     <span className="text-xs text-green-600 font-medium">네이버 플레이스 정보 불러오는 중...</span>
                   </div>
                 ) : linkUrl && (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl">
-                    <div className="size-5 rounded-full bg-[#03C75A] flex items-center justify-center shrink-0">
-                      <span className="text-white text-[10px] font-black">N</span>
+                  <div className="flex flex-col gap-2.5 p-3.5 bg-green-50 border border-green-200 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <div className="size-5 rounded-full bg-[#03C75A] flex items-center justify-center shrink-0">
+                        <span className="text-white text-[10px] font-black">N</span>
+                      </div>
+                      <span className="text-xs text-green-700 font-medium truncate flex-1">{linkUrl}</span>
+                      <button 
+                        onClick={() => { 
+                          setLinkUrl(""); 
+                          setLinkThumbnail(""); 
+                          if (mealType === "배달") setDeliveryStoreName("");
+                          else if (mealType === "외식") setSelectedPlace(null);
+                        }} 
+                        className="shrink-0 size-5 hover:bg-green-100/50 rounded flex items-center justify-center transition-colors"
+                      >
+                        <X className="size-3.5 text-green-600" />
+                      </button>
                     </div>
-                    <span className="text-xs text-green-700 font-medium truncate flex-1">{linkUrl}</span>
-                    <button onClick={() => { setLinkUrl(""); setLinkThumbnail(""); }} className="shrink-0">
-                      <X className="size-3.5 text-green-600" />
-                    </button>
+                    
+                    {/* 식당명 및 크롤링된 썸네일 노출 */}
+                    {(deliveryStoreName || selectedPlace?.name) && (
+                      <div className="flex items-center gap-3 mt-1.5 pt-2.5 border-t border-green-100">
+                        {linkThumbnail ? (
+                          <img 
+                            src={linkThumbnail} 
+                            alt="Store Thumbnail" 
+                            className="size-11 rounded-lg object-cover bg-white border border-green-200 shrink-0 shadow-sm" 
+                          />
+                        ) : (
+                          <div className="size-11 rounded-lg bg-green-100 flex items-center justify-center shrink-0 border border-green-200">
+                            <Navigation className="size-5 text-[#03C75A]" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-xs font-bold text-green-900 truncate">
+                            {mealType === "배달" ? deliveryStoreName : selectedPlace?.name}
+                          </h5>
+                          <p className="text-[10px] text-green-700/60 font-medium">네이버 플레이스 연동 완료</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

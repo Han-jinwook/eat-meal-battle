@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { 
   Crown, 
   Share2, 
@@ -447,6 +447,28 @@ export function FamilyPage({
   }, [showChefModal, members])
 
   const [meals, setMeals] = useState<SharedMeal[]>(sharedMeals)
+
+  // 기등록된 배달 식당 목록 추출
+  const registeredDeliveryStores = useMemo(() => {
+    const storesMap = new Map<string, any>()
+    meals.forEach(log => {
+      // family page에서는 mealType이 "delivery" 이거나 type이 "배달"
+      if ((log.mealType === "delivery" || log.type === "배달") && log.placeName) {
+        const address = log.placeAddress || ""
+        const dongMatch = address.match(/([가-힣\d]+동)/)
+        const dong = dongMatch ? dongMatch[1] : "역삼동"
+        storesMap.set(log.placeName, {
+          name: log.placeName,
+          address: address,
+          category: "배달음식",
+          dong: dong,
+          lastOrderedAt: log.date || "최근"
+        })
+      }
+    })
+    return Array.from(storesMap.values())
+  }, [meals])
+
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [vote, setVote] = useState<ActiveVote | null>(activeVote)
   const [selectedMealId, setSelectedMealId] = useState<string | number | null>(null)
@@ -589,33 +611,60 @@ export function FamilyPage({
       return
     }
 
+    const mealUuid = generateUUID()
+    let status = "pending"
+    let source = "family-shared"
+
+    const mealTypeMap = {
+      "집밥": "homemade" as const,
+      "배달": "delivery" as const,
+      "외식": "dining" as const
+    }
+    const mappedMealType = mealTypeMap[data.mealType] || "homemade"
+
+    // 1. 낙관적 업데이트 생성
+    const optimisticMeal: SharedMeal = {
+      id: mealUuid,
+      userName: user.user_metadata?.full_name || user.email?.split("@")[0] || "나",
+      userAvatar: user.user_metadata?.avatar_url || "/images/avatars/default.png",
+      userRole: members.find(m => m.userId === user.id)?.role || "member",
+      mealType: mappedMealType,
+      menuName: data.menuName,
+      rating: 0,
+      tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+      placeName: data.place?.name || data.deliveryStoreName || "",
+      placeAddress: data.place?.address || "",
+      description: data.description || "",
+      image: data.image || "/images/placeholder-food.jpg",
+      date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
+      comments: [],
+      likes: 0,
+      likedByMe: false,
+      ratingsCount: 0,
+      ratingsSum: 0,
+      linkUrl: data.linkUrl || "",
+      linkThumbnail: data.linkThumbnail || ""
+    }
+
+    // 로컬 상태 즉시 추가 (렉 없이 피드에 바로 렌더링!)
+    setMeals(prev => [optimisticMeal, ...prev])
+
+    // 모달 즉각 닫기
+    setAddModalOpen(false)
+
     try {
       let finalImageUrl = data.image || "/images/placeholder-food.jpg"
 
       if (data.image && data.image.startsWith("data:image")) {
-        const uploadToast = toast.loading("이미지를 업로드하고 있어요...")
         try {
           finalImageUrl = await uploadImageToStorage(data.image)
-          toast.dismiss(uploadToast)
+          setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
         } catch (uploadErr) {
-          toast.dismiss(uploadToast)
           console.error("Image upload failed:", uploadErr)
-          const errMsg = uploadErr instanceof Error ? uploadErr.message : "이미지 업로드에 실패했습니다.";
-          toast.error(`${errMsg} 기본 이미지로 진행합니다.`)
           finalImageUrl = "/images/placeholder-food.jpg"
+          setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
         }
       }
-
-      const mealUuid = generateUUID()
-      let status = "pending"
-      let source = "family-shared"
-
-      const mealTypeMap = {
-        "집밥": "homemade" as const,
-        "배달": "delivery" as const,
-        "외식": "dining" as const
-      }
-      const mappedMealType = mealTypeMap[data.mealType] || "homemade"
 
       const metadata = {
         title: data.menuName,
@@ -626,7 +675,7 @@ export function FamilyPage({
         placeAddress: data.place?.address || "",
         description: data.description || "",
         linkUrl: data.linkUrl || "",
-        linkThumbnail: ""
+        linkThumbnail: data.linkThumbnail || ""
       }
 
       await secureWrite({
@@ -666,9 +715,7 @@ export function FamilyPage({
         })
       }
 
-      toast.success("식사가 성공적으로 공유되었습니다!")
-      
-      // Refresh family shared meals
+      // 최종 정합성을 위해 백그라운드 fetch 수행
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       if (familyUserIds.length > 0) {
         await fetchFamilyData(familyUserIds)
@@ -676,8 +723,7 @@ export function FamilyPage({
       
     } catch (err) {
       console.error("Failed to save meal shared to Supabase:", err)
-      const errMsg = err instanceof Error ? err.message : "식사 공유 저장에 실패했습니다.";
-      toast.error(errMsg)
+      toast.error("백그라운드 식사 공유 저장에 실패했습니다.")
     }
   }
 
@@ -2999,6 +3045,7 @@ export function FamilyPage({
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddMealSave}
         mode="family"
+        registeredDeliveryStores={registeredDeliveryStores}
       />
     </div>
   )
