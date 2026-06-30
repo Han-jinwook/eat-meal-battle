@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
+import { toast } from "react-hot-toast"
 
 const getDynamicDefaultPlans = () => {
   const today = new Date()
@@ -336,25 +337,37 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     })
   }
 
+  const handleDeleteClick = (id: number) => {
+    if (id === 1 || id === 2 || id === 3) {
+      toast("샘플이라 삭제 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
+        icon: "💡",
+        duration: 3000,
+      })
+      return
+    }
+
+    setPlans((prev) => prev.filter((plan) => plan.id !== id))
+    toast.success("예약 일정이 삭제되었습니다.")
+  }
+
   return (
     <div className="flex flex-col gap-1">
       {/* Sticky Search + Filter */}
       <div className="sticky top-0 z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col gap-2">
-      {/* Search Row - 날짜순 정렬 */}
       <div className="flex items-center gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="식당, 메뉴, 장소 검색"
-            className="w-full pl-11 pr-4 py-2.5 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
+            className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
           />
         </div>
         <button
           onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
-          className="flex items-center gap-1.5 px-3 py-2.5 bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3.5 h-[38px] bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap cursor-pointer"
         >
           <ArrowUpDown className="size-3.5" />
           날짜순
@@ -521,6 +534,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         initialUrl={urlForModal}
         editData={editingPlan}
         onSave={handleModalSave}
+        onDelete={handleDeleteClick}
       />
     </div>
   )

@@ -18,6 +18,7 @@ import {
   Sun,
   Coffee,
   Moon,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
@@ -49,6 +50,7 @@ interface AddReservationModalProps {
   initialUrl?: string
   editData?: EditData | null
   onSave?: (data: EditData) => void
+  onDelete?: (id: number) => void
   prefillData?: ReservationPrefillData | null
 }
 
@@ -124,7 +126,7 @@ function formatDateDisplay(dateStr: string): string {
   return `${month}월 ${day}일 (${weekday})`
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, prefillData }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData }: AddReservationModalProps) {
   const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
 
@@ -358,13 +360,36 @@ const handleSubmit = () => {
       
       {/* Modal */}
       <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-180px)] overflow-y-auto hide-scrollbar mt-12">
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-5 right-5 z-10 size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors"
-        >
-          <X className="size-4" />
-        </button>
+        {/* Close Button & Delete Button in Edit Mode */}
+        <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
+          {isEditMode && editData?.id && (
+            <button
+              onClick={() => {
+                if (editData.id === 1 || editData.id === 2 || editData.id === 3) {
+                  toast("샘플이라 삭제 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
+                    icon: "💡",
+                    duration: 3000
+                  })
+                  return
+                }
+                if (confirm("이 예약 일정을 정말 삭제하시겠습니까?")) {
+                  onDelete?.(editData.id)
+                  onClose()
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <Trash2 className="size-3" />
+              삭제
+            </button>
+          )}
+          <button 
+            onClick={onClose}
+            className="size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
 
         <div className="p-6 sm:p-8">
           {/* Header */}
