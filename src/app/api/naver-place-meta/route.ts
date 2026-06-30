@@ -2,6 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 30; // 30 seconds limit
 
+async function fetchNaverPlacePhoto(storeName: string): Promise<string> {
+  if (!storeName || storeName.includes('지도') || storeName.includes('Map')) return '';
+  try {
+    const url = `https://search.naver.com/search.naver?query=${encodeURIComponent(storeName)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    
+    // Find pstatic images that contain ldb-phinf or pup-review-phinf or naverbooking-phinf
+    const regex = /https:\/\/search\.pstatic\.net\/common\/[^"'\s]*/gi;
+    const matches = html.match(regex);
+    if (matches) {
+      for (const img of matches) {
+        const decoded = decodeURIComponent(img).replace(/&amp;/g, '&').replace(/["'\s]/g, '');
+        if (decoded.includes('ldb-phinf') || decoded.includes('pup-review-phinf') || decoded.includes('naverbooking-phinf')) {
+          return decoded;
+        }
+      }
+      return matches[0].replace(/&amp;/g, '&').replace(/["'\s]/g, '');
+    }
+  } catch (e) {
+    console.error('Failed to fetch Naver Place Photo by keyword:', e);
+  }
+  return '';
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get('url');
@@ -99,11 +129,17 @@ export async function GET(request: NextRequest) {
         title = decodeURIComponent(qMatch[1]).replace(/\+/g, ' ');
       }
 
-      const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
-                       pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
-      image = imgMatch ? imgMatch[1].trim() : '';
-      if (image && image.startsWith('//')) {
-        image = 'https:' + image;
+      if (title) {
+        image = await fetchNaverPlacePhoto(title);
+      }
+
+      if (!image) {
+        const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
+                         pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+        image = imgMatch ? imgMatch[1].trim() : '';
+        if (image && image.startsWith('//')) {
+          image = 'https:' + image;
+        }
       }
     }
 
@@ -138,26 +174,32 @@ export async function GET(request: NextRequest) {
         title = '구글 지도';
       }
 
-      const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
-                       pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
-      image = imgMatch ? imgMatch[1].replace(/&amp;/g, '&').trim() : '';
+      if (title) {
+        image = await fetchNaverPlacePhoto(title);
+      }
 
-      if (image && image.includes('staticmap')) {
-        const centerMatch = image.match(/[?&]center=([0-9.-]+)(?:%2C|,)([0-9.-]+)/i);
-        if (centerMatch) {
-          const lat = parseFloat(centerMatch[1]);
-          const lng = parseFloat(centerMatch[2]);
-          
-          // 지리적으로 대한민국 영역을 벗어나거나 미국 등 엉뚱한 위치(예: default US center)인 경우 제거
-          const isUSLocation = (lng >= -130 && lng <= -60) || (Math.abs(lat - 37.0625) < 0.1 && Math.abs(lng - -95.677) < 0.1);
-          
-          if (isUSLocation) {
-            image = ''; // Fallback to premium G icon card
-          } else {
-            // 강제로 한국어 레이블 설정 및 빨간색 핀(Marker) 추가하여 가독성 강화
-            image = image.replace(/language=[a-z-]+/gi, 'language=ko');
-            if (!image.includes('markers=')) {
-              image += `&markers=color:red%7C${lat},${lng}`;
+      if (!image) {
+        const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
+                         pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+        image = imgMatch ? imgMatch[1].replace(/&amp;/g, '&').trim() : '';
+
+        if (image && image.includes('staticmap')) {
+          const centerMatch = image.match(/[?&]center=([0-9.-]+)(?:%2C|,)([0-9.-]+)/i);
+          if (centerMatch) {
+            const lat = parseFloat(centerMatch[1]);
+            const lng = parseFloat(centerMatch[2]);
+            
+            // 지리적으로 대한민국 영역을 벗어나거나 미국 등 엉뚱한 위치(예: default US center)인 경우 제거
+            const isUSLocation = (lng >= -130 && lng <= -60) || (Math.abs(lat - 37.0625) < 0.1 && Math.abs(lng - -95.677) < 0.1);
+            
+            if (isUSLocation) {
+              image = ''; // Fallback to premium G icon card
+            } else {
+              // 강제로 한국어 레이블 설정 및 빨간색 핀(Marker) 추가하여 가독성 강화
+              image = image.replace(/language=[a-z-]+/gi, 'language=ko');
+              if (!image.includes('markers=')) {
+                image += `&markers=color:red%7C${lat},${lng}`;
+              }
             }
           }
         }
