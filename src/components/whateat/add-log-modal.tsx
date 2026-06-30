@@ -121,19 +121,44 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     inputEl.click()
   }
 
+  // GPS 위치 기반 주변 장소 로드 함수 (외식용)
+  const loadGpsNearbyPlaces = () => {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation is not supported by this browser.")
+      return
+    }
+    setIsLoadingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const res = await fetch(`/api/nearby-places?lat=${latitude}&lng=${longitude}`)
+          if (res.ok) {
+            const data = await res.json()
+            setNearbyPlaces(data.places || [])
+          }
+        } catch (err) {
+          console.error("Failed to load GPS nearby places:", err)
+        } finally {
+          setIsLoadingLocation(false)
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error)
+        setIsLoadingLocation(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
+  }
+
   // GPS 위치 기반 주변 장소 로드 (외식 또는 배달 선택 시)
   useEffect(() => {
     if ((mealType === "외식" || mealType === "배달") && isOpen) {
-      setIsLoadingLocation(true)
-      // 실제로는 navigator.geolocation + API 연동
-      const timer = setTimeout(() => {
-        if (mealType === "외식") {
-          setNearbyPlaces([
-            { name: "스시 오마카세 히든", address: "서울 강남구 역삼동 234-56", category: "일식", distance: "50m" },
-            { name: "라멘 이치란 강남점", address: "서울 강남구 논현동 345-67", category: "일식", distance: "120m" },
-            { name: "우미학 청담점", address: "서울 강남구 청담동 123-45", category: "한식", distance: "200m" },
-          ])
-        } else if (mealType === "배달") {
+      if (mealType === "외식") {
+        loadGpsNearbyPlaces()
+      } else if (mealType === "배달") {
+        setIsLoadingLocation(true)
+        const timer = setTimeout(() => {
           if (registeredDeliveryStores && registeredDeliveryStores.length > 0) {
             setNearbyDeliveryStores(registeredDeliveryStores)
           } else {
@@ -148,10 +173,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
               }
             ])
           }
-        }
-        setIsLoadingLocation(false)
-      }, 1000)
-      return () => clearTimeout(timer)
+          setIsLoadingLocation(false)
+        }, 1000)
+        return () => clearTimeout(timer)
+      }
     }
   }, [mealType, isOpen, registeredDeliveryStores])
 
@@ -423,6 +448,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     if (file) {
       const url = URL.createObjectURL(file)
       setImagePreview(url)
+      if (mealType === "외식") {
+        loadGpsNearbyPlaces()
+      }
 
       setIsAnalyzingAi(true)
       try {
