@@ -777,11 +777,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
 
     if (pref === "approved") {
-      toast("5점 별점 식사가 맛톡 동네 피드에 자동 공유되었습니다!", { icon: "✨", duration: 2500 })
       await upload5StarMealToSupabase(data, imageUrl)
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("navigateToTalk"))
-      }, 1500)
+      }, 100)
     } else if (pref === "rejected") {
       console.log("User rejected auto-sharing of 5-star meals.")
     } else {
