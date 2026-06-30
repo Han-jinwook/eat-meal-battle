@@ -1509,45 +1509,84 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   <Pencil className="size-3.5" />
                 </button>
 
-                {/* Case 1: linkUrl 있음 -> 썸네일 혹은 기본 템플릿 표시 */}
+                 {/* Case 1: linkUrl 있음 -> 썸네일 혹은 기본 템플릿 표시 */}
                 {meal.linkUrl ? (
-                  <a
-                    href={meal.linkUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full h-full relative group overflow-hidden block"
-                  >
-                    {meal.linkThumbnail ? (
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                        style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-3 text-center">
-                        <div className="size-8 rounded-full bg-[#03C75A] flex items-center justify-center mb-1.5 shadow-sm">
-                          <span className="text-white text-sm font-black">N</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-green-800">네이버 플레이스</span>
-                        <span className="text-[9px] text-green-700/70 truncate max-w-full px-2 mt-0.5">{meal.placeName || "상세 보기"}</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
-                      {(meal.type === "외식" || meal.type === "배달") ? (
-                        <>
-                          <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">
-                            <span className="text-white text-[7px] font-black">N</span>
+                  (() => {
+                    const isKakao = meal.linkUrl.includes("kko.to") || meal.linkUrl.includes("kakao.com")
+                    const isGoogle = meal.linkUrl.includes("google.com") || meal.linkUrl.includes("google.co.kr") || meal.linkUrl.includes("goo.gl")
+                    return (
+                      <a
+                        href={meal.linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full h-full relative group overflow-hidden block"
+                      >
+                        {meal.linkThumbnail ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                            style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
+                          />
+                        ) : (
+                          <div className={cn(
+                            "absolute inset-0 flex flex-col items-center justify-center p-3 text-center",
+                            isKakao && "bg-gradient-to-br from-amber-50 to-amber-100/70",
+                            isGoogle && "bg-gradient-to-br from-blue-50 to-indigo-50/80",
+                            !isKakao && !isGoogle && "bg-gradient-to-br from-green-50 to-emerald-100"
+                          )}>
+                            <div className={cn(
+                              "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm",
+                              isKakao && "bg-[#FEE500] border border-amber-200 text-[#3C1E1E]",
+                              isGoogle && "bg-[#4285F4] text-white",
+                              !isKakao && !isGoogle && "bg-[#03C75A] text-white"
+                            )}>
+                              <span className="text-sm font-black">
+                                {isKakao ? "K" : isGoogle ? "G" : "N"}
+                              </span>
+                            </div>
+                            <span className={cn(
+                              "text-[10px] font-bold",
+                              isKakao && "text-amber-800",
+                              isGoogle && "text-blue-800",
+                              !isKakao && !isGoogle && "text-green-800"
+                            )}>
+                              {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : "네이버 플레이스"}
+                            </span>
+                            <span className={cn(
+                              "text-[9px] truncate max-w-full px-2 mt-0.5",
+                              isKakao && "text-amber-700/80",
+                              isGoogle && "text-blue-700/80",
+                              !isKakao && !isGoogle && "text-green-700/70"
+                            )}>{meal.placeName || "상세 보기"}</span>
                           </div>
-                          <span className="text-[10px] font-bold text-foreground">Place</span>
-                        </>
-                      ) : (
-                        <>
-                          <ExternalLink className="size-3 text-primary" />
-                          <span className="text-[10px] font-bold text-foreground">recipe</span>
-                        </>
-                      )}
-                    </div>
-                  </a>
+                        )}
+                        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                          {(meal.type === "외식" || meal.type === "배달") ? (
+                            <>
+                              <div className={cn(
+                                "size-4 rounded-full flex items-center justify-center",
+                                isKakao && "bg-[#FEE500] text-[#3C1E1E]",
+                                isGoogle && "bg-[#4285F4] text-white",
+                                !isKakao && !isGoogle && "bg-[#03C75A] text-white"
+                              )}>
+                                <span className="text-[7px] font-black">
+                                  {isKakao ? "K" : isGoogle ? "G" : "N"}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-foreground">
+                                {isKakao ? "Map" : isGoogle ? "Map" : "Place"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="size-3 text-primary" />
+                              <span className="text-[10px] font-bold text-foreground">recipe</span>
+                            </>
+                          )}
+                        </div>
+                      </a>
+                    )
+                  })()
                 ) : (
                   <>
                     {/* Case 2: linkUrl 없음 -> 직접 작성한 레시피/팁 표시 */}

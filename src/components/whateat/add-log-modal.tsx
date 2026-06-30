@@ -79,6 +79,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [linkUrl, setLinkUrl] = useState("")
   const [linkThumbnail, setLinkThumbnail] = useState("")
   const [isCrawlingLink, setIsCrawlingLink] = useState(false)
+  const [linkBrand, setLinkBrand] = useState<"naver" | "kakao" | "google">("naver")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
@@ -246,16 +247,19 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     }
   }, [editData, isOpen])
 
-  // 네이버 플레이스 링크 감지 시 크롤링 수행
+  // 지도/식당 링크 감지 시 크롤링 수행
   useEffect(() => {
     if (!linkUrl) return
 
     const trimmedLink = linkUrl.trim()
     if (!trimmedLink.startsWith("http")) return
 
-    // naver.me or place.naver.com or map.naver.com 감지
+    // naver, kakao, google 지도 링크 감지
     const isNaverPlace = trimmedLink.includes("naver.me") || trimmedLink.includes("naver.com")
-    if (!isNaverPlace) return
+    const isKakaoPlace = trimmedLink.includes("kko.to") || trimmedLink.includes("kakao.com")
+    const isGooglePlace = trimmedLink.includes("google.com") || trimmedLink.includes("google.co.kr") || trimmedLink.includes("goo.gl")
+    
+    if (!isNaverPlace && !isKakaoPlace && !isGooglePlace) return
 
     // 이미 썸네일과 장소명이 세팅되어 있고 그게 이 URL 관련 정보라면 중복 요청 방지
     if (linkThumbnail && (deliveryStoreName || selectedPlace?.name)) {
@@ -275,19 +279,24 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
         if (data.title) {
           setLinkThumbnail(data.image || "")
+          setLinkBrand(data.brand || "naver")
           
+          let platformName = "N플레이스"
+          if (data.brand === "kakao") platformName = "카카오맵"
+          else if (data.brand === "google") platformName = "구글 지도"
+
           if (mealType === "배달") {
             setDeliveryStoreName(data.title)
           } else if (mealType === "외식") {
             setSelectedPlace({
               name: data.title,
-              address: "인천 서구 청라동 (N플레이스 연동)",
+              address: `인천 서구 청라동 (${platformName} 연동)`,
               category: "음식점"
             })
           }
         }
       } catch (err) {
-        console.error("Naver Place Crawling failed:", err)
+        console.error("Map Link Crawling failed:", err)
       } finally {
         if (isMounted) {
           setIsCrawlingLink(false)
@@ -823,32 +832,49 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
               </div>
             )}
 
-            {/* 5. N플레이스 링크 - 외식/배달일 경우에만 */}
+            {/* 5. 식당 링크 - 외식/배달일 경우에만 */}
             {(mealType === "외식" || mealType === "배달") && (
               <div className="flex flex-col gap-3">
                 <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Link className="size-4 text-orange-500" />
-                  N플레이스 링크 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
+                  식당 링크 <span className="text-xs text-muted-foreground font-normal">(선택 - N플레이스, 카카오맵, 구글맵)</span>
                 </label>
                 <input
                   className="w-full px-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground/50"
-                  placeholder="네이버 플레이스 링크를 입력하세요"
+                  placeholder="네이버 플레이스, 카카오맵, 구글맵 링크를 입력하세요"
                   type="text"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                 />
                 {isCrawlingLink ? (
-                  <div className="flex items-center gap-2 p-3 bg-green-50/50 border border-green-100 rounded-xl">
-                    <Loader2 className="size-4 text-green-600 animate-spin" />
-                    <span className="text-xs text-green-600 font-medium">네이버 플레이스 정보 불러오는 중...</span>
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                    <Loader2 className="size-4 text-primary animate-spin" />
+                    <span className="text-xs text-muted-foreground font-medium">식당 정보 불러오는 중...</span>
                   </div>
                 ) : linkUrl && (
-                  <div className="flex flex-col gap-2.5 p-3.5 bg-green-50 border border-green-200 rounded-xl">
+                  <div className={cn(
+                    "flex flex-col gap-2.5 p-3.5 border rounded-xl transition-colors",
+                    linkBrand === "kakao" && "bg-amber-50/70 border-amber-200",
+                    linkBrand === "google" && "bg-blue-50 border-blue-200",
+                    linkBrand === "naver" && "bg-green-50 border-green-200"
+                  )}>
                     <div className="flex items-center gap-2">
-                      <div className="size-5 rounded-full bg-[#03C75A] flex items-center justify-center shrink-0">
-                        <span className="text-white text-[10px] font-black">N</span>
+                      <div className={cn(
+                        "size-5 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                        linkBrand === "kakao" && "bg-[#FEE500] border border-amber-300 text-[#3C1E1E]",
+                        linkBrand === "google" && "bg-[#4285F4] text-white",
+                        linkBrand === "naver" && "bg-[#03C75A] text-white"
+                      )}>
+                        <span className="text-[10px] font-black">
+                          {linkBrand === "kakao" ? "K" : linkBrand === "google" ? "G" : "N"}
+                        </span>
                       </div>
-                      <span className="text-xs text-green-700 font-medium truncate flex-1">{linkUrl}</span>
+                      <span className={cn(
+                        "text-xs font-medium truncate flex-1",
+                        linkBrand === "kakao" && "text-amber-800",
+                        linkBrand === "google" && "text-blue-700",
+                        linkBrand === "naver" && "text-green-700"
+                      )}>{linkUrl}</span>
                       <button 
                         onClick={() => { 
                           setLinkUrl(""); 
@@ -856,31 +882,63 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                           if (mealType === "배달") setDeliveryStoreName("");
                           else if (mealType === "외식") setSelectedPlace(null);
                         }} 
-                        className="shrink-0 size-5 hover:bg-green-100/50 rounded flex items-center justify-center transition-colors"
+                        className={cn(
+                          "shrink-0 size-5 rounded flex items-center justify-center transition-colors",
+                          linkBrand === "kakao" && "hover:bg-amber-100/50 text-amber-700",
+                          linkBrand === "google" && "hover:bg-blue-100/50 text-blue-600",
+                          linkBrand === "naver" && "hover:bg-green-100/50 text-green-600"
+                        )}
                       >
-                        <X className="size-3.5 text-green-600" />
+                        <X className="size-3.5" />
                       </button>
                     </div>
                     
                     {/* 식당명 및 크롤링된 썸네일 노출 */}
                     {(deliveryStoreName || selectedPlace?.name) && (
-                      <div className="flex items-center gap-3 mt-1.5 pt-2.5 border-t border-green-100">
+                      <div className={cn(
+                        "flex items-center gap-3 mt-1.5 pt-2.5 border-t",
+                        linkBrand === "kakao" && "border-amber-100",
+                        linkBrand === "google" && "border-blue-100",
+                        linkBrand === "naver" && "border-green-100"
+                      )}>
                         {linkThumbnail ? (
                           <img 
                             src={linkThumbnail} 
                             alt="Store Thumbnail" 
-                            className="size-11 rounded-lg object-cover bg-white border border-green-200 shrink-0 shadow-sm" 
+                            className={cn(
+                              "size-11 rounded-lg object-cover bg-white border shrink-0 shadow-sm",
+                              linkBrand === "kakao" && "border-amber-200",
+                              linkBrand === "google" && "border-blue-200",
+                              linkBrand === "naver" && "border-green-200"
+                            )} 
                           />
                         ) : (
-                          <div className="size-11 rounded-lg bg-green-100 flex items-center justify-center shrink-0 border border-green-200">
-                            <Navigation className="size-5 text-[#03C75A]" />
+                          <div className={cn(
+                            "size-11 rounded-lg flex items-center justify-center shrink-0 border",
+                            linkBrand === "kakao" && "bg-amber-100 border-amber-200 text-amber-700",
+                            linkBrand === "google" && "bg-blue-100 border-blue-200 text-[#4285F4]",
+                            linkBrand === "naver" && "bg-green-100 border-green-200 text-[#03C75A]"
+                          )}>
+                            <Navigation className="size-5" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-bold text-green-900 truncate">
+                          <h5 className={cn(
+                            "text-xs font-bold truncate",
+                            linkBrand === "kakao" && "text-amber-950",
+                            linkBrand === "google" && "text-blue-900",
+                            linkBrand === "naver" && "text-green-900"
+                          )}>
                             {mealType === "배달" ? deliveryStoreName : selectedPlace?.name}
                           </h5>
-                          <p className="text-[10px] text-green-700/60 font-medium">네이버 플레이스 연동 완료</p>
+                          <p className={cn(
+                            "text-[10px] font-medium",
+                            linkBrand === "kakao" && "text-amber-700/70",
+                            linkBrand === "google" && "text-blue-700/60",
+                            linkBrand === "naver" && "text-green-700/60"
+                          )}>
+                            {linkBrand === "kakao" ? "카카오맵 연동 완료" : linkBrand === "google" ? "구글 지도 연동 완료" : "네이버 플레이스 연동 완료"}
+                          </p>
                         </div>
                       </div>
                     )}
