@@ -31,13 +31,13 @@ export async function POST(req: Request) {
           content: [
             {
               type: 'text',
-              text: '주어진 음식 사진을 보고, 가장 잘 어울리는 음식 이름 1개만 단답형으로 대답해줘. (예: 제육볶음, 김치찌개, 떡볶이, 페퍼로니 피자, 아메리카노 등). 부가 설명 없이 딱 메뉴 이름만 말해야해.',
+              text: '주어진 음식 사진을 분석하여, 사진 속에 나타난 가장 구체적인 한국 음식 혹은 요리 이름 1개만 단답형으로 대답해줘. 국물 색상(예: 빨간 국물의 육개장 vs 맑은 국물의 갈비탕), 건더기 재료(예: 찢은 소고기 양지 vs 뼈가 붙은 갈비)를 자세히 관찰하고 식당에서 부르는 정확한 한식 메뉴명을 알려줘. (예: 육개장, 갈비탕, 김치찌개, 부대찌개 등). 다른 설명 없이 단어 1개만 말해야 해.',
             },
             {
               type: 'image_url',
               image_url: {
                 url: imageBase64,
-                detail: 'low', // Use 'low' to save tokens and speed up since we only need basic recognition
+                detail: 'high', // Use 'high' to ensure exact details (e.g. shredded beef vs bones) are visible
               },
             },
           ],

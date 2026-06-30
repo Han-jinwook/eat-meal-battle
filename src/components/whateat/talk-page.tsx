@@ -1581,19 +1581,29 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
               {/* Right: 레시피 / Place 썸네일 or 텍스트 설명 */}
               <div className="w-1/2 bg-gray-50/80 flex overflow-hidden relative">
-                {post.linkUrl && post.linkThumbnail ? (
+                {post.linkUrl ? (
                   <a
                     href={post.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full h-full relative group overflow-hidden"
+                    className="w-full h-full relative group overflow-hidden block"
                   >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                      style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
-                    />
-                    <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
+                    {post.linkThumbnail ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                        style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-3 text-center">
+                        <div className="size-8 rounded-full bg-[#03C75A] flex items-center justify-center mb-1.5 shadow-sm">
+                          <span className="text-white text-sm font-black">N</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-green-800">네이버 플레이스</span>
+                        <span className="text-[9px] text-green-700/70 truncate max-w-full px-2 mt-0.5">{post.restaurant?.name || "상세 보기"}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
                       {(post.type === "dineout" || post.type === "delivery") ? (
                         <>
                           <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">

@@ -1488,20 +1488,30 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   <Pencil className="size-3.5" />
                 </button>
 
-                {/* Case 1: linkUrl 있음 -> 썸네일만 (레시피 내용 없음) */}
-                {meal.linkUrl && meal.linkThumbnail ? (
+                {/* Case 1: linkUrl 있음 -> 썸네일 혹은 기본 템플릿 표시 */}
+                {meal.linkUrl ? (
                   <a
                     href={meal.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full h-full relative group overflow-hidden"
+                    className="w-full h-full relative group overflow-hidden block"
                   >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                      style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
-                    />
-                    <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors" />
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                    {meal.linkThumbnail ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                        style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-3 text-center">
+                        <div className="size-8 rounded-full bg-[#03C75A] flex items-center justify-center mb-1.5 shadow-sm">
+                          <span className="text-white text-sm font-black">N</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-green-800">네이버 플레이스</span>
+                        <span className="text-[9px] text-green-700/70 truncate max-w-full px-2 mt-0.5">{meal.placeName || "상세 보기"}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
                       {(meal.type === "외식" || meal.type === "배달") ? (
                         <>
                           <div className="size-4 rounded-full bg-[#03C75A] flex items-center justify-center">

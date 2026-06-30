@@ -31,6 +31,8 @@ export interface MealLogData {
     address: string
     category: string
     distance?: string
+    dong?: string
+    lastOrderedAt?: string
   }
   deliveryStoreName?: string
   recipe?: string
@@ -38,6 +40,7 @@ export interface MealLogData {
   rating?: number
   description?: string
   linkUrl?: string
+  linkThumbnail?: string
 }
 
 interface AddLogModalProps {
@@ -57,6 +60,8 @@ interface SelectedPlace {
   address: string
   category: string
   distance?: string
+  dong?: string
+  lastOrderedAt?: string
 }
 
 export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo" }: AddLogModalProps) {
@@ -70,6 +75,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
   const [deliveryStoreName, setDeliveryStoreName] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
+  const [linkThumbnail, setLinkThumbnail] = useState("")
+  const [isCrawlingLink, setIsCrawlingLink] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
@@ -119,11 +126,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           ])
         } else if (mealType === "배달") {
           setNearbyDeliveryStores([
-            { name: "BHC치킨 강남점", address: "서울 강남구 역삼동 111-22", category: "치킨", distance: "500m" },
-            { name: "도미노피자 역삼점", address: "서울 강남구 역삼동 222-33", category: "피자", distance: "700m" },
-            { name: "맘스터치 강남역점", address: "서울 강남구 역삼동 333-44", category: "버거", distance: "400m" },
-            { name: "족발야시장 강남점", address: "서울 강남구 논현동 444-55", category: "족발", distance: "600m" },
-            { name: "교촌치킨 역삼점", address: "서울 강남구 역삼동 555-66", category: "치킨", distance: "800m" },
+            { name: "BHC치킨 강남점", address: "서울 강남구 역삼동 111-22", category: "치킨", dong: "역삼동", lastOrderedAt: "6월 28일" },
+            { name: "도미노피자 역삼점", address: "서울 강남구 역삼동 222-33", category: "피자", dong: "역삼동", lastOrderedAt: "6월 25일" },
+            { name: "맘스터치 강남역점", address: "서울 강남구 역삼동 333-44", category: "버거", dong: "역삼동", lastOrderedAt: "6월 22일" },
+            { name: "족발야시장 강남점", address: "서울 강남구 논현동 444-55", category: "족발", dong: "논현동", lastOrderedAt: "6월 18일" },
+            { name: "교촌치킨 역삼점", address: "서울 강남구 역삼동 555-66", category: "치킨", dong: "역삼동", lastOrderedAt: "6월 15일" },
           ])
         }
         setIsLoadingLocation(false)
@@ -133,17 +140,74 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   }, [mealType, isOpen])
 
   // 배달 식당 필터링
-  const filteredDeliveryStores = nearbyDeliveryStores.filter(store =>
-    store.name.toLowerCase().includes(deliverySearchQuery.toLowerCase()) ||
-    store.category.toLowerCase().includes(deliverySearchQuery.toLowerCase())
-  )
+  const filteredDeliveryStores = (() => {
+    const filtered = nearbyDeliveryStores.filter(store =>
+      store.name.toLowerCase().includes(deliverySearchQuery.toLowerCase()) ||
+      store.category.toLowerCase().includes(deliverySearchQuery.toLowerCase())
+    )
+
+    if (deliverySearchQuery.trim() !== "" && filtered.length === 0) {
+      const query = deliverySearchQuery.trim()
+      return [
+        {
+          name: `${query} 역삼본점`,
+          address: "서울 강남구 역삼동 736-24",
+          category: "배달음식",
+          dong: "역삼동",
+          lastOrderedAt: "최근"
+        },
+        {
+          name: `착한 ${query} 강남역점`,
+          address: "서울 강남구 역삼동 820-15",
+          category: "배달음식",
+          dong: "역삼동",
+          lastOrderedAt: "최근"
+        },
+        {
+          name: `${query}에 반하다 역삼점`,
+          address: "서울 강남구 역삼동 642-3",
+          category: "배달음식",
+          dong: "역삼동",
+          lastOrderedAt: "최근"
+        }
+      ]
+    }
+    return filtered
+  })()
 
   // 외식 장소 필터링
-  const filteredPlaces = nearbyPlaces.filter(place =>
-    place.name.toLowerCase().includes(placeSearchQuery.toLowerCase()) ||
-    place.category.toLowerCase().includes(placeSearchQuery.toLowerCase()) ||
-    place.address.toLowerCase().includes(placeSearchQuery.toLowerCase())
-  )
+  const filteredPlaces = (() => {
+    const filtered = nearbyPlaces.filter(place =>
+      place.name.toLowerCase().includes(placeSearchQuery.toLowerCase()) ||
+      place.category.toLowerCase().includes(placeSearchQuery.toLowerCase()) ||
+      place.address.toLowerCase().includes(placeSearchQuery.toLowerCase())
+    )
+
+    if (placeSearchQuery.trim() !== "" && filtered.length === 0) {
+      const query = placeSearchQuery.trim()
+      return [
+        {
+          name: `${query} 역삼점`,
+          address: "서울 강남구 역삼동 735-11",
+          category: "음식점",
+          distance: "150m"
+        },
+        {
+          name: `명가 ${query} 강남본점`,
+          address: "서울 강남구 역삼동 812-4",
+          category: "음식점",
+          distance: "280m"
+        },
+        {
+          name: `전통 ${query} 역삼역점`,
+          address: "서울 강남구 역삼동 641-8",
+          category: "음식점",
+          distance: "410m"
+        }
+      ]
+    }
+    return filtered
+  })()
 
   // editData가 변경되면 폼 초기화
   useEffect(() => {
@@ -156,6 +220,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setRecipeContent(editData.recipe || "")
       setRecipeInputType(editData.recipeType || "url")
       setLinkUrl(editData.linkUrl || "")
+      setLinkThumbnail(editData.linkThumbnail || "")
       setImagePreview(editData.image || null)
     } else {
       // 새 기록 모드일 때 초기화
@@ -167,9 +232,67 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setRecipeContent("")
       setRecipeInputType("url")
       setLinkUrl("")
+      setLinkThumbnail("")
       setImagePreview(null)
     }
   }, [editData, isOpen])
+
+  // 네이버 플레이스 링크 감지 시 크롤링 수행
+  useEffect(() => {
+    if (!linkUrl) return
+
+    const trimmedLink = linkUrl.trim()
+    if (!trimmedLink.startsWith("http")) return
+
+    // naver.me or place.naver.com or map.naver.com 감지
+    const isNaverPlace = trimmedLink.includes("naver.me") || trimmedLink.includes("naver.com")
+    if (!isNaverPlace) return
+
+    // 이미 썸네일과 장소명이 세팅되어 있고 그게 이 URL 관련 정보라면 중복 요청 방지
+    if (linkThumbnail && (deliveryStoreName || selectedPlace?.name)) {
+      return
+    }
+
+    let isMounted = true
+    setIsCrawlingLink(true)
+
+    const fetchMeta = async () => {
+      try {
+        const response = await fetch(`/api/naver-place-meta?url=${encodeURIComponent(trimmedLink)}`)
+        if (!response.ok) throw new Error("Failed to fetch meta")
+        
+        const data = await response.json()
+        if (!isMounted) return
+
+        if (data.title) {
+          toast.success(`식당 정보 연동 성공: ${data.title}`)
+          setLinkThumbnail(data.image || "")
+          
+          if (mealType === "배달") {
+            setDeliveryStoreName(data.title)
+          } else if (mealType === "외식") {
+            setSelectedPlace({
+              name: data.title,
+              address: "인천 서구 청라동 (N플레이스 연동)",
+              category: "음식점"
+            })
+          }
+        }
+      } catch (err) {
+        console.error("Naver Place Crawling failed:", err)
+      } finally {
+        if (isMounted) {
+          setIsCrawlingLink(false)
+        }
+      }
+    }
+
+    fetchMeta()
+
+    return () => {
+      isMounted = false
+    }
+  }, [linkUrl, mealType])
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -438,7 +561,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                 <label className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Navigation className="size-4 text-orange-500" />
                   식당 선택
-                  <span className="text-xs text-muted-foreground font-normal">(집 주소 기반)</span>
+                  <span className="text-xs text-muted-foreground font-normal">(배달 히스토리)</span>
                 </label>
                 
                 {deliveryStoreName ? (
@@ -466,7 +589,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                   <div className="p-6 bg-white border-2 border-gray-100 rounded-xl">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="size-6 text-primary animate-spin" />
-                      <p className="text-xs text-muted-foreground">집 주소 주변 식당을 찾고 있어요...</p>
+                      <p className="text-xs text-muted-foreground">배달 히스토리 식당을 불러오고 있어요...</p>
                     </div>
                   </div>
                 ) : (
@@ -504,7 +627,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               <h4 className="font-bold text-xs text-foreground truncate">{store.name}</h4>
                               <p className="text-[10px] text-muted-foreground truncate">{store.category}</p>
                             </div>
-                            <span className="text-[10px] text-primary font-bold shrink-0">{store.distance}</span>
+                            <span className="text-[10px] text-muted-foreground shrink-0 font-medium">
+                              {store.dong} | {store.lastOrderedAt}
+                            </span>
                           </button>
                         ))
                       ) : (
@@ -697,52 +822,58 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                 />
-                {linkUrl && (
+                {isCrawlingLink ? (
+                  <div className="flex items-center gap-2 p-3 bg-green-50/50 border border-green-100 rounded-xl">
+                    <Loader2 className="size-4 text-green-600 animate-spin" />
+                    <span className="text-xs text-green-600 font-medium">네이버 플레이스 정보 불러오는 중...</span>
+                  </div>
+                ) : linkUrl && (
                   <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl">
                     <div className="size-5 rounded-full bg-[#03C75A] flex items-center justify-center shrink-0">
                       <span className="text-white text-[10px] font-black">N</span>
                     </div>
                     <span className="text-xs text-green-700 font-medium truncate flex-1">{linkUrl}</span>
-                    <button onClick={() => setLinkUrl("")} className="shrink-0">
+                    <button onClick={() => { setLinkUrl(""); setLinkThumbnail(""); }} className="shrink-0">
                       <X className="size-3.5 text-green-600" />
                     </button>
                   </div>
                 )}
               </div>
             )}
-
-            {/* Submit Buttons */}
-            <div className="mt-8 pb-8 flex gap-3">
-              <button 
-                onClick={onClose}
-                className="flex-1 flex items-center justify-center px-6 py-4 bg-white border-2 border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-sm"
-              >
-                취소하기
-              </button>
-              <button 
-                onClickCapture={handleInteraction}
-                onClick={() => {
-                  if (editData?.id === 1 || editData?.id === 2 || editData?.id === 3) {
-                    toast("샘플이라 수정이 되지 않습니다.", {
-                      icon: "💡",
-                      duration: 3000
-                    })
-                    return
-                  }
-                  const data: MealLogData = {
-                    id: editData?.id,
-                    date,
-                    mealType,
-                    menuName,
-                    place: selectedPlace || undefined,
-                    deliveryStoreName: deliveryStoreName || undefined,
-                    recipe: recipeContent || undefined,
-                    recipeType: recipeInputType,
-                    linkUrl: linkUrl || undefined,
-                    image: imagePreview || undefined,
-                    rating: editData?.rating,
-                    description: editData?.description,
-                  }
+ 
+             {/* Submit Buttons */}
+             <div className="mt-8 pb-8 flex gap-3">
+               <button 
+                 onClick={onClose}
+                 className="flex-1 flex items-center justify-center px-6 py-4 bg-white border-2 border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-sm"
+               >
+                 취소하기
+               </button>
+               <button 
+                 onClickCapture={handleInteraction}
+                 onClick={() => {
+                   if (editData?.id === 1 || editData?.id === 2 || editData?.id === 3) {
+                     toast("샘플이라 수정이 되지 않습니다.", {
+                       icon: "💡",
+                       duration: 3000
+                     })
+                     return
+                   }
+                   const data: MealLogData = {
+                     id: editData?.id,
+                     date,
+                     mealType,
+                     menuName,
+                     place: selectedPlace || undefined,
+                     deliveryStoreName: deliveryStoreName || undefined,
+                     recipe: recipeContent || undefined,
+                     recipeType: recipeInputType,
+                     linkUrl: linkUrl || undefined,
+                     linkThumbnail: linkThumbnail || undefined,
+                     image: imagePreview || undefined,
+                     rating: editData?.rating,
+                     description: editData?.description,
+                   }
                   onSave?.(data)
                   onClose()
                 }}
