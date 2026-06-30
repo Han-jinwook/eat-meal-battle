@@ -1588,7 +1588,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     const isYoutube = post.linkUrl.includes("youtube.com") || post.linkUrl.includes("youtu.be")
                     const isInstagram = post.linkUrl.includes("instagram.com")
                     const isTiktok = post.linkUrl.includes("tiktok.com")
-                    const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok
+                    const isNaver = post.linkUrl.includes("naver.com") || post.linkUrl.includes("naver.me")
+                    const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isNaver
+
+                    const isRecipe = isGeneric && (post.type === "homemade")
+                    const isStoreLink = isGeneric && !isRecipe
 
                     return (
                       <a
@@ -1610,8 +1614,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                             isYoutube && "bg-gradient-to-br from-red-50 to-red-100/70",
                             isInstagram && "bg-gradient-to-br from-pink-50 to-purple-50",
                             isTiktok && "bg-gradient-to-br from-slate-50 to-slate-100",
-                            isGeneric && "bg-gradient-to-br from-orange-50 to-orange-100/60",
-                            (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-gradient-to-br from-green-50 to-emerald-100"
+                            isNaver && "bg-gradient-to-br from-green-50 to-emerald-100",
+                            isRecipe && "bg-gradient-to-br from-orange-50 to-orange-100/60",
+                            isStoreLink && "bg-gradient-to-br from-slate-50 to-slate-100"
                           )}>
                             <div className={cn(
                               "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm text-sm font-black",
@@ -1620,11 +1625,12 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                               isYoutube && "bg-[#FF0000] text-white",
                               isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
                               isTiktok && "bg-[#010101] text-white border border-slate-700",
-                              isGeneric && "bg-orange-500 text-white",
-                              (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-[#03C75A] text-white"
+                              isNaver && "bg-[#03C75A] text-white",
+                              isRecipe && "bg-orange-500 text-white",
+                              isStoreLink && "bg-slate-600 text-white"
                             )}>
                               <span>
-                                {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isGeneric ? "R" : "N"}
+                                {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isNaver ? "N" : isRecipe ? "R" : "P"}
                               </span>
                             </div>
                             <span className={cn(
@@ -1634,9 +1640,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                               isYoutube && "text-red-800",
                               isInstagram && "text-pink-800",
                               isTiktok && "text-slate-800",
-                              isGeneric && "text-orange-800"
+                              isNaver && "text-emerald-800",
+                              isRecipe && "text-orange-800",
+                              isStoreLink && "text-slate-800"
                             )}>
-                              {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isGeneric ? "레시피" : "네이버 플레이스"}
+                              {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isNaver ? "네이버 플레이스" : isRecipe ? "레시피" : "식당 링크"}
                             </span>
                             <span className={cn(
                               "text-[9px] truncate max-w-full px-2 mt-0.5",
@@ -1645,19 +1653,21 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                               isYoutube && "text-red-700/80",
                               isInstagram && "text-pink-700/80",
                               isTiktok && "text-slate-700/80",
-                              isGeneric && "text-orange-700/80"
+                              isNaver && "text-emerald-700/80",
+                              isRecipe && "text-orange-700/80",
+                              isStoreLink && "text-slate-700/80"
                             )}>{post.restaurant?.name || "상세 보기"}</span>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm whitespace-nowrap">
-                          {(post.type === "dineout" || post.type === "delivery") ? (
+                          {(isKakao || isGoogle || isNaver) ? (
                             <>
                               <div className={cn(
                                 "size-4 rounded-full flex items-center justify-center",
                                 isKakao && "bg-[#FEE500] text-[#3C1E1E]",
                                 isGoogle && "bg-[#4285F4] text-white",
-                                !isKakao && !isGoogle && "bg-[#03C75A] text-white"
+                                isNaver && "bg-[#03C75A] text-white"
                               )}>
                                 <span className="text-[7px] font-black">
                                   {isKakao ? "K" : isGoogle ? "G" : "N"}
@@ -1674,14 +1684,15 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                                 isYoutube && "bg-[#FF0000] text-white",
                                 isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
                                 isTiktok && "bg-[#010101] text-white",
-                                !isYoutube && !isInstagram && !isTiktok && "bg-orange-500 text-white"
+                                isRecipe && "bg-orange-500 text-white",
+                                isStoreLink && "bg-slate-600 text-white"
                               )}>
                                 <span>
-                                  {isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : "R"}
+                                  {isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isRecipe ? "R" : "P"}
                                 </span>
                               </div>
                               <span className="text-[10px] font-bold text-foreground">
-                                {isYoutube ? "YouTube" : isInstagram ? "Reels" : isTiktok ? "TikTok" : "Recipe"}
+                                {isYoutube ? "YouTube" : isInstagram ? "Reels" : isTiktok ? "TikTok" : isRecipe ? "Recipe" : "Link"}
                               </span>
                             </>
                           )}
