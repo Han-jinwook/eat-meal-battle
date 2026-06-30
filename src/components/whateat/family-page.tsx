@@ -2169,7 +2169,7 @@ export function FamilyPage({
                                   {meal.linkThumbnail ? (
                                     <div
                                       className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                                      style={{ backgroundImage: `url("${meal.linkThumbnail}")` }}
+                                      style={{ backgroundImage: `url("${meal.linkThumbnail.startsWith('http') ? `/api/image-proxy?url=${encodeURIComponent(meal.linkThumbnail)}` : meal.linkThumbnail}")` }}
                                     />
                                   ) : (
                                     <div className={cn(

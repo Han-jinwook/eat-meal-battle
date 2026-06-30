@@ -1604,7 +1604,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                         {post.linkThumbnail ? (
                           <div
                             className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                            style={{ backgroundImage: `url("${post.linkThumbnail}")` }}
+                            style={{ backgroundImage: `url("${post.linkThumbnail.startsWith('http') ? `/api/image-proxy?url=${encodeURIComponent(post.linkThumbnail)}` : post.linkThumbnail}")` }}
                           />
                         ) : (
                           <div className={cn(
