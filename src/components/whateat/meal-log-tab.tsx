@@ -776,17 +776,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       return
     }
 
-    if (pref === "approved") {
-      await upload5StarMealToSupabase(data, imageUrl)
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("navigateToTalk"))
-      }, 100)
-    } else if (pref === "rejected") {
-      console.log("User rejected auto-sharing of 5-star meals.")
-    } else {
-      setPendingShareData({ logData: data, imageUrl })
-      setShareConsentModalOpen(true)
-    }
+    // 언제나 맛톡 공개 동의 모달(안내 메시지)이 뜨도록 설정하여 복원
+    setPendingShareData({ logData: data, imageUrl })
+    setShareConsentModalOpen(true)
   }
 
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
