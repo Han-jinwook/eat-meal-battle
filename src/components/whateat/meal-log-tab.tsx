@@ -671,7 +671,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       mealType: data.mealType,
       rating: data.rating || 5,
       tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
-      placeName: data.place?.name || data.deliveryStoreName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
+      placeName: data.place?.name || data.deliveryStoreName || data.placeName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
       placeAddress: data.place?.address || "",
       description: data.description || data.recipe || "",
       promotedAt: new Date().toISOString(), // 맛톡 승격 시점의 일시 저장
@@ -777,10 +777,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
 
     if (pref === "approved") {
+      toast("5점 별점 식사가 맛톡 동네 피드에 자동 공유되었습니다!", { icon: "✨", duration: 2500 })
       await upload5StarMealToSupabase(data, imageUrl)
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("navigateToTalk"))
-      }, 100)
+      }, 1500)
     } else if (pref === "rejected") {
       console.log("User rejected auto-sharing of 5-star meals.")
     } else {
@@ -1030,7 +1031,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           menuName: targetLog.title,
           rating: 5,
           recipe: targetLog.tips?.join("\n"),
-          linkUrl: targetLog.linkUrl,
+          linkUrl: targetLog.linkUrl || "",
+          linkThumbnail: targetLog.linkThumbnail || "",
+          placeName: targetLog.placeName || "",
           description: targetLog.description,
           image: targetLog.image,
           supabaseId: targetLog.id
@@ -1224,6 +1227,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       })
 
       if (data.description !== undefined) {
+        const cleanDesc = data.description.trim()
         const { data: existingComments } = await supabase
           .from("comments")
           .select("id")
@@ -1232,31 +1236,47 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           .eq("is_deleted", false)
           .order("created_at", { ascending: true })
 
-        if (existingComments && existingComments.length > 0) {
-          const firstCommentId = existingComments[0].id
-          await secureWrite({
-            table: "comments",
-            action: "update",
-            data: {
-              content: data.description,
-              updated_at: new Date().toISOString()
-            },
-            filters: { id: firstCommentId }
-          })
+        if (cleanDesc !== "") {
+          if (existingComments && existingComments.length > 0) {
+            const firstCommentId = existingComments[0].id
+            await secureWrite({
+              table: "comments",
+              action: "update",
+              data: {
+                content: cleanDesc,
+                updated_at: new Date().toISOString()
+              },
+              filters: { id: firstCommentId }
+            })
+          } else {
+            await secureWrite({
+              table: "comments",
+              action: "insert",
+              data: {
+                id: generateUUID(),
+                meal_id: mealUuid,
+                user_id: user.id,
+                content: cleanDesc,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_deleted: false
+              }
+            })
+          }
         } else {
-          await secureWrite({
-            table: "comments",
-            action: "insert",
-            data: {
-              id: generateUUID(),
-              meal_id: mealUuid,
-              user_id: user.id,
-              content: data.description,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_deleted: false
-            }
-          })
+          // description이 빈 문자열인 경우 기존 댓글이 있으면 soft delete
+          if (existingComments && existingComments.length > 0) {
+            const firstCommentId = existingComments[0].id
+            await secureWrite({
+              table: "comments",
+              action: "update",
+              data: {
+                is_deleted: true,
+                updated_at: new Date().toISOString()
+              },
+              filters: { id: firstCommentId }
+            })
+          }
         }
       }
 
@@ -1267,7 +1287,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           menuName: data.menuName,
           rating: 5,
           recipe: data.recipe,
-          linkUrl: data.linkUrl,
+          linkUrl: data.linkUrl || "",
+          linkThumbnail: data.linkThumbnail || "",
+          placeName: data.place?.name || data.deliveryStoreName || data.placeName || "",
           description: data.description,
           image: finalImageUrl,
           supabaseId: mealUuid

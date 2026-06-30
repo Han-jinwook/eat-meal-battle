@@ -2152,7 +2152,11 @@ export function FamilyPage({
                               const isYoutube = meal.linkUrl.includes("youtube.com") || meal.linkUrl.includes("youtu.be")
                               const isInstagram = meal.linkUrl.includes("instagram.com")
                               const isTiktok = meal.linkUrl.includes("tiktok.com")
-                              const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok
+                              const isNaver = meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com") || meal.linkUrl.includes("naver.co.kr")
+                              const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isNaver
+                              
+                              const isRecipe = isGeneric && (meal.mealType === "homemade" || meal.mealType === "집밥")
+                              const isStoreLink = isGeneric && !isRecipe
 
                               return (
                                 <a
@@ -2175,8 +2179,9 @@ export function FamilyPage({
                                       isYoutube && "bg-gradient-to-br from-red-50 to-red-100/70",
                                       isInstagram && "bg-gradient-to-br from-pink-50 to-purple-50",
                                       isTiktok && "bg-gradient-to-br from-slate-50 to-slate-100",
-                                      isGeneric && "bg-gradient-to-br from-orange-50 to-orange-100/60",
-                                      (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-gradient-to-br from-green-50 to-emerald-100"
+                                      isNaver && "bg-gradient-to-br from-green-50 to-emerald-100",
+                                      isRecipe && "bg-gradient-to-br from-orange-50 to-orange-100/60",
+                                      isStoreLink && "bg-gradient-to-br from-slate-50 to-slate-100"
                                     )}>
                                       <div className={cn(
                                         "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm text-sm font-black",
@@ -2185,11 +2190,12 @@ export function FamilyPage({
                                         isYoutube && "bg-[#FF0000] text-white",
                                         isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
                                         isTiktok && "bg-[#010101] text-white border border-slate-700",
-                                        isGeneric && "bg-orange-500 text-white",
-                                        (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-[#03C75A] text-white"
+                                        isNaver && "bg-[#03C75A] text-white",
+                                        isRecipe && "bg-orange-500 text-white",
+                                        isStoreLink && "bg-slate-600 text-white"
                                       )}>
                                         <span className="text-sm font-black">
-                                          {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isGeneric ? "R" : "N"}
+                                          {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isNaver ? "N" : isRecipe ? "R" : "P"}
                                         </span>
                                       </div>
                                       <span className={cn(
@@ -2199,9 +2205,11 @@ export function FamilyPage({
                                         isYoutube && "text-red-800",
                                         isInstagram && "text-pink-800",
                                         isTiktok && "text-slate-800",
-                                        isGeneric && "text-orange-800"
+                                        isNaver && "text-emerald-800",
+                                        isRecipe && "text-orange-800",
+                                        isStoreLink && "text-slate-800"
                                       )}>
-                                        {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isGeneric ? "레시피" : "네이버 플레이스"}
+                                        {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isNaver ? "네이버 플레이스" : isRecipe ? "레시피" : "식당 링크"}
                                       </span>
                                       <span className={cn(
                                         "text-[9px] truncate max-w-full px-2 mt-0.5",
@@ -2210,7 +2218,9 @@ export function FamilyPage({
                                         isYoutube && "text-red-700/80",
                                         isInstagram && "text-pink-700/80",
                                         isTiktok && "text-slate-700/80",
-                                        isGeneric && "text-orange-700/80"
+                                        isNaver && "text-emerald-700/80",
+                                        isRecipe && "text-orange-700/80",
+                                        isStoreLink && "text-slate-700/80"
                                       )}>{meal.placeName || "상세 보기"}</span>
                                     </div>
                                   )}
