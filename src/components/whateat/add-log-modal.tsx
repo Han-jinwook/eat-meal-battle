@@ -231,10 +231,21 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setMenuName(editData.menuName)
       setSelectedPlace(editData.place || null)
       setDeliveryStoreName(editData.deliveryStoreName || "")
-      setRecipeContent(editData.recipe || "")
-      setRecipeInputType(editData.recipeType || "url")
+      const rContent = editData.recipe || ""
+      setRecipeContent(rContent)
+      
+      const derivedType = editData.recipeType || (rContent && !rContent.trim().startsWith("http") ? "manual" : "url")
+      setRecipeInputType(derivedType)
+      
       setRecipeThumbnail(editData.linkThumbnail || "")
       setRecipeTitle(editData.place?.name || "레시피 정보")
+      
+      let brand: "youtube" | "instagram" | "tiktok" | "generic" = "generic"
+      if (rContent.includes("youtube.com") || rContent.includes("youtu.be")) brand = "youtube"
+      else if (rContent.includes("instagram.com")) brand = "instagram"
+      else if (rContent.includes("tiktok.com")) brand = "tiktok"
+      setRecipeBrand(brand)
+
       setLinkUrl(editData.linkUrl || "")
       setLinkThumbnail(editData.linkThumbnail || "")
       setImagePreview(editData.image || null)

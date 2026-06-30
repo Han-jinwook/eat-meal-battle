@@ -1090,6 +1090,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const handleEditClick = (meal: any) => {
+    const recipeText = meal.tips?.join("\n") || ""
+    const isUrl = recipeText.trim().startsWith("http")
+
     const editData: MealLogData = {
       id: meal.id,
       date: toIsoDate(parseDateString(meal.date)),
@@ -1098,9 +1101,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       image: meal.image,
       description: meal.description,
       rating: meal.rating,
-      recipe: meal.tips?.join("\n"),
-      recipeType: "manual",
+      recipe: recipeText,
+      recipeType: isUrl ? "url" : "manual",
       linkUrl: meal.linkUrl,
+      linkThumbnail: meal.linkThumbnail || "",
+      place: meal.placeName ? { name: meal.placeName, address: "", category: "" } : undefined
     }
     setEditingMeal(editData)
     setEditModalOpen(true)

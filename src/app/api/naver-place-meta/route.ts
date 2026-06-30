@@ -13,6 +13,29 @@ export async function GET(request: NextRequest) {
   try {
     const decodedUrl = decodeURIComponent(targetUrl).trim();
     
+    // 유튜브 URL 신속 인터셉트
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|shorts\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const youtubeMatch = decodedUrl.match(youtubeRegex);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      let title = '유튜브 영상';
+      let image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(decodedUrl)}&format=json`;
+        const oembedRes = await fetch(oembedUrl);
+        if (oembedRes.ok) {
+          const oembedData = await oembedRes.json();
+          title = oembedData.title || title;
+          image = oembedData.thumbnail_url || image;
+        }
+      } catch (e) {
+        console.error('YouTube oEmbed failed:', e);
+      }
+      
+      return NextResponse.json({ title, image, brand: 'youtube' });
+    }
+
     // 1. Resolve redirect to get final URL
     const res = await fetch(decodedUrl, {
       headers: {
@@ -118,6 +141,27 @@ export async function GET(request: NextRequest) {
       const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
                        pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
       image = imgMatch ? imgMatch[1].replace(/&amp;/g, '&').trim() : '';
+
+      if (image && image.includes('staticmap')) {
+        const centerMatch = image.match(/[?&]center=([0-9.-]+)(?:%2C|,)([0-9.-]+)/i);
+        if (centerMatch) {
+          const lat = parseFloat(centerMatch[1]);
+          const lng = parseFloat(centerMatch[2]);
+          
+          // 지리적으로 대한민국 영역을 벗어나거나 미국 등 엉뚱한 위치(예: default US center)인 경우 제거
+          const isUSLocation = (lng >= -130 && lng <= -60) || (Math.abs(lat - 37.0625) < 0.1 && Math.abs(lng - -95.677) < 0.1);
+          
+          if (isUSLocation) {
+            image = ''; // Fallback to premium G icon card
+          } else {
+            // 강제로 한국어 레이블 설정 및 빨간색 핀(Marker) 추가하여 가독성 강화
+            image = image.replace(/language=[a-z-]+/gi, 'language=ko');
+            if (!image.includes('markers=')) {
+              image += `&markers=color:red%7C${lat},${lng}`;
+            }
+          }
+        }
+      }
     }
 
     // 5. Case D: Generic Site (using standard OG tags)
