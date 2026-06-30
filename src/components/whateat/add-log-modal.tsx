@@ -84,6 +84,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [recipeThumbnail, setRecipeThumbnail] = useState("")
   const [recipeBrand, setRecipeBrand] = useState<"youtube" | "instagram" | "tiktok" | "generic">("generic")
   const [isCrawlingRecipe, setIsCrawlingRecipe] = useState(false)
+  const [lastCrawledUrl, setLastCrawledUrl] = useState("")
+  const [lastCrawledRecipeUrl, setLastCrawledRecipeUrl] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
@@ -248,6 +250,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
       setLinkUrl(editData.linkUrl || "")
       setLinkThumbnail(editData.linkThumbnail || "")
+      setLastCrawledUrl(editData.linkUrl || "")
+      setLastCrawledRecipeUrl(derivedType === "url" ? rContent : "")
       setImagePreview(editData.image || null)
     } else {
       // 새 기록 모드일 때 초기화
@@ -263,6 +267,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setRecipeBrand("generic")
       setLinkUrl("")
       setLinkThumbnail("")
+      setLastCrawledUrl("")
+      setLastCrawledRecipeUrl("")
       setImagePreview(null)
     }
   }, [editData, isOpen])
@@ -281,10 +287,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     
     if (!isNaverPlace && !isKakaoPlace && !isGooglePlace) return
 
-    // 이미 썸네일과 장소명이 세팅되어 있고 그게 이 URL 관련 정보라면 중복 요청 방지
-    if (linkThumbnail && (deliveryStoreName || selectedPlace?.name)) {
-      return
-    }
+    // 중복 요청 방지 (마지막으로 크롤링에 성공한 URL과 같다면 생략)
+    if (trimmedLink === lastCrawledUrl) return
 
     let isMounted = true
     setIsCrawlingLink(true)
@@ -300,6 +304,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         if (data.title) {
           setLinkThumbnail(data.image || "")
           setLinkBrand(data.brand || "naver")
+          setLastCrawledUrl(trimmedLink)
           
           let platformName = "N플레이스"
           if (data.brand === "kakao") platformName = "카카오맵"
@@ -307,12 +312,14 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
           if (mealType === "배달") {
             setDeliveryStoreName(data.title)
+            setSelectedPlace(null)
           } else if (mealType === "외식") {
             setSelectedPlace({
               name: data.title,
               address: `인천 서구 청라동 (${platformName} 연동)`,
               category: "음식점"
             })
+            setDeliveryStoreName("")
           }
         }
       } catch (err) {
@@ -338,10 +345,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     const trimmedLink = recipeContent.trim()
     if (!trimmedLink.startsWith("http")) return
 
-    // 중복 요청 방지
-    if (recipeThumbnail && recipeTitle) {
-      return
-    }
+    // 중복 요청 방지 (마지막으로 크롤링에 성공한 URL과 같다면 생략)
+    if (trimmedLink === lastCrawledRecipeUrl) return
 
     let isMounted = true
     setIsCrawlingRecipe(true)
@@ -358,6 +363,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           setRecipeTitle(data.title)
           setRecipeThumbnail(data.image || "")
           setRecipeBrand(data.brand || "generic")
+          setLastCrawledRecipeUrl(trimmedLink)
         }
       } catch (err) {
         console.error("Recipe Link Crawling failed:", err)
@@ -922,6 +928,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               setRecipeContent(""); 
                               setRecipeThumbnail("");
                               setRecipeTitle("");
+                              setLastCrawledRecipeUrl("");
                             }} 
                             className={cn(
                               "shrink-0 size-5 rounded flex items-center justify-center transition-colors",
@@ -1051,6 +1058,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         onClick={() => { 
                           setLinkUrl(""); 
                           setLinkThumbnail(""); 
+                          setLastCrawledUrl("");
                           if (mealType === "배달") setDeliveryStoreName("");
                           else if (mealType === "외식") setSelectedPlace(null);
                         }} 
