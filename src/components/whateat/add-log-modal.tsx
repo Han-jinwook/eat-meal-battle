@@ -274,7 +274,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         if (!isMounted) return
 
         if (data.title) {
-          toast.success(`식당 정보 연동 성공: ${data.title}`)
           setLinkThumbnail(data.image || "")
           
           if (mealType === "배달") {
