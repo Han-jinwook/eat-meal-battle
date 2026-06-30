@@ -979,6 +979,35 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
     let status = "pending"
     let source = "solo"
+
+    // 5점 -> 4점 이하로 다운그레이드 시 맛톡 수거 검증
+    if (oldRating === 5 && newRating < 5 && oldStatus === "approved") {
+      try {
+        const supabase = createClient()
+        // 다른 이웃의 댓글이 달렸는지 확인
+        const { data: otherComments, error: commentError } = await supabase
+          .from("comments")
+          .select("id")
+          .eq("meal_id", mealId)
+          .eq("is_deleted", false)
+          .neq("user_id", user.id)
+
+        if (commentError) throw commentError
+
+        if (otherComments && otherComments.length > 0) {
+          toast("다른 이웃의 댓글 등 활동이 발생하여 맛톡에서 식사 기록을 회수할 수 없습니다.", { icon: "🔒", duration: 4000 })
+          return
+        }
+
+        // 수거 성공 안내 토스트 노출
+        toast("다른 유저의 활동이 없어 맛톡 피드에서 식사 기록을 수거했습니다.", { icon: "🧹", duration: 3000 })
+      } catch (err) {
+        console.error("Downgrade check failed:", err)
+        toast.error("평점 변경 검증에 실패했습니다.")
+        return
+      }
+    }
+
     if (newRating === 5) {
       const pref = localStorage.getItem("whateat_auto_share_5star")
       if (pref === "approved") {
@@ -1128,6 +1157,39 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const rating = data.rating || 0
     let status = "pending"
     let source = "solo"
+
+    const targetLog = data.id ? mealLogs.find(log => log.id === data.id) : null
+    const oldRating = targetLog ? targetLog.rating : 0
+    const oldStatus = targetLog ? targetLog.status : "pending"
+    const newRating = rating
+
+    // 5점 -> 4점 이하로 다운그레이드 시 맛톡 수거 검증
+    if (data.id && oldRating === 5 && newRating < 5 && oldStatus === "approved") {
+      try {
+        const supabase = createClient()
+        // 다른 이웃의 댓글이 달렸는지 확인
+        const { data: otherComments, error: commentError } = await supabase
+          .from("comments")
+          .select("id")
+          .eq("meal_id", data.id)
+          .eq("is_deleted", false)
+          .neq("user_id", user.id)
+
+        if (commentError) throw commentError
+
+        if (otherComments && otherComments.length > 0) {
+          toast("다른 이웃의 댓글 등 활동이 발생하여 맛톡에서 식사 기록을 회수할 수 없습니다.", { icon: "🔒", duration: 4000 })
+          return
+        }
+
+        // 수거 성공 안내 토스트 노출
+        toast("다른 유저의 활동이 없어 맛톡 피드에서 식사 기록을 수거했습니다.", { icon: "🧹", duration: 3000 })
+      } catch (err) {
+        console.error("Downgrade check failed:", err)
+        toast.error("평점 변경 검증에 실패했습니다.")
+        return
+      }
+    }
 
     if (rating === 5) {
       const pref = localStorage.getItem("whateat_auto_share_5star")
