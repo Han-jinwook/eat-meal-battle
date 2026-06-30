@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { toast } from "react-hot-toast"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 
 // 타입 정의

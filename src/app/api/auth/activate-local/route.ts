@@ -89,9 +89,37 @@ export async function POST(request: Request) {
         .single();
 
       if (insertError) {
-        return NextResponse.json({ error: insertError.message }, { status: 500 });
+        if (insertError.message.includes('users_email_key')) {
+          const uniqueEmail = email && email.includes('@')
+            ? `${email.split('@')[0]}+${userId.substring(0, 8)}@${email.split('@')[1]}`
+            : `user_${userId.substring(0, 8)}@merlin.com`;
+
+          const { data: retryData, error: retryError } = await supabaseAdmin
+            .from('users')
+            .insert({
+              id: userId,
+              email: uniqueEmail,
+              nickname: nickname || '가족회원',
+              profile_image: profileImage || '',
+              provider: 'merlin_hub',
+              provider_id: userId,
+              is_student: false,
+              is_activated: isActivated || false,
+              accumulated_seconds: accumulatedSeconds || 0,
+            })
+            .select()
+            .single();
+
+          if (retryError) {
+            return NextResponse.json({ error: retryError.message }, { status: 500 });
+          }
+          resultData = retryData;
+        } else {
+          return NextResponse.json({ error: insertError.message }, { status: 500 });
+        }
+      } else {
+        resultData = data;
       }
-      resultData = data;
     } else {
       // 3. User exists, update accumulated_seconds and is_activated status
       // Once is_activated is true, we should keep it true and not overwrite with false

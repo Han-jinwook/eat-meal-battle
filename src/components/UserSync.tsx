@@ -30,8 +30,34 @@ export default function UserSync() {
             }
           });
           console.log('[UserSync] Local user synced successfully:', user.id);
-        } catch (err) {
+        } catch (err: any) {
           console.error('[UserSync] Failed to sync local user:', err);
+          // 이메일 중복 제약조건 충돌 시 고유한 이메일 접미사를 붙여 재시도
+          if (err.message && err.message.includes('users_email_key')) {
+            try {
+              const email = user.email || '';
+              const uniqueEmail = email.includes('@') 
+                ? `${email.split('@')[0]}+${user.id.substring(0, 8)}@${email.split('@')[1]}`
+                : `user_${user.id.substring(0, 8)}@merlin.com`;
+              
+              await secureWrite({
+                table: 'users',
+                action: 'upsert',
+                data: {
+                  id: user.id,
+                  nickname: user.nickname || '가족',
+                  email: uniqueEmail,
+                  profile_image: user.avatar_url || '',
+                  provider: 'local',
+                  provider_id: user.id,
+                  is_student: false
+                }
+              });
+              console.log('[UserSync] Local user synced with unique email suffix:', user.id);
+            } catch (retryErr) {
+              console.error('[UserSync] Retry sync failed:', retryErr);
+            }
+          }
         }
       };
       syncUser();
