@@ -1585,6 +1585,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   (() => {
                     const isKakao = post.linkUrl.includes("kko.to") || post.linkUrl.includes("kakao.com")
                     const isGoogle = post.linkUrl.includes("google.com") || post.linkUrl.includes("google.co.kr") || post.linkUrl.includes("goo.gl")
+                    const isYoutube = post.linkUrl.includes("youtube.com") || post.linkUrl.includes("youtu.be")
+                    const isInstagram = post.linkUrl.includes("instagram.com")
+                    const isTiktok = post.linkUrl.includes("tiktok.com")
+                    const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok
+
                     return (
                       <a
                         href={post.linkUrl}
@@ -1602,31 +1607,45 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                             "absolute inset-0 flex flex-col items-center justify-center p-3 text-center",
                             isKakao && "bg-gradient-to-br from-amber-50 to-amber-100/70",
                             isGoogle && "bg-gradient-to-br from-blue-50 to-indigo-50/80",
-                            !isKakao && !isGoogle && "bg-gradient-to-br from-green-50 to-emerald-100"
+                            isYoutube && "bg-gradient-to-br from-red-50 to-red-100/70",
+                            isInstagram && "bg-gradient-to-br from-pink-50 to-purple-50",
+                            isTiktok && "bg-gradient-to-br from-slate-50 to-slate-100",
+                            isGeneric && "bg-gradient-to-br from-orange-50 to-orange-100/60",
+                            (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-gradient-to-br from-green-50 to-emerald-100"
                           )}>
                             <div className={cn(
-                              "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm",
+                              "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm text-sm font-black",
                               isKakao && "bg-[#FEE500] border border-amber-200 text-[#3C1E1E]",
                               isGoogle && "bg-[#4285F4] text-white",
-                              !isKakao && !isGoogle && "bg-[#03C75A] text-white"
+                              isYoutube && "bg-[#FF0000] text-white",
+                              isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
+                              isTiktok && "bg-[#010101] text-white border border-slate-700",
+                              isGeneric && "bg-orange-500 text-white",
+                              (!isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isGeneric) && "bg-[#03C75A] text-white"
                             )}>
-                              <span className="text-sm font-black">
-                                {isKakao ? "K" : isGoogle ? "G" : "N"}
+                              <span>
+                                {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isGeneric ? "R" : "N"}
                               </span>
                             </div>
                             <span className={cn(
                               "text-[10px] font-bold",
                               isKakao && "text-amber-800",
                               isGoogle && "text-blue-800",
-                              !isKakao && !isGoogle && "text-green-800"
+                              isYoutube && "text-red-800",
+                              isInstagram && "text-pink-800",
+                              isTiktok && "text-slate-800",
+                              isGeneric && "text-orange-800"
                             )}>
-                              {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : "네이버 플레이스"}
+                              {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isGeneric ? "레시피" : "네이버 플레이스"}
                             </span>
                             <span className={cn(
                               "text-[9px] truncate max-w-full px-2 mt-0.5",
                               isKakao && "text-amber-700/80",
                               isGoogle && "text-blue-700/80",
-                              !isKakao && !isGoogle && "text-green-700/70"
+                              isYoutube && "text-red-700/80",
+                              isInstagram && "text-pink-700/80",
+                              isTiktok && "text-slate-700/80",
+                              isGeneric && "text-orange-700/80"
                             )}>{post.restaurant?.name || "상세 보기"}</span>
                           </div>
                         )}
@@ -1650,8 +1669,20 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                             </>
                           ) : (
                             <>
-                              <ExternalLink className="size-3 text-orange-500" />
-                              <span className="text-[10px] font-bold text-foreground">recipe</span>
+                              <div className={cn(
+                                "size-4 rounded-full flex items-center justify-center text-[7px] font-black shadow-sm",
+                                isYoutube && "bg-[#FF0000] text-white",
+                                isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
+                                isTiktok && "bg-[#010101] text-white",
+                                !isYoutube && !isInstagram && !isTiktok && "bg-orange-500 text-white"
+                              )}>
+                                <span>
+                                  {isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : "R"}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-foreground">
+                                {isYoutube ? "YouTube" : isInstagram ? "Reels" : isTiktok ? "TikTok" : "Recipe"}
+                              </span>
                             </>
                           )}
                         </div>

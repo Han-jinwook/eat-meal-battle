@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
     const isNaver = finalUrl.includes('naver.com') || decodedUrl.includes('naver.com') || decodedUrl.includes('naver.me');
     const isKakao = finalUrl.includes('kakao.com') || decodedUrl.includes('kakao.com') || decodedUrl.includes('kko.to');
     const isGoogle = finalUrl.includes('google.com') || finalUrl.includes('google.co.kr') || decodedUrl.includes('maps.app.goo.gl') || decodedUrl.includes('goo.gl/maps');
+    const isYoutube = finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be') || decodedUrl.includes('youtube.com') || decodedUrl.includes('youtu.be');
+    const isInstagram = finalUrl.includes('instagram.com') || decodedUrl.includes('instagram.com');
+    const isTiktok = finalUrl.includes('tiktok.com') || decodedUrl.includes('tiktok.com');
 
     let html = '';
     const getHtml = async () => {
@@ -133,6 +136,10 @@ export async function GET(request: NextRequest) {
     let brand = 'naver';
     if (isKakao) brand = 'kakao';
     else if (isGoogle) brand = 'google';
+    else if (isYoutube) brand = 'youtube';
+    else if (isInstagram) brand = 'instagram';
+    else if (isTiktok) brand = 'tiktok';
+    else brand = 'generic';
 
     return NextResponse.json({ title, image, brand });
   } catch (error: any) {
