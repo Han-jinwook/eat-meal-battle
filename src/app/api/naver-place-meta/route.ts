@@ -30,6 +30,14 @@ export async function GET(request: NextRequest) {
     const isKakao = finalUrl.includes('kakao.com') || decodedUrl.includes('kakao.com') || decodedUrl.includes('kko.to');
     const isGoogle = finalUrl.includes('google.com') || finalUrl.includes('google.co.kr') || decodedUrl.includes('maps.app.goo.gl') || decodedUrl.includes('goo.gl/maps');
 
+    let html = '';
+    const getHtml = async () => {
+      if (!html) {
+        html = await res.text();
+      }
+      return html;
+    };
+
     // 2. Case A: Naver Place
     if (isNaver) {
       const placeIdMatch = finalUrl.match(/\/place\/(\d+)/) || finalUrl.match(/restaurant\/(\d+)/) || decodedUrl.match(/\/place\/(\d+)/) || decodedUrl.match(/restaurant\/(\d+)/);
@@ -42,11 +50,11 @@ export async function GET(request: NextRequest) {
           }
         });
         if (pcmapRes.ok) {
-          const html = await pcmapRes.text();
-          const titleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
-                             html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
+          const pcHtml = await pcmapRes.text();
+          const titleMatch = pcHtml.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
+                             pcHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
           title = titleMatch ? titleMatch[1].replace(/\s*:\s*네이버.*/, '').trim() : '';
-          const imgMatch = html.match(/https:\/\/search\.pstatic\.net\/common\/[^"'\s]*/i);
+          const imgMatch = pcHtml.match(/https:\/\/search\.pstatic\.net\/common\/[^"'\s]*/i);
           image = imgMatch ? imgMatch[0].replace(/&amp;/g, '&').replace(/["'\s]/g, '') : '';
         }
       }
@@ -54,39 +62,71 @@ export async function GET(request: NextRequest) {
 
     // 3. Case B: Kakao Map
     if (isKakao && !title) {
-      const html = await res.text();
+      const pageHtml = await getHtml();
       
-      const titleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
-                         html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
+      const titleMatch = pageHtml.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
+                         pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
       title = titleMatch ? titleMatch[1].trim() : '';
       
-      // Kakao Map provides specific store name in q query param
       const qMatch = finalUrl.match(/[?&]q=([^&]+)/);
       if (qMatch) {
         title = decodeURIComponent(qMatch[1]).replace(/\+/g, ' ');
       }
 
-      const imgMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
-                       html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+      const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
+                       pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
       image = imgMatch ? imgMatch[1].trim() : '';
       if (image && image.startsWith('//')) {
         image = 'https:' + image;
       }
     }
 
-    // 4. Case C: Google Maps or Generic Site (using standard OG tags)
-    if (!title) {
-      const html = await res.text();
-      const titleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
-                         html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i) ||
-                         html.match(/<title>([^<]*)<\/title>/i);
-      title = titleMatch ? titleMatch[1].trim() : '';
-      if (title.includes('Google Maps') || title.includes('구글 지도')) {
-        title = title.replace(/\s*-\s*Google Maps.*/i, '').replace(/\s*-\s*구글 지도.*/i, '').trim();
+    // 4. Case C: Google Maps
+    if (isGoogle && !title) {
+      const placeMatch = finalUrl.match(/\/place\/([^/]+)/) || decodedUrl.match(/\/place\/([^/]+)/);
+      if (placeMatch) {
+        try {
+          title = decodeURIComponent(placeMatch[1]).replace(/\+/g, ' ').trim();
+        } catch (e) {
+          title = placeMatch[1].replace(/\+/g, ' ').trim();
+        }
       }
 
-      const imgMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
-                       html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+      const pageHtml = await getHtml();
+
+      if (!title || title.includes('Google Maps') || title.includes('Google 지도') || title.includes('Google지도')) {
+        const titleMatch = pageHtml.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
+                           pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i) ||
+                           pageHtml.match(/<title>([^<]*)<\/title>/i);
+        const parsedTitle = titleMatch ? titleMatch[1].trim() : '';
+        if (parsedTitle && !parsedTitle.includes('Google Maps') && !parsedTitle.includes('Google 지도') && !parsedTitle.includes('Google지도')) {
+          title = parsedTitle;
+        }
+      }
+
+      if (title) {
+        title = title.replace(/\s*-\s*Google Maps.*/i, '').replace(/\s*-\s*구글 지도.*/i, '').replace(/\s*-\s*Google지도.*/i, '').trim();
+      }
+
+      if (!title) {
+        title = '구글 지도';
+      }
+
+      const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
+                       pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+      image = imgMatch ? imgMatch[1].replace(/&amp;/g, '&').trim() : '';
+    }
+
+    // 5. Case D: Generic Site (using standard OG tags)
+    if (!title) {
+      const pageHtml = await getHtml();
+      const titleMatch = pageHtml.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
+                         pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i) ||
+                         pageHtml.match(/<title>([^<]*)<\/title>/i);
+      title = titleMatch ? titleMatch[1].trim() : '';
+
+      const imgMatch = pageHtml.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i) ||
+                       pageHtml.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
       image = imgMatch ? imgMatch[1].trim() : '';
     }
 
