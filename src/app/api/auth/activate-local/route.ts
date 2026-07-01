@@ -89,31 +89,42 @@ export async function POST(request: Request) {
         .single();
 
       if (insertError) {
-        if (insertError.message.includes('users_email_key')) {
-          const uniqueEmail = email && email.includes('@')
-            ? `${email.split('@')[0]}+${userId.substring(0, 8)}@${email.split('@')[1]}`
-            : `user_${userId.substring(0, 8)}@merlin.com`;
-
-          const { data: retryData, error: retryError } = await supabaseAdmin
+        if (insertError.message.includes('users_email_key') && email) {
+          const { data: otherUser } = await supabaseAdmin
             .from('users')
-            .insert({
-              id: userId,
-              email: uniqueEmail,
-              nickname: nickname || '가족회원',
-              profile_image: profileImage || '',
-              provider: 'merlin_hub',
-              provider_id: userId,
-              is_student: false,
-              is_activated: isActivated || false,
-              accumulated_seconds: accumulatedSeconds || 0,
-            })
-            .select()
+            .select('id')
+            .eq('email', email)
             .single();
-
-          if (retryError) {
-            return NextResponse.json({ error: retryError.message }, { status: 500 });
+          if (otherUser && otherUser.id !== userId) {
+            const uniqueDummyEmail = `stale_${otherUser.id.substring(0, 8)}_${Date.now()}@merlin.com`;
+            await supabaseAdmin
+              .from('users')
+              .update({ email: uniqueDummyEmail })
+              .eq('id', otherUser.id);
+            
+            // Retry insert
+            const { data: retryData, error: retryError } = await supabaseAdmin
+              .from('users')
+              .insert({
+                id: userId,
+                email: email,
+                nickname: nickname || '가족회원',
+                profile_image: profileImage || '',
+                provider: 'merlin_hub',
+                provider_id: userId,
+                is_student: false,
+                is_activated: isActivated || false,
+                accumulated_seconds: accumulatedSeconds || 0,
+              })
+              .select()
+              .single();
+            if (retryError) {
+              return NextResponse.json({ error: retryError.message }, { status: 500 });
+            }
+            resultData = retryData;
+          } else {
+            return NextResponse.json({ error: insertError.message }, { status: 500 });
           }
-          resultData = retryData;
         } else {
           return NextResponse.json({ error: insertError.message }, { status: 500 });
         }

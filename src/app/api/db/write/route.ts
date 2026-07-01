@@ -132,16 +132,71 @@ export async function POST(request: Request) {
 
       // Upsert/Insert 실행
       if (action === 'upsert') {
-        // meal_images upsert의 경우 온콘플릭트가 meal_id,status일 수 있음
-        const onConflict = table === 'meal_images' ? 'id' : undefined;
-        let query = supabaseAdmin.from(table).upsert(data);
-        const { data: resData, error } = await query.select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, data: resData });
+        try {
+          // meal_images upsert의 경우 온콘플릭트가 meal_id,status일 수 있음
+          const onConflict = table === 'meal_images' ? 'id' : undefined;
+          let query = supabaseAdmin.from(table).upsert(data);
+          const { data: resData, error } = await query.select();
+          if (error) throw error;
+          return NextResponse.json({ success: true, data: resData });
+        } catch (err: any) {
+          if (table === 'users' && err.message && err.message.includes('users_email_key')) {
+            const records = Array.isArray(data) ? data : [data];
+            const emailToFind = records[0]?.email;
+            if (emailToFind) {
+              const { data: otherUser } = await supabaseAdmin
+                .from('users')
+                .select('id')
+                .eq('email', emailToFind)
+                .single();
+              if (otherUser && otherUser.id !== records[0].id) {
+                const uniqueDummyEmail = `stale_${otherUser.id.substring(0, 8)}_${Date.now()}@merlin.com`;
+                await supabaseAdmin
+                  .from('users')
+                  .update({ email: uniqueDummyEmail })
+                  .eq('id', otherUser.id);
+                
+                // Retry upsert
+                let query = supabaseAdmin.from(table).upsert(data);
+                const { data: resData, error } = await query.select();
+                if (error) throw error;
+                return NextResponse.json({ success: true, data: resData });
+              }
+            }
+          }
+          throw err;
+        }
       } else {
-        const { data: resData, error } = await supabaseAdmin.from(table).insert(data).select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, data: resData });
+        try {
+          const { data: resData, error } = await supabaseAdmin.from(table).insert(data).select();
+          if (error) throw error;
+          return NextResponse.json({ success: true, data: resData });
+        } catch (err: any) {
+          if (table === 'users' && err.message && err.message.includes('users_email_key')) {
+            const records = Array.isArray(data) ? data : [data];
+            const emailToFind = records[0]?.email;
+            if (emailToFind) {
+              const { data: otherUser } = await supabaseAdmin
+                .from('users')
+                .select('id')
+                .eq('email', emailToFind)
+                .single();
+              if (otherUser && otherUser.id !== records[0].id) {
+                const uniqueDummyEmail = `stale_${otherUser.id.substring(0, 8)}_${Date.now()}@merlin.com`;
+                await supabaseAdmin
+                  .from('users')
+                  .update({ email: uniqueDummyEmail })
+                  .eq('id', otherUser.id);
+                
+                // Retry insert
+                const { data: resData, error } = await supabaseAdmin.from(table).insert(data).select();
+                if (error) throw error;
+                return NextResponse.json({ success: true, data: resData });
+              }
+            }
+          }
+          throw err;
+        }
       }
     } 
     
