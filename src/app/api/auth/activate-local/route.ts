@@ -89,48 +89,9 @@ export async function POST(request: Request) {
         .single();
 
       if (insertError) {
-        if (insertError.message.includes('users_email_key') && email) {
-          const { data: otherUser } = await supabaseAdmin
-            .from('users')
-            .select('id')
-            .eq('email', email)
-            .single();
-          if (otherUser && otherUser.id !== userId) {
-            const uniqueDummyEmail = `stale_${otherUser.id.substring(0, 8)}_${Date.now()}@merlin.com`;
-            await supabaseAdmin
-              .from('users')
-              .update({ email: uniqueDummyEmail })
-              .eq('id', otherUser.id);
-            
-            // Retry insert
-            const { data: retryData, error: retryError } = await supabaseAdmin
-              .from('users')
-              .insert({
-                id: userId,
-                email: email,
-                nickname: nickname || '가족회원',
-                profile_image: profileImage || '',
-                provider: 'merlin_hub',
-                provider_id: userId,
-                is_student: false,
-                is_activated: isActivated || false,
-                accumulated_seconds: accumulatedSeconds || 0,
-              })
-              .select()
-              .single();
-            if (retryError) {
-              return NextResponse.json({ error: retryError.message }, { status: 500 });
-            }
-            resultData = retryData;
-          } else {
-            return NextResponse.json({ error: insertError.message }, { status: 500 });
-          }
-        } else {
-          return NextResponse.json({ error: insertError.message }, { status: 500 });
-        }
-      } else {
-        resultData = data;
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
       }
+      resultData = data;
     } else {
       // 3. User exists, update accumulated_seconds and is_activated status
       // Once is_activated is true, we should keep it true and not overwrite with false
