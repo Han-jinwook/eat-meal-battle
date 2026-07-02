@@ -214,7 +214,7 @@ export default function ProfileClient() {
               {/* 우측 컬럼: 프로필, 알림 설정, 로그아웃 */}
               <div className="space-y-6">
                 {/* 허브 통합 프로필 카드 */}
-                <HubProfileCard />
+                <HubProfileCard hideCoinSection={true} />
                 
                 {/* 왓잇 거주지역 및 학교 설정 */}
                 <div className="bg-white rounded-2xl p-5 border border-orange-100 shadow-sm space-y-4">
