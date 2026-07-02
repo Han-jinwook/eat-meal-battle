@@ -1045,13 +1045,21 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         })
 
-        // 진짜 포스트가 단 하나라도 존재하면 샘플은 모두에게서 영구 노출 해제
-        // 진짜 포스트가 없을 때만 전체 샘플을 채워 넣음
-        if (parsedPosts.length > 0) {
-          setPosts(parsedPosts)
-        } else {
-          setPosts(dummyPosts.map(p => ({ ...p, isSample: true })))
-        }
+        // 진짜 포스트의 타입(집밥, 배달, 외식)이 존재하면 해당 타입의 샘플만 글로벌 노출 해제
+        const hasRealHomemade = parsedPosts.some(p => p.type === 'homemade');
+        const hasRealDelivery = parsedPosts.some(p => p.type === 'delivery');
+        const hasRealDineout = parsedPosts.some(p => p.type === 'dineout');
+
+        const activeSamples = dummyPosts
+          .map(p => ({ ...p, isSample: true }))
+          .filter(sample => {
+            if (sample.type === 'homemade' && hasRealHomemade) return false;
+            if (sample.type === 'delivery' && hasRealDelivery) return false;
+            if (sample.type === 'dineout' && hasRealDineout) return false;
+            return true;
+          });
+
+        setPosts([...parsedPosts, ...activeSamples])
       } catch (err) {
         console.error("Failed to fetch posts from Supabase", err)
       }
@@ -1139,8 +1147,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   const filteredPostsRaw = posts.filter(post => {
-    // 샘플 카드는 모든 필터를 타지 않고 항상 노출되도록 처리
-    if (post.isSample) return true
+    // 샘플 카드는 카테고리 필터만 적용받고 나머지 필터(NEW, 좋아요, 지역 등)는 모두 우회
+    if (post.isSample) {
+      return categoryFilter === "all" || post.type === categoryFilter
+    }
 
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
     if (showOnlyNew && !isTodayPost(post.createdAt)) return false
