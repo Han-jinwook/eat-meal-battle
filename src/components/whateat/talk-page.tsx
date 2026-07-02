@@ -1045,10 +1045,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         })
 
-        // Keep all dummy posts as samples. Individual hiding is handled by shouldHideSample
-        const activeDummyPosts = dummyPosts.map(p => ({ ...p, isSample: true }))
-
-        setPosts([...parsedPosts, ...activeDummyPosts])
+        // 진짜 포스트가 단 하나라도 존재하면 샘플은 모두에게서 영구 노출 해제
+        // 진짜 포스트가 없을 때만 전체 샘플을 채워 넣음
+        if (parsedPosts.length > 0) {
+          setPosts(parsedPosts)
+        } else {
+          setPosts(dummyPosts.map(p => ({ ...p, isSample: true })))
+        }
       } catch (err) {
         console.error("Failed to fetch posts from Supabase", err)
       }
@@ -1136,13 +1139,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   const filteredPostsRaw = posts.filter(post => {
+    // 샘플 카드는 모든 필터를 타지 않고 항상 노출되도록 처리
+    if (post.isSample) return true
+
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
     if (showOnlyNew && !isTodayPost(post.createdAt)) return false
     if (showOnlyLiked && !post.isLiked) return false
     if (showOnlySubscribed && !post.isSubscribed) return false
-    
-    // 샘플 카데고리 카드는 필터를 타지 않고 항상 통과
-    if (post.isSample) return true
 
     // 지역 필터: 검색 지역이 있으면 우선, 없으면 내 지역 + 범위
     const targetRegion = searchRegion || userRegion
@@ -1165,30 +1168,18 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return true
   })
 
-  // 샘플 카드 개별 소멸 여부 판단 (타입별 일치 여부 확인)
-  const shouldHideSample = (sample: TalkPost, realPosts: TalkPost[]) => {
-    return realPosts.some(real => real.type === sample.type && real.isExplicit)
-  }
-
-  // 샘플 카드 개수 제한 (동 1개, 구 2개, 시/전국 3개)
-  const getSampleLimit = () => {
-    return 3
-  }
-
   const realPostsFiltered = filteredPostsRaw.filter(p => !p.isSample)
-  const samplePostsFiltered = filteredPostsRaw
-    .filter(p => p.isSample && !shouldHideSample(p, realPostsFiltered))
-    .slice(0, getSampleLimit())
+  const samplePostsFiltered = filteredPostsRaw.filter(p => p.isSample)
   const filteredPosts = [...realPostsFiltered, ...samplePostsFiltered]
 
   const getCategoryCount = (categoryId: string) => {
     const rawFiltered = posts.filter((post) => {
-      if (categoryId !== "all" && post.type !== categoryId) return false
-      if (showOnlyNew && !isTodayPost(post.createdAt)) return false
-      if (showOnlyLiked && !post.isLiked) return false
-      if (showOnlySubscribed && !post.isSubscribed) return false
+      // 샘플 카드는 카테고리 필터만 적용받고 나머지 조건(NEW, 좋아요, 지역 등)은 우회
+      if (post.isSample) {
+        return categoryId === "all" || post.type === categoryId
+      }
 
-      if (post.isSample) return true
+      if (categoryId !== "all" && post.type !== categoryId) return false
 
       const targetRegion = searchRegion || userRegion
       const postRegion = post.author?.region || post.region?.dong || ""
@@ -1210,12 +1201,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       return true
     })
 
-    const realFiltered = rawFiltered.filter(p => !p.isSample)
-    const sampleFiltered = rawFiltered
-      .filter(p => p.isSample && !shouldHideSample(p, realFiltered))
-      .slice(0, getSampleLimit())
-
-    return realFiltered.length + sampleFiltered.length
+    return rawFiltered.length
   }
 
   const getPostTimestamp = (createdAt: string, fallbackId: number) => {
