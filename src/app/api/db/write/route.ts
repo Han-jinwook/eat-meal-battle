@@ -72,8 +72,6 @@ export async function POST(request: Request) {
       'meal_images',
       'comments',
       'comment_replies',
-      'comment_likes',
-      'reply_likes',
       'meal_ratings',
       'school_infos',
       'meal_menus',
@@ -99,7 +97,7 @@ export async function POST(request: Request) {
         if (table === 'meal_images' && rec.uploaded_by && rec.uploaded_by !== userId) {
           return NextResponse.json({ error: '본인의 업로드 정보만 저장할 수 있습니다.' }, { status: 403 });
         }
-        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'school_infos', 'interest_schools', 'meal_likes'].includes(table)) {
+        if (['comments', 'comment_replies', 'meal_ratings', 'school_infos', 'interest_schools', 'meal_likes'].includes(table)) {
           const recUserId = rec.user_id;
           if (recUserId && recUserId !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 작성할 수 있습니다.' }, { status: 403 });
@@ -218,7 +216,7 @@ export async function POST(request: Request) {
           if (table === 'meal_images' && existing.uploaded_by !== userId) {
             return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
           }
-          if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools', 'meal_likes'].includes(table) && existing.user_id !== userId) {
+          if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes'].includes(table) && existing.user_id !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
           }
           if (table === 'school_infos' && existing.user_id !== userId) {
@@ -235,12 +233,8 @@ export async function POST(request: Request) {
         const { error: deleteError } = await supabaseAdmin.from(table).delete().eq('id', recordId);
         if (deleteError) throw deleteError;
       } else {
-        // 조건식 삭제 (예: comment_likes나 reply_likes 삭제 시 user_id와 comment_id/reply_id 조건)
-        // 이 때도 반드시 본인의 user_id여야 함을 강제
-        if (['comment_likes', 'reply_likes', 'meal_ratings', 'meal_likes'].includes(table)) {
+        if (['meal_ratings', 'meal_likes'].includes(table)) {
           let query = supabaseAdmin.from(table).delete().eq('user_id', userId);
-          if (filters.comment_id) query = query.eq('comment_id', filters.comment_id);
-          if (filters.reply_id) query = query.eq('reply_id', filters.reply_id);
           if (filters.meal_id) query = query.eq('meal_id', filters.meal_id);
           
           const { error: deleteError } = await query;
