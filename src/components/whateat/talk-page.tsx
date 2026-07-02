@@ -310,7 +310,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [searchRegion, setSearchRegion] = useState<string>("") // 검색 지역
   const [showScopeDropdown, setShowScopeDropdown] = useState(false)
   const [showRegionSearch, setShowRegionSearch] = useState(false)
-  const [showOnlyNew, setShowOnlyNew] = useState(true)
+  const [showOnlyNew, setShowOnlyNew] = useState(false) // 전체(All)를 디폴트로 설정하기 위해 기존 true에서 false로 변경
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
   const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
@@ -1109,13 +1109,24 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   const isTodayPost = (createdAt: string) => {
+    // 출시 초반 유저 수 부족으로 인해 'NEW' 탭 노출 기간을 당일(1일)에서 1주일(7일)로 확대
+    // 나중에 유저가 많이 늘어나면 다시 당일 기준으로 원복 예정 (isTodayPost)
     const parsed = Date.parse(createdAt)
     if (!Number.isNaN(parsed)) {
-      return toKstDateKey(new Date()) === toKstDateKey(new Date(parsed))
+      const now = new Date().getTime()
+      const diffTime = now - parsed
+      const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000
+      return diffTime >= 0 && diffTime <= ONE_WEEK_MS
     }
 
-    if (createdAt.includes("어제") || createdAt.includes("일 전")) return false
-    if (createdAt.includes("방금") || createdAt.includes("분 전") || createdAt.includes("시간 전")) return true
+    if (createdAt.includes("방금") || createdAt.includes("분 전") || createdAt.includes("시간 전") || createdAt.includes("어제")) return true
+    
+    const daysMatch = createdAt.match(/(\d+)일 전/)
+    if (daysMatch) {
+      const days = parseInt(daysMatch[1], 10)
+      return days <= 7
+    }
+
     return false
   }
 
