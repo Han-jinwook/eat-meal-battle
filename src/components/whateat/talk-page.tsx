@@ -919,9 +919,28 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         }
 
+        // Fetch meal likes count and whether current user liked it
+        const mealLikesCountMap = new Map<string, number>()
+        const userLikedMealSet = new Set<string>()
+        const postIds = imgData.map((img: any) => img.id)
+
+        if (postIds.length > 0) {
+          const { data: likesData } = await supabase
+            .from("meal_likes")
+            .select("meal_id, user_id")
+            .in("meal_id", postIds)
+
+          const dbLikes = likesData || []
+          dbLikes.forEach((lk: any) => {
+            mealLikesCountMap.set(lk.meal_id, (mealLikesCountMap.get(lk.meal_id) || 0) + 1)
+            if (isLoggedIn && user?.id && lk.user_id === user.id) {
+              userLikedMealSet.add(lk.meal_id)
+            }
+          })
+        }
+
         // Fetch comment counts (comments + replies)
         const commentCountMap = new Map<string, number>()
-        const postIds = imgData.map((img: any) => img.id)
         if (postIds.length > 0) {
           const { data: commentsData } = await supabase
             .from("comments")
@@ -1034,8 +1053,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             },
             createdAt: meta.promotedAt || img.created_at,
             rating: finalRating,
-            likes: 0,
-            isLiked: false,
+            likes: mealLikesCountMap.get(img.id) || 0,
+            isLiked: userLikedMealSet.has(img.id),
             commentCount: commentCountMap.get(img.id) || 0,
             isSubscribed: false,
             isSample: false,
@@ -1093,12 +1112,54 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   // 좋아요 토글
-  const toggleLike = (postId: number | string) => {
-    setPosts(posts.map(p => 
+  const toggleLike = async (postId: number | string) => {
+    if (!isLoggedIn) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    const post = posts.find(p => p.id === postId)
+    if (!post) return
+
+    const wasLiked = post.isLiked
+    
+    // 1. UI 상태 즉각 업데이트 (Optimistic Update)
+    setPosts(prev => prev.map(p => 
       p.id === postId 
-        ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 }
+        ? { ...p, isLiked: !wasLiked, likes: wasLiked ? Math.max(0, p.likes - 1) : p.likes + 1 }
         : p
     ))
+
+    try {
+      if (wasLiked) {
+        // 좋아요 해제 (DELETE)
+        const supabase = createClient()
+        const { error } = await supabase
+          .from("meal_likes")
+          .delete()
+          .eq("meal_id", postId)
+          .eq("user_id", user.id)
+        if (error) throw error
+      } else {
+        // 좋아요 등록 (INSERT)
+        await secureWrite({
+          table: "meal_likes",
+          action: "insert",
+          data: {
+            meal_id: postId,
+            user_id: user.id
+          }
+        })
+      }
+    } catch (err) {
+      console.error("Failed to toggle like in database:", err)
+      // 실패 시 원래 상태로 원복
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, isLiked: wasLiked, likes: post.likes }
+          : p
+      ))
+    }
   }
 
   // 구독 토글 (집밥만)
