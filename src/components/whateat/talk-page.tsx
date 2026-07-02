@@ -540,12 +540,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           if (payload.eventType === 'INSERT') {
             const newLike = payload.new
             const isMyLike = user?.id && newLike.user_id === user.id
+            if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
+            
             setPosts(prev => prev.map(p => {
               if (p.id === newLike.meal_id) {
                 return {
                   ...p,
-                  likes: p.likes + 1,
-                  isLiked: isMyLike ? true : p.isLiked
+                  likes: p.likes + 1
                 }
               }
               return p
@@ -554,12 +555,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             const oldLike = payload.old
             if (oldLike && oldLike.meal_id) {
               const isMyLike = user?.id && oldLike.user_id === user.id
+              if (isMyLike) return // 본인의 좋아요 취소는 이미 optimistic update로 반영됨
+              
               setPosts(prev => prev.map(p => {
                 if (p.id === oldLike.meal_id) {
                   return {
                     ...p,
-                    likes: Math.max(0, p.likes - 1),
-                    isLiked: isMyLike ? false : p.isLiked
+                    likes: Math.max(0, p.likes - 1)
                   }
                 }
                 return p
@@ -1265,13 +1267,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     try {
       if (wasLiked) {
         // 좋아요 해제 (DELETE)
-        const supabase = createClient()
-        const { error } = await supabase
-          .from("meal_likes")
-          .delete()
-          .eq("meal_id", postId)
-          .eq("user_id", user.id)
-        if (error) throw error
+        await secureWrite({
+          table: "meal_likes",
+          action: "delete",
+          filters: {
+            meal_id: postId
+          }
+        })
       } else {
         // 좋아요 등록 (INSERT)
         await secureWrite({
