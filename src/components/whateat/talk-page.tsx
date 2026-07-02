@@ -291,6 +291,7 @@ function parseRegionFromAddress(address: string, defaultCity = "인천", default
 }
 
 export function TalkPage({ isActive }: { isActive?: boolean }) {
+  const { isLoggedIn, user } = useHub()
   const PAGE_SIZE = 12
   const [posts, setPosts] = useState<TalkPost[]>(() => dummyPosts.map(p => ({ ...p, isSample: true })))
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
@@ -314,6 +315,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
   const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
+  const [commentsTrigger, setCommentsTrigger] = useState(0)
   const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
   const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
@@ -493,7 +495,138 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
 
     fetchCommentsForPost()
-  }, [expandedComments])
+  }, [expandedComments, commentsTrigger])
+
+  // 실시간 연동 (Supabase Realtime) 설정: 좋아요 및 댓글 개수/목록 최신화
+  useEffect(() => {
+    const supabase = createClient()
+
+    // 1. 댓글 개수 실시간 갱신 공통 함수
+    const refreshCommentCount = async (mealId: string) => {
+      try {
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("id")
+          .eq("meal_id", mealId)
+          .eq("is_deleted", false)
+        const dbComments = commentsData || []
+        const commentIds = dbComments.map(c => c.id)
+        let count = dbComments.length
+
+        if (commentIds.length > 0) {
+          const { count: repliesCount } = await supabase
+            .from("comment_replies")
+            .select("id", { count: 'exact', head: true })
+            .in("comment_id", commentIds)
+            .eq("is_deleted", false)
+          count += (repliesCount || 0)
+        }
+
+        setPosts(prev => prev.map(p => 
+          p.id === mealId ? { ...p, commentCount: count } : p
+        ))
+      } catch (err) {
+        console.error("Failed to refresh comment count:", err)
+      }
+    }
+
+    // 2. meal_likes 테이블 실시간 구독
+    const likesChannel = supabase
+      .channel('realtime:meal_likes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'meal_likes' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newLike = payload.new
+            const isMyLike = user?.id && newLike.user_id === user.id
+            setPosts(prev => prev.map(p => {
+              if (p.id === newLike.meal_id) {
+                return {
+                  ...p,
+                  likes: p.likes + 1,
+                  isLiked: isMyLike ? true : p.isLiked
+                }
+              }
+              return p
+            }))
+          } else if (payload.eventType === 'DELETE') {
+            const oldLike = payload.old
+            if (oldLike && oldLike.meal_id) {
+              const isMyLike = user?.id && oldLike.user_id === user.id
+              setPosts(prev => prev.map(p => {
+                if (p.id === oldLike.meal_id) {
+                  return {
+                    ...p,
+                    likes: Math.max(0, p.likes - 1),
+                    isLiked: isMyLike ? false : p.isLiked
+                  }
+                }
+                return p
+              }))
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    // 3. comments 테이블 실시간 구독
+    const commentsChannel = supabase
+      .channel('realtime:comments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        async (payload) => {
+          const targetMealId = payload.new?.meal_id || payload.old?.meal_id
+          if (!targetMealId) return
+
+          // 댓글 개수 갱신
+          refreshCommentCount(targetMealId)
+
+          // 현재 열려있는 댓글창인 경우 댓글 목록 다시 불러오기
+          if (expandedComments === targetMealId) {
+            setCommentsTrigger(prev => prev + 1)
+          }
+        }
+      )
+      .subscribe()
+
+    // 4. comment_replies 테이블 실시간 구독
+    const repliesChannel = supabase
+      .channel('realtime:comment_replies')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'comment_replies' },
+        async (payload) => {
+          const commentId = payload.new?.comment_id || payload.old?.comment_id
+          if (!commentId) return
+
+          // 부모 댓글의 meal_id 조회
+          const { data } = await supabase
+            .from("comments")
+            .select("meal_id")
+            .eq("id", commentId)
+            .single()
+
+          if (data?.meal_id) {
+            // 댓글 개수 갱신
+            refreshCommentCount(data.meal_id)
+
+            // 현재 열려있는 댓글창인 경우 댓글 목록 다시 불러오기
+            if (expandedComments === data.meal_id) {
+              setCommentsTrigger(prev => prev + 1)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(likesChannel)
+      supabase.removeChannel(commentsChannel)
+      supabase.removeChannel(repliesChannel)
+    }
+  }, [expandedComments, user?.id])
 
   // 댓글 등록 처리 함수
   const handleAddComment = async (postId: string | number) => {
@@ -812,7 +945,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
   }
 
-  const { isLoggedIn, user } = useHub()
 
   // Fetch user region dynamically from users
   useEffect(() => {

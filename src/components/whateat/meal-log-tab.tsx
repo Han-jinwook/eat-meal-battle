@@ -995,7 +995,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         if (commentError) throw commentError
 
         if (otherComments && otherComments.length > 0) {
-          toast("다른 이웃의 댓글 등 활동이 발생하여 맛톡에서 식사 기록을 회수할 수 없습니다.", { icon: "🔒", duration: 4000 })
+          toast("다른 이웃의 댓글 등 활동이 발생하여 평점을 낮출 수 없습니다.", { icon: "🔒", duration: 4000 })
           return
         }
 
@@ -1178,7 +1178,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         if (commentError) throw commentError
 
         if (otherComments && otherComments.length > 0) {
-          toast("다른 이웃의 댓글 등 활동이 발생하여 맛톡에서 식사 기록을 회수할 수 없습니다.", { icon: "🔒", duration: 4000 })
+          toast("다른 이웃의 댓글 등 활동이 발생하여 평점을 낮출 수 없습니다.", { icon: "🔒", duration: 4000 })
           return
         }
 
