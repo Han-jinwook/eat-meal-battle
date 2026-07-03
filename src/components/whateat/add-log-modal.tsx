@@ -889,7 +889,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               setSelectedPlace(place)
                               setPlaceSearchQuery("")
                               if (place.link) {
-                                setRestaurantLink(place.link)
+                                setLinkUrl(place.link)
                               }
                             }}
                             className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0"
