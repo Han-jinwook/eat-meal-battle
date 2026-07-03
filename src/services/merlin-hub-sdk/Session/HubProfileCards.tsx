@@ -5,6 +5,7 @@ import { Camera, Mail, User, Edit2, Save, UserX, LogOut, Bell } from 'lucide-rea
 import { MerlinHub } from '../index';
 import { HubAvatar } from './HubProfileWidget';
 import { useHub } from '../HubProvider';
+import { logout } from '../Auth/auth';
 
 // -----------------------------------------
 // 1. HubProfileCard (상단 섹션: 프로필 뷰 및 수정)
@@ -404,6 +405,7 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
     fetch('/api/auth/logout', { method: 'POST' })
       .catch(() => {})
       .finally(() => {
+        logout(); // SDK의 logout 호출 (쿠키 및 localStorage 세션 토큰 명시적 삭제)
         localStorage.clear();
         window.dispatchEvent(new Event('profileUpdated'));
         if (onLogout) onLogout();
