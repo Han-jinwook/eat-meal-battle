@@ -1,76 +1,39 @@
-# Merlin Family OS & WhatEat Referral System Stabilization Guide
+# WhatEat Realtime Likes Synchronization Debugging Guide
 
 ## 📅 리셋(세션 전환) 일시
-* **일시**: 2026년 6월 10일 14:50 (KST)
-* **상황**: 이전 세션 완료 후, 새 세션에서 이어서 진행하기 위해 현재 상태와 남은 이슈를 상세히 기록합니다.
+* **일시**: 2026년 7월 3일 12:25 (KST)
+* **상황**: 좋아요 실시간 동기화 개발 중 런타임 에러(`ReferenceError: prev is not defined`)를 잡고, 새 세션으로 전환하여 실시간 동기화를 최종 검증하기 위한 기록입니다.
 
 ---
 
 ## 📌 현재 상태 및 이슈 요약
 
-### 1. 동적 해시(#) URL 공유 (조치 완료)
-* **이슈**: 어떤 메뉴/탭(예: 급식, 혼밥 등)을 눌러서 이동하더라도, 복사되는 링크가 항상 루트 도메인(`https://whateat.sundreamer.app/`)으로 고정되던 결함.
-* **조치**: 
-  - `WhatEat` 앱의 [WhatEatApp.tsx](file:///d:/WhatEat/src/components/whateat/WhatEatApp.tsx) 및 [ProfileClient.tsx](file:///d:/WhatEat/src/components/ProfileClient.tsx) 등에서 `HubShareSquare`를 호출할 때 하드코딩되었던 `customUrl` 속성을 완전히 제거하여 배포를 완료했습니다.
-  - 이제 사용자가 위치한 탭의 해시(#) 주소(예: `#solo`, `#meal` 등)가 동적으로 결합되어 링크 복사 시 정상적으로 나타납니다.
+### 1. 실시간 소켓 연동 환경 완성 (조치 완료)
+* **원인 분석**: 브라우저 클라이언트가 Supabase RLS 정책 하에서 `anon` 권한으로 동작하여 좋아요 테이블(`meal_likes`) 조회 권한이 막혀있던 현상 및 수파베이스 실시간 게시판(`supabase_realtime` publication)에 테이블이 누락된 현상을 해소했습니다.
+* **마이그레이션 실행 완료 (멀린님 수동 실행)**:
+  - `meal_likes` 테이블의 RLS `SELECT` 권한을 `anon` 및 `authenticated` 모두에게 허용.
+  - `supabase_realtime` 게시판에 `meal_likes`, `comments`, `comment_replies` 테이블 추가 등록.
+  - 실시간 삭제(`DELETE`) 시 `meal_id`를 누락 없이 온전히 수신하기 위해 `meal_likes`, `comments`, `comment_replies` 테이블의 `REPLICA IDENTITY`를 `FULL`로 변경 완료.
+  - 이로 인해 양쪽 브라우저 콘솔(F12)에 좋아요 생성/삭제 시 수파베이스의 웹소켓 메시지가 누락 없이 완벽히 유입됨을 확인했습니다.
 
-### 2. 로그인 상태에서 초대 코드(?ref=) 누락 및 증발 현상 (원인 파악 및 수정 대기)
-* **이슈**: 로그인된 상태에서 링크를 공유하려고 할 때, URL에 추천인 코드(`?ref=초대코드`)가 붙지 않고 계속 유실되는 현상.
-* **근본 원인**:
-  - `HubShareSquare.tsx` 컴포넌트의 마운트 시점에서 `localStorage`에 유효한 초대코드(`userReferralCode`)가 존재하더라도, 아래 `useEffect` 비동기 로직에 의해 강제로 공백(`''`)으로 덮어써집니다.
-    ```typescript
-    useEffect(() => {
-      const fetchInfo = async () => {
-        const info = await getMyReferralInfo();
-        if (info?.code) {
-          setInviteCode(info.code);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('userReferralCode', info.code);
-          }
-        } else {
-          setInviteCode(''); // <- API 응답 지연/부재 시 기존 로컬스토리지 값마저 날려버리는 원인!
-        }
-      };
-      fetchInfo();
-    }, [getMyReferralInfo, isLoggedIn]);
-    ```
-  - 로그인 상태(`isLoggedIn`)가 변하거나 컴포넌트가 다시 그릴 때, API(`getMyReferralInfo`)로부터 데이터를 아직 받아오지 못했거나 응답이 일시적으로 지연되는 시점에 `else { setInviteCode(''); }`를 타게 되어 유효한 추천인 코드가 초기화되고 캐시가 유실됩니다.
+### 2. 디버깅 로그 추가 과정에서의 ReferenceError 결함 (원인 파악 및 조치 완료)
+* **이슈**: 실시간 이벤트는 정상 수신되나 화면에 좋아요 숫자가 갱신되지 않고 콘솔에 `Uncaught ReferenceError: prev is not defined` 에러가 발생하는 현상.
+* **원인**:
+  - `likesChannel` 콜백 내에서 디버깅 로그를 출력할 때, `setPosts` 외부 스코프에 존재하지 않는 `prev` 상태 변수를 `prev.map(p => p.id)`로 불렀기 때문입니다.
+* **조치**:
+  - `prev.map` 대신 스코프 상에 올바르게 존재하는 `posts.map`을 참조하도록 수정 완료하여 깃에 커밋 및 강제 푸시를 완료했습니다.
 
 ---
 
 ## 🛠️ 새 세션 작업 계획 (Next Steps)
 
-### Step 1. `HubShareSquare.tsx` 수정 반영
-* **수정 대상 파일**:
-  1. `WhatEat` 프로젝트: [HubShareSquare.tsx](file:///d:/WhatEat/src/services/merlin-hub-sdk/Referral/HubShareSquare.tsx)
-  2. `MerlinFamilyOS` 프로젝트: [HubShareSquare.tsx](file:///d:/MerlinFamilyOS/허브_라이브러리/Referral/HubShareSquare.tsx)
-* **코드 수정 상세**:
-  - `else { setInviteCode(''); }` 분기를 제거하고, API가 정상적으로 신규 추천인 코드를 내려주었을 때만 상태와 로컬스토리지를 갱신하도록 처리합니다.
-  - 로그인 상태가 확실할 때만 API를 호출하도록 안전 장치(예: `if (isLoggedIn) fetchInfo();`)를 확보합니다.
-  - **수정 예시**:
-    ```typescript
-    useEffect(() => {
-      const fetchInfo = async () => {
-        const info = await getMyReferralInfo();
-        if (info?.code) {
-          setInviteCode(info.code);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('userReferralCode', info.code);
-          }
-        }
-        // else { setInviteCode(''); } 를 제거하여 기존 localStorage 값을 유지
-      };
-      if (isLoggedIn) {
-        fetchInfo();
-      }
-    }, [getMyReferralInfo, isLoggedIn]);
-    ```
+### Step 1. 배포 완료 확인 및 강력 새로고침
+* 최신 커밋(`3cbd95cc` 또는 이메일 제약 조건 핫픽스가 포함된 `b19671d0`, 최종 ReferenceError 수정본 `1efb514d` 이후 버전)이 Netlify에 배포 완료되었는지 확인합니다.
+* 테스트용 브라우저 두 개를 모두 강력 새로고침(`Ctrl + F5` 또는 캐시 비우기)하여 최신 코드를 로드합니다.
 
-### Step 2. 버전 갱신 및 라이브러리 대장 업데이트
-* **버전 정보**: 허브 라이브러리 버전을 `v3.2.4`, `HubShareSquare` 모듈 버전을 `v1.0.5`로 상향 조정합니다.
-* **라이브러리 대장**: `MerlinFamilyOS` 프로젝트의 `라이브러리_대장.md` 파일에 변경 내용을 기록합니다.
-
-### Step 3. 빌드 및 배포 테스트
-* `WhatEat` 프로젝트 경로에서 빌드 테스트를 수행합니다: `npm run build`
-* 빌드가 성공하면 두 레포지토리의 변경 사항을 Git에 스테이징/커밋하고 `main` 브랜치에 각각 push합니다.
-* 사용자가 카카오톡 캐시 초기화를 마쳤으므로, 최종 웹 서비스 배포가 끝난 뒤 브라우저를 강력 새로고침(`Ctrl + F5`)하여 로그인 후 정상적으로 `https://whateat.sundreamer.app/?ref=추천코드#meal` 형태로 복사되는지 최종 확인합니다.
+### Step 2. 실시간 좋아요 증감 동기화 최종 검증
+* **로그인 상태 확인**: `스타크` 계정과 `멀린` 계정으로 각각 로그인합니다. (로그인 후 자신의 좋아요 상태가 정확히 빨간 하트로 로드되는지 확인)
+* **상호 작용 테스트**:
+  - A브라우저(`스타크`)에서 좋아요를 누르면, B브라우저(`멀린`) 피드 카드에 하트 숫자가 즉시 `1` 증가하는지 확인합니다.
+  - B브라우저에서 좋아요를 누르고 해제할 때, A브라우저의 숫자가 실시간으로 즉시 오르고 내리는지 확인합니다.
+  - 콘솔에 `Uncaught ReferenceError` 또는 다른 오류가 추가로 발생하는지 감시합니다.
