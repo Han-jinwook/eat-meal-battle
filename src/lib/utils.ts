@@ -37,3 +37,27 @@ export const decodeAndDecompress = (base64String: string): object | null => {
     }
   }
 };
+
+export function formatPlaceNameWithRegion(name?: string, address?: string) {
+  if (!name) return "";
+  if (!address) return name;
+  
+  const parts = address.split(" ");
+  let city = parts[0];
+  
+  // Simplify city names (e.g., 서울특별시 -> 서울, 인천광역시 -> 인천)
+  if (city.length > 2 && (city.endsWith("시") || city.endsWith("도") || city.endsWith("특별시") || city.endsWith("광역시"))) {
+    city = city.substring(0, 2);
+  } else if (city.length === 4 && city.endsWith("특도")) { // 제주특별자치도
+    city = "제주";
+  }
+  
+  // Find Dong, Eup, or Myeon
+  const dong = parts.find(p => p.match(/\d*(동|읍|면)$/));
+  
+  if (city && dong) {
+    return `${name} (${city}/${dong})`;
+  }
+  
+  return name;
+}

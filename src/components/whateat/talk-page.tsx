@@ -18,7 +18,7 @@ import {
   Pencil,
   Trash2
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
@@ -1863,7 +1863,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                               isNaver && "text-emerald-700/80",
                               isRecipe && "text-orange-700/80",
                               isStoreLink && "text-slate-700/80"
-                            )}>{post.restaurant?.name || "상세 보기"}</span>
+                            )}>{formatPlaceNameWithRegion(post.restaurant?.name, post.restaurant?.address) || "상세 보기"}</span>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
@@ -1920,7 +1920,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               {/* 식당명 + 별점 한 줄 */}
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[11px] text-muted-foreground font-medium truncate">
-                  {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
+                  {formatPlaceNameWithRegion(post.restaurant?.name, post.restaurant?.address) || (post.type === "homemade" ? "집밥" : "")}
                 </span>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">
