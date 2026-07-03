@@ -1139,6 +1139,21 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             mappedType = "dineout"
             isExplicit = true
           }
+          
+          if ((mappedType === "dineout" || mappedType === "delivery") && meta.placeAddress) {
+            const parts = meta.placeAddress.split(" ")
+            if (parts.length >= 3) {
+              let cityStr = parts[0]
+              if (cityStr.length > 2 && (cityStr.endsWith("시") || cityStr.endsWith("도") || cityStr.endsWith("특별시") || cityStr.endsWith("광역시"))) {
+                cityStr = cityStr.substring(0, 2)
+              } else if (cityStr.length === 4 && cityStr.endsWith("특도")) {
+                cityStr = "제주"
+              }
+              parsedCity = cityStr
+              parsedGu = parts[1]
+              parsedDong = parts.find((p: string) => p.match(/\d*(동|읍|면)$/)) || parts[2]
+            }
+          }
 
           const rawSource = img.source || ""
           let mappedSource: "solo" | "family" | "group" = "solo"

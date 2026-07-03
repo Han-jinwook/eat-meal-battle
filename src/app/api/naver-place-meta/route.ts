@@ -227,7 +227,28 @@ export async function GET(request: NextRequest) {
     else if (isTiktok) brand = 'tiktok';
     else brand = 'generic';
 
-    return NextResponse.json({ title, image, brand });
+    let address = '';
+    if (title && brand !== 'youtube' && brand !== 'generic') {
+      try {
+        const localSearchUrl = `https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(title)}&display=1`;
+        const localRes = await fetch(localSearchUrl, {
+          headers: {
+            "X-Naver-Client-Id": process.env.NAVER_SEARCH_CLIENT_ID || "",
+            "X-Naver-Client-Secret": process.env.NAVER_SEARCH_CLIENT_SECRET || ""
+          }
+        });
+        if (localRes.ok) {
+          const localData = await localRes.json();
+          if (localData.items && localData.items.length > 0) {
+            address = localData.items[0].roadAddress || localData.items[0].address || '';
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch address from Naver Local Search:', e);
+      }
+    }
+
+    return NextResponse.json({ title, image, brand, address });
   } catch (error: any) {
     console.error('Map Link Meta Parsing Error:', error);
     return NextResponse.json({ error: 'Failed to parse metadata', details: error.message }, { status: 500 });

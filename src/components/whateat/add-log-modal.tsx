@@ -374,7 +374,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           } else if (mealType === "외식") {
             setSelectedPlace({
               name: data.title,
-              address: `인천 서구 청라동 (${platformName} 연동)`,
+              address: data.address || `${platformName} 연동`,
               category: "음식점"
             })
             setDeliveryStoreName("")
