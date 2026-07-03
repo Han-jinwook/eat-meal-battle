@@ -125,10 +125,12 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   }
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
-  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number) => {
-    const fetchPlaces = async (lat: number, lng: number) => {
+  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
+    const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
       try {
-        const res = await fetch(`/api/nearby-places?lat=${lat}&lng=${lng}`)
+        const queryParams = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+        if (kw) queryParams.append('keyword', kw)
+        const res = await fetch(`/api/nearby-places?${queryParams.toString()}`)
         if (res.ok) {
           const data = await res.json()
           setNearbyPlaces(data.places || [])
@@ -151,7 +153,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     // 1. 사진 EXIF 등 명시적 좌표가 있으면 브라우저 GPS 생략
     if (paramLat !== undefined && paramLng !== undefined) {
-      fetchPlaces(paramLat, paramLng)
+      fetchPlaces(paramLat, paramLng, keyword)
       return
     }
 
@@ -165,7 +167,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        fetchPlaces(position.coords.latitude, position.coords.longitude)
+        fetchPlaces(position.coords.latitude, position.coords.longitude, keyword)
       },
       (error) => {
         console.error("Geolocation error:", error)
@@ -512,6 +514,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const data = await response.json()
         if (data.menuName) {
           setMenuName(data.menuName)
+          // AI 분석 결과(메뉴명)가 나오면, 외식일 경우 해당 메뉴명으로 장소를 다시 검색합니다.
+          if (mealType === "외식") {
+            loadGpsNearbyPlaces(photoLat, photoLng, data.menuName)
+          }
         }
       } catch (error) {
         console.error("AI Analysis failed:", error)
@@ -897,7 +903,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               <h4 className="font-bold text-xs text-foreground truncate">{place.name}</h4>
                               <p className="text-[10px] text-muted-foreground truncate">{place.address}</p>
                             </div>
-                            <span className="text-[10px] text-primary font-bold shrink-0">{place.distance}</span>
+                            {place.distance && <span className="text-[10px] text-primary font-bold shrink-0">{place.distance}</span>}
                           </button>
                         ))
                       ) : placeSearchQuery ? (
