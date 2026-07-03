@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
       dong = '역삼동'; // fallback
     }
 
-    // 2. Fetch Naver Search results for "${dong} ${keyword || '맛집'}"
-    const searchQuery = keyword ? `${dong} ${keyword}` : `${dong} 맛집`;
-    const searchUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent(searchQuery)}`;
+    // 2. Fetch Naver Search results for "${dong} 식당"
+    const searchQuery = keyword ? `${dong} ${keyword}` : `${dong} 식당`;
+    const searchUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent(searchQuery)}&lat=${lat}&lng=${lng}`;
     const searchRes = await fetch(searchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
