@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     const html = await searchRes.text();
     const placesMap = new Map<string, any>();
 
-    // Scan for "smartplaceImages"
+    // Scan for "address" to find JSON blocks containing place info
     let pos = 0;
     while (true) {
-      const index = html.indexOf('"smartplaceImages"', pos);
+      const index = html.indexOf('"address"', pos);
       if (index === -1) break;
 
       // Extract surrounding brace matching chunk
@@ -97,26 +97,31 @@ export async function GET(request: NextRequest) {
           const category = categoryMatch ? categoryMatch[1] : '음식점';
           let image = imgMatch ? imgMatch[1] : '';
 
-          if (name && address) {
-            image = decodeURIComponent(image).replace(/\\/g, '');
-            if (image && !image.startsWith('http')) {
-              image = 'https:' + image;
+          // Filter out UI noise and ensure valid address
+          if (name && address && name.length > 1 && address.includes(' ')) {
+            if (image) {
+              image = decodeURIComponent(image).replace(/\\/g, '');
+              if (!image.startsWith('http')) {
+                image = 'https:' + image;
+              }
             }
 
-            placesMap.set(name, {
-              name,
-              address: address.includes(' ') ? address : `${dong} ${address}`,
-              category,
-              distance: '300m', // default distance
-              image
-            });
+            if (!placesMap.has(name)) {
+              placesMap.set(name, {
+                name,
+                address: address.includes(' ') ? address : `${dong} ${address}`,
+                category,
+                distance: '300m', // default distance
+                image
+              });
+            }
           }
         } catch (e) {
           // ignore parse errors
         }
       }
 
-      pos = index + 20;
+      pos = index + 9; // move past "address"
     }
 
     const places = Array.from(placesMap.values());
