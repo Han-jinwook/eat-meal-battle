@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { 
   MapPin, 
   Star,
@@ -318,6 +318,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [commentsTrigger, setCommentsTrigger] = useState(0)
   const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
   const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
+  const likesChannelRef = useRef<any>(null)
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
   const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
   const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null)
@@ -497,47 +498,33 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     fetchCommentsForPost()
   }, [expandedComments, commentsTrigger])
 
-  // 실시간 연동 (1) 좋아요: user.id가 바뀌었을 때만 재구독 (댓글창 열림/닫힘에 무관)
+  // 실시간 연동 (1) 좋아요: Broadcast를 사용하여 DB REPLICA IDENTITY 버그 우회
   useEffect(() => {
     const supabase = createClient()
-    // 타임스탬프를 채널명에 포함시켜 재구독 시 기존 채널과 이름 충돌 방지
-    const channelName = `realtime:meal_likes:${user?.id || 'anon'}:${Date.now()}`
+    const channelName = 'public:meal_likes_broadcast'
 
-    const likesChannel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'meal_likes' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newLike = payload.new
-            const isMyLike = user?.id && newLike.user_id === user.id
-            if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
+    const likesChannel = supabase.channel(channelName)
+    likesChannelRef.current = likesChannel
 
-            setPosts(prevPosts => prevPosts.map(p => {
-              if (p.id === newLike.meal_id) {
-                return { ...p, likes: p.likes + 1 }
-              }
-              return p
-            }))
-          } else if (payload.eventType === 'DELETE') {
-            const oldLike = payload.old
-            if (oldLike && oldLike.meal_id) {
-              const isMyLike = user?.id && oldLike.user_id === user.id
-              if (isMyLike) return // 본인의 좋아요 취소는 이미 optimistic update로 반영됨
-
-              setPosts(prevPosts => prevPosts.map(p => {
-                if (p.id === oldLike.meal_id) {
-                  return { ...p, likes: Math.max(0, p.likes - 1) }
-                }
-                return p
-              }))
-            }
-          }
-        }
-      )
+    likesChannel
+      .on('broadcast', { event: 'LIKE' }, (payload) => {
+        const { meal_id, user_id } = payload.payload
+        if (user?.id && user_id === user.id) return // 본인 좋아요는 optimistic update로 반영됨
+        
+        setPosts(prevPosts => prevPosts.map(p => 
+          p.id === meal_id ? { ...p, likes: p.likes + 1 } : p
+        ))
+      })
+      .on('broadcast', { event: 'UNLIKE' }, (payload) => {
+        const { meal_id, user_id } = payload.payload
+        if (user?.id && user_id === user.id) return // 본인 취소는 optimistic update로 반영됨
+        
+        setPosts(prevPosts => prevPosts.map(p => 
+          p.id === meal_id ? { ...p, likes: Math.max(0, p.likes - 1) } : p
+        ))
+      })
       .subscribe((status, err) => {
-        if (err) console.error('[Realtime:meal_likes] Error:', err)
+        if (err) console.error('[Realtime:meal_likes_broadcast] Error:', err)
       })
 
     return () => {
@@ -1277,6 +1264,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             meal_id: postId
           }
         })
+        if (likesChannelRef.current) {
+          likesChannelRef.current.send({
+            type: 'broadcast',
+            event: 'UNLIKE',
+            payload: { meal_id: postId, user_id: user.id }
+          }).catch(console.error)
+        }
       } else {
         // 좋아요 등록 (INSERT)
         await secureWrite({
@@ -1287,6 +1281,13 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             user_id: user.id
           }
         })
+        if (likesChannelRef.current) {
+          likesChannelRef.current.send({
+            type: 'broadcast',
+            event: 'LIKE',
+            payload: { meal_id: postId, user_id: user.id }
+          }).catch(console.error)
+        }
       }
     } catch (err) {
       console.error("Failed to toggle like in database:", err)
