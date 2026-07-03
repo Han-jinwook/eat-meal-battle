@@ -497,11 +497,60 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     fetchCommentsForPost()
   }, [expandedComments, commentsTrigger])
 
-  // 실시간 연동 (Supabase Realtime) 설정: 좋아요 및 댓글 개수/목록 최신화
+  // 실시간 연동 (1) 좋아요: user.id가 바뀌었을 때만 재구독 (댓글창 열림/닫힘에 무관)
   useEffect(() => {
     const supabase = createClient()
+    // 타임스탬프를 채널명에 포함시켜 재구독 시 기존 채널과 이름 충돌 방지
+    const channelName = `realtime:meal_likes:${user?.id || 'anon'}:${Date.now()}`
 
-    // 1. 댓글 개수 실시간 갱신 공통 함수
+    const likesChannel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'meal_likes' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newLike = payload.new
+            const isMyLike = user?.id && newLike.user_id === user.id
+            if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
+
+            setPosts(prevPosts => prevPosts.map(p => {
+              if (p.id === newLike.meal_id) {
+                return { ...p, likes: p.likes + 1 }
+              }
+              return p
+            }))
+          } else if (payload.eventType === 'DELETE') {
+            const oldLike = payload.old
+            if (oldLike && oldLike.meal_id) {
+              const isMyLike = user?.id && oldLike.user_id === user.id
+              if (isMyLike) return // 본인의 좋아요 취소는 이미 optimistic update로 반영됨
+
+              setPosts(prevPosts => prevPosts.map(p => {
+                if (p.id === oldLike.meal_id) {
+                  return { ...p, likes: Math.max(0, p.likes - 1) }
+                }
+                return p
+              }))
+            }
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) console.error('[Realtime:meal_likes] Error:', err)
+      })
+
+    return () => {
+      supabase.removeChannel(likesChannel)
+    }
+  }, [user?.id])
+
+  // 실시간 연동 (2) 댓글/대댓글: expandedComments가 바뀌었을 때만 재구독
+  useEffect(() => {
+    const supabase = createClient()
+    const ts = Date.now()
+
+    // 댓글 개수 실시간 갱신 공통 함수
     const refreshCommentCount = async (mealId: string) => {
       try {
         const { data: commentsData } = await supabase
@@ -522,7 +571,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           count += (repliesCount || 0)
         }
 
-        setPosts(prev => prev.map(p => 
+        setPosts(prev => prev.map(p =>
           p.id === mealId ? { ...p, commentCount: count } : p
         ))
       } catch (err) {
@@ -530,47 +579,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       }
     }
 
-    // 2. meal_likes 테이블 실시간 구독
-    const likesChannel = supabase
-      .channel('realtime:meal_likes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'meal_likes' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newLike = payload.new
-            const isMyLike = user?.id && newLike.user_id === user.id
-            if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
-            
-            setPosts(prevPosts => prevPosts.map(p => {
-              if (p.id === newLike.meal_id) {
-                return { ...p, likes: p.likes + 1 }
-              }
-              return p
-            }))
-          } else if (payload.eventType === 'DELETE') {
-            const oldLike = payload.old
-            if (oldLike && oldLike.meal_id) {
-              const isMyLike = user?.id && oldLike.user_id === user.id
-              if (isMyLike) return // 본인의 좋아요 취소는 이미 optimistic update로 반영됨
-              
-              setPosts(prevPosts => prevPosts.map(p => {
-                if (p.id === oldLike.meal_id) {
-                  return { ...p, likes: Math.max(0, p.likes - 1) }
-                }
-                return p
-              }))
-            }
-          }
-        }
-      )
-      .subscribe((status, err) => {
-        if (err) console.error('[Realtime:meal_likes] Error:', err)
-      })
-
-    // 3. comments 테이블 실시간 구독
     const commentsChannel = supabase
-      .channel('realtime:comments')
+      .channel(`realtime:comments:${ts}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comments' },
@@ -578,10 +588,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           const targetMealId = payload.new?.meal_id || payload.old?.meal_id
           if (!targetMealId) return
 
-          // 댓글 개수 갱신
           refreshCommentCount(targetMealId)
 
-          // 현재 열려있는 댓글창인 경우 댓글 목록 다시 불러오기
           if (expandedComments === targetMealId) {
             setCommentsTrigger(prev => prev + 1)
           }
@@ -591,9 +599,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         if (err) console.error('[Realtime:comments] Error:', err)
       })
 
-    // 4. comment_replies 테이블 실시간 구독
     const repliesChannel = supabase
-      .channel('realtime:comment_replies')
+      .channel(`realtime:comment_replies:${ts}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comment_replies' },
@@ -601,7 +608,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           const commentId = payload.new?.comment_id || payload.old?.comment_id
           if (!commentId) return
 
-          // 부모 댓글의 meal_id 조회
           const { data } = await supabase
             .from("comments")
             .select("meal_id")
@@ -609,10 +615,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             .single()
 
           if (data?.meal_id) {
-            // 댓글 개수 갱신
             refreshCommentCount(data.meal_id)
 
-            // 현재 열려있는 댓글창인 경우 댓글 목록 다시 불러오기
             if (expandedComments === data.meal_id) {
               setCommentsTrigger(prev => prev + 1)
             }
@@ -624,7 +628,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       })
 
     return () => {
-      supabase.removeChannel(likesChannel)
       supabase.removeChannel(commentsChannel)
       supabase.removeChannel(repliesChannel)
     }
