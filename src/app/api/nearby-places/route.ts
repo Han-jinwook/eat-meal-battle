@@ -88,16 +88,25 @@ export async function GET(request: NextRequest) {
             return String.fromCharCode(parseInt(grp, 16));
           });
 
+          const idMatch = decoded.match(/"id"\s*:\s*"([^"]+)"/);
           const nameMatch = decoded.match(/"name"\s*:\s*"([^"]+)"/);
           const titleMatch = decoded.match(/"title"\s*:\s*"([^"]+)"/);
           const addressMatch = decoded.match(/"address"\s*:\s*"([^"]+)"/);
           const categoryMatch = decoded.match(/"category"\s*:\s*"([^"]+)"/);
           const imgMatch = decoded.match(/"smartplaceImages"\s*:\s*\[\s*"([^"]+)"/);
+          const bCatMatch = decoded.match(/"businessCategory"\s*:\s*"([^"]+)"/);
 
+          const id = idMatch ? idMatch[1] : null;
           const name = nameMatch ? nameMatch[1] : (titleMatch ? titleMatch[1] : null);
           const address = addressMatch ? addressMatch[1] : null;
           const category = categoryMatch ? categoryMatch[1] : '음식점';
           let image = imgMatch ? imgMatch[1] : '';
+          const bCat = bCatMatch ? bCatMatch[1] : null;
+
+          // 비식당 업종 제외 (모텔, 숙박, 병원 등)
+          if (bCat && !['restaurant', 'cafe', 'bakery', 'pub', 'bar'].includes(bCat)) {
+            continue;
+          }
 
           // Filter out UI noise and ensure valid address
           if (name && address && name.length > 1 && address.includes(' ')) {
@@ -113,7 +122,8 @@ export async function GET(request: NextRequest) {
                 name,
                 address: address.includes(' ') ? address : `${dong} ${address}`,
                 category,
-                image
+                image,
+                link: id ? `https://m.place.naver.com/restaurant/${id}` : undefined
               });
             }
           }

@@ -125,11 +125,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   }
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
-  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
-    const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
+  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number) => {
+    const fetchPlaces = async (lat: number, lng: number) => {
       try {
         const queryParams = new URLSearchParams({ lat: String(lat), lng: String(lng) })
-        if (kw) queryParams.append('keyword', kw)
         const res = await fetch(`/api/nearby-places?${queryParams.toString()}`)
         if (res.ok) {
           const data = await res.json()
@@ -153,7 +152,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     // 1. 사진 EXIF 등 명시적 좌표가 있으면 브라우저 GPS 생략
     if (paramLat !== undefined && paramLng !== undefined) {
-      fetchPlaces(paramLat, paramLng, keyword)
+      fetchPlaces(paramLat, paramLng)
       return
     }
 
@@ -167,7 +166,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        fetchPlaces(position.coords.latitude, position.coords.longitude, keyword)
+        fetchPlaces(position.coords.latitude, position.coords.longitude)
       },
       (error) => {
         console.error("Geolocation error:", error)
@@ -514,10 +513,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const data = await response.json()
         if (data.menuName) {
           setMenuName(data.menuName)
-          // AI 분석 결과(메뉴명)가 나오면, 외식일 경우 해당 메뉴명으로 장소를 다시 검색합니다.
-          if (mealType === "외식") {
-            loadGpsNearbyPlaces(photoLat, photoLng, data.menuName)
-          }
         }
       } catch (error) {
         console.error("AI Analysis failed:", error)
@@ -893,6 +888,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                             onClick={() => {
                               setSelectedPlace(place)
                               setPlaceSearchQuery("")
+                              if (place.link) {
+                                setRestaurantLink(place.link)
+                              }
                             }}
                             className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0"
                           >
