@@ -886,6 +886,7 @@ export function FamilyPage({
           linkUrl: meta.linkUrl,
           linkThumbnail: meta.linkThumbnail,
           placeName: meta.placeName,
+          placeAddress: meta.placeAddress || "",
           status: img.status
         }
       })
