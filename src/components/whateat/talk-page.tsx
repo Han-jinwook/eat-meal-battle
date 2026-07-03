@@ -542,7 +542,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             const newLike = payload.new
             const isMyLike = user?.id && newLike.user_id === user.id
             console.log("[Realtime:meal_likes] INSERT received. newLike:", newLike, "isMyLike:", isMyLike, "current user.id:", user?.id)
-            console.log("[Realtime:meal_likes] Current posts IDs:", prev.map(p => p.id))
+            console.log("[Realtime:meal_likes] Current posts IDs:", posts.map(p => p.id))
             if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
             
             setPosts(prevPosts => {
