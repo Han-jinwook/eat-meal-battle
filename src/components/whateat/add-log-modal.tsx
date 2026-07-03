@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { toast } from "react-hot-toast"
+import exifr from "exifr"
 
 
 export interface MealLogData {
@@ -90,6 +91,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [locationError, setLocationError] = useState<string>("")
+  const [photoGps, setPhotoGps] = useState<{lat: number, lng: number} | null>(null)
   const [nearbyPlaces, setNearbyPlaces] = useState<SelectedPlace[]>([])
 
   const isEditMode = !!editData
@@ -123,34 +125,47 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   }
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
-  const loadGpsNearbyPlaces = () => {
+  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number) => {
+    const fetchPlaces = async (lat: number, lng: number) => {
+      try {
+        const res = await fetch(`/api/nearby-places?lat=${lat}&lng=${lng}`)
+        if (res.ok) {
+          const data = await res.json()
+          setNearbyPlaces(data.places || [])
+          if (data.places?.length === 0) {
+            setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
+          }
+        } else {
+          setLocationError("서버에서 주변 장소를 가져오지 못했습니다.")
+        }
+      } catch (err) {
+        console.error("Failed to load GPS nearby places:", err)
+        setLocationError("주변 장소 검색 중 오류가 발생했습니다.")
+      } finally {
+        setIsLoadingLocation(false)
+      }
+    }
+
+    setLocationError("")
+    setIsLoadingLocation(true)
+
+    // 1. 사진 EXIF 등 명시적 좌표가 있으면 브라우저 GPS 생략
+    if (paramLat !== undefined && paramLng !== undefined) {
+      fetchPlaces(paramLat, paramLng)
+      return
+    }
+
+    // 2. 명시적 좌표가 없으면 브라우저 현재 위치 사용 (폴백)
     if (!navigator.geolocation) {
       console.warn("Geolocation is not supported by this browser.")
       setLocationError("이 브라우저에서는 위치 기능을 지원하지 않습니다.")
+      setIsLoadingLocation(false)
       return
     }
-    setLocationError("")
-    setIsLoadingLocation(true)
+
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords
-          const res = await fetch(`/api/nearby-places?lat=${latitude}&lng=${longitude}`)
-          if (res.ok) {
-            const data = await res.json()
-            setNearbyPlaces(data.places || [])
-            if (data.places?.length === 0) {
-              setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
-            }
-          } else {
-            setLocationError("서버에서 주변 장소를 가져오지 못했습니다.")
-          }
-        } catch (err) {
-          console.error("Failed to load GPS nearby places:", err)
-          setLocationError("주변 장소 검색 중 오류가 발생했습니다.")
-        } finally {
-          setIsLoadingLocation(false)
-        }
+      (position) => {
+        fetchPlaces(position.coords.latitude, position.coords.longitude)
       },
       (error) => {
         console.error("Geolocation error:", error)
@@ -169,7 +184,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   useEffect(() => {
     if ((mealType === "외식" || mealType === "배달") && isOpen) {
       if (mealType === "외식") {
-        loadGpsNearbyPlaces()
+        loadGpsNearbyPlaces(photoGps?.lat, photoGps?.lng)
       } else if (mealType === "배달") {
         setIsLoadingLocation(true)
         const timer = setTimeout(() => {
@@ -462,8 +477,27 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     if (file) {
       const url = URL.createObjectURL(file)
       setImagePreview(url)
+      
+      // 1. 사진에서 EXIF GPS 추출
+      let photoLat: number | undefined
+      let photoLng: number | undefined
+      try {
+        const gps = await exifr.gps(file)
+        if (gps && gps.latitude && gps.longitude) {
+          setPhotoGps({ lat: gps.latitude, lng: gps.longitude })
+          photoLat = gps.latitude
+          photoLng = gps.longitude
+        } else {
+          setPhotoGps(null)
+        }
+      } catch (err) {
+        console.warn("Failed to extract EXIF:", err)
+        setPhotoGps(null)
+      }
+
+      // 2. 외식일 경우 좌표를 기반으로 식당 로드
       if (mealType === "외식") {
-        loadGpsNearbyPlaces()
+        loadGpsNearbyPlaces(photoLat, photoLng)
       }
 
       setIsAnalyzingAi(true)
@@ -885,7 +919,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         <div className="p-4 text-center flex flex-col items-center justify-center gap-1">
                           <p className="text-xs text-muted-foreground">{locationError || "주변 장소가 없어요"}</p>
                           {locationError && (
-                            <button onClick={loadGpsNearbyPlaces} className="text-[10px] text-orange-500 hover:underline mt-1">
+                            <button onClick={() => loadGpsNearbyPlaces(photoGps?.lat, photoGps?.lng)} className="text-[10px] text-orange-500 hover:underline mt-1">
                               다시 시도하기
                             </button>
                           )}
