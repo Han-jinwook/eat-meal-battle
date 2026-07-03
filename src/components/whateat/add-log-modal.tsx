@@ -89,6 +89,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [locationError, setLocationError] = useState<string>("")
   const [nearbyPlaces, setNearbyPlaces] = useState<SelectedPlace[]>([])
 
   const isEditMode = !!editData
@@ -125,8 +126,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const loadGpsNearbyPlaces = () => {
     if (!navigator.geolocation) {
       console.warn("Geolocation is not supported by this browser.")
+      setLocationError("이 브라우저에서는 위치 기능을 지원하지 않습니다.")
       return
     }
+    setLocationError("")
     setIsLoadingLocation(true)
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -136,15 +139,26 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           if (res.ok) {
             const data = await res.json()
             setNearbyPlaces(data.places || [])
+            if (data.places?.length === 0) {
+              setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
+            }
+          } else {
+            setLocationError("서버에서 주변 장소를 가져오지 못했습니다.")
           }
         } catch (err) {
           console.error("Failed to load GPS nearby places:", err)
+          setLocationError("주변 장소 검색 중 오류가 발생했습니다.")
         } finally {
           setIsLoadingLocation(false)
         }
       },
       (error) => {
         console.error("Geolocation error:", error)
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError("위치 권한이 차단되었습니다. 브라우저 설정에서 허용해주세요.")
+        } else {
+          setLocationError("위치를 가져올 수 없습니다. (PC 등에서는 제한될 수 있음)")
+        }
         setIsLoadingLocation(false)
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -868,8 +882,13 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                           <p className="text-[10px] text-muted-foreground mt-0.5">목록에 없는 식당을 직접 입력해요</p>
                         </button>
                       ) : (
-                        <div className="p-4 text-center">
-                          <p className="text-xs text-muted-foreground">주변 장소가 없어요</p>
+                        <div className="p-4 text-center flex flex-col items-center justify-center gap-1">
+                          <p className="text-xs text-muted-foreground">{locationError || "주변 장소가 없어요"}</p>
+                          {locationError && (
+                            <button onClick={loadGpsNearbyPlaces} className="text-[10px] text-orange-500 hover:underline mt-1">
+                              다시 시도하기
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
