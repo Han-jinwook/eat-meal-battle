@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 30; // 30 seconds
 
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // metres
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
@@ -95,6 +109,8 @@ export async function GET(request: NextRequest) {
           const categoryMatch = decoded.match(/"category"\s*:\s*"([^"]+)"/);
           const imgMatch = decoded.match(/"smartplaceImages"\s*:\s*\[\s*"([^"]+)"/);
           const bCatMatch = decoded.match(/"businessCategory"\s*:\s*"([^"]+)"/);
+          const xMatch = decoded.match(/"x"\s*:\s*"([^"]+)"/);
+          const yMatch = decoded.match(/"y"\s*:\s*"([^"]+)"/);
 
           const id = idMatch ? idMatch[1] : null;
           const name = nameMatch ? nameMatch[1] : (titleMatch ? titleMatch[1] : null);
@@ -117,13 +133,37 @@ export async function GET(request: NextRequest) {
               }
             }
 
+            const px = xMatch ? parseFloat(xMatch[1]) : null;
+            const py = yMatch ? parseFloat(yMatch[1]) : null;
+            
             if (!placesMap.has(name)) {
+              let distStr = undefined;
+              let rawDist = 999999;
+              
+              if (px && py && !isNaN(px) && !isNaN(py) && lat && lng) {
+                const numLat = parseFloat(lat);
+                const numLng = parseFloat(lng);
+                if (!isNaN(numLat) && !isNaN(numLng)) {
+                  rawDist = getDistance(numLat, numLng, py, px);
+                  // Filter out places completely out of bounds (e.g. > 3km)
+                  if (rawDist > 3000) continue;
+                  
+                  if (rawDist < 1000) {
+                    distStr = `${Math.round(rawDist)}m`;
+                  } else {
+                    distStr = `${(rawDist / 1000).toFixed(1)}km`;
+                  }
+                }
+              }
+
               placesMap.set(name, {
                 name,
                 address: address.includes(' ') ? address : `${dong} ${address}`,
                 category,
                 image,
-                link: id ? `https://m.place.naver.com/restaurant/${id}` : undefined
+                link: id ? `https://m.place.naver.com/restaurant/${id}` : undefined,
+                distance: distStr,
+                rawDist
               });
             }
           }
@@ -135,10 +175,12 @@ export async function GET(request: NextRequest) {
       pos = index + 9; // move past "address"
     }
 
-    const places = Array.from(placesMap.values());
-    return NextResponse.json({ places });
+    // Convert map to array and sort by raw distance
+    const sortedPlaces = Array.from(placesMap.values()).sort((a, b) => a.rawDist - b.rawDist);
+
+    return NextResponse.json({ places: sortedPlaces.slice(0, 25) });
   } catch (error) {
-    console.error('Failed to fetch nearby places:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching nearby places:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

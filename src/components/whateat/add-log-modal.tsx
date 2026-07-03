@@ -79,6 +79,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [deliveryStoreName, setDeliveryStoreName] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
   const [linkThumbnail, setLinkThumbnail] = useState("")
+  const [visiblePlacesCount, setVisiblePlacesCount] = useState(10)
   const [isCrawlingLink, setIsCrawlingLink] = useState(false)
   const [linkBrand, setLinkBrand] = useState<"naver" | "kakao" | "google">("naver")
   const [recipeTitle, setRecipeTitle] = useState("")
@@ -125,14 +126,16 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   }
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
-  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number) => {
-    const fetchPlaces = async (lat: number, lng: number) => {
+  const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
+    const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
       try {
         const queryParams = new URLSearchParams({ lat: String(lat), lng: String(lng) })
+        if (kw) queryParams.append('keyword', kw)
         const res = await fetch(`/api/nearby-places?${queryParams.toString()}`)
         if (res.ok) {
           const data = await res.json()
           setNearbyPlaces(data.places || [])
+          setVisiblePlacesCount(10)
           if (data.places?.length === 0) {
             setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
           }
@@ -152,7 +155,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     // 1. 사진 EXIF 등 명시적 좌표가 있으면 브라우저 GPS 생략
     if (paramLat !== undefined && paramLng !== undefined) {
-      fetchPlaces(paramLat, paramLng)
+      fetchPlaces(paramLat, paramLng, keyword)
       return
     }
 
@@ -166,7 +169,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        fetchPlaces(position.coords.latitude, position.coords.longitude)
+        fetchPlaces(position.coords.latitude, position.coords.longitude, keyword)
       },
       (error) => {
         console.error("Geolocation error:", error)
@@ -513,6 +516,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const data = await response.json()
         if (data.menuName) {
           setMenuName(data.menuName)
+          // AI 분석 결과(메뉴명)가 나오면, 외식일 경우 해당 메뉴명으로 장소를 다시 검색합니다.
+          if (mealType === "외식") {
+            loadGpsNearbyPlaces(photoLat, photoLng, data.menuName)
+          }
         }
       } catch (error) {
         console.error("AI Analysis failed:", error)
@@ -882,28 +889,38 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     </div>
                     <div>
                       {filteredPlaces.length > 0 ? (
-                        filteredPlaces.map((place, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setSelectedPlace(place)
-                              setPlaceSearchQuery("")
-                              if (place.link) {
-                                setLinkUrl(place.link)
-                              }
-                            }}
-                            className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0"
-                          >
-                            <div className="size-8 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
-                              <MapPin className="size-4 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-xs text-foreground truncate">{place.name}</h4>
-                              <p className="text-[10px] text-muted-foreground truncate">{place.address}</p>
-                            </div>
-                            {place.distance && <span className="text-[10px] text-primary font-bold shrink-0">{place.distance}</span>}
-                          </button>
-                        ))
+                        <>
+                          {filteredPlaces.slice(0, visiblePlacesCount).map((place, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setSelectedPlace(place)
+                                setPlaceSearchQuery("")
+                                if (place.link) {
+                                  setLinkUrl(place.link)
+                                }
+                              }}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-orange-50/50 transition-colors text-left border-b border-gray-50 last:border-0"
+                            >
+                              <div className="size-8 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                                <MapPin className="size-4 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-xs text-foreground truncate">{place.name}</h4>
+                                <p className="text-[10px] text-muted-foreground truncate">{place.address}</p>
+                              </div>
+                              {place.distance && <span className="text-[10px] text-primary font-bold shrink-0">{place.distance}</span>}
+                            </button>
+                          ))}
+                          {visiblePlacesCount < filteredPlaces.length && (
+                            <button
+                              onClick={() => setVisiblePlacesCount(prev => prev + 10)}
+                              className="w-full p-3 text-xs text-primary font-bold hover:bg-orange-50/50 transition-colors text-center"
+                            >
+                              검색 결과 더보기 ({filteredPlaces.length - visiblePlacesCount}개)
+                            </button>
+                          )}
+                        </>
                       ) : placeSearchQuery ? (
                         <button
                           onClick={() => {
