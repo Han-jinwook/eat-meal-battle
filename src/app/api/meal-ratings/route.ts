@@ -134,36 +134,6 @@ export async function POST(request: Request) {
     // 평균 평점 업데이트
     await updateMealAverageRating(meal_id);
     
-    // 🔥 급식배틀 계산 트리거
-    try {
-      console.log('🏆 급식배틀 계산 트리거 시작...');
-      
-      // 해당 급식의 날짜 정보 조회
-      const { data: mealData, error: mealError } = await supabaseAdmin
-        .from('meal_menus')
-        .select('meal_date, school_code')
-        .eq('id', meal_id)
-        .single();
-        
-      console.log('📊 급식 데이터 조회 결과:', { mealError, mealData });
-        
-      if (!mealError && mealData) {
-        const mealDate = mealData.meal_date;
-        const schoolCode = mealData.school_code;
-        
-        console.log(`📅 급식배틀 계산 대상: 날짜=${mealDate}, 학교=${schoolCode}`);
-        
-        // 급식배틀 계산 기능 제거됨
-        console.log('급식배틀 계산 기능이 제거되었습니다.');
-      } else {
-        console.log('❌ 급식 데이터 조회 실패 또는 데이터 없음');
-      }
-    } catch (battleError) {
-      console.error('❌ 급식배틀 계산 중 오류 (평점 저장은 성공):', battleError);
-      console.error('🔍 오류 스택:', battleError.stack);
-      // 배틀 계산 실패해도 평점 저장은 성공으로 처리
-    }
-    
     return NextResponse.json({ 
       success: true,
       message: '급식 평점이 성공적으로 저장되었습니다'
@@ -209,13 +179,6 @@ export async function DELETE(request: Request) {
       );
     }
     
-    // 배틀 계산을 위해 먼저 급식 정보 조회
-    const { data: mealData, error: mealError } = await supabaseAdmin
-      .from('meal_menus')
-      .select('meal_date, school_code')
-      .eq('id', meal_id)
-      .single();
-    
     // 평점 삭제
     const { error } = await supabaseAdmin
       .from('meal_ratings')
@@ -233,22 +196,6 @@ export async function DELETE(request: Request) {
     
     // 평균 평점 업데이트
     await updateMealAverageRating(meal_id);
-    
-    // 🔥 급식배틀 계산 트리거
-    try {
-      console.log('🏆 급식배틀 계산 트리거 시작 (삭제)...');
-      
-      if (!mealError && mealData) {
-        const mealDate = mealData.meal_date;
-        const schoolCode = mealData.school_code;
-        
-        // 급식배틀 계산 기능 제거됨
-        console.log('급식배틀 계산 기능이 제거되었습니다.');
-      }
-    } catch (battleError) {
-      console.error('⚠️ 급식배틀 계산 중 오류 (평점 삭제는 성공):', battleError);
-      // 배틀 계산 실패해도 평점 삭제는 성공으로 처리
-    }
     
     return NextResponse.json({ 
       success: true,

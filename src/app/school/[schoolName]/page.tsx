@@ -58,8 +58,7 @@ export default async function SchoolPage({ params }: Props) {
     }
 
     // 기존 메인 페이지로 리다이렉트 (school_code와 school_name 포함)
-    const redirectUrl = `/?school_code=${school.school_code}&school_name=${encodeURIComponent(school.school_name)}`
-    redirect(redirectUrl)
+    redirect('/')
     
   } catch (error) {
     console.error('학교 페이지 오류:', error)

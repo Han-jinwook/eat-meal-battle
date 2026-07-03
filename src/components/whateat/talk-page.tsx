@@ -537,40 +537,54 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'meal_likes' },
         (payload) => {
+          console.log("[Realtime:meal_likes] Event received:", payload)
           if (payload.eventType === 'INSERT') {
             const newLike = payload.new
             const isMyLike = user?.id && newLike.user_id === user.id
+            console.log("[Realtime:meal_likes] INSERT received. newLike:", newLike, "isMyLike:", isMyLike, "current user.id:", user?.id)
+            console.log("[Realtime:meal_likes] Current posts IDs:", prev.map(p => p.id))
             if (isMyLike) return // 본인의 좋아요 등록은 이미 optimistic update로 반영됨
             
-            setPosts(prev => prev.map(p => {
-              if (p.id === newLike.meal_id) {
-                return {
-                  ...p,
-                  likes: p.likes + 1
+            setPosts(prevPosts => {
+              const matched = prevPosts.some(p => p.id === newLike.meal_id)
+              console.log("[Realtime:meal_likes] Match found for INSERT:", matched)
+              return prevPosts.map(p => {
+                if (p.id === newLike.meal_id) {
+                  return {
+                    ...p,
+                    likes: p.likes + 1
+                  }
                 }
-              }
-              return p
-            }))
+                return p
+              })
+            })
           } else if (payload.eventType === 'DELETE') {
             const oldLike = payload.old
+            console.log("[Realtime:meal_likes] DELETE received. oldLike:", oldLike, "current user.id:", user?.id)
             if (oldLike && oldLike.meal_id) {
               const isMyLike = user?.id && oldLike.user_id === user.id
               if (isMyLike) return // 본인의 좋아요 취소는 이미 optimistic update로 반영됨
               
-              setPosts(prev => prev.map(p => {
-                if (p.id === oldLike.meal_id) {
-                  return {
-                    ...p,
-                    likes: Math.max(0, p.likes - 1)
+              setPosts(prevPosts => {
+                const matched = prevPosts.some(p => p.id === oldLike.meal_id)
+                console.log("[Realtime:meal_likes] Match found for DELETE:", matched)
+                return prevPosts.map(p => {
+                  if (p.id === oldLike.meal_id) {
+                    return {
+                      ...p,
+                      likes: Math.max(0, p.likes - 1)
+                    }
                   }
-                }
-                return p
-              }))
+                  return p
+                })
+              })
             }
           }
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log(`[Realtime:meal_likes] Status: ${status}`, err || '')
+      })
 
     // 3. comments 테이블 실시간 구독
     const commentsChannel = supabase
@@ -579,6 +593,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comments' },
         async (payload) => {
+          console.log("[Realtime:comments] Event received:", payload)
           const targetMealId = payload.new?.meal_id || payload.old?.meal_id
           if (!targetMealId) return
 
@@ -591,7 +606,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log(`[Realtime:comments] Status: ${status}`, err || '')
+      })
 
     // 4. comment_replies 테이블 실시간 구독
     const repliesChannel = supabase
@@ -600,6 +617,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comment_replies' },
         async (payload) => {
+          console.log("[Realtime:comment_replies] Event received:", payload)
           const commentId = payload.new?.comment_id || payload.old?.comment_id
           if (!commentId) return
 
@@ -621,7 +639,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log(`[Realtime:comment_replies] Status: ${status}`, err || '')
+      })
 
     return () => {
       supabase.removeChannel(likesChannel)
@@ -1221,7 +1241,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     if (isActive !== false) {
       fetchDbPosts()
     }
-  }, [isActive])
+  }, [isActive, isLoggedIn, user?.id])
 
   const userAddress = {
     dong: userAddressState.dong,
