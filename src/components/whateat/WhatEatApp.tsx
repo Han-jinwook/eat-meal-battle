@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 import MealWrapper from "@/app/client-wrapper"
 import { useHub, HubShareSquare, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { HomeOnboarding } from "@/components/whateat/home-onboarding"
-import PWAInstallPrompt from "@/components/PWAInstallPrompt"
+import { HubPWAInstallPrompt } from "@/services/merlin-hub-sdk/react"
 
 function LoginNudge({ 
   title, 
@@ -439,7 +439,7 @@ export default function WhatEatApp() {
         </div>
       )}
 
-      <PWAInstallPrompt />
+      <HubPWAInstallPrompt />
     </div>
   )
 }
