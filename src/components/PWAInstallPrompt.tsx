@@ -13,9 +13,13 @@ export default function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // 모바일 기기 여부 확인 (PC/데스크톱에서는 설치 권장 안내를 띄우지 않음)
+    // 1차 차단: 모바일 기기 여부 확인 (PC/데스크톱에서는 설치 권장 안내를 띄우지 않음)
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) {
+    
+    // 2차 강력 차단: UserAgent가 변조되었더라도 화면 가로폭이 768px 초과(PC/태블릿 가로)면 절대 띄우지 않음
+    const isDesktopScreen = window.innerWidth > 768;
+    
+    if (!isMobile || isDesktopScreen) {
       return;
     }
 
