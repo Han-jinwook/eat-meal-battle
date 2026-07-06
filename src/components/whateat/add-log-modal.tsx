@@ -1196,12 +1196,14 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                             {mealType === "배달" ? deliveryStoreName : selectedPlace?.name}
                           </h5>
                           <p className={cn(
-                            "text-[10px] font-medium",
+                            "text-[10px] font-medium truncate",
                             linkBrand === "kakao" && "text-amber-700/70",
                             linkBrand === "google" && "text-blue-700/60",
                             linkBrand === "naver" && "text-green-700/60"
                           )}>
-                            {linkBrand === "kakao" ? "카카오맵 연동 완료" : linkBrand === "google" ? "구글 지도 연동 완료" : "네이버 플레이스 연동 완료"}
+                            {mealType === "외식" && selectedPlace?.address
+                              ? selectedPlace.address
+                              : linkBrand === "kakao" ? "카카오맵 연동 완료" : linkBrand === "google" ? "구글 지도 연동 완료" : "네이버 플레이스 연동 완료"}
                           </p>
                         </div>
                       </div>
