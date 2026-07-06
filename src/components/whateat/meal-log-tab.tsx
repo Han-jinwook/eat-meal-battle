@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
@@ -1138,7 +1138,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       recipeType: isUrl ? "url" : "manual",
       linkUrl: meal.linkUrl,
       linkThumbnail: meal.linkThumbnail || "",
-      place: meal.placeName ? { name: meal.placeName, address: "", category: "" } : undefined
+      deliveryStoreName: meal.type === "배달" ? meal.placeName : undefined,
+      place: meal.placeName ? { name: meal.placeName, address: meal.placeAddress || "", category: "" } : undefined
     }
     setEditingMeal(editData)
     setEditModalOpen(true)
@@ -1734,25 +1735,29 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               </div>
             </div>
 
-            {/* Naver Place info bar - 외식/배달 with link */}
-            {(meal.type === "외식" || meal.type === "배달") && meal.linkUrl && meal.placeName && (
-              <a
-                href={meal.linkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 hover:bg-gray-100/60 transition-all group"
+            {/* Place info bar - 외식/배달 */}
+            {(meal.type === "외식" || meal.type === "배달") && meal.placeName && (
+              <div
+                className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+                onClick={() => { if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer') }}
               >
-                <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
-                  <span className="text-white text-[8px] font-black">N</span>
-                </div>
+                {meal.linkUrl ? (
+                  <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                    <span className="text-white text-[8px] font-black">N</span>
+                  </div>
+                ) : (
+                  <div className="size-5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
+                    <MapPin className="size-3 text-orange-500" />
+                  </div>
+                )}
                 <span className="text-[11px] font-bold text-foreground truncate">{formatPlaceNameWithRegion(meal.placeName, meal.placeAddress)}</span>
                 {meal.placeRating && (
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0 ml-auto">
                     <Star className="size-2.5 text-[#03C75A] fill-[#03C75A]" />
                     <span className="text-[11px] font-bold text-[#03C75A]">{meal.placeRating}</span>
                   </div>
                 )}
-              </a>
+              </div>
             )}
 
             {/* Card Footer */}

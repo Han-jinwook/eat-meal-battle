@@ -257,29 +257,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       place.address.toLowerCase().includes(placeSearchQuery.toLowerCase())
     )
 
-    if (placeSearchQuery.trim() !== "" && filtered.length === 0) {
-      const query = placeSearchQuery.trim()
-      return [
-        {
-          name: `${query} 역삼점`,
-          address: "서울 강남구 역삼동 735-11",
-          category: "음식점",
-          distance: "150m"
-        },
-        {
-          name: `명가 ${query} 강남본점`,
-          address: "서울 강남구 역삼동 812-4",
-          category: "음식점",
-          distance: "280m"
-        },
-        {
-          name: `전통 ${query} 역삼역점`,
-          address: "서울 강남구 역삼동 641-8",
-          category: "음식점",
-          distance: "410m"
-        }
-      ]
-    }
     return filtered
   })()
 
@@ -534,6 +511,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       document.body.classList.add("modal-open")
     } else {
       document.body.classList.remove("modal-open")
+      setNearbyPlaces([])
+      setNearbyDeliveryStores([])
+      setPhotoGps(null)
+      setLocationError("")
+      setIsLoadingLocation(true)
     }
     return () => {
       document.body.classList.remove("modal-open")

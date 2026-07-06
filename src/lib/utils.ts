@@ -60,6 +60,9 @@ export function formatPlaceNameWithRegion(name?: string, address?: string) {
   const dong = parts.find(p => p.match(/\d*(동|읍|면)$/));
   
   if (city && dong) {
+    if (city === dong) {
+      return `${name} (${dong})`;
+    }
     return `${name} (${city}/${dong})`;
   }
   
