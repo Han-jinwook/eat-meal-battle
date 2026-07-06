@@ -347,7 +347,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
           if (mealType === "배달") {
             setDeliveryStoreName(data.title)
-            setSelectedPlace(null)
+            setSelectedPlace({
+              name: data.title,
+              address: data.address || "",
+              category: "음식점"
+            })
           } else if (mealType === "외식") {
             setSelectedPlace({
               name: data.title,
@@ -1143,8 +1147,12 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                           setLinkUrl(""); 
                           setLinkThumbnail(""); 
                           setLastCrawledUrl("");
-                          if (mealType === "배달") setDeliveryStoreName("");
-                          else if (mealType === "외식") setSelectedPlace(null);
+                          if (mealType === "배달") {
+                            setDeliveryStoreName("");
+                            setSelectedPlace(null);
+                          } else if (mealType === "외식") {
+                            setSelectedPlace(null);
+                          }
                         }} 
                         className={cn(
                           "shrink-0 size-5 rounded flex items-center justify-center transition-colors",
@@ -1201,7 +1209,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                             linkBrand === "google" && "text-blue-700/60",
                             linkBrand === "naver" && "text-green-700/60"
                           )}>
-                            {mealType === "외식" && selectedPlace?.address
+                            {selectedPlace?.address
                               ? selectedPlace.address
                               : linkBrand === "kakao" ? "카카오맵 연동 완료" : linkBrand === "google" ? "구글 지도 연동 완료" : "네이버 플레이스 연동 완료"}
                           </p>
