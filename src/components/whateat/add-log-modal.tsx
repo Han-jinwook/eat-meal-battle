@@ -374,7 +374,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           } else if (mealType === "외식") {
             setSelectedPlace({
               name: data.title,
-              address: data.address || `${platformName} 연동`,
+              address: data.address || "",
               category: "음식점"
             })
             setDeliveryStoreName("")
@@ -1252,7 +1252,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     const finalLinkThumbnail = isRecipeUrl ? recipeThumbnail : (linkThumbnail || undefined)
                     const finalRecipe = isRecipeUrl ? recipeContent : (recipeInputType === "manual" ? recipeContent : undefined)
                     const finalPlace = isRecipeUrl 
-                      ? { name: recipeTitle || "레시피 영상", address: "레시피 연동", category: "레시피" }
+                      ? { name: recipeTitle || "레시피 영상", address: "", category: "레시피" }
                       : (selectedPlace || undefined)
 
                     const data: MealLogData = {

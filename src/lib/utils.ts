@@ -45,6 +45,10 @@ export function formatPlaceNameWithRegion(name?: string, address?: string) {
   const parts = address.split(" ");
   let city = parts[0];
   
+  if (["N플레이스", "카카오맵", "구글", "레시피", "유튜브", "인스타그램", "틱톡"].includes(city)) {
+    return name;
+  }
+  
   // Simplify city names (e.g., 서울특별시 -> 서울, 인천광역시 -> 인천)
   if (city.length > 2 && (city.endsWith("시") || city.endsWith("도") || city.endsWith("특별시") || city.endsWith("광역시"))) {
     city = city.substring(0, 2);
