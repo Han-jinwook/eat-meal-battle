@@ -792,6 +792,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   const [focusedMealId, setFocusedMealId] = useState<number | null>(null)
+  const [isSharingModalSubmitting, setIsSharingModalSubmitting] = useState(false)
   const [expandedMemoId, setExpandedMemoId] = useState<number | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [soloCommentLikes, setSoloCommentLikes] = useState<Record<string, boolean>>({})
@@ -1936,11 +1937,12 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             
             <div className="flex gap-2">
               <button
+                disabled={isSharingModalSubmitting}
                 onClick={async () => {
                   if (rememberSharePref) {
                     localStorage.setItem("whateat_auto_share_5star", "approved")
                   }
-                  setShareConsentModalOpen(false)
+                  setIsSharingModalSubmitting(true)
                   if (pendingShareData) {
                     const hasRegion = userRegion ? (() => {
                       try {
@@ -1957,16 +1959,22 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                       await upload5StarMealToSupabase(pendingShareData.logData, pendingShareData.imageUrl)
                       setTimeout(() => {
                         window.dispatchEvent(new CustomEvent("navigateToTalk"))
+                        setShareConsentModalOpen(false)
+                        setIsSharingModalSubmitting(false)
                       }, 100)
                       setPendingShareData(null)
                     }
+                  } else {
+                    setShareConsentModalOpen(false)
+                    setIsSharingModalSubmitting(false)
                   }
                 }}
-                className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                className="flex-1 py-2.5 flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                승낙 (공개)
+                {isSharingModalSubmitting ? <Loader2 className="size-4 animate-spin" /> : "승낙 (공개)"}
               </button>
               <button
+                disabled={isSharingModalSubmitting}
                 onClick={() => {
                   if (rememberSharePref) {
                     localStorage.setItem("whateat_auto_share_5star", "rejected")
@@ -1974,7 +1982,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   setShareConsentModalOpen(false)
                   setPendingShareData(null)
                 }}
-                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 거절 (비공개)
               </button>

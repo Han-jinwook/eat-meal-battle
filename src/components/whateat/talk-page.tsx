@@ -1764,7 +1764,14 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <MapPin className="size-3 text-muted-foreground" />
-                    <span className="text-[11px] text-muted-foreground">{post.author.region}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {(post.type === "dineout" || post.type === "delivery") && post.placeAddress
+                        ? (() => {
+                            const parsed = parseRegionFromAddress(post.placeAddress)
+                            return `${parsed.city}/${parsed.dong}`
+                          })()
+                        : post.author.region}
+                    </span>
                     <span className="text-[10px] text-muted-foreground/50">·</span>
                     <span className="text-[10px] text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
                   </div>
