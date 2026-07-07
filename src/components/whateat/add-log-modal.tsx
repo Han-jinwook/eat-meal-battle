@@ -742,11 +742,15 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                       </button>
                     </div>
                   </div>
-                ) : isLoadingLocation ? (
+                ) : (isLoadingLocation || isCrawlingLink || isAnalyzingAi) ? (
                   <div className="p-6 bg-white border-2 border-gray-100 rounded-xl">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="size-6 text-primary animate-spin" />
-                      <p className="text-xs text-muted-foreground">배달 히스토리 식당을 불러오고 있어요...</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isCrawlingLink ? "링크 정보를 분석하고 있어요..." : 
+                         isAnalyzingAi ? "음식 사진을 분석하고 있어요..." : 
+                         "배달 히스토리 식당을 불러오고 있어요..."}
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -839,11 +843,15 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                       </button>
                     </div>
                   </div>
-                ) : isLoadingLocation ? (
+                ) : (isLoadingLocation || isCrawlingLink || isAnalyzingAi) ? (
                   <div className="p-6 bg-white border-2 border-gray-100 rounded-xl">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="size-6 text-primary animate-spin" />
-                      <p className="text-xs text-muted-foreground">현재 위치를 찾고 있어요...</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isCrawlingLink ? "링크 정보를 분석하고 있어요..." : 
+                         isAnalyzingAi ? "음식 사진을 분석하고 있어요..." : 
+                         "현재 위치를 찾고 있어요..."}
+                      </p>
                     </div>
                   </div>
                 ) : (
