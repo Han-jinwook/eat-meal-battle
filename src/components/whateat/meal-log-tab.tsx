@@ -627,7 +627,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             linkUrl: img.link_url || meta.linkUrl || "",
             linkThumbnail: img.link_thumbnail || meta.linkThumbnail || "",
             placeName: img.place_name || meta.placeName || "",
-            placeAddress: meta.placeAddress || "",
+            placeAddress: img.place_address || meta.placeAddress || "",
             aiTag: img.source === "solo-5star" || img.source === "solo",
             healthy: mappedType === "집밥",
             status: img.status,

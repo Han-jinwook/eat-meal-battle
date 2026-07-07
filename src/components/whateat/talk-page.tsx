@@ -261,9 +261,26 @@ const categoryOptions = [
 
 export function formatRegionStr(city: string, gu: string, dong: string) {
   const parts = []
-  if (city) parts.push(city)
-  if (gu && gu !== city) parts.push(gu)
-  if (dong) parts.push(dong)
+  if (city) {
+    let c = city
+    if (c.length >= 3 && (c.endsWith("광역시") || c.endsWith("특별시") || c.endsWith("자치시") || c.endsWith("자치도"))) {
+      c = c.substring(0, 2)
+    } else if (c.endsWith("도") || c.endsWith("시")) {
+      c = c.substring(0, c.length - 1)
+    }
+    if (c === "서울특별") c = "서울"
+    parts.push(c)
+  }
+  if (gu && gu !== city) {
+    parts.push(gu)
+  }
+  if (dong) {
+    let d = dong
+    if (d.endsWith("동") || d.endsWith("읍") || d.endsWith("면")) {
+      d = d.substring(0, d.length - 1)
+    }
+    parts.push(d)
+  }
   return parts.join("/")
 }
 
@@ -1148,19 +1165,12 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             isExplicit = true
           }
           
-          if ((mappedType === "dineout" || mappedType === "delivery") && meta.placeAddress) {
-            const parts = meta.placeAddress.split(" ")
-            if (parts.length >= 3) {
-              let cityStr = parts[0]
-              if (cityStr.length > 2 && (cityStr.endsWith("시") || cityStr.endsWith("도") || cityStr.endsWith("특별시") || cityStr.endsWith("광역시"))) {
-                cityStr = cityStr.substring(0, 2)
-              } else if (cityStr.length === 4 && cityStr.endsWith("특도")) {
-                cityStr = "제주"
-              }
-              parsedCity = cityStr
-              parsedGu = parts[1]
-              parsedDong = parts.find((p: string) => p.match(/\d*(동|읍|면)$/)) || parts[2]
-            }
+          const actualPlaceAddress = img.place_address || meta.placeAddress || ""
+          if ((mappedType === "dineout" || mappedType === "delivery") && actualPlaceAddress) {
+            const parsed = parseRegionFromAddress(actualPlaceAddress, parsedCity, parsedGu, parsedDong)
+            parsedCity = parsed.city
+            parsedGu = parsed.gu
+            parsedDong = parsed.dong
           }
 
           const rawSource = img.source || ""
