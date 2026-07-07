@@ -1148,7 +1148,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                           setLinkThumbnail(""); 
                           setLastCrawledUrl("");
                           if (mealType === "배달") {
-                            setDeliveryStoreName("");
                             setSelectedPlace(null);
                           } else if (mealType === "외식") {
                             setSelectedPlace(null);

@@ -78,6 +78,8 @@ export async function GET(request: NextRequest) {
     const finalUrl = res.url;
     let title = '';
     let image = '';
+    let address = '';
+    let html = '';
     
     const isNaver = finalUrl.includes('naver.com') || decodedUrl.includes('naver.com') || decodedUrl.includes('naver.me');
     const isKakao = finalUrl.includes('kakao.com') || decodedUrl.includes('kakao.com') || decodedUrl.includes('kko.to');
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
     const isInstagram = finalUrl.includes('instagram.com') || decodedUrl.includes('instagram.com');
     const isTiktok = finalUrl.includes('tiktok.com') || decodedUrl.includes('tiktok.com');
 
-    let html = '';
+
     const getHtml = async () => {
       if (!html) {
         html = await res.text();
@@ -112,6 +114,14 @@ export async function GET(request: NextRequest) {
           title = titleMatch ? titleMatch[1].replace(/\s*:\s*네이버.*/, '').trim() : '';
           const imgMatch = pcHtml.match(/https:\/\/search\.pstatic\.net\/common\/[^"'\s]*/i);
           image = imgMatch ? imgMatch[0].replace(/&amp;/g, '&').replace(/["'\s]/g, '') : '';
+          
+          const roadAddrMatch = pcHtml.match(/"roadAddress"\s*:\s*"([^"]+)"/i) || pcHtml.match(/roadAddress\\?"\s*:\s*\\?"([^"]+)\\?"/i);
+          const addrMatch = pcHtml.match(/"address"\s*:\s*"([^"]+)"/i) || pcHtml.match(/address\\?"\s*:\s*\\?"([^"]+)\\?"/i);
+          if (roadAddrMatch && roadAddrMatch[1]) {
+            address = roadAddrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
+          } else if (addrMatch && addrMatch[1]) {
+            address = addrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
+          }
         }
       }
     }
@@ -227,8 +237,7 @@ export async function GET(request: NextRequest) {
     else if (isTiktok) brand = 'tiktok';
     else brand = 'generic';
 
-    let address = '';
-    if (title && brand !== 'youtube' && brand !== 'generic') {
+    if (!address && title && brand !== 'youtube' && brand !== 'generic') {
       try {
         const localSearchUrl = `https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(title)}&display=1`;
         const localRes = await fetch(localSearchUrl, {
