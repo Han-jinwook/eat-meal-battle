@@ -56,25 +56,27 @@ export function formatPlaceNameWithRegion(name?: string, address?: string) {
     city = "제주";
   }
   
-  // Find Dong, Eup, or Myeon, or Gu, Gun
-  let region = parts.find(p => p.match(/\d*(동|읍|면)\)?$/));
-  if (region) {
-    region = region.replace(/[()]/g, '');
+  let gu = parts.find(p => p.match(/\d*(구|군)$/));
+  if (gu) {
+    gu = gu.replace(/[()]/g, '');
+  }
+
+  // Find Dong, Eup, or Myeon
+  let dong = parts.find(p => p.match(/\d*(동|읍|면)\)?$/));
+  if (dong) {
+    dong = dong.replace(/[()]/g, '');
   }
   
-  if (!region && parts.length >= 2) {
-    // If no dong/eup/myeon, try to use gu/gun or the second part
-    region = parts.find(p => p.match(/\d*(구|군)$/)) || parts[1];
-    if (region) {
-      region = region.replace(/[()]/g, '');
-    }
-  }
-  
-  if (city && region) {
-    if (city === region) {
-      return `${name} (${region})`;
-    }
-    return `${name} (${city}/${region})`;
+  const regionParts = [city];
+  if (gu && gu !== city) regionParts.push(gu);
+  if (dong && dong !== gu && dong !== city) regionParts.push(dong);
+
+  if (regionParts.length > 1) {
+    return `${name} (${regionParts.join("/")})`;
+  } else if (regionParts.length === 1 && parts.length >= 2) {
+    // If no gu or dong found, try to use the second part as fallback
+    let fallback = parts[1].replace(/[()]/g, '');
+    return `${name} (${city}/${fallback})`;
   }
   
   return name;
