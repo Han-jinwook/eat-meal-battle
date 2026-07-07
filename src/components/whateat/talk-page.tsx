@@ -1165,7 +1165,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             isExplicit = true
           }
           
-          const actualPlaceAddress = img.place_address || meta.placeAddress || ""
+          const actualPlaceAddress = (img.place_address && img.place_address.trim() !== "") ? img.place_address : (meta.placeAddress || "")
           if ((mappedType === "dineout" || mappedType === "delivery") && actualPlaceAddress) {
             const parsed = parseRegionFromAddress(actualPlaceAddress, parsedCity, parsedGu, parsedDong)
             parsedCity = parsed.city
@@ -1199,8 +1199,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               city: parsedCity
             },
             restaurant: (mappedType === "dineout" || mappedType === "delivery") ? {
-              name: meta.placeName || "맛집",
-              address: meta.placeAddress || ""
+              name: img.place_name || meta.placeName || "맛집",
+              address: actualPlaceAddress
             } : undefined,
             author: {
               id: img.uploaded_by,
@@ -1783,9 +1783,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <MapPin className="size-3 text-muted-foreground" />
                     <span className="text-[11px] text-muted-foreground">
-                      {(post.type === "dineout" || post.type === "delivery") && post.placeAddress
+                      {(post.type === "dineout" || post.type === "delivery") && post.restaurant?.address
                         ? (() => {
-                            const parsed = parseRegionFromAddress(post.placeAddress)
+                            const parsed = parseRegionFromAddress(post.restaurant.address)
                             return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
                           })()
                         : post.author.region}
