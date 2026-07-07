@@ -259,33 +259,41 @@ const categoryOptions = [
   { id: "dineout", label: "외식" },
 ]
 
+export function formatRegionStr(city: string, gu: string, dong: string) {
+  const parts = []
+  if (city) parts.push(city)
+  if (gu && gu !== city) parts.push(gu)
+  if (dong) parts.push(dong)
+  return parts.join("/")
+}
+
 function parseRegionFromAddress(address: string, defaultCity = "인천", defaultGu = "서구", defaultDong = "청라동") {
   if (!address) return { city: defaultCity, gu: defaultGu, dong: defaultDong }
   const parts = address.split(/\s+/)
   let city = defaultCity
-  let gu = defaultGu
-  let dong = defaultDong
+  let gu = ""
+  let dong = ""
 
   if (parts.length > 0) {
     const p0 = parts[0]
-    if (p0.endsWith("시") || p0.endsWith("도")) {
+    if (p0.endsWith("시") || p0.endsWith("도") || p0.endsWith("특별자치시") || p0.endsWith("광역시")) {
       city = p0.substring(0, 2)
     } else {
       city = p0
     }
   }
-  if (parts.length > 1) {
-    const p1 = parts[1]
-    if (p1.endsWith("구") || p1.endsWith("군")) {
-      gu = p1
+  for (const part of parts.slice(1)) {
+    if (part.endsWith("구") || part.endsWith("군") || part.endsWith("시")) {
+      if (!gu) gu = part
     }
-  }
-  for (const part of parts) {
     if (part.endsWith("동") || part.endsWith("읍") || part.endsWith("면")) {
       dong = part
       break
     }
   }
+
+  if (!gu) gu = defaultGu
+  if (!dong) dong = defaultDong
 
   return { city, gu, dong }
 }
@@ -1188,7 +1196,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               id: img.uploaded_by,
               nickname: meta.familyName || u?.nickname || "익명 회원",
               avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-              region: parsedDong
+              region: formatRegionStr(parsedCity, parsedGu, parsedDong)
             },
             createdAt: meta.promotedAt || img.created_at,
             rating: finalRating,
@@ -1768,7 +1776,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                       {(post.type === "dineout" || post.type === "delivery") && post.placeAddress
                         ? (() => {
                             const parsed = parseRegionFromAddress(post.placeAddress)
-                            return `${parsed.city}/${parsed.dong}`
+                            return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
                           })()
                         : post.author.region}
                     </span>
