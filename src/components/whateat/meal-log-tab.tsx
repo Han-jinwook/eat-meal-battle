@@ -1123,7 +1123,32 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
   }
 
-  const handleEditClick = (meal: any) => {
+  const handleEditClick = async (meal: any) => {
+    // 1. 맛톡 공유된 기록인지 확인 (status === 'approved')
+    if (meal.status === "approved" && meal.id) {
+      const supabase = createClient()
+      
+      // 다른 사용자의 댓글 확인
+      const { data: otherComments } = await supabase
+        .from("comments")
+        .select("id")
+        .eq("meal_id", meal.id)
+        .eq("is_deleted", false)
+        .neq("user_id", user?.id)
+        
+      // 다른 사용자의 좋아요 확인
+      const { data: otherLikes } = await supabase
+        .from("meal_likes")
+        .select("id")
+        .eq("meal_id", meal.id)
+        .neq("user_id", user?.id)
+
+      if ((otherComments && otherComments.length > 0) || (otherLikes && otherLikes.length > 0)) {
+        toast("맛톡 이웃의 활동(댓글/좋아요)이 있어 수정할 수 없습니다.", { icon: "🔒" })
+        return
+      }
+    }
+
     const recipeText = meal.tips?.join("\n") || ""
     const isUrl = recipeText.trim().startsWith("http")
 
