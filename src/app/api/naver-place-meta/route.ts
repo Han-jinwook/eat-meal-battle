@@ -117,10 +117,25 @@ export async function GET(request: NextRequest) {
           
           const roadAddrMatch = pcHtml.match(/"roadAddress"\s*:\s*"([^"]+)"/i) || pcHtml.match(/roadAddress\\?"\s*:\s*\\?"([^"]+)\\?"/i);
           const addrMatch = pcHtml.match(/"address"\s*:\s*"([^"]+)"/i) || pcHtml.match(/address\\?"\s*:\s*\\?"([^"]+)\\?"/i);
+          
+          let roadAddr = '';
+          let jibunAddr = '';
           if (roadAddrMatch && roadAddrMatch[1]) {
-            address = roadAddrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
-          } else if (addrMatch && addrMatch[1]) {
-            address = addrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
+            roadAddr = roadAddrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
+          }
+          if (addrMatch && addrMatch[1]) {
+            jibunAddr = addrMatch[1].replace(/\\u[0-9a-fA-F]{4}/g, (match) => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16)));
+          }
+
+          if (roadAddr && jibunAddr) {
+            const dongMatch = jibunAddr.match(/\s([가-힣]+(?:동|읍|면))(?:\s|\d|$)/);
+            if (dongMatch) {
+              address = `${roadAddr} (${dongMatch[1]})`;
+            } else {
+              address = roadAddr;
+            }
+          } else {
+            address = roadAddr || jibunAddr || '';
           }
         }
       }

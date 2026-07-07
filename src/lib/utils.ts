@@ -57,11 +57,17 @@ export function formatPlaceNameWithRegion(name?: string, address?: string) {
   }
   
   // Find Dong, Eup, or Myeon, or Gu, Gun
-  let region = parts.find(p => p.match(/\d*(동|읍|면)$/));
+  let region = parts.find(p => p.match(/\d*(동|읍|면)\)?$/));
+  if (region) {
+    region = region.replace(/[()]/g, '');
+  }
   
   if (!region && parts.length >= 2) {
     // If no dong/eup/myeon, try to use gu/gun or the second part
     region = parts.find(p => p.match(/\d*(구|군)$/)) || parts[1];
+    if (region) {
+      region = region.replace(/[()]/g, '');
+    }
   }
   
   if (city && region) {
