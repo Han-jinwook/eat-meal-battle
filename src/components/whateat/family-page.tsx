@@ -2222,7 +2222,7 @@ export function FamilyPage({
                                         isNaver && "text-emerald-700/80",
                                         isRecipe && "text-orange-700/80",
                                         isStoreLink && "text-slate-700/80"
-                                      )}>{formatPlaceNameWithRegion(meal.placeName, meal.placeAddress) || "상세 보기"}</span>
+                                      )}>{meal.placeName || "상세 보기"}</span>
                                     </div>
                                   )}
                                   <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
@@ -2277,7 +2277,7 @@ export function FamilyPage({
                                 <MapPin className="size-5 text-[#03C75A]" />
                               </div>
                               <span className="text-[11px] font-bold text-foreground text-center line-clamp-2 leading-tight">
-                                {formatPlaceNameWithRegion(meal.placeName, meal.placeAddress)}
+                                {meal.placeName}
                               </span>
                             </a>
                           ) : (meal.mealType === "dining" || meal.mealType === "delivery") ? (

@@ -1692,7 +1692,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                               isInstagram && "text-pink-700/80",
                               isTiktok && "text-slate-700/80",
                               isGeneric && "text-orange-700/80"
-                            )}>{formatPlaceNameWithRegion(meal.placeName, meal.placeAddress) || "상세 보기"}</span>
+                            )}>{meal.placeName || "상세 보기"}</span>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
@@ -1776,7 +1776,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     <MapPin className="size-3 text-orange-500" />
                   </div>
                 )}
-                <span className="text-[11px] font-bold text-foreground truncate">{formatPlaceNameWithRegion(meal.placeName, meal.placeAddress)}</span>
+                <span className="text-[11px] font-bold text-foreground truncate">{meal.placeName}</span>
                 {meal.placeRating && (
                   <div className="flex items-center gap-0.5 shrink-0 ml-auto">
                     <Star className="size-2.5 text-[#03C75A] fill-[#03C75A]" />
