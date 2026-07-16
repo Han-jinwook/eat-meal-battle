@@ -65,13 +65,16 @@ export const createClient = () => {
           if (typeof document !== 'undefined') {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            if (parts.length === 2) {
+              const cookieValue = parts.pop()?.split(';').shift();
+              return cookieValue ? decodeURIComponent(cookieValue) : undefined;
+            }
           }
           return undefined;
         },
         set(name: string, value: string, options: any) {
           if (typeof document !== 'undefined') {
-            let cookieString = `${name}=${value}`;
+            let cookieString = `${name}=${encodeURIComponent(value)}`;
             if (options?.maxAge) cookieString += `; max-age=${options.maxAge}`;
             if (options?.path) cookieString += `; path=${options.path}`;
             if (options?.domain) cookieString += `; domain=${options.domain}`;
