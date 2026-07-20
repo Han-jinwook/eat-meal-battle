@@ -1367,10 +1367,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       if (!matchesSearch) return false
     }
 
-    // 샘플 카드는 카테고리 필터와 검색 지역 필터(입력 시)만 적용받고 나머지 필터(NEW, 좋아요 등)는 우회
+    // 샘플 카드는 검색 중(텍스트 검색 또는 지역 검색)일 때는 검색 대상에서 완전히 제외
     if (post.isSample) {
-      if (categoryFilter !== "all" && post.type !== categoryFilter) return false
-      return matchesRegionFilter(post)
+      if (searchQuery || searchRegion) return false
+      return categoryFilter === "all" || post.type === categoryFilter
     }
 
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
@@ -1388,6 +1388,12 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
   const getCategoryCount = (categoryId: string) => {
     const rawFiltered = posts.filter((post) => {
+      // 샘플 카드는 검색 중일 때 카운트에서 제외
+      if (post.isSample) {
+        if (searchQuery || searchRegion) return false
+        return categoryId === "all" || post.type === categoryId
+      }
+
       if (categoryId !== "all" && post.type !== categoryId) return false
       return matchesRegionFilter(post)
     })
