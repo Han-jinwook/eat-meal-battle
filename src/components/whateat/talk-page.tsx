@@ -1506,7 +1506,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                 <ChevronDown className="size-3" />
               </button>
               {showScopeDropdown && (
-                <div className="absolute left-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl shadow-orange-950/10 border border-orange-200 py-1.5 z-50">
+                <div className="absolute left-0 top-full mt-1 w-32 bg-white rounded-xl shadow-lg border border-orange-200 py-1 z-50">
                   {regionScopeOptions.map((scope) => (
                     <button
                       key={scope.id}
@@ -1517,14 +1517,14 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                         setShowScopeDropdown(false)
                       }}
                       className={cn(
-                        "w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between gap-2",
+                        "w-full px-3 py-1.5 text-left text-[11px] transition-colors flex items-center justify-between gap-1.5",
                         scopeFilter === scope.id && !searchRegion
-                          ? "bg-orange-50 text-orange-500 font-bold"
-                          : "text-muted-foreground hover:bg-muted/50"
+                          ? "bg-orange-50/70 text-orange-500 font-bold"
+                          : "text-muted-foreground hover:bg-muted/30"
                       )}
                     >
                       <span>{scope.label}</span>
-                      {scopeFilter === scope.id && !searchRegion && <span className="text-[10px]">선택된 항목</span>}
+                      {scopeFilter === scope.id && !searchRegion && <span className="text-[11px] text-orange-500 font-bold">✓</span>}
                     </button>
                   ))}
                 </div>
