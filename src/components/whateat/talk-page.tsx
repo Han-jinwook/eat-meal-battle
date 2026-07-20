@@ -1322,6 +1322,37 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return c1.substring(0, 2) === c2.substring(0, 2)
   }
 
+  const matchesRegionFilter = (post: any) => {
+    if (searchRegion) {
+      const q = searchRegion.trim().toLowerCase()
+      const cleanQ = q.replace(/[동구시]$/, "")
+      
+      const pDong = (post.region?.dong || post.author?.region || "").toLowerCase()
+      const pGu = (post.region?.gu || "").toLowerCase()
+      const pCity = (post.region?.city || "").toLowerCase()
+
+      const matchesDong = pDong.includes(q) || pDong.replace(/[동구시]$/, "").includes(cleanQ)
+      const matchesGu = pGu.includes(q) || pGu.replace(/[동구시]$/, "").includes(cleanQ)
+      const matchesCity = pCity.includes(q) || pCity.replace(/[동구시]$/, "").includes(cleanQ)
+
+      return matchesDong || matchesGu || matchesCity
+    }
+
+    if (post.isSample) return true
+
+    const postRegion = post.author?.region || post.region?.dong || ""
+    if (scopeFilter === "dong") {
+      return isSameCity(post.region.city, userAddress.city) &&
+             post.region.gu === userAddress.gu &&
+             postRegion === userRegion
+    } else if (scopeFilter === "gu") {
+      return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
+    } else if (scopeFilter === "city") {
+      return isSameCity(post.region.city, userAddress.city)
+    }
+    return true
+  }
+
   const filteredPostsRaw = posts.filter(post => {
     // Search filter
     if (searchQuery) {
@@ -1336,9 +1367,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       if (!matchesSearch) return false
     }
 
-    // 샘플 카드는 카테고리 필터만 적용받고 나머지 필터(NEW, 좋아요, 지역 등)는 모두 우회
+    // 샘플 카드는 카테고리 필터와 검색 지역 필터(입력 시)만 적용받고 나머지 필터(NEW, 좋아요 등)는 우회
     if (post.isSample) {
-      return categoryFilter === "all" || post.type === categoryFilter
+      if (categoryFilter !== "all" && post.type !== categoryFilter) return false
+      return matchesRegionFilter(post)
     }
 
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
@@ -1346,25 +1378,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     if (showOnlyLiked && !post.isLiked) return false
     if (showOnlySubscribed && !post.isSubscribed) return false
 
-    // 지역 필터: 검색 지역이 있으면 우선, 없으면 내 지역 + 범위
-    const targetRegion = searchRegion || userRegion
-    const postRegion = post.author?.region || post.region?.dong || ""
-    
-    if (scopeFilter === "dong") {
-      if (searchRegion) {
-        return postRegion === targetRegion
-      } else {
-        return isSameCity(post.region.city, userAddress.city) &&
-               post.region.gu === userAddress.gu &&
-               postRegion === targetRegion
-      }
-    } else if (scopeFilter === "gu") {
-      return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
-    } else if (scopeFilter === "city") {
-      return isSameCity(post.region.city, userAddress.city)
-    }
-    // all: 모든 지역
-    return true
+    // 지역 필터 적용
+    return matchesRegionFilter(post)
   })
 
   const realPostsFiltered = filteredPostsRaw.filter(p => !p.isSample)
@@ -1373,31 +1388,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
   const getCategoryCount = (categoryId: string) => {
     const rawFiltered = posts.filter((post) => {
-      // 샘플 카드는 카테고리 필터만 적용받고 나머지 조건(NEW, 좋아요, 지역 등)은 우회
-      if (post.isSample) {
-        return categoryId === "all" || post.type === categoryId
-      }
-
       if (categoryId !== "all" && post.type !== categoryId) return false
-
-      const targetRegion = searchRegion || userRegion
-      const postRegion = post.author?.region || post.region?.dong || ""
-
-      if (scopeFilter === "dong") {
-        if (searchRegion) {
-          return postRegion === targetRegion
-        } else {
-          return isSameCity(post.region.city, userAddress.city) &&
-                 post.region.gu === userAddress.gu &&
-                 postRegion === targetRegion
-        }
-      } else if (scopeFilter === "gu") {
-        return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
-      } else if (scopeFilter === "city") {
-        return isSameCity(post.region.city, userAddress.city)
-      }
-
-      return true
+      return matchesRegionFilter(post)
     })
 
     return rawFiltered.length
