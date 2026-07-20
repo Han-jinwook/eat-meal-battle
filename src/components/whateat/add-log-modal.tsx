@@ -603,7 +603,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     key={type.id}
                     onClick={() => {
                       setMealType(type.id)
-                      if (type.id !== "외식") {
+                      if (type.id !== "외식" && type.id !== "배달") {
                         setSelectedPlace(null)
                       }
                       if (type.id !== "배달") {
@@ -734,6 +734,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                       <button 
                         onClick={() => {
                           setDeliveryStoreName("")
+                          setSelectedPlace(null)
                           setDeliverySearchQuery("")
                         }}
                         className="size-7 rounded-lg hover:bg-muted/50 flex items-center justify-center shrink-0"
@@ -778,6 +779,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                           <button
                             key={idx}
                             onClick={() => {
+                              setSelectedPlace({
+                                name: store.name,
+                                address: store.address || "",
+                                category: store.category
+                              })
                               setDeliveryStoreName(store.name)
                               setDeliverySearchQuery("")
                             }}
