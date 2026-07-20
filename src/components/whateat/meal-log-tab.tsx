@@ -1054,7 +1054,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         filters: { id: mealId }
       })
 
-      if (newRating === 5) {
+      if (newRating === 5 && oldStatus !== "approved") {
         // DB 쓰기 완료를 기다리지 않고 즉시 모달 판단(오픈) 로직 실행
         await checkConsentAndUpload({
           id: targetLog.id,
@@ -1064,10 +1064,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           recipe: targetLog.tips?.join("\n"),
           linkUrl: targetLog.linkUrl || "",
           linkThumbnail: targetLog.linkThumbnail || "",
-          placeName: targetLog.placeName || "",
+          place: { name: targetLog.placeName || "", address: targetLog.placeAddress || "", category: "" },
           description: targetLog.description,
-          image: targetLog.image,
-          supabaseId: targetLog.id
+          image: targetLog.image
         }, targetLog.image)
       }
 
@@ -1220,13 +1219,18 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     }
 
     if (rating === 5) {
-      const pref = localStorage.getItem("whateat_auto_share_5star")
-      if (pref === "approved") {
+      if (oldStatus === "approved") {
         status = "approved"
-        source = "solo-5star"
+        source = targetLog ? targetLog.source : "solo-5star"
       } else {
-        status = "pending"
-        source = "solo-5star"
+        const pref = localStorage.getItem("whateat_auto_share_5star")
+        if (pref === "approved") {
+          status = "approved"
+          source = "solo-5star"
+        } else {
+          status = "pending"
+          source = "solo-5star"
+        }
       }
     }
 
@@ -1370,7 +1374,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         }
       }
 
-      if (rating === 5) {
+      if (rating === 5 && oldStatus !== "approved") {
         await checkConsentAndUpload({
           id: mealUuid,
           mealType: data.mealType,
@@ -1379,10 +1383,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           recipe: data.recipe,
           linkUrl: data.linkUrl || "",
           linkThumbnail: data.linkThumbnail || "",
-          placeName: data.place?.name || data.deliveryStoreName || data.placeName || "",
+          place: data.place || (data.deliveryStoreName ? { name: data.deliveryStoreName, address: "", category: "" } : undefined),
           description: data.description,
-          image: finalImageUrl,
-          supabaseId: mealUuid
+          image: finalImageUrl
         }, finalImageUrl)
       }
     } catch (err) {
