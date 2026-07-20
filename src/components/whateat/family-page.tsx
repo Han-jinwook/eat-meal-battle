@@ -1032,10 +1032,21 @@ export function FamilyPage({
 
   const baseMeals = meals.length === 0 ? defaultSharedMeals : meals
   const filteredMeals = baseMeals.filter((meal) => {
-    if (sharedMealFilter === "all") {
-      return true
+    if (sharedMealFilter !== "all" && getSharedMealCategory(meal) !== sharedMealFilter) {
+      return false
     }
-    return getSharedMealCategory(meal) === sharedMealFilter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const matchesSearch = 
+        meal.title.toLowerCase().includes(q) ||
+        meal.placeName?.toLowerCase().includes(q) ||
+        meal.placeAddress?.toLowerCase().includes(q) ||
+        meal.sharedBy.toLowerCase().includes(q) ||
+        meal.rawExplanation?.toLowerCase().includes(q)
+      
+      if (!matchesSearch) return false
+    }
+    return true
   })
 
   const formatRemainingTime = (remainingMs: number) => {
@@ -2666,66 +2677,86 @@ export function FamilyPage({
           </div>
 
           <div className="flex flex-col gap-3">
-            {["breakfast", "lunch", "dinner"].map((mealTime) => {
+            {(() => {
               const displayTodayMenus = todayDecidedMenus.length === 0 ? defaultTodayMenus : todayDecidedMenus
-              const menu = displayTodayMenus.find(m => m.mealTime === mealTime)
-              const label = mealTime === "breakfast" ? "아침" : mealTime === "lunch" ? "점심" : "저녁"
-              const timeRange = mealTime === "breakfast" ? "06:00 - 09:00" : mealTime === "lunch" ? "11:00 - 14:00" : "17:00 - 20:00"
+              const filteredTodayMenus = displayTodayMenus.filter(m => {
+                if (!searchQuery) return true
+                const q = searchQuery.toLowerCase()
+                return m.title.toLowerCase().includes(q) ||
+                       (m.decidedBy || "").toLowerCase().includes(q)
+              })
 
-              return (
-                <div 
-                  key={mealTime}
-                  className={cn(
-                    "bg-white/80 rounded-2xl p-4 border border-white shadow-md relative overflow-hidden",
-                    !menu && "opacity-60"
-                  )}
-                >
-                  {/* 샘플 리본 */}
-                  {todayDecidedMenus.length === 0 && menu && (
-                    <div className="absolute top-0 right-0 overflow-hidden w-16 h-16 z-10 pointer-events-none">
-                      <div className="absolute top-2 -right-6 w-20 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
-                        💡 SAMPLE
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "size-12 rounded-xl flex items-center justify-center shrink-0",
-                      menu ? "bg-gradient-to-br from-orange-400 to-orange-500" : "bg-muted"
-                    )}>
-                      <Utensils className={cn("size-5", menu ? "text-white" : "text-muted-foreground")} />
-                    </div>
-                    
-                    {menu ? (
-                      <div className="flex-1 flex items-center gap-3">
-                        <img src={menu.image || "/placeholder.svg"} alt={menu.title} className="size-14 rounded-xl object-cover" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-orange-500">{label}</span>
-                            <span className="text-[10px] text-muted-foreground">{timeRange}</span>
-                          </div>
-                          <h4 className="font-bold text-foreground mt-0.5">{menu.title}</h4>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {menu.decidedBy}님이 {menu.decidedAt}에 결정
-                          </p>
+              if (searchQuery && filteredTodayMenus.length === 0) {
+                return (
+                  <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                    <Search className="size-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">검색 결과가 없어요</p>
+                  </div>
+                )
+              }
+
+              return ["breakfast", "lunch", "dinner"].map((mealTime) => {
+                const menu = filteredTodayMenus.find(m => m.mealTime === mealTime)
+                if (searchQuery && !menu) return null
+
+                const label = mealTime === "breakfast" ? "아침" : mealTime === "lunch" ? "점심" : "저녁"
+                const timeRange = mealTime === "breakfast" ? "06:00 - 09:00" : mealTime === "lunch" ? "11:00 - 14:00" : "17:00 - 20:00"
+
+                return (
+                  <div 
+                    key={mealTime}
+                    className={cn(
+                      "bg-white/80 rounded-2xl p-4 border border-white shadow-md relative overflow-hidden",
+                      !menu && "opacity-60"
+                    )}
+                  >
+                    {/* 샘플 리본 */}
+                    {todayDecidedMenus.length === 0 && menu && (
+                      <div className="absolute top-0 right-0 overflow-hidden w-16 h-16 z-10 pointer-events-none">
+                        <div className="absolute top-2 -right-6 w-20 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
+                          💡 SAMPLE
                         </div>
-                        <button className="size-8 rounded-lg hover:bg-muted/50 flex items-center justify-center">
-                          <MoreVertical className="size-4 text-muted-foreground" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-muted-foreground">{label}</span>
-                          <span className="text-[10px] text-muted-foreground">{timeRange}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">아직 결정되지 않았어요</p>
                       </div>
                     )}
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "size-12 rounded-xl flex items-center justify-center shrink-0",
+                        menu ? "bg-gradient-to-br from-orange-400 to-orange-500" : "bg-muted"
+                      )}>
+                        <Utensils className={cn("size-5", menu ? "text-white" : "text-muted-foreground")} />
+                      </div>
+                      
+                      {menu ? (
+                        <div className="flex-1 flex items-center gap-3">
+                          <img src={menu.image || "/placeholder.svg"} alt={menu.title} className="size-14 rounded-xl object-cover" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-orange-500">{label}</span>
+                              <span className="text-[10px] text-muted-foreground">{timeRange}</span>
+                            </div>
+                            <h4 className="font-bold text-foreground mt-0.5">{menu.title}</h4>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {menu.decidedBy}님이 {menu.decidedAt}에 결정
+                            </p>
+                          </div>
+                          <button className="size-8 rounded-lg hover:bg-muted/50 flex items-center justify-center">
+                            <MoreVertical className="size-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-muted-foreground">{label}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeRange}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">아직 결정되지 않았어요</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            })()}
           </div>
 
           {/* Notification Preview */}

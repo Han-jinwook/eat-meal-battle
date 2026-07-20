@@ -921,7 +921,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     .filter(log => {
       const matchesSearch = !searchQuery || 
         log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        log.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.placeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.placeAddress?.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesMealType = mealTypeFilter === "전체" || log.type === mealTypeFilter
       
       // Date range filter

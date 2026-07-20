@@ -296,7 +296,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const filteredPlans = plans.filter(plan => {
     const matchesSearch = !searchQuery || 
       plan.menu.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.place?.toLowerCase().includes(searchQuery.toLowerCase())
+      plan.place?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      plan.memo?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesDate = !selectedDate || plan.date === selectedDate
     const matchesMealType = mealTypeFilter === "전체" || plan.mealType === mealTypeFilter
     return matchesSearch && matchesDate && matchesMealType

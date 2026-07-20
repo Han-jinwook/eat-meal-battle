@@ -1323,6 +1323,19 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   const filteredPostsRaw = posts.filter(post => {
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const matchesSearch = 
+        post.title.toLowerCase().includes(q) ||
+        post.restaurant?.name?.toLowerCase().includes(q) ||
+        post.restaurant?.address?.toLowerCase().includes(q) ||
+        post.author?.nickname?.toLowerCase().includes(q) ||
+        post.description?.toLowerCase().includes(q)
+      
+      if (!matchesSearch) return false
+    }
+
     // 샘플 카드는 카테고리 필터만 적용받고 나머지 필터(NEW, 좋아요, 지역 등)는 모두 우회
     if (post.isSample) {
       return categoryFilter === "all" || post.type === categoryFilter
