@@ -18,7 +18,7 @@ import {
   Pencil,
   Trash2
 } from "lucide-react"
-import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
+import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
@@ -258,62 +258,6 @@ const categoryOptions = [
   { id: "delivery", label: "배달" },
   { id: "dineout", label: "외식" },
 ]
-
-export function formatRegionStr(city: string, gu: string, dong: string) {
-  const parts = []
-  if (city) {
-    let c = city
-    if (c.length >= 3 && (c.endsWith("광역시") || c.endsWith("특별시") || c.endsWith("자치시") || c.endsWith("자치도"))) {
-      c = c.substring(0, 2)
-    } else if (c.endsWith("도") || c.endsWith("시")) {
-      c = c.substring(0, c.length - 1)
-    }
-    if (c === "서울특별") c = "서울"
-    parts.push(c)
-  }
-  if (gu && gu !== city) {
-    parts.push(gu)
-  }
-  if (dong) {
-    let d = dong
-    if (d.endsWith("동") || d.endsWith("읍") || d.endsWith("면")) {
-      d = d.substring(0, d.length - 1)
-    }
-    parts.push(d)
-  }
-  return parts.join("/")
-}
-
-function parseRegionFromAddress(address: string, defaultCity = "인천", defaultGu = "서구", defaultDong = "청라동") {
-  if (!address) return { city: defaultCity, gu: defaultGu, dong: defaultDong }
-  const parts = address.split(/\s+/)
-  let city = defaultCity
-  let gu = ""
-  let dong = ""
-
-  if (parts.length > 0) {
-    const p0 = parts[0]
-    if (p0.endsWith("시") || p0.endsWith("도") || p0.endsWith("특별자치시") || p0.endsWith("광역시")) {
-      city = p0.substring(0, 2)
-    } else {
-      city = p0
-    }
-  }
-  for (const part of parts.slice(1)) {
-    if (part.endsWith("구") || part.endsWith("군") || part.endsWith("시")) {
-      if (!gu) gu = part
-    }
-    if (part.endsWith("동") || part.endsWith("읍") || part.endsWith("면")) {
-      dong = part
-      break
-    }
-  }
-
-  if (!gu) gu = defaultGu
-  if (!dong) dong = defaultDong
-
-  return { city, gu, dong }
-}
 
 export function TalkPage({ isActive }: { isActive?: boolean }) {
   const { isLoggedIn, user } = useHub()
@@ -1783,12 +1727,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <MapPin className="size-3 text-muted-foreground" />
                     <span className="text-[11px] text-muted-foreground">
-                      {(post.type === "dineout" || post.type === "delivery") && post.restaurant?.address
-                        ? (() => {
-                            const parsed = parseRegionFromAddress(post.restaurant.address)
-                            return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
-                          })()
-                        : post.author.region}
+                      {post.author.region}
                     </span>
                     <span className="text-[10px] text-muted-foreground/50">·</span>
                     <span className="text-[10px] text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
@@ -1961,6 +1900,14 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[11px] text-muted-foreground font-medium truncate">
                   {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
+                  {post.restaurant?.address && (
+                    <span className="text-[10px] text-muted-foreground/70 ml-1">
+                      {(() => {
+                        const parsed = parseRegionFromAddress(post.restaurant.address)
+                        return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
+                      })()}
+                    </span>
+                  )}
                 </span>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">

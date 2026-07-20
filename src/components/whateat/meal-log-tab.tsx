@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react"
 import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin } from "lucide-react"
 import { toast } from "react-hot-toast"
-import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
+import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
@@ -1776,7 +1776,17 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     <MapPin className="size-3 text-orange-500" />
                   </div>
                 )}
-                <span className="text-[11px] font-bold text-foreground truncate">{meal.placeName}</span>
+                <span className="text-[11px] font-bold text-foreground truncate flex items-center">
+                  <span className="truncate">{meal.placeName}</span>
+                  {meal.placeAddress && (
+                    <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
+                      {(() => {
+                        const parsed = parseRegionFromAddress(meal.placeAddress)
+                        return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
+                      })()}
+                    </span>
+                  )}
+                </span>
                 {meal.placeRating && (
                   <div className="flex items-center gap-0.5 shrink-0 ml-auto">
                     <Star className="size-2.5 text-[#03C75A] fill-[#03C75A]" />
