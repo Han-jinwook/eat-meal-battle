@@ -1506,7 +1506,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                 <ChevronDown className="size-3" />
               </button>
               {showScopeDropdown && (
-                <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                <div className="absolute left-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl shadow-orange-950/10 border border-orange-200 py-1.5 z-50">
                   {regionScopeOptions.map((scope) => (
                     <button
                       key={scope.id}
