@@ -124,12 +124,11 @@ export function parseRegionFromAddress(address: string, defaultCity = "", defaul
   }
   for (const part of parts.slice(1)) {
     const cleaned = part.replace(/[()]/g, "")
-    if (cleaned.endsWith("구") || cleaned.endsWith("군") || cleaned.endsWith("시")) {
+    if (cleaned.endsWith("구") || cleaned.endsWith("군") || (cleaned.endsWith("시") && cleaned.length > 2)) {
       if (!gu) gu = cleaned
     }
     if (cleaned.endsWith("동") || cleaned.endsWith("읍") || cleaned.endsWith("면")) {
-      dong = cleaned
-      break
+      if (!dong) dong = cleaned
     }
   }
 

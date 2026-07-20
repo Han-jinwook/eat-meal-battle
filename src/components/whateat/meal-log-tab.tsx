@@ -1781,7 +1781,20 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   {meal.placeAddress && (
                     <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
                       {(() => {
-                        const parsed = parseRegionFromAddress(meal.placeAddress)
+                        let defaultCity = ""
+                        let defaultGu = ""
+                        let defaultDong = ""
+                        if (userRegion) {
+                          try {
+                            const parsedReg = JSON.parse(userRegion)
+                            defaultCity = parsedReg.city || ""
+                            defaultGu = parsedReg.gu || ""
+                            defaultDong = parsedReg.dong || ""
+                          } catch (e) {
+                            defaultDong = userRegion
+                          }
+                        }
+                        const parsed = parseRegionFromAddress(meal.placeAddress, defaultCity, defaultGu, defaultDong)
                         return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
                       })()}
                     </span>
