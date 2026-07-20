@@ -1609,9 +1609,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   {meal.healthy && (
                     <span className="w-fit px-2 py-0.5 bg-green-600 text-white text-[8px] font-black rounded-md">HEALTHY</span>
                   )}
-                  <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
-                    {meal.type}
-                  </span>
                 </div>
               </div>
 
@@ -1817,7 +1814,17 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   ))}
                 </div>
               </div>
-              <h3 className="font-bold text-foreground text-lg mb-2">{meal.title}</h3>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h3 className="font-bold text-foreground text-lg truncate">{meal.title}</h3>
+                <span className={cn(
+                  "shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold",
+                  meal.type === "집밥" ? "bg-green-50 text-green-600" :
+                  meal.type === "배달" ? "bg-blue-50 text-blue-600" :
+                  "bg-purple-50 text-purple-600"
+                )}>
+                  {meal.type}
+                </span>
+              </div>
               {/* Comment Section (기존 Memo Section 전면 대체) */}
               <div className="mt-4 pt-3 border-t border-muted/30">
                 <div 
