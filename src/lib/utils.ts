@@ -107,7 +107,7 @@ export function formatRegionStr(city: string, gu: string, dong: string) {
   return parts.join("/")
 }
 
-export function parseRegionFromAddress(address: string, defaultCity = "인천", defaultGu = "서구", defaultDong = "청라동") {
+export function parseRegionFromAddress(address: string, defaultCity = "", defaultGu = "", defaultDong = "") {
   if (!address) return { city: defaultCity, gu: defaultGu, dong: defaultDong }
   const parts = address.split(/\s+/)
   let city = defaultCity
@@ -123,11 +123,12 @@ export function parseRegionFromAddress(address: string, defaultCity = "인천", 
     }
   }
   for (const part of parts.slice(1)) {
-    if (part.endsWith("구") || part.endsWith("군") || part.endsWith("시")) {
-      if (!gu) gu = part
+    const cleaned = part.replace(/[()]/g, "")
+    if (cleaned.endsWith("구") || cleaned.endsWith("군") || cleaned.endsWith("시")) {
+      if (!gu) gu = cleaned
     }
-    if (part.endsWith("동") || part.endsWith("읍") || part.endsWith("면")) {
-      dong = part
+    if (cleaned.endsWith("동") || cleaned.endsWith("읍") || cleaned.endsWith("면")) {
+      dong = cleaned
       break
     }
   }
