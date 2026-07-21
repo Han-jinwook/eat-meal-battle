@@ -1846,108 +1846,119 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               {/* Comment Section (기존 Memo Section 전면 대체) */}
               <div className="mt-4 pt-3 border-t border-muted/30">
                 <div 
-                  className="flex items-center gap-1.5 mb-2.5 cursor-pointer"
-                  onClick={() => setVisibleMemoInputs(prev => ({ ...prev, [meal.id]: !prev[meal.id] }))}
+                  className="flex items-center gap-1.5 mb-2.5 cursor-pointer group hover:bg-muted/10 p-1 -mx-1 rounded-md transition-colors"
+                  onClick={() => setVisibleMemoInputs(prev => {
+                    const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
+                    return { ...prev, [meal.id]: !isCurrentlyVisible }
+                  })}
                 >
                   <MessageSquare className="size-3.5 text-orange-500" />
                   <span className="text-xs font-bold text-foreground select-none">메모</span>
                   <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
                     {(meal.comments || []).length}
                   </span>
+                  <ChevronDown className={cn(
+                    "size-4 text-muted-foreground/50 ml-auto transition-transform", 
+                    (visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && "rotate-180"
+                  )} />
                 </div>
 
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {(meal.comments || []).length === 0 ? null : (
-                    (meal.comments || []).map((comment: any) => (
-                      <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-black text-foreground">{comment.author}</span>
-                            <span className="text-[9px] text-muted-foreground">{comment.createdAt}</span>
-                          </div>
-                          {comment.userId === user?.id && (
-                            <div className="flex items-center gap-1.5">
-                              {editingCommentId === comment.id ? (
-                                <>
-                                  <button
-                                    onClick={() => handleUpdateComment(meal.id, comment.id)}
-                                    className="text-[9px] font-bold text-orange-600 hover:underline"
-                                  >
-                                    저장
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingCommentId(null)}
-                                    className="text-[9px] font-bold text-muted-foreground hover:underline"
-                                  >
-                                    취소
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleEditComment(comment.id, comment.content)}
-                                    className="text-muted-foreground hover:text-orange-500 transition-colors"
-                                    title="수정"
-                                  >
-                                    <Pencil className="size-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteComment(meal.id, comment.id)}
-                                    className="text-muted-foreground hover:text-red-500 transition-colors"
-                                    title="삭제"
-                                  >
-                                    <Trash2 className="size-3" />
-                                  </button>
-                                </>
+                {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
+                  <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {(meal.comments || []).length === 0 ? null : (
+                        (meal.comments || []).map((comment: any) => (
+                          <div key={comment.id} className="rounded-xl bg-orange-50/50 border border-orange-100 p-2.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-black text-foreground">{comment.author}</span>
+                                <span className="text-[9px] text-muted-foreground">{comment.createdAt}</span>
+                              </div>
+                              {comment.userId === user?.id && (
+                                <div className="flex items-center gap-1.5">
+                                  {editingCommentId === comment.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleUpdateComment(meal.id, comment.id)}
+                                        className="text-[9px] font-bold text-orange-600 hover:underline"
+                                      >
+                                        저장
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingCommentId(null)}
+                                        className="text-[9px] font-bold text-muted-foreground hover:underline"
+                                      >
+                                        취소
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => handleEditComment(comment.id, comment.content)}
+                                        className="text-muted-foreground hover:text-orange-500 transition-colors"
+                                        title="수정"
+                                      >
+                                        <Pencil className="size-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteComment(meal.id, comment.id)}
+                                        className="text-muted-foreground hover:text-red-500 transition-colors"
+                                        title="삭제"
+                                      >
+                                        <Trash2 className="size-3" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                        {editingCommentId === comment.id ? (
-                          <div className="mt-2 flex gap-1.5">
-                            <input
-                              type="text"
-                              value={editCommentText}
-                              onChange={(e) => setEditCommentText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                                  e.preventDefault()
-                                  handleUpdateComment(meal.id, comment.id)
-                                }
-                              }}
-                              className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
-                            />
+                            {editingCommentId === comment.id ? (
+                              <div className="mt-2 flex gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editCommentText}
+                                  onChange={(e) => setEditCommentText(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                      e.preventDefault()
+                                      handleUpdateComment(meal.id, comment.id)
+                                    }
+                                  }}
+                                  className="flex-1 px-2 py-1 rounded bg-white border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground"
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
+                        ))
+                      )}
+                    </div>
 
-                {/* 댓글 입력창 - 패밀리 스타일 통일 (이미 댓글이 있는 경우는 숨김) */}
-                {visibleMemoInputs[meal.id] && (meal.comments || []).length === 0 && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={commentInputs[meal.id] || ""}
-                      onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                          e.preventDefault()
-                          handleAddComment(meal.id)
-                        }
-                      }}
-                      placeholder="메모를 입력하거나 소통해 보세요"
-                      className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
-                    />
-                    <button
-                      onClick={() => handleAddComment(meal.id)}
-                      className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
-                    >
-                      <Send className="size-4" />
-                    </button>
+                    {/* 댓글 입력창 - 패밀리 스타일 통일 (이미 댓글이 있는 경우는 숨김) */}
+                    {(meal.comments || []).length === 0 && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={commentInputs[meal.id] || ""}
+                          onChange={(e) => setCommentInputs(prev => ({ ...prev, [meal.id]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                              e.preventDefault()
+                              handleAddComment(meal.id)
+                            }
+                          }}
+                          placeholder="메모를 입력하거나 소통해 보세요"
+                          className="flex-1 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-orange-300 text-foreground placeholder:text-muted-foreground/50"
+                        />
+                        <button
+                          onClick={() => handleAddComment(meal.id)}
+                          className="size-9 rounded-lg bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 transition-colors"
+                        >
+                          <Send className="size-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
