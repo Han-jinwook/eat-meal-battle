@@ -1,0 +1,164 @@
+import { X, CalendarDays, MapPin, Search, Youtube, ExternalLink, Utensils, Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+export interface DetailPlanData {
+  id: number | string
+  date: string
+  time: string
+  mealType: string
+  menu: string
+  place: string
+  memo: string
+  thumbnail?: string
+}
+
+interface ReservationDetailModalProps {
+  isOpen: boolean
+  onClose: () => void
+  plan: DetailPlanData | null
+}
+
+export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDetailModalProps) {
+  if (!isOpen || !plan) return null
+
+  const getActionConfig = () => {
+    switch (plan.mealType) {
+      case "집밥":
+        return {
+          icon: Youtube,
+          label: "레시피 검색",
+          color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(plan.menu + " 레시피")}`
+        }
+      case "배달":
+        return {
+          icon: Search,
+          label: "배달앱 검색",
+          color: "bg-teal-50 text-teal-600 hover:bg-teal-100 ring-teal-200",
+          url: `https://search.naver.com/search.naver?query=${encodeURIComponent(plan.place || plan.menu + " 배달")}`
+        }
+      case "외식":
+        return {
+          icon: MapPin,
+          label: "지도 검색",
+          color: "bg-blue-50 text-blue-600 hover:bg-blue-100 ring-blue-200",
+          url: `https://map.naver.com/v5/search/${encodeURIComponent(plan.place || plan.menu)}`
+        }
+      default:
+        return null
+    }
+  }
+
+  const action = getActionConfig()
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div 
+        className="w-full max-w-sm bg-white rounded-[28px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header / Thumbnail Image */}
+        <div className="relative h-48 bg-orange-50 overflow-hidden group">
+          {plan.thumbnail ? (
+            <img 
+              src={plan.thumbnail} 
+              alt={plan.menu} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-primary/40">
+              <Utensils className="size-16 mb-2" />
+              <span className="text-sm font-medium">No Image</span>
+            </div>
+          )}
+          
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 size-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
+          >
+            <X className="size-5" />
+          </button>
+          
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-bold rounded-lg border border-white/20">
+                {plan.mealType}
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-white drop-shadow-sm leading-tight">
+              {plan.menu}
+            </h2>
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6">
+          <div className="space-y-4">
+            
+            {/* Time & Date */}
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded-2xl bg-orange-50 flex items-center justify-center shrink-0 text-primary">
+                <CalendarDays className="size-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {new Date(plan.date).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
+                </p>
+                {plan.time && (
+                  <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                    <Clock className="size-3" />
+                    {plan.time}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Place */}
+            {plan.place && (
+              <div className="flex items-start gap-3">
+                <div className="size-10 rounded-2xl bg-orange-50 flex items-center justify-center shrink-0 text-primary">
+                  <MapPin className="size-5" />
+                </div>
+                <div className="flex-1 min-w-0 flex items-center h-10">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {plan.place}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Memo */}
+            {plan.memo && (
+              <div className="mt-2 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
+                  {plan.memo}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Button */}
+          {action && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <a 
+                href={action.url}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold transition-all ring-1 ring-inset",
+                  action.color
+                )}
+              >
+                <action.icon className="size-4.5" />
+                <span>{action.label}</span>
+                <ExternalLink className="size-3.5 opacity-50 ml-1" />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

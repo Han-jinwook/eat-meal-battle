@@ -17,9 +17,12 @@ import {
   Pencil,
   Plus,
   ArrowUpDown,
+  Calendar as CalendarIcon,
+  Link2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
+import { ReservationDetailModal, type DetailPlanData } from "@/components/whateat/reservation-detail-modal"
 import { toast } from "react-hot-toast"
 
 export const getDynamicDefaultPlans = (baseDate?: Date) => {
@@ -126,6 +129,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
+  const [selectedDetailPlan, setSelectedDetailPlan] = useState<DetailPlanData | null>(null)
   const { isLoggedIn, user } = useHub()
 
   // Load initial plans from Supabase
@@ -503,8 +507,9 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 ref={(el) => {
                   cardRefs.current[plan.id] = el
                 }}
+                onClick={() => setSelectedDetailPlan(plan)}
                 className={cn(
-                  "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100 relative overflow-hidden",
+                  "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100 relative overflow-hidden cursor-pointer",
                   focusedPlanId === plan.id && "ring-2 ring-cyan-400 shadow-cyan-100",
                   (plan.id === 1 || plan.id === 2 || plan.id === 3) && "opacity-90"
                 )}
@@ -571,7 +576,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                       </div>
                     )}
                     <button 
-                      onClick={() => handleEditClick(plan)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditClick(plan)
+                      }}
                       className="absolute -top-1.5 -right-1.5 size-6 flex items-center justify-center bg-white text-muted-foreground hover:text-primary rounded-full shadow-md border border-gray-100 transition-all z-10"
                     >
                       <Pencil className="size-3" />
@@ -608,6 +616,13 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         editData={editingPlan}
         onSave={handleModalSave}
         onDelete={handleDeleteClick}
+      />
+
+      {/* Reservation Detail Modal */}
+      <ReservationDetailModal 
+        isOpen={!!selectedDetailPlan}
+        onClose={() => setSelectedDetailPlan(null)}
+        plan={selectedDetailPlan}
       />
     </div>
   )
