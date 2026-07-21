@@ -3,6 +3,9 @@
 import React from "react"
 
 import { useState, useRef, useEffect } from "react"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+import { createClient } from "@/lib/supabase"
+import { secureWrite } from "@/lib/supabase-safe"
 import {
   Search,
   CalendarDays,
@@ -123,28 +126,51 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
+  const { isLoggedIn, user } = useHub()
 
-  // Load initial plans from localStorage
+  // Load initial plans from Supabase
   useEffect(() => {
-    const saved = localStorage.getItem("whateat_reservation_plans")
-    if (saved) {
-      try {
-        setPlans(JSON.parse(saved))
-      } catch (e) {
-        console.error("Failed to parse saved reservation plans", e)
+    const fetchPlans = async () => {
+      if (!isLoggedIn || !user?.id) {
+        setPlans(defaultMealPlans)
+        setIsLoaded(true)
+        return
       }
-    } else {
-      localStorage.setItem("whateat_reservation_plans", JSON.stringify(defaultMealPlans))
-    }
-    setIsLoaded(true)
-  }, [])
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("meal_reservations")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("source", "solo")
+        
+        if (error) throw error
 
-  // Save plans to localStorage on changes
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("whateat_reservation_plans", JSON.stringify(plans))
+        if (data && data.length > 0) {
+          const mapped = data.map(row => ({
+            id: row.id,
+            date: row.date,
+            time: row.time || "",
+            mealType: row.meal_type,
+            menu: row.menu,
+            place: row.place || "",
+            memo: row.memo || "",
+            thumbnail: row.thumbnail || ""
+          }))
+          setPlans(mapped)
+        } else {
+          setPlans(defaultMealPlans)
+        }
+      } catch (err) {
+        console.error("Failed to fetch reservations", err)
+        setPlans(defaultMealPlans)
+      } finally {
+        setIsLoaded(true)
+      }
     }
-  }, [plans, isLoaded])
+    fetchPlans()
+  }, [isLoggedIn, user?.id])
+
   const calendarRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
@@ -320,7 +346,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     return plans.filter((plan) => plan.mealType === optionId).length
   }
 
-  const handleModalSave = (saved: EditData) => {
+  const handleModalSave = async (saved: EditData) => {
     if (saved.id === 1 || saved.id === 2 || saved.id === 3) {
       return
     }
@@ -329,22 +355,62 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       thumbnail: saved.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop",
     }
 
-    setPlans((prev) => {
-      const exists = prev.some((plan) => plan.id === saved.id)
-      if (exists) {
-        return prev.map((plan) => (plan.id === saved.id ? { ...plan, ...nextPlan } : plan))
+    if (isLoggedIn && user?.id) {
+      try {
+        await secureWrite({
+          table: "meal_reservations",
+          action: "upsert",
+          data: {
+            id: saved.id,
+            user_id: user.id,
+            date: saved.date,
+            time: saved.time,
+            meal_type: saved.mealType,
+            menu: saved.menu,
+            place: saved.place,
+            memo: saved.memo,
+            thumbnail: nextPlan.thumbnail,
+            source: "solo"
+          }
+        })
+      } catch (err) {
+        console.error("Failed to save reservation", err)
+        toast.error("예약 저장에 실패했습니다.")
+        return
       }
-      return [nextPlan, ...prev]
+    }
+
+    setPlans((prev) => {
+      let newPrev = prev.filter(p => p.id !== 1 && p.id !== 2 && p.id !== 3)
+      const exists = newPrev.some((plan) => plan.id === saved.id)
+      if (exists) {
+        return newPrev.map((plan) => (plan.id === saved.id ? { ...plan, ...nextPlan } : plan))
+      }
+      return [nextPlan, ...newPrev]
     })
   }
 
-  const handleDeleteClick = (id: number) => {
+  const handleDeleteClick = async (id: string | number) => {
     if (id === 1 || id === 2 || id === 3) {
       toast("샘플이라 삭제 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
         icon: "💡",
         duration: 3000,
       })
       return
+    }
+
+    if (isLoggedIn && user?.id) {
+      try {
+        await secureWrite({
+          table: "meal_reservations",
+          action: "delete",
+          filters: { id }
+        })
+      } catch (err) {
+        console.error("Failed to delete reservation", err)
+        toast.error("예약 삭제에 실패했습니다.")
+        return
+      }
     }
 
     setPlans((prev) => prev.filter((plan) => plan.id !== id))

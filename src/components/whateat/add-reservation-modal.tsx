@@ -28,7 +28,7 @@ import { toast } from "react-hot-toast"
 
 
 export interface EditData {
-  id: number
+  id: string | number
   date: string
   menu: string
   mealType: "집밥" | "배달" | "외식"
@@ -50,7 +50,7 @@ interface AddReservationModalProps {
   initialUrl?: string
   editData?: EditData | null
   onSave?: (data: EditData) => void
-  onDelete?: (id: number) => void
+  onDelete?: (id: string | number) => void
   prefillData?: ReservationPrefillData | null
 }
 
@@ -124,6 +124,17 @@ function formatDateDisplay(dateStr: string): string {
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"]
   const weekday = weekdays[date.getDay()]
   return `${month}월 ${day}일 (${weekday})`
+}
+
+function generateUUID() {
+  if (typeof window !== "undefined" && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
 }
 
 export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData }: AddReservationModalProps) {
@@ -323,7 +334,7 @@ const handleSubmit = () => {
           : null
 
     const payload: EditData = {
-      id: editData?.id ?? Date.now(),
+      id: editData?.id ?? generateUUID(),
       date: date || editData?.date || new Date().toISOString().split("T")[0],
       menu: menuName || urlPreview?.aiSuggestedName || editData?.menu || "메뉴 미정",
       mealType: resolvedMealType,

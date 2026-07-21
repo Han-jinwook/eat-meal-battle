@@ -28,7 +28,7 @@ const sampleReservationData: Record<string, { name: string; type: "home" | "deli
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
 export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: MealCalendarTabProps) {
-  const [mode, setMode] = useState<CalendarMode>("log")
+  const [mode, setMode] = useState<CalendarMode>("reservation")
   const [currentMonth, setCurrentMonth] = useState({ year: 2026, month: 3 })
 
   const goToPrevMonth = () => {
@@ -170,17 +170,6 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       {/* Mode Toggle */}
       <div className="flex items-center justify-center gap-2">
         <button
-          onClick={() => setMode("log")}
-          className={cn(
-            "px-5 py-2 rounded-full text-sm font-bold transition-all",
-            mode === "log"
-              ? "bg-cyan-500 text-white shadow-md"
-              : "bg-white/70 text-muted-foreground hover:bg-white"
-          )}
-        >
-          먹로그
-        </button>
-        <button
           onClick={() => setMode("reservation")}
           className={cn(
             "px-5 py-2 rounded-full text-sm font-bold transition-all",
@@ -190,6 +179,17 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           )}
         >
           먹예약
+        </button>
+        <button
+          onClick={() => setMode("log")}
+          className={cn(
+            "px-5 py-2 rounded-full text-sm font-bold transition-all",
+            mode === "log"
+              ? "bg-cyan-500 text-white shadow-md"
+              : "bg-white/70 text-muted-foreground hover:bg-white"
+          )}
+        >
+          먹로그
         </button>
       </div>
 
