@@ -277,6 +277,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     dong: "청라동"
   })
   const [scopeFilter, setScopeFilter] = useState<string>("all") // 범위: dong/gu/city/all
+  const [scopeLabel, setScopeLabel] = useState<string>("전국") // 드롭다운 버튼 표시 레이블
   const [searchRegion, setSearchRegion] = useState<string>("") // 검색 지역
   const [showScopeDropdown, setShowScopeDropdown] = useState(false)
   const [showRegionSearch, setShowRegionSearch] = useState(false)
@@ -1205,22 +1206,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       ]
     : [{ id: "all", label: "전국" }]
 
-  const getDropdownButtonLabel = () => {
-    if (searchRegion) {
-      return searchRegion
-    }
-    switch (scopeFilter) {
-      case "dong":
-        return userAddress.dong || "전국"
-      case "gu":
-        return userAddress.gu || "전국"
-      case "city":
-        return userAddress.city || "전국"
-      case "all":
-      default:
-        return "전국"
-    }
-  }
+  const displayLabel = searchRegion || scopeLabel
 
   // 좋아요 토글
   const toggleLike = async (postId: number | string) => {
@@ -1519,7 +1505,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     : "bg-orange-50 text-orange-600 border-orange-200"
                 )}
               >
-                {getDropdownButtonLabel()}
+                {displayLabel}
                 <ChevronDown className="size-3" />
               </button>
               {showScopeDropdown && (
@@ -1529,6 +1515,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                       key={scope.id}
                       onClick={() => {
                         setScopeFilter(scope.id)
+                        setScopeLabel(scope.label)
                         setSearchRegion("")
                         setShowRegionSearch(false)
                         setShowScopeDropdown(false)
@@ -1558,6 +1545,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                 } else {
                   setSearchRegion("")
                   setScopeFilter("all")
+                  setScopeLabel("전국")
                 }
               }}
               className={cn(
@@ -1591,6 +1579,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     setShowRegionSearch(false)
                     setSearchRegion("")
                     setScopeFilter("all")
+                    setScopeLabel("전국")
                   }
                 }}
                 className="w-36 px-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none placeholder:text-muted-foreground/50 animate-in slide-in-from-left-2 duration-200 h-9"
