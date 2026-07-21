@@ -1915,9 +1915,16 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             <div className="px-4 pt-3 pb-1">
               {/* 식당명 + 별점 한 줄 */}
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[11px] text-muted-foreground font-medium truncate">
-                  {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
-                </span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {post.linkUrl && (
+                    <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
+                      <span className="text-white text-[8px] font-black leading-none">N</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] text-muted-foreground font-medium truncate">
+                    {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
+                  </span>
+                </div>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">
                     <Star className="size-3 fill-orange-400 text-orange-400" />
@@ -1927,11 +1934,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                     <span className="text-[10px] text-muted-foreground">
                       ({post.rating.count}명)
                     </span>
-                    <span className={cn(
-                      "text-[10px] font-bold",
-                      post.source === "solo" ? "text-cyan-500" :
-                      post.source === "family" ? "text-orange-500" : "text-purple-500"
-                    )}>
+                    <span className="text-[10px] font-bold text-orange-500">
                       {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"}
                     </span>
                   </div>
