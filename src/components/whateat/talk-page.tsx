@@ -1206,7 +1206,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       ]
     : [{ id: "all", label: "전국" }]
 
-  const displayLabel = searchRegion || scopeLabel
+  const displayLabel = scopeLabel
 
   // 좋아요 토글
   const toggleLike = async (postId: number | string) => {
