@@ -1322,6 +1322,15 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return c1.substring(0, 2) === c2.substring(0, 2)
   }
 
+  const isSameDong = (d1?: string, d2?: string) => {
+    const clean = (d?: string) => {
+      if (!d) return ""
+      const last = d.includes("/") ? d.split("/").pop() || "" : d
+      return last.replace(/[동읍면]$/, "").trim()
+    }
+    return clean(d1) === clean(d2)
+  }
+
   const matchesRegionFilter = (post: any) => {
     if (searchRegion) {
       const q = searchRegion.trim().toLowerCase()
@@ -1338,13 +1347,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       return matchesDong || matchesGu || matchesCity
     }
 
-    if (post.isSample) return true
-
     const postRegion = post.author?.region || post.region?.dong || ""
     if (scopeFilter === "dong") {
       return isSameCity(post.region.city, userAddress.city) &&
              post.region.gu === userAddress.gu &&
-             postRegion === userRegion
+             isSameDong(postRegion, userRegion)
     } else if (scopeFilter === "gu") {
       return isSameCity(post.region.city, userAddress.city) && post.region.gu === userAddress.gu
     } else if (scopeFilter === "city") {
