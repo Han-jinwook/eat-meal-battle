@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin, Loader2 } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
