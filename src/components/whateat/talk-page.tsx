@@ -1209,7 +1209,17 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     if (searchRegion) {
       return searchRegion
     }
-    return regionScopeOptions.find((s) => s.id === scopeFilter)?.label || "전국"
+    switch (scopeFilter) {
+      case "dong":
+        return userAddress.dong || "전국"
+      case "gu":
+        return userAddress.gu || "전국"
+      case "city":
+        return userAddress.city || "전국"
+      case "all":
+      default:
+        return "전국"
+    }
   }
 
   // 좋아요 토글
