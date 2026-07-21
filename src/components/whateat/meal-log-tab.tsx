@@ -1812,8 +1812,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             )}
 
             {/* Card Footer */}
-            <div className="px-5 pt-4 pb-3 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
+            <div className="px-5 pt-2.5 pb-3 flex flex-col">
+              <div className="flex items-center justify-between mb-1">
                 <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">{meal.date}</p>
                 <div className="flex items-center gap-0.5 text-orange-500">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -1832,7 +1832,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between mb-2 gap-2">
+              <div className="flex items-center justify-between mb-0.5 gap-2">
                 <h3 className="font-bold text-foreground text-lg truncate">{meal.title}</h3>
                 <span className={cn(
                   "shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold",
