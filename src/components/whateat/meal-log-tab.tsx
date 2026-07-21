@@ -671,8 +671,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       title: data.menuName,
       mealType: data.mealType,
       rating: data.rating || 5,
-      tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
-      placeName: data.place?.name || data.deliveryStoreName || data.placeName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
+      tips: data.recipe ? data.recipe.split("\n").filter((t) => t.trim()) : [],
+      placeName: data.place?.name || data.deliveryStoreName || (data as any).placeName || (data.linkUrl ? "식사 공유 상세" : "식사 일지"),
       placeAddress: data.place?.address || "",
       description: data.description || data.recipe || "",
       promotedAt: new Date().toISOString(), // 맛톡 승격 시점의 일시 저장
