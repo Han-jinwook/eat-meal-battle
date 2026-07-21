@@ -1917,14 +1917,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[11px] text-muted-foreground font-medium truncate">
                   {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
-                  {post.restaurant?.address && (
-                    <span className="text-[10px] text-muted-foreground/70 ml-1">
-                      {(() => {
-                        const parsed = parseRegionFromAddress(post.restaurant.address)
-                        return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
-                      })()}
-                    </span>
-                  )}
                 </span>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">
