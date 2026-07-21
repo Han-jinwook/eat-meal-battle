@@ -1576,7 +1576,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
 
       {/* Meal Cards - PC에서 2열 그리드 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
         {filteredLogs.map((meal) => (
           <div
             key={meal.id}
@@ -1844,9 +1844,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </span>
               </div>
               {/* Comment Section (기존 Memo Section 전면 대체) */}
-              <div className="mt-3">
+              <div className="mt-0.5">
                 <div 
-                  className="flex items-center gap-1.5 mb-2.5 cursor-pointer group hover:bg-muted/10 p-1 -mx-1 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mx-1 rounded-md transition-colors"
                   onClick={() => setVisibleMemoInputs(prev => {
                     const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
                     return { ...prev, [meal.id]: !isCurrentlyVisible }
@@ -1860,7 +1860,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </div>
 
                 {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
-                  <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="animate-in fade-in slide-in-from-top-1 duration-200 pt-2">
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {(meal.comments || []).length === 0 ? null : (
                         (meal.comments || []).map((comment: any) => (
