@@ -1844,7 +1844,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </span>
               </div>
               {/* Comment Section (기존 Memo Section 전면 대체) */}
-              <div className="mt-4 pt-3 border-t border-muted/30">
+              <div className="mt-3">
                 <div 
                   className="flex items-center gap-1.5 mb-2.5 cursor-pointer group hover:bg-muted/10 p-1 -mx-1 rounded-md transition-colors"
                   onClick={() => setVisibleMemoInputs(prev => {
@@ -1857,10 +1857,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
                     {(meal.comments || []).length}
                   </span>
-                  <ChevronDown className={cn(
-                    "size-4 text-muted-foreground/50 ml-auto transition-transform", 
-                    (visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && "rotate-180"
-                  )} />
                 </div>
 
                 {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
