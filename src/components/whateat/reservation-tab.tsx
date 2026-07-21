@@ -22,8 +22,8 @@ import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 import { toast } from "react-hot-toast"
 
-const getDynamicDefaultPlans = () => {
-  const today = new Date()
+export const getDynamicDefaultPlans = (baseDate?: Date) => {
+  const today = baseDate || new Date()
   let targetYear = today.getFullYear()
   let targetMonth = today.getMonth() + 1 // Next month (0-indexed, so today.getMonth() + 1)
   if (targetMonth > 11) {
@@ -159,7 +159,13 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           }))
           setPlans(mapped)
         } else {
-          setPlans(defaultMealPlans)
+          // Fetch user's created_at to use as base date for samples
+          let baseDate = new Date()
+          const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
+          if (userData?.created_at) {
+            baseDate = new Date(userData.created_at)
+          }
+          setPlans(getDynamicDefaultPlans(baseDate))
         }
       } catch (err) {
         console.error("Failed to fetch reservations", err)

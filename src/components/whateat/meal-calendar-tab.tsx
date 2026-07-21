@@ -1,8 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight, ChefHat, Bike, UtensilsCrossed, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getDynamicDefaultPlans } from "./reservation-tab"
+import { useHub } from "@/services/merlin-hub-sdk/react"
+import { createClient } from "@/lib/supabase"
 
 interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
@@ -18,20 +21,78 @@ const sampleLogData: Record<string, { type: "home" | "delivery" | "out"; label: 
   "2026-03-18": [{ type: "delivery", label: "양념치킨", id: 3 }],
 }
 
-// 실제 먹예약 데이터와 연동
-const sampleReservationData: Record<string, { name: string; type: "home" | "delivery" | "out"; memo: string; id: number }[]> = {
-  "2026-03-15": [{ name: "삼겹살", type: "out", memo: "회식", id: 1 }],
-  "2026-03-22": [{ name: "파스타", type: "home", memo: "집에서 만들기", id: 2 }],
-  "2026-04-05": [{ name: "치킨", type: "delivery", memo: "", id: 3 }],
+// 실제 먹예약 데이터 연동을 위한 함수형 변환 (임시 하드코딩 제거)
+const generateDynamicSampleReservationData = (baseDate?: Date) => {
+  const dynamicPlans = getDynamicDefaultPlans(baseDate)
+  const data: Record<string, any[]> = {}
+  dynamicPlans.forEach(plan => {
+    let type: "home" | "delivery" | "out" = "home"
+    if (plan.mealType === "배달") type = "delivery"
+    if (plan.mealType === "외식") type = "out"
+    
+    if (!data[plan.date]) {
+      data[plan.date] = []
+    }
+    data[plan.date].push({
+      name: plan.menu,
+      type,
+      memo: plan.memo,
+      id: plan.id
+    })
+  })
+  return data
 }
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
 export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: MealCalendarTabProps) {
   const [mode, setMode] = useState<CalendarMode>("reservation")
-  const [currentMonth, setCurrentMonth] = useState({ year: 2026, month: 3 })
+  const { isLoggedIn, user } = useHub()
+  const [baseDate, setBaseDate] = useState<Date | undefined>(undefined)
+
+  useEffect(() => {
+    if (isLoggedIn && user?.id) {
+      const fetchUserDate = async () => {
+        const supabase = createClient()
+        const { data } = await supabase.from("users").select("created_at").eq("id", user.id).single()
+        if (data?.created_at) {
+          setBaseDate(new Date(data.created_at))
+        }
+      }
+      fetchUserDate()
+    }
+  }, [isLoggedIn, user?.id])
+
+  // 상태로 관리하여 첫 진입 시 샘플 데이터 기준 월로 세팅
+  const dynamicSampleReservationData = useMemo(() => generateDynamicSampleReservationData(baseDate), [baseDate])
+  
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const target = baseDate || new Date()
+    let targetYear = target.getFullYear()
+    let targetMonth = target.getMonth() + 2 // Next month is default for samples
+    if (targetMonth > 12) {
+      targetMonth -= 12
+      targetYear += 1
+    }
+    return { year: targetYear, month: targetMonth }
+  })
+
+  // baseDate가 업데이트 되면 캘린더 초기 월도 동기화해줍니다 (단, 유저가 월을 바꾸지 않은 초기 상태일 때만)
+  const [hasUserNavigated, setHasUserNavigated] = useState(false)
+  useEffect(() => {
+    if (baseDate && !hasUserNavigated) {
+      let targetYear = baseDate.getFullYear()
+      let targetMonth = baseDate.getMonth() + 2
+      if (targetMonth > 12) {
+        targetMonth -= 12
+        targetYear += 1
+      }
+      setCurrentMonth({ year: targetYear, month: targetMonth })
+    }
+  }, [baseDate, hasUserNavigated])
 
   const goToPrevMonth = () => {
+    setHasUserNavigated(true)
     setCurrentMonth(prev => {
       if (prev.month === 1) {
         return { year: prev.year - 1, month: 12 }
@@ -41,6 +102,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   }
 
   const goToNextMonth = () => {
+    setHasUserNavigated(true)
     setCurrentMonth(prev => {
       if (prev.month === 12) {
         return { year: prev.year + 1, month: 1 }
@@ -105,7 +167,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     let total = 0
     let activeDays = 0
 
-    const activeDataMap = mode === "log" ? sampleLogData : sampleReservationData
+    const activeDataMap = mode === "log" ? sampleLogData : dynamicSampleReservationData
 
     Object.entries(activeDataMap).forEach(([dateKey, dayData]) => {
       const [year, month] = dateKey.split("-").map(Number)
@@ -151,7 +213,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   }
 
   const getReservationIndicators = (date: string) => {
-    return sampleReservationData[date] || []
+    return dynamicSampleReservationData[date] || []
   }
 
   const getTypeColor = (type: "home" | "delivery" | "out") => {
