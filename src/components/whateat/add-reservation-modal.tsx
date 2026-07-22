@@ -228,7 +228,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
   }
 
   // URL 미리보기 가져오기 함수
-  const fetchUrlPreview = (url: string) => {
+  const fetchUrlPreview = async (url: string) => {
     if (!url || !isValidUrl(url)) {
       setUrlPreview(null)
       return
@@ -240,37 +240,35 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       url: url,
       isLoading: true
     })
-    
-    // Simulate AI processing (실제로는 API 호출)
-    setTimeout(() => {
-      let suggestedName = "맛있는 음식"
-      let thumbnail = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
-      
-      if (url.includes("youtube")) {
-        suggestedName = "유튜브 레시피 - 집에서 만드는 파스타"
-        thumbnail = "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop"
-      } else if (url.includes("instagram")) {
-        suggestedName = "인스타 맛집 - 청담동 오마카세"
-        thumbnail = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop"
-      } else if (url.includes("naver") || url.includes("place")) {
-        suggestedName = "네이버 플레이스 - 강남 스시 오마카세"
-        thumbnail = "https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&h=300&fit=crop"
-      } else if (url.includes("blog")) {
-        suggestedName = "블로그 레시피 - 매콤 닭볶음탕"
-        thumbnail = "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop"
-      } else if (url.includes("baemin") || url.includes("coupang") || url.includes("yogiyo")) {
-        suggestedName = "배달앱 - BHC 뿌링클"
-        thumbnail = "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400&h=300&fit=crop"
+
+    try {
+      const response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
+      const result = await response.json()
+
+      if (result.status === "success" && result.data) {
+        const title = result.data.title || "웹사이트 링크"
+        const imageUrl = result.data.image?.url || result.data.logo?.url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+
+        setUrlPreview({
+          thumbnail: imageUrl,
+          aiSuggestedName: title,
+          url: url,
+          isLoading: false
+        })
+        setMenuName(title)
+      } else {
+        throw new Error("Invalid response from microlink")
       }
-      
+    } catch (err) {
+      console.error("Failed to fetch URL preview:", err)
+      // Fallback
       setUrlPreview({
-        thumbnail,
-        aiSuggestedName: suggestedName,
+        thumbnail: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+        aiSuggestedName: "직접 입력해주세요",
         url: url,
         isLoading: false
       })
-      setMenuName(suggestedName)
-    }, 1200)
+    }
   }
 
   // URL 입력 디바운스 처리
