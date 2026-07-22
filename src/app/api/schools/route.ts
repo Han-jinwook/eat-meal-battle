@@ -6,10 +6,10 @@ const NEIS_API_BASE_URL = 'https://open.neis.go.kr/hub';
 // 교육부 API 키
 const API_KEY = process.env.NEIS_API_KEY || 'cd3edd777f534caca0100e7c006d4dcd';
 
-// API 키 확인
-console.log(`NEIS API KEY 사용 여부: ${API_KEY ? '설정됨' : '설정되지 않음'}`);
-
 export async function GET(request: Request) {
+  // API 키 확인 (호출 시에만 로그 출력)
+  console.log(`NEIS API KEY 사용 여부: ${API_KEY ? '설정됨' : '설정되지 않음'}`);
+
   const { searchParams } = new URL(request.url);
   const keyword = searchParams.get('keyword');
   
