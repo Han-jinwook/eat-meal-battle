@@ -250,7 +250,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
         let clean = title.split(/[-|]/)[0].trim()
         
         // 1. 따옴표 안의 단어 추출 (예: '수육')
-        const quoteMatch = clean.match(/['"](.*?)['"]/)
+        const quoteMatch = clean.match(/['"‘“](.*?)['"’”]/)
         if (quoteMatch && quoteMatch[1] && quoteMatch[1].length < 15) {
           clean = quoteMatch[1]
         }
@@ -258,16 +258,17 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
         // 2. 괄호 안의 내용 제거
         clean = clean.replace(/\[.*?\]|\(.*?\)/g, "").trim()
         
-        // 3. 불필요한 수식어 제거
+        // 3. 불필요한 수식어 및 기호 제거
         const stopWords = [
           "만드는 법", "만드는 방법", "삶는 방법", "삶는 법", "만들기", "레시피", "황금레시피", 
           "초간단", "간단", "진짜 맛있는", "맛있는", "비법", "알려드릴게요", "겁나불게", 
           "부드러운", "최고의", "완벽한", "실패없는", "대박", "1분", "쇼츠", "shorts", "백종원", "류수영"
         ]
         const regex = new RegExp(stopWords.join("|"), "gi")
-        clean = clean.replace(regex, "").replace(/\s+/g, " ").replace(/[!?,~]/g, "").trim()
+        clean = clean.replace(regex, "").replace(/\s+/g, " ").replace(/[!?,~'"‘“’”]/g, "").trim()
         
-        return clean || title.split(/[-|]/)[0].trim()
+        const fallback = title.split(/[-|]/)[0].replace(/[!?,~'"‘“’”]/g, "").trim()
+        return clean || fallback
       }
 
       if (result.status === "success" && result.data) {
