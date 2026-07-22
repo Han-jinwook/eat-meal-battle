@@ -152,6 +152,14 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         
         if (error) throw error
 
+        let baseDate = new Date()
+        const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
+        if (userData?.created_at) {
+          baseDate = new Date(userData.created_at)
+        }
+        
+        const samples = getDynamicDefaultPlans(baseDate)
+
         if (data && data.length > 0) {
           const mapped = data.map(row => ({
             id: row.id,
@@ -164,15 +172,21 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             thumbnail: row.thumbnail || "",
             url: row.source_url || ""
           }))
-          setPlans(mapped)
+          
+          let finalPlans = [...mapped]
+          
+          const hasDelivery = mapped.some(p => p.mealType === "배달")
+          const hasHomemade = mapped.some(p => p.mealType === "집밥")
+          const hasDineout = mapped.some(p => p.mealType === "외식")
+          
+          if (!hasDelivery) finalPlans.push(samples.find(s => s.mealType === "배달") as any)
+          if (!hasHomemade) finalPlans.push(samples.find(s => s.mealType === "집밥") as any)
+          if (!hasDineout) finalPlans.push(samples.find(s => s.mealType === "외식") as any)
+          
+          finalPlans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          setPlans(finalPlans)
         } else {
-          // Fetch user's created_at to use as base date for samples
-          let baseDate = new Date()
-          const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
-          if (userData?.created_at) {
-            baseDate = new Date(userData.created_at)
-          }
-          setPlans(getDynamicDefaultPlans(baseDate))
+          setPlans(samples)
         }
       } catch (err) {
         console.error("Failed to fetch reservations", err)
