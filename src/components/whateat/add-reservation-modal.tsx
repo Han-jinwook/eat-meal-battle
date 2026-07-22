@@ -36,6 +36,7 @@ export interface EditData {
   memo: string
   time: string
   thumbnail?: string
+  url?: string
 }
 
 export interface ReservationPrefillData {
@@ -342,6 +343,7 @@ const handleSubmit = () => {
       memo,
       time: mealTime || editData?.time || "",
       thumbnail: urlPreview?.thumbnail || editData?.thumbnail || undefined,
+      url: urlPreview?.url || initialUrl || editData?.url || undefined,
     }
 
     onSave?.(payload)

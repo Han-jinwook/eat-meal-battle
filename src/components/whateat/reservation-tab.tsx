@@ -159,7 +159,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             menu: row.menu,
             place: row.place || "",
             memo: row.memo || "",
-            thumbnail: row.thumbnail || ""
+            thumbnail: row.thumbnail || "",
+            url: row.source_url || ""
           }))
           setPlans(mapped)
         } else {
@@ -380,6 +381,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             place: saved.place,
             memo: saved.memo,
             thumbnail: nextPlan.thumbnail,
+            source_url: saved.url || null,
             source: "solo"
           }
         })

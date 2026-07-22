@@ -1,5 +1,7 @@
-import { X, CalendarDays, MapPin, Search, Youtube, ExternalLink, Utensils, Clock } from "lucide-react"
+import { useState } from "react"
+import { X, CalendarDays, MapPin, Search, Youtube, ExternalLink, Utensils, Clock, Link2, Copy } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "react-hot-toast"
 
 export interface DetailPlanData {
   id: number | string
@@ -10,6 +12,7 @@ export interface DetailPlanData {
   place: string
   memo: string
   thumbnail?: string
+  url?: string
 }
 
 interface ReservationDetailModalProps {
@@ -19,6 +22,8 @@ interface ReservationDetailModalProps {
 }
 
 export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDetailModalProps) {
+  const [showDeliveryApps, setShowDeliveryApps] = useState(false)
+
   if (!isOpen || !plan) return null
 
   const getActionConfig = () => {
@@ -38,6 +43,14 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
           url: `https://search.naver.com/search.naver?query=${encodeURIComponent(plan.place || plan.menu + " 배달")}`
         }
       case "외식":
+        if (plan.url) {
+          return {
+            icon: Link2,
+            label: "저장된 장소 링크 열기",
+            color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 ring-indigo-200",
+            url: plan.url
+          }
+        }
         return {
           icon: MapPin,
           label: "지도 검색",
@@ -50,6 +63,24 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
   }
 
   const action = getActionConfig()
+
+  const handleDeliveryAppClick = (appUrl: string) => {
+    const textToCopy = plan.place || plan.menu
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        toast.success(`'${textToCopy}' 복사 완료! 앱 검색창에 붙여넣으세요.`, { icon: '📋' })
+      }).catch(() => {
+        toast.error("클립보드 복사에 실패했습니다.")
+      })
+    }
+    window.open(appUrl, '_blank')
+  }
+
+  const DELIVERY_APPS = [
+    { name: "배달의민족", url: "https://www.baemin.com/", color: "bg-[#2ac1bc] text-white hover:bg-[#23a5a1]" },
+    { name: "쿠팡이츠", url: "https://www.coupangeats.com/", color: "bg-[#00a8e1] text-white hover:bg-[#0092c4]" },
+    { name: "요기요", url: "https://www.yogiyo.co.kr/", color: "bg-[#fa0050] text-white hover:bg-[#de0047]" }
+  ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
@@ -140,7 +171,7 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
           </div>
 
           {/* Action Button */}
-          {action && (
+          {action && plan.mealType !== "배달" && (
             <div className="mt-6 pt-6 border-t border-gray-100">
               <a 
                 href={action.url}
@@ -155,6 +186,45 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
                 <span>{action.label}</span>
                 <ExternalLink className="size-3.5 opacity-50 ml-1" />
               </a>
+            </div>
+          )}
+
+          {plan.mealType === "배달" && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              {!showDeliveryApps ? (
+                <button 
+                  onClick={() => setShowDeliveryApps(true)}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold transition-all ring-1 ring-inset bg-teal-50 text-teal-600 hover:bg-teal-100 ring-teal-200"
+                >
+                  <Search className="size-4.5" />
+                  <span>배달앱 선택하기</span>
+                  <ExternalLink className="size-3.5 opacity-50 ml-1" />
+                </button>
+              ) : (
+                <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="text-center mb-1">
+                    <p className="text-sm font-bold text-gray-700 flex items-center justify-center gap-1.5">
+                      <Copy className="size-3.5 text-gray-400" />
+                      어떤 앱으로 주문할까요?
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">앱을 열고 이름이 자동 복사되면 붙여넣으세요</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {DELIVERY_APPS.map(app => (
+                      <button
+                        key={app.name}
+                        onClick={() => handleDeliveryAppClick(app.url)}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex flex-col items-center justify-center gap-1",
+                          app.color
+                        )}
+                      >
+                        {app.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

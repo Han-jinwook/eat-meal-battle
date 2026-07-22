@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.meal_reservations (
     place text,
     memo text,
     thumbnail text,
+    source_url text,
     source text DEFAULT 'solo',
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
