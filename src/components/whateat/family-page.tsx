@@ -1030,7 +1030,19 @@ export function FamilyPage({
     { id: "dining" as SharedMealFilterType, label: "외식", icon: UtensilsCrossed },
   ]
 
-  const baseMeals = meals.length === 0 ? defaultSharedMeals : meals
+  const hasHomemade = meals.some(m => m.mealType === "homemade")
+  const hasDelivery = meals.some(m => m.mealType === "delivery")
+  const hasDining = meals.some(m => m.mealType === "dining")
+  
+  const activeDefaultMeals = defaultSharedMeals.filter(m => {
+    if (m.mealType === "homemade" && hasHomemade) return false
+    if (m.mealType === "delivery" && hasDelivery) return false
+    if (m.mealType === "dining" && hasDining) return false
+    return true
+  })
+  
+  const baseMeals = [...activeDefaultMeals, ...meals]
+  
   const filteredMeals = baseMeals.filter((meal) => {
     if (sharedMealFilter !== "all" && getSharedMealCategory(meal) !== sharedMealFilter) {
       return false
@@ -2062,7 +2074,7 @@ export function FamilyPage({
             <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
-                const displayMeals = meals.length === 0 ? defaultSharedMeals : meals
+                const displayMeals = [...activeDefaultMeals, ...meals]
                 const count =
                   filterTab.id === "all"
                     ? displayMeals.length
