@@ -79,7 +79,8 @@ export async function POST(request: Request) {
       'users',
       'interest_schools',
       'notification_recipients',
-      'meal_likes'
+      'meal_likes',
+      'meal_reservations'
     ];
 
     if (!ALLOWED_TABLES.includes(table)) {
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
         if (table === 'meal_images' && rec.uploaded_by && rec.uploaded_by !== userId) {
           return NextResponse.json({ error: '본인의 업로드 정보만 저장할 수 있습니다.' }, { status: 403 });
         }
-        if (['comments', 'comment_replies', 'meal_ratings', 'school_infos', 'interest_schools', 'meal_likes'].includes(table)) {
+        if (['comments', 'comment_replies', 'meal_ratings', 'school_infos', 'interest_schools', 'meal_likes', 'meal_reservations'].includes(table)) {
           const recUserId = rec.user_id;
           if (recUserId && recUserId !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 작성할 수 있습니다.' }, { status: 403 });
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
         if (table === 'meal_images' && existing.uploaded_by !== userId) {
           return NextResponse.json({ error: '본인의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
         }
-        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools'].includes(table) && existing.user_id !== userId) {
+        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
           return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
         }
         if (table === 'school_infos' && existing.user_id !== userId) {
@@ -216,7 +217,7 @@ export async function POST(request: Request) {
           if (table === 'meal_images' && existing.uploaded_by !== userId) {
             return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
           }
-          if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes'].includes(table) && existing.user_id !== userId) {
+          if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
             return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
           }
           if (table === 'school_infos' && existing.user_id !== userId) {
