@@ -29,6 +29,14 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
   const getActionConfig = () => {
     switch (plan.mealType) {
       case "집밥":
+        if (plan.url) {
+          return {
+            icon: Link2,
+            label: "저장된 레시피 열기",
+            color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
+            url: plan.url
+          }
+        }
         return {
           icon: Youtube,
           label: "레시피 검색",

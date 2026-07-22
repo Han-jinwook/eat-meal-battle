@@ -78,7 +78,8 @@ export const getDynamicDefaultPlans = (baseDate?: Date) => {
       menu: "파스타",
       place: "집",
       memo: "집에서 직접 만들기 실습",
-      thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop"
+      thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop",
+      url: "https://www.youtube.com/results?search_query=집밥+파스타+만들기"
     },
     {
       id: 3,
@@ -88,7 +89,8 @@ export const getDynamicDefaultPlans = (baseDate?: Date) => {
       menu: "삼겹살",
       place: "우미학 청담점",
       memo: "주말 저녁 외식 패밀리 데이",
-      thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop"
+      thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop",
+      url: "https://m.place.naver.com/restaurant/37166160"
     }
   ]
 }
