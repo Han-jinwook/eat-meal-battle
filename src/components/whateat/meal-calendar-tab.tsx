@@ -334,11 +334,29 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     return realReservations[date] || (Object.keys(realReservations).length === 0 ? (dynamicSampleReservationData[date] || []) : [])
   }
 
-  const getTypeColor = (type: "home" | "delivery" | "out") => {
+  const getItemBadgeStyle = (type: "home" | "delivery" | "out") => {
     switch (type) {
-      case "home": return "bg-emerald-500"
-      case "delivery": return "bg-cyan-500"
-      case "out": return "bg-violet-500"
+      case "home":
+        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/25"
+      case "delivery":
+        return "bg-cyan-500/15 text-cyan-700 border-cyan-500/30 hover:bg-cyan-500/25"
+      case "out":
+        return "bg-violet-500/15 text-violet-700 border-violet-500/30 hover:bg-violet-500/25"
+      default:
+        return "bg-gray-500/15 text-gray-700 border-gray-500/30"
+    }
+  }
+
+  const getItemIcon = (type: "home" | "delivery" | "out") => {
+    switch (type) {
+      case "home":
+        return <ChefHat className="size-3 text-emerald-500 shrink-0" />
+      case "delivery":
+        return <Bike className="size-3 text-cyan-500 shrink-0" />
+      case "out":
+        return <UtensilsCrossed className="size-3 text-violet-500 shrink-0" />
+      default:
+        return null
     }
   }
 
@@ -431,19 +449,24 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                   hasData && dayObj.isCurrentMonth && "bg-white/80"
                 )}
               >
-                {/* 날짜 숫자 */}
-                <div className={cn(
-                  "text-[11px] font-bold px-1.5 pt-1 leading-none",
-                  !dayObj.isCurrentMonth && "text-muted-foreground/30",
-                  dayObj.isCurrentMonth && dayOfWeek === 0 && "text-red-400",
-                  dayObj.isCurrentMonth && dayOfWeek === 6 && "text-blue-400",
-                  dayObj.isCurrentMonth && dayOfWeek !== 0 && dayOfWeek !== 6 && "text-foreground/70",
-                  isToday && "text-primary font-extrabold"
-                )}>
-                  {dayObj.day}
+                {/* 날짜 숫자 & 식사 유형 아이콘 */}
+                <div className="flex items-center justify-between px-1.5 pt-1">
+                  <span className={cn(
+                    "text-[11px] font-bold leading-none",
+                    !dayObj.isCurrentMonth && "text-muted-foreground/30",
+                    dayObj.isCurrentMonth && dayOfWeek === 0 && "text-red-400",
+                    dayObj.isCurrentMonth && dayOfWeek === 6 && "text-blue-400",
+                    dayObj.isCurrentMonth && dayOfWeek !== 0 && dayOfWeek !== 6 && "text-foreground/70",
+                    isToday && "text-primary font-extrabold"
+                  )}>
+                    {dayObj.day}
+                  </span>
+                  {dayObj.isCurrentMonth && hasData && activeData[0] && (
+                    getItemIcon(activeData[0].type)
+                  )}
                 </div>
 
-                {/* 배경색 블록 내용 - 모드별 단일 색상 */}
+                {/* 배경색 블록 내용 - 식사 유형별 패턴 색상 통일 */}
                 {dayObj.isCurrentMonth && hasData && (
                   <div className="flex-1 px-1 pb-1 mt-0.5">
                     {activeData.slice(0, 1).map((item, i) => (
@@ -454,10 +477,8 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                           handleItemClick(item, dayObj.fullDate)
                         }}
                         className={cn(
-                          "w-full text-left text-[9px] font-medium leading-tight px-1.5 py-1 rounded-lg truncate transition-all hover:opacity-80 active:scale-95",
-                          mode === "log"
-                            ? "bg-cyan-500/20 text-cyan-700 border border-cyan-500/30"
-                            : "bg-violet-500/20 text-violet-700 border border-violet-500/30"
+                          "w-full text-left text-[9px] font-medium leading-tight px-1.5 py-1 rounded-lg truncate transition-all border active:scale-95",
+                          getItemBadgeStyle(item.type)
                         )}
                       >
                         {"label" in item ? item.label : item.name}
@@ -469,7 +490,6 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             )
           })}
         </div>
-
       </div>
 
       {/* Statistics */}
