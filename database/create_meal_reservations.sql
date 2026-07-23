@@ -19,26 +19,14 @@ CREATE TABLE IF NOT EXISTS public.meal_reservations (
 -- RLS 활성화
 ALTER TABLE public.meal_reservations ENABLE ROW LEVEL SECURITY;
 
--- 조회 정책: 본인이 작성한 예약만 조회 가능
-CREATE POLICY "Users can view their own reservations"
-    ON public.meal_reservations FOR SELECT
-    USING (auth.uid() = user_id);
+-- 기존 정책 제거 후 WhatEat 공통 보안 정책 적용 (SELECT 전용 허용, 쓰기는 /api/db/write에서 처리)
+DROP POLICY IF EXISTS "Users can view their own reservations" ON public.meal_reservations;
+DROP POLICY IF EXISTS "Users can insert their own reservations" ON public.meal_reservations;
+DROP POLICY IF EXISTS "Users can update their own reservations" ON public.meal_reservations;
+DROP POLICY IF EXISTS "Users can delete their own reservations" ON public.meal_reservations;
+DROP POLICY IF EXISTS "Allow select for all" ON public.meal_reservations;
 
--- 삽입 정책: 본인의 예약만 생성 가능
-CREATE POLICY "Users can insert their own reservations"
-    ON public.meal_reservations FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
--- 수정 정책: 본인이 작성한 예약만 수정 가능
-CREATE POLICY "Users can update their own reservations"
-    ON public.meal_reservations FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
-
--- 삭제 정책: 본인이 작성한 예약만 삭제 가능
-CREATE POLICY "Users can delete their own reservations"
-    ON public.meal_reservations FOR DELETE
-    USING (auth.uid() = user_id);
+CREATE POLICY "Allow select for all" ON public.meal_reservations FOR SELECT TO anon, authenticated USING (true);
 
 -- 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_meal_reservations_user_id ON public.meal_reservations(user_id);
