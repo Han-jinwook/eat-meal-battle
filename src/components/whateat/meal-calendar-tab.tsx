@@ -339,16 +339,18 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     return realReservations[date] || (Object.keys(realReservations).length === 0 ? (dynamicSampleReservationData[date] || []) : [])
   }
 
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+
   const getItemBadgeStyle = (type: "home" | "delivery" | "out") => {
     switch (type) {
       case "home":
-        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/25"
+        return "bg-emerald-50/90 text-emerald-700 border-emerald-500/30 hover:bg-emerald-100"
       case "delivery":
-        return "bg-cyan-500/15 text-cyan-700 border-cyan-500/30 hover:bg-cyan-500/25"
+        return "bg-cyan-50/90 text-cyan-700 border-cyan-500/30 hover:bg-cyan-100"
       case "out":
-        return "bg-violet-500/15 text-violet-700 border-violet-500/30 hover:bg-violet-500/25"
+        return "bg-violet-50/90 text-violet-700 border-violet-500/30 hover:bg-violet-100"
       default:
-        return "bg-gray-500/15 text-gray-700 border-gray-500/30"
+        return "bg-gray-50/90 text-gray-700 border-gray-500/30"
     }
   }
 
@@ -454,8 +456,10 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             return (
               <div
                 key={`${dayObj.fullDate}-${index}`}
+                onMouseEnter={() => setHoveredDate(dayObj.fullDate)}
+                onMouseLeave={() => setHoveredDate(null)}
                 className={cn(
-                  "min-h-[58px] flex flex-col rounded-lg border transition-all",
+                  "relative min-h-[58px] flex flex-col rounded-lg border transition-all",
                   dayObj.isCurrentMonth
                     ? "border-muted/20 bg-white/40"
                     : "border-transparent bg-transparent",
@@ -463,7 +467,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                   hasData && dayObj.isCurrentMonth && "bg-white/80"
                 )}
               >
-                {/* 날짜 숫자 & 식사 유형 아이콘 */}
+                {/* 날짜 숫자 & 식사 유형 아이콘들 (2개든 3개든 모두 표시) */}
                 <div className="flex items-center justify-between px-1.5 pt-1">
                   <span className={cn(
                     "text-[11px] font-bold leading-none",
@@ -475,29 +479,70 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                   )}>
                     {dayObj.day}
                   </span>
-                  {dayObj.isCurrentMonth && hasData && activeData[0] && (
-                    getItemIcon(activeData[0].type)
+                  {dayObj.isCurrentMonth && hasData && (
+                    <div className="flex items-center gap-0.5">
+                      {Array.from(new Set(activeData.map(item => item.type))).map(type => (
+                        <span key={type}>{getItemIcon(type as "home" | "delivery" | "out")}</span>
+                      ))}
+                    </div>
                   )}
                 </div>
 
-                {/* 배경색 블록 내용 - 식사 유형별 패턴 색상 통일 */}
+                {/* 배경색 블록 내용 - 대표 1개 + (+N건) 칩 */}
                 {dayObj.isCurrentMonth && hasData && (
-                  <div className="flex-1 px-1 pb-1 mt-0.5">
-                    {activeData.slice(0, 1).map((item, i) => (
-                      <button
-                        key={i}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleItemClick(item, dayObj.fullDate)
-                        }}
-                        className={cn(
-                          "w-full text-left text-[9px] font-medium leading-tight px-1.5 py-1 rounded-lg truncate transition-all border active:scale-95",
-                          getItemBadgeStyle(item.type)
-                        )}
-                      >
-                        {"label" in item ? item.label : item.name}
-                      </button>
-                    ))}
+                  <div className="flex-1 px-1 pb-1 mt-0.5 flex flex-col gap-0.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleItemClick(activeData[0], dayObj.fullDate)
+                      }}
+                      className={cn(
+                        "w-full text-left text-[9px] font-medium leading-tight px-1.5 py-0.5 rounded-md truncate transition-all border active:scale-95",
+                        getItemBadgeStyle(activeData[0].type)
+                      )}
+                    >
+                      {"label" in activeData[0] ? activeData[0].label : activeData[0].name}
+                    </button>
+
+                    {activeData.length > 1 && (
+                      <div className="text-[8px] font-bold text-orange-600 bg-orange-50 border border-orange-200/80 rounded-md px-1 py-0.2 self-start flex items-center gap-0.5 shadow-2xs">
+                        +{activeData.length - 1}건
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 마우스 오버 팝업 (해당 날짜의 모든 예약/로그 목록 노출) */}
+                {hoveredDate === dayObj.fullDate && dayObj.isCurrentMonth && hasData && activeData.length > 1 && (
+                  <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-orange-200/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto">
+                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
+                      <span className="text-[11px] font-bold text-foreground">
+                        {new Date(dayObj.fullDate).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} ({activeData.length}건)
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                      {activeData.map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleItemClick(item, dayObj.fullDate)
+                          }}
+                          className={cn(
+                            "flex items-center gap-1.5 p-1.5 rounded-xl text-left text-[11px] font-bold transition-all border hover:scale-[1.02]",
+                            getItemBadgeStyle(item.type)
+                          )}
+                        >
+                          {getItemIcon(item.type)}
+                          <span className="truncate flex-1">{"label" in item ? item.label : item.name}</span>
+                          {item.time && (
+                            <span className="text-[9px] font-medium opacity-75 shrink-0 px-1 py-0.2 bg-white/60 rounded">
+                              {item.time}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
