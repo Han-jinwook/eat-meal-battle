@@ -483,10 +483,10 @@ const handleSubmit = () => {
         onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-180px)] overflow-y-auto hide-scrollbar mt-12">
+      {/* Modal Container */}
+      <div className="relative w-full max-w-lg bg-orange-50/70 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[96vh] overflow-y-auto hide-scrollbar my-auto">
         {/* Close Button & Delete Button in Edit Mode */}
-        <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
           {isEditMode && editData?.id && (
             <button
               onClick={() => {
@@ -502,7 +502,7 @@ const handleSubmit = () => {
                   onClose()
                 }
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
             >
               <Trash2 className="size-3" />
               삭제
@@ -510,25 +510,24 @@ const handleSubmit = () => {
           )}
           <button 
             onClick={onClose}
-            className="size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors cursor-pointer"
+            className="size-8 flex items-center justify-center rounded-full bg-white/60 hover:bg-white text-foreground transition-colors cursor-pointer"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-5">
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold tracking-tight text-foreground mb-2">
+          <div className="mb-3">
+            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
               {isEditMode ? "식사 예약 수정" : "나의 식사 예약"}
             </h2>
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-5" onClickCapture={handleInteraction}>
+          <div className="space-y-3" onClickCapture={handleInteraction}>
             {/* Meal Type - 유형 선택 (가장 위) */}
-            <div className="flex flex-col gap-3">
-              
+            <div className="flex flex-col gap-2">
               <div className="grid grid-cols-3 gap-2">
                 {mealTypes.map((type) => {
                   const Icon = type.icon
@@ -543,13 +542,13 @@ const handleSubmit = () => {
                         }
                       }}
                       className={cn(
-                        "py-3.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                        "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
                         mealType === type.id
-                          ? "bg-orange-500 text-white shadow-lg shadow-orange-300/40"
-                          : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
+                          ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
+                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
                       )}
                     >
-                      <Icon className="size-4" />
+                      <Icon className="size-3.5" />
                       <span className="text-xs">{type.label}</span>
                     </button>
                   )
@@ -558,12 +557,12 @@ const handleSubmit = () => {
 
               {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
               {mealType && (
-                <div className="mt-2 flex flex-col gap-3">
+                <div className="mt-1 flex flex-col gap-2">
                   {/* 1. 참고 영상 / 레시피 / 쇼츠 URL */}
                   <div className="relative">
-                    <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-red-500" />
+                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-red-500" />
                     <input
-                      className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
                       placeholder="🎬 참고 영상/쇼츠/레시피 URL (예: https://youtube.com/shorts/...)"
                       type="url"
                       value={recipeUrl}
@@ -574,9 +573,9 @@ const handleSubmit = () => {
                   {/* 2. 장소/지도 URL (외식/배달 시) */}
                   {(mealType === "외식" || mealType === "배달") && (
                     <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-indigo-500" />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-indigo-500" />
                       <input
-                        className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
                         placeholder="📍 장소/지도 URL (예: https://naver.me/...)"
                         type="url"
                         value={placeUrlInput}
@@ -592,41 +591,38 @@ const handleSubmit = () => {
 
                   {recipeUrl &&
                     (urlPreview?.isLoading ? (
-                      <div className="bg-white rounded-2xl p-4 border border-gray-100">
-                        <div className="flex items-center gap-3">
-                          <div className="size-16 rounded-xl bg-muted animate-pulse" />
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-2 text-orange-500">
-                              <Loader2 className="size-4 animate-spin" />
-                              <span className="text-sm font-bold">AI가 메뉴명을 분석 중...</span>
+                      <div className="bg-white rounded-xl p-2.5 border border-gray-200">
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-12 rounded-lg bg-muted animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-1.5 text-orange-500">
+                              <Loader2 className="size-3.5 animate-spin" />
+                              <span className="text-xs font-bold">AI가 메뉴명을 분석 중...</span>
                             </div>
-                            <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
+                            <div className="h-2.5 bg-muted rounded animate-pulse w-2/3" />
                           </div>
                         </div>
                       </div>
                     ) : (
                       urlPreview && (
-                        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                          <div className="relative h-36 bg-muted">
+                        <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2.5">
+                          <div className="relative size-14 rounded-lg bg-muted overflow-hidden shrink-0">
                             <img
                               src={urlPreview.thumbnail || "/placeholder.svg"}
                               alt="URL preview"
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute left-3 top-3 px-2 py-1 rounded-lg bg-black/60 text-white text-[10px] font-medium truncate max-w-[220px]">
-                              {urlPreview.url}
-                            </div>
                           </div>
-                          <div className="p-4 space-y-2">
-                            <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                              <Sparkles className="size-4 text-orange-500" />
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                              <Sparkles className="size-3 text-orange-500" />
                               AI 메뉴명 추천
                             </label>
                             <input
                               type="text"
                               value={menuName}
                               onChange={(e) => setMenuName(e.target.value)}
-                              className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-sm font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
+                              className="w-full px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
                               placeholder="AI가 추출한 메뉴명 (수정 가능)"
                             />
                           </div>
@@ -635,16 +631,16 @@ const handleSubmit = () => {
                     ))}
 
                   {(!recipeUrl || !urlPreview) && (
-                    <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
-                      <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                        <Sparkles className="size-4 text-orange-500" />
+                    <div className="bg-white rounded-xl border border-gray-200 p-2.5 space-y-1">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Sparkles className="size-3.5 text-orange-500" />
                         AI 메뉴명 추천
                       </label>
                       <input
                         type="text"
                         value={menuName}
                         onChange={(e) => setMenuName(e.target.value)}
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl text-sm font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
+                        className="w-full px-3 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
                         placeholder="URL 입력 후 추출되며, 직접 수정 가능"
                       />
                     </div>
@@ -653,130 +649,121 @@ const handleSubmit = () => {
               )}
             </div>
 
-            {/* Memo - 한줄메모 (유형 선택 바로 아래) */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-foreground">한줄메모 <span className="text-xs text-muted-foreground font-normal">(선택)</span></label>
+            {/* Memo - 한줄메모 */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-foreground">한줄메모 <span className="text-[10px] text-muted-foreground font-normal">(선택)</span></label>
               <input
                 type="text"
-                className="w-full px-4 py-3 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
                 placeholder="특별한 날? 누구와 함께?"
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
               />
             </div>
 
-            {/* Date - 날짜 (대략적 선택 탭 + 직접 선택) */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <CalendarDays className="size-4 text-orange-500" />
-                날짜
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {dateOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      if (option.id === "직접선택") {
-                        setDateOption(option.id)
-                        openDatePicker()
-                      } else {
-                        setDateOption(option.id)
-                        setDate(getDateFromOption(option.id))
-                      }
-                    }}
-                    className={cn(
-                      "py-3 rounded-xl text-xs font-bold transition-all",
-                      dateOption === option.id
-                        ? "bg-orange-500 text-white shadow-lg shadow-orange-300/40"
-                        : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setDateOption("직접선택")
-                  openDatePicker()
-                }}
-                className="w-full px-4 py-2.5 bg-orange-50 rounded-xl flex items-center justify-between hover:bg-orange-100 transition-colors"
-              >
-                <span className={cn("text-sm font-medium", date ? "text-orange-500" : "text-muted-foreground")}>{date ? formatDateDisplay(date) : "날짜를 선택해 주세요"}</span>
-                <span className="text-lg leading-none" aria-hidden>
-                  📅
-                </span>
-              </button>
-              <input
-                ref={dateInputRef}
-                className="sr-only"
-                type="date"
-                value={date}
-                onChange={(e) => {
-                  setDate(e.target.value)
-                  setDateOption("직접선택")
-                }}
-              />
-            </div>
-
-            {/* Meal Time - 식사 시간 (아침/점심/저녁 탭) */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Clock className="size-4 text-orange-500" />
-                식사 시간 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {mealTimes.map((time) => {
-                  const Icon = time.icon
-                  return (
+            {/* Date & Meal Time Grid (Side-by-side or Compact vertical) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Date - 날짜 */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <CalendarDays className="size-3.5 text-orange-500" />
+                  날짜
+                </label>
+                <div className="grid grid-cols-4 gap-1">
+                  {dateOptions.map((option) => (
                     <button
-                      key={time.id}
-                      onClick={() => setMealTime(mealTime === time.id ? "" : time.id)}
+                      key={option.id}
+                      onClick={() => {
+                        if (option.id === "직접선택") {
+                          setDateOption(option.id)
+                          openDatePicker()
+                        } else {
+                          setDateOption(option.id)
+                          setDate(getDateFromOption(option.id))
+                        }
+                      }}
                       className={cn(
-                        "py-3.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-                        mealTime === time.id
-                          ? "bg-orange-500 text-white shadow-lg shadow-orange-300/40"
-                          : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
+                        "py-1.5 rounded-lg text-[10px] font-bold transition-all truncate",
+                        dateOption === option.id
+                          ? "bg-orange-500 text-white shadow-sm"
+                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
                       )}
                     >
-                      <Icon className="size-4" />
-                      <span className="text-xs">{time.label}</span>
+                      {option.label}
                     </button>
-                  )
-                })}
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateOption("직접선택")
+                    openDatePicker()
+                  }}
+                  className="w-full px-3 py-1.5 bg-orange-50/90 border border-orange-200/60 rounded-lg flex items-center justify-between hover:bg-orange-100 transition-colors"
+                >
+                  <span className={cn("text-xs font-bold", date ? "text-orange-600" : "text-muted-foreground")}>{date ? formatDateDisplay(date) : "날짜 선택"}</span>
+                  <span className="text-sm leading-none" aria-hidden>
+                    📅
+                  </span>
+                </button>
+                <input
+                  ref={dateInputRef}
+                  className="sr-only"
+                  type="date"
+                  value={date}
+                  onChange={(e) => {
+                    setDate(e.target.value)
+                    setDateOption("직접선택")
+                  }}
+                />
+              </div>
+
+              {/* Meal Time - 식사 시간 */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Clock className="size-3.5 text-orange-500" />
+                  식사 시간 <span className="text-[10px] text-muted-foreground font-normal">(선택)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-1">
+                  {mealTimes.map((time) => {
+                    const Icon = time.icon
+                    return (
+                      <button
+                        key={time.id}
+                        onClick={() => setMealTime(mealTime === time.id ? "" : time.id)}
+                        className={cn(
+                          "py-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1",
+                          mealTime === time.id
+                            ? "bg-orange-500 text-white shadow-sm"
+                            : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
+                        )}
+                      >
+                        <Icon className="size-3" />
+                        <span>{time.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
+          </div>
 
-
-
-            {/* Delivery Info (배달 only) */}
-            {mealType === "배달" && (
-              <div className="flex flex-col gap-3">
-                
-                
-              </div>
-            )}
-
-            </div>
-
-{/* Submit Buttons */}
-  <div className="mt-8 pb-8 flex gap-3">
-  <button
-  onClick={onClose}
-  className="flex-1 flex items-center justify-center px-6 py-4 bg-white border-2 border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-sm"
-  >
-  취소하기
-  </button>
-  <button
-  onClickCapture={handleInteraction}
-  onClick={handleSubmit}
-  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-sm"
-  >
-  
-  {isEditMode ? "수정 완료" : "예약 저장하기"}
-  </button>
-  </div>
+          {/* Submit Buttons */}
+          <div className="mt-4 pt-2 flex gap-2.5">
+            <button
+              onClick={onClose}
+              className="flex-1 flex items-center justify-center px-4 py-2.5 bg-white border border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-xs"
+            >
+              취소하기
+            </button>
+            <button
+              onClickCapture={handleInteraction}
+              onClick={handleSubmit}
+              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-500 text-white rounded-xl shadow-md shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-xs"
+            >
+              {isEditMode ? "수정 완료" : "예약 저장하기"}
+            </button>
+          </div>
         </div>
 
         {/* Place Search Modal */}
