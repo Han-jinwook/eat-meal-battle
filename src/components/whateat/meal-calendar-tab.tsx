@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { ChevronLeft, ChevronRight, ChefHat, Bike, UtensilsCrossed, CalendarDays } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChefHat, Bike, UtensilsCrossed, CalendarDays, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDynamicDefaultPlans } from "./reservation-tab"
 import { useHub } from "@/services/merlin-hub-sdk/react"
@@ -59,6 +59,11 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   const [realReservations, setRealReservations] = useState<Record<string, any[]>>({})
   const [realLogs, setRealLogs] = useState<Record<string, any[]>>({})
   const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<DetailPlanData | null>(null)
+  const [typeFilter, setTypeFilter] = useState<"all" | "home" | "delivery" | "out">("all")
+
+  const handleToggleFilter = (type: "home" | "delivery" | "out") => {
+    setTypeFilter(prev => prev === type ? "all" : type)
+  }
 
   // 현재 날짜(오늘) 기준으로 초기 캘린더 월 설정
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -394,7 +399,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       {/* Calendar */}
       <div className="bg-white/80 rounded-3xl p-5 shadow-sm border border-white/50">
         {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <button 
             onClick={goToPrevMonth}
             className="size-9 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
@@ -411,6 +416,22 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             <ChevronRight className="size-5" />
           </button>
         </div>
+
+        {/* Active Filter Bar */}
+        {typeFilter !== "all" && (
+          <div className="flex items-center justify-between mb-4 px-3.5 py-2 bg-orange-50/80 border border-orange-200/80 rounded-2xl text-xs backdrop-blur-sm animate-in fade-in duration-200">
+            <span className="font-bold text-orange-600 flex items-center gap-1.5">
+              <Filter className="size-3.5" />
+              {typeFilter === "home" ? "🍳 집밥 패턴만 필터링 중" : typeFilter === "delivery" ? "🛵 배달 패턴만 필터링 중" : "🍽️ 외식 패턴만 필터링 중"}
+            </span>
+            <button 
+              onClick={() => setTypeFilter("all")} 
+              className="text-muted-foreground hover:text-orange-600 font-bold underline text-[11px] transition-colors"
+            >
+              전체 보기 (필터 해제)
+            </button>
+          </div>
+        )}
 
         {/* Days of Week */}
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
@@ -433,7 +454,10 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             const isToday = dayObj.fullDate === todayStr
             const logData = getLogIndicators(dayObj.fullDate)
             const reservationData = getReservationIndicators(dayObj.fullDate)
-            const activeData = mode === "log" ? logData : reservationData
+            const rawActiveData = mode === "log" ? logData : reservationData
+            const activeData = typeFilter === "all"
+              ? rawActiveData
+              : rawActiveData.filter(item => item.type === typeFilter)
             const hasData = activeData.length > 0
             const dayOfWeek = index % 7
 
@@ -506,12 +530,22 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
         </div>
 
         {/* Progress Bars */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* 집밥 */}
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => handleToggleFilter("home")}
+            className={cn(
+              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              typeFilter === "home" 
+                ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/50 shadow-sm" 
+                : typeFilter !== "all" 
+                ? "opacity-40 border-transparent hover:opacity-100" 
+                : "border-transparent hover:bg-gray-50"
+            )}
+          >
             <div className="flex items-center gap-1.5 w-16">
               <ChefHat className="size-4 text-emerald-500" />
-              <span className="text-xs font-medium">집밥</span>
+              <span className="text-xs font-bold">집밥</span>
             </div>
             <div className="relative flex-1">
               <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
@@ -530,10 +564,20 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           </div>
 
           {/* 배달 */}
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => handleToggleFilter("delivery")}
+            className={cn(
+              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              typeFilter === "delivery" 
+                ? "bg-cyan-50/90 border-cyan-300 ring-2 ring-cyan-400/50 shadow-sm" 
+                : typeFilter !== "all" 
+                ? "opacity-40 border-transparent hover:opacity-100" 
+                : "border-transparent hover:bg-gray-50"
+            )}
+          >
             <div className="flex items-center gap-1.5 w-16">
               <Bike className="size-4 text-cyan-500" />
-              <span className="text-xs font-medium">배달</span>
+              <span className="text-xs font-bold">배달</span>
             </div>
             <div className="relative flex-1">
               <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
@@ -552,10 +596,20 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           </div>
 
           {/* 외식 */}
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => handleToggleFilter("out")}
+            className={cn(
+              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              typeFilter === "out" 
+                ? "bg-violet-50/90 border-violet-300 ring-2 ring-violet-400/50 shadow-sm" 
+                : typeFilter !== "all" 
+                ? "opacity-40 border-transparent hover:opacity-100" 
+                : "border-transparent hover:bg-gray-50"
+            )}
+          >
             <div className="flex items-center gap-1.5 w-16">
               <UtensilsCrossed className="size-4 text-violet-500" />
-              <span className="text-xs font-medium">외식</span>
+              <span className="text-xs font-bold">외식</span>
             </div>
             <div className="relative flex-1">
               <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
