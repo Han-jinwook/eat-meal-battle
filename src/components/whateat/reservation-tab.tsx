@@ -132,7 +132,24 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
   const [selectedDetailPlan, setSelectedDetailPlan] = useState<DetailPlanData | null>(null)
+  const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
   const { isLoggedIn, user } = useHub()
+
+  const mergeRealAndSamplePlans = (realPlans: any[], bDate: Date) => {
+    const samples = getDynamicDefaultPlans(bDate)
+    let finalPlans = [...realPlans]
+    
+    const hasDelivery = realPlans.some(p => p.mealType === "배달")
+    const hasHomemade = realPlans.some(p => p.mealType === "집밥")
+    const hasDineout = realPlans.some(p => p.mealType === "외식")
+    
+    if (!hasDelivery) finalPlans.push(samples.find(s => s.mealType === "배달") as any)
+    if (!hasHomemade) finalPlans.push(samples.find(s => s.mealType === "집밥") as any)
+    if (!hasDineout) finalPlans.push(samples.find(s => s.mealType === "외식") as any)
+    
+    finalPlans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    return finalPlans
+  }
 
   // Load initial plans from Supabase
   useEffect(() => {
@@ -152,13 +169,14 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         
         if (error) throw error
 
-        let baseDate = new Date()
+        let baseDateObj = new Date()
         const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
         if (userData?.created_at) {
-          baseDate = new Date(userData.created_at)
+          baseDateObj = new Date(userData.created_at)
+          setUserBaseDate(baseDateObj)
         }
         
-        const samples = getDynamicDefaultPlans(baseDate)
+        const samples = getDynamicDefaultPlans(baseDateObj)
 
         if (data && data.length > 0) {
           const mapped = data.map(row => ({
@@ -173,18 +191,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             url: row.source_url || ""
           }))
           
-          let finalPlans = [...mapped]
-          
-          const hasDelivery = mapped.some(p => p.mealType === "배달")
-          const hasHomemade = mapped.some(p => p.mealType === "집밥")
-          const hasDineout = mapped.some(p => p.mealType === "외식")
-          
-          if (!hasDelivery) finalPlans.push(samples.find(s => s.mealType === "배달") as any)
-          if (!hasHomemade) finalPlans.push(samples.find(s => s.mealType === "집밥") as any)
-          if (!hasDineout) finalPlans.push(samples.find(s => s.mealType === "외식") as any)
-          
-          finalPlans.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-          setPlans(finalPlans)
+          setPlans(mergeRealAndSamplePlans(mapped, baseDateObj))
         } else {
           setPlans(samples)
         }
@@ -409,12 +416,13 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     }
 
     setPlans((prev) => {
-      let newPrev = prev.filter(p => p.id !== 1 && p.id !== 2 && p.id !== 3)
-      const exists = newPrev.some((plan) => plan.id === saved.id)
-      if (exists) {
-        return newPrev.map((plan) => (plan.id === saved.id ? { ...plan, ...nextPlan } : plan))
-      }
-      return [nextPlan, ...newPrev]
+      const realPlans = prev.filter(p => p.id !== 1 && p.id !== 2 && p.id !== 3)
+      const exists = realPlans.some((plan) => plan.id === saved.id)
+      const updatedRealPlans = exists
+        ? realPlans.map((plan) => (plan.id === saved.id ? { ...plan, ...nextPlan } : plan))
+        : [nextPlan, ...realPlans]
+
+      return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
     })
   }
 
@@ -441,7 +449,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       }
     }
 
-    setPlans((prev) => prev.filter((plan) => plan.id !== id))
+    setPlans((prev) => {
+      const updatedRealPlans = prev.filter((plan) => plan.id !== id && plan.id !== 1 && plan.id !== 2 && plan.id !== 3)
+      return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
+    })
     toast.success("예약 일정이 삭제되었습니다.")
   }
 
