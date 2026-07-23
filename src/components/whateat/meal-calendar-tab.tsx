@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { getDynamicDefaultPlans } from "./reservation-tab"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
+import { ReservationDetailModal, DetailPlanData } from "./reservation-detail-modal"
 
 interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
@@ -51,6 +52,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   const [baseDate, setBaseDate] = useState<Date | undefined>(undefined)
   const [realReservations, setRealReservations] = useState<Record<string, any[]>>({})
   const [realLogs, setRealLogs] = useState<Record<string, any[]>>({})
+  const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<DetailPlanData | null>(null)
 
   // 현재 날짜(오늘) 기준으로 초기 캘린더 월 설정
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -288,6 +290,24 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     }
   }
 
+  const handleItemClick = (item: any, date: string) => {
+    if (mode === "reservation") {
+      setSelectedPlanForDetail({
+        id: item.id,
+        date: item.date || date,
+        time: item.time || "저녁",
+        mealType: item.mealType || (item.type === "delivery" ? "배달" : item.type === "out" ? "외식" : "집밥"),
+        menu: item.menu || item.name || "식사 예약",
+        place: item.place || "",
+        memo: item.memo || "",
+        thumbnail: item.thumbnail,
+        url: item.url
+      })
+    } else {
+      onNavigateToLog?.(date)
+    }
+  }
+
   const getLogIndicators = (date: string) => {
     return realLogs[date] || (Object.keys(realLogs).length === 0 ? (sampleLogData[date] || []) : [])
   }
@@ -411,7 +431,10 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                     {activeData.slice(0, 1).map((item, i) => (
                       <button
                         key={i}
-                        onClick={() => handleDateClick(dayObj.fullDate)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleItemClick(item, dayObj.fullDate)
+                        }}
                         className={cn(
                           "w-full text-left text-[9px] font-medium leading-tight px-1.5 py-1 rounded-lg truncate transition-all hover:opacity-80 active:scale-95",
                           mode === "log"
@@ -524,6 +547,13 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           </p>
         </div>
       </div>
+
+      {/* Reservation Detail Modal */}
+      <ReservationDetailModal 
+        isOpen={!!selectedPlanForDetail} 
+        onClose={() => setSelectedPlanForDetail(null)} 
+        plan={selectedPlanForDetail} 
+      />
     </div>
   )
 }
