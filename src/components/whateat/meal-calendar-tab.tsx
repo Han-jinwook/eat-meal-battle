@@ -372,14 +372,17 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     <div className="flex flex-col gap-3 pt-2">
       {/* Calendar Card */}
       <div className="bg-white/80 rounded-3xl p-4 shadow-sm border border-white/50 space-y-3">
-        {/* Single Row Header: Mode Toggle (Left) + Month Selector (Right) */}
-        <div className="flex items-center justify-between pb-2 border-b border-gray-100/80">
-          {/* Left: Mode Toggle */}
-          <div className="flex items-center gap-1.5 p-1 bg-gray-100/80 rounded-full">
+        {/* Single Row Header: Mode Toggle (Center) + Month Selector (Right) */}
+        <div className="relative flex items-center justify-between pb-2 border-b border-gray-100/80">
+          {/* Dummy spacer for flex balance */}
+          <div className="w-24 hidden sm:block" />
+
+          {/* Center: Mode Toggle */}
+          <div className="flex items-center gap-1.5 p-1 bg-gray-100/80 rounded-full sm:absolute sm:left-1/2 sm:-translate-x-1/2">
             <button
               onClick={() => setMode("reservation")}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                 mode === "reservation"
                   ? "bg-cyan-500 text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -390,7 +393,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             <button
               onClick={() => setMode("log")}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                 mode === "log"
                   ? "bg-cyan-500 text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -401,7 +404,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           </div>
 
           {/* Right: Month Selector */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 ml-auto">
             <button 
               onClick={goToPrevMonth}
               className="size-8 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
