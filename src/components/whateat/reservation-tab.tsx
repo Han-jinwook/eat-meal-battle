@@ -424,6 +424,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
       return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
     })
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("whateat:reservation-updated"))
+    }
   }
 
   const handleDeleteClick = async (id: string | number) => {
@@ -453,6 +457,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       const updatedRealPlans = prev.filter((plan) => plan.id !== id && plan.id !== 1 && plan.id !== 2 && plan.id !== 3)
       return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
     })
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("whateat:reservation-updated"))
+    }
     toast.success("예약 일정이 삭제되었습니다.")
   }
 

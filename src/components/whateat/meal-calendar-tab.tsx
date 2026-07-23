@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight, ChefHat, Bike, UtensilsCrossed, CalendarDays, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getDynamicDefaultPlans } from "./reservation-tab"
@@ -71,128 +71,136 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     return { year: today.getFullYear(), month: today.getMonth() + 1 }
   })
 
-  useEffect(() => {
-    if (isLoggedIn && user?.id) {
-      const fetchData = async () => {
-        try {
-          const supabase = createClient()
-          
-          // 1. 유저 가입일(created_at) 조회
-          const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
-          let userBaseDate = new Date()
-          if (userData?.created_at) {
-            userBaseDate = new Date(userData.created_at)
-            setBaseDate(userBaseDate)
-          }
-
-          // 2. 실제 먹예약 (meal_reservations) DB 조회
-          const { data: resData } = await supabase
-            .from("meal_reservations")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("source", "solo")
-
-          const resMap: Record<string, any[]> = {}
-          const hasType = { home: false, delivery: false, out: false }
-
-          if (resData && resData.length > 0) {
-            resData.forEach(row => {
-              let type: "home" | "delivery" | "out" = "home"
-              if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
-              else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
-              else { type = "home"; hasType.home = true }
-
-              if (!resMap[row.date]) resMap[row.date] = []
-              resMap[row.date].push({
-                id: row.id,
-                name: row.menu,
-                menu: row.menu,
-                mealType: row.meal_type,
-                type,
-                time: row.time || "",
-                place: row.place || "",
-                memo: row.memo || "",
-                thumbnail: row.thumbnail,
-                url: row.source_url || row.url,
-                isSample: false
-              })
-            })
-          }
-
-          // 등록 안 한 유형의 샘플 예약 추가
-          const samples = getDynamicDefaultPlans(userBaseDate)
-          samples.forEach(sample => {
-            let type: "home" | "delivery" | "out" = "home"
-            if (sample.mealType === "배달") type = "delivery"
-            else if (sample.mealType === "외식") type = "out"
-            else type = "home"
-
-            if (!hasType[type]) {
-              if (!resMap[sample.date]) resMap[sample.date] = []
-              resMap[sample.date].push({
-                id: sample.id,
-                name: sample.menu,
-                menu: sample.menu,
-                mealType: sample.mealType,
-                type,
-                time: sample.time || "",
-                place: sample.place || "",
-                memo: sample.memo || "",
-                thumbnail: sample.thumbnail,
-                url: sample.url,
-                isSample: true
-              })
-            }
-          })
-          setRealReservations(resMap)
-
-          // 3. 실제 먹로그 (meal_images) DB 조회
-          const { data: logData } = await supabase
-            .from("meal_images")
-            .select("*")
-            .eq("uploaded_by", user.id)
-            .order("created_at", { ascending: false })
-
-          const logMap: Record<string, any[]> = {}
-          const hasLogType = { home: false, delivery: false, out: false }
-
-          if (logData && logData.length > 0) {
-            logData.forEach(row => {
-              let type: "home" | "delivery" | "out" = "home"
-              if (row.meal_type === "배달" || row.meal_type === "delivery") { type = "delivery"; hasLogType.delivery = true }
-              else if (row.meal_type === "외식" || row.meal_type === "dineout" || row.meal_type === "out") { type = "out"; hasLogType.out = true }
-              else { type = "home"; hasLogType.home = true }
-
-              const dateKey = row.created_at ? row.created_at.split("T")[0] : ""
-              if (dateKey) {
-                if (!logMap[dateKey]) logMap[dateKey] = []
-                logMap[dateKey].push({
-                  id: row.id,
-                  label: row.title || row.explanation || "맛있는 식사",
-                  type,
-                  isSample: false
-                })
-              }
-            })
-          }
-
-          // 등록 안 한 유형의 샘플 먹로그 추가
-          Object.entries(sampleLogData).forEach(([dateKey, items]) => {
-            items.forEach(item => {
-              if (!hasLogType[item.type]) {
-                if (!logMap[dateKey]) logMap[dateKey] = []
-                logMap[dateKey].push({ ...item, isSample: true })
-              }
-            })
-          })
-          setRealLogs(logMap)
-        } catch (e) {
-          console.error("Failed to load calendar data", e)
-        }
+  const fetchData = useCallback(async () => {
+    if (!isLoggedIn || !user?.id) return
+    try {
+      const supabase = createClient()
+      
+      // 1. 유저 가입일(created_at) 조회
+      const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
+      let userBaseDate = new Date()
+      if (userData?.created_at) {
+        userBaseDate = new Date(userData.created_at)
+        setBaseDate(userBaseDate)
       }
-      fetchData()
+
+      // 2. 실제 먹예약 (meal_reservations) DB 조회
+      const { data: resData } = await supabase
+        .from("meal_reservations")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("source", "solo")
+
+      const resMap: Record<string, any[]> = {}
+      const hasType = { home: false, delivery: false, out: false }
+
+      if (resData && resData.length > 0) {
+        resData.forEach(row => {
+          let type: "home" | "delivery" | "out" = "home"
+          if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
+          else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
+          else { type = "home"; hasType.home = true }
+
+          if (!resMap[row.date]) resMap[row.date] = []
+          resMap[row.date].push({
+            id: row.id,
+            name: row.menu,
+            menu: row.menu,
+            mealType: row.meal_type,
+            type,
+            time: row.time || "",
+            place: row.place || "",
+            memo: row.memo || "",
+            thumbnail: row.thumbnail,
+            url: row.source_url || row.url,
+            isSample: false
+          })
+        })
+      }
+
+      // 등록 안 한 유형의 샘플 예약 추가
+      const samples = getDynamicDefaultPlans(userBaseDate)
+      samples.forEach(sample => {
+        let type: "home" | "delivery" | "out" = "home"
+        if (sample.mealType === "배달") type = "delivery"
+        else if (sample.mealType === "외식") type = "out"
+        else type = "home"
+
+        if (!hasType[type]) {
+          if (!resMap[sample.date]) resMap[sample.date] = []
+          resMap[sample.date].push({
+            id: sample.id,
+            name: sample.menu,
+            menu: sample.menu,
+            mealType: sample.mealType,
+            type,
+            time: sample.time || "",
+            place: sample.place || "",
+            memo: sample.memo || "",
+            thumbnail: sample.thumbnail,
+            url: sample.url,
+            isSample: true
+          })
+        }
+      })
+      setRealReservations(resMap)
+
+      // 3. 실제 먹로그 (meal_images) DB 조회
+      const { data: logData } = await supabase
+        .from("meal_images")
+        .select("*")
+        .eq("uploaded_by", user.id)
+        .order("created_at", { ascending: false })
+
+      const logMap: Record<string, any[]> = {}
+      const hasLogType = { home: false, delivery: false, out: false }
+
+      if (logData && logData.length > 0) {
+        logData.forEach(row => {
+          let type: "home" | "delivery" | "out" = "home"
+          if (row.meal_type === "배달" || row.meal_type === "delivery") { type = "delivery"; hasLogType.delivery = true }
+          else if (row.meal_type === "외식" || row.meal_type === "dineout" || row.meal_type === "out") { type = "out"; hasLogType.out = true }
+          else { type = "home"; hasLogType.home = true }
+
+          const dateKey = row.created_at ? row.created_at.split("T")[0] : ""
+          if (dateKey) {
+            if (!logMap[dateKey]) logMap[dateKey] = []
+            logMap[dateKey].push({
+              id: row.id,
+              label: row.title || row.explanation || "맛있는 식사",
+              type,
+              isSample: false
+            })
+          }
+        })
+      }
+
+      // 등록 안 한 유형의 샘플 먹로그 추가
+      Object.entries(sampleLogData).forEach(([dateKey, items]) => {
+        items.forEach(item => {
+          if (!hasLogType[item.type]) {
+            if (!logMap[dateKey]) logMap[dateKey] = []
+            logMap[dateKey].push({ ...item, isSample: true })
+          }
+        })
+      })
+      setRealLogs(logMap)
+    } catch (e) {
+      console.error("Failed to load calendar data", e)
     }
   }, [isLoggedIn, user?.id])
+
+  useEffect(() => {
+    fetchData()
+
+    const handleUpdate = () => {
+      fetchData()
+    }
+    window.addEventListener("whateat:reservation-updated", handleUpdate)
+    return () => {
+      window.removeEventListener("whateat:reservation-updated", handleUpdate)
+    }
+  }, [fetchData])
 
   const dynamicSampleReservationData = useMemo(() => generateDynamicSampleReservationData(baseDate), [baseDate])
 

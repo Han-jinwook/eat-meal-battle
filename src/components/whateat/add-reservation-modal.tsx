@@ -456,6 +456,9 @@ const handleSubmit = () => {
     }
 
     onSave?.(payload)
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("whateat:reservation-updated"))
+    }
     onClose()
   }
 
