@@ -369,77 +369,64 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   return (
-    <div className="flex flex-col gap-5 pt-4">
-      {/* Mode Toggle */}
-      <div className="flex items-center justify-center gap-2">
-        <button
-          onClick={() => setMode("reservation")}
-          className={cn(
-            "px-5 py-2 rounded-full text-sm font-bold transition-all",
-            mode === "reservation"
-              ? "bg-cyan-500 text-white shadow-md"
-              : "bg-white/70 text-muted-foreground hover:bg-white"
-          )}
-        >
-          먹예약
-        </button>
-        <button
-          onClick={() => setMode("log")}
-          className={cn(
-            "px-5 py-2 rounded-full text-sm font-bold transition-all",
-            mode === "log"
-              ? "bg-cyan-500 text-white shadow-md"
-              : "bg-white/70 text-muted-foreground hover:bg-white"
-          )}
-        >
-          먹로그
-        </button>
-      </div>
-
-      {/* Calendar */}
-      <div className="bg-white/80 rounded-3xl p-5 shadow-sm border border-white/50">
-        {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={goToPrevMonth}
-            className="size-9 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
-          >
-            <ChevronLeft className="size-5" />
-          </button>
-          <h3 className="font-bold text-lg text-foreground">
-            {currentMonth.year}년 {currentMonth.month}월
-          </h3>
-          <button 
-            onClick={goToNextMonth}
-            className="size-9 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
-          >
-            <ChevronRight className="size-5" />
-          </button>
-        </div>
-
-        {/* Active Filter Bar */}
-        {typeFilter !== "all" && (
-          <div className="flex items-center justify-between mb-4 px-3.5 py-2 bg-orange-50/80 border border-orange-200/80 rounded-2xl text-xs backdrop-blur-sm animate-in fade-in duration-200">
-            <span className="font-bold text-orange-600 flex items-center gap-1.5">
-              <Filter className="size-3.5" />
-              {typeFilter === "home" ? "🍳 집밥 패턴만 필터링 중" : typeFilter === "delivery" ? "🛵 배달 패턴만 필터링 중" : "🍽️ 외식 패턴만 필터링 중"}
-            </span>
-            <button 
-              onClick={() => setTypeFilter("all")} 
-              className="text-muted-foreground hover:text-orange-600 font-bold underline text-[11px] transition-colors"
+    <div className="flex flex-col gap-3 pt-2">
+      {/* Calendar Card */}
+      <div className="bg-white/80 rounded-3xl p-4 shadow-sm border border-white/50 space-y-3">
+        {/* Single Row Header: Mode Toggle (Left) + Month Selector (Right) */}
+        <div className="flex items-center justify-between pb-2 border-b border-gray-100/80">
+          {/* Left: Mode Toggle */}
+          <div className="flex items-center gap-1.5 p-1 bg-gray-100/80 rounded-full">
+            <button
+              onClick={() => setMode("reservation")}
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                mode === "reservation"
+                  ? "bg-cyan-500 text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              전체 보기 (필터 해제)
+              먹예약
+            </button>
+            <button
+              onClick={() => setMode("log")}
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all",
+                mode === "log"
+                  ? "bg-cyan-500 text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              먹로그
             </button>
           </div>
-        )}
+
+          {/* Right: Month Selector */}
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={goToPrevMonth}
+              className="size-8 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
+            >
+              <ChevronLeft className="size-4.5" />
+            </button>
+            <h3 className="font-bold text-base text-foreground tracking-tight px-1">
+              {currentMonth.year}년 {currentMonth.month}월
+            </h3>
+            <button 
+              onClick={goToNextMonth}
+              className="size-8 rounded-full hover:bg-muted/50 flex items-center justify-center text-muted-foreground transition-colors"
+            >
+              <ChevronRight className="size-4.5" />
+            </button>
+          </div>
+        </div>
 
         {/* Days of Week */}
-        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        <div className="grid grid-cols-7 gap-1 text-center mb-1">
           {daysOfWeek.map((day, index) => (
             <div 
               key={day} 
               className={cn(
-                "text-xs font-bold py-2",
+                "text-xs font-bold py-1",
                 index === 0 ? "text-red-400" : index === 6 ? "text-blue-400" : "text-muted-foreground"
               )}
             >
@@ -465,7 +452,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
               <div
                 key={`${dayObj.fullDate}-${index}`}
                 className={cn(
-                  "min-h-[64px] flex flex-col rounded-lg border transition-all",
+                  "min-h-[58px] flex flex-col rounded-lg border transition-all",
                   dayObj.isCurrentMonth
                     ? "border-muted/20 bg-white/40"
                     : "border-transparent bg-transparent",
@@ -517,25 +504,25 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       </div>
 
       {/* Statistics */}
-      <div className="bg-white/80 rounded-3xl p-5 shadow-sm border border-white/50">
-        <div className="flex items-center gap-2 mb-4">
-          <CalendarDays className="size-5 text-primary" />
-          <h3 className="font-bold text-foreground">
+      <div className="bg-white/80 rounded-3xl p-4 shadow-sm border border-white/50 space-y-2">
+        <div className="flex items-center gap-2 mb-2">
+          <CalendarDays className="size-4.5 text-primary" />
+          <h3 className="font-bold text-sm text-foreground">
             {mode === "log" ? "이번 달 먹로그 패턴" : "이번 달 먹예약 식사 패턴"}
           </h3>
-          <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="ml-auto flex items-center gap-3 text-[11px] text-muted-foreground font-medium">
             <span>{mode === "log" ? "기록일" : "예약일"} {stats.activeDays}일</span>
             <span>{mode === "log" ? "기록" : "예약"} {stats.total}건</span>
           </div>
         </div>
 
         {/* Progress Bars */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {/* 집밥 */}
           <div 
             onClick={() => handleToggleFilter("home")}
             className={cn(
-              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
               typeFilter === "home" 
                 ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/50 shadow-sm" 
                 : typeFilter !== "all" 
@@ -567,7 +554,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           <div 
             onClick={() => handleToggleFilter("delivery")}
             className={cn(
-              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
               typeFilter === "delivery" 
                 ? "bg-cyan-50/90 border-cyan-300 ring-2 ring-cyan-400/50 shadow-sm" 
                 : typeFilter !== "all" 
@@ -599,7 +586,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
           <div 
             onClick={() => handleToggleFilter("out")}
             className={cn(
-              "flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all border select-none",
+              "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
               typeFilter === "out" 
                 ? "bg-violet-50/90 border-violet-300 ring-2 ring-violet-400/50 shadow-sm" 
                 : typeFilter !== "all" 
@@ -626,17 +613,6 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             </div>
             <span className="text-xs font-bold text-violet-500 w-10 text-right">{stats.out}%</span>
           </div>
-        </div>
-
-        {/* Summary Message */}
-        <div className="mt-4 pt-4 border-t border-muted/20">
-          <p className="text-xs text-muted-foreground text-center">
-            {stats.home >= stats.delivery && stats.home >= stats.out 
-              ? "집밥을 가장 많이 드셨어요! 건강한 식습관을 유지하고 계시네요."
-              : stats.delivery >= stats.out
-              ? "배달 음식을 자주 드시네요. 가끔은 집밥도 어떨까요?"
-              : "외식을 자주 하시네요! 맛있는 곳 많이 발견하셨나요?"}
-          </p>
         </div>
       </div>
 
