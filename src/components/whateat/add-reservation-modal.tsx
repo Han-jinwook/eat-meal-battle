@@ -241,7 +241,75 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       isLoading: true
     })
 
+    const extractMenuName = (title: string) => {
+      if (!title) return "웹사이트 링크"
+      
+      // placePath= 등 쿼리스트링 문자열 지우기
+      let clean = title.replace(/\d+\?placePath=.*$/, "").trim()
+      clean = clean.split(/[-|:]/)[0].trim()
+      
+      // 1. 따옴표 안의 단어 추출 (예: '수육')
+      const quoteMatch = clean.match(/['"‘“](.*?)['"’”]/)
+      if (quoteMatch && quoteMatch[1] && quoteMatch[1].length < 15) {
+        clean = quoteMatch[1]
+      }
+      
+      // 2. 괄호 안의 내용 제거
+      clean = clean.replace(/\[.*?\]|\(.*?\)/g, "").trim()
+      
+      // 3. 불필요한 수식어 및 기호 제거
+      const stopWords = [
+        "만드는 법", "만드는 방법", "삶는 방법", "삶는 법", "만들기", "레시피", "황금레시피", 
+        "초간단", "간단", "진짜 맛있는", "맛있는", "비법", "알려드릴게요", "겁나불게", 
+        "부드러운", "최고의", "완벽한", "실패없는", "대박", "1분", "쇼츠", "shorts", "백종원", "류수영",
+        "네이버 MY플레이스", "네이버 지도", "네이버 플레이스", "네이버지도", "MY플레이스", "카카오맵", "배달의민족", "쿠팡이츠", "요기요"
+      ]
+      const regex = new RegExp(stopWords.join("|"), "gi")
+      clean = clean.replace(regex, "").replace(/\s+/g, " ").replace(/[!?,~'"‘“’”]/g, "").trim()
+      
+      const fallback = title.split(/[-|:]/)[0].replace(/[!?,~'"‘“’”]/g, "").trim()
+      return clean || fallback || "식당/메뉴 링크"
+    }
+
     try {
+      // 1. YouTube 링크 (Shorts, Watch, YouTu.be) 전용 oEmbed 처리 (Microlink 타임아웃/차단 방지)
+      const ytMatch = url.match(/(?:youtube\.com\/(?:shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+      if (ytMatch && ytMatch[1]) {
+        const videoId = ytMatch[1]
+        try {
+          const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`
+          const ytResp = await fetch(oembedUrl)
+          if (ytResp.ok) {
+            const ytData = await ytResp.json()
+            const rawTitle = ytData.title || ""
+            const title = extractMenuName(rawTitle)
+            const imageUrl = ytData.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+
+            setUrlPreview({
+              thumbnail: imageUrl,
+              aiSuggestedName: title,
+              url: url,
+              isLoading: false
+            })
+            setMenuName(title)
+            return
+          }
+        } catch (e) {
+          console.warn("YouTube oEmbed failed, falling back to direct thumbnail", e)
+        }
+
+        // oEmbed 실패 시 YouTube 직접 썸네일 제공
+        setUrlPreview({
+          thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          aiSuggestedName: "유튜브 영상 레시피",
+          url: url,
+          isLoading: false
+        })
+        setMenuName("유튜브 영상 레시피")
+        return
+      }
+
+      // 2. 일반 웹페이지 & 네이버 지도 / 플레이스 링크 처리 (Microlink API)
       let response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
       let result = await response.json()
 
@@ -263,36 +331,6 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
             }
           }
         }
-      }
-
-      const extractMenuName = (title: string) => {
-        if (!title) return "웹사이트 링크"
-        
-        // placePath= 등 쿼리스트링 문자열 지우기
-        let clean = title.replace(/\d+\?placePath=.*$/, "").trim()
-        clean = clean.split(/[-|:]/)[0].trim()
-        
-        // 1. 따옴표 안의 단어 추출 (예: '수육')
-        const quoteMatch = clean.match(/['"‘“](.*?)['"’”]/)
-        if (quoteMatch && quoteMatch[1] && quoteMatch[1].length < 15) {
-          clean = quoteMatch[1]
-        }
-        
-        // 2. 괄호 안의 내용 제거
-        clean = clean.replace(/\[.*?\]|\(.*?\)/g, "").trim()
-        
-        // 3. 불필요한 수식어 및 기호 제거
-        const stopWords = [
-          "만드는 법", "만드는 방법", "삶는 방법", "삶는 법", "만들기", "레시피", "황금레시피", 
-          "초간단", "간단", "진짜 맛있는", "맛있는", "비법", "알려드릴게요", "겁나불게", 
-          "부드러운", "최고의", "완벽한", "실패없는", "대박", "1분", "쇼츠", "shorts", "백종원", "류수영",
-          "네이버 MY플레이스", "네이버 지도", "네이버 플레이스", "네이버지도", "MY플레이스", "카카오맵", "배달의민족", "쿠팡이츠", "요기요"
-        ]
-        const regex = new RegExp(stopWords.join("|"), "gi")
-        clean = clean.replace(regex, "").replace(/\s+/g, " ").replace(/[!?,~'"‘“’”]/g, "").trim()
-        
-        const fallback = title.split(/[-|:]/)[0].replace(/[!?,~'"‘“’”]/g, "").trim()
-        return clean || fallback || "식당/메뉴 링크"
       }
 
       if (result.status === "success" && result.data) {
