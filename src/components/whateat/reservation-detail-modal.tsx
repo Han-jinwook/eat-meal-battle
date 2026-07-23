@@ -21,56 +21,88 @@ interface ReservationDetailModalProps {
   plan: DetailPlanData | null
 }
 
+export function parseSourceUrls(urlStr?: string | null) {
+  if (!urlStr) return { placeUrl: "", videoUrl: "" }
+  if (urlStr.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(urlStr)
+      return {
+        placeUrl: parsed.placeUrl || "",
+        videoUrl: parsed.videoUrl || ""
+      }
+    } catch (e) {}
+  }
+  if (urlStr.includes("youtube.com") || urlStr.includes("youtu.be") || urlStr.includes("instagram.com") || urlStr.includes("tiktok.com")) {
+    return { placeUrl: "", videoUrl: urlStr }
+  } else {
+    return { placeUrl: urlStr, videoUrl: "" }
+  }
+}
+
+export function stringifySourceUrls(placeUrl?: string, videoUrl?: string): string | undefined {
+  const p = placeUrl?.trim() || ""
+  const v = videoUrl?.trim() || ""
+  if (p && v) {
+    return JSON.stringify({ placeUrl: p, videoUrl: v })
+  }
+  return p || v || undefined
+}
+
 export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDetailModalProps) {
   const [showDeliveryApps, setShowDeliveryApps] = useState(false)
 
   if (!isOpen || !plan) return null
 
-  const getActionConfig = () => {
-    switch (plan.mealType) {
-      case "집밥":
-        if (plan.url) {
-          return {
-            icon: Link2,
-            label: "저장된 레시피 열기",
-            color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
-            url: plan.url
-          }
-        }
-        return {
-          icon: Youtube,
-          label: "레시피 검색",
-          color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
-          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(plan.menu + " 레시피")}`
-        }
-      case "배달":
-        return {
-          icon: Search,
-          label: "배달앱 검색",
-          color: "bg-teal-50 text-teal-600 hover:bg-teal-100 ring-teal-200",
-          url: `https://search.naver.com/search.naver?query=${encodeURIComponent(plan.place || plan.menu + " 배달")}`
-        }
-      case "외식":
-        if (plan.url) {
-          return {
-            icon: Link2,
-            label: "저장된 장소 링크 열기",
-            color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 ring-indigo-200",
-            url: plan.url
-          }
-        }
-        return {
+  const { placeUrl, videoUrl } = parseSourceUrls(plan.url)
+
+  const getActionButtons = () => {
+    const buttons = []
+
+    if (placeUrl) {
+      buttons.push({
+        id: "place-link",
+        icon: Link2,
+        label: "저장된 장소 지도 열기",
+        color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 ring-indigo-200",
+        url: placeUrl
+      })
+    }
+
+    if (videoUrl) {
+      buttons.push({
+        id: "video-link",
+        icon: Youtube,
+        label: "참고 영상 / 쇼츠 열기",
+        color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
+        url: videoUrl
+      })
+    }
+
+    // Fallbacks if no URL is explicitly saved
+    if (buttons.length === 0) {
+      if (plan.mealType === "외식") {
+        buttons.push({
+          id: "map-search",
           icon: MapPin,
           label: "지도 검색",
           color: "bg-blue-50 text-blue-600 hover:bg-blue-100 ring-blue-200",
           url: `https://map.naver.com/v5/search/${encodeURIComponent(plan.place || plan.menu)}`
-        }
-      default:
-        return null
+        })
+      } else if (plan.mealType === "집밥") {
+        buttons.push({
+          id: "recipe-search",
+          icon: Youtube,
+          label: "레시피 검색",
+          color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(plan.menu + " 레시피")}`
+        })
+      }
     }
+
+    return buttons
   }
 
-  const action = getActionConfig()
+  const actionButtons = getActionButtons()
 
   const handleDeliveryAppClick = (appUrl: string) => {
     const textToCopy = plan.place || plan.menu
@@ -178,22 +210,25 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
             )}
           </div>
 
-          {/* Action Button */}
-          {action && plan.mealType !== "배달" && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <a 
-                href={action.url}
-                target="_blank"
-                rel="noreferrer"
-                className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold transition-all ring-1 ring-inset",
-                  action.color
-                )}
-              >
-                <action.icon className="size-4.5" />
-                <span>{action.label}</span>
-                <ExternalLink className="size-3.5 opacity-50 ml-1" />
-              </a>
+          {/* Action Buttons */}
+          {actionButtons.length > 0 && plan.mealType !== "배달" && (
+            <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-2">
+              {actionButtons.map((btn) => (
+                <a 
+                  key={btn.id}
+                  href={btn.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(
+                    "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-bold transition-all ring-1 ring-inset",
+                    btn.color
+                  )}
+                >
+                  <btn.icon className="size-4.5" />
+                  <span>{btn.label}</span>
+                  <ExternalLink className="size-3.5 opacity-50 ml-1" />
+                </a>
+              ))}
             </div>
           )}
 

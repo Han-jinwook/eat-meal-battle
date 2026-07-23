@@ -19,7 +19,9 @@ import {
   Coffee,
   Moon,
   Trash2,
+  Youtube,
 } from "lucide-react"
+import { parseSourceUrls, stringifySourceUrls } from "./reservation-detail-modal"
 import { cn } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { toast } from "react-hot-toast"
@@ -152,6 +154,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
   const [deliveryStoreName, setDeliveryStoreName] = useState("")
   const [recipeUrl, setRecipeUrl] = useState("")
+  const [placeUrlInput, setPlaceUrlInput] = useState("")
   const [urlPreview, setUrlPreview] = useState<{
     thumbnail: string
     aiSuggestedName: string
@@ -169,7 +172,10 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       setMemo(editData.memo)
       setMealType(editData.mealType)
       setDateOption("직접선택")
-      setRecipeUrl("")
+      
+      const parsedUrls = parseSourceUrls(editData.url)
+      setRecipeUrl(parsedUrls.videoUrl || (!parsedUrls.placeUrl ? editData.url || "" : ""))
+      setPlaceUrlInput(parsedUrls.placeUrl)
       setUrlPreview(null)
       if (editData.place) {
         if (editData.mealType === "외식") {
@@ -191,7 +197,8 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       setMemo("")
       setDateOption("")
       setMealTime("")
-      setRecipeUrl("")
+      setRecipeUrl(initialUrl ? parseSourceUrls(initialUrl).videoUrl || initialUrl : "")
+      setPlaceUrlInput(initialUrl ? parseSourceUrls(initialUrl).placeUrl : "")
       setUrlPreview(null)
 
       if (prefillData) {
@@ -343,13 +350,21 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
           imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
         }
 
+        // 네이버/카카오 지도 장소 링크인 경우 식당(장소) 이름 자동 채움
+        const isPlaceUrl = url.includes("naver.me") || url.includes("map.naver.com") || url.includes("place.naver.com") || url.includes("kakao.com")
+        if (isPlaceUrl && title && title !== "웹사이트 링크" && title !== "식당/메뉴 링크") {
+          setSelectedPlace({ name: title, address: "네이버/카카오 지도 링크", category: "" })
+        }
+
         setUrlPreview({
           thumbnail: imageUrl,
           aiSuggestedName: title,
           url: url,
           isLoading: false
         })
-        setMenuName(title)
+        if (!menuName || isPlaceUrl) {
+          setMenuName(title)
+        }
       } else {
         throw new Error("Invalid response from microlink")
       }
@@ -426,6 +441,8 @@ const handleSubmit = () => {
           ? deliveryStoreName || editData?.place || null
           : null
 
+    const finalUrl = stringifySourceUrls(placeUrlInput, recipeUrl)
+
     const payload: EditData = {
       id: editData?.id ?? generateUUID(),
       date: date || editData?.date || new Date().toISOString().split("T")[0],
@@ -435,7 +452,7 @@ const handleSubmit = () => {
       memo,
       time: mealTime || editData?.time || "",
       thumbnail: urlPreview?.thumbnail || editData?.thumbnail || undefined,
-      url: urlPreview?.url || initialUrl || editData?.url || undefined,
+      url: finalUrl || editData?.url || undefined,
     }
 
     onSave?.(payload)
@@ -539,22 +556,36 @@ const handleSubmit = () => {
               {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
               {mealType && (
                 <div className="mt-2 flex flex-col gap-3">
+                  {/* 1. 참고 영상 / 레시피 / 쇼츠 URL */}
                   <div className="relative">
-                    <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-orange-500" />
+                    <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-red-500" />
                     <input
                       className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
-                      placeholder={
-                        mealType === "집밥"
-                          ? "레시피 URL 입력 (예: https://youtube.com/...)"
-                          : mealType === "외식"
-                            ? "장소 URL 입력 (예: https://naver.me/...)"
-                            : "배달 URL 입력 (예: 배달앱/리뷰 링크)"
-                      }
+                      placeholder="🎬 참고 영상/쇼츠/레시피 URL (예: https://youtube.com/shorts/...)"
                       type="url"
                       value={recipeUrl}
                       onChange={(e) => setRecipeUrl(e.target.value)}
                     />
                   </div>
+
+                  {/* 2. 장소/지도 URL (외식/배달 시) */}
+                  {(mealType === "외식" || mealType === "배달") && (
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-indigo-500" />
+                      <input
+                        className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-sm placeholder:text-muted-foreground/50"
+                        placeholder="📍 장소/지도 URL (예: https://naver.me/...)"
+                        type="url"
+                        value={placeUrlInput}
+                        onChange={(e) => {
+                          setPlaceUrlInput(e.target.value)
+                          if (e.target.value && isValidUrl(e.target.value) && !recipeUrl) {
+                            fetchUrlPreview(e.target.value)
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {recipeUrl &&
                     (urlPreview?.isLoading ? (
