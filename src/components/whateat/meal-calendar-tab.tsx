@@ -49,50 +49,129 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   const [mode, setMode] = useState<CalendarMode>("reservation")
   const { isLoggedIn, user } = useHub()
   const [baseDate, setBaseDate] = useState<Date | undefined>(undefined)
+  const [realReservations, setRealReservations] = useState<Record<string, any[]>>({})
+  const [realLogs, setRealLogs] = useState<Record<string, any[]>>({})
+
+  // 현재 날짜(오늘) 기준으로 초기 캘린더 월 설정
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const today = new Date()
+    return { year: today.getFullYear(), month: today.getMonth() + 1 }
+  })
 
   useEffect(() => {
     if (isLoggedIn && user?.id) {
-      const fetchUserDate = async () => {
-        const supabase = createClient()
-        const { data } = await supabase.from("users").select("created_at").eq("id", user.id).single()
-        if (data?.created_at) {
-          setBaseDate(new Date(data.created_at))
+      const fetchData = async () => {
+        try {
+          const supabase = createClient()
+          
+          // 1. 유저 가입일(created_at) 조회
+          const { data: userData } = await supabase.from("users").select("created_at").eq("id", user.id).single()
+          let userBaseDate = new Date()
+          if (userData?.created_at) {
+            userBaseDate = new Date(userData.created_at)
+            setBaseDate(userBaseDate)
+          }
+
+          // 2. 실제 먹예약 (meal_reservations) DB 조회
+          const { data: resData } = await supabase
+            .from("meal_reservations")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("source", "solo")
+
+          const resMap: Record<string, any[]> = {}
+          const hasType = { home: false, delivery: false, out: false }
+
+          if (resData && resData.length > 0) {
+            resData.forEach(row => {
+              let type: "home" | "delivery" | "out" = "home"
+              if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
+              else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
+              else { type = "home"; hasType.home = true }
+
+              if (!resMap[row.date]) resMap[row.date] = []
+              resMap[row.date].push({
+                id: row.id,
+                name: row.menu,
+                type,
+                memo: row.memo || "",
+                isSample: false
+              })
+            })
+          }
+
+          // 등록 안 한 유형의 샘플 예약 추가
+          const samples = getDynamicDefaultPlans(userBaseDate)
+          samples.forEach(sample => {
+            let type: "home" | "delivery" | "out" = "home"
+            if (sample.mealType === "배달") type = "delivery"
+            else if (sample.mealType === "외식") type = "out"
+            else type = "home"
+
+            if (!hasType[type]) {
+              if (!resMap[sample.date]) resMap[sample.date] = []
+              resMap[sample.date].push({
+                id: sample.id,
+                name: sample.menu,
+                type,
+                memo: sample.memo || "",
+                isSample: true
+              })
+            }
+          })
+          setRealReservations(resMap)
+
+          // 3. 실제 먹로그 (meal_images) DB 조회
+          const { data: logData } = await supabase
+            .from("meal_images")
+            .select("*")
+            .eq("uploaded_by", user.id)
+            .order("created_at", { ascending: false })
+
+          const logMap: Record<string, any[]> = {}
+          const hasLogType = { home: false, delivery: false, out: false }
+
+          if (logData && logData.length > 0) {
+            logData.forEach(row => {
+              let type: "home" | "delivery" | "out" = "home"
+              if (row.meal_type === "배달" || row.meal_type === "delivery") { type = "delivery"; hasLogType.delivery = true }
+              else if (row.meal_type === "외식" || row.meal_type === "dineout" || row.meal_type === "out") { type = "out"; hasLogType.out = true }
+              else { type = "home"; hasLogType.home = true }
+
+              const dateKey = row.created_at ? row.created_at.split("T")[0] : ""
+              if (dateKey) {
+                if (!logMap[dateKey]) logMap[dateKey] = []
+                logMap[dateKey].push({
+                  id: row.id,
+                  label: row.title || row.explanation || "맛있는 식사",
+                  type,
+                  isSample: false
+                })
+              }
+            })
+          }
+
+          // 등록 안 한 유형의 샘플 먹로그 추가
+          Object.entries(sampleLogData).forEach(([dateKey, items]) => {
+            items.forEach(item => {
+              if (!hasLogType[item.type]) {
+                if (!logMap[dateKey]) logMap[dateKey] = []
+                logMap[dateKey].push({ ...item, isSample: true })
+              }
+            })
+          })
+          setRealLogs(logMap)
+        } catch (e) {
+          console.error("Failed to load calendar data", e)
         }
       }
-      fetchUserDate()
+      fetchData()
     }
   }, [isLoggedIn, user?.id])
 
-  // 상태로 관리하여 첫 진입 시 샘플 데이터 기준 월로 세팅
   const dynamicSampleReservationData = useMemo(() => generateDynamicSampleReservationData(baseDate), [baseDate])
-  
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const target = baseDate || new Date()
-    let targetYear = target.getFullYear()
-    let targetMonth = target.getMonth() + 2 // Next month is default for samples
-    if (targetMonth > 12) {
-      targetMonth -= 12
-      targetYear += 1
-    }
-    return { year: targetYear, month: targetMonth }
-  })
-
-  // baseDate가 업데이트 되면 캘린더 초기 월도 동기화해줍니다 (단, 유저가 월을 바꾸지 않은 초기 상태일 때만)
-  const [hasUserNavigated, setHasUserNavigated] = useState(false)
-  useEffect(() => {
-    if (baseDate && !hasUserNavigated) {
-      let targetYear = baseDate.getFullYear()
-      let targetMonth = baseDate.getMonth() + 2
-      if (targetMonth > 12) {
-        targetMonth -= 12
-        targetYear += 1
-      }
-      setCurrentMonth({ year: targetYear, month: targetMonth })
-    }
-  }, [baseDate, hasUserNavigated])
 
   const goToPrevMonth = () => {
-    setHasUserNavigated(true)
     setCurrentMonth(prev => {
       if (prev.month === 1) {
         return { year: prev.year - 1, month: 12 }
@@ -102,7 +181,6 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   }
 
   const goToNextMonth = () => {
-    setHasUserNavigated(true)
     setCurrentMonth(prev => {
       if (prev.month === 12) {
         return { year: prev.year + 1, month: 1 }
@@ -167,7 +245,9 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
     let total = 0
     let activeDays = 0
 
-    const activeDataMap = mode === "log" ? sampleLogData : dynamicSampleReservationData
+    const activeDataMap = mode === "log" 
+      ? (Object.keys(realLogs).length > 0 ? realLogs : sampleLogData)
+      : (Object.keys(realReservations).length > 0 ? realReservations : dynamicSampleReservationData)
 
     Object.entries(activeDataMap).forEach(([dateKey, dayData]) => {
       const [year, month] = dateKey.split("-").map(Number)
@@ -209,11 +289,11 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
   }
 
   const getLogIndicators = (date: string) => {
-    return sampleLogData[date] || []
+    return realLogs[date] || (Object.keys(realLogs).length === 0 ? (sampleLogData[date] || []) : [])
   }
 
   const getReservationIndicators = (date: string) => {
-    return dynamicSampleReservationData[date] || []
+    return realReservations[date] || (Object.keys(realReservations).length === 0 ? (dynamicSampleReservationData[date] || []) : [])
   }
 
   const getTypeColor = (type: "home" | "delivery" | "out") => {
