@@ -745,42 +745,7 @@ const handleSubmit = () => {
               </div>
             </div>
 
-            {/* Place Selection (외식 only) */}
-            {mealType === "외식" && (
-              <div className="flex flex-col gap-3">
-                <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <MapPin className="size-4 text-orange-500" />
-                  장소 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
-                </label>
-                {selectedPlace ? (
-                  <div className="relative p-3 bg-white border-2 border-orange-200 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
-                        <MapPin className="size-5 text-orange-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-sm text-foreground">{selectedPlace.name}</h4>
-                        <p className="text-xs text-muted-foreground truncate">{selectedPlace.address}</p>
-                      </div>
-                      <button 
-                        onClick={() => setSelectedPlace(null)}
-                        className="size-7 rounded-lg hover:bg-muted/50 flex items-center justify-center shrink-0"
-                      >
-                        <X className="size-3.5 text-muted-foreground" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowPlaceSearch(true)}
-                    className="w-full px-4 py-3.5 bg-white border-2 border-dashed border-gray-200 hover:border-orange-300 rounded-xl transition-all flex items-center gap-3 group"
-                  >
-                    <MapPin className="size-4 text-muted-foreground group-hover:text-orange-500 transition-colors" />
-                    <span className="text-sm text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">장소 검색하기</span>
-                  </button>
-                )}
-              </div>
-            )}
+
 
             {/* Delivery Info (배달 only) */}
             {mealType === "배달" && (
