@@ -605,8 +605,8 @@ const handleSubmit = () => {
                       </div>
                     ) : (
                       urlPreview && (
-                        <div className="bg-white rounded-xl border border-gray-200 p-2 flex items-center gap-2.5">
-                          <div className="relative size-14 rounded-lg bg-muted overflow-hidden shrink-0">
+                        <div className="bg-white rounded-xl border border-gray-200 p-2.5 flex items-center gap-3">
+                          <div className="relative w-20 h-20 rounded-xl bg-muted overflow-hidden shrink-0 shadow-xs border border-gray-100">
                             <img
                               src={urlPreview.thumbnail || "/placeholder.svg"}
                               alt="URL preview"

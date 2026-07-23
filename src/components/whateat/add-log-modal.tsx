@@ -551,10 +551,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="relative w-full max-w-md bg-orange-50/60 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[calc(100vh-180px)] overflow-y-auto hide-scrollbar mt-12">
+      {/* Modal Container */}
+      <div className="relative w-full max-w-lg bg-orange-50/70 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[96vh] overflow-y-auto hide-scrollbar my-auto">
         {/* Close Button & Delete Button in Edit Mode */}
-        <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
           {isEditMode && editData?.id && (
             <button
               onClick={() => {
@@ -567,7 +567,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                   onClose()
                 }
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-extrabold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
             >
               <Trash2 className="size-3" />
               삭제
@@ -575,16 +575,16 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           )}
           <button 
             onClick={onClose}
-            className="size-9 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-foreground transition-colors"
+            className="size-8 flex items-center justify-center rounded-full bg-white/60 hover:bg-white text-foreground transition-colors"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-5">
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-extrabold tracking-tight text-foreground mb-2">
+          <div className="mb-3">
+            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
               {mode === "family"
                 ? (isEditMode ? "(패밀리) 먹로그 수정하기" : "(패밀리) 먹로그 기록하기")
                 : (isEditMode ? "(솔로) 먹로그 수정하기" : "(솔로) 먹로그 기록하기")
@@ -593,50 +593,52 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-5" onClickCapture={handleInteraction}>
-            {/* 1. Meal Type - 제일 먼저 */}
-            <div className="flex flex-col gap-3">
-              
-              <div className="grid grid-cols-3 gap-2">
-                {mealTypes.map((type) => (
-                  <button
-                    key={type.id}
-                    onClick={() => {
-                      setMealType(type.id)
-                      if (type.id !== "외식" && type.id !== "배달") {
-                        setSelectedPlace(null)
-                      }
-                      if (type.id !== "배달") {
-                        setDeliveryStoreName("")
-                      }
-                    }}
-                    className={cn(
-                      "py-3.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-                      mealType === type.id
-                        ? "bg-orange-500 text-white shadow-lg shadow-orange-300/40"
-                        : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
-                    )}
-                  >
-                    {type.icon && <type.icon className="size-4" />}
-                    <span className="text-xs">{type.label}</span>
-                  </button>
-                ))}
+          <div className="space-y-3" onClickCapture={handleInteraction}>
+            {/* 1. Meal Type & Date (Side-by-side) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground">식사 유형</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {mealTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => {
+                        setMealType(type.id)
+                        if (type.id !== "외식" && type.id !== "배달") {
+                          setSelectedPlace(null)
+                        }
+                        if (type.id !== "배달") {
+                          setDeliveryStoreName("")
+                        }
+                      }}
+                      className={cn(
+                        "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1",
+                        mealType === type.id
+                          ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
+                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
+                      )}
+                    >
+                      {type.icon && <type.icon className="size-3.5" />}
+                      <span className="text-[11px]">{type.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <CalendarDays className="size-4 text-orange-500" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <CalendarDays className="size-3.5 text-orange-500" />
                   날짜
                 </label>
                 <button
                   type="button"
                   onClick={openDatePicker}
-                  className="w-full px-4 py-2.5 bg-orange-50 rounded-xl flex items-center justify-between hover:bg-orange-100 transition-colors"
+                  className="w-full px-3 py-1.5 bg-orange-50/90 border border-orange-200/60 rounded-xl flex items-center justify-between hover:bg-orange-100 transition-colors"
                 >
-                  <span className={cn("text-sm font-medium", date ? "text-orange-500" : "text-muted-foreground")}>
-                    {date ? formatDateDisplay(date) : "날짜를 선택해 주세요"}
+                  <span className={cn("text-xs font-bold", date ? "text-orange-600" : "text-muted-foreground")}>
+                    {date ? formatDateDisplay(date) : "날짜 선택"}
                   </span>
-                  <span className="text-lg leading-none" aria-hidden>
+                  <span className="text-sm leading-none" aria-hidden>
                     📅
                   </span>
                 </button>
@@ -1235,10 +1237,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
             )}
  
              {/* Submit Buttons */}
-             <div className="mt-8 pb-8 flex gap-3">
+             <div className="mt-4 pt-2 flex gap-2.5">
                <button 
                  onClick={onClose}
-                 className="flex-1 flex items-center justify-center px-6 py-4 bg-white border-2 border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-sm"
+                 className="flex-1 flex items-center justify-center px-4 py-2.5 bg-white border border-gray-200 text-foreground rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-bold text-xs"
                >
                  취소하기
                </button>
@@ -1278,9 +1280,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                    onSave?.(data)
                    onClose()
                 }}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-sm"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-500 text-white rounded-xl shadow-md shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-xs"
               >
-                
                 {isEditMode ? "수정 완료" : "기록하기"}
               </button>
             </div>
