@@ -35,10 +35,16 @@ const generateDynamicSampleReservationData = (baseDate?: Date) => {
       data[plan.date] = []
     }
     data[plan.date].push({
+      id: plan.id,
       name: plan.menu,
+      menu: plan.menu,
+      mealType: plan.mealType,
       type,
-      memo: plan.memo,
-      id: plan.id
+      time: plan.time || "점심",
+      place: plan.place || "",
+      memo: plan.memo || "",
+      thumbnail: plan.thumbnail,
+      url: plan.url
     })
   })
   return data
@@ -95,8 +101,14 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
               resMap[row.date].push({
                 id: row.id,
                 name: row.menu,
+                menu: row.menu,
+                mealType: row.meal_type,
                 type,
+                time: row.time || "",
+                place: row.place || "",
                 memo: row.memo || "",
+                thumbnail: row.thumbnail,
+                url: row.source_url || row.url,
                 isSample: false
               })
             })
@@ -115,8 +127,14 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
               resMap[sample.date].push({
                 id: sample.id,
                 name: sample.menu,
+                menu: sample.menu,
+                mealType: sample.mealType,
                 type,
+                time: sample.time || "",
+                place: sample.place || "",
                 memo: sample.memo || "",
+                thumbnail: sample.thumbnail,
+                url: sample.url,
                 isSample: true
               })
             }
@@ -295,7 +313,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       setSelectedPlanForDetail({
         id: item.id,
         date: item.date || date,
-        time: item.time || "저녁",
+        time: item.time || "",
         mealType: item.mealType || (item.type === "delivery" ? "배달" : item.type === "out" ? "외식" : "집밥"),
         menu: item.menu || item.name || "식사 예약",
         place: item.place || "",
