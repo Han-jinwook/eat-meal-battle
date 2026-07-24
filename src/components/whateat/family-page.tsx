@@ -459,7 +459,7 @@ export function FamilyPage({
             realOtherMembers.push({
               id: 2,
               name: "멀린",
-              avatar: avatarPresets[1],
+              avatar: "",
               role: "member",
               isOnline: true,
               isStudent: false
@@ -2095,21 +2095,13 @@ export function FamilyPage({
               {members.map((member) => (
                 <div key={member.id} className="flex flex-col items-center gap-1 shrink-0">
                   <div className="relative">
-                    {member.name === "나" ? (
-                      <HubAvatar
-                        isLoggedIn={isLoggedIn}
-                        avatarUrl={user?.avatar_url}
-                        nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
-                        size="sm"
-                        className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
-                      />
-                    ) : (
-                      <img
-                        src={member.avatar || "/placeholder.svg"}
-                        alt={member.name}
-                        className="size-11 rounded-xl object-cover border-2 border-white shadow-sm"
-                      />
-                    )}
+                    <HubAvatar
+                      isLoggedIn={isLoggedIn}
+                      avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                      nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
+                      size="sm"
+                      className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
+                    />
                     {member.role === "chef" && (
                       <div className="absolute -top-1 -right-1 size-4 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
                         <ChefHat className="size-2.5 text-white" />
@@ -3000,21 +2992,13 @@ export function FamilyPage({
                         : "border-gray-100 hover:bg-gray-50"
                     )}
                   >
-                    {member.name === "나" ? (
-                      <HubAvatar
-                        isLoggedIn={isLoggedIn}
-                        avatarUrl={user?.avatar_url}
-                        nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')}
-                        size="sm"
-                        className="!w-10 !h-10 rounded-xl"
-                      />
-                    ) : (
-                      <img 
-                        src={member.avatar || "/placeholder.svg"} 
-                        alt={member.name} 
-                        className="size-10 rounded-xl object-cover"
-                      />
-                    )}
+                    <HubAvatar
+                      isLoggedIn={isLoggedIn}
+                      avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                      nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
+                      size="sm"
+                      className="!w-10 !h-10 rounded-xl"
+                    />
                     <div className="flex-1 text-left">
                       <span className="font-bold text-sm text-foreground">{member.name}</span>
                       {member.role === 'chef' && (
