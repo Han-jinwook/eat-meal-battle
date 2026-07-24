@@ -447,7 +447,7 @@ export function FamilyPage({
           let realOtherMembers: FamilyMember[] = otherMembersData.map((m: any, idx: number) => ({
             id: idx + 2,
             name: m.nickname || "가족",
-            avatar: m.profile_image || avatarPresets[(idx + 1) % avatarPresets.length],
+            avatar: m.profile_image || (m.nickname?.includes("멀린") ? "" : avatarPresets[(idx + 1) % avatarPresets.length]),
             role: "member" as const,
             isOnline: true,
             isStudent: false,
@@ -472,7 +472,7 @@ export function FamilyPage({
           const meMember: FamilyMember = {
             id: 1,
             name: "나",
-            avatar: user.avatar_url || avatarPresets[1],
+            avatar: user.avatar_url || "",
             role: "member",
             isOnline: true,
             isStudent: false,
@@ -494,7 +494,7 @@ export function FamilyPage({
             .map((m: any, idx: number) => ({
               id: idx + 3,
               name: m.nickname || "가족",
-              avatar: m.profile_image || avatarPresets[(idx + 2) % avatarPresets.length],
+              avatar: m.profile_image || (m.nickname?.includes("스타크") ? hostAvatar : ""),
               role: "member" as const,
               isOnline: false,
               isStudent: false,
