@@ -350,15 +350,18 @@ export function FamilyPage({
         // 데모/샘플 닉네임 폴백 지원: 닉네임에 '멀린'이 들어가면 방장을 '스타크'로 매핑
         if (!hostId && user.nickname && (user.nickname.includes("멀린") || user.nickname === "가족회원")) {
           try {
-            const { data: starkUser } = await supabase
+            const { data: starkUsers } = await supabase
               .from("users")
-              .select("id")
+              .select("id, nickname")
               .ilike("nickname", "%스타크%")
-              .maybeSingle()
+            
+            const starkUser = starkUsers?.find(u => u.nickname === "스타크") || starkUsers?.[0]
             if (starkUser?.id) {
               hostId = starkUser.id
             }
-          } catch (e) {}
+          } catch (e) {
+            console.error("Failed to fallback search host starkUser:", e)
+          }
         }
 
         const isOwner = !hostId || hostId === user.id
@@ -399,15 +402,18 @@ export function FamilyPage({
         // 데모/샘플 닉네임 폴백 지원
         if (refereeIds.length === 0 && (hostNickname.includes("스타크") || isOwner)) {
           try {
-            const { data: merlinUser } = await supabase
+            const { data: merlinUsers } = await supabase
               .from("users")
-              .select("id")
+              .select("id, nickname")
               .ilike("nickname", "%멀린%")
-              .maybeSingle()
+            
+            const merlinUser = merlinUsers?.find(u => u.nickname === "멀린") || merlinUsers?.[0]
             if (merlinUser?.id && merlinUser.id !== targetHostId) {
               refereeIds.push(merlinUser.id)
             }
-          } catch (e) {}
+          } catch (e) {
+            console.error("Failed to fallback search referee merlinUser:", e)
+          }
         }
 
         // 4. 초대한 가족 유저 정보 상세 조회
@@ -535,11 +541,11 @@ export function FamilyPage({
 
         let dbUsers: any[] = []
         if (emails.length > 0) {
-          const { data } = await supabase.from('users').select('id, email, nickname').in('email', emails)
+          const { data } = await supabase.from('users').select('id, email, nickname, profile_image').in('email', emails)
           if (data) dbUsers = [...dbUsers, ...data]
         }
         if (nicknames.length > 0) {
-          const { data } = await supabase.from('users').select('id, email, nickname').in('nickname', nicknames)
+          const { data } = await supabase.from('users').select('id, email, nickname, profile_image').in('nickname', nicknames)
           if (data) dbUsers = [...dbUsers, ...data]
         }
 
@@ -552,7 +558,11 @@ export function FamilyPage({
           })
 
           if (matched) {
-            return { ...m, userId: matched.id }
+            return { 
+              ...m, 
+              userId: matched.id,
+              avatar: matched.profile_image || m.avatar
+            }
           }
           return m
         }))
