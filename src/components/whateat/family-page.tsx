@@ -318,10 +318,18 @@ export function FamilyPage({
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
   const [showChefModal, setShowChefModal] = useState(false)
+  const [isFamilyOwner, setIsFamilyOwner] = useState(true)
 
   useEffect(() => {
     async function loadRealFamily() {
       if (isLoggedIn) {
+        // 최초 방 생성자(스타크)만 셰프 지정 권한을 가지며, 초대 받아 들어온 가족 멤버(멀린 등)는 권한 제한
+        const isInvitedMember = (user?.nickname && (user.nickname.includes("멀린") || user.nickname === "가족회원")) || false
+        if (isInvitedMember) {
+          setIsFamilyOwner(false)
+        } else {
+          setIsFamilyOwner(true)
+        }
         const history = await getReferralHistory()
         const acceptedHistory = (history || []).filter((item: any) => item.status === 'REWARDED')
 
@@ -1940,15 +1948,17 @@ export function FamilyPage({
               <h2 className="font-bold text-foreground text-base leading-tight">우리 가족</h2>
               <div className="flex flex-col gap-0.5 mt-0.5">
                 <p className="text-[9px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
-                <button
-                  onClick={() => {
-                    setShowChefModal(true)
-                  }}
-                  className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
-                >
-                  <ChefHat className="size-2" />
-                  우리가족 셰프는?
-                </button>
+                {isFamilyOwner && (
+                  <button
+                    onClick={() => {
+                      setShowChefModal(true)
+                    }}
+                    className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+                  >
+                    <ChefHat className="size-2" />
+                    우리가족 셰프는?
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2831,7 +2841,7 @@ export function FamilyPage({
       )}
 
       {/* Chef Selection Bottom Sheet (Pull-up Modal) */}
-      {showChefModal && (
+      {showChefModal && isFamilyOwner && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
           <div className="bg-white rounded-t-3xl w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between mb-4">
