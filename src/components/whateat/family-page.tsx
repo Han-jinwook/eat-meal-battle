@@ -363,6 +363,7 @@ export function FamilyPage({
               userId: item.inviteeId || item.id
             }))
 
+            // 진짜 초대가 이뤄진 순간 샘플 가족(엄마, 아빠, 동생)은 100% 제거하고 실제 가족만 유지
             const updatedMembers = [meMember, ...realMembers]
 
             if (currentChef && currentChef.name !== "나") {
@@ -1919,22 +1920,32 @@ export function FamilyPage({
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm">
           <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
             <>
-              <button
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'))
-                  } else {
-                    familyPhotoInputRef.current?.click()
-                  }
-                }}
-                className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
-              >
-                {familyPhoto ? (
-                  <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-                ) : (
-                  <Pencil className="size-4" />
-                )}
-              </button>
+              {isFamilyOwner ? (
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      window.dispatchEvent(new CustomEvent('openLoginModal'))
+                    } else {
+                      familyPhotoInputRef.current?.click()
+                    }
+                  }}
+                  className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
+                >
+                  {familyPhoto ? (
+                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                  ) : (
+                    <Pencil className="size-4" />
+                  )}
+                </button>
+              ) : (
+                <div className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 overflow-hidden shrink-0">
+                  {familyPhoto ? (
+                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg">🏡</span>
+                  )}
+                </div>
+              )}
               <input
                 ref={familyPhotoInputRef}
                 type="file"
@@ -1945,7 +1956,9 @@ export function FamilyPage({
             </>
 
             <div className="shrink-0 min-w-fit pr-1">
-              <h2 className="font-bold text-foreground text-base leading-tight">우리 가족</h2>
+              <h2 className="font-bold text-foreground text-base leading-tight">
+                {isFamilyOwner ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족` : '스타크 가족'}
+              </h2>
               <div className="flex flex-col gap-0.5 mt-0.5">
                 <p className="text-[9px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
                 {isFamilyOwner && (
