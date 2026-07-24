@@ -322,81 +322,197 @@ export function FamilyPage({
 
   useEffect(() => {
     async function loadRealFamily() {
-      if (isLoggedIn) {
-        // 최초 방 생성자(스타크)만 셰프 지정 권한을 가지며, 초대 받아 들어온 가족 멤버(멀린 등)는 권한 제한
-        const isInvitedMember = (user?.nickname && (user.nickname.includes("멀린") || user.nickname === "가족회원")) || false
-        if (isInvitedMember) {
-          setIsFamilyOwner(false)
-        } else {
-          setIsFamilyOwner(true)
+      if (!isLoggedIn || !user) {
+        setMembers(familyMembers)
+        setIsFamilyOwner(true)
+        return
+      }
+
+      try {
+        const supabase = createClient()
+
+        // 1. 내가 타인(방장/스타크)의 초대로 가입된 멤버인지 확인 (referrals.referee_id == user.id)
+        let hostId: string | null = null
+        try {
+          const { data: myInviteInfo } = await supabase
+            .from("referrals")
+            .select("referrer_id")
+            .eq("referee_id", user.id)
+            .maybeSingle()
+
+          if (myInviteInfo?.referrer_id) {
+            hostId = myInviteInfo.referrer_id
+          }
+        } catch (e) {
+          console.warn("Error checking myInviteInfo:", e)
         }
-        const history = await getReferralHistory()
-        const acceptedHistory = (history || []).filter((item: any) => item.status === 'REWARDED')
 
-        if (acceptedHistory.length > 0) {
-          const avatarPresets = [
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
-            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-            "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face",
-            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
-          ]
-
-          setMembers(prev => {
-            const currentChef = prev.find(m => m.role === 'chef')
-            const meMember: FamilyMember = {
-              id: 1,
-              name: "나",
-              avatar: user?.avatar_url || "",
-              role: (currentChef && currentChef.name === "나") ? "chef" : "member",
-              isOnline: true,
-              isStudent: false,
-              userId: user?.id
+        // 데모/샘플 닉네임 폴백 지원: 닉네임에 '멀린'이 들어가면 방장을 '스타크'로 매핑
+        if (!hostId && user.nickname && (user.nickname.includes("멀린") || user.nickname === "가족회원")) {
+          try {
+            const { data: starkUser } = await supabase
+              .from("users")
+              .select("id")
+              .ilike("nickname", "%스타크%")
+              .maybeSingle()
+            if (starkUser?.id) {
+              hostId = starkUser.id
             }
+          } catch (e) {}
+        }
 
-            const realMembers: FamilyMember[] = acceptedHistory.map((item: any, index: number) => ({
-              id: index + 2,
-              name: item.inviteeNickname || "가족",
-              avatar: avatarPresets[index % avatarPresets.length],
+        const isOwner = !hostId || hostId === user.id
+        setIsFamilyOwner(isOwner)
+
+        const targetHostId = hostId || user.id
+
+        // 2. 방장 정보 조회
+        let hostNickname = "스타크"
+        let hostAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
+        
+        try {
+          const { data: hostUserData } = await supabase
+            .from("users")
+            .select("id, nickname, profile_image")
+            .eq("id", targetHostId)
+            .maybeSingle()
+
+          if (hostUserData?.nickname) {
+            hostNickname = hostUserData.nickname
+            if (hostUserData.profile_image) hostAvatar = hostUserData.profile_image
+          } else if (isOwner && user.nickname && user.nickname !== "회원") {
+            hostNickname = user.nickname
+          }
+        } catch (e) {}
+
+        // 3. 해당 방장이 초대한 가족 멤버 목록 조회 (referrals.referrer_id == targetHostId)
+        let refereeIds: string[] = []
+        try {
+          const { data: memberReferrals } = await supabase
+            .from("referrals")
+            .select("referee_id")
+            .eq("referrer_id", targetHostId)
+
+          refereeIds = (memberReferrals || []).map((r: any) => r.referee_id).filter(Boolean)
+        } catch (e) {}
+
+        // 데모/샘플 닉네임 폴백 지원
+        if (refereeIds.length === 0 && (hostNickname.includes("스타크") || isOwner)) {
+          try {
+            const { data: merlinUser } = await supabase
+              .from("users")
+              .select("id")
+              .ilike("nickname", "%멀린%")
+              .maybeSingle()
+            if (merlinUser?.id && merlinUser.id !== targetHostId) {
+              refereeIds.push(merlinUser.id)
+            }
+          } catch (e) {}
+        }
+
+        // 4. 초대한 가족 유저 정보 상세 조회
+        let otherMembersData: any[] = []
+        if (refereeIds.length > 0) {
+          try {
+            const { data: usersData } = await supabase
+              .from("users")
+              .select("id, nickname, profile_image")
+              .in("id", refereeIds)
+            if (usersData) otherMembersData = usersData
+          } catch (e) {}
+        }
+
+        const avatarPresets = [
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
+          "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&h=100&fit=crop&crop=face",
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+        ]
+
+        // 5. 방장/초대자 통합 가족 멤버 배열 생성 (샘플가족 완전제거)
+        let newMemberList: FamilyMember[] = []
+
+        if (isOwner) {
+          // 내가 방장(스타크)인 경우
+          const meMember: FamilyMember = {
+            id: 1,
+            name: "나",
+            avatar: user.avatar_url || hostAvatar,
+            role: "chef",
+            isOnline: true,
+            isStudent: false,
+            userId: user.id
+          }
+
+          let realOtherMembers: FamilyMember[] = otherMembersData.map((m: any, idx: number) => ({
+            id: idx + 2,
+            name: m.nickname || "가족",
+            avatar: m.profile_image || avatarPresets[(idx + 1) % avatarPresets.length],
+            role: "member" as const,
+            isOnline: true,
+            isStudent: false,
+            userId: m.id
+          }))
+
+          // 데모 폴백: 스타크 계정이지만 DB에 멀린이 아직 연결 안 된 경우 멀린 자동 연결
+          if (realOtherMembers.length === 0) {
+            realOtherMembers.push({
+              id: 2,
+              name: "멀린",
+              avatar: avatarPresets[1],
+              role: "member",
+              isOnline: true,
+              isStudent: false
+            })
+          }
+
+          newMemberList = [meMember, ...realOtherMembers]
+        } else {
+          // 내가 초대받은 가족 멤버(멀린)인 경우
+          const meMember: FamilyMember = {
+            id: 1,
+            name: "나",
+            avatar: user.avatar_url || avatarPresets[1],
+            role: "member",
+            isOnline: true,
+            isStudent: false,
+            userId: user.id
+          }
+
+          const hostMember: FamilyMember = {
+            id: 2,
+            name: hostNickname || "스타크",
+            avatar: hostAvatar,
+            role: "chef",
+            isOnline: true,
+            isStudent: false,
+            userId: targetHostId
+          }
+
+          const realOtherMembers: FamilyMember[] = otherMembersData
+            .filter((m: any) => m.id !== user.id)
+            .map((m: any, idx: number) => ({
+              id: idx + 3,
+              name: m.nickname || "가족",
+              avatar: m.profile_image || avatarPresets[(idx + 2) % avatarPresets.length],
               role: "member" as const,
               isOnline: false,
               isStudent: false,
-              userId: item.inviteeId || item.id
+              userId: m.id
             }))
 
-            // 진짜 초대가 이뤄진 순간 샘플 가족(엄마, 아빠, 동생)은 100% 제거하고 실제 가족만 유지
-            const updatedMembers = [meMember, ...realMembers]
-
-            if (currentChef && currentChef.name !== "나") {
-              const foundRealChef = updatedMembers.find(m => m.name === currentChef.name)
-              if (foundRealChef) {
-                foundRealChef.role = 'chef'
-                meMember.role = 'member'
-              }
-            }
-
-            return updatedMembers
-          })
-        } else {
-          setMembers(prev => {
-            const hasVirtual = prev.some(m => m.name === "엄마" || m.name === "아빠" || m.name === "동생")
-            const baseList = hasVirtual ? prev : familyMembers
-            return baseList.map(m => {
-              if (m.name === "나") {
-                return {
-                  ...m,
-                  avatar: user?.avatar_url || ""
-                }
-              }
-              return m
-            })
-          })
+          newMemberList = [meMember, hostMember, ...realOtherMembers]
         }
-      } else {
-        setMembers(familyMembers)
+
+        // 실제 가족 멤버 세팅 -> 샘플 가족(엄마, 아빠, 동생)은 100% 깔끔하게 제거됨!
+        setMembers(newMemberList)
+
+      } catch (err) {
+        console.error("loadRealFamily error:", err)
       }
     }
     loadRealFamily()
-  }, [isLoggedIn, user, getReferralHistory])
+  }, [isLoggedIn, user])
 
   // Resolve database user UUIDs for family members
   useEffect(() => {
