@@ -429,6 +429,9 @@ export function FamilyPage({
           "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
         ]
 
+        const merlinAvatar = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=face"
+        const starkAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
+
         // 5. 방장/초대자 통합 가족 멤버 배열 생성 (샘플가족 완전제거)
         let newMemberList: FamilyMember[] = []
 
@@ -437,7 +440,7 @@ export function FamilyPage({
           const meMember: FamilyMember = {
             id: 1,
             name: "나",
-            avatar: user.avatar_url || hostAvatar,
+            avatar: user.avatar_url || starkAvatar,
             role: "chef",
             isOnline: true,
             isStudent: false,
@@ -447,7 +450,7 @@ export function FamilyPage({
           let realOtherMembers: FamilyMember[] = otherMembersData.map((m: any, idx: number) => ({
             id: idx + 2,
             name: m.nickname || "가족",
-            avatar: m.profile_image || (m.nickname?.includes("멀린") ? "" : avatarPresets[(idx + 1) % avatarPresets.length]),
+            avatar: m.profile_image || (m.nickname?.includes("멀린") ? merlinAvatar : avatarPresets[(idx + 1) % avatarPresets.length]),
             role: "member" as const,
             isOnline: true,
             isStudent: false,
@@ -459,7 +462,7 @@ export function FamilyPage({
             realOtherMembers.push({
               id: 2,
               name: "멀린",
-              avatar: "",
+              avatar: merlinAvatar,
               role: "member",
               isOnline: true,
               isStudent: false
@@ -472,7 +475,7 @@ export function FamilyPage({
           const meMember: FamilyMember = {
             id: 1,
             name: "나",
-            avatar: user.avatar_url || "",
+            avatar: user.avatar_url || merlinAvatar,
             role: "member",
             isOnline: true,
             isStudent: false,
@@ -482,7 +485,7 @@ export function FamilyPage({
           const hostMember: FamilyMember = {
             id: 2,
             name: hostNickname || "스타크",
-            avatar: hostAvatar,
+            avatar: hostAvatar || starkAvatar,
             role: "chef",
             isOnline: true,
             isStudent: false,
@@ -494,7 +497,7 @@ export function FamilyPage({
             .map((m: any, idx: number) => ({
               id: idx + 3,
               name: m.nickname || "가족",
-              avatar: m.profile_image || (m.nickname?.includes("스타크") ? hostAvatar : ""),
+              avatar: m.profile_image || (m.nickname?.includes("스타크") ? starkAvatar : (m.nickname?.includes("멀린") ? merlinAvatar : avatarPresets[(idx + 2) % avatarPresets.length])),
               role: "member" as const,
               isOnline: false,
               isStudent: false,
