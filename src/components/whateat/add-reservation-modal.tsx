@@ -176,7 +176,21 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       const parsedUrls = parseSourceUrls(editData.url)
       setRecipeUrl(parsedUrls.videoUrl || (!parsedUrls.placeUrl ? editData.url || "" : ""))
       setPlaceUrlInput(parsedUrls.placeUrl)
-      setUrlPreview(null)
+      
+      if (editData.thumbnail) {
+        setUrlPreview({
+          thumbnail: editData.thumbnail,
+          aiSuggestedName: editData.menu,
+          url: editData.url || "",
+          isLoading: false
+        })
+      } else if (parsedUrls.placeUrl && isValidUrl(parsedUrls.placeUrl)) {
+        fetchUrlPreview(parsedUrls.placeUrl)
+      } else if (parsedUrls.videoUrl && isValidUrl(parsedUrls.videoUrl)) {
+        fetchUrlPreview(parsedUrls.videoUrl)
+      } else {
+        setUrlPreview(null)
+      }
       if (editData.place) {
         if (editData.mealType === "외식") {
           setSelectedPlace({ name: editData.place, address: "", category: "" })
@@ -589,11 +603,11 @@ const handleSubmit = () => {
                     </div>
                   )}
 
-                  {recipeUrl &&
+                  {(recipeUrl || placeUrlInput || urlPreview || editData?.thumbnail) &&
                     (urlPreview?.isLoading ? (
                       <div className="bg-white rounded-xl p-2.5 border border-gray-200">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-12 rounded-lg bg-muted animate-pulse shrink-0" />
+                          <div className="size-14 rounded-lg bg-muted animate-pulse shrink-0" />
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-1.5 text-orange-500">
                               <Loader2 className="size-3.5 animate-spin" />
@@ -604,25 +618,25 @@ const handleSubmit = () => {
                         </div>
                       </div>
                     ) : (
-                      urlPreview && (
+                      (urlPreview?.thumbnail || editData?.thumbnail) && (
                         <div className="bg-white rounded-xl border border-gray-200 p-2.5 flex items-center gap-3">
-                          <div className="relative w-20 h-20 rounded-xl bg-muted overflow-hidden shrink-0 shadow-xs border border-gray-100">
+                          <div className="relative w-26 h-26 sm:w-28 sm:h-28 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-gray-100">
                             <img
-                              src={urlPreview.thumbnail || "/placeholder.svg"}
+                              src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
                               alt="URL preview"
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                              <Sparkles className="size-3 text-orange-500" />
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <label className="text-xs font-bold text-foreground flex items-center gap-1">
+                              <Sparkles className="size-3.5 text-orange-500" />
                               AI 메뉴명 추천
                             </label>
                             <input
                               type="text"
                               value={menuName}
                               onChange={(e) => setMenuName(e.target.value)}
-                              className="w-full px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
+                              className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
                               placeholder="AI가 추출한 메뉴명 (수정 가능)"
                             />
                           </div>
@@ -630,7 +644,7 @@ const handleSubmit = () => {
                       )
                     ))}
 
-                  {(!recipeUrl || !urlPreview) && (
+                  {(!recipeUrl && !placeUrlInput && !urlPreview?.thumbnail && !editData?.thumbnail) && (
                     <div className="bg-white rounded-xl border border-gray-200 p-2.5 space-y-1">
                       <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         <Sparkles className="size-3.5 text-orange-500" />
