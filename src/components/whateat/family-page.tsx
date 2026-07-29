@@ -325,6 +325,7 @@ export function FamilyPage({
       if (!isLoggedIn || !user) {
         setMembers(familyMembers)
         setIsFamilyOwner(true)
+        setFamilyPhoto(null)
         return
       }
 
@@ -368,6 +369,23 @@ export function FamilyPage({
         setIsFamilyOwner(isOwner)
 
         const targetHostId = hostId || user.id
+
+        // 1.5 가족 그룹 사진 조회
+        try {
+          const { data: familyGroupData } = await supabase
+            .from("family_groups")
+            .select("family_photo")
+            .eq("owner_id", targetHostId)
+            .maybeSingle()
+
+          if (familyGroupData?.family_photo) {
+            setFamilyPhoto(familyGroupData.family_photo)
+          } else {
+            setFamilyPhoto(null)
+          }
+        } catch (e) {
+          console.warn("Error loading familyGroupData:", e)
+        }
 
         // 2. 방장 정보 조회
         let hostNickname = "스타크"
@@ -1142,14 +1160,39 @@ export function FamilyPage({
   const currentFamilyMemberId = currentFamilyMember.id
   const currentFamilyMemberName = currentFamilyMember.name
 
-  const handleFamilyPhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFamilyPhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) {
       return
     }
 
-    const objectUrl = URL.createObjectURL(file)
-    setFamilyPhoto(objectUrl)
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64Image = e.target?.result as string
+      if (!base64Image) return
+
+      const uploadToast = toast.loading("가족 사진을 업로드하고 있습니다...")
+      try {
+        const publicUrl = await uploadImageToStorage(base64Image)
+
+        await secureWrite({
+          table: "family_groups",
+          action: "upsert",
+          data: {
+            owner_id: user.id,
+            name: `${user.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
+            family_photo: publicUrl
+          }
+        })
+
+        setFamilyPhoto(publicUrl)
+        toast.success("가족 사진이 업로드되었습니다! 🎉", { id: uploadToast })
+      } catch (err) {
+        console.error("Failed to upload family photo:", err)
+        toast.error("가족 사진 업로드에 실패했습니다.", { id: uploadToast })
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   const selectedMeal = meals.find((meal) => meal.id === selectedMealId) ?? null
