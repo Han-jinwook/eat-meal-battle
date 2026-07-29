@@ -29,6 +29,7 @@ import {
   Search,
   ExternalLink,
   BookOpen,
+  Calendar,
 } from "lucide-react"
 import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
@@ -38,6 +39,7 @@ import { secureWrite } from "@/lib/supabase-safe"
 import { toast } from "react-hot-toast"
 import { MealCalendarTab } from "@/components/whateat/meal-calendar-tab"
 import { TabNavigation } from "@/components/whateat/tab-navigation"
+import { AddReservationModal } from "@/components/whateat/add-reservation-modal"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 
 export interface FamilyMember {
@@ -370,18 +372,34 @@ export function FamilyPage({
 
         const targetHostId = hostId || user.id
 
-        // 1.5 가족 그룹 사진 조회
+        let currentChefUserId = targetHostId
+        // 1.5 가족 그룹 사진 및 정보 조회
         try {
           const { data: familyGroupData } = await supabase
             .from("family_groups")
-            .select("family_photo")
+            .select("id, family_photo, chef_id")
             .eq("owner_id", targetHostId)
             .maybeSingle()
 
-          if (familyGroupData?.family_photo) {
-            setFamilyPhoto(familyGroupData.family_photo)
+          if (familyGroupData) {
+            setFamilyGroupId(familyGroupData.id)
+            if (familyGroupData.family_photo) {
+              setFamilyPhoto(familyGroupData.family_photo)
+            } else {
+              setFamilyPhoto(null)
+            }
+            if (familyGroupData.chef_id) {
+              setChefUserId(familyGroupData.chef_id)
+              currentChefUserId = familyGroupData.chef_id
+            } else {
+              setChefUserId(targetHostId)
+              currentChefUserId = targetHostId
+            }
           } else {
+            setFamilyGroupId(null)
             setFamilyPhoto(null)
+            setChefUserId(targetHostId)
+            currentChefUserId = targetHostId
           }
         } catch (e) {
           console.warn("Error loading familyGroupData:", e)
@@ -465,7 +483,7 @@ export function FamilyPage({
             id: 1,
             name: "나",
             avatar: user.avatar_url || starkAvatar,
-            role: "chef",
+            role: currentChefUserId === user.id ? "chef" : "member",
             isOnline: true,
             isStudent: false,
             userId: user.id
@@ -475,7 +493,7 @@ export function FamilyPage({
             id: idx + 2,
             name: m.nickname || "멀린",
             avatar: m.profile_image || merlinAvatar,
-            role: "member" as const,
+            role: currentChefUserId === m.id ? "chef" : ("member" as const),
             isOnline: true,
             isStudent: false,
             userId: m.id
@@ -487,7 +505,7 @@ export function FamilyPage({
               id: 2,
               name: "멀린",
               avatar: merlinAvatar,
-              role: "member",
+              role: currentChefUserId === "00000000-0000-4000-8000-000000000002" ? "chef" : "member", // dummy fallback check
               isOnline: true,
               isStudent: false
             })
@@ -500,7 +518,7 @@ export function FamilyPage({
             id: 1,
             name: "나",
             avatar: user.avatar_url || merlinAvatar,
-            role: "member",
+            role: currentChefUserId === user.id ? "chef" : "member",
             isOnline: true,
             isStudent: false,
             userId: user.id
@@ -510,7 +528,7 @@ export function FamilyPage({
             id: 2,
             name: hostNickname || "스타크",
             avatar: hostAvatar || starkAvatar,
-            role: "chef",
+            role: currentChefUserId === targetHostId ? "chef" : "member",
             isOnline: true,
             isStudent: false,
             userId: targetHostId
@@ -522,7 +540,7 @@ export function FamilyPage({
               id: idx + 3,
               name: m.nickname || "가족",
               avatar: m.profile_image || (m.nickname?.includes("스타크") ? starkAvatar : merlinAvatar),
-              role: "member" as const,
+              role: currentChefUserId === m.id ? "chef" : ("member" as const),
               isOnline: false,
               isStudent: false,
               userId: m.id
@@ -898,6 +916,16 @@ export function FamilyPage({
   const [showCreateVoteModal, setShowCreateVoteModal] = useState(false)
   const [showDecideMenuModal, setShowDecideMenuModal] = useState(false)
   const [familyPhoto, setFamilyPhoto] = useState<string | null>(null)
+  const [reservationSubTab, setReservationSubTab] = useState<"wishlist" | "list">("wishlist")
+  const [familyGroupId, setFamilyGroupId] = useState<string | null>(null)
+  const [chefUserId, setChefUserId] = useState<string | null>(null)
+  const [familyReservations, setFamilyReservations] = useState<any[]>([])
+  const [wishlistItems, setWishlistItems] = useState<any[]>([])
+  const [isReservationsLoaded, setIsReservationsLoaded] = useState(false)
+  const [isAddReservationOpen, setIsAddReservationOpen] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<any | null>(null)
+  const [wishlistLikes, setWishlistLikes] = useState<Record<string | number, string[]>>({})
+  const [reservationFilter, setReservationFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
 
   const [inviteLink, setInviteLink] = useState("")
@@ -1116,6 +1144,284 @@ export function FamilyPage({
     }
   }
 
+  const fetchFamilyReservations = async (familyUserIds: string[]) => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("meal_reservations")
+        .select("*")
+        .in("user_id", familyUserIds)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+
+      if (data) {
+        const wishlist = data.filter(r => r.source === "family_wishlist" || !r.date).map(row => ({
+          id: row.id,
+          date: row.date || "",
+          time: row.time || "",
+          mealType: row.meal_type as "집밥" | "배달" | "외식",
+          menu: row.menu,
+          place: row.place || "",
+          memo: row.memo || "",
+          thumbnail: row.thumbnail || "",
+          url: row.source_url || "",
+          userId: row.user_id,
+          createdAt: row.created_at
+        }))
+
+        const reservations = data.filter(r => r.source === "family" && r.date).map(row => ({
+          id: row.id,
+          date: row.date,
+          time: row.time || "",
+          mealType: row.meal_type as "집밥" | "배달" | "외식",
+          menu: row.menu,
+          place: row.place || "",
+          memo: row.memo || "",
+          thumbnail: row.thumbnail || "",
+          url: row.source_url || "",
+          userId: row.user_id,
+          createdAt: row.created_at
+        }))
+
+        setWishlistItems(wishlist)
+        setFamilyReservations(reservations)
+
+        // Fetch comments and replies for wishlist and reservations
+        const wishlistIds = wishlist.map(w => w.id)
+        const reservationIds = reservations.map(r => r.id)
+        const allResIds = [...wishlistIds, ...reservationIds]
+        if (allResIds.length > 0) {
+          const { data: commentsData } = await supabase
+            .from("comments")
+            .select("*")
+            .in("meal_id", allResIds)
+            .eq("is_deleted", false)
+          
+          const allComments = commentsData || []
+          const commentIds = allComments.map(c => c.id)
+          
+          let allReplies: any[] = []
+          if (commentIds.length > 0) {
+            const { data: repliesData } = await supabase
+              .from("comment_replies")
+              .select("*")
+              .in("comment_id", commentIds)
+              .eq("is_deleted", false)
+            allReplies = repliesData || []
+          }
+
+          const userIds = Array.from(new Set([
+            ...allComments.map(c => c.user_id),
+            ...allReplies.map(r => r.user_id)
+          ]))
+          
+          let dbUsers: any[] = []
+          if (userIds.length > 0) {
+            const { data: usersData } = await supabase
+              .from("users")
+              .select("id, nickname, profile_image")
+              .in("id", userIds)
+            dbUsers = usersData || []
+          }
+          const userMap = new Map(dbUsers.map(u => [u.id, u]))
+
+          const commentsMap: Record<string | number, MealComment[]> = {}
+          allResIds.forEach(resId => {
+            commentsMap[resId] = allComments
+              .filter(c => c.meal_id === resId)
+              .map(c => {
+                const u = userMap.get(c.user_id)
+                const cAuthor = c.user_id === user?.id ? "나" : (u?.nickname || "가족")
+                const cReplies = allReplies
+                  .filter(r => r.comment_id === c.id)
+                  .map(r => {
+                    const ru = userMap.get(r.user_id)
+                    return {
+                      id: r.id,
+                      userId: r.user_id,
+                      author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
+                      content: r.content,
+                      createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                      likes: 0,
+                      isLiked: false
+                    }
+                  })
+                
+                return {
+                  id: c.id,
+                  userId: c.user_id,
+                  author: cAuthor,
+                  content: c.content,
+                  createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                  likes: 0,
+                  isLiked: false,
+                  replies: cReplies
+                }
+              })
+          })
+          setMealComments(prev => ({ ...prev, ...commentsMap }))
+        }
+
+        // Fetch likes for wishlist items
+        if (wishlistIds.length > 0) {
+          const { data: likesData } = await supabase
+            .from("meal_likes")
+            .select("meal_id, user_id")
+            .in("meal_id", wishlistIds)
+          
+          if (likesData) {
+            const likesMap: Record<string | number, string[]> = {}
+            wishlistIds.forEach(wid => {
+              likesMap[wid] = likesData.filter(l => l.meal_id === wid).map(l => l.user_id)
+            })
+            setWishlistLikes(likesMap)
+          }
+        }
+      } else {
+        setWishlistItems([])
+        setFamilyReservations([])
+      }
+    } catch (err) {
+      console.error("Failed to fetch family reservations:", err)
+    } finally {
+      setIsReservationsLoaded(true)
+    }
+  }
+
+  const handleSaveWishlistItem = async (data: any) => {
+    if (!isLoggedIn || !user) return
+    const uploadToast = toast.loading("위시리스트를 저장하고 있습니다...")
+    try {
+      await secureWrite({
+        table: "meal_reservations",
+        action: "upsert",
+        data: {
+          id: data.id,
+          user_id: user.id,
+          date: null,
+          time: data.time || "",
+          meal_type: data.mealType,
+          menu: data.menu,
+          place: data.place || null,
+          memo: data.memo || "",
+          thumbnail: data.thumbnail || null,
+          source_url: data.url || null,
+          source: "family_wishlist"
+        }
+      })
+      toast.success("위시리스트에 추가되었습니다! 📋", { id: uploadToast })
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      fetchFamilyReservations(familyUserIds)
+    } catch (err) {
+      console.error("Failed to save wishlist item:", err)
+      toast.error("위시리스트 저장에 실패했습니다.", { id: uploadToast })
+    }
+  }
+
+  const handleDeleteWishlistItem = async (id: string | number) => {
+    const deleteToast = toast.loading("위시리스트를 삭제하고 있습니다...")
+    try {
+      await secureWrite({
+        table: "meal_reservations",
+        action: "delete",
+        filters: { id }
+      })
+      toast.success("삭제되었습니다.", { id: deleteToast })
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      fetchFamilyReservations(familyUserIds)
+    } catch (err) {
+      console.error("Failed to delete wishlist item:", err)
+      toast.error("삭제에 실패했습니다.", { id: deleteToast })
+    }
+  }
+
+  const handleSaveFamilyReservation = async (data: any) => {
+    if (!isLoggedIn || !user) return
+    const uploadToast = toast.loading("가족 예약을 저장하고 있습니다...")
+    try {
+      await secureWrite({
+        table: "meal_reservations",
+        action: "upsert",
+        data: {
+          id: data.id,
+          user_id: user.id,
+          date: data.date,
+          time: data.time || "",
+          meal_type: data.mealType,
+          menu: data.menu,
+          place: data.place || null,
+          memo: data.memo || "",
+          thumbnail: data.thumbnail || null,
+          source_url: data.url || null,
+          source: "family"
+        }
+      })
+      toast.success("가족 먹예약이 저장되었습니다! 📅", { id: uploadToast })
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      fetchFamilyReservations(familyUserIds)
+    } catch (err) {
+      console.error("Failed to save family reservation:", err)
+      toast.error("예약 저장에 실패했습니다.", { id: uploadToast })
+    }
+  }
+
+  const handleDeleteFamilyReservation = async (id: string | number) => {
+    const deleteToast = toast.loading("예약을 삭제하고 있습니다...")
+    try {
+      await secureWrite({
+        table: "meal_reservations",
+        action: "delete",
+        filters: { id }
+      })
+      toast.success("삭제되었습니다.", { id: deleteToast })
+      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      fetchFamilyReservations(familyUserIds)
+    } catch (err) {
+      console.error("Failed to delete reservation:", err)
+      toast.error("삭제에 실패했습니다.", { id: deleteToast })
+    }
+  }
+
+  const handleToggleWishlistLike = async (itemId: string | number) => {
+    if (!isLoggedIn || !user) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+    
+    const likedUsers = wishlistLikes[itemId] || []
+    const hasLiked = likedUsers.includes(user.id)
+    
+    try {
+      if (hasLiked) {
+        await secureWrite({
+          table: "meal_likes",
+          action: "delete",
+          filters: { meal_id: itemId }
+        })
+        setWishlistLikes(prev => ({
+          ...prev,
+          [itemId]: likedUsers.filter(uid => uid !== user.id)
+        }))
+      } else {
+        await secureWrite({
+          table: "meal_likes",
+          action: "insert",
+          data: {
+            meal_id: itemId,
+            user_id: user.id
+          }
+        })
+        setWishlistLikes(prev => ({
+          ...prev,
+          [itemId]: [...likedUsers, user.id]
+        }))
+      }
+    } catch (err) {
+      console.error("Failed to toggle wishlist like:", err)
+    }
+  }
+
   const fetchDecidedMenus = async () => {
     try {
       const supabase = createClient()
@@ -1151,6 +1457,7 @@ export function FamilyPage({
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       if (familyUserIds.length > 0) {
         fetchFamilyData(familyUserIds)
+        fetchFamilyReservations(familyUserIds)
       }
       fetchDecidedMenus()
     }
@@ -2670,311 +2977,289 @@ export function FamilyPage({
         </div>
       )}
 
-      {activeMainTab === "reservation" && (
-        <div className="flex flex-col gap-4">
-          {/* 투표 배지 - 먹예약 탭 상단 강조 표시 */}
-          <div className="bg-gradient-to-r from-orange-100 to-amber-50 border border-orange-200 rounded-2xl p-3.5 flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-              <VoteIcon className="size-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-black text-orange-700">🗳️ 이번주 식사 투표!</p>
-              <p className="text-[10px] text-orange-600 mt-0.5">{(vote || defaultActiveVote)?.title ?? "메뉴를 함께 정해보세요"}</p>
-            </div>
-          </div>
+      {activeMainTab === "reservation" && (() => {
+        const isChef = chefUserId ? user?.id === chefUserId : isFamilyOwner
+        const chef = members.find(m => m.userId === chefUserId) ?? members.find(m => m.role === "chef")
 
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-foreground">진행 중인 투표</h3>
-            <button 
-              onClick={() => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  setShowCreateVoteModal(true)
-                }
-              }}
-              className="flex items-center gap-1 text-xs text-orange-500 font-bold"
-            >
-              <Plus className="size-3.5" />
-              투표 만들기
-            </button>
-          </div>
+        const filteredWishlist = wishlistItems.filter(item => {
+          if (reservationFilter === "전체") return true
+          return item.mealType === reservationFilter
+        })
 
-          {(() => {
-            const displayVote = vote || defaultActiveVote
-            return displayVote?.isActive ? (
-              <div className="bg-white/80 rounded-3xl p-5 border border-white shadow-lg relative overflow-hidden">
-                {/* 샘플 리본 */}
-                {!vote && (
-                  <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-                    <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[9px] font-black py-0.5 text-center rotate-45 shadow-md">
-                      💡 SAMPLE
-                    </div>
+        const filteredReservations = familyReservations.filter(item => {
+          if (reservationFilter === "전체") return true
+          return item.mealType === reservationFilter
+        })
+
+        const renderCard = (item: any, isWishlistCard: boolean) => {
+          const likedUsers = wishlistLikes[item.id] || []
+          const hasLiked = user?.id ? likedUsers.includes(user.id) : false
+          const commentList = mealComments[item.id] || []
+          const mealTypeColor: Record<string, string> = {
+            "집밥": "bg-green-100 text-green-700",
+            "배달": "bg-blue-100 text-blue-700",
+            "외식": "bg-orange-100 text-orange-700",
+          }
+
+          return (
+            <div key={item.id} className="bg-white/90 rounded-2xl border border-white shadow-md overflow-hidden">
+              {item.thumbnail ? (
+                <div className="w-full h-36 relative">
+                  <img src={item.thumbnail} alt={item.menu} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-2 left-3">
+                    <span className="text-white font-bold text-sm drop-shadow">{item.menu}</span>
                   </div>
-                )}
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="font-bold text-foreground">{displayVote.title}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">{displayVote.createdBy}님이 생성</span>
-                      <span className="text-xs text-orange-500 font-bold flex items-center gap-1">
-                        <Clock className="size-3" />
-                        {displayVote.endsAt}
+                </div>
+              ) : null}
+
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    {!item.thumbnail && (
+                      <h4 className="font-bold text-foreground">{item.menu}</h4>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground"}`}>
+                        {item.mealType}
                       </span>
-                    </div>
-                  </div>
-                  <div className="px-2.5 py-1 bg-green-100 rounded-full">
-                    <span className="text-[10px] font-bold text-green-600">진행중</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {displayVote.options.map((option) => {
-                    const totalVotes = displayVote.options.reduce((sum, o) => sum + o.votes, 0)
-                    const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0
-                    const hasVoted = option.votedBy.includes("나")
-
-                    return (
-                      <button
-                        key={option.id}
-                        onClick={() => !hasVoted && vote && castVote(option.id as number)}
-                        disabled={hasVoted || !vote}
-                        className={cn(
-                          "relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all overflow-hidden cursor-pointer",
-                          hasVoted 
-                            ? "border-orange-400 bg-orange-50" 
-                            : "border-muted hover:border-orange-300 bg-white"
-                        )}
-                      >
-                        {/* Progress bar background */}
-                        <div 
-                          className="absolute inset-0 bg-orange-100/50 transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                        
-                        <img 
-                          src={option.image || "/placeholder.svg"} 
-                          alt={option.title} 
-                          className="relative size-12 rounded-xl object-cover shrink-0"
-                        />
-                        <div className="relative flex-1 text-left">
-                          <span className="font-bold text-sm">{option.title}</span>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-xs text-muted-foreground">
-                              {option.votedBy.length > 0 ? option.votedBy.join(", ") : "아직 투표 없음"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="relative flex items-center gap-2">
-                          <span className="font-bold text-orange-500">{option.votes}</span>
-                          {hasVoted && <Check className="size-4 text-orange-500" />}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                <VoteIcon className="size-12 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">진행 중인 투표가 없어요</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">가족들과 메뉴를 정해보세요!</p>
-              </div>
-            )
-          })()}
-        </div>
-      )}
-
-      {activeMainTab === "reservation" && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="식당, 메뉴, 장소 검색"
-                className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
-              />
-            </div>
-
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
-              >
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
-                  }}
-                  className="inline-flex cursor-pointer"
-                >
-                  <ArrowUpDown className="size-3" />
-                </span>
-                <span>{sortOption}</span>
-                <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-                <ChevronDown className="size-2.5" />
-              </button>
-
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
-                  {(["날짜순", "별점순", "기간"] as const).map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortOption(option)
-                        setShowSortDropdown(false)
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left text-sm transition-all",
-                        sortOption === option
-                          ? "bg-orange-50 text-primary font-bold"
-                          : "text-foreground hover:bg-muted/50"
+                      {item.place && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <MapPin className="size-2.5" />{item.place}
+                        </span>
                       )}
-                    >
-                      {option}
-                    </button>
-                  ))}
+                      {!isWishlistCard && item.date && (
+                        <span className="text-[10px] text-orange-500 font-bold flex items-center gap-0.5">
+                          <Calendar className="size-2.5" />{item.date}
+                          {item.time ? ` ${item.time}` : ""}
+                        </span>
+                      )}
+                    </div>
+                    {item.memo && (
+                      <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{item.memo}</p>
+                    )}
+                    {item.url && (
+                      <a href={item.url} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-blue-500 mt-1.5">
+                        <ExternalLink className="size-2.5" />링크 보기
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    {isWishlistCard && isChef && (
+                      <button
+                        onClick={() => {
+                          setEditingPlan({ ...item, isWishlistToSchedule: true })
+                          setIsAddReservationOpen(true)
+                        }}
+                        className="flex items-center gap-1 text-[10px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-2.5 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Calendar className="size-3" />
+                        날짜 잡기
+                      </button>
+                    )}
+                    {(!isWishlistCard || item.userId === user?.id || isChef) && (
+                      <button
+                        onClick={() => {
+                          if (confirm("삭제하시겠습니까?")) {
+                            if (isWishlistCard) handleDeleteWishlistItem(item.id)
+                            else handleDeleteFamilyReservation(item.id)
+                          }
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 좋아요 & 댓글 row */}
+                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-muted/30">
+                  {isWishlistCard && (
+                    <button
+                      onClick={() => handleToggleWishlistLike(item.id)}
+                      className={`flex items-center gap-1 text-xs font-medium transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
+                    >
+                      <Heart className={`size-3.5 ${hasLiked ? "fill-rose-500" : ""}`} />
+                      {likedUsers.length > 0 ? likedUsers.length : ""}
+                      좋아요
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setActiveMealId(item.id)
+                      setShowCommentModal(true)
+                    }}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <MessageCircle className="size-3.5" />
+                    댓글 {commentList.length > 0 ? commentList.length : ""}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="flex flex-col gap-4">
+            {/* 셰프 정보 바 */}
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+                <ChefHat className="size-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-black text-orange-700">
+                  👨‍🍳 {chef ? `${chef.name === "나" ? "나" : chef.name}가 오늘의 셰프` : "방장이 임시 셰프"}
+                </p>
+                <p className="text-[10px] text-orange-600 mt-0.5">
+                  {isChef ? "위시리스트를 보고 날짜를 잡아 예약을 확정할 수 있어요" : "셰프가 위시리스트를 보고 날짜를 잡아줄 거예요"}
+                </p>
+              </div>
+              {isChef && (
+                <button
+                  onClick={() => {
+                    setEditingPlan(null)
+                    setIsAddReservationOpen(true)
+                  }}
+                  className="size-9 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md transition-all shrink-0"
+                >
+                  <Plus className="size-4" />
+                </button>
               )}
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-foreground">{"Chef's Choice"}</h3>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'))
-                  } else {
-                    setShowDecideMenuModal(true)
-                  }
-                }}
-                className="flex items-center gap-1 text-xs text-orange-500 font-bold"
-              >
-                <ChefHat className="size-3.5" />
-                메뉴 결정하기
-              </button>
-              
+            {/* 서브 탭 스위처 */}
+            <div className="flex bg-muted/40 rounded-xl p-1 gap-1">
               <button
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'))
-                  } else {
-                    alert("가족/모임 먹예약 추가 기능은 준비 중입니다.")
-                  }
-                }}
-                className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
+                onClick={() => setReservationSubTab("wishlist")}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-sm font-bold transition-all",
+                  reservationSubTab === "wishlist"
+                    ? "bg-white text-orange-500 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <Plus className="size-5" />
+                📋 위시리스트
+              </button>
+              <button
+                onClick={() => setReservationSubTab("list")}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-sm font-bold transition-all",
+                  reservationSubTab === "list"
+                    ? "bg-white text-orange-500 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                📅 예약 목록
               </button>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3">
-            {(() => {
-              const displayTodayMenus = todayDecidedMenus.length === 0 ? defaultTodayMenus : todayDecidedMenus
-              const filteredTodayMenus = displayTodayMenus.filter(m => {
-                if (!searchQuery) return true
-                const q = searchQuery.toLowerCase()
-                return m.title.toLowerCase().includes(q) ||
-                       (m.decidedBy || "").toLowerCase().includes(q)
-              })
-
-              if (searchQuery && filteredTodayMenus.length === 0) {
-                return (
-                  <div className="bg-white/60 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                    <Search className="size-12 text-muted-foreground/30 mb-3" />
-                    <p className="text-sm text-muted-foreground">검색 결과가 없어요</p>
-                  </div>
-                )
-              }
-
-              return ["breakfast", "lunch", "dinner"].map((mealTime) => {
-                const menu = filteredTodayMenus.find(m => m.mealTime === mealTime)
-                if (searchQuery && !menu) return null
-
-                const label = mealTime === "breakfast" ? "아침" : mealTime === "lunch" ? "점심" : "저녁"
-                const timeRange = mealTime === "breakfast" ? "06:00 - 09:00" : mealTime === "lunch" ? "11:00 - 14:00" : "17:00 - 20:00"
-
-                return (
-                  <div 
-                    key={mealTime}
-                    className={cn(
-                      "bg-white/80 rounded-2xl p-4 border border-white shadow-md relative overflow-hidden",
-                      !menu && "opacity-60"
-                    )}
-                  >
-                    {/* 샘플 리본 */}
-                    {todayDecidedMenus.length === 0 && menu && (
-                      <div className="absolute top-0 right-0 overflow-hidden w-16 h-16 z-10 pointer-events-none">
-                        <div className="absolute top-2 -right-6 w-20 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
-                          💡 SAMPLE
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "size-12 rounded-xl flex items-center justify-center shrink-0",
-                        menu ? "bg-gradient-to-br from-orange-400 to-orange-500" : "bg-muted"
-                      )}>
-                        <Utensils className={cn("size-5", menu ? "text-white" : "text-muted-foreground")} />
-                      </div>
-                      
-                      {menu ? (
-                        <div className="flex-1 flex items-center gap-3">
-                          <img src={menu.image || "/placeholder.svg"} alt={menu.title} className="size-14 rounded-xl object-cover" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-orange-500">{label}</span>
-                              <span className="text-[10px] text-muted-foreground">{timeRange}</span>
-                            </div>
-                            <h4 className="font-bold text-foreground mt-0.5">{menu.title}</h4>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {menu.decidedBy}님이 {menu.decidedAt}에 결정
-                            </p>
-                          </div>
-                          <button className="size-8 rounded-lg hover:bg-muted/50 flex items-center justify-center">
-                            <MoreVertical className="size-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-muted-foreground">{label}</span>
-                            <span className="text-[10px] text-muted-foreground">{timeRange}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">아직 결정되지 않았어요</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            })()}
-          </div>
-
-          {/* Notification Preview */}
-          <div className="bg-gradient-to-r from-orange-100/70 to-orange-50 rounded-2xl p-4 border border-orange-200">
-            <div className="flex items-start gap-3">
-              <div className="size-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                <Bell className="size-5 text-orange-500" />
-              </div>
-              <div>
-                <h4 className="font-bold text-foreground text-sm">알림 설정</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {"메뉴가 결정되면 가족 모두에게 알림이 전송돼요"}
-                </p>
-                <button className="text-xs text-orange-500 font-bold mt-2">설정 변경</button>
-              </div>
+            {/* 필터 칩 */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {(["전체", "집밥", "배달", "외식"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setReservationFilter(f)}
+                  className={cn(
+                    "shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition-all",
+                    reservationFilter === f
+                      ? "bg-orange-500 text-white border-orange-500"
+                      : "bg-white text-muted-foreground border-muted hover:border-orange-300"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
             </div>
+
+            {/* 위시리스트 탭 */}
+            {reservationSubTab === "wishlist" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-foreground text-sm">
+                    가족 위시리스트
+                    {filteredWishlist.length > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">({filteredWishlist.length})</span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        window.dispatchEvent(new CustomEvent('openLoginModal'))
+                      } else {
+                        setEditingPlan({ isWishlist: true })
+                        setIsAddReservationOpen(true)
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-orange-500 font-bold"
+                  >
+                    <Plus className="size-3.5" />
+                    추가
+                  </button>
+                </div>
+
+                {!isReservationsLoaded ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="size-6 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin" />
+                  </div>
+                ) : filteredWishlist.length === 0 ? (
+                  <div className="bg-white/60 rounded-2xl p-10 flex flex-col items-center justify-center text-center">
+                    <BookOpen className="size-10 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">위시리스트가 비어있어요</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">먹고 싶은 메뉴나 식당을 추가해보세요!</p>
+                  </div>
+                ) : (
+                  filteredWishlist.map(item => renderCard(item, true))
+                )}
+              </div>
+            )}
+
+            {/* 예약 목록 탭 */}
+            {reservationSubTab === "list" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-foreground text-sm">
+                    가족 먹예약
+                    {filteredReservations.length > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">({filteredReservations.length})</span>
+                    )}
+                  </h3>
+                  {isChef && (
+                    <button
+                      onClick={() => {
+                        setEditingPlan(null)
+                        setIsAddReservationOpen(true)
+                      }}
+                      className="flex items-center gap-1 text-xs text-orange-500 font-bold"
+                    >
+                      <Plus className="size-3.5" />
+                      예약 추가
+                    </button>
+                  )}
+                </div>
+
+                {!isReservationsLoaded ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="size-6 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin" />
+                  </div>
+                ) : filteredReservations.length === 0 ? (
+                  <div className="bg-white/60 rounded-2xl p-10 flex flex-col items-center justify-center text-center">
+                    <Calendar className="size-10 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">아직 예약이 없어요</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      {isChef ? "위시리스트에서 날짜를 잡아 예약을 만들어보세요!" : "셰프가 날짜를 잡으면 여기에 나타나요"}
+                    </p>
+                  </div>
+                ) : (
+                  filteredReservations.map(item => renderCard(item, false))
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* 패밀리 먹캘린더 탭 */}
       {activeMainTab === "calendar" && (
@@ -2984,7 +3269,36 @@ export function FamilyPage({
       )}
       </div>
 
+      {/* AddReservationModal - 위시리스트 및 예약 추가/수정 */}
+      {isAddReservationOpen && (
+        <AddReservationModal
+          isOpen={isAddReservationOpen}
+          onClose={() => {
+            setIsAddReservationOpen(false)
+            setEditingPlan(null)
+          }}
+          onSave={(data: any) => {
+            const isSchedulingFromWishlist = editingPlan?.isWishlistToSchedule
+            const isWishlistAdd = editingPlan?.isWishlist && !isSchedulingFromWishlist
+
+            if (isSchedulingFromWishlist) {
+              // 위시리스트 → 예약 전환: 동일 ID로 source=family, date 확정
+              handleSaveFamilyReservation({ ...data, id: editingPlan.id })
+            } else if (isWishlistAdd || !data.date) {
+              handleSaveWishlistItem(data)
+            } else {
+              handleSaveFamilyReservation(data)
+            }
+            setIsAddReservationOpen(false)
+            setEditingPlan(null)
+          }}
+          editData={editingPlan && !editingPlan.isWishlist && !editingPlan.isWishlistToSchedule ? editingPlan : null}
+          isWishlist={!editingPlan?.isWishlistToSchedule && (editingPlan?.isWishlist === true || !editingPlan?.date)}
+        />
+      )}
+
       {/* Invite Modal */}
+
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-5">
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
@@ -3073,15 +3387,32 @@ export function FamilyPage({
             </div>
             
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!isLoggedIn) {
                   window.dispatchEvent(new CustomEvent('openLoginModal'))
                 } else {
                   if (selectedChefId) {
+                    const newChefMember = members.find(m => m.id === selectedChefId)
+                    const newChefUserId = newChefMember?.userId
                     setMembers(prev => prev.map(m => ({
                       ...m,
                       role: m.id === selectedChefId ? 'chef' : 'member'
                     })))
+                    if (newChefUserId && familyGroupId) {
+                      try {
+                        await secureWrite({
+                          table: "family_groups",
+                          action: "update",
+                          data: { chef_id: newChefUserId },
+                          filters: { id: familyGroupId }
+                        })
+                        setChefUserId(newChefUserId)
+                        toast.success("셰프가 변경되었습니다! 👨‍🍳")
+                      } catch (err) {
+                        console.error("Failed to update chef_id:", err)
+                        toast.error("셰프 변경 저장에 실패했습니다.")
+                      }
+                    }
                     setShowChefModal(false)
                   }
                 }

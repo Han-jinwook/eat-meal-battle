@@ -55,6 +55,7 @@ interface AddReservationModalProps {
   onSave?: (data: EditData) => void
   onDelete?: (id: string | number) => void
   prefillData?: ReservationPrefillData | null
+  isWishlist?: boolean
 }
 
 type MealType = "집밥" | "외식" | "배달" | ""
@@ -140,7 +141,7 @@ function generateUUID() {
   })
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false }: AddReservationModalProps) {
   const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
 
@@ -459,7 +460,7 @@ const handleSubmit = () => {
 
     const payload: EditData = {
       id: editData?.id ?? generateUUID(),
-      date: date || editData?.date || new Date().toISOString().split("T")[0],
+      date: isWishlist ? "" : (date || editData?.date || new Date().toISOString().split("T")[0]),
       menu: menuName || urlPreview?.aiSuggestedName || editData?.menu || "메뉴 미정",
       mealType: resolvedMealType,
       place: resolvedPlace,
@@ -676,61 +677,63 @@ const handleSubmit = () => {
             </div>
 
             {/* Date & Meal Time Grid (Side-by-side or Compact vertical) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className={cn("grid gap-3 pt-1", isWishlist ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
               {/* Date - 날짜 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <CalendarDays className="size-3.5 text-orange-500" />
-                  날짜
-                </label>
-                <div className="grid grid-cols-4 gap-1">
-                  {dateOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => {
-                        if (option.id === "직접선택") {
-                          setDateOption(option.id)
-                          openDatePicker()
-                        } else {
-                          setDateOption(option.id)
-                          setDate(getDateFromOption(option.id))
-                        }
-                      }}
-                      className={cn(
-                        "py-1.5 rounded-lg text-[10px] font-bold transition-all truncate",
-                        dateOption === option.id
-                          ? "bg-orange-500 text-white shadow-sm"
-                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+              {!isWishlist && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <CalendarDays className="size-3.5 text-orange-500" />
+                    날짜
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {dateOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => {
+                          if (option.id === "직접선택") {
+                            setDateOption(option.id)
+                            openDatePicker()
+                          } else {
+                            setDateOption(option.id)
+                            setDate(getDateFromOption(option.id))
+                          }
+                        }}
+                        className={cn(
+                          "py-1.5 rounded-lg text-[10px] font-bold transition-all truncate",
+                          dateOption === option.id
+                            ? "bg-orange-500 text-white shadow-sm"
+                            : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateOption("직접선택")
+                      openDatePicker()
+                    }}
+                    className="w-full px-3 py-1.5 bg-orange-50/90 border border-orange-200/60 rounded-lg flex items-center justify-between hover:bg-orange-100 transition-colors"
+                  >
+                    <span className={cn("text-xs font-bold", date ? "text-orange-600" : "text-muted-foreground")}>{date ? formatDateDisplay(date) : "날짜 선택"}</span>
+                    <span className="text-sm leading-none" aria-hidden>
+                      📅
+                    </span>
+                  </button>
+                  <input
+                    ref={dateInputRef}
+                    className="sr-only"
+                    type="date"
+                    value={date}
+                    onChange={(e) => {
+                      setDate(e.target.value)
+                      setDateOption("직접선택")
+                    }}
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDateOption("직접선택")
-                    openDatePicker()
-                  }}
-                  className="w-full px-3 py-1.5 bg-orange-50/90 border border-orange-200/60 rounded-lg flex items-center justify-between hover:bg-orange-100 transition-colors"
-                >
-                  <span className={cn("text-xs font-bold", date ? "text-orange-600" : "text-muted-foreground")}>{date ? formatDateDisplay(date) : "날짜 선택"}</span>
-                  <span className="text-sm leading-none" aria-hidden>
-                    📅
-                  </span>
-                </button>
-                <input
-                  ref={dateInputRef}
-                  className="sr-only"
-                  type="date"
-                  value={date}
-                  onChange={(e) => {
-                    setDate(e.target.value)
-                    setDateOption("직접선택")
-                  }}
-                />
-              </div>
+              )}
 
               {/* Meal Time - 식사 시간 */}
               <div className="flex flex-col gap-1.5">
@@ -775,7 +778,7 @@ const handleSubmit = () => {
               onClick={handleSubmit}
               className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-500 text-white rounded-xl shadow-md shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-xs"
             >
-              {isEditMode ? "수정 완료" : "예약 저장하기"}
+              {isEditMode ? "수정 완료" : (isWishlist ? "위시리스트 추가" : "예약 저장하기")}
             </button>
           </div>
         </div>
