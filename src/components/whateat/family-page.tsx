@@ -3145,113 +3145,154 @@ export function FamilyPage({
             "배달": "bg-blue-100 text-blue-700",
             "외식": "bg-orange-100 text-orange-700",
           }
-
           const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
+          const mealTypeIconMap: Record<string, any> = {
+            "집밥": Utensils,
+            "배달": ExternalLink,
+            "외식": MapPin
+          }
+          const TypeIcon = mealTypeIconMap[item.mealType] || Utensils
 
           return (
-            <div key={item.id} className="bg-white/90 rounded-2xl border border-white shadow-md overflow-hidden relative">
+            <div 
+              key={item.id} 
+              className={cn(
+                "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all relative overflow-hidden",
+                isSampleItem && "opacity-90"
+              )}
+            >
               {/* 샘플 리본 */}
               {isSampleItem && (
                 <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-                  <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
+                  <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
                     💡 SAMPLE
                   </div>
                 </div>
               )}
-              {item.thumbnail ? (
-                <div className="w-full h-36 relative">
-                  <img src={item.thumbnail} alt={item.menu} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  <div className="absolute bottom-2 left-3">
-                    <span className="text-white font-bold text-sm drop-shadow">{item.menu}</span>
-                  </div>
-                </div>
-              ) : null}
 
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    {!item.thumbnail && (
-                      <h4 className="font-bold text-foreground">{item.menu}</h4>
-                    )}
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground"}`}>
-                        {item.mealType}
+              <div className="flex items-start gap-3">
+                {/* Meal Type Icon Badge */}
+                <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5", mealTypeColor[item.mealType] ?? "bg-orange-50 text-orange-500")}>
+                  <TypeIcon className="size-5" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  {/* Menu Title & Time */}
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h4 className="font-bold text-foreground text-sm leading-tight">{item.menu}</h4>
+                    {item.time && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
+                        {item.time}
                       </span>
-                      {item.place && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <MapPin className="size-2.5" />{item.place}
-                        </span>
+                    )}
+                  </div>
+
+                  {/* Date or Category */}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1 flex-wrap">
+                    {!isWishlistCard && item.date && (
+                      <>
+                        <Calendar className="size-3 text-orange-500" />
+                        <span className="text-orange-500 font-bold">{item.date}</span>
+                        <span className="text-muted-foreground/40">|</span>
+                      </>
+                    )}
+                    <span className="font-medium text-foreground">{item.mealType}</span>
+                  </div>
+
+                  {/* Place */}
+                  {item.place && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                      <MapPin className="size-3 text-orange-400 shrink-0" />
+                      <span className="truncate">{item.place}</span>
+                    </div>
+                  )}
+
+                  {/* Memo */}
+                  {item.memo && (
+                    <div className="mt-1.5 rounded-lg border border-orange-100 bg-orange-50/50 px-2.5 py-1.5">
+                      <p className="text-[11px] leading-4 text-muted-foreground line-clamp-2">
+                        {item.memo}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* External Link */}
+                  {item.url && (
+                    <a 
+                      href={item.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] text-blue-500 hover:underline mt-1 font-medium"
+                    >
+                      <ExternalLink className="size-2.5" />링크 보기
+                    </a>
+                  )}
+
+                  {/* Bottom Bar: Likes, Comments, Actions */}
+                  <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-muted/30">
+                    <div className="flex items-center gap-3">
+                      {isWishlistCard && (
+                        <button
+                          onClick={() => handleToggleWishlistLike(item.id)}
+                          className={`flex items-center gap-1 text-xs font-medium transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
+                        >
+                          <Heart className={`size-3.5 ${hasLiked ? "fill-rose-500" : ""}`} />
+                          <span>{likedUsers.length > 0 ? likedUsers.length : ""}</span>
+                          <span>좋아요</span>
+                        </button>
                       )}
-                      {!isWishlistCard && item.date && (
-                        <span className="text-[10px] text-orange-500 font-bold flex items-center gap-0.5">
-                          <Calendar className="size-2.5" />{item.date}
-                          {item.time ? ` ${item.time}` : ""}
-                        </span>
+                      <button
+                        onClick={() => {
+                          setActiveMealId(item.id)
+                          setShowCommentModal(true)
+                        }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <MessageCircle className="size-3.5" />
+                        <span>댓글 {commentList.length > 0 ? commentList.length : ""}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {isWishlistCard && isChef && (
+                        <button
+                          onClick={() => {
+                            setEditingPlan({ ...item, isWishlistToSchedule: true })
+                            setIsAddReservationOpen(true)
+                          }}
+                          className="flex items-center gap-1 text-[10px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-2 py-1 rounded-lg transition-colors shadow-sm"
+                        >
+                          <Calendar className="size-3" />
+                          날짜 잡기
+                        </button>
+                      )}
+                      {(!isWishlistCard || item.userId === user?.id || isChef) && (
+                        <button
+                          onClick={() => {
+                            if (confirm("삭제하시겠습니까?")) {
+                              if (isWishlistCard) handleDeleteWishlistItem(item.id)
+                              else handleDeleteFamilyReservation(item.id)
+                            }
+                          }}
+                          className="text-[10px] text-muted-foreground hover:text-destructive px-1.5 py-1 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          삭제
+                        </button>
                       )}
                     </div>
-                    {item.memo && (
-                      <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{item.memo}</p>
-                    )}
-                    {item.url && (
-                      <a href={item.url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[10px] text-blue-500 mt-1.5">
-                        <ExternalLink className="size-2.5" />링크 보기
-                      </a>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    {isWishlistCard && isChef && (
-                      <button
-                        onClick={() => {
-                          setEditingPlan({ ...item, isWishlistToSchedule: true })
-                          setIsAddReservationOpen(true)
-                        }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-2.5 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Calendar className="size-3" />
-                        날짜 잡기
-                      </button>
-                    )}
-                    {(!isWishlistCard || item.userId === user?.id || isChef) && (
-                      <button
-                        onClick={() => {
-                          if (confirm("삭제하시겠습니까?")) {
-                            if (isWishlistCard) handleDeleteWishlistItem(item.id)
-                            else handleDeleteFamilyReservation(item.id)
-                          }
-                        }}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        삭제
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {/* 좋아요 & 댓글 row */}
-                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-muted/30">
-                  {isWishlistCard && (
-                    <button
-                      onClick={() => handleToggleWishlistLike(item.id)}
-                      className={`flex items-center gap-1 text-xs font-medium transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
-                    >
-                      <Heart className={`size-3.5 ${hasLiked ? "fill-rose-500" : ""}`} />
-                      {likedUsers.length > 0 ? likedUsers.length : ""}
-                      좋아요
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setActiveMealId(item.id)
-                      setShowCommentModal(true)
-                    }}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <MessageCircle className="size-3.5" />
-                    댓글 {commentList.length > 0 ? commentList.length : ""}
-                  </button>
-                </div>
+                {/* Right side Thumbnail Image */}
+                {item.thumbnail && (
+                  <div className="size-16 sm:size-20 rounded-xl overflow-hidden shrink-0 border border-muted/30">
+                    <img 
+                      src={item.thumbnail} 
+                      alt={item.menu} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -3260,33 +3301,114 @@ export function FamilyPage({
         return (
           <div className="flex flex-col gap-4">
             {/* 셰프 정보 바 */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-                <ChefHat className="size-5 text-white" />
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
+              <div className="size-8 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+                <ChefHat className="size-4.5 text-white" />
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-black text-orange-700">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-orange-700 truncate">
                   👨‍🍳 {chef ? `${chef.name === "나" ? "나" : chef.name}가 오늘의 셰프` : "방장이 임시 셰프"}
                 </p>
-                <p className="text-[10px] text-orange-600 mt-0.5">
-                  {isChef ? "위시리스트를 보고 날짜를 잡아 예약을 확정할 수 있어요" : "셰프가 위시리스트를 보고 날짜를 잡아줄 거예요"}
+                <p className="text-[10px] text-orange-600 truncate">
+                  {isChef ? "위시리스트를 보고 날짜를 잡아 예약을 확정해보세요" : "셰프가 위시리스트를 보고 날짜를 잡아줄 거예요"}
                 </p>
               </div>
-              {isChef && (
-                <button
-                  onClick={() => {
-                    setEditingPlan(null)
-                    setIsAddReservationOpen(true)
-                  }}
-                  className="size-9 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md transition-all shrink-0"
-                >
-                  <Plus className="size-4" />
-                </button>
-              )}
             </div>
 
-            {/* 서브 탭 스위처 */}
-            <div className="flex bg-muted/40 rounded-xl p-1 gap-1">
+            {/* 검색어 입력 및 정렬 (솔로와 동일) */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="식당, 메뉴, 장소 검색"
+                  className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
+                >
+                  <ArrowUpDown className="size-3" />
+                  <span>{sortOption}</span>
+                  <ChevronDown className="size-2.5" />
+                </button>
+
+                {showSortDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                    {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setSortOption(option)
+                          setShowSortDropdown(false)
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left text-sm transition-all",
+                          sortOption === option
+                            ? "bg-orange-50 text-primary font-bold"
+                            : "text-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 카테고리 필터 칩 + 수량 배지 + (+) 추가 버튼 */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {(["전체", "집밥", "배달", "외식"] as const).map(f => {
+                  const count = f === "전체" 
+                    ? wishlistItems.length + familyReservations.length 
+                    : wishlistItems.filter(i => i.mealType === f).length + familyReservations.filter(i => i.mealType === f).length
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setReservationFilter(f)}
+                      className={cn(
+                        "shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5",
+                        reservationFilter === f
+                          ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                          : "bg-white text-muted-foreground border-muted hover:border-orange-300"
+                      )}
+                    >
+                      <span>{f}</span>
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-full font-black",
+                        reservationFilter === f ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                      )}>
+                        {count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    setEditingPlan({ isWishlist: true })
+                    setIsAddReservationOpen(true)
+                  }
+                }}
+                className="size-9 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md transition-all shrink-0"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
+
+            {/* 모바일 서브 탭 스위처 (md 이상에서는 숨김) */}
+            <div className="md:hidden flex bg-muted/40 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setReservationSubTab("wishlist")}
                 className={cn(
@@ -3296,7 +3418,7 @@ export function FamilyPage({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                📋 위시리스트
+                📋 위시리스트 ({filteredWishlist.length})
               </button>
               <button
                 onClick={() => setReservationSubTab("list")}
@@ -3307,37 +3429,34 @@ export function FamilyPage({
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                📅 예약 목록
+                📅 예약 목록 ({filteredReservations.length})
               </button>
             </div>
 
-            {/* 필터 칩 */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {(["전체", "집밥", "배달", "외식"] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setReservationFilter(f)}
-                  className={cn(
-                    "shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition-all",
-                    reservationFilter === f
-                      ? "bg-orange-500 text-white border-orange-500"
-                      : "bg-white text-muted-foreground border-muted hover:border-orange-300"
-                  )}
-                >
-                  {f}
-                </button>
-              ))}
+            {/* 모바일 뷰 (선택된 탭 렌더링) */}
+            <div className="md:hidden flex flex-col gap-3">
+              {reservationSubTab === "wishlist" && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="font-bold text-foreground text-sm">📋 가족 위시리스트 ({filteredWishlist.length})</h3>
+                  {filteredWishlist.map(item => renderCard(item, true))}
+                </div>
+              )}
+              {reservationSubTab === "list" && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="font-bold text-foreground text-sm">📅 가족 먹예약 목록 ({filteredReservations.length})</h3>
+                  {filteredReservations.map(item => renderCard(item, false))}
+                </div>
+              )}
             </div>
 
-            {/* 위시리스트 탭 */}
-            {reservationSubTab === "wishlist" && (
+            {/* 데스크톱/태블릿 2열 Split-View (md 이상에서 활성화) */}
+            <div className="hidden md:grid md:grid-cols-2 gap-4 items-start">
+              {/* 좌측: 위시리스트 */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-foreground text-sm">
-                    가족 위시리스트
-                    {filteredWishlist.length > 0 && (
-                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">({filteredWishlist.length})</span>
-                    )}
+                <div className="flex items-center justify-between pb-1 border-b border-muted/40">
+                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                    <span>📋 가족 위시리스트</span>
+                    <span className="text-xs text-orange-500 font-bold">({filteredWishlist.length})</span>
                   </h3>
                   <button
                     onClick={() => {
@@ -3348,38 +3467,20 @@ export function FamilyPage({
                         setIsAddReservationOpen(true)
                       }
                     }}
-                    className="flex items-center gap-1 text-xs text-orange-500 font-bold"
+                    className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline"
                   >
-                    <Plus className="size-3.5" />
-                    추가
+                    <Plus className="size-3" /> 추가
                   </button>
                 </div>
-
-                {!isReservationsLoaded ? (
-                  <div className="flex items-center justify-center py-10">
-                    <div className="size-6 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin" />
-                  </div>
-                ) : filteredWishlist.length === 0 ? (
-                  <div className="bg-white/60 rounded-2xl p-10 flex flex-col items-center justify-center text-center">
-                    <BookOpen className="size-10 text-muted-foreground/30 mb-3" />
-                    <p className="text-sm text-muted-foreground">위시리스트가 비어있어요</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">먹고 싶은 메뉴나 식당을 추가해보세요!</p>
-                  </div>
-                ) : (
-                  filteredWishlist.map(item => renderCard(item, true))
-                )}
+                {filteredWishlist.map(item => renderCard(item, true))}
               </div>
-            )}
 
-            {/* 예약 목록 탭 */}
-            {reservationSubTab === "list" && (
+              {/* 우측: 확정 예약 목록 */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-foreground text-sm">
-                    가족 먹예약
-                    {filteredReservations.length > 0 && (
-                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">({filteredReservations.length})</span>
-                    )}
+                <div className="flex items-center justify-between pb-1 border-b border-muted/40">
+                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                    <span>📅 확정 예약 목록</span>
+                    <span className="text-xs text-orange-500 font-bold">({filteredReservations.length})</span>
                   </h3>
                   {isChef && (
                     <button
@@ -3387,31 +3488,15 @@ export function FamilyPage({
                         setEditingPlan(null)
                         setIsAddReservationOpen(true)
                       }}
-                      className="flex items-center gap-1 text-xs text-orange-500 font-bold"
+                      className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline"
                     >
-                      <Plus className="size-3.5" />
-                      예약 추가
+                      <Plus className="size-3" /> 예약 추가
                     </button>
                   )}
                 </div>
-
-                {!isReservationsLoaded ? (
-                  <div className="flex items-center justify-center py-10">
-                    <div className="size-6 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin" />
-                  </div>
-                ) : filteredReservations.length === 0 ? (
-                  <div className="bg-white/60 rounded-2xl p-10 flex flex-col items-center justify-center text-center">
-                    <Calendar className="size-10 text-muted-foreground/30 mb-3" />
-                    <p className="text-sm text-muted-foreground">아직 예약이 없어요</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      {isChef ? "위시리스트에서 날짜를 잡아 예약을 만들어보세요!" : "셰프가 날짜를 잡으면 여기에 나타나요"}
-                    </p>
-                  </div>
-                ) : (
-                  filteredReservations.map(item => renderCard(item, false))
-                )}
+                {filteredReservations.map(item => renderCard(item, false))}
               </div>
-            )}
+            </div>
           </div>
         )
       })()}
