@@ -3223,65 +3223,70 @@ export function FamilyPage({
                 </div>
               </div>
 
-              {/* 2. 카드 본문 - 메뉴명, 시간, 위치 */}
-              <div className="px-4 pb-2">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="font-bold text-foreground text-base leading-snug">{item.menu}</h4>
-                  {item.time && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 text-orange-600 rounded-md shrink-0">
-                      {item.time}
-                    </span>
+              {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/위시날짜/메모, 우: url 썸네일 사진) */}
+              <div className="px-4 pb-3 flex items-start gap-3">
+                {/* 좌측 텍스트 & 정보 구역 */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug truncate">{item.menu}</h4>
+                    {item.time && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 text-orange-600 rounded-md shrink-0">
+                        {item.time}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 장소(MapPin) 및 날짜 */}
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                    {item.place && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">{item.place}</span>
+                      </div>
+                    )}
+                    {!isWishlistCard && item.date && (
+                      <div className="flex items-center gap-1 text-orange-500 font-bold">
+                        <Calendar className="size-3 shrink-0" />
+                        <span>{item.date}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 메모 말풍선 (좌측 영역 내 배치) */}
+                  {item.memo && (
+                    <div className="mt-2 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                      <p className="line-clamp-2 font-medium">{item.memo}</p>
+                    </div>
                   )}
                 </div>
 
-                {/* 위치 (MapPin) 및 날짜 */}
-                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                  {item.place && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="size-3.5 text-orange-500 shrink-0" />
-                      <span className="font-medium text-foreground">{item.place}</span>
-                    </div>
-                  )}
-                  {!isWishlistCard && item.date && (
-                    <div className="flex items-center gap-1 text-orange-500 font-bold">
-                      <Calendar className="size-3 shrink-0" />
-                      <span>{item.date}</span>
-                    </div>
-                  )}
-                </div>
+                {/* 우측 URL 썸네일 이미지 (사진 클릭 시 원본 URL 링크 이동!) */}
+                {item.thumbnail ? (
+                  <div 
+                    className={cn(
+                      "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
+                      item.url && "cursor-pointer group"
+                    )}
+                    onClick={() => {
+                      if (item.url) window.open(item.url, '_blank')
+                    }}
+                    title={item.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
+                  >
+                    <img 
+                      src={item.thumbnail} 
+                      alt={item.menu} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                    />
+                    {item.url && (
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
+                        <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
+                          <ExternalLink className="size-3" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
-
-              {/* 3. 대표 사진 (사진 클릭 시 원본 URL 링크 이동!) */}
-              {item.thumbnail ? (
-                <div 
-                  className={cn(
-                    "w-full h-48 relative overflow-hidden bg-muted",
-                    item.url && "cursor-pointer group"
-                  )}
-                  onClick={() => {
-                    if (item.url) window.open(item.url, '_blank')
-                  }}
-                >
-                  <img 
-                    src={item.thumbnail} 
-                    alt={item.menu} 
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                  />
-                  {item.url && (
-                    <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg text-white text-[10px] font-bold flex items-center gap-1 opacity-90">
-                      <ExternalLink className="size-3" />
-                      <span>사진 클릭시 링크 이동</span>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {/* 4. 메모 영역 (사진 유무 상관없이 깔끔한 말풍선 형태) */}
-              {item.memo && (
-                <div className="mx-4 my-2.5 p-3 bg-orange-50/60 rounded-2xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
-                  <p className="line-clamp-3 font-medium">{item.memo}</p>
-                </div>
-              )}
 
               {/* 5. 맛톡 느낌의 하단 액션 바 (좋아요, 댓글, 셰프 날짜 잡기) */}
               <div className="flex items-center justify-between border-t border-muted/30 px-4 py-2.5 bg-gray-50/30">
