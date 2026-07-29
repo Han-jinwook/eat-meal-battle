@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 클릭 가능한 모든 요소에 마우스 포인터 강제 적용 */
+button,
+a,
+[role="button"],
+.cursor-pointer {
+  cursor: pointer !important;
+}

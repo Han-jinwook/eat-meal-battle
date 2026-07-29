@@ -2133,7 +2133,7 @@ export function FamilyPage({
                 onClick={() => {
                   setShowInviteModal(true)
                 }}
-                className="flex flex-col items-center gap-1 shrink-0 ml-1"
+                className="flex flex-col items-center gap-1 shrink-0 ml-1 cursor-pointer"
               >
                 <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
                   <Plus className="size-4 text-muted-foreground/50" />
@@ -2181,7 +2181,7 @@ export function FamilyPage({
                     e.stopPropagation()
                     setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
                   }}
-                  className="inline-flex"
+                  className="inline-flex cursor-pointer"
                 >
                   <ArrowUpDown className="size-3" />
                 </span>
@@ -2293,7 +2293,7 @@ export function FamilyPage({
                       onClick={() => isOpen && handleOpenMealCardDetail(meal.id)}
                       className={cn(
                         "w-full text-left block",
-                        isOpen ? "hover:opacity-95 transition-opacity" : "cursor-default",
+                        isOpen ? "hover:opacity-95 transition-opacity cursor-pointer" : "cursor-default",
                       )}
                     >
                       <div className="flex h-[190px]">
@@ -2331,7 +2331,7 @@ export function FamilyPage({
                                   href={meal.linkUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="w-full h-full relative group overflow-hidden block"
+                                  className="w-full h-full relative group overflow-hidden block cursor-pointer"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {meal.linkThumbnail ? (
@@ -2437,7 +2437,7 @@ export function FamilyPage({
                               href={meal.linkUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] hover:bg-gray-100 transition-colors p-3"
+                              className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] hover:bg-gray-100 transition-colors p-3 cursor-pointer"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <div className="size-10 rounded-full bg-[#03C75A]/10 flex items-center justify-center mb-2">
@@ -2767,7 +2767,7 @@ export function FamilyPage({
                     e.stopPropagation()
                     setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
                   }}
-                  className="inline-flex"
+                  className="inline-flex cursor-pointer"
                 >
                   <ArrowUpDown className="size-3" />
                 </span>
