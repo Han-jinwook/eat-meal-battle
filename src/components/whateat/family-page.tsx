@@ -516,6 +516,7 @@ export function FamilyPage({
         setIsFamilyOwner(isOwner)
 
         const targetHostId = hostId || user.id
+        setFamilyHostId(targetHostId)
 
         let currentChefUserId = targetHostId
         // 1.5 가족 그룹 사진 및 정보 조회
@@ -1063,6 +1064,7 @@ export function FamilyPage({
   const [familyPhoto, setFamilyPhoto] = useState<string | null>(null)
   const [reservationSubTab, setReservationSubTab] = useState<"wishlist" | "list">("wishlist")
   const [familyGroupId, setFamilyGroupId] = useState<string | null>(null)
+  const [familyHostId, setFamilyHostId] = useState<string | null>(null)
   const [chefUserId, setChefUserId] = useState<string | null>(null)
   const [familyReservations, setFamilyReservations] = useState<any[]>(defaultFamilyReservations)
   const [wishlistItems, setWishlistItems] = useState<any[]>(defaultWishlistItems)
@@ -1640,10 +1642,11 @@ export function FamilyPage({
 
       const uploadToast = toast.loading("가족 사진을 업로드하고 있습니다...")
       try {
+        const activeHostId = familyHostId || user.id
         const publicUrl = await uploadImageToStorage(base64Image)
 
         const payload: any = {
-          owner_id: user.id,
+          owner_id: activeHostId,
           name: `${user.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
           family_photo: publicUrl
         }
@@ -3688,14 +3691,23 @@ export function FamilyPage({
                       ...m,
                       role: m.id === selectedChefId ? 'chef' : 'member'
                     })))
-                    if (newChefUserId && familyGroupId) {
+                    if (newChefUserId) {
                       try {
-                        await secureWrite({
+                        const payload: any = {
+                          owner_id: familyHostId || user.id,
+                          chef_id: newChefUserId
+                        }
+                        if (familyGroupId) {
+                          payload.id = familyGroupId
+                        }
+                        const res = await secureWrite({
                           table: "family_groups",
-                          action: "update",
-                          data: { chef_id: newChefUserId },
-                          filters: { id: familyGroupId }
+                          action: "upsert",
+                          data: payload
                         })
+                        if (res?.data?.[0]?.id) {
+                          setFamilyGroupId(res.data[0].id)
+                        }
                         setChefUserId(newChefUserId)
                         toast.success("셰프가 변경되었습니다! 👨‍🍳")
                       } catch (err) {

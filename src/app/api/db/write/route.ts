@@ -130,9 +130,6 @@ export async function POST(request: Request) {
           }
         }
         if (table === 'family_groups') {
-          if (rec.owner_id && rec.owner_id !== userId) {
-            return NextResponse.json({ error: '본인의 가족 그룹만 관리할 수 있습니다.' }, { status: 403 });
-          }
           if (!rec.owner_id) {
             rec.owner_id = userId;
           }
@@ -191,9 +188,6 @@ export async function POST(request: Request) {
         }
         if (table === 'school_infos' && existing.user_id !== userId) {
           return NextResponse.json({ error: '본인의 소속 정보만 수정할 수 있습니다.' }, { status: 403 });
-        }
-        if (table === 'family_groups' && existing.owner_id !== userId) {
-          return NextResponse.json({ error: '본인의 가족 그룹만 수정할 수 있습니다.' }, { status: 403 });
         }
       }
 
