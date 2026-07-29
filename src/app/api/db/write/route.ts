@@ -80,7 +80,8 @@ export async function POST(request: Request) {
       'interest_schools',
       'notification_recipients',
       'meal_likes',
-      'meal_reservations'
+      'meal_reservations',
+      'family_groups'
     ];
 
     if (!ALLOWED_TABLES.includes(table)) {
@@ -126,6 +127,14 @@ export async function POST(request: Request) {
           // 공유 퀴즈의 소유자이거나 본인이 뷰어여야 함
           if (rec.quiz_owner_id !== userId && rec.viewer_id !== userId) {
             return NextResponse.json({ error: '본인 관련 퀴즈 공유 관계만 설정할 수 있습니다.' }, { status: 403 });
+          }
+        }
+        if (table === 'family_groups') {
+          if (rec.owner_id && rec.owner_id !== userId) {
+            return NextResponse.json({ error: '본인의 가족 그룹만 관리할 수 있습니다.' }, { status: 403 });
+          }
+          if (!rec.owner_id) {
+            rec.owner_id = userId;
           }
         }
       }
@@ -184,6 +193,9 @@ export async function POST(request: Request) {
         if (table === 'school_infos' && existing.user_id !== userId) {
           return NextResponse.json({ error: '본인의 소속 정보만 수정할 수 있습니다.' }, { status: 403 });
         }
+        if (table === 'family_groups' && existing.owner_id !== userId) {
+          return NextResponse.json({ error: '본인의 가족 그룹만 수정할 수 있습니다.' }, { status: 403 });
+        }
       }
 
       // 업데이트 실행
@@ -227,6 +239,9 @@ export async function POST(request: Request) {
             if (existing.quiz_owner_id !== userId && existing.viewer_id !== userId) {
               return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
             }
+          }
+          if (table === 'family_groups' && existing.owner_id !== userId) {
+            return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
           }
         }
 
