@@ -263,6 +263,136 @@ const defaultTodayMenus: TodayMenu[] = [
   }
 ]
 
+const defaultWishlistItems = [
+  {
+    id: "sample-wish-1",
+    date: "",
+    time: "19:00",
+    mealType: "배달",
+    menu: "가족 야식 치킨 파티 🍗",
+    place: "교촌치킨 청라점",
+    memo: "이번 주말 야식으로 다같이 치맥 어때요?",
+    thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=500&fit=crop",
+    url: "https://m.place.naver.com/restaurant/1234567",
+    userId: "sample-user-1",
+    isSample: true
+  },
+  {
+    id: "sample-wish-2",
+    date: "",
+    time: "12:30",
+    mealType: "집밥",
+    menu: "아빠표 해물 토마토 파스타 🍝",
+    place: "우리집 주방",
+    memo: "주말 점심에 스페셜 해물 파스타 해드릴게요!",
+    thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=500&fit=crop",
+    url: "https://www.youtube.com/results?search_query=해물+파스타+레시피",
+    userId: "sample-user-2",
+    isSample: true
+  },
+  {
+    id: "sample-wish-3",
+    date: "",
+    time: "18:30",
+    mealType: "외식",
+    menu: "청담동 숙성 삼겹살 외식 🥓",
+    place: "우미학 청담점",
+    memo: "이번 주말 외식 장소로 어때요? 다같이 고기 먹어요!",
+    thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&fit=crop",
+    url: "https://m.place.naver.com/restaurant/37166160",
+    userId: "sample-user-3",
+    isSample: true
+  }
+]
+
+const defaultFamilyReservations = [
+  {
+    id: "sample-res-1",
+    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    time: "19:00",
+    mealType: "배달",
+    menu: "불금 가족 치킨 배달 🍗",
+    place: "교촌치킨 청라점",
+    memo: "금요일 저녁 다같이 모여서 치맥!",
+    thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=500&fit=crop",
+    url: "https://m.place.naver.com/restaurant/1234567",
+    userId: "sample-user-1",
+    isSample: true
+  },
+  {
+    id: "sample-res-2",
+    date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    time: "12:30",
+    mealType: "집밥",
+    menu: "주말 아빠표 봉골레 파스타 🍝",
+    place: "우리집",
+    memo: "주말 점심 특식 파스타!",
+    thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=500&fit=crop",
+    url: "https://www.youtube.com/results?search_query=봉골레+파스타",
+    userId: "sample-user-2",
+    isSample: true
+  },
+  {
+    id: "sample-res-3",
+    date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    time: "18:30",
+    mealType: "외식",
+    menu: "가족 외식 삼겹살 데이 🥓",
+    place: "우미학 청담점",
+    memo: "일요일 저녁 가족 외식",
+    thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&fit=crop",
+    url: "https://m.place.naver.com/restaurant/37166160",
+    userId: "sample-user-3",
+    isSample: true
+  }
+]
+
+const mergeWishlistWithSamples = (realWishlist: any[]) => {
+  if (!realWishlist || realWishlist.length === 0) {
+    return defaultWishlistItems
+  }
+  const hasDelivery = realWishlist.some(item => item.mealType === "배달")
+  const hasHomemade = realWishlist.some(item => item.mealType === "집밥")
+  const hasDineout = realWishlist.some(item => item.mealType === "외식")
+  const result = [...realWishlist]
+  if (!hasDelivery) {
+    const sample = defaultWishlistItems.find(s => s.mealType === "배달")
+    if (sample) result.push(sample)
+  }
+  if (!hasHomemade) {
+    const sample = defaultWishlistItems.find(s => s.mealType === "집밥")
+    if (sample) result.push(sample)
+  }
+  if (!hasDineout) {
+    const sample = defaultWishlistItems.find(s => s.mealType === "외식")
+    if (sample) result.push(sample)
+  }
+  return result
+}
+
+const mergeReservationsWithSamples = (realReservations: any[]) => {
+  if (!realReservations || realReservations.length === 0) {
+    return defaultFamilyReservations
+  }
+  const hasDelivery = realReservations.some(item => item.mealType === "배달")
+  const hasHomemade = realReservations.some(item => item.mealType === "집밥")
+  const hasDineout = realReservations.some(item => item.mealType === "외식")
+  const result = [...realReservations]
+  if (!hasDelivery) {
+    const sample = defaultFamilyReservations.find(s => s.mealType === "배달")
+    if (sample) result.push(sample)
+  }
+  if (!hasHomemade) {
+    const sample = defaultFamilyReservations.find(s => s.mealType === "집밥")
+    if (sample) result.push(sample)
+  }
+  if (!hasDineout) {
+    const sample = defaultFamilyReservations.find(s => s.mealType === "외식")
+    if (sample) result.push(sample)
+  }
+  return result
+}
+
 const sharedMeals: SharedMeal[] = []
 const activeVote: ActiveVote | null = null
 const todayMenus: TodayMenu[] = []
@@ -919,8 +1049,8 @@ export function FamilyPage({
   const [reservationSubTab, setReservationSubTab] = useState<"wishlist" | "list">("wishlist")
   const [familyGroupId, setFamilyGroupId] = useState<string | null>(null)
   const [chefUserId, setChefUserId] = useState<string | null>(null)
-  const [familyReservations, setFamilyReservations] = useState<any[]>([])
-  const [wishlistItems, setWishlistItems] = useState<any[]>([])
+  const [familyReservations, setFamilyReservations] = useState<any[]>(defaultFamilyReservations)
+  const [wishlistItems, setWishlistItems] = useState<any[]>(defaultWishlistItems)
   const [isReservationsLoaded, setIsReservationsLoaded] = useState(false)
   const [isAddReservationOpen, setIsAddReservationOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
@@ -1156,7 +1286,7 @@ export function FamilyPage({
       if (error) throw error
 
       if (data) {
-        const wishlist = data.filter(r => r.source === "family_wishlist" || !r.date).map(row => ({
+        const rawWishlist = data.filter(r => r.source === "family_wishlist" || !r.date).map(row => ({
           id: row.id,
           date: row.date || "",
           time: row.time || "",
@@ -1170,7 +1300,7 @@ export function FamilyPage({
           createdAt: row.created_at
         }))
 
-        const reservations = data.filter(r => r.source === "family" && r.date).map(row => ({
+        const rawReservations = data.filter(r => r.source === "family" && r.date).map(row => ({
           id: row.id,
           date: row.date,
           time: row.time || "",
@@ -1183,6 +1313,9 @@ export function FamilyPage({
           userId: row.user_id,
           createdAt: row.created_at
         }))
+
+        const wishlist = mergeWishlistWithSamples(rawWishlist)
+        const reservations = mergeReservationsWithSamples(rawReservations)
 
         setWishlistItems(wishlist)
         setFamilyReservations(reservations)
@@ -1279,11 +1412,13 @@ export function FamilyPage({
           }
         }
       } else {
-        setWishlistItems([])
-        setFamilyReservations([])
+        setWishlistItems(defaultWishlistItems)
+        setFamilyReservations(defaultFamilyReservations)
       }
     } catch (err) {
       console.error("Failed to fetch family reservations:", err)
+      setWishlistItems(defaultWishlistItems)
+      setFamilyReservations(defaultFamilyReservations)
     } finally {
       setIsReservationsLoaded(true)
     }
@@ -1297,7 +1432,7 @@ export function FamilyPage({
         table: "meal_reservations",
         action: "upsert",
         data: {
-          id: data.id,
+          id: data.id && !String(data.id).startsWith("sample-") ? data.id : undefined,
           user_id: user.id,
           date: null,
           time: data.time || "",
@@ -1320,6 +1455,11 @@ export function FamilyPage({
   }
 
   const handleDeleteWishlistItem = async (id: string | number) => {
+    if (String(id).startsWith("sample-")) {
+      toast("실제 식사를 등록하면 샘플은 자동으로 사라집니다! 💡")
+      setWishlistItems(prev => prev.filter(item => item.id !== id))
+      return
+    }
     const deleteToast = toast.loading("위시리스트를 삭제하고 있습니다...")
     try {
       await secureWrite({
@@ -1344,7 +1484,7 @@ export function FamilyPage({
         table: "meal_reservations",
         action: "upsert",
         data: {
-          id: data.id,
+          id: data.id && !String(data.id).startsWith("sample-") ? data.id : undefined,
           user_id: user.id,
           date: data.date,
           time: data.time || "",
@@ -1367,6 +1507,11 @@ export function FamilyPage({
   }
 
   const handleDeleteFamilyReservation = async (id: string | number) => {
+    if (String(id).startsWith("sample-")) {
+      toast("실제 식사 예약을 등록하면 샘플은 자동으로 사라집니다! 💡")
+      setFamilyReservations(prev => prev.filter(item => item.id !== id))
+      return
+    }
     const deleteToast = toast.loading("예약을 삭제하고 있습니다...")
     try {
       await secureWrite({
@@ -3001,8 +3146,18 @@ export function FamilyPage({
             "외식": "bg-orange-100 text-orange-700",
           }
 
+          const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
+
           return (
-            <div key={item.id} className="bg-white/90 rounded-2xl border border-white shadow-md overflow-hidden">
+            <div key={item.id} className="bg-white/90 rounded-2xl border border-white shadow-md overflow-hidden relative">
+              {/* 샘플 리본 */}
+              {isSampleItem && (
+                <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+                  <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-md">
+                    💡 SAMPLE
+                  </div>
+                </div>
+              )}
               {item.thumbnail ? (
                 <div className="w-full h-36 relative">
                   <img src={item.thumbnail} alt={item.menu} className="w-full h-full object-cover" />
