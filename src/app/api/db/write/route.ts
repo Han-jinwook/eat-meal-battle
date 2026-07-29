@@ -141,9 +141,8 @@ export async function POST(request: Request) {
 
       // Upsert/Insert 실행
       if (action === 'upsert') {
-        // meal_images upsert의 경우 온콘플릭트가 meal_id,status일 수 있음
-        const onConflict = table === 'meal_images' ? 'id' : undefined;
-        let query = supabaseAdmin.from(table).upsert(data);
+        const onConflict = table === 'family_groups' ? 'owner_id' : (table === 'meal_images' ? 'id' : undefined);
+        let query = supabaseAdmin.from(table).upsert(data, onConflict ? { onConflict } : undefined);
         const { data: resData, error } = await query.select();
         if (error) throw error;
         return NextResponse.json({ success: true, data: resData });

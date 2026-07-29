@@ -1642,15 +1642,24 @@ export function FamilyPage({
       try {
         const publicUrl = await uploadImageToStorage(base64Image)
 
-        await secureWrite({
+        const payload: any = {
+          owner_id: user.id,
+          name: `${user.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
+          family_photo: publicUrl
+        }
+        if (familyGroupId) {
+          payload.id = familyGroupId
+        }
+
+        const res = await secureWrite({
           table: "family_groups",
           action: "upsert",
-          data: {
-            owner_id: user.id,
-            name: `${user.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
-            family_photo: publicUrl
-          }
+          data: payload
         })
+
+        if (res?.data?.[0]?.id) {
+          setFamilyGroupId(res.data[0].id)
+        }
 
         setFamilyPhoto(publicUrl)
         toast.success("가족 사진이 업로드되었습니다! 🎉", { id: uploadToast })
