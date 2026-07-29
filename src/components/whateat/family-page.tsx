@@ -400,6 +400,21 @@ const todayMenus: TodayMenu[] = []
 type TabType = "shared" | "vote" | "menu"
 type SharedMealFilterType = "all" | "homemade" | "delivery" | "dining"
 
+function formatTimeAgo(isoString?: string) {
+  if (!isoString) return "방금 전"
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return "방금 전"
+  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diffSec < 60) return "방금 전"
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}분 전`
+  const diffHour = Math.floor(diffMin / 60)
+  if (diffHour < 24) return `${diffHour}시간 전`
+  const diffDay = Math.floor(diffHour / 24)
+  if (diffDay < 7) return `${diffDay}일 전`
+  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+}
+
 function generateUUID() {
   if (typeof window !== "undefined" && window.crypto?.randomUUID) {
     return window.crypto.randomUUID()
@@ -3146,18 +3161,20 @@ export function FamilyPage({
             "외식": "bg-orange-100 text-orange-700",
           }
           const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
-          const mealTypeIconMap: Record<string, any> = {
-            "집밥": Utensils,
-            "배달": ExternalLink,
-            "외식": MapPin
-          }
-          const TypeIcon = mealTypeIconMap[item.mealType] || Utensils
+
+          // 작성자 메타데이터 (헤더 노출)
+          const cardUser = members.find(m => m.userId === item.userId)
+          const avatarUrl = item.userId === user?.id ? user?.avatar_url : cardUser?.avatar
+          const nickname = item.userId === user?.id
+            ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
+            : (cardUser?.name || "가족")
+          const formattedTime = item.createdAt ? formatTimeAgo(item.createdAt) : "방금 전"
 
           return (
             <div 
               key={item.id} 
               className={cn(
-                "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all relative overflow-hidden",
+                "bg-white rounded-3xl border border-white shadow-md overflow-hidden relative transition-all hover:shadow-lg",
                 isSampleItem && "opacity-90"
               )}
             >
@@ -3170,128 +3187,138 @@ export function FamilyPage({
                 </div>
               )}
 
-              <div className="flex items-start gap-3">
-                {/* Meal Type Icon Badge */}
-                <div className={cn("size-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5", mealTypeColor[item.mealType] ?? "bg-orange-50 text-orange-500")}>
-                  <TypeIcon className="size-5" />
+              {/* 1. 상단 프로필 헤더 (누가 올렸는지 + 언제 올렸는지) */}
+              <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+                <div className="flex items-center gap-2.5">
+                  <HubAvatar
+                    isLoggedIn={isLoggedIn}
+                    avatarUrl={avatarUrl}
+                    nickname={nickname}
+                    size="sm"
+                    className="!w-9 !h-9 rounded-full border border-white shadow-sm shrink-0"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-foreground">{nickname}</span>
+                    <span className="text-[10px] text-muted-foreground">{formattedTime}</span>
+                  </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  {/* Menu Title & Time */}
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h4 className="font-bold text-foreground text-sm leading-tight">{item.menu}</h4>
-                    {item.time && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
-                        {item.time}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Date or Category */}
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1 flex-wrap">
-                    {!isWishlistCard && item.date && (
-                      <>
-                        <Calendar className="size-3 text-orange-500" />
-                        <span className="text-orange-500 font-bold">{item.date}</span>
-                        <span className="text-muted-foreground/40">|</span>
-                      </>
-                    )}
-                    <span className="font-medium text-foreground">{item.mealType}</span>
-                  </div>
-
-                  {/* Place */}
-                  {item.place && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                      <MapPin className="size-3 text-orange-400 shrink-0" />
-                      <span className="truncate">{item.place}</span>
-                    </div>
-                  )}
-
-                  {/* Memo */}
-                  {item.memo && (
-                    <div className="mt-1.5 rounded-lg border border-orange-100 bg-orange-50/50 px-2.5 py-1.5">
-                      <p className="text-[11px] leading-4 text-muted-foreground line-clamp-2">
-                        {item.memo}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* External Link */}
-                  {item.url && (
-                    <a 
-                      href={item.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] text-blue-500 hover:underline mt-1 font-medium"
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
+                    {item.mealType}
+                  </span>
+                  {/* 수정 버튼 (수정 모달에서 수정 및 삭제 가능) */}
+                  {(item.userId === user?.id || isChef) && (
+                    <button
+                      onClick={() => {
+                        setEditingPlan({ ...item, isWishlist: isWishlistCard })
+                        setIsAddReservationOpen(true)
+                      }}
+                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+                      title="수정/삭제"
                     >
-                      <ExternalLink className="size-2.5" />링크 보기
-                    </a>
+                      <Pencil className="size-3.5" />
+                    </button>
                   )}
+                </div>
+              </div>
 
-                  {/* Bottom Bar: Likes, Comments, Actions */}
-                  <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-muted/30">
-                    <div className="flex items-center gap-3">
-                      {isWishlistCard && (
-                        <button
-                          onClick={() => handleToggleWishlistLike(item.id)}
-                          className={`flex items-center gap-1 text-xs font-medium transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
-                        >
-                          <Heart className={`size-3.5 ${hasLiked ? "fill-rose-500" : ""}`} />
-                          <span>{likedUsers.length > 0 ? likedUsers.length : ""}</span>
-                          <span>좋아요</span>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setActiveMealId(item.id)
-                          setShowCommentModal(true)
-                        }}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <MessageCircle className="size-3.5" />
-                        <span>댓글 {commentList.length > 0 ? commentList.length : ""}</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {isWishlistCard && isChef && (
-                        <button
-                          onClick={() => {
-                            setEditingPlan({ ...item, isWishlistToSchedule: true })
-                            setIsAddReservationOpen(true)
-                          }}
-                          className="flex items-center gap-1 text-[10px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-2 py-1 rounded-lg transition-colors shadow-sm"
-                        >
-                          <Calendar className="size-3" />
-                          날짜 잡기
-                        </button>
-                      )}
-                      {(!isWishlistCard || item.userId === user?.id || isChef) && (
-                        <button
-                          onClick={() => {
-                            if (confirm("삭제하시겠습니까?")) {
-                              if (isWishlistCard) handleDeleteWishlistItem(item.id)
-                              else handleDeleteFamilyReservation(item.id)
-                            }
-                          }}
-                          className="text-[10px] text-muted-foreground hover:text-destructive px-1.5 py-1 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </div>
-                  </div>
+              {/* 2. 카드 본문 - 메뉴명, 시간, 위치 */}
+              <div className="px-4 pb-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-bold text-foreground text-base leading-snug">{item.menu}</h4>
+                  {item.time && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 text-orange-600 rounded-md shrink-0">
+                      {item.time}
+                    </span>
+                  )}
                 </div>
 
-                {/* Right side Thumbnail Image */}
-                {item.thumbnail && (
-                  <div className="size-16 sm:size-20 rounded-xl overflow-hidden shrink-0 border border-muted/30">
-                    <img 
-                      src={item.thumbnail} 
-                      alt={item.menu} 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
+                {/* 위치 (MapPin) 및 날짜 */}
+                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                  {item.place && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                      <span className="font-medium text-foreground">{item.place}</span>
+                    </div>
+                  )}
+                  {!isWishlistCard && item.date && (
+                    <div className="flex items-center gap-1 text-orange-500 font-bold">
+                      <Calendar className="size-3 shrink-0" />
+                      <span>{item.date}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. 대표 사진 (사진 클릭 시 원본 URL 링크 이동!) */}
+              {item.thumbnail ? (
+                <div 
+                  className={cn(
+                    "w-full h-48 relative overflow-hidden bg-muted",
+                    item.url && "cursor-pointer group"
+                  )}
+                  onClick={() => {
+                    if (item.url) window.open(item.url, '_blank')
+                  }}
+                >
+                  <img 
+                    src={item.thumbnail} 
+                    alt={item.menu} 
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                  />
+                  {item.url && (
+                    <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg text-white text-[10px] font-bold flex items-center gap-1 opacity-90">
+                      <ExternalLink className="size-3" />
+                      <span>사진 클릭시 링크 이동</span>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {/* 4. 메모 영역 (사진 유무 상관없이 깔끔한 말풍선 형태) */}
+              {item.memo && (
+                <div className="mx-4 my-2.5 p-3 bg-orange-50/60 rounded-2xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                  <p className="line-clamp-3 font-medium">{item.memo}</p>
+                </div>
+              )}
+
+              {/* 5. 맛톡 느낌의 하단 액션 바 (좋아요, 댓글, 셰프 날짜 잡기) */}
+              <div className="flex items-center justify-between border-t border-muted/30 px-4 py-2.5 bg-gray-50/30">
+                <div className="flex items-center gap-4">
+                  {isWishlistCard && (
+                    <button
+                      onClick={() => handleToggleWishlistLike(item.id)}
+                      className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"}`}
+                    >
+                      <Heart className={`size-4 ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
+                      <span>좋아요 {likedUsers.length > 0 ? likedUsers.length : ""}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setActiveMealId(item.id)
+                      setShowCommentModal(true)
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <MessageCircle className="size-4" />
+                    <span>댓글 {commentList.length > 0 ? commentList.length : ""}</span>
+                  </button>
+                </div>
+
+                {/* 셰프 전용 날짜 잡기 버튼 (셰프에게만 표시!) */}
+                {isWishlistCard && isChef && (
+                  <button
+                    onClick={() => {
+                      setEditingPlan({ ...item, isWishlistToSchedule: true })
+                      setIsAddReservationOpen(true)
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95"
+                  >
+                    <Calendar className="size-3.5" />
+                    <span>날짜 잡기</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -3532,7 +3559,16 @@ export function FamilyPage({
             setIsAddReservationOpen(false)
             setEditingPlan(null)
           }}
-          editData={editingPlan && !editingPlan.isWishlist && !editingPlan.isWishlistToSchedule ? editingPlan : null}
+          onDelete={(id) => {
+            if (editingPlan?.isWishlist || !editingPlan?.date) {
+              handleDeleteWishlistItem(id)
+            } else {
+              handleDeleteFamilyReservation(id)
+            }
+            setIsAddReservationOpen(false)
+            setEditingPlan(null)
+          }}
+          editData={editingPlan && !editingPlan.isWishlistToSchedule ? editingPlan : null}
           isWishlist={!editingPlan?.isWishlistToSchedule && (editingPlan?.isWishlist === true || !editingPlan?.date)}
         />
       )}
