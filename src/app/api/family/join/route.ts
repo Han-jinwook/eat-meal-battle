@@ -2,19 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabaseAdmin';
 import { createClient } from '@/lib/supabase-server';
 
+const HUB_URL = process.env.NEXT_PUBLIC_MERLIN_HUB_URL || 'https://os.sundreamer.app';
+const CLIENT_ID = process.env.MERLIN_HUB_CLIENT_ID || process.env.NEXT_PUBLIC_MERLIN_CLIENT_ID || 'APP-01';
+const CLIENT_SECRET = process.env.MERLIN_HUB_CLIENT_SECRET || process.env.NEXT_PUBLIC_MERLIN_CLIENT_SECRET || 'merlin-family-secret-key-2026';
+
 /**
  * POST /api/family/join
  * body: { refCode: string }
  *
  * 가족 초대 수락 시 왓잇 DB에 가족 연결 생성
- * 1. refCode로 방장(inviter) 유저 찾기
- * 2. 방장의 family_groups 조회 or 생성
- * 3. 나(invitee)를 family_members에 추가
- * 4. 방장도 family_members에 없으면 추가
+ * refCode = 허브의 referral_code (초대자/방장 식별)
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. 현재 로그인 유저 확인
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -29,41 +29,59 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = createAdminClient();
     const myUserId = user.id;
-
-    // 2. refCode로 방장 유저 찾기 (users 테이블의 referral_code 또는 닉네임 기반)
-    //    허브에서 referral_code는 허브 users 테이블에 있으나,
-    //    왓잇 users에도 referral_code가 있을 수 있음
     let inviterId: string | null = null;
 
-    // 왓잇 DB users에서 referral_code 매칭 시도
-    const { data: inviterByCode } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('referral_code', refCode)
-      .maybeSingle();
-
-    if (inviterByCode?.id) {
-      inviterId = inviterByCode.id;
+    // 1. 허브 API로 refCode → 초대자(방장) 유저 정보 조회
+    try {
+      const hubRes = await fetch(`${HUB_URL}/api/auth/user-by-referral-code?code=${encodeURIComponent(refCode)}`, {
+        headers: {
+          'X-Client-Id': CLIENT_ID,
+          'X-Client-Secret': CLIENT_SECRET,
+        },
+      });
+      if (hubRes.ok) {
+        const hubData = await hubRes.json();
+        // 허브 응답에서 user_id (= 왓잇 users.id와 동일한 UUID)
+        inviterId = hubData?.user?.id || hubData?.userId || hubData?.user_id || null;
+      }
+    } catch (e) {
+      console.warn('[family/join] 허브 referral lookup 실패:', e);
     }
 
+    // 2. 허브 lookup 실패 시 — refCode가 UUID 형식이면 직접 user_id로 사용
     if (!inviterId) {
-      // refCode를 user_id로 직접 쓰는 경우도 지원 (UUID 형식이면)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(refCode)) {
         inviterId = refCode;
       }
     }
 
+    // 3. 왓잇 users 테이블에서 referral_code로 조회
+    if (!inviterId) {
+      const { data: inviterByCode } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('referral_code', refCode)
+        .maybeSingle();
+      if (inviterByCode?.id) inviterId = inviterByCode.id;
+    }
+
     if (!inviterId) {
       console.warn('[family/join] inviter not found for refCode:', refCode);
-      return NextResponse.json({ error: '초대자를 찾을 수 없습니다.' }, { status: 404 });
+      // 방장을 못 찾아도 가족 연결 자체는 실패로 처리하지 않음
+      // (허브가 처리하므로) - 단, DB 저장은 못 함
+      return NextResponse.json({ 
+        success: false, 
+        error: '초대자를 찾을 수 없습니다. 허브에만 등록됩니다.',
+        refCode 
+      }, { status: 200 });
     }
 
     if (inviterId === myUserId) {
       return NextResponse.json({ error: '자기 자신을 초대할 수 없습니다.' }, { status: 400 });
     }
 
-    // 3. 방장의 family_groups 조회 or 생성
+    // 4. 방장의 family_groups 조회 or 생성
     let { data: familyGroup } = await supabaseAdmin
       .from('family_groups')
       .select('id, name')
@@ -71,7 +89,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (!familyGroup) {
-      // 방장의 family_group이 없으면 생성
       const { data: inviterUser } = await supabaseAdmin
         .from('users')
         .select('nickname')
@@ -88,14 +105,14 @@ export async function POST(req: NextRequest) {
 
       if (createErr || !newGroup) {
         console.error('[family/join] family_groups 생성 실패:', createErr);
-        return NextResponse.json({ error: '가족 그룹 생성 실패' }, { status: 500 });
+        return NextResponse.json({ error: '가족 그룹 생성 실패', detail: createErr }, { status: 500 });
       }
       familyGroup = newGroup;
     }
 
     const familyId = familyGroup.id;
 
-    // 4. 방장이 family_members에 없으면 추가
+    // 5. 방장이 family_members에 없으면 추가
     const { data: ownerMember } = await supabaseAdmin
       .from('family_members')
       .select('id')
@@ -109,7 +126,7 @@ export async function POST(req: NextRequest) {
         .insert({ family_id: familyId, user_id: inviterId, role: 'owner' });
     }
 
-    // 5. 내가(invitee) 이미 이 가족에 있는지 확인
+    // 6. 나(멤버) 추가
     const { data: myMember } = await supabaseAdmin
       .from('family_members')
       .select('id')
@@ -124,11 +141,11 @@ export async function POST(req: NextRequest) {
 
       if (insertErr) {
         console.error('[family/join] family_members 추가 실패:', insertErr);
-        return NextResponse.json({ error: '가족 멤버 추가 실패' }, { status: 500 });
+        return NextResponse.json({ error: '가족 멤버 추가 실패', detail: insertErr }, { status: 500 });
       }
     }
 
-    console.log('[family/join] 성공:', { myUserId, inviterId, familyId });
+    console.log('[family/join] 성공 ✅', { myUserId, inviterId, familyId, familyName: familyGroup.name });
 
     return NextResponse.json({ success: true, familyId, familyName: familyGroup.name });
   } catch (err) {
