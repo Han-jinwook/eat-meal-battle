@@ -1630,6 +1630,10 @@ export function FamilyPage({
   const currentFamilyMemberName = currentFamilyMember.name
 
   const handleFamilyPhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isFamilyOwner) {
+      toast.error("가족 대표 사진은 방장만 변경할 수 있습니다.")
+      return
+    }
     const file = event.target.files?.[0]
     if (!file) {
       return
@@ -1642,12 +1646,11 @@ export function FamilyPage({
 
       const uploadToast = toast.loading("가족 사진을 업로드하고 있습니다...")
       try {
-        const activeHostId = familyHostId || user.id
         const publicUrl = await uploadImageToStorage(base64Image)
 
         const payload: any = {
-          owner_id: activeHostId,
-          name: `${user.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
+          owner_id: user?.id,
+          name: `${user?.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족`,
           family_photo: publicUrl
         }
         if (familyGroupId) {
@@ -3692,9 +3695,13 @@ export function FamilyPage({
                       role: m.id === selectedChefId ? 'chef' : 'member'
                     })))
                     if (newChefUserId) {
+                      if (!isFamilyOwner) {
+                        toast.error("셰프 지정 권한은 방장에게만 있습니다.")
+                        return
+                      }
                       try {
                         const payload: any = {
-                          owner_id: familyHostId || user.id,
+                          owner_id: user?.id,
                           chef_id: newChefUserId
                         }
                         if (familyGroupId) {
