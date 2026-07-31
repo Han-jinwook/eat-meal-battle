@@ -118,9 +118,6 @@ interface TodayMenu {
 
 export const familyMembers: FamilyMember[] = [
   { id: 1, name: "나", avatar: "", role: "chef", isOnline: true, isStudent: false },
-  { id: 2, name: "엄마", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: false },
-  { id: 3, name: "아빠", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: false },
-  { id: 4, name: "동생", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face", role: "member", isOnline: false, isStudent: true },
 ]
 
 const defaultSharedMeals: SharedMeal[] = [
