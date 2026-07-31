@@ -474,14 +474,8 @@ export function FamilyPage({
       }
 
       try {
-        // 멀린 허브 세션 토큰 가져오기 (referrals 조회에 필요)
-        const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client')
-        const hubToken = getSessionToken() || ''
-
-        // 서버 API로 가족 정보 조회 (멀린 허브 referrals + Supabase 사용자 정보)
-        const res = await fetch('/api/family/members', {
-          headers: { 'x-hub-token': hubToken }
-        })
+        // 왓잇 전용 가족 정보 조회 (family_groups + family_members 테이블)
+        const res = await fetch('/api/family/members')
         if (!res.ok) throw new Error(`family/members API error: ${res.status}`)
         const result = await res.json()
 
