@@ -110,11 +110,26 @@ export default function WhatEatApp() {
   const handleAcceptFamilyJoin = async () => {
     if (!pendingRefCode) return;
     
+    // 1. 허브 SDK에 초대자 코드 등록 (허브 통계/보상용)
     const success = await registerInviter(pendingRefCode);
     
     if (success) {
       localStorage.removeItem('pending_family_ref');
       setShowFamilyJoinConfirm(false);
+
+      // 2. 왓잇 DB에 가족 연결 생성 (family_groups + family_members)
+      try {
+        const joinRes = await fetch('/api/family/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refCode: pendingRefCode }),
+        });
+        if (!joinRes.ok) {
+          console.warn('[WhatEatApp] 가족 DB 연결 실패:', await joinRes.text());
+        }
+      } catch (e) {
+        console.error('[WhatEatApp] 가족 DB 연결 오류:', e);
+      }
       
       alert("가족으로 성공적으로 연동되었습니다! 🏡");
       
