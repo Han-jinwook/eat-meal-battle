@@ -565,6 +565,7 @@ export function FamilyPage({
           } else if (isOwner && user.nickname && user.nickname !== "회원") {
             hostNickname = user.nickname
           }
+          setFamilyHostName(hostNickname)
         } catch (e) {}
 
         // 3. 해당 방장이 초대한 가족 멤버 목록 조회 (referrals.referrer_id == targetHostId)
@@ -1062,6 +1063,7 @@ export function FamilyPage({
   const [reservationSubTab, setReservationSubTab] = useState<"wishlist" | "list">("wishlist")
   const [familyGroupId, setFamilyGroupId] = useState<string | null>(null)
   const [familyHostId, setFamilyHostId] = useState<string | null>(null)
+  const [familyHostName, setFamilyHostName] = useState<string>("스타크")
   const [chefUserId, setChefUserId] = useState<string | null>(null)
   const [familyReservations, setFamilyReservations] = useState<any[]>(defaultFamilyReservations)
   const [wishlistItems, setWishlistItems] = useState<any[]>(defaultWishlistItems)
@@ -2612,7 +2614,7 @@ export function FamilyPage({
                   ? "게스트 가족"
                   : isFamilyOwner
                     ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
-                    : `${hostNickname || '가족'} 식사 모임`}
+                    : `${familyHostName || '가족'} 가족`}
               </h2>
               <div className="flex flex-col gap-0.5 mt-0.5">
                 <p className="text-[9px] text-muted-foreground font-semibold">
