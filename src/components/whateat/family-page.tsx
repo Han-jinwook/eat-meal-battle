@@ -479,6 +479,27 @@ export function FamilyPage({
         if (!res.ok) throw new Error(`family/members API error: ${res.status}`)
         const result = await res.json()
 
+        // 가족 연결 전 (family_members에 데이터 없음) → 나 혼자 상태
+        if (result._noFamily) {
+          setIsFamilyOwner(true)
+          setFamilyHostId(user.id)
+          setFamilyGroupId(null)
+          setFamilyPhoto(null)
+          setChefUserId(user.id)
+          setFamilyHostName(user.nickname || '나')
+          const mySelf: FamilyMember = {
+            id: 1,
+            name: "나",
+            avatar: user.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
+            role: "member",
+            isOnline: true,
+            isStudent: false,
+            userId: user.id
+          }
+          setMembers([mySelf])
+          return
+        }
+
         const { isOwner, hostId, hostUser, refereeIds, membersData, familyGroup } = result
 
         setIsFamilyOwner(isOwner)
@@ -487,19 +508,19 @@ export function FamilyPage({
         setFamilyPhoto(familyGroup?.family_photo || null)
         setChefUserId(hostId)
 
-        const hostNickname = hostUser?.nickname || "스타크"
-        const hostAvatar = hostUser?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
-        setFamilyHostName(hostNickname)
+        const myDefaultAvatar = user.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
+        const fallbackAvatar = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=face"
 
-        const merlinAvatar = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=face"
-        const starkAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
+        const hostNickname = hostUser?.nickname || (user.nickname || "나")
+        const hostAvatar = hostUser?.profile_image || myDefaultAvatar
+        setFamilyHostName(hostNickname)
 
         let newMemberList: FamilyMember[] = []
 
         const meMember: FamilyMember = {
           id: 1,
           name: "나",
-          avatar: user.avatar_url || (isOwner ? starkAvatar : merlinAvatar),
+          avatar: myDefaultAvatar,
           role: "member",
           isOnline: true,
           isStudent: false,
@@ -507,11 +528,11 @@ export function FamilyPage({
         }
 
         if (isOwner) {
-          // 방장(스타크)인 경우: 나 + 초대한 멤버들
+          // 방장인 경우: 나 + 초대한 멤버들
           const otherMembers: FamilyMember[] = (membersData || []).map((m: any, idx: number) => ({
             id: idx + 2,
             name: m.nickname || "멤버",
-            avatar: m.profile_image || merlinAvatar,
+            avatar: m.profile_image || fallbackAvatar,
             role: "member" as const,
             isOnline: true,
             isStudent: false,
@@ -519,7 +540,7 @@ export function FamilyPage({
           }))
           newMemberList = [meMember, ...otherMembers]
         } else {
-          // 초대받은 멤버(멀린)인 경우: 나 + 방장(스타크)
+          // 초대받은 멤버인 경우: 나 + 방장 + 다른 멤버들
           const hostMember: FamilyMember = {
             id: 2,
             name: hostNickname,
@@ -534,7 +555,7 @@ export function FamilyPage({
             .map((m: any, idx: number) => ({
               id: idx + 3,
               name: m.nickname || "멤버",
-              avatar: m.profile_image || merlinAvatar,
+              avatar: m.profile_image || fallbackAvatar,
               role: "member" as const,
               isOnline: false,
               isStudent: false,
