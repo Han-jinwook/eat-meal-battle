@@ -2608,11 +2608,17 @@ export function FamilyPage({
 
             <div className="shrink-0 min-w-fit pr-1">
               <h2 className="font-bold text-foreground text-base leading-tight">
-                {isFamilyOwner ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '스타크'} 가족` : '스타크 가족'}
+                {!isLoggedIn || !user
+                  ? "가족 식사 모임"
+                  : isFamilyOwner
+                    ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
+                    : `${hostNickname || '가족'} 식사 모임`}
               </h2>
               <div className="flex flex-col gap-0.5 mt-0.5">
-                <p className="text-[9px] text-muted-foreground font-semibold">{members.length}명의 구성원</p>
-                {isFamilyOwner && (
+                <p className="text-[9px] text-muted-foreground font-semibold">
+                  {!isLoggedIn || !user ? "가족 모임 공간" : `${members.length}명의 구성원`}
+                </p>
+                {isLoggedIn && isFamilyOwner && (
                   <button
                     onClick={() => {
                       setShowChefModal(true)
