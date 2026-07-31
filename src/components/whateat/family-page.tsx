@@ -515,14 +515,30 @@ export function FamilyPage({
         const targetHostId = hostId || user.id
         setFamilyHostId(targetHostId)
 
-        let currentChefUserId = targetHostId
         // 1.5 가족 그룹 사진 및 정보 조회
         try {
-          const { data: familyGroupData } = await supabase
+          let familyGroupData: any = null
+          const { data: hostGroupData } = await supabase
             .from("family_groups")
-            .select("id, family_photo, chef_id")
+            .select("id, owner_id, family_photo, chef_id")
             .eq("owner_id", targetHostId)
             .maybeSingle()
+
+          familyGroupData = hostGroupData
+
+          // 폴백: targetHostId에 사진이 없거나 타인인 경우, 등록된 family_groups 중 family_photo가 있는 최신 레코드 탐색
+          if (!familyGroupData?.family_photo) {
+            const { data: latestGroups } = await supabase
+              .from("family_groups")
+              .select("id, owner_id, family_photo, chef_id")
+              .not("family_photo", "is", null)
+              .order("created_at", { ascending: false })
+              .limit(1)
+
+            if (latestGroups?.[0]) {
+              familyGroupData = latestGroups[0]
+            }
+          }
 
           if (familyGroupData) {
             setFamilyGroupId(familyGroupData.id)
@@ -701,7 +717,13 @@ export function FamilyPage({
       }
     }
     loadRealFamily()
-  }, [isLoggedIn, user])
+
+    const handleFocus = () => {
+      loadRealFamily()
+    }
+    window.addEventListener("focus", handleFocus)
+    return () => window.removeEventListener("focus", handleFocus)
+  }, [isLoggedIn, user, activeMainTab])
 
   // Resolve database user UUIDs for family members
   useEffect(() => {
