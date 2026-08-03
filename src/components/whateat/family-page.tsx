@@ -2238,7 +2238,7 @@ export function FamilyPage({
     }
   }
 
-  const renderMealCommentsSection = (mealId: number, variant: "modal" | "card" = "modal") => {
+  const renderMealCommentsSection = (mealId: string | number, variant: "modal" | "card" = "modal") => {
     const commentsList = displayComments[mealId] ?? []
     const totalCommentsCount = commentsList.reduce((acc, c) => acc + 1 + (c.replies ?? []).length, 0)
 
@@ -2945,24 +2945,19 @@ export function FamilyPage({
                     <div className="px-4 pb-3 pt-2">
                       <button
                         onClick={() => {
-                          if (isOpen) {
-                            handleOpenMealCardDetail(meal.id)
-                            return
+                          setExpandedMealCommentsId(isExpanded ? null : meal.id)
+                          if (isExpanded) {
+                            setActiveReplyTarget(null)
+                            setMealReplyInput("")
                           }
-
-                            setExpandedMealCommentsId(isExpanded ? null : meal.id)
-                            if (isExpanded) {
-                              setActiveReplyTarget(null)
-                              setMealReplyInput("")
-                            }
                         }}
-                        className="w-full rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-2 text-[11px] font-bold text-orange-600 flex items-center justify-center gap-1"
+                        className="w-full rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-2 text-[11px] font-bold text-orange-600 flex items-center justify-center gap-1 hover:bg-orange-100/70 transition-colors cursor-pointer"
                       >
                         <MessageCircle className="size-3.5" />
                         댓글 {(displayComments[meal.id] ?? []).length}개
                       </button>
 
-                      {!isOpen && isExpanded && (
+                      {isExpanded && (
                         <div className="mt-2 rounded-xl border border-orange-100 bg-white p-3">
                           {renderMealCommentsSection(meal.id, "card")}
                         </div>
