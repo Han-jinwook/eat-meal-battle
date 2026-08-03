@@ -141,7 +141,10 @@ export async function POST(request: Request) {
 
       // Upsert/Insert 실행
       if (action === 'upsert') {
-        const onConflict = table === 'whateat_family_groups' ? 'owner_id' : (table === 'meal_images' ? 'id' : undefined);
+        const firstRec = Array.isArray(data) ? data[0] : data;
+        const onConflict = table === 'whateat_family_groups' 
+          ? (firstRec?.id ? 'id' : 'owner_id') 
+          : (table === 'meal_images' ? 'id' : undefined);
         let query = supabaseAdmin.from(table).upsert(data, onConflict ? { onConflict } : undefined);
         const { data: resData, error } = await query.select();
         if (error) throw error;

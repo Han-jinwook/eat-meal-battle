@@ -548,13 +548,15 @@ export function FamilyPage({
           return
         }
 
-        const { isOwner, hostId, hostUser, refereeIds, membersData, familyGroup } = result
+        const { isOwner, hostId, chefId, hostUser, refereeIds, membersData, familyGroup } = result
+        const effectiveChefId = chefId || hostId || user.id;
 
         setIsFamilyOwner(isOwner)
         setFamilyHostId(hostId)
         setFamilyGroupId(familyGroup?.id || null)
         setFamilyPhoto(familyGroup?.family_photo || null)
-        setChefUserId(hostId)
+        setChefUserId(effectiveChefId)
+        setSelectedChefId(effectiveChefId)
 
         const myDefaultAvatar = user.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face"
         const fallbackAvatar = "https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=face"
@@ -569,7 +571,7 @@ export function FamilyPage({
           id: 1,
           name: "나",
           avatar: myDefaultAvatar,
-          role: "member",
+          role: user.id === effectiveChefId ? "chef" : "member",
           isOnline: true,
           isStudent: false,
           userId: user.id
@@ -581,7 +583,7 @@ export function FamilyPage({
             id: idx + 2,
             name: m.nickname || "멤버",
             avatar: m.profile_image || fallbackAvatar,
-            role: "member" as const,
+            role: m.id === effectiveChefId ? ("chef" as const) : ("member" as const),
             isOnline: true,
             isStudent: false,
             userId: m.id
@@ -593,7 +595,7 @@ export function FamilyPage({
             id: 2,
             name: hostNickname,
             avatar: hostAvatar,
-            role: "member" as const,
+            role: hostId === effectiveChefId ? ("chef" as const) : ("member" as const),
             isOnline: true,
             isStudent: false,
             userId: hostId
@@ -604,7 +606,7 @@ export function FamilyPage({
               id: idx + 3,
               name: m.nickname || "멤버",
               avatar: m.profile_image || fallbackAvatar,
-              role: "member" as const,
+              role: m.id === effectiveChefId ? ("chef" as const) : ("member" as const),
               isOnline: false,
               isStudent: false,
               userId: m.id
@@ -3591,11 +3593,14 @@ export function FamilyPage({
                 
                 <div className="space-y-2 flex-1 max-h-56 overflow-y-auto pr-1 mb-4">
                   {members.map((member) => {
-                    const isSelected = selectedChefId === member.id
+                    const memberUserId = member.userId || (member.name === "나" ? user?.id : null)
+                    const isSelected = selectedChefId 
+                      ? (selectedChefId === memberUserId || selectedChefId === member.id) 
+                      : (chefUserId ? chefUserId === memberUserId : member.role === 'chef')
                     return (
                       <button
                         key={member.id}
-                        onClick={() => setSelectedChefId(member.id)}
+                        onClick={() => setSelectedChefId(memberUserId || member.id)}
                         className={cn(
                           "w-full flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer text-left",
                           isSelected 
@@ -3612,7 +3617,7 @@ export function FamilyPage({
                         />
                         <div className="flex-1 min-w-0">
                           <span className="font-bold text-xs text-foreground block truncate">{member.name}</span>
-                          {member.role === 'chef' && (
+                          {(member.role === 'chef' || (chefUserId && memberUserId === chefUserId)) && (
                             <span className="text-[9px] font-bold text-orange-500 bg-orange-100 px-1.5 py-0.5 rounded-md">현재 셰프</span>
                           )}
                         </div>
@@ -3633,17 +3638,23 @@ export function FamilyPage({
                       window.dispatchEvent(new CustomEvent('openLoginModal'))
                     } else {
                       if (selectedChefId) {
-                        const newChefMember = members.find(m => m.id === selectedChefId)
-                        const newChefUserId = newChefMember?.userId
-                        setMembers(prev => prev.map(m => ({
-                          ...m,
-                          role: m.id === selectedChefId ? 'chef' : 'member'
-                        })))
+                        const newChefMember = members.find(m => m.userId === selectedChefId || m.id === selectedChefId || (m.name === "나" && user?.id === selectedChefId))
+                        const newChefUserId = newChefMember?.userId || (newChefMember?.name === "나" ? user?.id : (typeof selectedChefId === 'string' ? selectedChefId : null))
+                        
                         if (newChefUserId) {
                           if (!isFamilyOwner) {
                             toast.error("셰프 지정 권한은 방장에게만 있습니다.")
                             return
                           }
+                          setMembers(prev => prev.map(m => {
+                            const isThisMemberChef = m.userId === newChefUserId || (m.name === "나" && user?.id === newChefUserId)
+                            return {
+                              ...m,
+                              role: isThisMemberChef ? 'chef' : 'member'
+                            }
+                          }))
+                          setChefUserId(newChefUserId)
+
                           try {
                             const payload: any = {
                               owner_id: user?.id,
@@ -3660,7 +3671,6 @@ export function FamilyPage({
                             if (res?.data?.[0]?.id) {
                               setFamilyGroupId(res.data[0].id)
                             }
-                            setChefUserId(newChefUserId)
                             toast.success("셰프가 변경되었습니다! 👨‍🍳")
                           } catch (err) {
                             console.error("Failed to update chef_id:", err)

@@ -91,14 +91,15 @@ export async function GET(req: NextRequest) {
 
     const familyId = myMembership.family_id;
 
-    // 2. whateat_family_groups에서 방장 및 가족 사진 조회
+    // 2. whateat_family_groups에서 방장, 셰프 및 가족 사진 조회
     const { data: familyGroup } = await supabaseAdmin
       .from('whateat_family_groups')
-      .select('id, owner_id, name, family_photo')
+      .select('id, owner_id, name, family_photo, chef_id')
       .eq('id', familyId)
       .maybeSingle();
 
     const ownerId = familyGroup?.owner_id || userId;
+    const chefId = (familyGroup as any)?.chef_id || ownerId; // 셰프 미지정 시 방장이 디폴트 셰프!
     const isOwner = ownerId === userId;
 
     // 3. 같은 가족의 전체 멤버 목록 조회 (방장 + 멤버 모두)
@@ -128,15 +129,16 @@ export async function GET(req: NextRequest) {
       if (usersData) membersData = usersData;
     }
 
-    console.log('[family/members GET] userId:', userId, '| familyId:', familyId, '| isOwner:', isOwner, '| memberCount:', memberIds.length);
+    console.log('[family/members GET] userId:', userId, '| familyId:', familyId, '| isOwner:', isOwner, '| chefId:', chefId);
 
     return NextResponse.json({
       isOwner,
       hostId: ownerId,
+      chefId: chefId,
       hostUser: hostUser || null,
       refereeIds: memberIds,
       membersData,
-      familyGroup: familyGroup || null,
+      familyGroup: familyGroup ? { ...familyGroup, chef_id: chefId } : null,
     });
   } catch (err) {
     console.error('/api/family/members GET error:', err);
