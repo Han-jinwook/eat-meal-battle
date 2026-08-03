@@ -215,3 +215,69 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
   }
 }
+
+/**
+ * PUT /api/family/members
+ * headers: x-hub-token (선택)
+ * body: { chefUserId: string }
+ *
+ * 방장이 가족의 셰프(chef_id)를 지정/변경
+ */
+export async function PUT(req: NextRequest) {
+  try {
+    const userId = await resolveUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+    }
+
+    const { chefUserId } = await req.json();
+    if (!chefUserId) {
+      return NextResponse.json({ error: 'chefUserId가 필요합니다.' }, { status: 400 });
+    }
+
+    const supabaseAdmin = createAdminClient();
+
+    // 1. 내 멤버십 및 가족 정보 확인
+    const { data: myMembership } = await supabaseAdmin
+      .from('whateat_family_members')
+      .select('family_id, role')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!myMembership) {
+      return NextResponse.json({ error: '가족 그룹에 속해 있지 않습니다.' }, { status: 404 });
+    }
+
+    const familyId = myMembership.family_id;
+
+    // 2. 방장 권한 검증
+    const { data: familyGroup } = await supabaseAdmin
+      .from('whateat_family_groups')
+      .select('owner_id')
+      .eq('id', familyId)
+      .maybeSingle();
+
+    const isOwner = familyGroup?.owner_id === userId || myMembership.role === 'owner';
+    if (!isOwner) {
+      return NextResponse.json({ error: '셰프 지정 권한은 방장에게만 있습니다.' }, { status: 403 });
+    }
+
+    // 3. whateat_family_groups의 chef_id 업데이트
+    const { data: updatedGroup, error: updateErr } = await supabaseAdmin
+      .from('whateat_family_groups')
+      .update({ chef_id: chefUserId })
+      .eq('id', familyId)
+      .select();
+
+    if (updateErr) {
+      console.error('[family/members PUT] DB update error:', updateErr);
+      return NextResponse.json({ error: '셰프 변경에 실패했습니다.', detail: updateErr }, { status: 500 });
+    }
+
+    console.log('[family/members PUT] ✅ 셰프 변경 성공:', { familyId, newChefUserId: chefUserId });
+    return NextResponse.json({ success: true, chefUserId, familyGroup: updatedGroup?.[0] });
+  } catch (err) {
+    console.error('/api/family/members PUT error:', err);
+    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+  }
+}

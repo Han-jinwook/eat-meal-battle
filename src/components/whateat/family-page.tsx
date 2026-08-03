@@ -2567,12 +2567,12 @@ export function FamilyPage({
                       size="sm"
                       className={cn(
                         "!w-11 !h-11 rounded-xl border-2 shadow-sm transition-all",
-                        member.role === "chef" ? "border-amber-500 ring-2 ring-amber-400/50" : "border-white"
+                        member.role === "chef" ? "border-black ring-2 ring-black/20" : "border-white"
                       )}
                     />
                     {member.role === "chef" && (
-                      <div className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-gray-900 text-amber-400 flex items-center justify-center border-2 border-white shadow-md z-10" title="가족 셰프 👨‍🍳">
-                        <ChefHat className="size-3 stroke-[2.5]" />
+                      <div className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-white text-black flex items-center justify-center border-2 border-black shadow-md z-10" title="가족 셰프 👨‍🍳">
+                        <ChefHat className="size-3.5 stroke-[2.5]" />
                       </div>
                     )}
                     {member.isOnline && (
@@ -3659,21 +3659,26 @@ export function FamilyPage({
                           setChefUserId(newChefUserId)
 
                           try {
-                            const payload: any = {
-                              owner_id: user?.id,
-                              chef_id: newChefUserId
-                            }
-                            if (familyGroupId) {
-                              payload.id = familyGroupId
-                            }
-                            const res = await secureWrite({
-                              table: "whateat_family_groups",
-                              action: "upsert",
-                              data: payload
+                            let hubToken = ''
+                            try {
+                              const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client')
+                              hubToken = getSessionToken() || ''
+                            } catch (e) {}
+
+                            const res = await fetch('/api/family/members', {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(hubToken ? { 'x-hub-token': hubToken } : {})
+                              },
+                              body: JSON.stringify({ chefUserId: newChefUserId })
                             })
-                            if (res?.data?.[0]?.id) {
-                              setFamilyGroupId(res.data[0].id)
+
+                            if (!res.ok) {
+                              const errData = await res.json().catch(() => ({}))
+                              throw new Error(errData.error || `HTTP ${res.status}`)
                             }
+
                             toast.success("셰프가 변경되었습니다! 👨‍🍳")
                           } catch (err) {
                             console.error("Failed to update chef_id:", err)
