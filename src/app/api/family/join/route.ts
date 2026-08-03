@@ -22,48 +22,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
 
-    const { refCode } = await req.json();
-    if (!refCode) {
-      return NextResponse.json({ error: 'refCode가 필요합니다.' }, { status: 400 });
+    const { refCode, hostUserId: clientHostId } = await req.json();
+    if (!refCode && !clientHostId) {
+      return NextResponse.json({ error: 'refCode 또는 hostUserId가 필요합니다.' }, { status: 400 });
     }
 
     const supabaseAdmin = createAdminClient();
     const myUserId = user.id;
-    let inviterId: string | null = null;
+    let inviterId: string | null = clientHostId || null;
 
-    // 1. 허브 API로 refCode → 초대자(방장) 유저 정보 조회
-    try {
-      const hubRes = await fetch(`${HUB_URL}/api/auth/user-by-referral-code?code=${encodeURIComponent(refCode)}`, {
-        headers: {
-          'X-Client-Id': CLIENT_ID,
-          'X-Client-Secret': CLIENT_SECRET,
-        },
-      });
-      if (hubRes.ok) {
-        const hubData = await hubRes.json();
-        // 허브 응답에서 user_id (= 왓잇 users.id와 동일한 UUID)
-        inviterId = hubData?.user?.id || hubData?.userId || hubData?.user_id || null;
+    // clientHostId가 없으면 refCode로 방장 찾기
+    if (!inviterId && refCode) {
+      // 1. 허브 API로 refCode → 초대자(방장) 유저 정보 조회
+      try {
+        const hubRes = await fetch(`${HUB_URL}/api/auth/user-by-referral-code?code=${encodeURIComponent(refCode)}`, {
+          headers: {
+            'X-Client-Id': CLIENT_ID,
+            'X-Client-Secret': CLIENT_SECRET,
+          },
+        });
+        if (hubRes.ok) {
+          const hubData = await hubRes.json();
+          inviterId = hubData?.user?.id || hubData?.userId || hubData?.user_id || null;
+        }
+      } catch (e) {
+        console.warn('[family/join] 허브 referral lookup 실패:', e);
       }
-    } catch (e) {
-      console.warn('[family/join] 허브 referral lookup 실패:', e);
-    }
 
-    // 2. 허브 lookup 실패 시 — refCode가 UUID 형식이면 직접 user_id로 사용
-    if (!inviterId) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (uuidRegex.test(refCode)) {
-        inviterId = refCode;
+      // 2. refCode가 UUID 형식이면 직접 user_id로 사용
+      if (!inviterId) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(refCode)) {
+          inviterId = refCode;
+        }
       }
-    }
 
-    // 3. 왓잇 users 테이블에서 referral_code로 조회
-    if (!inviterId) {
-      const { data: inviterByCode } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('referral_code', refCode)
-        .maybeSingle();
-      if (inviterByCode?.id) inviterId = inviterByCode.id;
+      // 3. 왓잇 users 테이블에서 referral_code로 조회
+      if (!inviterId) {
+        const { data: inviterByCode } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('referral_code', refCode)
+          .maybeSingle();
+        if (inviterByCode?.id) inviterId = inviterByCode.id;
+      }
     }
 
     if (!inviterId) {

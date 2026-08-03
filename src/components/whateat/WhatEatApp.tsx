@@ -117,15 +117,37 @@ export default function WhatEatApp() {
       localStorage.removeItem('pending_family_ref');
       setShowFamilyJoinConfirm(false);
 
-      // 2. 왓잇 DB에 가족 연결 생성 (family_groups + family_members)
+      // 2. 허브 /api/auth/me에서 invited_by_id(방장 UUID) 가져오기
+      let hostUserId: string | null = null;
+      try {
+        const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
+        const token = getSessionToken();
+        if (token) {
+          const HUB_URL = process.env.NEXT_PUBLIC_MERLIN_HUB_URL || 'https://os.sundreamer.app';
+          const meRes = await fetch(`${HUB_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            hostUserId = meData?.user?.invited_by_id || meData?.user?.invitedById || null;
+            console.log('[WhatEatApp] invited_by_id from hub:', hostUserId);
+          }
+        }
+      } catch (e) {
+        console.warn('[WhatEatApp] hub me 조회 실패:', e);
+      }
+
+      // 3. 왓잇 DB에 가족 연결 생성 (family_groups + family_members)
       try {
         const joinRes = await fetch('/api/family/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refCode: pendingRefCode }),
+          body: JSON.stringify({ refCode: pendingRefCode, hostUserId }),
         });
         if (!joinRes.ok) {
           console.warn('[WhatEatApp] 가족 DB 연결 실패:', await joinRes.text());
+        } else {
+          console.log('[WhatEatApp] 가족 DB 연결 성공');
         }
       } catch (e) {
         console.error('[WhatEatApp] 가족 DB 연결 오류:', e);
