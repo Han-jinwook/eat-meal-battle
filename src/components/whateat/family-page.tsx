@@ -30,6 +30,8 @@ import {
   ExternalLink,
   BookOpen,
   Calendar,
+  UserMinus,
+  Users,
 } from "lucide-react"
 import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
@@ -462,7 +464,45 @@ export function FamilyPage({
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
   const [showChefModal, setShowChefModal] = useState(false)
+  const [showMemberManageModal, setShowMemberManageModal] = useState(false)
   const [isFamilyOwner, setIsFamilyOwner] = useState(true)
+
+  const handleRemoveMember = async (targetUserId: string, memberName: string) => {
+    if (!targetUserId || targetUserId === user?.id) {
+      toast.error('방장 자신은 제거할 수 없습니다.');
+      return;
+    }
+    if (!confirm(`'${memberName}' 님을 가족 그룹에서 제거하시겠습니까?`)) return;
+
+    try {
+      let hubToken = '';
+      try {
+        const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
+        hubToken = getSessionToken() || '';
+      } catch (e) {}
+
+      const res = await fetch('/api/family/members', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {}),
+        },
+        body: JSON.stringify({ targetUserId }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`'${memberName}' 님이 가족에서 제거되었습니다.`);
+        // Reload family members
+        window.dispatchEvent(new Event('focus'));
+      } else {
+        toast.error(data.error || '멤버 제거에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+      toast.error('오류가 발생했습니다.');
+    }
+  };
 
   useEffect(() => {
     async function loadRealFamily() {
@@ -2495,20 +2535,31 @@ export function FamilyPage({
                     ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
                     : `${familyHostName || '가족'} 가족`}
               </h2>
-              <div className="flex flex-col gap-0.5 mt-0.5">
+              <div className="flex flex-col gap-1 mt-0.5">
                 <p className="text-[9px] text-muted-foreground font-semibold">
                   {members.length}명의 구성원
                 </p>
                 {isLoggedIn && isFamilyOwner && (
-                  <button
-                    onClick={() => {
-                      setShowChefModal(true)
-                    }}
-                    className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
-                  >
-                    <ChefHat className="size-2" />
-                    우리가족 셰프는?
-                  </button>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setShowChefModal(true)
+                      }}
+                      className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+                    >
+                      <ChefHat className="size-2" />
+                      우리가족 셰프는?
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMemberManageModal(true)
+                      }}
+                      className="text-[8px] bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
+                    >
+                      <Users className="size-2" />
+                      멤버 관리
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -2524,6 +2575,18 @@ export function FamilyPage({
                       size="sm"
                       className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
                     />
+                    {isLoggedIn && isFamilyOwner && member.userId && member.userId !== user?.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveMember(member.userId!, member.name)
+                        }}
+                        title={`${member.name} 가족에서 제거`}
+                        className="absolute -top-1 -left-1 size-4 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center border-2 border-white shadow-sm transition-transform hover:scale-110"
+                      >
+                        <X className="size-2.5 stroke-[3]" />
+                      </button>
+                    )}
                     {member.role === "chef" && (
                       <div className="absolute -top-1 -right-1 size-4 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
                         <ChefHat className="size-2.5 text-white" />
@@ -3613,6 +3676,76 @@ export function FamilyPage({
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/20"
             >
               셰프 변경 완료
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Family Member Manage Modal */}
+      {showMemberManageModal && isFamilyOwner && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-3xl w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Users className="size-5 text-orange-500" />
+                가족 멤버 관리 👥
+              </h3>
+              <button 
+                onClick={() => setShowMemberManageModal(false)} 
+                className="size-8 rounded-full hover:bg-muted flex items-center justify-center"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4 leading-normal">
+              방장은 필요 시 가족 멤버를 내보낼 수 있습니다.
+            </p>
+            
+            <div className="space-y-2.5 max-h-60 overflow-y-auto mb-6">
+              {members.map((member) => {
+                const isMe = member.userId === user?.id || member.name === "나"
+                return (
+                  <div
+                    key={member.id}
+                    className="w-full flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-gray-50/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <HubAvatar
+                        isLoggedIn={isLoggedIn}
+                        avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                        nickname={member.name === "나" ? (user?.nickname || '나') : member.name}
+                        size="sm"
+                        className="!w-10 !h-10 rounded-xl"
+                      />
+                      <div>
+                        <span className="font-bold text-sm text-foreground">{member.name}</span>
+                        {isMe ? (
+                          <span className="ml-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md">방장(나)</span>
+                        ) : (
+                          <span className="ml-2 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">가족 멤버</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {!isMe && member.userId && (
+                      <button
+                        onClick={() => handleRemoveMember(member.userId!, member.name)}
+                        className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 border border-red-100 cursor-pointer"
+                      >
+                        <UserMinus className="size-3.5" />
+                        가족 제외
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
+            <button
+              onClick={() => setShowMemberManageModal(false)}
+              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-lg"
+            >
+              닫기
             </button>
           </div>
         </div>
