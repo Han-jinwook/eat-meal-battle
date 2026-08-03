@@ -61,7 +61,8 @@ export default function WhatEatApp() {
   const [bottomNavTab, setBottomNavTab] = useState<HeaderNavTab>("home")
   const [hasAutoNavigated, setHasAutoNavigated] = useState(false)
   const [showFamilyJoinConfirm, setShowFamilyJoinConfirm] = useState(false)
-  const [pendingRefCode, setPendingRefCode] = useState("")
+  const [pendingRefCode, setPendingRefCode] = useState("")   // 허브 개인 코드 (ref=)
+  const [pendingFamilyCode, setPendingFamilyCode] = useState("") // 왓잇 가족방 코드 (family=방장UUID)
   const [isNudgeDismissed, setIsNudgeDismissed] = useState(false)
 
   // 0. 오늘 세션 동안 넛지 닫힘 상태 로드
@@ -77,17 +78,26 @@ export default function WhatEatApp() {
     setIsNudgeDismissed(true)
   }
 
-  // 1. URL의 ref 파라미터 감지 및 캐싱 & 주소창 정돈
+  // 1. URL의 ref(허브) + family(왓잇) 파라미터 감지 및 캐싱
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
+    const refCode = urlParams.get('ref');       // 허브 개인 추천 코드
+    const familyCode = urlParams.get('family'); // 왓잇 가족방 코드 (방장 user.id UUID)
 
-    if (refCode) {
-      localStorage.setItem('pending_family_ref', refCode);
+    if (refCode) localStorage.setItem('pending_hub_ref', refCode);
+    if (familyCode) localStorage.setItem('pending_family_code', familyCode);
 
-      // 주소창에서 ?ref=... 파라미터를 조용히 제거하여 새로고침 시 무한 팝업 방지
+    // 팝업 트리거 조건: family 코드가 있어야 가족방 합류 팝업
+    if (familyCode) {
+      try {
+        const urlObj = new URL(window.location.href);
+        urlObj.searchParams.delete('ref');
+        urlObj.searchParams.delete('family');
+        window.history.replaceState({}, '', urlObj.toString());
+      } catch (e) {}
+    } else if (refCode) {
       try {
         const urlObj = new URL(window.location.href);
         urlObj.searchParams.delete('ref');
@@ -99,74 +109,62 @@ export default function WhatEatApp() {
   // 2. 로그인 완료 감지 시 가족 합류 컨펌 노출
   useEffect(() => {
     if (isLoggedIn && !isLoading) {
-      const pendingRef = localStorage.getItem('pending_family_ref');
-      if (pendingRef) {
-        setPendingRefCode(pendingRef);
+      const pendingRef = localStorage.getItem('pending_hub_ref');
+      const pendingFamily = localStorage.getItem('pending_family_code');
+      if (pendingFamily) { // 왓잇 가족방 코드가 있어야 팝업
+        if (pendingRef) setPendingRefCode(pendingRef);
+        setPendingFamilyCode(pendingFamily);
         setShowFamilyJoinConfirm(true);
       }
     }
   }, [isLoggedIn, isLoading]);
 
   const handleAcceptFamilyJoin = async () => {
-    if (!pendingRefCode) return;
-    
-    // 1. 허브 SDK에 초대자 코드 등록 (허브 통계/보상용)
-    const success = await registerInviter(pendingRefCode);
-    
-    if (success) {
-      localStorage.removeItem('pending_family_ref');
-      setShowFamilyJoinConfirm(false);
+    if (!pendingFamilyCode) return;
 
-      // 2. 허브 /api/auth/me에서 invited_by_id(방장 UUID) 가져오기
-      let hostUserId: string | null = null;
-      try {
-        const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
-        const token = getSessionToken();
-        if (token) {
-          const HUB_URL = process.env.NEXT_PUBLIC_MERLIN_HUB_URL || 'https://os.sundreamer.app';
-          const meRes = await fetch(`${HUB_URL}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (meRes.ok) {
-            const meData = await meRes.json();
-            hostUserId = meData?.user?.invited_by_id || meData?.user?.invitedById || null;
-            console.log('[WhatEatApp] invited_by_id from hub:', hostUserId);
-          }
-        }
-      } catch (e) {
-        console.warn('[WhatEatApp] hub me 조회 실패:', e);
-      }
+    localStorage.removeItem('pending_hub_ref');
+    localStorage.removeItem('pending_family_code');
+    setShowFamilyJoinConfirm(false);
 
-      // 3. 왓잇 DB에 가족 연결 생성 (family_groups + family_members)
+    // 1. 허브 개인 추천 코드 처리 (있을 때만)
+    if (pendingRefCode) {
       try {
-        const joinRes = await fetch('/api/family/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refCode: pendingRefCode, hostUserId }),
-        });
-        if (!joinRes.ok) {
-          console.warn('[WhatEatApp] 가족 DB 연결 실패:', await joinRes.text());
-        } else {
-          console.log('[WhatEatApp] 가족 DB 연결 성공');
-        }
+        await registerInviter(pendingRefCode);
       } catch (e) {
-        console.error('[WhatEatApp] 가족 DB 연결 오류:', e);
+        console.warn('[WhatEatApp] 허브 registerInviter 실패 (무시):', e);
       }
-      
-      alert("가족으로 성공적으로 연동되었습니다! 🏡");
-      
-      handleTabChange("family");
-      
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('profileUpdated'));
+    }
+
+    // 2. 왓잇 가족방 DB 연결 (family=방장UUID)
+    try {
+      const joinRes = await fetch('/api/family/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refCode: pendingFamilyCode }),
+      });
+      const joinData = await joinRes.json();
+      if (!joinRes.ok || !joinData.success) {
+        console.warn('[WhatEatApp] 가족 DB 연결 실패:', joinData);
+        alert('가족 연동에 실패했습니다. 다시 시도해 주세요.');
+        return;
       }
-    } else {
-      alert("가족 연동에 실패했습니다. 다시 시도해 주세요.");
+      console.log('[WhatEatApp] 가족 DB 연결 성공:', joinData);
+    } catch (e) {
+      console.error('[WhatEatApp] 가족 DB 연결 오류:', e);
+      alert('가족 연동에 실패했습니다. 다시 시도해 주세요.');
+      return;
+    }
+
+    alert('가족으로 성공적으로 연동되었습니다! 🏡');
+    handleTabChange('family');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
     }
   };
 
   const handleDeclineFamilyJoin = () => {
-    localStorage.removeItem('pending_family_ref');
+    localStorage.removeItem('pending_hub_ref');
+    localStorage.removeItem('pending_family_code');
     setShowFamilyJoinConfirm(false);
   };
 

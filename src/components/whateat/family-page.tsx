@@ -954,34 +954,29 @@ export function FamilyPage({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
-    async function buildInviteLink() {
-      let base = window.location.origin + window.location.pathname;
-      try {
-        const urlObj = new URL(base);
-        const privatePaths = ['/profile', '/payment', '/login'];
-        if (privatePaths.some(p => urlObj.pathname.startsWith(p))) {
-          urlObj.pathname = '/';
-          urlObj.search = '';
-        }
-        base = urlObj.toString();
-      } catch (e) {}
 
-      if (isLoggedIn) {
+    // 초대 링크 = ref(허브 개인코드) + family(왓잇 방장 UUID) 두 코드 포함
+    async function buildInviteLink() {
+      const base = window.location.origin + '/';
+      if (!isLoggedIn || !user?.id) {
+        setInviteLink(base);
+        return;
+      }
+
+      // 왓잇 가족방 코드: 방장 user.id (UUID)
+      const familyParam = `family=${user.id}`;
+
+      // 허브 개인 추천 코드 (있을 때만 추가)
+      try {
         const info = await getMyReferralInfo();
         if (info?.code) {
-          try {
-            const urlObj = new URL(base);
-            urlObj.searchParams.set('ref', info.code);
-            setInviteLink(urlObj.toString());
-            return;
-          } catch (e) {
-            setInviteLink(`${base}${base.includes('?') ? '&' : '?'}ref=${info.code}`);
-            return;
-          }
+          setInviteLink(`${base}?ref=${info.code}&${familyParam}`);
+          return;
         }
-      }
-      setInviteLink(base);
+      } catch (e) {}
+
+      // 허브 코드 없으면 family 코드만
+      setInviteLink(`${base}?${familyParam}`);
     }
     buildInviteLink();
   }, [isLoggedIn, user, getMyReferralInfo])
