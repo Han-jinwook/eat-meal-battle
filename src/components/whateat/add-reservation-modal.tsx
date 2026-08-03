@@ -491,15 +491,15 @@ const handleSubmit = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 pt-16 sm:pt-20 pb-4 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-foreground/20 backdrop-blur-md"
+        className="fixed inset-0 bg-foreground/20 backdrop-blur-md"
         onClick={onClose}
       />
       
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg bg-orange-50/70 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[96vh] overflow-y-auto hide-scrollbar my-auto">
+      <div className="relative w-full max-w-lg bg-orange-50/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.2)] border border-white/80 overflow-hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto hide-scrollbar my-auto">
         {/* Close Button & Delete Button in Edit Mode */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
           {isEditMode && editData?.id && (

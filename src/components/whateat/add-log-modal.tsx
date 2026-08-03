@@ -544,17 +544,17 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   ]
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 pt-16 sm:pt-20 pb-4 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-foreground/20 backdrop-blur-md"
+        className="fixed inset-0 bg-foreground/20 backdrop-blur-md"
         onClick={onClose}
       />
       
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg bg-orange-50/70 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-white overflow-hidden max-h-[96vh] overflow-y-auto hide-scrollbar my-auto">
+      <div className="relative w-full max-w-lg bg-orange-50/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.2)] border border-white/80 overflow-hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto hide-scrollbar my-auto">
         {/* Close Button & Delete Button in Edit Mode */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2">
           {isEditMode && editData?.id && (
             <button
               onClick={() => {
@@ -575,7 +575,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           )}
           <button 
             onClick={onClose}
-            className="size-8 flex items-center justify-center rounded-full bg-white/60 hover:bg-white text-foreground transition-colors"
+            className="size-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white text-foreground transition-colors shadow-xs"
           >
             <X className="size-4" />
           </button>
@@ -583,8 +583,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
         <div className="p-4 sm:p-5">
           {/* Header */}
-          <div className="mb-3">
-            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
+          <div className="mb-2.5">
+            <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-foreground">
               {mode === "family"
                 ? (isEditMode ? "(패밀리) 먹로그 수정하기" : "(패밀리) 먹로그 기록하기")
                 : (isEditMode ? "(솔로) 먹로그 수정하기" : "(솔로) 먹로그 기록하기")
@@ -593,10 +593,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           </div>
 
           {/* Form Fields */}
-          <div className="space-y-3" onClickCapture={handleInteraction}>
+          <div className="space-y-2.5" onClickCapture={handleInteraction}>
             {/* 1. Meal Type & Date (Side-by-side) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-foreground">식사 유형</label>
                 <div className="grid grid-cols-3 gap-1">
                   {mealTypes.map((type) => (
@@ -612,7 +612,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         }
                       }}
                       className={cn(
-                        "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1",
+                        "py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1",
                         mealType === type.id
                           ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
                           : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
@@ -625,7 +625,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <CalendarDays className="size-3.5 text-orange-500" />
                   날짜
@@ -653,10 +653,10 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
             </div>
 
             {/* 2. Image Upload */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-foreground">사진</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-foreground">사진</label>
               <div 
-                className="relative group cursor-pointer aspect-video w-full rounded-xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-orange-50/30 transition-all overflow-hidden"
+                className="relative group cursor-pointer h-36 sm:h-40 w-full rounded-xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center gap-1.5 hover:border-primary/50 hover:bg-orange-50/30 transition-all overflow-hidden"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {imagePreview ? (
