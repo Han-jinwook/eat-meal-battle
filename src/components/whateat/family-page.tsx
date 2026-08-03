@@ -2565,18 +2565,6 @@ export function FamilyPage({
                       size="sm"
                       className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
                     />
-                    {isLoggedIn && isFamilyOwner && member.userId && member.userId !== user?.id && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveMember(member.userId!, member.name)
-                        }}
-                        title={`${member.name} 가족에서 제거`}
-                        className="absolute -top-1 -left-1 size-4 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center border-2 border-white shadow-sm transition-transform hover:scale-110"
-                      >
-                        <X className="size-2.5 stroke-[3]" />
-                      </button>
-                    )}
                     {member.role === "chef" && (
                       <div className="absolute -top-1 -right-1 size-4 rounded-full bg-yellow-400 flex items-center justify-center border-2 border-white">
                         <ChefHat className="size-2.5 text-white" />
