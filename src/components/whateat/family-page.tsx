@@ -2558,7 +2558,7 @@ export function FamilyPage({
 
             <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
               {members.map((member) => (
-                <div key={member.id} className="flex flex-col items-center gap-1 shrink-0">
+                <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 pt-1">
                   <div className="relative">
                     <HubAvatar
                       isLoggedIn={isLoggedIn}
@@ -2568,8 +2568,8 @@ export function FamilyPage({
                       className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
                     />
                     {member.role === "chef" && (
-                      <div className="absolute -top-2 -right-1.5 z-10 pointer-events-none" title="가족 셰프 👨‍🍳">
-                        <ChefHat className="size-5 text-black fill-white stroke-[2.2]" />
+                      <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족 셰프 👨‍🍳">
+                        셰
                       </div>
                     )}
                     {member.isOnline && (
