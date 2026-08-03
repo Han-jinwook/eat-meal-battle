@@ -3544,11 +3544,17 @@ export function FamilyPage({
       {/* Invite Modal */}
 
       {showInviteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-5">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-5" onClick={() => { setShowInviteModal(false); setIsInviteLinkCopied(false); }}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">가족 초대하기</h3>
-              <button onClick={() => setShowInviteModal(false)} className="size-8 rounded-full hover:bg-muted flex items-center justify-center">
+              <button 
+                onClick={() => {
+                  setShowInviteModal(false)
+                  setIsInviteLinkCopied(false)
+                }} 
+                className="size-8 rounded-full hover:bg-muted flex items-center justify-center"
+              >
                 <X className="size-5" />
               </button>
             </div>
@@ -3560,13 +3566,16 @@ export function FamilyPage({
               onClick={() => {
                 if (!isLoggedIn) {
                   window.dispatchEvent(new CustomEvent('openLoginModal'))
+                } else if (isInviteLinkCopied) {
+                  setShowInviteModal(false)
+                  setIsInviteLinkCopied(false)
                 } else {
                   handleCopyInviteLink()
                 }
               }}
               className={cn(
-                "w-full py-3 text-white font-bold rounded-xl transition-colors",
-                isInviteLinkCopied ? "bg-emerald-500" : "bg-orange-500 hover:bg-orange-600",
+                "w-full py-3 text-white font-bold rounded-xl transition-colors cursor-pointer",
+                isInviteLinkCopied ? "bg-emerald-500 hover:bg-emerald-600" : "bg-orange-500 hover:bg-orange-600",
               )}
             >
               {isInviteLinkCopied ? "복사 완료!" : "링크 복사하기"}
