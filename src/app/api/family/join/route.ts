@@ -9,7 +9,8 @@ const HUB_URL = process.env.NEXT_PUBLIC_MERLIN_HUB_URL || 'https://os.sundreamer
  * body: { refCode: string }  ← 방장의 user.id (UUID)
  *
  * 왓잇 자체 가족 초대 수락 처리 (허브 무관)
- * 유저 인증: Supabase 세션 대신 허브 토큰 → 허브 /api/auth/me → 이메일 → 왓잇 users 조회
+ * 테이블: whateat_family_groups, whateat_family_members
+ * 유저 인증: 허브 토큰 → 허브 /api/auth/me → 왓잇 users 조회
  */
 export async function POST(req: NextRequest) {
   try {
@@ -93,9 +94,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '초대자를 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    // 5. 방장의 family_groups 조회 or 생성
+    // 5. 방장의 whateat_family_groups 조회 or 생성
     let { data: familyGroup } = await supabaseAdmin
-      .from('family_groups')
+      .from('whateat_family_groups')
       .select('id, name')
       .eq('owner_id', inviterId)
       .maybeSingle();
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
     if (!familyGroup) {
       const familyName = inviterUser.nickname ? `${inviterUser.nickname} 가족` : '우리 가족';
       const { data: newGroup, error: createErr } = await supabaseAdmin
-        .from('family_groups')
+        .from('whateat_family_groups')
         .insert({ owner_id: inviterId, name: familyName })
         .select('id, name')
         .single();
@@ -116,9 +117,9 @@ export async function POST(req: NextRequest) {
 
     const familyId = familyGroup.id;
 
-    // 6. 방장이 family_members에 없으면 추가
+    // 6. 방장이 whateat_family_members에 없으면 추가
     const { data: ownerMember } = await supabaseAdmin
-      .from('family_members')
+      .from('whateat_family_members')
       .select('id')
       .eq('family_id', familyId)
       .eq('user_id', inviterId)
@@ -126,13 +127,13 @@ export async function POST(req: NextRequest) {
 
     if (!ownerMember) {
       await supabaseAdmin
-        .from('family_members')
+        .from('whateat_family_members')
         .insert({ family_id: familyId, user_id: inviterId, role: 'owner' });
     }
 
     // 7. 나(멤버) 추가
     const { data: myMember } = await supabaseAdmin
-      .from('family_members')
+      .from('whateat_family_members')
       .select('id')
       .eq('family_id', familyId)
       .eq('user_id', myUserId)
@@ -140,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     if (!myMember) {
       const { error: insertErr } = await supabaseAdmin
-        .from('family_members')
+        .from('whateat_family_members')
         .insert({ family_id: familyId, user_id: myUserId, role: 'member' });
 
       if (insertErr) {

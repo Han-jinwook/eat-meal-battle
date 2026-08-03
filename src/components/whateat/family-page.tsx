@@ -1528,7 +1528,7 @@ export function FamilyPage({
         }
 
         const res = await secureWrite({
-          table: "family_groups",
+          table: "whateat_family_groups",
           action: "upsert",
           data: payload
         })
@@ -3584,7 +3584,7 @@ export function FamilyPage({
                           payload.id = familyGroupId
                         }
                         const res = await secureWrite({
-                          table: "family_groups",
+                          table: "whateat_family_groups",
                           action: "upsert",
                           data: payload
                         })

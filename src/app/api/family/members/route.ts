@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase-server';
  * GET /api/family/members
  *
  * 왓잇 전용 '먹자 가족' 조회
- * - family_groups (방장 + 가족 사진)
- * - family_members (구성원 목록)
+ * - whateat_family_groups (방장 + 가족 사진)
+ * - whateat_family_members (구성원 목록)
  * 두 테이블 모두 왓잇 Supabase DB에 있음. 허브와 무관.
  */
 export async function GET(req: NextRequest) {
@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
     const supabaseAdmin = createAdminClient();
     const userId = user.id;
 
-    // 2. 내가 속한 family_members row 찾기 → family_id 획득
+    // 2. 내가 속한 whateat_family_members row 찾기 → family_id 획득
     const { data: myMembership } = await supabaseAdmin
-      .from('family_members')
+      .from('whateat_family_members')
       .select('family_id, role')
       .eq('user_id', userId)
       .maybeSingle();
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
 
     const familyId = myMembership.family_id;
 
-    // 3. family_groups에서 방장 및 가족 사진 조회
+    // 3. whateat_family_groups에서 방장 및 가족 사진 조회
     const { data: familyGroup } = await supabaseAdmin
-      .from('family_groups')
+      .from('whateat_family_groups')
       .select('id, owner_id, name, family_photo')
       .eq('id', familyId)
       .maybeSingle();
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     // 4. 같은 가족의 전체 멤버 목록 조회
     const { data: allMembers } = await supabaseAdmin
-      .from('family_members')
+      .from('whateat_family_members')
       .select('user_id, role')
       .eq('family_id', familyId);
 
