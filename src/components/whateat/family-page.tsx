@@ -1003,7 +1003,7 @@ export function FamilyPage({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 초대 링크 = ref(허브 개인코드) + family(왓잇 방장 UUID) 두 코드 포함
+    // 초대 링크 = ref(초대하는 멤버의 허브 개인코드) + family(왓잇 방장 UUID) 두 코드 포함
     async function buildInviteLink() {
       const base = window.location.origin + '/';
       if (!isLoggedIn || !user?.id) {
@@ -1011,10 +1011,11 @@ export function FamilyPage({
         return;
       }
 
-      // 왓잇 가족방 코드: 방장 user.id (UUID)
-      const familyParam = `family=${user.id}`;
+      // 왓잇 가족방 코드: 방장의 user.id (UUID) - 방장이든 멤버든 속해있는 가족의 방장 ID 사용
+      const hostIdToUse = familyHostId || user.id;
+      const familyParam = `family=${hostIdToUse}`;
 
-      // 허브 개인 추천 코드 (있을 때만 추가)
+      // 허브 개인 추천 코드 (초대하는 내 코드 - 허브 보상 수령용)
       try {
         const info = await getMyReferralInfo();
         if (info?.code) {
@@ -1027,7 +1028,7 @@ export function FamilyPage({
       setInviteLink(`${base}?${familyParam}`);
     }
     buildInviteLink();
-  }, [isLoggedIn, user, getMyReferralInfo])
+  }, [isLoggedIn, user, familyHostId, getMyReferralInfo])
 
   const fetchFamilyData = async (familyUserIds: string[]) => {
     try {
