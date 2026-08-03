@@ -474,8 +474,16 @@ export function FamilyPage({
       }
 
       try {
-        // 왓잇 전용 가족 정보 조회 (family_groups + family_members 테이블)
-        const res = await fetch('/api/family/members')
+        let hubToken = ''
+        try {
+          const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client')
+          hubToken = getSessionToken() || ''
+        } catch (e) {}
+
+        // 왓잇 전용 가족 정보 조회 (whateat_family_groups + whateat_family_members 테이블)
+        const res = await fetch('/api/family/members', {
+          headers: hubToken ? { 'x-hub-token': hubToken } : undefined
+        })
         if (!res.ok) throw new Error(`family/members API error: ${res.status}`)
         const result = await res.json()
 
