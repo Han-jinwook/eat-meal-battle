@@ -137,9 +137,15 @@ export default function WhatEatApp() {
 
     // 2. 왓잇 가족방 DB 연결 (family=방장UUID)
     try {
+      const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
+      const hubToken = getSessionToken() || '';
+
       const joinRes = await fetch('/api/family/join', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-hub-token': hubToken,
+        },
         body: JSON.stringify({ refCode: pendingFamilyCode }),
       });
       const joinData = await joinRes.json();
