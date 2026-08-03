@@ -2565,14 +2565,11 @@ export function FamilyPage({
                       avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
                       nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
                       size="sm"
-                      className={cn(
-                        "!w-11 !h-11 rounded-xl border-2 shadow-sm transition-all",
-                        member.role === "chef" ? "border-black ring-2 ring-black/20" : "border-white"
-                      )}
+                      className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
                     />
                     {member.role === "chef" && (
-                      <div className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-white text-black flex items-center justify-center border-2 border-black shadow-md z-10" title="가족 셰프 👨‍🍳">
-                        <ChefHat className="size-3.5 stroke-[2.5]" />
+                      <div className="absolute -top-2 -right-1.5 z-10 pointer-events-none" title="가족 셰프 👨‍🍳">
+                        <ChefHat className="size-5 text-black fill-white stroke-[2.2]" />
                       </div>
                     )}
                     {member.isOnline && (
