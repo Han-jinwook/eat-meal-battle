@@ -2541,26 +2541,15 @@ export function FamilyPage({
                   {members.length}명의 구성원
                 </p>
                 {isLoggedIn && isFamilyOwner && (
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <button
-                      onClick={() => {
-                        setShowChefModal(true)
-                      }}
-                      className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
-                    >
-                      <ChefHat className="size-2" />
-                      우리가족 셰프는?
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowMemberManageModal(true)
-                      }}
-                      className="text-[8px] bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 px-1.5 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5"
-                    >
-                      <Users className="size-2" />
-                      멤버 관리
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setShowChefModal(true)
+                    }}
+                    className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-2 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5 cursor-pointer mt-0.5"
+                  >
+                    <Settings className="size-2" />
+                    셰프 / 가족 관리
+                  </button>
                 )}
               </div>
             </div>
@@ -3584,176 +3573,177 @@ export function FamilyPage({
         </div>
       )}
 
-      {/* Chef Selection Bottom Sheet (Pull-up Modal) */}
+      {/* Integrated 2-Column Family & Chef Management Modal */}
       {showChefModal && isFamilyOwner && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="bg-white rounded-t-3xl w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">우리가족 셰프 지정 🍳</h3>
-              <button 
-                onClick={() => setShowChefModal(false)} 
-                className="size-8 rounded-full hover:bg-muted flex items-center justify-center"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4 leading-normal">
-              가족들의 식사를 결정할 주방 책임자(셰프)를 지정하세요. 셰프는 메뉴 결정 권한을 가집니다.
-            </p>
-            
-            <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
-              {members.map((member) => {
-                const isSelected = selectedChefId === member.id
-                return (
-                  <button
-                    key={member.id}
-                    onClick={() => setSelectedChefId(member.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-2xl border transition-all",
-                      isSelected 
-                        ? "border-orange-500 bg-orange-50/50" 
-                        : "border-gray-100 hover:bg-gray-50"
-                    )}
-                  >
-                    <HubAvatar
-                      isLoggedIn={isLoggedIn}
-                      avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
-                      nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
-                      size="sm"
-                      className="!w-10 !h-10 rounded-xl"
-                    />
-                    <div className="flex-1 text-left">
-                      <span className="font-bold text-sm text-foreground">{member.name}</span>
-                      {member.role === 'chef' && (
-                        <span className="ml-2 text-[10px] font-bold text-orange-500 bg-orange-100 px-1.5 py-0.5 rounded-md">현재 셰프</span>
-                      )}
-                    </div>
-                    <div className={cn(
-                      "size-5 rounded-full border flex items-center justify-center",
-                      isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300"
-                    )}>
-                      {isSelected && <Check className="size-3 stroke-[3]" />}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            
-            <button
-              onClick={async () => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  if (selectedChefId) {
-                    const newChefMember = members.find(m => m.id === selectedChefId)
-                    const newChefUserId = newChefMember?.userId
-                    setMembers(prev => prev.map(m => ({
-                      ...m,
-                      role: m.id === selectedChefId ? 'chef' : 'member'
-                    })))
-                    if (newChefUserId) {
-                      if (!isFamilyOwner) {
-                        toast.error("셰프 지정 권한은 방장에게만 있습니다.")
-                        return
-                      }
-                      try {
-                        const payload: any = {
-                          owner_id: user?.id,
-                          chef_id: newChefUserId
-                        }
-                        if (familyGroupId) {
-                          payload.id = familyGroupId
-                        }
-                        const res = await secureWrite({
-                          table: "whateat_family_groups",
-                          action: "upsert",
-                          data: payload
-                        })
-                        if (res?.data?.[0]?.id) {
-                          setFamilyGroupId(res.data[0].id)
-                        }
-                        setChefUserId(newChefUserId)
-                        toast.success("셰프가 변경되었습니다! 👨‍🍳")
-                      } catch (err) {
-                        console.error("Failed to update chef_id:", err)
-                        toast.error("셰프 변경 저장에 실패했습니다.")
-                      }
-                    }
-                    setShowChefModal(false)
-                  }
-                }
-              }}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-orange-500/20"
-            >
-              셰프 변경 완료
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Family Member Manage Modal */}
-      {showMemberManageModal && isFamilyOwner && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="bg-white rounded-t-3xl w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <Users className="size-5 text-orange-500" />
-                가족 멤버 관리 👥
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-6" onClick={() => setShowChefModal(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-[440px] md:max-w-[760px] p-5 md:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                <Settings className="size-5 text-orange-500" />
+                가족 및 셰프 관리 ⚙️
               </h3>
               <button 
-                onClick={() => setShowMemberManageModal(false)} 
-                className="size-8 rounded-full hover:bg-muted flex items-center justify-center"
+                onClick={() => setShowChefModal(false)} 
+                className="size-8 rounded-full hover:bg-muted flex items-center justify-center cursor-pointer transition-colors"
               >
                 <X className="size-5" />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground mb-4 leading-normal">
-              방장은 필요 시 가족 멤버를 내보낼 수 있습니다.
-            </p>
             
-            <div className="space-y-2.5 max-h-60 overflow-y-auto mb-6">
-              {members.map((member) => {
-                const isMe = member.userId === user?.id || member.name === "나"
-                return (
-                  <div
-                    key={member.id}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl border border-gray-100 hover:bg-gray-50/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <HubAvatar
-                        isLoggedIn={isLoggedIn}
-                        avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
-                        nickname={member.name === "나" ? (user?.nickname || '나') : member.name}
-                        size="sm"
-                        className="!w-10 !h-10 rounded-xl"
-                      />
-                      <div>
-                        <span className="font-bold text-sm text-foreground">{member.name}</span>
-                        {isMe ? (
-                          <span className="ml-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md">방장(나)</span>
-                        ) : (
-                          <span className="ml-2 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">가족 멤버</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+              {/* Left Column (1단): 셰프 지정 */}
+              <div className="flex flex-col bg-gray-50/70 p-4 rounded-2xl border border-gray-100/80">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <ChefHat className="size-4 text-orange-500" />
+                  <h4 className="font-bold text-sm text-foreground">1. 우리가족 셰프 지정</h4>
+                </div>
+                <p className="text-[11px] text-muted-foreground mb-3 leading-tight">
+                  가족들의 메뉴 결정 권한을 가질 셰프를 지정하세요.
+                </p>
+                
+                <div className="space-y-2 flex-1 max-h-56 overflow-y-auto pr-1 mb-4">
+                  {members.map((member) => {
+                    const isSelected = selectedChefId === member.id
+                    return (
+                      <button
+                        key={member.id}
+                        onClick={() => setSelectedChefId(member.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer text-left",
+                          isSelected 
+                            ? "border-orange-500 bg-orange-50/90 shadow-xs" 
+                            : "border-gray-200/80 bg-white hover:bg-gray-50"
+                        )}
+                      >
+                        <HubAvatar
+                          isLoggedIn={isLoggedIn}
+                          avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                          nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
+                          size="sm"
+                          className="!w-9 !h-9 rounded-lg"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="font-bold text-xs text-foreground block truncate">{member.name}</span>
+                          {member.role === 'chef' && (
+                            <span className="text-[9px] font-bold text-orange-500 bg-orange-100 px-1.5 py-0.5 rounded-md">현재 셰프</span>
+                          )}
+                        </div>
+                        <div className={cn(
+                          "size-4 rounded-full border flex items-center justify-center shrink-0",
+                          isSelected ? "border-orange-500 bg-orange-500 text-white" : "border-gray-300"
+                        )}>
+                          {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!isLoggedIn) {
+                      window.dispatchEvent(new CustomEvent('openLoginModal'))
+                    } else {
+                      if (selectedChefId) {
+                        const newChefMember = members.find(m => m.id === selectedChefId)
+                        const newChefUserId = newChefMember?.userId
+                        setMembers(prev => prev.map(m => ({
+                          ...m,
+                          role: m.id === selectedChefId ? 'chef' : 'member'
+                        })))
+                        if (newChefUserId) {
+                          if (!isFamilyOwner) {
+                            toast.error("셰프 지정 권한은 방장에게만 있습니다.")
+                            return
+                          }
+                          try {
+                            const payload: any = {
+                              owner_id: user?.id,
+                              chef_id: newChefUserId
+                            }
+                            if (familyGroupId) {
+                              payload.id = familyGroupId
+                            }
+                            const res = await secureWrite({
+                              table: "whateat_family_groups",
+                              action: "upsert",
+                              data: payload
+                            })
+                            if (res?.data?.[0]?.id) {
+                              setFamilyGroupId(res.data[0].id)
+                            }
+                            setChefUserId(newChefUserId)
+                            toast.success("셰프가 변경되었습니다! 👨‍🍳")
+                          } catch (err) {
+                            console.error("Failed to update chef_id:", err)
+                            toast.error("셰프 변경 저장에 실패했습니다.")
+                          }
+                        }
+                        setShowChefModal(false)
+                      }
+                    }
+                  }}
+                  className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-colors shadow-md cursor-pointer mt-auto"
+                >
+                  셰프 변경 완료
+                </button>
+              </div>
+
+              {/* Right Column (2단): 가족 멤버 관리 */}
+              <div className="flex flex-col bg-gray-50/70 p-4 rounded-2xl border border-gray-100/80">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Users className="size-4 text-red-500" />
+                  <h4 className="font-bold text-sm text-foreground">2. 가족 멤버 관리</h4>
+                </div>
+                <p className="text-[11px] text-muted-foreground mb-3 leading-tight">
+                  필요 시 가족 그룹에서 구성원을 제외할 수 있습니다.
+                </p>
+                
+                <div className="space-y-2 flex-1 max-h-56 overflow-y-auto pr-1 mb-4">
+                  {members.map((member) => {
+                    const isMe = member.userId === user?.id || member.name === "나"
+                    return (
+                      <div
+                        key={member.id}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-gray-200/80 bg-white"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <HubAvatar
+                            isLoggedIn={isLoggedIn}
+                            avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                            nickname={member.name === "나" ? (user?.nickname || '나') : member.name}
+                            size="sm"
+                            className="!w-9 !h-9 rounded-lg"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs text-foreground block truncate">{member.name}</span>
+                            {isMe ? (
+                              <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md">방장(나)</span>
+                            ) : (
+                              <span className="text-[9px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-md">가족 멤버</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {!isMe && member.userId && (
+                          <button
+                            onClick={() => handleRemoveMember(member.userId!, member.name)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-0.5 border border-red-100 shrink-0 cursor-pointer"
+                          >
+                            <UserMinus className="size-3" />
+                            제외
+                          </button>
                         )}
                       </div>
-                    </div>
-
-                    {!isMe && member.userId && (
-                      <button
-                        onClick={() => handleRemoveMember(member.userId!, member.name)}
-                        className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors flex items-center gap-1 border border-red-100 cursor-pointer"
-                      >
-                        <UserMinus className="size-3.5" />
-                        가족 제외
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
+                    )
+                  })}
+                </div>
+              </div>
             </div>
             
             <button
-              onClick={() => setShowMemberManageModal(false)}
-              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-lg"
+              onClick={() => setShowChefModal(false)}
+              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs rounded-xl transition-colors shadow-md cursor-pointer"
             >
               닫기
             </button>
