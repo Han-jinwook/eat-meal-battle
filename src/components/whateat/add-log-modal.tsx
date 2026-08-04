@@ -403,9 +403,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           setRecipeThumbnail(data.image || "")
           setRecipeBrand(data.brand || "generic")
           setLastCrawledRecipeUrl(trimmedLink)
-          if (!menuName.trim()) {
-            setMenuName(data.title)
-          }
         }
       } catch (err) {
         console.error("Recipe Link Crawling failed:", err)
@@ -959,6 +956,170 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
 
 
+            {/* 4. Recipe Input - 집밥일 경우에만 */}
+            {mealType === "집밥" && (
+              <div className="flex flex-col gap-3">
+                <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Link className="size-4 text-orange-500" />
+                  레시피 <span className="text-xs text-muted-foreground font-normal">(선택)</span>
+                </label>
+                <div className="flex gap-2 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => setRecipeInputType("url")}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      recipeInputType === "url"
+                        ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
+                        : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
+                    )}
+                  >
+                    URL 첨부
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecipeInputType("manual")}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      recipeInputType === "manual"
+                        ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
+                        : "bg-white border-2 border-gray-100 text-foreground hover:border-orange-300"
+                    )}
+                  >
+                    직접 작성
+                  </button>
+                </div>
+                
+                {recipeInputType === "url" ? (
+                  <div className="flex flex-col gap-2.5">
+                    <input
+                      className="w-full px-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground/50"
+                      placeholder="Youtube 또는 Instagram 레시피 링크를 입력하세요"
+                      type="text"
+                      value={recipeContent}
+                      onChange={(e) => setRecipeContent(e.target.value)}
+                    />
+                    {isCrawlingRecipe ? (
+                      <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                        <Loader2 className="size-4 text-primary animate-spin" />
+                        <span className="text-xs text-muted-foreground font-medium">레시피 정보 불러오는 중...</span>
+                      </div>
+                    ) : recipeContent && recipeContent.trim().startsWith("http") && (
+                      <div className={cn(
+                        "flex flex-col gap-2.5 p-3.5 border rounded-xl transition-colors",
+                        recipeBrand === "youtube" && "bg-red-50/70 border-red-200",
+                        recipeBrand === "instagram" && "bg-pink-50/70 border-pink-200",
+                        recipeBrand === "tiktok" && "bg-slate-50/70 border-slate-300",
+                        recipeBrand === "generic" && "bg-orange-50/70 border-orange-200"
+                      )}>
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "size-5 rounded-full flex items-center justify-center shrink-0 shadow-sm text-[10px] font-black",
+                            recipeBrand === "youtube" && "bg-[#FF0000] text-white",
+                            recipeBrand === "instagram" && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
+                            recipeBrand === "tiktok" && "bg-[#010101] text-white border border-slate-700",
+                            recipeBrand === "generic" && "bg-orange-500 text-white"
+                          )}>
+                            <span>
+                              {recipeBrand === "youtube" ? "Y" : recipeBrand === "instagram" ? "I" : recipeBrand === "tiktok" ? "T" : "R"}
+                            </span>
+                          </div>
+                          <span className={cn(
+                            "text-xs font-medium truncate flex-1",
+                            recipeBrand === "youtube" && "text-red-700",
+                            recipeBrand === "instagram" && "text-pink-700",
+                            recipeBrand === "tiktok" && "text-slate-800",
+                            recipeBrand === "generic" && "text-orange-700"
+                          )}>{recipeContent}</span>
+                          <button 
+                            type="button"
+                            onClick={() => { 
+                              setRecipeContent(""); 
+                              setRecipeThumbnail("");
+                              setRecipeTitle("");
+                              setLastCrawledRecipeUrl("");
+                            }} 
+                            className={cn(
+                              "shrink-0 size-5 rounded flex items-center justify-center transition-colors",
+                              recipeBrand === "youtube" && "hover:bg-red-100/50 text-red-600",
+                              recipeBrand === "instagram" && "hover:bg-pink-100/50 text-pink-600",
+                              recipeBrand === "tiktok" && "hover:bg-slate-200 text-slate-700",
+                              recipeBrand === "generic" && "hover:bg-orange-100/50 text-orange-600"
+                            )}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                        
+                        {/* 레시피 정보 노출 (참고용으로만 노출, 메뉴명에는 절대 영향 미치지 않음!) */}
+                        {recipeTitle && (
+                          <div className={cn(
+                            "flex items-center gap-3 mt-1.5 pt-2.5 border-t",
+                            recipeBrand === "youtube" && "border-red-100",
+                            recipeBrand === "instagram" && "border-pink-100",
+                            recipeBrand === "tiktok" && "border-slate-200",
+                            recipeBrand === "generic" && "border-orange-100"
+                          )}>
+                            {recipeThumbnail ? (
+                              <img 
+                                src={recipeThumbnail} 
+                                alt="Recipe Thumbnail" 
+                                className={cn(
+                                  "size-11 rounded-lg object-cover bg-white border shrink-0 shadow-sm",
+                                  recipeBrand === "youtube" && "border-red-200",
+                                  recipeBrand === "instagram" && "border-pink-200",
+                                  recipeBrand === "tiktok" && "border-slate-300",
+                                  recipeBrand === "generic" && "border-orange-200"
+                                )} 
+                              />
+                            ) : (
+                              <div className={cn(
+                                "size-11 rounded-lg flex items-center justify-center shrink-0 border",
+                                recipeBrand === "youtube" && "bg-red-100 border-red-200 text-[#FF0000]",
+                                recipeBrand === "instagram" && "bg-pink-100 border-pink-200 text-pink-600",
+                                recipeBrand === "tiktok" && "bg-slate-100 border-slate-300 text-slate-700",
+                                recipeBrand === "generic" && "bg-orange-100 border-orange-200 text-orange-600"
+                              )}>
+                                <Navigation className="size-5" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h5 className={cn(
+                                "text-xs font-bold truncate",
+                                recipeBrand === "youtube" && "text-red-950",
+                                recipeBrand === "instagram" && "text-pink-950",
+                                recipeBrand === "tiktok" && "text-slate-950",
+                                recipeBrand === "generic" && "text-orange-950"
+                              )}>
+                                {recipeTitle}
+                              </h5>
+                              <p className={cn(
+                                "text-[10px] font-medium",
+                                recipeBrand === "youtube" && "text-red-700/60",
+                                recipeBrand === "instagram" && "text-pink-700/60",
+                                recipeBrand === "tiktok" && "text-slate-700/60",
+                                recipeBrand === "generic" && "text-orange-700/60"
+                              )}>
+                                {recipeBrand === "youtube" ? "유튜브 레시피 영상 연동 완료" : recipeBrand === "instagram" ? "인스타그램 릴스 연동 완료" : recipeBrand === "tiktok" ? "틱톡 영상 연동 완료" : "레시피 링크 연동 완료"}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <textarea
+                    className="w-full px-4 py-3.5 bg-white border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-sm text-foreground placeholder:text-muted-foreground/50 resize-none"
+                    placeholder="조리 순서나 핵심 레시피를 자유롭게 기록하세요"
+                    rows={3}
+                    value={recipeContent}
+                    onChange={(e) => setRecipeContent(e.target.value)}
+                  />
+                )}
+              </div>
+            )}
+
             {/* 5. 식당 링크 - 외식/배달일 경우에만 */}
             {(mealType === "외식" || mealType === "배달") && (
               <div className="flex flex-col gap-3">
@@ -1099,15 +1260,15 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                      return
                    }
 
-                   if (!imagePreview && !menuName.trim()) {
-                     toast("음식 사진을 추가하시거나 메뉴명을 입력해주세요.", { icon: "📸" })
-                     return
-                   }
-
                    const effectiveMenuName = menuName.trim() 
                      || selectedPlace?.name 
                      || deliveryStoreName 
                      || (mealType === "집밥" ? "오늘의 집밥" : mealType === "배달" ? "배달 음식" : "외식 기록")
+
+                   const isRecipeUrl = mealType === "집밥" && recipeInputType === "url" && recipeContent.trim().startsWith("http")
+                   const finalRecipeUrl = isRecipeUrl ? recipeContent.trim() : undefined
+                   const finalRecipeThumbnail = isRecipeUrl ? recipeThumbnail : undefined
+                   const finalRecipeText = isRecipeUrl ? recipeContent.trim() : (recipeInputType === "manual" ? recipeContent : undefined)
 
                    const data: MealLogData = {
                      id: editData?.id,
@@ -1116,9 +1277,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                      menuName: effectiveMenuName,
                      place: selectedPlace || (deliveryStoreName ? { name: deliveryStoreName, address: "", category: "배달" } : undefined),
                      deliveryStoreName: deliveryStoreName || undefined,
-                     linkUrl: linkUrl || undefined,
-                     linkThumbnail: linkThumbnail || undefined,
-                     image: imagePreview || undefined,
+                     recipe: finalRecipeText,
+                     recipeType: recipeInputType,
+                     linkUrl: finalRecipeUrl || linkUrl || undefined,
+                     linkThumbnail: finalRecipeThumbnail || linkThumbnail || undefined,
+                     image: imagePreview || finalRecipeThumbnail || undefined,
                      rating: editData?.rating,
                      description: editData?.description,
                    }
