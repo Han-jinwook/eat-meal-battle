@@ -1007,7 +1007,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                     ) : recipeContent && recipeContent.trim().startsWith("http") && (
                       <div className={cn(
                         "flex flex-col gap-2.5 p-3.5 border rounded-xl transition-colors",
-                        recipeBrand === "youtube" && "bg-red-50/70 border-red-200",
+                        recipeBrand === "youtube" && "bg-orange-50/80 border-orange-200",
                         recipeBrand === "instagram" && "bg-pink-50/70 border-pink-200",
                         recipeBrand === "tiktok" && "bg-slate-50/70 border-slate-300",
                         recipeBrand === "generic" && "bg-orange-50/70 border-orange-200"
@@ -1025,11 +1025,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                             </span>
                           </div>
                           <span className={cn(
-                            "text-xs font-medium truncate flex-1",
-                            recipeBrand === "youtube" && "text-red-700",
-                            recipeBrand === "instagram" && "text-pink-700",
-                            recipeBrand === "tiktok" && "text-slate-800",
-                            recipeBrand === "generic" && "text-orange-700"
+                            "text-xs font-medium truncate flex-1 text-foreground",
                           )}>{recipeContent}</span>
                           <button 
                             type="button"
@@ -1039,13 +1035,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                               setRecipeTitle("");
                               setLastCrawledRecipeUrl("");
                             }} 
-                            className={cn(
-                              "shrink-0 size-5 rounded flex items-center justify-center transition-colors",
-                              recipeBrand === "youtube" && "hover:bg-red-100/50 text-red-600",
-                              recipeBrand === "instagram" && "hover:bg-pink-100/50 text-pink-600",
-                              recipeBrand === "tiktok" && "hover:bg-slate-200 text-slate-700",
-                              recipeBrand === "generic" && "hover:bg-orange-100/50 text-orange-600"
-                            )}
+                            className="shrink-0 size-5 rounded flex items-center justify-center text-muted-foreground hover:bg-gray-200/50 transition-colors"
                           >
                             <X className="size-3.5" />
                           </button>
@@ -1054,52 +1044,24 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         {/* 레시피 정보 노출 (참고용으로만 노출, 메뉴명에는 절대 영향 미치지 않음!) */}
                         {recipeTitle && (
                           <div className={cn(
-                            "flex items-center gap-3 mt-1.5 pt-2.5 border-t",
-                            recipeBrand === "youtube" && "border-red-100",
-                            recipeBrand === "instagram" && "border-pink-100",
-                            recipeBrand === "tiktok" && "border-slate-200",
-                            recipeBrand === "generic" && "border-orange-100"
+                            "flex items-center gap-3 mt-1.5 pt-2.5 border-t border-orange-100",
                           )}>
                             {recipeThumbnail ? (
                               <img 
                                 src={recipeThumbnail} 
                                 alt="Recipe Thumbnail" 
-                                className={cn(
-                                  "size-11 rounded-lg object-cover bg-white border shrink-0 shadow-sm",
-                                  recipeBrand === "youtube" && "border-red-200",
-                                  recipeBrand === "instagram" && "border-pink-200",
-                                  recipeBrand === "tiktok" && "border-slate-300",
-                                  recipeBrand === "generic" && "border-orange-200"
-                                )} 
+                                className="size-11 rounded-lg object-cover bg-white border border-orange-200 shrink-0 shadow-sm"
                               />
                             ) : (
-                              <div className={cn(
-                                "size-11 rounded-lg flex items-center justify-center shrink-0 border",
-                                recipeBrand === "youtube" && "bg-red-100 border-red-200 text-[#FF0000]",
-                                recipeBrand === "instagram" && "bg-pink-100 border-pink-200 text-pink-600",
-                                recipeBrand === "tiktok" && "bg-slate-100 border-slate-300 text-slate-700",
-                                recipeBrand === "generic" && "bg-orange-100 border-orange-200 text-orange-600"
-                              )}>
+                              <div className="size-11 rounded-lg flex items-center justify-center shrink-0 border bg-orange-100 border-orange-200 text-orange-600">
                                 <Navigation className="size-5" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <h5 className={cn(
-                                "text-xs font-bold truncate",
-                                recipeBrand === "youtube" && "text-red-950",
-                                recipeBrand === "instagram" && "text-pink-950",
-                                recipeBrand === "tiktok" && "text-slate-950",
-                                recipeBrand === "generic" && "text-orange-950"
-                              )}>
+                              <h5 className="text-xs font-bold truncate text-foreground">
                                 {recipeTitle}
                               </h5>
-                              <p className={cn(
-                                "text-[10px] font-medium",
-                                recipeBrand === "youtube" && "text-red-700/60",
-                                recipeBrand === "instagram" && "text-pink-700/60",
-                                recipeBrand === "tiktok" && "text-slate-700/60",
-                                recipeBrand === "generic" && "text-orange-700/60"
-                              )}>
+                              <p className="text-[10px] font-medium text-orange-600">
                                 {recipeBrand === "youtube" ? "유튜브 레시피 영상 연동 완료" : recipeBrand === "instagram" ? "인스타그램 릴스 연동 완료" : recipeBrand === "tiktok" ? "틱톡 영상 연동 완료" : "레시피 링크 연동 완료"}
                               </p>
                             </div>

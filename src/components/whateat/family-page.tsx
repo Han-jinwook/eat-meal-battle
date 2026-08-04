@@ -941,7 +941,7 @@ export function FamilyPage({
         action: "insert",
         data: {
           id: mealUuid,
-          meal_id: mealUuid,
+          meal_id: null,
           image_url: finalImageUrl,
           uploaded_by: user.id,
           explanation: JSON.stringify(metadata),

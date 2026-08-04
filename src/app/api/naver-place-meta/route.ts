@@ -48,19 +48,32 @@ export async function GET(request: NextRequest) {
     const youtubeMatch = decodedUrl.match(youtubeRegex);
     if (youtubeMatch) {
       const videoId = youtubeMatch[1];
-      let title = '유튜브 영상';
+      let title = '';
       let image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
       
       try {
-        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(decodedUrl)}&format=json`;
-        const oembedRes = await fetch(oembedUrl);
-        if (oembedRes.ok) {
-          const oembedData = await oembedRes.json();
-          title = oembedData.title || title;
-          image = oembedData.thumbnail_url || image;
+        const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const ytRes = await fetch(watchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+          }
+        });
+        if (ytRes.ok) {
+          const ytHtml = await ytRes.text();
+          const titleMatch = ytHtml.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i) || 
+                             ytHtml.match(/<meta[^>]*name="title"[^>]*content="([^"]*)"/i) ||
+                             ytHtml.match(/<title>([^<]*)<\/title>/i);
+          if (titleMatch && titleMatch[1]) {
+            title = titleMatch[1].replace(/\s*-\s*YouTube.*/i, '').trim();
+          }
         }
       } catch (e) {
-        console.error('YouTube oEmbed failed:', e);
+        console.error('YouTube HTML fetch failed:', e);
+      }
+
+      if (!title) {
+        title = '유튜브 영상';
       }
       
       return NextResponse.json({ title, image, brand: 'youtube' });
