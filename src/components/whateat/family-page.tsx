@@ -1520,32 +1520,7 @@ export function FamilyPage({
   }
 
   const fetchDecidedMenus = async () => {
-    try {
-      const supabase = createClient()
-      const todayStr = new Date().toISOString().split('T')[0]
-      const { data, error } = await supabase
-        .from('meal_menus')
-        .select('*')
-        .eq('school_code', 'family')
-        .eq('meal_date', todayStr)
-        .eq('is_temporary', false)
-
-      if (error) throw error
-
-      if (data) {
-        const formatted: TodayMenu[] = data.map(m => ({
-          id: m.id,
-          title: m.menu_items?.[0] || "결정된 메뉴",
-          image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop",
-          decidedBy: m.kcal || "셰프",
-          decidedAt: new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-          mealTime: m.meal_type as "breakfast" | "lunch" | "dinner"
-        }))
-        setTodayDecidedMenus(formatted)
-      }
-    } catch (err) {
-      console.error("Failed to fetch decided menus", err)
-    }
+    // 급식(meal_menus) 칼럼 재활용 잔재 제거 - local state 및 패밀리 전용 데이터 사용
   }
 
   // Trigger sync of family data and decided menus
@@ -2165,24 +2140,15 @@ export function FamilyPage({
     }
 
     try {
-      const todayStr = new Date().toISOString().split('T')[0]
-      await secureWrite({
-        table: 'meal_menus',
-        action: 'insert',
-        data: {
-          id: generateUUID(),
-          school_code: 'family',
-          meal_date: todayStr,
-          meal_type: decidedMealTime === "breakfast" ? "아침" : decidedMealTime === "lunch" ? "점심" : "저녁",
-          menu_items: [decidedMenuName.trim()],
-          kcal: currentFamilyMemberName, // storing decidedBy in kcal
-          is_temporary: false,
-          is_empty_result: false,
-          office_code: 'E10'
-        }
-      })
-
-      await fetchDecidedMenus()
+      const newDecidedMenu: TodayMenu = {
+        id: generateUUID(),
+        title: decidedMenuName.trim(),
+        image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop",
+        decidedBy: currentFamilyMemberName,
+        decidedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        mealTime: decidedMealTime
+      }
+      setTodayDecidedMenus(prev => [newDecidedMenu, ...prev])
       setShowDecideMenuModal(false)
       setDecidedMenuName("")
     } catch (err) {
