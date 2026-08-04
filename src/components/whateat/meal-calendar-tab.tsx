@@ -354,9 +354,9 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       case "home":
         return "bg-emerald-50/90 text-emerald-700 border-emerald-500/30 hover:bg-emerald-100"
       case "delivery":
-        return "bg-cyan-50/90 text-cyan-700 border-cyan-500/30 hover:bg-cyan-100"
+        return "bg-sky-50/90 text-sky-700 border-sky-500/30 hover:bg-sky-100"
       case "out":
-        return "bg-violet-50/90 text-violet-700 border-violet-500/30 hover:bg-violet-100"
+        return "bg-orange-50/90 text-orange-700 border-orange-500/30 hover:bg-orange-100"
       default:
         return "bg-gray-50/90 text-gray-700 border-gray-500/30"
     }
@@ -367,9 +367,9 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
       case "home":
         return <ChefHat className="size-3 text-emerald-500 shrink-0" />
       case "delivery":
-        return <Bike className="size-3 text-cyan-500 shrink-0" />
+        return <Bike className="size-3 text-sky-500 shrink-0" />
       case "out":
-        return <UtensilsCrossed className="size-3 text-violet-500 shrink-0" />
+        return <UtensilsCrossed className="size-3 text-orange-500 shrink-0" />
       default:
         return null
     }
@@ -612,20 +612,20 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             className={cn(
               "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
               typeFilter === "delivery" 
-                ? "bg-cyan-50/90 border-cyan-300 ring-2 ring-cyan-400/50 shadow-sm" 
+                ? "bg-sky-50/90 border-sky-300 ring-2 ring-sky-400/50 shadow-sm" 
                 : typeFilter !== "all" 
                 ? "opacity-40 border-transparent hover:opacity-100" 
                 : "border-transparent hover:bg-gray-50"
             )}
           >
             <div className="flex items-center gap-1.5 w-16">
-              <Bike className="size-4 text-cyan-500" />
+              <Bike className="size-4 text-sky-500" />
               <span className="text-xs font-bold">배달</span>
             </div>
             <div className="relative flex-1">
               <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-500"
                   style={{ width: `${stats.delivery}%` }}
                 />
               </div>
@@ -635,7 +635,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                 </span>
               </div>
             </div>
-            <span className="text-xs font-bold text-cyan-500 w-10 text-right">{stats.delivery}%</span>
+            <span className="text-xs font-bold text-sky-500 w-10 text-right">{stats.delivery}%</span>
           </div>
 
           {/* 외식 */}
@@ -644,20 +644,20 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
             className={cn(
               "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
               typeFilter === "out" 
-                ? "bg-violet-50/90 border-violet-300 ring-2 ring-violet-400/50 shadow-sm" 
+                ? "bg-orange-50/90 border-orange-300 ring-2 ring-orange-400/50 shadow-sm" 
                 : typeFilter !== "all" 
                 ? "opacity-40 border-transparent hover:opacity-100" 
                 : "border-transparent hover:bg-gray-50"
             )}
           >
             <div className="flex items-center gap-1.5 w-16">
-              <UtensilsCrossed className="size-4 text-violet-500" />
+              <UtensilsCrossed className="size-4 text-orange-500" />
               <span className="text-xs font-bold">외식</span>
             </div>
             <div className="relative flex-1">
               <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500"
                   style={{ width: `${stats.out}%` }}
                 />
               </div>
@@ -667,7 +667,7 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
                 </span>
               </div>
             </div>
-            <span className="text-xs font-bold text-violet-500 w-10 text-right">{stats.out}%</span>
+            <span className="text-xs font-bold text-orange-500 w-10 text-right">{stats.out}%</span>
           </div>
         </div>
       </div>

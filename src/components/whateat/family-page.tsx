@@ -3564,7 +3564,7 @@ export function FamilyPage({
                   <span>{formattedTime}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className={cn("flex items-center gap-1.5", isSampleItem && "mr-12")}>
                   <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-extrabold", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
                     {item.mealType}
                   </span>
