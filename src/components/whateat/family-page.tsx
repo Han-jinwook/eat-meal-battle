@@ -1770,7 +1770,7 @@ export function FamilyPage({
     }
   }, [members, isLoggedIn, user])
 
-  // Realtime subscription for family updates (meals, ratings, comments, replies)
+  // Realtime subscription for family updates (meals, ratings, comments, replies, reservations, likes)
   useEffect(() => {
     if (!isLoggedIn || !user?.id) return
 
@@ -1787,12 +1787,20 @@ export function FamilyPage({
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
         fetchFamilyData(familyUserIds)
+        fetchFamilyReservations(familyUserIds)
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_replies' }, () => {
         fetchFamilyData(familyUserIds)
+        fetchFamilyReservations(familyUserIds)
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_images' }, () => {
         fetchFamilyData(familyUserIds)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_reservations' }, () => {
+        fetchFamilyReservations(familyUserIds)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_likes' }, () => {
+        fetchFamilyReservations(familyUserIds)
       })
       .subscribe((status, err) => {
         if (err) console.error('[Realtime:family_sync] Error:', err)
@@ -3642,20 +3650,22 @@ export function FamilyPage({
 
         return (
           <div className="flex flex-col gap-4">
-            {/* 셰프 정보 바 */}
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
-              <div className="size-8 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-                <ChefHat className="size-4.5 text-white" />
+            {/* 셰프 정보 바 (방장에게는 표시하지 않음) */}
+            {!isFamilyOwner && (
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
+                <div className="size-8 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+                  <ChefHat className="size-4.5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black text-orange-700 truncate">
+                    👨‍🍳 {chef ? `${chef.name === "나" ? "나" : chef.name}가 오늘의 셰프` : "방장이 임시 셰프"}
+                  </p>
+                  <p className="text-[10px] text-orange-600 truncate">
+                    셰프가 위시리스트를 보고 날짜를 잡아줄 거예요
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-black text-orange-700 truncate">
-                  👨‍🍳 {chef ? `${chef.name === "나" ? "나" : chef.name}가 오늘의 셰프` : "방장이 임시 셰프"}
-                </p>
-                <p className="text-[10px] text-orange-600 truncate">
-                  {isChef ? "위시리스트를 보고 날짜를 잡아 예약을 확정해보세요" : "셰프가 위시리스트를 보고 날짜를 잡아줄 거예요"}
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* 검색어 입력 및 정렬 (솔로와 동일) */}
             <div className="flex items-center gap-2">
