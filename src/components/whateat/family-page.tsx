@@ -2918,11 +2918,8 @@ export function FamilyPage({
 
                     {/* 좌우 분할 카드 - 솔로 스타일 동일 적용 */}
                     <div
-                      onClick={() => isOpen && handleOpenMealCardDetail(meal.id)}
-                      className={cn(
-                        "w-full text-left block",
-                        isOpen ? "hover:opacity-95 transition-opacity cursor-pointer" : "cursor-default",
-                      )}
+                      onClick={() => handleOpenMealCardDetail(meal.id)}
+                      className="w-full text-left block hover:opacity-95 transition-opacity cursor-pointer"
                     >
                       <div className="flex h-[190px]">
                         {/* 왼쪽: 이미지 (클릭 시 솔로 모드처럼 크게 확대) */}
@@ -3130,12 +3127,47 @@ export function FamilyPage({
                               <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
                             )}
                           </p>
-                          <div className="flex items-center gap-0.5 text-orange-500">
-                            <Star className="size-4 fill-orange-400 text-orange-400" />
-                            <span className="text-xs font-bold ml-0.5">
-                              {isOpen ? "평가중" : `${averageRating.toFixed(1)} (${Object.keys(mealRatings[meal.id] || {}).length}명)`}
-                            </span>
-                          </div>
+                          {(() => {
+                            const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
+                            const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
+                            return (
+                              <div className="flex flex-col items-end gap-1 select-none">
+                                {isOpen ? (
+                                  <>
+                                    <div className="flex items-center gap-1 text-orange-500 font-bold text-xs bg-orange-50 border border-orange-100 rounded-full px-2.5 py-0.5 shadow-sm">
+                                      <Star className="size-3.5 fill-orange-400 text-orange-400" />
+                                      <span>평가중 ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명 참여)</span>
+                                    </div>
+                                    {myRating > 0 ? (
+                                      <span className="text-[9px] text-green-600 font-bold bg-green-50 border border-green-100 rounded-full px-2 py-0.2 shrink-0">
+                                        ✅ 내 별점: {myRating}점
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] text-orange-600 font-extrabold bg-orange-100/60 border border-orange-200 rounded-full px-2 py-0.2 shrink-0 animate-pulse">
+                                        ⚠️ 내 별점 미등록
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="flex items-center gap-1 text-gray-500 font-bold text-xs bg-gray-50 border border-gray-100 rounded-full px-2.5 py-0.5">
+                                      <Star className="size-3.5 fill-gray-400 text-gray-400" />
+                                      <span>마감 ({averageRating.toFixed(1)}점 / {totalRatedCount}명 참여)</span>
+                                    </div>
+                                    {myRating > 0 ? (
+                                      <span className="text-[9px] text-gray-400 font-medium">
+                                        (내 참여: {myRating}점)
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] text-gray-400 font-medium">
+                                        (내 평가 없음)
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                         <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
                         <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
