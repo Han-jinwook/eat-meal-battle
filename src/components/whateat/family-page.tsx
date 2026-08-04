@@ -1783,8 +1783,16 @@ export function FamilyPage({
       return
     }
 
-    // 가족방 전용 평가 기능 (솔로/맛톡 연동 없이 가족방에서 평가 기록 및 즉시 평균 반영)
+    // 1. 패밀리 평점 저장
     await saveFamilyRating(mealId, memberId, score)
+
+    // 2. 가족 중 1명이라도 5점 평가 시 맛톡(TasteTalk) 피드로 자동 승격!
+    const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
+    const has5Star = score === 5 || Object.values(currentRatingMap).some((s) => s === 5)
+    if (has5Star) {
+      await tryPromoteMealToTalk(mealId, currentRatingMap)
+      toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
+    }
   }
 
   const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
