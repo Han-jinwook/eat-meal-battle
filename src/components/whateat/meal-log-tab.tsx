@@ -498,11 +498,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
       try {
         const supabase = createClient()
-        // 1. meal_images 조회
         const { data: imgData, error: imgError } = await supabase
           .from("meal_images")
           .select("*")
           .eq("uploaded_by", user.id)
+          .neq("source", "family-shared")
           .order("created_at", { ascending: false })
 
         if (imgError) throw imgError

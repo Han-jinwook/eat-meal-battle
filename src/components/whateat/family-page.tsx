@@ -1783,53 +1783,8 @@ export function FamilyPage({
       return
     }
 
-    const targetMeal = meals.find((meal) => meal.id === mealId)
-    if (!targetMeal) return
-    
-    if (score === 5) {
-      const supabase = createClient()
-      const { data: userData } = await supabase
-        .from('users')
-        .select('region')
-        .eq('id', user?.id)
-        .single()
-
-      const hasRegion = userData?.region ? (() => {
-        try {
-          const parsed = JSON.parse(userData.region)
-          return Boolean(parsed.city && parsed.gu && parsed.dong)
-        } catch (e) {
-          return false
-        }
-      })() : false
-
-      // 지역 설정이 없다면 모달 오픈
-      if (!hasRegion) {
-        setPendingFamilyRating({ mealId, memberId, score })
-        setRegionModalOpen(true)
-        return
-      }
-
-      const pref = localStorage.getItem("whateat_auto_share_5star")
-      if (pref === "approved") {
-        await saveFamilyRating(mealId, memberId, score)
-        const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
-        await tryPromoteMealToTalk(mealId, currentRatingMap)
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("navigateToTalk"))
-        }, 100)
-      } else if (pref === "rejected") {
-        await saveFamilyRating(mealId, memberId, score)
-        await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
-        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-        await fetchFamilyData(familyUserIds)
-      } else {
-        setPendingFamilyRating({ mealId, memberId, score })
-        setShareConsentModalOpen(true)
-      }
-    } else {
-      await saveFamilyRating(mealId, memberId, score)
-    }
+    // 가족방 전용 평가 기능 (솔로/맛톡 연동 없이 가족방에서 평가 기록 및 즉시 평균 반영)
+    await saveFamilyRating(mealId, memberId, score)
   }
 
   const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
@@ -2713,15 +2668,15 @@ export function FamilyPage({
                       shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
                     )}
                   >
-                    {/* 샘플 리본 - 솔로 스타일과 동일 */}
-                    {meals.length === 0 && (
+                    {/* 샘플 리본 - 샘플 카드에 100% 지속 노출 */}
+                    {(meal.id === 1 || meal.id === 2 || meal.id === 3 || typeof meal.id === "number") && (
                       <div className="absolute top-4 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
                         💡 SAMPLE
                       </div>
                     )}
 
                     {/* 좌우 분할 카드 - 솔로 스타일 동일 적용 */}
-                    <button
+                    <div
                       onClick={() => isOpen && handleOpenMealCardDetail(meal.id)}
                       className={cn(
                         "w-full text-left block",
@@ -2729,18 +2684,51 @@ export function FamilyPage({
                       )}
                     >
                       <div className="flex h-[190px]">
-                        {/* 왼쪽: 이미지 */}
-                        <div className="w-1/2 relative overflow-hidden">
+                        {/* 왼쪽: 이미지 (클릭 시 솔로 모드처럼 크게 확대 / 우측상단 연필 아이콘 클릭 시 수정 모달) */}
+                        <div 
+                          className="w-1/2 relative overflow-hidden group/img cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (meal.image) {
+                              setViewerImage(meal.image)
+                            }
+                          }}
+                        >
                           <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover/img:scale-105"
                             style={{ backgroundImage: `url("${meal.image || '/placeholder.svg'}")` }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                          <div className="absolute top-3 left-3">
+                          <div className="absolute top-3 left-3 z-10">
                             <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
                               {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
                             </span>
                           </div>
+
+                          {/* 연필 수정 아이콘 (솔로 모드와 100% 동일 위치/기능) */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (meal.id === 1 || meal.id === 2 || meal.id === 3 || typeof meal.id === "number") {
+                                toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
+                                return
+                              }
+                              setEditingMeal({
+                                id: meal.id,
+                                mealType: meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : "외식",
+                                menuName: meal.title,
+                                linkUrl: meal.linkUrl,
+                                linkThumbnail: meal.linkThumbnail,
+                                image: meal.image,
+                                description: (meal as any).description || ""
+                              } as any)
+                              setEditModalOpen(true)
+                            }}
+                            className="absolute top-2.5 right-2.5 size-7 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-foreground hover:bg-white shadow-md transition-all hover:scale-110 active:scale-95 z-20 cursor-pointer"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
                         </div>
 
                         {/* 오른쪽: 식사 정보 또는 식당 링크 */}
@@ -2920,7 +2908,7 @@ export function FamilyPage({
                         <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
                         <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
                       </div>
-                    </button>
+                    </div>
 
                     <div className="px-4 pb-3 pt-2">
                       <button
