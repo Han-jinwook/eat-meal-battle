@@ -3607,8 +3607,8 @@ export function FamilyPage({
                       <span>{formatCardDate(item.date, item.time)}</span>
                     </span>
                   )}
-                  {/* 수정 버튼 */}
-                  {!isSampleItem && (item.userId === user?.id || isChef) && (
+                  {/* 수정 버튼 (샘플 카드 포함 상시 노출) */}
+                  {(item.userId === user?.id || isChef) && (
                     <button
                       onClick={() => {
                         setEditingPlan({ ...item, isWishlist: isWishlistCard })
@@ -3627,13 +3627,13 @@ export function FamilyPage({
               <div className="px-4 pb-3 flex items-start justify-between gap-3">
                 {/* 좌측 텍스트 & 정보 구역 */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 flex-wrap">
+                  <div className="min-w-0 w-full">
+                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full">
                       {/* 식사 분류 배지 - 메뉴명 바로 앞으로 이동 */}
                       <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
                         {item.mealType}
                       </span>
-                      <span>{item.menu}</span>
+                      <span className="truncate flex-1">{item.menu}</span>
                     </h4>
                   </div>
 
