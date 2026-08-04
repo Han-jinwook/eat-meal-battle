@@ -714,6 +714,14 @@ export function FamilyPage({
   }, [meals])
 
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingMeal, setEditingMeal] = useState<MealLogData | null>(null)
+
+  const isSampleMeal = (mealId: string | number) => {
+    if (mealId === 1 || mealId === 2 || mealId === 3) return true
+    if (typeof mealId === "string" && (mealId.startsWith("sample-") || mealId === "1" || mealId === "2" || mealId === "3")) return true
+    return false
+  }
   const [vote, setVote] = useState<ActiveVote | null>(activeVote)
   const [selectedMealId, setSelectedMealId] = useState<string | number | null>(null)
   const [mealCommentInput, setMealCommentInput] = useState("")
@@ -982,6 +990,231 @@ export function FamilyPage({
     } catch (err) {
       console.error("Failed to save meal shared to Supabase:", err)
       toast.error("백그라운드 식사 공유 저장에 실패했습니다.")
+    }
+  }
+
+  const handleEditMealClick = (meal: SharedMeal) => {
+    if (isSampleMeal(meal.id)) {
+      toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+
+    let meta: any = {}
+    if (meal.rawExplanation) {
+      try {
+        meta = JSON.parse(meal.rawExplanation)
+      } catch (e) {
+        meta = {}
+      }
+    }
+
+    const mealTypeMap: Record<string, "집밥" | "배달" | "외식"> = {
+      homemade: "집밥",
+      delivery: "배달",
+      dining: "외식",
+      집밥: "집밥",
+      배달: "배달",
+      외식: "외식"
+    }
+
+    const editData: MealLogData = {
+      id: meal.id,
+      mealType: mealTypeMap[meal.mealType] || "집밥",
+      menuName: meal.title,
+      image: meal.image,
+      description: meta.description || "",
+      recipe: (meta.tips || []).join("\n"),
+      linkUrl: meal.linkUrl || meta.linkUrl || "",
+      linkThumbnail: meal.linkThumbnail || meta.linkThumbnail || "",
+      deliveryStoreName: meal.mealType === "delivery" ? (meal.placeName || meta.placeName) : undefined,
+      place: (meal.placeName || meta.placeName) ? { name: meal.placeName || meta.placeName, address: meta.placeAddress || "", category: "" } : undefined
+    }
+
+    setEditingMeal(editData)
+    setEditModalOpen(true)
+  }
+
+  const handleDeleteMealClick = async (mealId: string | number) => {
+    if (isSampleMeal(mealId)) {
+      toast("샘플이라 삭제가 되지 않습니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    try {
+      await secureWrite({
+        table: "comments",
+        action: "delete",
+        filters: { meal_id: mealId }
+      })
+    } catch (e) {
+      console.warn("Failed to delete comments for meal:", e)
+    }
+
+    try {
+      await secureWrite({
+        table: "meal_images",
+        action: "delete",
+        filters: { id: mealId }
+      })
+
+      setMeals(prev => prev.filter(m => m.id !== mealId))
+      setEditModalOpen(false)
+      setEditingMeal(null)
+      toast.success("식사 기록이 삭제되었습니다.")
+    } catch (err) {
+      console.error("Failed to delete family meal:", err)
+      toast.error("식사 기록 삭제에 실패했습니다.")
+    }
+  }
+
+  const handleEditMealSave = async (data: MealLogData) => {
+    if (!data.id || isSampleMeal(data.id)) return
+
+    if (!isLoggedIn || !user?.id) {
+      toast.error("로그인이 필요한 작업입니다.")
+      return
+    }
+
+    const mealUuid = data.id
+    const mealTypeMap = {
+      "집밥": "homemade" as const,
+      "배달": "delivery" as const,
+      "외식": "dining" as const
+    }
+    const mappedMealType = mealTypeMap[data.mealType] || "homemade"
+    const effectiveImage = data.image || data.linkThumbnail || "/images/placeholder-food.jpg"
+    const effectiveTitle = data.menuName?.trim() || data.place?.name || "맛있는 식사"
+
+    // 1. Optimistic update
+    setMeals(prev => prev.map(m => {
+      if (m.id === mealUuid) {
+        return {
+          ...m,
+          image: effectiveImage,
+          title: effectiveTitle,
+          mealType: mappedMealType,
+          linkUrl: data.linkUrl || "",
+          linkThumbnail: data.linkThumbnail || "",
+          placeName: data.place?.name || data.deliveryStoreName || "",
+          rawExplanation: JSON.stringify({
+            title: effectiveTitle,
+            mealType: mappedMealType,
+            rating: 0,
+            tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+            placeName: data.place?.name || data.deliveryStoreName || "",
+            placeAddress: data.place?.address || "",
+            description: data.description || "",
+            linkUrl: data.linkUrl || "",
+            linkThumbnail: data.linkThumbnail || ""
+          })
+        }
+      }
+      return m
+    }))
+
+    setEditModalOpen(false)
+    setEditingMeal(null)
+    toast.success("식사 기록이 수정되었습니다.")
+
+    try {
+      let finalImageUrl = effectiveImage
+
+      if (data.image && data.image.startsWith("data:image")) {
+        try {
+          finalImageUrl = await uploadImageToStorage(data.image)
+          setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
+        } catch (uploadErr) {
+          console.error("Image upload failed:", uploadErr)
+          finalImageUrl = data.linkThumbnail || "/images/placeholder-food.jpg"
+          setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
+        }
+      }
+
+      const metadata = {
+        title: effectiveTitle,
+        mealType: mappedMealType,
+        rating: 0,
+        tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+        placeName: data.place?.name || data.deliveryStoreName || "",
+        placeAddress: data.place?.address || "",
+        description: data.description || "",
+        linkUrl: data.linkUrl || "",
+        linkThumbnail: data.linkThumbnail || ""
+      }
+
+      await secureWrite({
+        table: "meal_images",
+        action: "update",
+        data: {
+          image_url: finalImageUrl,
+          explanation: JSON.stringify(metadata),
+          title: effectiveTitle,
+          meal_type: data.mealType,
+          link_url: data.linkUrl || "",
+          place_name: data.place?.name || data.deliveryStoreName || "",
+          place_address: data.place?.address || "",
+          description: data.description || ""
+        },
+        filters: { id: mealUuid }
+      })
+
+      if (data.description !== undefined) {
+        const supabase = createClient()
+        const cleanDesc = data.description.trim()
+        const { data: existingComments } = await supabase
+          .from("comments")
+          .select("id")
+          .eq("meal_id", mealUuid)
+          .eq("user_id", user.id)
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: true })
+
+        if (cleanDesc !== "") {
+          if (existingComments && existingComments.length > 0) {
+            await secureWrite({
+              table: "comments",
+              action: "update",
+              data: {
+                content: cleanDesc,
+                updated_at: new Date().toISOString()
+              },
+              filters: { id: existingComments[0].id }
+            })
+          } else {
+            await secureWrite({
+              table: "comments",
+              action: "insert",
+              data: {
+                id: generateUUID(),
+                meal_id: mealUuid,
+                user_id: user.id,
+                content: cleanDesc,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_deleted: false
+              }
+            })
+          }
+        } else if (existingComments && existingComments.length > 0) {
+          await secureWrite({
+            table: "comments",
+            action: "update",
+            data: {
+              is_deleted: true,
+              updated_at: new Date().toISOString()
+            },
+            filters: { id: existingComments[0].id }
+          })
+        }
+      }
+    } catch (err) {
+      console.error("Failed to edit family meal in Supabase:", err)
+      toast.error("식사 기록 수정 중 오류가 발생했습니다.")
     }
   }
 
@@ -2677,7 +2910,7 @@ export function FamilyPage({
                     )}
                   >
                     {/* 샘플 리본 - 샘플 카드에 100% 지속 노출 */}
-                    {(meal.id === 1 || meal.id === 2 || meal.id === 3 || typeof meal.id === "number") && (
+                    {isSampleMeal(meal.id) && (
                       <div className="absolute top-4 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
                         💡 SAMPLE
                       </div>
@@ -2692,7 +2925,7 @@ export function FamilyPage({
                       )}
                     >
                       <div className="flex h-[190px]">
-                        {/* 왼쪽: 이미지 (클릭 시 솔로 모드처럼 크게 확대 / 우측상단 연필 아이콘 클릭 시 수정 모달) */}
+                        {/* 왼쪽: 이미지 (클릭 시 솔로 모드처럼 크게 확대) */}
                         <div 
                           className="w-1/2 relative overflow-hidden group/img cursor-pointer"
                           onClick={(e) => {
@@ -2712,35 +2945,26 @@ export function FamilyPage({
                               {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
                             </span>
                           </div>
-
-                          {/* 연필 수정 아이콘 (솔로 모드와 100% 동일 위치/기능) */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (meal.id === 1 || meal.id === 2 || meal.id === 3 || typeof meal.id === "number") {
-                                toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
-                                return
-                              }
-                              setEditingMeal({
-                                id: meal.id,
-                                mealType: meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : "외식",
-                                menuName: meal.title,
-                                linkUrl: meal.linkUrl,
-                                linkThumbnail: meal.linkThumbnail,
-                                image: meal.image,
-                                description: (meal as any).description || ""
-                              } as any)
-                              setEditModalOpen(true)
-                            }}
-                            className="absolute top-2.5 right-2.5 size-7 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-foreground hover:bg-white shadow-md transition-all hover:scale-110 active:scale-95 z-20 cursor-pointer"
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
                         </div>
 
                         {/* 오른쪽: 식사 정보 또는 식당 링크 */}
                         <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col overflow-hidden relative">
+                          {/* 연필 수정 아이콘 - 솔로 모드와 100% 동일한 우측 상단 위치(top-1.5 right-1.5) 및 스타일 적용 */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (isSampleMeal(meal.id)) {
+                                toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
+                                return
+                              }
+                              handleEditMealClick(meal)
+                            }}
+                            className="absolute top-1.5 right-1.5 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
+                            title="수정"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
                           {meal.linkUrl ? (
                             (() => {
                               const isKakao = meal.linkUrl.includes("kko.to") || meal.linkUrl.includes("kakao.com")
@@ -3982,11 +4206,17 @@ export function FamilyPage({
           </div>
         </div>
       )}
-      {/* Add Meal Log Modal */}
+      {/* Add / Edit Meal Log Modal */}
       <AddLogModal
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSave={handleAddMealSave}
+        isOpen={addModalOpen || editModalOpen}
+        onClose={() => {
+          setAddModalOpen(false)
+          setEditModalOpen(false)
+          setEditingMeal(null)
+        }}
+        editData={editingMeal}
+        onSave={editingMeal ? handleEditMealSave : handleAddMealSave}
+        onDelete={editingMeal && editingMeal.id ? () => handleDeleteMealClick(editingMeal.id!) : undefined}
         mode="family"
         registeredDeliveryStores={registeredDeliveryStores}
       />
