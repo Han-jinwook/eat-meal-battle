@@ -2791,7 +2791,7 @@ export function FamilyPage({
                       className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
                     />
                     {member.role === "chef" && (
-                      <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족 셰프 👨‍🍳">
+                      <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족셰프-메뉴결정권자">
                         셰
                       </div>
                     )}
@@ -3650,23 +3650,6 @@ export function FamilyPage({
 
         return (
           <div className="flex flex-col gap-4">
-            {/* 셰프 정보 바 (방장에게는 표시하지 않음) */}
-            {!isFamilyOwner && (
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 flex items-center gap-3">
-                <div className="size-8 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-                  <ChefHat className="size-4.5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-orange-700 truncate">
-                    👨‍🍳 {chef ? `${chef.name === "나" ? "나" : chef.name}가 오늘의 셰프` : "방장이 임시 셰프"}
-                  </p>
-                  <p className="text-[10px] text-orange-600 truncate">
-                    셰프가 위시리스트를 보고 날짜를 잡아줄 거예요
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* 검색어 입력 및 정렬 (솔로와 동일) */}
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
