@@ -3481,12 +3481,40 @@ export function FamilyPage({
           const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
 
           // 작성자 메타데이터 (헤더 노출)
+          const isSampleUser = String(item.userId).startsWith("sample-")
+          const sampleNameMap: Record<string, string> = {
+            "sample-user-1": "엄마",
+            "sample-user-2": "아빠",
+            "sample-user-3": "동생"
+          }
+          const sampleAvatarMap: Record<string, string> = {
+            "sample-user-1": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face",
+            "sample-user-2": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+            "sample-user-3": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face"
+          }
+
           const cardUser = members.find(m => m.userId === item.userId)
-          const avatarUrl = item.userId === user?.id ? user?.avatar_url : cardUser?.avatar
-          const nickname = item.userId === user?.id
-            ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
-            : (cardUser?.name || "가족")
-          const formattedTime = item.createdAt ? formatTimeAgo(item.createdAt) : "방금 전"
+          const avatarUrl = isSampleUser 
+            ? sampleAvatarMap[item.userId]
+            : (item.userId === user?.id ? user?.avatar_url : cardUser?.avatar)
+
+          const nickname = isSampleUser
+            ? sampleNameMap[item.userId] || "가족"
+            : (item.userId === user?.id
+              ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
+              : (cardUser?.name || "가족"))
+
+          const sampleTimeMap: Record<string, string> = {
+            "sample-wish-1": "어제",
+            "sample-wish-2": "2일 전",
+            "sample-wish-3": "3일 전",
+            "sample-res-1": "어제",
+            "sample-res-2": "2일 전",
+            "sample-res-3": "3일 전"
+          }
+          const formattedTime = isSampleItem
+            ? (sampleTimeMap[item.id] || "3일 전")
+            : (item.createdAt ? formatTimeAgo(item.createdAt) : "방금 전")
 
           return (
             <div 
