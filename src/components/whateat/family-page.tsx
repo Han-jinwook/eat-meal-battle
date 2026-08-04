@@ -3131,38 +3131,54 @@ export function FamilyPage({
                             const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
                             const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
                             return (
-                              <div className="flex flex-col items-end gap-1 select-none">
+                              <div className="flex items-center gap-1.5 select-none shrink-0">
                                 {isOpen ? (
                                   <>
-                                    <div className="flex items-center gap-1 text-orange-500 font-bold text-xs bg-orange-50 border border-orange-100 rounded-full px-2.5 py-0.5 shadow-sm">
-                                      <Star className="size-3.5 fill-orange-400 text-orange-400" />
-                                      <span>평가중 ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명 참여)</span>
+                                    {/* 5성 인터랙티브 별점 (내 별점 평가) */}
+                                    <div className="flex items-center gap-0.5 text-orange-500">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                          key={star}
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, star)
+                                          }}
+                                          className="hover:scale-125 active:scale-95 transition-transform"
+                                          title={`별점 ${star}점 남기기`}
+                                        >
+                                          <Star
+                                            className={cn(
+                                              "size-4",
+                                              star <= myRating ? "fill-orange-400 text-orange-400" : "text-gray-300"
+                                            )}
+                                          />
+                                        </button>
+                                      ))}
                                     </div>
-                                    {myRating > 0 ? (
-                                      <span className="text-[9px] text-green-600 font-bold bg-green-50 border border-green-100 rounded-full px-2 py-0.2 shrink-0">
-                                        ✅ 내 별점: {myRating}점
-                                      </span>
-                                    ) : (
-                                      <span className="text-[9px] text-orange-600 font-extrabold bg-orange-100/60 border border-orange-200 rounded-full px-2 py-0.2 shrink-0 animate-pulse">
-                                        ⚠️ 내 별점 미등록
-                                      </span>
-                                    )}
+                                    <span className="text-[11px] font-bold text-muted-foreground ml-0.5">
+                                      ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
+                                    </span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" title="평가 진행 중" />
                                   </>
                                 ) : (
                                   <>
-                                    <div className="flex items-center gap-1 text-gray-500 font-bold text-xs bg-gray-50 border border-gray-100 rounded-full px-2.5 py-0.5">
-                                      <Star className="size-3.5 fill-gray-400 text-gray-400" />
-                                      <span>마감 ({averageRating.toFixed(1)}점 / {totalRatedCount}명 참여)</span>
+                                    {/* 마감된 평균 별점 표시 */}
+                                    <div className="flex items-center gap-0.5 text-gray-400">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                          key={star}
+                                          className={cn(
+                                            "size-3.5",
+                                            star <= Math.round(averageRating) ? "fill-gray-400 text-gray-400" : "text-gray-200"
+                                          )}
+                                        />
+                                      ))}
                                     </div>
-                                    {myRating > 0 ? (
-                                      <span className="text-[9px] text-gray-400 font-medium">
-                                        (내 참여: {myRating}점)
-                                      </span>
-                                    ) : (
-                                      <span className="text-[9px] text-gray-400 font-medium">
-                                        (내 평가 없음)
-                                      </span>
-                                    )}
+                                    <span className="text-[11px] font-bold text-muted-foreground/75 ml-0.5">
+                                      ({averageRating.toFixed(1)}점 / {totalRatedCount}명)
+                                    </span>
+                                    <span className="text-[9px] bg-gray-100 text-gray-500 font-semibold px-1 rounded">마감</span>
                                   </>
                                 )}
                               </div>
