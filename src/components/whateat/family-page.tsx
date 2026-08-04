@@ -959,6 +959,7 @@ export function FamilyPage({
           rating: 0,
           meal_type: data.mealType,
           link_url: data.linkUrl || "",
+          link_thumbnail: data.linkThumbnail || "",
           place_name: data.place?.name || data.deliveryStoreName || "",
           place_address: data.place?.address || "",
           description: data.description || ""
@@ -1027,7 +1028,7 @@ export function FamilyPage({
       linkUrl: meal.linkUrl || meta.linkUrl || "",
       linkThumbnail: meal.linkThumbnail || meta.linkThumbnail || "",
       deliveryStoreName: meal.mealType === "delivery" ? (meal.placeName || meta.placeName) : undefined,
-      place: (meal.placeName || meta.placeName) ? { name: meal.placeName || meta.placeName, address: meta.placeAddress || "", category: "" } : undefined
+      place: (meal.placeName || meta.placeName) ? { name: meal.placeName || meta.placeName, address: meal.placeAddress || meta.placeAddress || "", category: "" } : undefined
     }
 
     setEditingMeal(editData)
@@ -1156,6 +1157,7 @@ export function FamilyPage({
           title: effectiveTitle,
           meal_type: data.mealType,
           link_url: data.linkUrl || "",
+          link_thumbnail: data.linkThumbnail || "",
           place_name: data.place?.name || data.deliveryStoreName || "",
           place_address: data.place?.address || "",
           description: data.description || ""
@@ -1374,7 +1376,7 @@ export function FamilyPage({
         return {
           id: img.id,
           image: img.image_url,
-          title: meta.title || "맛있는 식사",
+          title: img.title || meta.title || "맛있는 식사",
           sharedBy: img.uploaded_by === user?.id ? "나" : uploaderName,
           sharedAt: formattedDate,
           sharedAtIso: img.created_at,
@@ -1382,10 +1384,10 @@ export function FamilyPage({
           mealMenuId: img.meal_id,
           doNotPromote: meta.doNotPromote || false,
           rawExplanation: img.explanation || '',
-          linkUrl: meta.linkUrl,
-          linkThumbnail: meta.linkThumbnail,
-          placeName: meta.placeName,
-          placeAddress: meta.placeAddress || "",
+          linkUrl: img.link_url || meta.linkUrl || "",
+          linkThumbnail: img.link_thumbnail || meta.linkThumbnail || "",
+          placeName: img.place_name || meta.placeName || "",
+          placeAddress: img.place_address || meta.placeAddress || "",
           status: img.status
         }
       })
