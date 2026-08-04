@@ -2025,22 +2025,34 @@ export function FamilyPage({
   }
 
   const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
+    toast(`별점 등록 요청: ${score}점`, { icon: "⏳" })
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
       setMealRatings((prev) => {
         const next = { ...prev }
         next[mealId] = { ...(next[mealId] ?? {}), [memberId]: score }
         return next
       })
+      toast.success("샘플 별점 등록 완료!")
       return
     }
 
     const targetMeal = baseMeals.find((meal) => meal.id === mealId)
-    if (!targetMeal || memberId !== currentFamilyMemberId || !isMealRatingOpen(targetMeal)) {
+    if (!targetMeal) {
+      toast.error("식사 데이터를 찾을 수 없습니다.")
+      return
+    }
+    if (memberId !== currentFamilyMemberId) {
+      toast.error(`본인만 평가할 수 있습니다. (memberId: ${memberId}, current: ${currentFamilyMemberId})`)
+      return
+    }
+    if (!isMealRatingOpen(targetMeal)) {
+      toast.error("평가 기간이 마감되었습니다.")
       return
     }
 
     if (!isLoggedIn || !user?.id) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))
+      toast.error("로그인이 필요합니다.")
       return
     }
 
@@ -2049,17 +2061,21 @@ export function FamilyPage({
       const ratingTargetId = targetMeal.mealMenuId || targetMeal.id
 
       if (!ratingTargetId) {
-        console.error("Cannot rate meal: invalid target ID")
+        toast.error("유효하지 않은 식사 식별자입니다.")
         return
       }
 
       // Check if user already rated this meal
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchErr } = await supabase
         .from('meal_ratings')
         .select('id')
         .eq('user_id', user.id)
         .eq('meal_id', ratingTargetId)
         .limit(1)
+
+      if (fetchErr) {
+        throw fetchErr
+      }
 
       if (existing && existing.length > 0) {
         await secureWrite({
@@ -2081,11 +2097,14 @@ export function FamilyPage({
         })
       }
 
+      toast.success("별점이 등록되었습니다! ⭐️")
+
       // Sync state by reloading family data
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save rating to Supabase", err)
+      toast.error(`별점 저장 실패: ${err?.message || err}`)
     }
   }
 
