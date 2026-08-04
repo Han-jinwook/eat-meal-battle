@@ -865,6 +865,8 @@ export function FamilyPage({
       "외식": "dining" as const
     }
     const mappedMealType = mealTypeMap[data.mealType] || "homemade"
+    const effectiveImage = data.image || data.linkThumbnail || "/images/placeholder-food.jpg"
+    const effectiveTitle = data.menuName?.trim() || data.place?.name || "맛있는 식사"
 
     // 1. 낙관적 업데이트 생성
     const optimisticMeal: SharedMeal = {
@@ -873,13 +875,13 @@ export function FamilyPage({
       userAvatar: user.user_metadata?.avatar_url || "/images/avatars/default.png",
       userRole: members.find(m => m.userId === user.id)?.role || "member",
       mealType: mappedMealType,
-      menuName: data.menuName,
+      menuName: effectiveTitle,
       rating: 0,
       tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
       placeName: data.place?.name || data.deliveryStoreName || "",
       placeAddress: data.place?.address || "",
       description: data.description || "",
-      image: data.image || "/images/placeholder-food.jpg",
+      image: effectiveImage,
       date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
       comments: [],
       likes: 0,
@@ -895,9 +897,10 @@ export function FamilyPage({
 
     // 모달 즉각 닫기
     setAddModalOpen(false)
+    toast.success("식사 기록이 등록되었습니다! 🍽️")
 
     try {
-      let finalImageUrl = data.image || "/images/placeholder-food.jpg"
+      let finalImageUrl = effectiveImage
 
       if (data.image && data.image.startsWith("data:image")) {
         try {
@@ -905,13 +908,13 @@ export function FamilyPage({
           setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
         } catch (uploadErr) {
           console.error("Image upload failed:", uploadErr)
-          finalImageUrl = "/images/placeholder-food.jpg"
+          finalImageUrl = data.linkThumbnail || "/images/placeholder-food.jpg"
           setMeals(prev => prev.map(meal => meal.id === mealUuid ? { ...meal, image: finalImageUrl } : meal))
         }
       }
 
       const metadata = {
-        title: data.menuName,
+        title: effectiveTitle,
         mealType: mappedMealType,
         rating: 0,
         tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
@@ -933,7 +936,7 @@ export function FamilyPage({
           explanation: JSON.stringify(metadata),
           source: source,
           status: status,
-          title: data.menuName,
+          title: effectiveTitle,
           rating: 0,
           meal_type: data.mealType,
           link_url: data.linkUrl || "",
@@ -959,8 +962,8 @@ export function FamilyPage({
         })
       }
 
-      // 최종 정합성을 위해 백그라운드 fetch 수행
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+      // 최종 정합성을 위해 백그라운드 fetch 수행 (작성자 ID 본인 포함 보장)
+      const familyUserIds = Array.from(new Set([user.id, ...members.map(m => m.userId).filter(Boolean) as string[]]))
       if (familyUserIds.length > 0) {
         await fetchFamilyData(familyUserIds)
       }

@@ -403,6 +403,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           setRecipeThumbnail(data.image || "")
           setRecipeBrand(data.brand || "generic")
           setLastCrawledRecipeUrl(trimmedLink)
+          if (!menuName.trim()) {
+            setMenuName(data.title)
+          }
         }
       } catch (err) {
         console.error("Recipe Link Crawling failed:", err)
