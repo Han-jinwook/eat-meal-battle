@@ -1768,6 +1768,39 @@ export function FamilyPage({
     }
   }, [members, isLoggedIn, user])
 
+  // Realtime subscription for family updates (meals, ratings, comments, replies)
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return
+
+    const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+    if (familyUserIds.length === 0) return
+
+    const supabase = createClient()
+    const ts = Date.now()
+
+    const channel = supabase
+      .channel(`realtime:family_sync:${ts}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_ratings' }, () => {
+        fetchFamilyData(familyUserIds)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
+        fetchFamilyData(familyUserIds)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_replies' }, () => {
+        fetchFamilyData(familyUserIds)
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_images' }, () => {
+        fetchFamilyData(familyUserIds)
+      })
+      .subscribe((status, err) => {
+        if (err) console.error('[Realtime:family_sync] Error:', err)
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [members, isLoggedIn, user])
+
   const currentFamilyMember = members.find((member) => member.name === "나") ?? members[0]
   const currentFamilyMemberId = currentFamilyMember.id
   const currentFamilyMemberName = currentFamilyMember.name
