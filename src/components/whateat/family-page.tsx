@@ -3594,12 +3594,21 @@ export function FamilyPage({
                   <span>{formattedTime}</span>
                 </div>
 
-                <div className={cn("flex items-center gap-1.5", isSampleItem && "mr-12")}>
-                  <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-extrabold", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
-                    {item.mealType}
-                  </span>
+                <div className={cn("flex items-center gap-2 shrink-0", isSampleItem && "mr-12")}>
+                  {/* 예약 날짜 뱃지 (헤더 우측으로 이동) */}
+                  {!isWishlistCard && item.date && (
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight flex items-center gap-1 shadow-xs border border-white/10 select-none",
+                      item.mealType === "집밥" && "bg-emerald-500 text-white",
+                      item.mealType === "배달" && "bg-sky-500 text-white",
+                      item.mealType === "외식" && "bg-orange-500 text-white"
+                    )}>
+                      <Calendar className="size-2.5 shrink-0" />
+                      <span>{formatCardDate(item.date, item.time)}</span>
+                    </span>
+                  )}
                   {/* 수정 버튼 */}
-                  {(item.userId === user?.id || isChef) && (
+                  {!isSampleItem && (item.userId === user?.id || isChef) && (
                     <button
                       onClick={() => {
                         setEditingPlan({ ...item, isWishlist: isWishlistCard })
@@ -3614,12 +3623,18 @@ export function FamilyPage({
                 </div>
               </div>
 
-              {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일/예약날짜) */}
+              {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
               <div className="px-4 pb-3 flex items-start justify-between gap-3">
                 {/* 좌측 텍스트 & 정보 구역 */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug truncate">{item.menu}</h4>
+                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 flex-wrap">
+                      {/* 식사 분류 배지 - 메뉴명 바로 앞으로 이동 */}
+                      <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
+                        {item.mealType}
+                      </span>
+                      <span>{item.menu}</span>
+                    </h4>
                   </div>
 
                   {/* 장소(MapPin) */}
@@ -3638,7 +3653,7 @@ export function FamilyPage({
                   )}
                 </div>
 
-                {/* 우측 영역 (이미지 + 날짜 배지) */}
+                {/* 우측 영역 (이미지만 남겨두어 세로 두께 최소화) */}
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   {item.thumbnail ? (
                     <div 
@@ -3665,19 +3680,6 @@ export function FamilyPage({
                       )}
                     </div>
                   ) : null}
-
-                  {/* 예약 날짜 뱃지 (우측 정렬, 사진 근처, 식사 타입별 색상 통일 및 강조) */}
-                  {!isWishlistCard && item.date && (
-                    <div className={cn(
-                      "px-2.5 py-1 rounded-xl text-[10px] font-black tracking-tight flex items-center gap-1 shadow-xs border border-white/10 select-none",
-                      item.mealType === "집밥" && "bg-emerald-500 text-white",
-                      item.mealType === "배달" && "bg-sky-500 text-white",
-                      item.mealType === "외식" && "bg-orange-500 text-white"
-                    )}>
-                      <Calendar className="size-3 shrink-0" />
-                      <span>{formatCardDate(item.date, item.time)}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
