@@ -1880,7 +1880,7 @@ export function FamilyPage({
   }
 
   const getMealDeadline = (meal: SharedMeal) => {
-    const deadlineMs = Date.parse(meal.sharedAtIso) + 3 * 60 * 60 * 1000
+    const deadlineMs = Date.parse(meal.sharedAtIso) + 7 * 24 * 60 * 60 * 1000
     return new Date(deadlineMs)
   }
 
