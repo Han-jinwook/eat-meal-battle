@@ -3487,41 +3487,60 @@ export function FamilyPage({
             "sample-user-2": "아빠",
             "sample-user-3": "동생"
           }
-          const sampleAvatarMap: Record<string, string> = {
-            "sample-user-1": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face",
-            "sample-user-2": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-            "sample-user-3": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face"
-          }
 
           const cardUser = members.find(m => m.userId === item.userId)
-          const avatarUrl = isSampleUser 
-            ? sampleAvatarMap[item.userId]
-            : (item.userId === user?.id ? user?.avatar_url : cardUser?.avatar)
-
           const nickname = isSampleUser
             ? sampleNameMap[item.userId] || "가족"
             : (item.userId === user?.id
               ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
               : (cardUser?.name || "가족"))
 
-          const sampleTimeMap: Record<string, string> = {
-            "sample-wish-1": "어제",
-            "sample-wish-2": "2일 전",
-            "sample-wish-3": "3일 전",
-            "sample-res-1": "어제",
-            "sample-res-2": "2일 전",
-            "sample-res-3": "3일 전"
+          const formatMetaDate = (dateStr?: string) => {
+            if (!dateStr) return "26.08.04"
+            try {
+              const d = new Date(dateStr)
+              const yy = String(d.getFullYear()).slice(-2)
+              const mm = String(d.getMonth() + 1).padStart(2, '0')
+              const dd = String(d.getDate()).padStart(2, '0')
+              return `${yy}.${mm}.${dd}`
+            } catch (e) {
+              return "26.08.04"
+            }
+          }
+
+          const sampleDateMap: Record<string, string> = {
+            "sample-wish-1": "26.08.03",
+            "sample-wish-2": "26.08.02",
+            "sample-wish-3": "26.08.01",
+            "sample-res-1": "26.08.03",
+            "sample-res-2": "26.08.02",
+            "sample-res-3": "26.08.01"
           }
           const formattedTime = isSampleItem
-            ? (sampleTimeMap[item.id] || "3일 전")
-            : (item.createdAt ? formatTimeAgo(item.createdAt) : "방금 전")
+            ? (sampleDateMap[item.id] || "26.08.01")
+            : formatMetaDate(item.createdAt)
+
+          // 카드 외관 스타일 (위시리스트 vs 확정 예약 차별화)
+          const borderClass = isWishlistCard
+            ? "border border-dashed border-gray-200 shadow-xs hover:shadow-sm"
+            : cn(
+                "border border-y-gray-200/80 border-r-gray-200/80 border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5",
+                item.mealType === "집밥" && "border-l-emerald-500",
+                item.mealType === "배달" && "border-l-sky-500",
+                item.mealType === "외식" && "border-l-orange-500"
+              )
+          const bgClass = isWishlistCard
+            ? "bg-white"
+            : "bg-gradient-to-br from-amber-50/15 via-white to-white"
 
           return (
             <div 
               key={item.id} 
               className={cn(
-                "bg-white rounded-3xl border border-white shadow-md overflow-hidden relative transition-all hover:shadow-lg",
-                isSampleItem && "opacity-90"
+                "rounded-3xl overflow-hidden relative transition-all duration-200",
+                borderClass,
+                bgClass,
+                isSampleItem && "opacity-95"
               )}
             >
               {/* 샘플 리본 */}
@@ -3533,27 +3552,23 @@ export function FamilyPage({
                 </div>
               )}
 
-              {/* 1. 상단 프로필 헤더 (누가 올렸는지 + 언제 올렸는지) */}
-              <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-                <div className="flex items-center gap-2.5">
-                  <HubAvatar
-                    isLoggedIn={isLoggedIn}
-                    avatarUrl={avatarUrl}
-                    nickname={nickname}
-                    size="sm"
-                    className="!w-9 !h-9 rounded-full border border-white shadow-sm shrink-0"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-foreground">{nickname}</span>
-                    <span className="text-[10px] text-muted-foreground">{formattedTime}</span>
-                  </div>
+              {/* 1. 상단 프로필 헤더 (컴팩트 텍스트형으로 축소) */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+                  <span className="text-foreground font-black">{nickname}</span>
+                  <span className="text-gray-300">·</span>
+                  <span className={cn(isWishlistCard ? "text-slate-500" : "text-amber-600")}>
+                    {isWishlistCard ? "wish" : "plan"}
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span>{formattedTime}</span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
+                  <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-extrabold", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
                     {item.mealType}
                   </span>
-                  {/* 수정 버튼 (수정 모달에서 수정 및 삭제 가능) */}
+                  {/* 수정 버튼 */}
                   {(item.userId === user?.id || isChef) && (
                     <button
                       onClick={() => {
@@ -3563,7 +3578,7 @@ export function FamilyPage({
                       className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
                       title="수정/삭제"
                     >
-                      <Pencil className="size-3.5" />
+                      <Pencil className="size-3" />
                     </button>
                   )}
                 </div>
