@@ -2011,18 +2011,14 @@ export function FamilyPage({
   }
 
   const checkFamilyConsentAndRate = async (mealId: string | number, memberId: number, score: number) => {
-    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 별점 수정 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-      return
-    }
-
     // 1. 패밀리 평점 저장
     await saveFamilyRating(mealId, memberId, score)
 
-    // 2. 가족 중 1명이라도 5점 평가 시 맛톡(TasteTalk) 피드로 자동 승격!
+    // 2. 가족 중 1명이라도 5점 평가 시 맛톡(TasteTalk) 피드로 자동 승격! (샘플 제외)
+    const isSample = typeof mealId === "string" && mealId.startsWith("sample-")
     const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
     const has5Star = score === 5 || Object.values(currentRatingMap).some((s) => s === 5)
-    if (has5Star) {
+    if (has5Star && !isSample) {
       await tryPromoteMealToTalk(mealId, currentRatingMap)
       toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
     }
