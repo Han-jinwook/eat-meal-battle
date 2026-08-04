@@ -3215,8 +3215,11 @@ export function FamilyPage({
                               <div className="flex items-center gap-1.5 select-none shrink-0">
                                 {isOpen ? (
                                   <>
-                                    {/* 5성 인터랙티브 별점 (내 별점 평가) */}
-                                    <div className="flex items-center gap-0.5 text-orange-500">
+                                    {/* 5성 인터랙티브 별점 (내 별점 평가) - 클릭 전파 차단하여 모달 팝업 방지 */}
+                                    <div 
+                                      className="flex items-center gap-0.5 text-orange-500"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       {[1, 2, 3, 4, 5].map((star) => (
                                         <button
                                           key={star}
@@ -3237,15 +3240,19 @@ export function FamilyPage({
                                         </button>
                                       ))}
                                     </div>
-                                    <span className="text-[11px] font-bold text-muted-foreground ml-0.5">
+                                    {/* 평점 텍스트: 클릭 시 부모로 전파되어 상세 평가 모달 오픈 */}
+                                    <span className="text-[11px] font-bold text-muted-foreground ml-0.5 hover:text-foreground cursor-pointer transition-colors">
                                       ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
                                     </span>
                                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" title="평가 진행 중" />
                                   </>
                                 ) : (
                                   <>
-                                    {/* 마감된 평균 별점 표시 */}
-                                    <div className="flex items-center gap-0.5 text-gray-400">
+                                    {/* 마감된 평균 별점 표시 - 클릭 전파 차단하여 모달 팝업 방지 */}
+                                    <div 
+                                      className="flex items-center gap-0.5 text-gray-400"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       {[1, 2, 3, 4, 5].map((star) => (
                                         <Star
                                           key={star}
@@ -3256,7 +3263,8 @@ export function FamilyPage({
                                         />
                                       ))}
                                     </div>
-                                    <span className="text-[11px] font-bold text-muted-foreground/75 ml-0.5">
+                                    {/* 평점 텍스트: 클릭 시 부모로 전파되어 상세 평가 모달 오픈 */}
+                                    <span className="text-[11px] font-bold text-muted-foreground/75 ml-0.5 hover:text-foreground cursor-pointer transition-colors">
                                       ({averageRating.toFixed(1)}점 / {totalRatedCount}명)
                                     </span>
                                     <span className="text-[9px] bg-gray-100 text-gray-500 font-semibold px-1 rounded">마감</span>
