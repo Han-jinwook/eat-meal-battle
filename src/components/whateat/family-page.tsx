@@ -2025,47 +2025,38 @@ export function FamilyPage({
   }
 
   const saveFamilyRating = async (mealId: string | number, memberId: number, score: number) => {
-    toast(`별점 등록 요청: ${score}점`, { icon: "⏳" })
+    // 샘플 카드: 로컬 상태에만 즉시 반영
     if (typeof mealId === "string" && mealId.startsWith("sample-")) {
       setMealRatings((prev) => {
         const next = { ...prev }
         next[mealId] = { ...(next[mealId] ?? {}), [memberId]: score }
         return next
       })
-      toast.success("샘플 별점 등록 완료!")
       return
     }
 
     const targetMeal = baseMeals.find((meal) => meal.id === mealId)
-    if (!targetMeal) {
-      toast.error("식사 데이터를 찾을 수 없습니다.")
-      return
-    }
-    if (memberId !== currentFamilyMemberId) {
-      toast.error(`본인만 평가할 수 있습니다. (memberId: ${memberId}, current: ${currentFamilyMemberId})`)
-      return
-    }
-    if (!isMealRatingOpen(targetMeal)) {
-      toast.error("평가 기간이 마감되었습니다.")
+    if (!targetMeal) return
+    if (memberId !== currentFamilyMemberId) return
+    if (!isMealRatingOpen(targetMeal)) return
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
       return
     }
 
-    if (!isLoggedIn || !user?.id) {
-      window.dispatchEvent(new CustomEvent('openLoginModal'))
-      toast.error("로그인이 필요합니다.")
-      return
-    }
+    // 낙관적(optimistic) UI 업데이트: 클릭 즉시 별에 색 반영
+    const prevRatings = mealRatings
+    setMealRatings((prev) => {
+      const next = { ...prev }
+      next[mealId] = { ...(next[mealId] ?? {}), [memberId]: score }
+      return next
+    })
 
     try {
       const supabase = createClient()
       const ratingTargetId = targetMeal.mealMenuId || targetMeal.id
+      if (!ratingTargetId) return
 
-      if (!ratingTargetId) {
-        toast.error("유효하지 않은 식사 식별자입니다.")
-        return
-      }
-
-      // Check if user already rated this meal
       const { data: existing, error: fetchErr } = await supabase
         .from('meal_ratings')
         .select('id')
@@ -2073,9 +2064,7 @@ export function FamilyPage({
         .eq('meal_id', ratingTargetId)
         .limit(1)
 
-      if (fetchErr) {
-        throw fetchErr
-      }
+      if (fetchErr) throw fetchErr
 
       if (existing && existing.length > 0) {
         await secureWrite({
@@ -2097,14 +2086,13 @@ export function FamilyPage({
         })
       }
 
-      toast.success("별점이 등록되었습니다! ⭐️")
-
-      // Sync state by reloading family data
+      // 저장 성공 후 서버 데이터 동기화
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
     } catch (err: any) {
+      // 실패 시 낙관적 업데이트 롤백
+      setMealRatings(prevRatings)
       console.error("Failed to save rating to Supabase", err)
-      toast.error(`별점 저장 실패: ${err?.message || err}`)
     }
   }
 
