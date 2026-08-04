@@ -33,7 +33,7 @@ import {
   UserMinus,
   Users,
 } from "lucide-react"
-import { cn, formatPlaceNameWithRegion } from "@/lib/utils"
+import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
@@ -2901,6 +2901,30 @@ export function FamilyPage({
                 const averageRating = getMealAverageRating(meal.id)
                 const shouldHighlight = isOpen && !dismissedMealHighlightIds.includes(meal.id)
 
+                const placeAddress = (() => {
+                  if (meal.rawExplanation) {
+                    try {
+                      const meta = JSON.parse(meal.rawExplanation)
+                      return meta.placeAddress || ""
+                    } catch (e) {}
+                  }
+                  return ""
+                })()
+
+                const getCleanDate = (m: SharedMeal) => {
+                  if (m.sharedAtIso) {
+                    const d = new Date(m.sharedAtIso)
+                    if (!isNaN(d.getTime())) {
+                      const y = d.getFullYear()
+                      const mStr = String(d.getMonth() + 1).padStart(2, "0")
+                      const dateVal = String(d.getDate()).padStart(2, "0")
+                      return `${y}.${mStr}.${dateVal}`
+                    }
+                  }
+                  return m.sharedAt
+                }
+                const cleanDate = getCleanDate(meal)
+
                 return (
                   <div
                     key={meal.id}
@@ -3118,14 +3142,55 @@ export function FamilyPage({
                         </div>
                       </div>
 
-                      {/* Card Footer: Title, Date, Average Rating */}
-                      <div className="px-5 pt-4 pb-1">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase flex items-center gap-1.5">
-                            {meal.sharedAt}
-                            {meal.mealType === "homemade" && (
-                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold">홈쉐퍼</span>
+                      {/* Place info bar - 외식/배달 (Row 1) */}
+                      {(meal.mealType === "dining" || meal.mealType === "delivery" || meal.mealType === "외식" || meal.mealType === "배달") && meal.placeName && (
+                        <div
+                          className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
+                          }}
+                        >
+                          {meal.linkUrl && (meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com")) ? (
+                            <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                              <span className="text-white text-[8px] font-black">N</span>
+                            </div>
+                          ) : (
+                            <div className="size-5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
+                              <MapPin className="size-3 text-orange-500" />
+                            </div>
+                          )}
+                          <span className="text-[11px] font-bold text-foreground truncate flex items-center">
+                            <span className="truncate">{meal.placeName}</span>
+                            {placeAddress && (
+                              <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
+                                {(() => {
+                                  let defaultCity = ""
+                                  let defaultGu = ""
+                                  let defaultDong = ""
+                                  if (userRegion) {
+                                    try {
+                                      const parsedReg = JSON.parse(userRegion)
+                                      defaultCity = parsedReg.city || ""
+                                      defaultGu = parsedReg.gu || ""
+                                      defaultDong = parsedReg.dong || ""
+                                    } catch (ex) {}
+                                  }
+                                  const parsed = parseRegionFromAddress(placeAddress, defaultCity, defaultGu, defaultDong)
+                                  return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
+                                })()}
+                              </span>
                             )}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Card Footer: Title, Date, Average Rating */}
+                      <div className="px-5 pt-2.5 pb-3 flex flex-col">
+                        {/* Row 2 (Date & Rating) */}
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
+                            {cleanDate}
                           </p>
                           {(() => {
                             const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
@@ -3185,8 +3250,21 @@ export function FamilyPage({
                             )
                           })()}
                         </div>
-                        <h3 className="font-bold text-foreground text-[16px] leading-snug mb-1 truncate">{meal.title}</h3>
-                        <p className="text-[10px] text-muted-foreground/80 mb-2">by {meal.sharedBy}</p>
+                        {/* Row 3 (Menu Name & Type Badge) */}
+                        <div className="flex items-center justify-between mb-0.5 gap-2">
+                          <h3 className="font-bold text-foreground text-[16px] leading-snug truncate flex items-center" title={`(by ${meal.sharedBy}) ${meal.title}`}>
+                            <span className="text-muted-foreground font-medium text-xs mr-1.5 shrink-0">(by {meal.sharedBy})</span>
+                            <span className="truncate">{meal.title}</span>
+                          </h3>
+                          <span className={cn(
+                            "shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold",
+                            meal.mealType === "homemade" ? "bg-green-50 text-green-600" :
+                            meal.mealType === "delivery" ? "bg-blue-50 text-blue-600" :
+                            "bg-purple-50 text-purple-600"
+                          )}>
+                            {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : "외식"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
