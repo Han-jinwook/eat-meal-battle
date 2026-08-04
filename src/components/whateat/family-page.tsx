@@ -868,28 +868,39 @@ export function FamilyPage({
     const effectiveImage = data.image || data.linkThumbnail || "/images/placeholder-food.jpg"
     const effectiveTitle = data.menuName?.trim() || data.place?.name || "맛있는 식사"
 
+    const nowIso = new Date().toISOString()
+    const formattedDate = new Date().toLocaleDateString('ko-KR', {
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
     // 1. 낙관적 업데이트 생성
     const optimisticMeal: SharedMeal = {
       id: mealUuid,
-      userName: user.user_metadata?.full_name || user.email?.split("@")[0] || "나",
-      userAvatar: user.user_metadata?.avatar_url || "/images/avatars/default.png",
-      userRole: members.find(m => m.userId === user.id)?.role || "member",
-      mealType: mappedMealType,
-      menuName: effectiveTitle,
-      rating: 0,
-      tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
-      placeName: data.place?.name || data.deliveryStoreName || "",
-      placeAddress: data.place?.address || "",
-      description: data.description || "",
       image: effectiveImage,
-      date: data.date ? toDisplayDate(data.date) : toDisplayDate(toIsoDate(new Date())),
-      comments: [],
-      likes: 0,
-      likedByMe: false,
-      ratingsCount: 0,
-      ratingsSum: 0,
+      title: effectiveTitle,
+      sharedBy: user.user_metadata?.full_name || user.email?.split("@")[0] || "나",
+      sharedAt: formattedDate,
+      sharedAtIso: nowIso,
+      mealType: mappedMealType,
+      mealMenuId: mealUuid,
+      rawExplanation: JSON.stringify({
+        title: effectiveTitle,
+        mealType: mappedMealType,
+        rating: 0,
+        tips: data.recipe?.split("\n").filter((t) => t.trim()) || [],
+        placeName: data.place?.name || data.deliveryStoreName || "",
+        placeAddress: data.place?.address || "",
+        description: data.description || "",
+        linkUrl: data.linkUrl || "",
+        linkThumbnail: data.linkThumbnail || ""
+      }),
       linkUrl: data.linkUrl || "",
-      linkThumbnail: data.linkThumbnail || ""
+      linkThumbnail: data.linkThumbnail || "",
+      placeName: data.place?.name || data.deliveryStoreName || "",
+      status: status
     }
 
     // 로컬 상태 즉시 추가 (렉 없이 피드에 바로 렌더링!)
