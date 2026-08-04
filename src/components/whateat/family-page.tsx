@@ -1326,13 +1326,13 @@ export function FamilyPage({
         allReplies = repliesData || []
       }
 
-      // 3. Fetch ratings for these mealMenuIds
+      // 3. Fetch ratings for these target IDs
       let allRatings: any[] = []
-      if (mealMenuIds.length > 0) {
+      if (allTargetIds.length > 0) {
         const { data: ratingsData } = await supabase
           .from('meal_ratings')
           .select('*')
-          .in('meal_id', mealMenuIds)
+          .in('meal_id', allTargetIds)
         allRatings = ratingsData || []
       }
 
@@ -1434,12 +1434,12 @@ export function FamilyPage({
       // Map ratings
       const ratingsByMealId: Record<string, Record<number, number>> = {}
       imgData.forEach(img => {
-        const mealMenuId = img.meal_id
+        const targetId = img.meal_id || img.id
         const imgId = img.id
         const mealRatingsMap: Record<number, number> = {}
 
         allRatings
-          .filter(rt => rt.meal_id === mealMenuId)
+          .filter(rt => rt.meal_id === targetId)
           .forEach(rt => {
             const foundMember = members.find(m => m.userId === rt.user_id)
             if (foundMember) {
@@ -2050,10 +2050,10 @@ export function FamilyPage({
 
     try {
       const supabase = createClient()
-      const mealMenuId = targetMeal.mealMenuId
+      const ratingTargetId = targetMeal.mealMenuId || targetMeal.id
 
-      if (!mealMenuId) {
-        console.error("Cannot rate meal without a valid mealMenuId")
+      if (!ratingTargetId) {
+        console.error("Cannot rate meal: invalid target ID")
         return
       }
 
@@ -2062,7 +2062,7 @@ export function FamilyPage({
         .from('meal_ratings')
         .select('id')
         .eq('user_id', user.id)
-        .eq('meal_id', mealMenuId)
+        .eq('meal_id', ratingTargetId)
         .limit(1)
 
       if (existing && existing.length > 0) {
@@ -2079,7 +2079,7 @@ export function FamilyPage({
           data: {
             id: generateUUID(),
             user_id: user.id,
-            meal_id: mealMenuId,
+            meal_id: ratingTargetId,
             rating: score
           }
         })
@@ -2145,7 +2145,8 @@ export function FamilyPage({
     }
 
     const targetMeal = baseMeals.find(m => m.id === mealId)
-    if (!targetMeal || !targetMeal.mealMenuId) return
+    if (!targetMeal) return
+    const commentTargetId = targetMeal.mealMenuId || targetMeal.id
 
     if (!isLoggedIn || !user?.id) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))
@@ -2159,7 +2160,7 @@ export function FamilyPage({
         action: 'insert',
         data: {
           id: commentUuid,
-          meal_id: targetMeal.mealMenuId,
+          meal_id: commentTargetId,
           user_id: user.id,
           content: content,
           is_deleted: false
