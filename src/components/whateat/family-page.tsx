@@ -3893,17 +3893,6 @@ export function FamilyPage({
                     <span>📅 확정 예약 목록</span>
                     <span className="text-xs text-orange-500 font-bold">({filteredReservations.length})</span>
                   </h3>
-                  {isChef && (
-                    <button
-                      onClick={() => {
-                        setEditingPlan(null)
-                        setIsAddReservationOpen(true)
-                      }}
-                      className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline"
-                    >
-                      <Plus className="size-3" /> 예약 추가
-                    </button>
-                  )}
                 </div>
                 {filteredReservations.map(item => renderCard(item, false))}
               </div>
