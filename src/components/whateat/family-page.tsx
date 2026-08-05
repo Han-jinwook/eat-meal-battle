@@ -3607,8 +3607,8 @@ export function FamilyPage({
                       <span>{formatCardDate(item.date, item.time)}</span>
                     </span>
                   )}
-                  {/* 수정 버튼 (샘플 카드 포함 상시 노출) */}
-                  {(item.userId === user?.id || isChef) && (
+                  {/* 수정 버튼 (모든 구성원 상시 노출) */}
+                  {isLoggedIn && (
                     <button
                       onClick={() => {
                         setEditingPlan({ ...item, isWishlist: isWishlistCard })
@@ -3686,15 +3686,14 @@ export function FamilyPage({
               {/* 5. 맛톡 느낌의 하단 액션 바 (좋아요, 댓글, 셰프 날짜 잡기) */}
               <div className="flex items-center justify-between border-t border-muted/30 px-4 py-2.5 bg-gray-50/30">
                 <div className="flex items-center gap-4">
-                  {isWishlistCard && (
-                    <button
-                      onClick={() => handleToggleWishlistLike(item.id)}
-                      className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"}`}
-                    >
-                      <Heart className={`size-4 ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
-                      <span>좋아요 {likedUsers.length > 0 ? likedUsers.length : ""}</span>
-                    </button>
-                  )}
+                  {/* 좋아요 버튼 (위시리스트와 예약 모두 노출하여 선호도 표시 유지) */}
+                  <button
+                    onClick={() => handleToggleWishlistLike(item.id)}
+                    className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"}`}
+                  >
+                    <Heart className={`size-4 ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
+                    <span>좋아요 {likedUsers.length > 0 ? likedUsers.length : ""}</span>
+                  </button>
                   <button
                     onClick={() => {
                       setActiveMealId(item.id)
