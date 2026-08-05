@@ -535,7 +535,9 @@ const handleSubmit = () => {
           {/* Header */}
           <div className="mb-3">
             <h2 className="text-lg font-extrabold tracking-tight text-foreground">
-              {isEditMode ? "식사 예약 수정" : "나의 식사 예약"}
+              {isEditMode 
+                ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
+                : (isWishlist ? "식사 위시리스트 추가" : "나의 식사 예약")}
             </h2>
           </div>
 
