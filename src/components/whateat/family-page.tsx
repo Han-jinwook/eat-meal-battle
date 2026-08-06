@@ -453,6 +453,13 @@ const getFamilyName = async (supabase: any, uploadedBy: string) => {
   return "우리 가족"
 }
 
+// DB 아바타 URL 및 렌더링 최적화를 위한 O(1) 상수 매핑
+export const AVATAR_MAP: Record<string, string> = {
+  'stark': '/images/avatars/stark-profile.png',
+  'merlin': '/images/avatars/merlin-profile.png',
+  'default': 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=100&h=100&fit=crop&crop=face'
+}
+
 export function FamilyPage({ 
   activeMainTab = "log",
   onTabChange
@@ -1800,9 +1807,43 @@ export function FamilyPage({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_ratings' }, () => {
         fetchFamilyData(familyUserIds)
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () => {
-        fetchFamilyData(familyUserIds)
-        fetchFamilyReservations(familyUserIds)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
+        const newComment = payload.new as any;
+        setMealComments(prev => {
+          const mealId = newComment.meal_id;
+          const existingComments = prev[mealId] || [];
+          if (existingComments.some(c => c.id === newComment.id)) return prev;
+          
+          const u = members.find(m => m.userId === newComment.user_id);
+          const author = newComment.user_id === user?.id ? "나" : (u?.nickname || u?.name || "가족");
+          
+          const mappedComment = {
+            id: newComment.id,
+            userId: newComment.user_id,
+            author,
+            content: newComment.content,
+            createdAt: new Date(newComment.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+            likes: 0,
+            isLiked: false,
+            replies: []
+          };
+          return { ...prev, [mealId]: [...existingComments, mappedComment] };
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'comments' }, (payload) => {
+        const updatedComment = payload.new as any;
+        setMealComments(prev => {
+          const mealId = updatedComment.meal_id;
+          if (!prev[mealId]) return prev;
+          if (updatedComment.is_deleted) {
+            return { ...prev, [mealId]: prev[mealId].filter(c => c.id !== updatedComment.id) };
+          } else {
+            return {
+              ...prev,
+              [mealId]: prev[mealId].map(c => c.id === updatedComment.id ? { ...c, content: updatedComment.content } : c)
+            };
+          }
+        });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_replies' }, () => {
         fetchFamilyData(familyUserIds)
@@ -1814,8 +1855,20 @@ export function FamilyPage({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_reservations' }, () => {
         fetchFamilyReservations(familyUserIds)
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_likes' }, () => {
-        fetchFamilyReservations(familyUserIds)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meal_likes' }, (payload) => {
+        const { meal_id, user_id } = payload.new as any;
+        setWishlistLikes(prev => {
+          const existingLikes = prev[meal_id] || [];
+          if (existingLikes.includes(user_id)) return prev;
+          return { ...prev, [meal_id]: [...existingLikes, user_id] };
+        });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'meal_likes' }, (payload) => {
+        const { meal_id, user_id } = payload.old as any;
+        setWishlistLikes(prev => {
+          const existingLikes = prev[meal_id] || [];
+          return { ...prev, [meal_id]: existingLikes.filter(id => id !== user_id) };
+        });
       })
       .subscribe((status, err) => {
         if (err) console.error('[Realtime:family_sync] Error:', err)
@@ -2209,15 +2262,34 @@ export function FamilyPage({
       || wishlistItems.find(m => m.id === mealId)
       || familyReservations.find(m => m.id === mealId);
     if (!targetMeal) return
-    const commentTargetId = targetMeal.mealMenuId || targetMeal.id
+    const commentTargetId = targetMeal.id
 
     if (!isLoggedIn || !user?.id) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))
       return
     }
 
+    const commentUuid = generateUUID()
+    
+    // 낙관적 업데이트
+    setMealComments(prev => {
+      const existing = prev[commentTargetId] || [];
+      const tempComment = {
+        id: commentUuid,
+        userId: user.id,
+        author: "나",
+        content: content,
+        createdAt: new Date().toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        likes: 0,
+        isLiked: false,
+        replies: []
+      };
+      return { ...prev, [commentTargetId]: [...existing, tempComment] };
+    });
+    
+    setMealCommentInput("")
+
     try {
-      const commentUuid = generateUUID()
       await secureWrite({
         table: 'comments',
         action: 'insert',
@@ -2229,13 +2301,13 @@ export function FamilyPage({
           is_deleted: false
         }
       })
-
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
-      setMealCommentInput("")
     } catch (err: any) {
       console.error("Failed to add comment to Supabase", err)
+      // 에러 발생 시 낙관적 업데이트 롤백
+      setMealComments(prev => {
+        const existing = prev[commentTargetId] || [];
+        return { ...prev, [commentTargetId]: existing.filter(c => c.id !== commentUuid) };
+      });
       toast.error(`댓글 저장에 실패했습니다: ${err.message || err}`)
     }
   }
@@ -2268,9 +2340,6 @@ export function FamilyPage({
         }
       })
 
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
       setMealReplyInput("")
       setActiveReplyTarget(null)
     } catch (err) {
@@ -2303,9 +2372,8 @@ export function FamilyPage({
       setEditingCommentId(null)
       setEditCommentText("")
       
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
+      setEditingCommentId(null)
+      setEditCommentText("")
     } catch (err) {
       console.error("Failed to update comment:", err)
       toast.error("댓글 수정에 실패했습니다.")
@@ -2328,9 +2396,7 @@ export function FamilyPage({
         })
       }
 
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
+
       toast.success("댓글이 삭제되었습니다.")
     } catch (err) {
       console.error("Failed to delete comment:", err)
@@ -2363,9 +2429,7 @@ export function FamilyPage({
       setEditingReplyId(null)
       setEditReplyText("")
 
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
+
     } catch (err) {
       console.error("Failed to update reply:", err)
       toast.error("답글 수정에 실패했습니다.")
@@ -2388,9 +2452,7 @@ export function FamilyPage({
         })
       }
 
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
-      await fetchFamilyReservations(familyUserIds)
+
       toast.success("답글이 삭제되었습니다.")
     } catch (err) {
       console.error("Failed to delete reply:", err)
