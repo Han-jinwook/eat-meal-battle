@@ -1446,8 +1446,8 @@ export function FamilyPage({
       })
 
       setMeals(formattedMeals)
-      setMealComments(commentsByMealId)
-      setMealRatings(ratingsByMealId)
+      setMealComments(prev => ({ ...prev, ...commentsByMealId }))
+      setMealRatings(prev => ({ ...prev, ...ratingsByMealId }))
 
     } catch (e) {
       console.error("Failed to fetch family shared data:", e)
@@ -1717,6 +1717,19 @@ export function FamilyPage({
     const likedUsers = wishlistLikes[itemId] || []
     const hasLiked = likedUsers.includes(user.id)
     
+    // 낙관적 업데이트로 더블클릭 등 방지
+    if (hasLiked) {
+      setWishlistLikes(prev => ({
+        ...prev,
+        [itemId]: likedUsers.filter(uid => uid !== user.id)
+      }))
+    } else {
+      setWishlistLikes(prev => ({
+        ...prev,
+        [itemId]: [...likedUsers, user.id]
+      }))
+    }
+
     try {
       if (hasLiked) {
         await secureWrite({
@@ -1724,10 +1737,6 @@ export function FamilyPage({
           action: "delete",
           filters: { meal_id: itemId }
         })
-        setWishlistLikes(prev => ({
-          ...prev,
-          [itemId]: likedUsers.filter(uid => uid !== user.id)
-        }))
       } else {
         await secureWrite({
           table: "meal_likes",
@@ -1737,12 +1746,24 @@ export function FamilyPage({
             user_id: user.id
           }
         })
+      }
+    } catch (err: any) {
+      // 중복 키 에러는 이미 처리된 것이므로 무시
+      if (err.message && err.message.includes("duplicate key")) {
+        return
+      }
+      // 실패 시 롤백
+      if (hasLiked) {
         setWishlistLikes(prev => ({
           ...prev,
           [itemId]: [...likedUsers, user.id]
         }))
+      } else {
+        setWishlistLikes(prev => ({
+          ...prev,
+          [itemId]: likedUsers.filter(uid => uid !== user.id)
+        }))
       }
-    } catch (err: any) {
       console.error("Failed to toggle wishlist like:", err)
       toast.error(`좋아요 처리에 실패했습니다: ${err.message || err}`)
     }
