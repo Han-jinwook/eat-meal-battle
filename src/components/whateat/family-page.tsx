@@ -1328,14 +1328,21 @@ export function FamilyPage({
         allReplies = repliesData || []
       }
 
-      // 3. Fetch ratings for these target IDs
+      // 3. Fetch ratings and likes for these target IDs
       let allRatings: any[] = []
+      let allLikes: any[] = []
       if (allTargetIds.length > 0) {
         const { data: ratingsData } = await supabase
           .from('meal_ratings')
           .select('*')
           .in('meal_id', allTargetIds)
         allRatings = ratingsData || []
+
+        const { data: likesData } = await supabase
+          .from('meal_likes')
+          .select('meal_id, user_id')
+          .in('meal_id', allTargetIds)
+        allLikes = likesData || []
       }
 
       // 4. Load users list to map user_id to nicknames/avatars
@@ -1343,7 +1350,8 @@ export function FamilyPage({
         ...imgData.map(img => img.uploaded_by),
         ...allComments.map(c => c.user_id),
         ...allReplies.map(r => r.user_id),
-        ...allRatings.map(rt => rt.user_id)
+        ...allRatings.map(rt => rt.user_id),
+        ...allLikes.map(l => l.user_id)
       ]))
       let dbUsers: any[] = []
       if (allUserIds.length > 0) {
@@ -1433,8 +1441,10 @@ export function FamilyPage({
         commentsByMealId[imgId] = mealCommentsList
       })
 
-      // Map ratings
+      // Map ratings and likes
       const ratingsByMealId: Record<string, Record<number, number>> = {}
+      const likesByMealId: Record<string, string[]> = {}
+      
       imgData.forEach(img => {
         const targetId = img.meal_id || img.id
         const imgId = img.id
@@ -1450,11 +1460,16 @@ export function FamilyPage({
           })
 
         ratingsByMealId[imgId] = mealRatingsMap
+        
+        likesByMealId[imgId] = allLikes
+          .filter(l => l.meal_id === targetId)
+          .map(l => l.user_id)
       })
 
       setMeals(formattedMeals)
       setMealComments(prev => ({ ...prev, ...commentsByMealId }))
       setMealRatings(prev => ({ ...prev, ...ratingsByMealId }))
+      setWishlistLikes(prev => ({ ...prev, ...likesByMealId }))
 
     } catch (e) {
       console.error("Failed to fetch family shared data:", e)
@@ -1511,11 +1526,13 @@ export function FamilyPage({
         const wishlistIds = wishlist.map(w => w.id)
         const reservationIds = reservations.map(r => r.id)
         const allResIds = [...wishlistIds, ...reservationIds]
-        if (allResIds.length > 0) {
+        const dbResIds = allResIds.filter(id => typeof id === 'string' && !id.startsWith('sample-'))
+        
+        if (dbResIds.length > 0) {
           const { data: commentsData } = await supabase
             .from("comments")
             .select("*")
-            .in("meal_id", allResIds)
+            .in("meal_id", dbResIds)
             .eq("is_deleted", false)
           
           const allComments = commentsData || []
@@ -1547,7 +1564,7 @@ export function FamilyPage({
           const userMap = new Map(dbUsers.map(u => [u.id, u]))
 
           const commentsMap: Record<string | number, MealComment[]> = {}
-          allResIds.forEach(resId => {
+          dbResIds.forEach(resId => {
             commentsMap[resId] = allComments
               .filter(c => c.meal_id === resId)
               .map(c => {
@@ -1584,18 +1601,18 @@ export function FamilyPage({
         }
 
         // Fetch likes for wishlist and reservation items
-        if (allResIds.length > 0) {
+        if (dbResIds.length > 0) {
           const { data: likesData } = await supabase
             .from("meal_likes")
             .select("meal_id, user_id")
-            .in("meal_id", allResIds)
+            .in("meal_id", dbResIds)
           
           if (likesData) {
             const likesMap: Record<string | number, string[]> = {}
-            allResIds.forEach(resId => {
+            dbResIds.forEach(resId => {
               likesMap[resId] = likesData.filter(l => l.meal_id === resId).map(l => l.user_id)
             })
-            setWishlistLikes(likesMap)
+            setWishlistLikes(prev => ({ ...prev, ...likesMap }))
           }
         }
       } else {
