@@ -450,8 +450,8 @@ const handleSubmit = () => {
     }
     const resolvedMealType = (mealType || editData?.mealType || "집밥") as "집밥" | "배달" | "외식"
 
-    if ((resolvedMealType === "외식" || resolvedMealType === "배달") && !placeUrlInput) {
-      toast.error("외식/배달의 경우 식당 URL을 입력해야 합니다.")
+    if ((resolvedMealType === "외식" || resolvedMealType === "배달") && !placeUrlInput && !selectedPlace?.name && !deliveryStoreName) {
+      toast.error("외식/배달의 경우 식당 이름이나 URL을 최소한 하나 입력해야 합니다.")
       return
     }
     if (resolvedMealType === "집밥" && placeUrlInput) {
