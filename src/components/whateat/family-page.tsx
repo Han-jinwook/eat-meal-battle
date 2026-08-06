@@ -3696,8 +3696,11 @@ export function FamilyPage({
                   </button>
                   <button
                     onClick={() => {
-                      setActiveMealId(item.id)
-                      setShowCommentModal(true)
+                      setExpandedMealCommentsId(expandedMealCommentsId === item.id ? null : item.id)
+                      if (expandedMealCommentsId === item.id) {
+                        setActiveReplyTarget(null)
+                        setMealReplyInput("")
+                      }
                     }}
                     className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -3720,6 +3723,13 @@ export function FamilyPage({
                   </button>
                 )}
               </div>
+
+              {/* 댓글 섹션 추가 (인라인 전개) */}
+              {expandedMealCommentsId === item.id && (
+                <div className="border-t border-muted/20 bg-white p-4">
+                  {renderMealCommentsSection(item.id, "card")}
+                </div>
+              )}
             </div>
           )
         }
