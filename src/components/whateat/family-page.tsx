@@ -737,15 +737,8 @@ export function FamilyPage({
   const [mealRatings, setMealRatings] = useState<Record<string | number, Record<number, number>>>({})
   
   // 샘플 데이터일 때 초기 댓글과 평점을 로컬 상태에 주입
-  useEffect(() => {
-    if (meals.length === 0) {
-      setMealComments(defaultMealComments)
-      setMealRatings(defaultMealRatings)
-    }
-  }, [meals])
-
-  const displayComments = meals.length === 0 ? defaultMealComments : mealComments
-  const displayRatings = meals.length === 0 ? defaultMealRatings : mealRatings
+  const displayComments = { ...defaultMealComments, ...mealComments }
+  const displayRatings = { ...defaultMealRatings, ...mealRatings }
 
   const [sortOption, setSortOption] = useState<"날짜순" | "별점순" | "기간">("날짜순")
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc")
@@ -1583,17 +1576,17 @@ export function FamilyPage({
           setMealComments(prev => ({ ...prev, ...commentsMap }))
         }
 
-        // Fetch likes for wishlist items
-        if (wishlistIds.length > 0) {
+        // Fetch likes for wishlist and reservation items
+        if (allResIds.length > 0) {
           const { data: likesData } = await supabase
             .from("meal_likes")
             .select("meal_id, user_id")
-            .in("meal_id", wishlistIds)
+            .in("meal_id", allResIds)
           
           if (likesData) {
             const likesMap: Record<string | number, string[]> = {}
-            wishlistIds.forEach(wid => {
-              likesMap[wid] = likesData.filter(l => l.meal_id === wid).map(l => l.user_id)
+            allResIds.forEach(resId => {
+              likesMap[resId] = likesData.filter(l => l.meal_id === resId).map(l => l.user_id)
             })
             setWishlistLikes(likesMap)
           }
@@ -1749,8 +1742,9 @@ export function FamilyPage({
           [itemId]: [...likedUsers, user.id]
         }))
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle wishlist like:", err)
+      toast.error(`좋아요 처리에 실패했습니다: ${err.message || err}`)
     }
   }
 
@@ -2219,8 +2213,9 @@ export function FamilyPage({
       await fetchFamilyData(familyUserIds)
       await fetchFamilyReservations(familyUserIds)
       setMealCommentInput("")
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to add comment to Supabase", err)
+      toast.error(`댓글 저장에 실패했습니다: ${err.message || err}`)
     }
   }
 

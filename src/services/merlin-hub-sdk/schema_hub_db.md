@@ -216,3 +216,176 @@ family_users.invited_by_id  →  내를 초대한 방장의 user_id
 | ------------------------ | ---------------------------- |
 | GET `/api/auth/referrals` | 내 초대 실적 목록 (허브 DB)  |
 | GET `/api/auth/profile`   | 내 프로필 (`invited_by_id` 포함) |
+
+---
+
+## 📱 WhatEat 로컬 서비스 테이블 스키마
+
+### `comments` — 맛톡 및 가족 예약 댓글
+
+| column_name | data_type                | is_nullable |
+| ----------- | ------------------------ | ----------- |
+| id          | uuid                     | NO          |
+| meal_id     | uuid                     | YES         |
+| user_id     | uuid                     | YES         |
+| content     | text                     | NO          |
+| created_at  | timestamp with time zone | YES         |
+| updated_at  | timestamp with time zone | YES         |
+| is_deleted  | boolean                  | YES         |
+
+---
+
+### `comment_replies` — 댓글 답글(대댓글)
+
+| column_name      | data_type                | is_nullable |
+| ---------------- | ------------------------ | ----------- |
+| id               | uuid                     | NO          |
+| comment_id       | uuid                     | YES         |
+| user_id          | uuid                     | YES         |
+| content          | text                     | NO          |
+| created_at       | timestamp with time zone | YES         |
+| updated_at       | timestamp with time zone | YES         |
+| is_deleted       | boolean                  | YES         |
+| reply_to_user_id | uuid                     | YES         |
+
+---
+
+### `meal_likes` — 맛톡 및 가족 예약 좋아요
+
+| column_name | data_type                | is_nullable |
+| ----------- | ------------------------ | ----------- |
+| id          | uuid                     | NO          |
+| meal_id     | uuid                     | YES         |
+| user_id     | uuid                     | YES         |
+| created_at  | timestamp with time zone | YES         |
+
+---
+
+### `meal_images` — 솔로 식사 및 맛톡 이미지 기록
+
+| column_name    | data_type                | is_nullable |
+| -------------- | ------------------------ | ----------- |
+| id             | uuid                     | NO          |
+| meal_id        | uuid                     | YES         |
+| image_url      | text                     | NO          |
+| uploaded_by    | uuid                     | YES         |
+| match_score    | integer                  | YES         |
+| status         | text                     | YES         |
+| created_at     | timestamp with time zone | YES         |
+| explanation    | text                     | YES         |
+| source         | text                     | YES         |
+| title          | text                     | YES         |
+| rating         | integer                  | YES         |
+| meal_type      | text                     | YES         |
+| link_url       | text                     | YES         |
+| link_thumbnail | text                     | YES         |
+| place_name     | text                     | YES         |
+| place_address  | text                     | YES         |
+| description    | text                     | YES         |
+
+---
+
+### `meal_image_reports` — 식사 이미지 신고
+
+| column_name       | data_type                | is_nullable |
+| ----------------- | ------------------------ | ----------- |
+| id                | uuid                     | NO          |
+| image_id          | uuid                     | YES         |
+| reporter_id       | uuid                     | NO          |
+| school_code       | text                     | NO          |
+| meal_date         | date                     | NO          |
+| meal_type         | text                     | NO          |
+| image_url         | text                     | NO          |
+| uploader_nickname | text                     | YES         |
+| report_reason     | text                     | YES         |
+| status            | text                     | YES         |
+| admin_notes       | text                     | YES         |
+| created_at        | timestamp with time zone | YES         |
+| reviewed_at       | timestamp with time zone | YES         |
+| reviewed_by       | uuid                     | YES         |
+
+---
+
+### `meal_menus` — 학교 급식 메뉴
+
+| column_name     | data_type                | is_nullable |
+| --------------- | ------------------------ | ----------- |
+| id              | uuid                     | NO          |
+| school_code     | text                     | NO          |
+| meal_date       | text                     | NO          |
+| meal_type       | text                     | NO          |
+| menu_items      | jsonb                    | YES         |
+| kcal            | text                     | YES         |
+| origin_info     | text                     | YES         |
+| ntr_info        | text                     | YES         |
+| created_at      | timestamp with time zone | YES         |
+| updated_at      | timestamp with time zone | YES         |
+| is_empty_result | boolean                  | YES         |
+| office_code     | character varying        | YES         |
+| is_temporary    | boolean                  | YES         |
+
+---
+
+### `meal_menu_items` — 학교 급식 세부 반찬 항목
+
+| column_name | data_type                | is_nullable |
+| ----------- | ------------------------ | ----------- |
+| id          | uuid                     | NO          |
+| meal_id     | uuid                     | NO          |
+| item_name   | text                     | NO          |
+| item_order  | integer                  | NO          |
+| created_at  | timestamp with time zone | YES         |
+| updated_at  | timestamp with time zone | YES         |
+
+---
+
+### `meal_quizzes` — 학교 급식 AI 퀴즈
+
+| column_name    | data_type                | is_nullable |
+| -------------- | ------------------------ | ----------- |
+| id             | uuid                     | NO          |
+| school_code    | text                     | NO          |
+| grade          | integer                  | NO          |
+| meal_date      | date                     | NO          |
+| meal_id        | uuid                     | YES         |
+| question       | text                     | NO          |
+| options        | jsonb                    | NO          |
+| correct_answer | integer                  | NO          |
+| created_at     | timestamp with time zone | YES         |
+| explanation    | text                     | YES         |
+| report_status  | character varying        | YES         |
+
+---
+
+### `meal_rating_stats` — 식사 별점 통계
+
+| column_name  | data_type         | is_nullable |
+| ------------ | ----------------- | ----------- |
+| meal_id      | uuid              | NO          |
+| school_code  | text              | YES         |
+| avg_rating   | numeric           | YES         |
+| rating_count | integer           | YES         |
+| grade1_avg   | numeric           | YES         |
+| grade1_count | integer           | YES         |
+| grade2_avg   | numeric           | YES         |
+| grade2_count | integer           | YES         |
+| grade3_avg   | numeric           | YES         |
+| grade3_count | integer           | YES         |
+| grade4_avg   | numeric           | YES         |
+| grade4_count | integer           | YES         |
+
+---
+
+### `interest_schools` — 관심 학교 목록
+
+| column_name | data_type                   | is_nullable |
+| ----------- | --------------------------- | ----------- |
+| id          | uuid                        | NO          |
+| user_id     | uuid                        | NO          |
+| school_code | character varying           | NO          |
+| school_name | character varying           | NO          |
+| created_at  | timestamp without time zone | YES         |
+| updated_at  | timestamp without time zone | YES         |
+| office_code | character varying           | YES         |
+| region      | text                        | YES         |
+| school_type | text                        | YES         |
