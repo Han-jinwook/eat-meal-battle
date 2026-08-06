@@ -449,6 +449,15 @@ const handleSubmit = () => {
       return
     }
     const resolvedMealType = (mealType || editData?.mealType || "집밥") as "집밥" | "배달" | "외식"
+
+    if ((resolvedMealType === "외식" || resolvedMealType === "배달") && !placeUrlInput) {
+      toast.error("외식/배달의 경우 식당 URL을 입력해야 합니다.")
+      return
+    }
+    if (resolvedMealType === "집밥" && placeUrlInput) {
+      toast.error("집밥인 경우 식당 URL을 등록할 수 없습니다. URL을 지워주세요.")
+      return
+    }
     const resolvedPlace =
       resolvedMealType === "외식"
         ? selectedPlace?.name || editData?.place || null

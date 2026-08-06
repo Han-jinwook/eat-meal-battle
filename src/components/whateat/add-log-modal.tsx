@@ -1222,6 +1222,15 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                      return
                    }
 
+                   if ((mealType === "외식" || mealType === "배달") && !linkUrl) {
+                     toast.error("외식/배달의 경우 식당 URL을 입력해야 합니다.")
+                     return
+                   }
+                   if (mealType === "집밥" && linkUrl) {
+                     toast.error("집밥 기록 시에는 식당 URL을 입력할 수 없습니다. (레시피 URL만 가능)")
+                     return
+                   }
+
                    const effectiveMenuName = menuName.trim() 
                      || selectedPlace?.name 
                      || deliveryStoreName 

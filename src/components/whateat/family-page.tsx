@@ -4141,7 +4141,7 @@ export function FamilyPage({
             setIsAddReservationOpen(false)
             setEditingPlan(null)
           }}
-          editData={editingPlan && editingPlan.id && !editingPlan.isWishlistToSchedule ? editingPlan : null}
+          editData={editingPlan && editingPlan.id ? editingPlan : null}
           isWishlist={!editingPlan?.isWishlistToSchedule && (editingPlan?.isWishlist === true || !editingPlan?.date)}
         />
       )}
