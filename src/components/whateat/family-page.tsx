@@ -2191,6 +2191,8 @@ export function FamilyPage({
     }
 
     const targetMeal = baseMeals.find(m => m.id === mealId)
+      || wishlistItems.find(m => m.id === mealId)
+      || familyReservations.find(m => m.id === mealId);
     if (!targetMeal) return
     const commentTargetId = targetMeal.mealMenuId || targetMeal.id
 
@@ -2215,6 +2217,7 @@ export function FamilyPage({
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
       setMealCommentInput("")
     } catch (err) {
       console.error("Failed to add comment to Supabase", err)
@@ -2251,6 +2254,7 @@ export function FamilyPage({
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
       setMealReplyInput("")
       setActiveReplyTarget(null)
     } catch (err) {
@@ -2285,6 +2289,7 @@ export function FamilyPage({
       
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
     } catch (err) {
       console.error("Failed to update comment:", err)
       toast.error("댓글 수정에 실패했습니다.")
@@ -2309,6 +2314,7 @@ export function FamilyPage({
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
       toast.success("댓글이 삭제되었습니다.")
     } catch (err) {
       console.error("Failed to delete comment:", err)
@@ -2343,6 +2349,7 @@ export function FamilyPage({
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
     } catch (err) {
       console.error("Failed to update reply:", err)
       toast.error("답글 수정에 실패했습니다.")
@@ -2367,6 +2374,7 @@ export function FamilyPage({
 
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
       await fetchFamilyData(familyUserIds)
+      await fetchFamilyReservations(familyUserIds)
       toast.success("답글이 삭제되었습니다.")
     } catch (err) {
       console.error("Failed to delete reply:", err)
