@@ -1421,8 +1421,8 @@ export function FamilyPage({
                   author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
                   content: r.content,
                   createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                  likes: 0,
-                  isLiked: false
+                  likes: r.likes_count || 0,
+                  isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
                 }
               })
 
@@ -1432,8 +1432,8 @@ export function FamilyPage({
               author: cAuthor,
               content: c.content,
               createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-              likes: 0,
-              isLiked: false,
+              likes: c.likes_count || 0,
+              isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false,
               replies: cReplies
             }
           })
@@ -1580,8 +1580,8 @@ export function FamilyPage({
                       author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
                       content: r.content,
                       createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                      likes: 0,
-                      isLiked: false
+                      likes: r.likes_count || 0,
+                      isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
                     }
                   })
                 
@@ -1591,8 +1591,8 @@ export function FamilyPage({
                   author: cAuthor,
                   content: c.content,
                   createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                  likes: 0,
-                  isLiked: false,
+                  likes: c.likes_count || 0,
+                  isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false,
                   replies: cReplies
                 }
               })
@@ -1857,7 +1857,11 @@ export function FamilyPage({
           } else {
             return {
               ...prev,
-              [mealId]: prev[mealId].map(c => c.id === updatedComment.id ? { ...c, content: updatedComment.content } : c)
+              [mealId]: prev[mealId].map(c => c.id === updatedComment.id ? { 
+                ...c, 
+                content: updatedComment.content,
+                likes: updatedComment.likes_count ?? c.likes
+              } : c)
             };
           }
         });
@@ -2229,41 +2233,124 @@ export function FamilyPage({
     setDismissedMealHighlightIds((prev) => (prev.includes(mealId) ? prev : [...prev, mealId]))
   }
 
-  const toggleMealCommentLike = (mealId: number, commentId: number) => {
+  const toggleMealCommentLike = async (mealId: string | number, commentId: string | number) => {
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    const storageKey = `liked_comment_${user.id}_${commentId}`
+    const alreadyLiked = localStorage.getItem(storageKey) === 'true'
+
+    const comments = mealComments[mealId] || []
+    const targetComment = comments.find(c => c.id === commentId)
+    if (!targetComment) return
+
+    const newLikesCount = alreadyLiked ? Math.max(0, targetComment.likes - 1) : targetComment.likes + 1
+
     setMealComments((prev) => ({
       ...prev,
       [mealId]: (prev[mealId] ?? []).map((comment) =>
         comment.id === commentId
           ? {
               ...comment,
-              isLiked: !comment.isLiked,
-              likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
+              isLiked: !alreadyLiked,
+              likes: newLikesCount,
             }
           : comment,
       ),
     }))
+
+    if (alreadyLiked) localStorage.removeItem(storageKey)
+    else localStorage.setItem(storageKey, 'true')
+
+    try {
+      await secureWrite({
+        table: 'comments',
+        action: 'update',
+        data: { likes_count: newLikesCount },
+        filters: { id: commentId }
+      })
+    } catch (err) {
+      console.error("Failed to update comment like:", err)
+      setMealComments((prev) => ({
+        ...prev,
+        [mealId]: (prev[mealId] ?? []).map((comment) =>
+          comment.id === commentId
+            ? { ...comment, isLiked: alreadyLiked, likes: targetComment.likes }
+            : comment,
+        ),
+      }))
+      if (alreadyLiked) localStorage.setItem(storageKey, 'true')
+      else localStorage.removeItem(storageKey)
+      toast.error("좋아요 처리에 실패했습니다.")
+    }
   }
 
-  const toggleMealReplyLike = (mealId: number, commentId: number, replyId: number) => {
+  const toggleMealReplyLike = async (mealId: string | number, commentId: string | number, replyId: string | number) => {
+    if (!isLoggedIn || !user?.id) {
+      window.dispatchEvent(new CustomEvent('openLoginModal'))
+      return
+    }
+
+    const storageKey = `liked_reply_${user.id}_${replyId}`
+    const alreadyLiked = localStorage.getItem(storageKey) === 'true'
+
+    const comments = mealComments[mealId] || []
+    const targetComment = comments.find(c => c.id === commentId)
+    if (!targetComment) return
+    const targetReply = targetComment.replies.find(r => r.id === replyId)
+    if (!targetReply) return
+
+    const newLikesCount = alreadyLiked ? Math.max(0, targetReply.likes - 1) : targetReply.likes + 1
+
     setMealComments((prev) => ({
       ...prev,
       [mealId]: (prev[mealId] ?? []).map((comment) =>
         comment.id === commentId
           ? {
               ...comment,
-              replies: (comment.replies ?? []).map((reply) =>
+              replies: comment.replies.map((reply) =>
                 reply.id === replyId
-                  ? {
-                      ...reply,
-                      isLiked: !reply.isLiked,
-                      likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
-                    }
-                  : reply,
+                  ? { ...reply, isLiked: !alreadyLiked, likes: newLikesCount }
+                  : reply
               ),
             }
           : comment,
       ),
     }))
+
+    if (alreadyLiked) localStorage.removeItem(storageKey)
+    else localStorage.setItem(storageKey, 'true')
+
+    try {
+      await secureWrite({
+        table: 'comment_replies',
+        action: 'update',
+        data: { likes_count: newLikesCount },
+        filters: { id: replyId }
+      })
+    } catch (err) {
+      console.error("Failed to update reply like:", err)
+      setMealComments((prev) => ({
+        ...prev,
+        [mealId]: (prev[mealId] ?? []).map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: comment.replies.map((reply) =>
+                  reply.id === replyId
+                    ? { ...reply, isLiked: alreadyLiked, likes: targetReply.likes }
+                    : reply
+                ),
+              }
+            : comment,
+        ),
+      }))
+      if (alreadyLiked) localStorage.setItem(storageKey, 'true')
+      else localStorage.removeItem(storageKey)
+      toast.error("좋아요 처리에 실패했습니다.")
+    }
   }
 
   const handleAddMealComment = async (mealId: string | number) => {
