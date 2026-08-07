@@ -56,6 +56,7 @@ interface AddReservationModalProps {
   onDelete?: (id: string | number) => void
   prefillData?: ReservationPrefillData | null
   isWishlist?: boolean
+  isScheduling?: boolean
 }
 
 type MealType = "집밥" | "외식" | "배달" | ""
@@ -141,7 +142,7 @@ function generateUUID() {
   })
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false, isScheduling = false }: AddReservationModalProps) {
   const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
 
@@ -162,6 +163,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
     url: string
     isLoading: boolean
   } | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!editData
   const dateInputRef = useRef<HTMLInputElement>(null)
 
@@ -544,151 +546,180 @@ const handleSubmit = () => {
           {/* Header */}
           <div className="mb-3">
             <h2 className="text-lg font-extrabold tracking-tight text-foreground">
-              {isEditMode 
-                ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
-                : (isWishlist ? "식사 위시리스트 추가" : "나의 식사 예약")}
+              {isScheduling 
+                ? "식사 예약 잡기"
+                : isEditMode 
+                  ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
+                  : (isWishlist ? "식사 위시리스트 추가" : "나의 식사 예약")}
             </h2>
           </div>
 
           {/* Form Fields */}
           <div className="space-y-3" onClickCapture={handleInteraction}>
-            {/* Meal Type - 유형 선택 (가장 위) */}
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-3 gap-2">
-                {mealTypes.map((type) => {
-                  const Icon = type.icon
-                  return (
-                    <button
-                      key={type.id}
-                      disabled={isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥")}
-                      onClick={() => {
-                        if (isEditMode && mealType === type.id) return // 수정 모드에서는 선택 해제 불가
-                        setMealType(mealType === type.id ? "" : type.id)
-                        if (type.id !== "외식") setSelectedPlace(null)
-                        if (type.id !== "배달") {
-                          setDeliveryStoreName("")
-                        }
-                      }}
-                      className={cn(
-                        "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
-                        mealType === type.id
-                          ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
-                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300",
-                        isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥") && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400"
-                      )}
-                    >
-                      <Icon className="size-3.5" />
-                      <span className="text-xs">{type.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
-              {mealType && (
-                <div className="mt-1 flex flex-col gap-2">
-                  {/* 1. 참고 영상 / 레시피 / 쇼츠 URL */}
-                  <div className="relative">
-                    <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-red-500" />
-                    <input
-                      className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
-                      placeholder="🎬 참고 영상/쇼츠/레시피 URL (예: https://youtube.com/shorts/...)"
-                      type="url"
-                      value={recipeUrl}
-                      onChange={(e) => setRecipeUrl(e.target.value)}
+            {isScheduling ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+                {(urlPreview?.thumbnail || editData?.thumbnail) && (
+                  <div className="relative w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-gray-100">
+                    <img
+                      src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
+                      alt="Thumbnail"
+                      className="w-full h-full object-cover"
                     />
                   </div>
-
-                  {/* 2. 장소/지도 URL (외식/배달 시) */}
-                  {(mealType === "외식" || mealType === "배달") && (
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-indigo-500" />
-                      <input
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
-                        placeholder="📍 장소/지도 URL (예: https://naver.me/...)"
-                        type="url"
-                        value={placeUrlInput}
-                        onChange={(e) => {
-                          setPlaceUrlInput(e.target.value)
-                          if (e.target.value && isValidUrl(e.target.value) && !recipeUrl) {
-                            fetchUrlPreview(e.target.value)
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {mealType === "집밥" && <ChefHat className="size-3.5 text-orange-500" />}
+                    {mealType === "배달" && <Bike className="size-3.5 text-orange-500" />}
+                    {mealType === "외식" && <UtensilsCrossed className="size-3.5 text-orange-500" />}
+                    <span className="text-xs font-bold text-orange-600">{mealType}</span>
+                  </div>
+                  <div className="text-sm font-extrabold text-foreground truncate">
+                    {menuName || "메뉴 이름 없음"}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {/* Meal Type - 유형 선택 (가장 위) */}
+                <div className="grid grid-cols-3 gap-2">
+                  {mealTypes.map((type) => {
+                    const Icon = type.icon
+                    return (
+                      <button
+                        key={type.id}
+                        disabled={isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥")}
+                        onClick={() => {
+                          if (isEditMode && mealType === type.id) return // 수정 모드에서는 선택 해제 불가
+                          setMealType(mealType === type.id ? "" : type.id)
+                          if (type.id !== "외식") setSelectedPlace(null)
+                          if (type.id !== "배달") {
+                            setDeliveryStoreName("")
                           }
                         }}
-                      />
-                    </div>
-                  )}
-
-                  {(recipeUrl || placeUrlInput || urlPreview || editData?.thumbnail) &&
-                    (urlPreview?.isLoading ? (
-                      <div className="bg-white rounded-xl p-2.5 border border-gray-200">
-                        <div className="flex items-center gap-2.5">
-                          <div className="size-14 rounded-lg bg-muted animate-pulse shrink-0" />
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-1.5 text-orange-500">
-                              <Loader2 className="size-3.5 animate-spin" />
-                              <span className="text-xs font-bold">AI가 메뉴명을 분석 중...</span>
-                            </div>
-                            <div className="h-2.5 bg-muted rounded animate-pulse w-2/3" />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      (urlPreview?.thumbnail || editData?.thumbnail) && (
-                        <div className="bg-white rounded-xl border border-gray-200 p-2.5 flex items-center gap-3">
-                          <div className="relative w-26 h-26 sm:w-28 sm:h-28 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-gray-100">
-                            <img
-                              src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
-                              alt="URL preview"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                              <Sparkles className="size-3.5 text-orange-500" />
-                              AI 메뉴명 추천
-                            </label>
-                            <input
-                              type="text"
-                              value={menuName}
-                              onChange={(e) => setMenuName(e.target.value)}
-                              className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
-                              placeholder="AI가 추출한 메뉴명 (수정 가능)"
-                            />
-                          </div>
-                        </div>
-                      )
-                    ))}
-
-                  {(!recipeUrl && !placeUrlInput && !urlPreview?.thumbnail && !editData?.thumbnail) && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-2.5 space-y-1">
-                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <Sparkles className="size-3.5 text-orange-500" />
-                        AI 메뉴명 추천
-                      </label>
-                      <input
-                        type="text"
-                        value={menuName}
-                        onChange={(e) => setMenuName(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
-                        placeholder="URL 입력 후 추출되며, 직접 수정 가능"
-                      />
-                    </div>
-                  )}
+                        className={cn(
+                          "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                          mealType === type.id
+                            ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
+                            : "bg-white border border-gray-200 text-foreground hover:border-orange-300",
+                          isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥") && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400"
+                        )}
+                      >
+                        <Icon className="size-3.5" />
+                        <span className="text-xs">{type.label}</span>
+                      </button>
+                    )
+                  })}
                 </div>
-              )}
-            </div>
+
+                {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
+                {mealType && (
+                  <div className="mt-1 flex flex-col gap-2">
+                    {/* 1. 참고 영상 / 레시피 / 쇼츠 URL */}
+                    <div className="relative">
+                      <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-red-500" />
+                      <input
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
+                        placeholder="🎬 참고 영상/쇼츠/레시피 URL (예: https://youtube.com/shorts/...)"
+                        type="url"
+                        value={recipeUrl}
+                        onChange={(e) => setRecipeUrl(e.target.value)}
+                      />
+                    </div>
+
+                    {/* 2. 장소/지도 URL (외식/배달 시) */}
+                    {(mealType === "외식" || mealType === "배달") && (
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-indigo-500" />
+                        <input
+                          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
+                          placeholder="📍 장소/지도 URL (예: https://naver.me/...)"
+                          type="url"
+                          value={placeUrlInput}
+                          onChange={(e) => {
+                            setPlaceUrlInput(e.target.value)
+                            if (e.target.value && isValidUrl(e.target.value) && !recipeUrl) {
+                              fetchUrlPreview(e.target.value)
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {(recipeUrl || placeUrlInput || urlPreview || editData?.thumbnail) &&
+                      (urlPreview?.isLoading ? (
+                        <div className="bg-white rounded-xl p-2.5 border border-gray-200">
+                          <div className="flex items-center gap-2.5">
+                            <div className="size-14 rounded-lg bg-muted animate-pulse shrink-0" />
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-1.5 text-orange-500">
+                                <Loader2 className="size-3.5 animate-spin" />
+                                <span className="text-xs font-bold">AI가 메뉴명을 분석 중...</span>
+                              </div>
+                              <div className="h-2.5 bg-muted rounded animate-pulse w-2/3" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        (urlPreview?.thumbnail || editData?.thumbnail) && (
+                          <div className="bg-white rounded-xl border border-gray-200 p-2.5 flex items-center gap-3">
+                            <div className="relative w-26 h-26 sm:w-28 sm:h-28 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-gray-100">
+                              <img
+                                src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
+                                alt="URL preview"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <label className="text-xs font-bold text-foreground flex items-center gap-1">
+                                <Sparkles className="size-3.5 text-orange-500" />
+                                AI 메뉴명 추천
+                              </label>
+                              <input
+                                type="text"
+                                value={menuName}
+                                onChange={(e) => setMenuName(e.target.value)}
+                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
+                                placeholder="AI가 추출한 메뉴명 (수정 가능)"
+                              />
+                            </div>
+                          </div>
+                        )
+                      ))}
+
+                    {(!recipeUrl && !placeUrlInput && !urlPreview?.thumbnail && !editData?.thumbnail) && (
+                      <div className="bg-white rounded-xl border border-gray-200 p-2.5 space-y-1">
+                        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Sparkles className="size-3.5 text-orange-500" />
+                          AI 메뉴명 추천
+                        </label>
+                        <input
+                          type="text"
+                          value={menuName}
+                          onChange={(e) => setMenuName(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
+                          placeholder="URL 입력 후 추출되며, 직접 수정 가능"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Memo - 한줄메모 */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-foreground">한줄메모 <span className="text-[10px] text-muted-foreground font-normal">(선택)</span></label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
-                placeholder="특별한 날? 누구와 함께?"
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-              />
-            </div>
+            {!isScheduling && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-foreground">한줄메모 <span className="text-[10px] text-muted-foreground font-normal">(선택)</span></label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
+                  placeholder="특별한 날? 누구와 함께?"
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Date & Meal Time Grid (Side-by-side or Compact vertical) */}
             <div className={cn("grid gap-3 pt-1", isWishlist ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
