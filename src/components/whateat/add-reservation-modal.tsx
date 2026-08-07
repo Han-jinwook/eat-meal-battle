@@ -560,6 +560,7 @@ const handleSubmit = () => {
                   return (
                     <button
                       key={type.id}
+                      disabled={isEditMode}
                       onClick={() => {
                         setMealType(mealType === type.id ? "" : type.id)
                         if (type.id !== "외식") setSelectedPlace(null)
@@ -571,7 +572,9 @@ const handleSubmit = () => {
                         "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
                         mealType === type.id
                           ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
-                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
+                          : "bg-white border border-gray-200 text-foreground hover:border-orange-300",
+                        isEditMode && mealType !== type.id && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400",
+                        isEditMode && mealType === type.id && "cursor-default"
                       )}
                     >
                       <Icon className="size-3.5" />
