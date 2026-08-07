@@ -602,8 +602,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                   {mealTypes.map((type) => (
                     <button
                       key={type.id}
-                      disabled={isEditMode}
+                      disabled={isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥")}
                       onClick={() => {
+                        if (isEditMode && mealType === type.id) return // 수정 모드에서는 선택 해제 불가
                         setMealType(type.id)
                         if (type.id !== "외식" && type.id !== "배달") {
                           setSelectedPlace(null)
@@ -617,8 +618,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                         mealType === type.id
                           ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
                           : "bg-white border border-gray-200 text-foreground hover:border-orange-300",
-                        isEditMode && mealType !== type.id && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400",
-                        isEditMode && mealType === type.id && "cursor-default"
+                        isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥") && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400"
                       )}
                     >
                       {type.icon && <type.icon className="size-3.5" />}
