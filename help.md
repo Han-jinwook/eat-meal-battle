@@ -1,35 +1,77 @@
-# WhatEat Family Avatar Sync Issue & Handover Note
+# WhatEat 가족 페이지 (family-page.tsx) 좋아요 및 댓글 디버깅 요청서
 
-## 1. 현재 상황 및 요약
-현재 "가족방"에서 **방장(스타크)**과 **초대된 가족 멤버(멀린)**가 서로를 조회할 때 프로필 아바타 이미지 동기화가 제대로 이루어지지 않고 있는 이슈가 있습니다.
-- **멀린 화면**: `나` 탭에 본인의 고유 캐릭터 이미지(고깔 모자를 쓴 아기 캐릭터)가 정상적으로 잘 보임.
-- **스타크 화면**: 멀린의 프로필 자리에 엉뚱한 여성 사진(Unsplash 프리셋)이나 "멀" 텍스트 이니셜이 보임.
+외부 AI님, 현재 WhatEat 애플리케이션의 가족 페이지(`family-page.tsx`)에서 위시리스트 및 예약 카드의 **댓글 저장 및 좋아요 실시간 동기화**에 심각한 버그가 있어 지원을 요청합니다.
 
-## 2. 최근 작업 내역 (커밋 `ee0e70ef`)
-1. **Unsplash 임시 인덱스 프리셋 제거**:
-   - `family-page.tsx` 내 `loadRealFamily()` 함수에서 DB에 이미지 경로가 없을 때 순환 참조하며 적용되던 불필요한 `avatarPresets` 폴백을 완전히 배제하고, `merlinAvatar` 및 `starkAvatar` 상수 이미지로 매핑하도록 정리함.
-2. **UI 렌더링 수정**:
-   - 가족 구성원 헤더 리스트와 `ChefModal`에서 `HubAvatar` 혹은 `<img src={...}>`의 조건식을 통해 각 구성원의 고유 `avatar` 값을 직접 우선하여 그리도록 수정함.
-
-## 3. 남아있는 이슈 및 원인 추정
-코드를 고치고 푸시했음에도 화면에 **"변화가 없다"**(여전히 엉뚱한 사진이 보임)고 하시는 상태입니다. 이에 따른 기술적 원인 분석 및 추정 요인은 다음과 같습니다:
-
-1. **상태(State) 업데이트 시점의 비동기 불일치**:
-   - `loadRealFamily()` 내부의 `otherMembersData.map(...)` 루프가 돌기 전에 Supabase DB의 `users` 테이블에 멀린의 `profile_image` 정보가 즉각 동기화되지 않았을 가능성.
-   - 혹은 `referrals` 관계를 찾은 뒤 `refereeIds`를 통해 사용자 정보를 가져올 때, Supabase 데이터 쿼리 실패 또는 네트워크 딜레이로 인해 프론트엔드의 데모 폴백 목록(`realOtherMembers.length === 0`일 때 강제로 푸시되는 값)이 적용되는 문제.
-2. **`realOtherMembers` 매핑 시 닉네임 문자열 매칭 실패**:
-   - `m.nickname?.includes("멀린")` 조건식이 동작하지 않고 엉뚱한 임시 데이터 혹은 다른 아바타가 로드되는 현상.
-   - 데이터베이스 상 멀린의 실제 저장 닉네임이 `"가족회원"` 혹은 `"가족"` 등으로 매핑되어 `"멀린"` 필터링을 타지 못하고 다른 이미지 경로를 반환할 수 있음.
-3. **클라이언트 브라우저 캐싱**:
-   - React 빌드 본들 또는 로컬스토리지에 저장된 유저 캐시 정보(`localStorage.getItem('userProfileImage')` 등)가 최신화되지 않아 기존 이미지가 지속 노출되는 경우.
-
-## 4. 새 세션 진행 가이드
-다음 세션에서 즉시 작업을 이어갈 수 있도록 코드 상의 주요 로케이션 정보를 남깁니다:
-- **핵심 파일**: [family-page.tsx](file:///d:/WhatEat/src/components/whateat/family-page.tsx)
-- **로직 분석 및 수정 대상 위치**:
-  - `loadRealFamily()` 함수 내부 (약 324라인 ~ 510라인): `otherMembersData`를 파싱하여 `avatar` 경로를 결정하는 영역.
-  - `UserSync.tsx` (유저 로그인 정보 Supabase DB 동기화): `profile_image`가 Supabase `users` 테이블에 정상적으로 기록되는지 테스트 필수.
-  - 가족 리스트 및 아바타 렌더링 JSX 영역 (약 2095라인 부근 및 2990라인 부근).
+## 🚨 발생 중인 문제 증상
+1. **위시리스트/예약 카드 댓글 증발 문제**
+   - 사용자가 위시리스트 카드에서 댓글을 입력하고 저장 버튼을 누르면 입력창의 글자가 사라지지만, **댓글이 화면에 나타나지 않으며 DB에도 정상적으로 반영/유지되지 않는 현상**이 발생하고 있습니다.
+2. **좋아요 실시간 동기화 불량 (먹통)**
+   - 위시리스트/예약 카드의 좋아요(하트) 버튼을 누르면 실시간으로 다른 가족 멤버의 화면에 동기화되어야 하나, 작동하지 않으며 먹통이 되는 현상이 지속되고 있습니다.
 
 ---
-새 세션에서 위 가이드라인을 참조하여 **스타크와 멀린 간의 고유 프로필 아바타 매핑**을 심플하고 완벽하게 마무리해주시기 바랍니다.
+
+## 🏗️ 시스템 아키텍처 및 배경지식
+- **인증(Auth)**: 본 앱은 Supabase Auth를 직접 사용하지 않고 Merlin Hub 서버를 통해 자체 세션 토큰을 발급받아 인증합니다. 프론트엔드는 주로 `anon` 키를 사용하므로 DB의 RLS는 인증된 사용자(Supabase Auth)가 아닌 `anon` 접근을 열어두거나 API 라우트를 통해 우회하여 데이터를 쓰도록 설계되어 있습니다.
+- **데이터 쓰기 (`secureWrite`)**: RLS 문제를 회피하기 위해 클라이언트에서는 `src/lib/supabase-safe.ts`의 `secureWrite` 함수를 호출하여 Next.js 서버의 `src/app/api/db/write/route.ts` (API 라우트)에서 `supabaseAdmin` 권한으로 DB에 접근하여 데이터를 삽입/수정/삭제합니다.
+- **실시간 구독 (Supabase Realtime)**: `family-page.tsx` 내에서 `supabase.channel('realtime:family_sync:...')`을 열고 `postgres_changes` 이벤트를 수신하여 테이블(`comments`, `meal_likes` 등)에 변화가 생기면 데이터를 리패치합니다.
+
+---
+
+## 🔍 관련 핵심 코드 분석
+### 1. 데이터 가져오기 로직 (`fetchFamilyData` vs `fetchFamilyReservations`)
+가족 페이지는 두 종류의 식사 데이터를 서로 다른 함수로 가져옵니다.
+- `fetchFamilyData`: `meal_images` (완료된 식사 기록)를 가져오고, 여기에 달린 댓글을 가져와 `mealComments` 상태(State)에 `setMealComments`로 주입합니다.
+- `fetchFamilyReservations`: `meal_reservations` (위시리스트 및 계획된 식사)를 가져오고, 여기에 달린 `comments`와 `meal_likes`를 가져옵니다. 이때 가져온 댓글은 `setMealComments(prev => ({...prev, ...commentsMap}))` 방식으로 기존 상태에 병합하고, 좋아요는 `setWishlistLikes(likesMap)`으로 상태에 주입합니다.
+
+### 2. 댓글 작성 로직 (`handleAddMealComment`)
+```typescript
+const handleAddMealComment = async (mealId: string | number) => {
+  // ... (id 탐색 로직 생략)
+  const commentUuid = generateUUID()
+  await secureWrite({
+    table: 'comments',
+    action: 'insert',
+    data: { id: commentUuid, meal_id: commentTargetId, user_id: user.id, content: content, is_deleted: false }
+  })
+  // 작성 후 리패치
+  await fetchFamilyData(familyUserIds)
+  await fetchFamilyReservations(familyUserIds)
+  setMealCommentInput("")
+}
+```
+**문제 가설 1 (Race Condition)**: 
+`secureWrite`로 댓글을 인서트하는 순간 Supabase Realtime이 발동하여 `fetchFamilyData`와 `fetchFamilyReservations`가 **백그라운드에서 실행**됩니다. 동시에 `handleAddMealComment`에서도 두 함수를 순차적으로 `await`하며 재실행합니다. 이 과정에서 `fetchFamilyData`가 상태를 덮어씌우거나, 비동기 업데이트 순서가 꼬이면서 위시리스트용 댓글 상태가 초기화(증발)될 가능성이 의심됩니다. (이전 수정에서 `setMealComments(prev => ({...prev, ...commentsByMealId}))`로 병합하도록 조치했으나 여전히 해결되지 않음)
+
+**문제 가설 2 (Target ID 불일치)**:
+위시리스트의 카드는 `meal_reservations`의 `id`를 가집니다. `commentTargetId`로 `targetMeal.mealMenuId || targetMeal.id`를 사용하여 `comments` 테이블의 `meal_id`에 저장합니다. 데이터를 불러올 때 `in("meal_id", allResIds)`로 올바르게 매핑되는지 검증이 필요합니다.
+
+### 3. 좋아요 로직 (`handleToggleWishlistLike`)
+```typescript
+const handleToggleWishlistLike = async (itemId: string | number) => {
+  const likedUsers = wishlistLikes[itemId] || []
+  const hasLiked = likedUsers.includes(user.id)
+  
+  if (hasLiked) {
+    setWishlistLikes(prev => ({...prev, [itemId]: likedUsers.filter(uid => uid !== user.id)})) // 낙관적 업데이트
+    await secureWrite({ table: "meal_likes", action: "delete", filters: { meal_id: itemId } })
+  } else {
+    setWishlistLikes(prev => ({...prev, [itemId]: [...likedUsers, user.id]})) // 낙관적 업데이트
+    await secureWrite({ table: "meal_likes", action: "insert", data: { meal_id: itemId, user_id: user.id } })
+  }
+}
+```
+**문제 가설 (Realtime 동기화 누락 및 충돌)**:
+좋아요를 누르면 낙관적 업데이트로 로컬 상태는 변하지만, DB에 쓰인 후 Supabase Realtime 리스너가 다른 클라이언트에게 이벤트를 브로드캐스트할 때 `fetchFamilyReservations`가 호출됩니다. 
+하지만 이 과정에서 `likesData`를 성공적으로 읽어오지 못하거나 (`anon` 클라이언트의 RLS 문제?), 혹은 가져온 `likesData`가 React 상태에 제대로 덮어씌워지지 않아 실시간 반영(Realtime)이 되지 않는 것으로 추정됩니다. 중복 키(Duplicate Key) 에러를 방지하기 위해 낙관적 업데이트를 적용했음에도 "먹통" 현상이 발생하고 있습니다.
+
+---
+
+## 🛠️ 검토 및 수정이 필요한 사항
+외부 AI님께서는 다음 사항을 집중적으로 분석하여 코드를 수정해 주시기 바랍니다.
+
+1. **상태 관리 꼬임 해결 (Race Condition)**: 
+   `fetchFamilyData`와 `fetchFamilyReservations`가 동일한 `mealComments` 상태(State)를 비동기적으로 업데이트하면서 발생하는 충돌과 덮어씌워짐 현상을 완벽하게 분리하거나 안전하게 통합할 수 있는 아키텍처 재설계.
+2. **Realtime 리스너 로직 개선**:
+   `comments` 및 `meal_likes` 테이블의 Realtime 이벤트 발생 시 전체 데이터를 무식하게 리패치(`fetchFamilyReservations`)하는 과정에서 일어나는 성능 저하 및 상태 초기화 문제를 막기 위해, payload를 분석하여 필요한 로컬 상태만 타겟팅하여 업데이트하도록 최적화할 것.
+3. **secureWrite 삽입 후 조회 흐름 검증**:
+   위시리스트 카드(예: `meal_reservations` 기반 항목)의 댓글과 좋아요가 `meal_id` 외래키를 통해 정확하게 저장되고 다시 Select 될 때 데이터가 누락되지 않는지, API Route(`route.ts`)의 권한/조회 필터 로직에 허점이 없는지 점검.

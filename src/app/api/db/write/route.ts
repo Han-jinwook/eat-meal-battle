@@ -190,7 +190,16 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: '본인의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
         }
         if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
-          return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
+          if (['comments', 'comment_replies'].includes(table)) {
+            const keys = Object.keys(data);
+            if (keys.length === 1 && keys[0] === 'likes_count') {
+              // Allow updating likes_count even for comments not owned by user
+            } else {
+              return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
+            }
+          } else {
+            return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
+          }
         }
         if (table === 'school_infos' && existing.user_id !== userId) {
           return NextResponse.json({ error: '본인의 소속 정보만 수정할 수 있습니다.' }, { status: 403 });

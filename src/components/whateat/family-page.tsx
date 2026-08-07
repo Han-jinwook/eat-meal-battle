@@ -1597,7 +1597,13 @@ export function FamilyPage({
                 }
               })
           })
-          setMealComments(prev => ({ ...prev, ...commentsMap }))
+          setMealComments(prev => {
+            const next = { ...prev }
+            dbResIds.forEach(resId => {
+              next[resId] = commentsMap[resId] || []
+            })
+            return next
+          })
         }
 
         // Fetch likes for wishlist and reservation items
