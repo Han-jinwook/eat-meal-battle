@@ -653,14 +653,13 @@ export function FamilyPage({
         const nicknames = acceptedHistory.map((h: any) => h.inviteeNickname).filter(Boolean)
 
         let dbUsers: any[] = []
-        if (emails.length > 0) {
-          const { data } = await supabase.from('users').select('id, email, nickname, profile_image').in('email', emails)
-          if (data) dbUsers = [...dbUsers, ...data]
-        }
-        if (nicknames.length > 0) {
-          const { data } = await supabase.from('users').select('id, email, nickname, profile_image').in('nickname', nicknames)
-          if (data) dbUsers = [...dbUsers, ...data]
-        }
+        const [emailRes, nicknameRes] = await Promise.all([
+          emails.length > 0 ? supabase.from('users').select('id, email, nickname, profile_image').in('email', emails) : Promise.resolve({ data: [] }),
+          nicknames.length > 0 ? supabase.from('users').select('id, email, nickname, profile_image').in('nickname', nicknames) : Promise.resolve({ data: [] })
+        ])
+        
+        if (emailRes.data) dbUsers = [...dbUsers, ...emailRes.data]
+        if (nicknameRes.data) dbUsers = [...dbUsers, ...nicknameRes.data]
 
         setMembers(prev => prev.map(m => {
           if (m.name === "나") return { ...m, userId: user.id }
@@ -1305,15 +1304,20 @@ export function FamilyPage({
       const mealImageIds = imgData.map(img => img.id).filter(Boolean)
       const allTargetIds = Array.from(new Set([...mealMenuIds, ...mealImageIds]))
 
-      // 2. Fetch comments for these target IDs
+      // 2. Fetch comments, ratings, and likes for these target IDs in parallel
       let allComments: any[] = []
+      let allRatings: any[] = []
+      let allLikes: any[] = []
+
       if (allTargetIds.length > 0) {
-        const { data: commentsData } = await supabase
-          .from('comments')
-          .select('*')
-          .in('meal_id', allTargetIds)
-          .eq('is_deleted', false)
-        allComments = commentsData || []
+        const [commentsRes, ratingsRes, likesRes] = await Promise.all([
+          supabase.from('comments').select('*').in('meal_id', allTargetIds).eq('is_deleted', false),
+          supabase.from('meal_ratings').select('*').in('meal_id', allTargetIds),
+          supabase.from('meal_likes').select('meal_id, user_id').in('meal_id', allTargetIds)
+        ])
+        allComments = commentsRes.data || []
+        allRatings = ratingsRes.data || []
+        allLikes = likesRes.data || []
       }
 
       // Extract comment IDs to fetch replies
@@ -1326,23 +1330,6 @@ export function FamilyPage({
           .in('comment_id', commentIds)
           .eq('is_deleted', false)
         allReplies = repliesData || []
-      }
-
-      // 3. Fetch ratings and likes for these target IDs
-      let allRatings: any[] = []
-      let allLikes: any[] = []
-      if (allTargetIds.length > 0) {
-        const { data: ratingsData } = await supabase
-          .from('meal_ratings')
-          .select('*')
-          .in('meal_id', allTargetIds)
-        allRatings = ratingsData || []
-
-        const { data: likesData } = await supabase
-          .from('meal_likes')
-          .select('meal_id, user_id')
-          .in('meal_id', allTargetIds)
-        allLikes = likesData || []
       }
 
       // 4. Load users list to map user_id to nicknames/avatars
