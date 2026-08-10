@@ -1399,9 +1399,9 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   return (
     <div className="flex flex-col gap-3">
       {/* Sticky Search + Filter */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col gap-2">
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
       {/* Search + Date Filter Row */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 md:flex-1 md:order-2">
         {/* Search Input */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
@@ -1528,8 +1528,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
 
       {/* Meal Type Filter Buttons */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between md:contents">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 md:order-1">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
@@ -1552,7 +1552,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             )
           })}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:order-3">
           {showBackToCalendar && onBackToCalendar && (
             <button
               onClick={onBackToCalendar}
