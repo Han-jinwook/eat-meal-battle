@@ -750,6 +750,7 @@ export function FamilyPage({
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc")
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -3016,64 +3017,11 @@ export function FamilyPage({
       <div className="pt-3 flex flex-col gap-3">
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="식당, 메뉴, 장소 검색"
-                className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
-              />
-            </div>
+          {/* Sticky Search + Filter */}
+          <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-end justify-between gap-2">
             
-            <div className="relative shrink-0" ref={sortRef}>
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
-              >
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
-                  }}
-                  className="inline-flex cursor-pointer"
-                >
-                  <ArrowUpDown className="size-3" />
-                </span>
-                <span>{sortOption}</span>
-                <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-                <ChevronDown className="size-2.5" />
-              </button>
-
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
-                  {(["날짜순", "별점순", "기간"] as const).map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => {
-                        setSortOption(option)
-                        setShowSortDropdown(false)
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left text-sm transition-all",
-                        sortOption === option
-                          ? "bg-orange-50 text-primary font-bold"
-                          : "text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-end gap-2 overflow-x-auto hide-scrollbar pb-1">
+            {/* Left Side: Filters */}
+            <div className="flex items-end gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pb-1">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
                 const displayMeals = [...activeDefaultMeals, ...meals]
@@ -3101,18 +3049,98 @@ export function FamilyPage({
                 )
               })}
             </div>
-            <button
-              onClick={() => {
-                if (!isLoggedIn) {
-                  window.dispatchEvent(new CustomEvent('openLoginModal'))
-                } else {
-                  setAddModalOpen(true)
-                }
-              }}
-              className="size-11 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
-            >
-              <Plus className="size-5" />
-            </button>
+
+            {/* Right Side: Actions (Search, Sort, FAB) */}
+            <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
+              
+              {/* Search Bar */}
+              <div className={cn("relative transition-all duration-300 ease-in-out", isSearchExpanded || searchQuery ? "flex-1 min-w-[120px] sm:min-w-[150px]" : "w-[38px] flex-shrink-0")}>
+                {isSearchExpanded || searchQuery ? (
+                  <>
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onBlur={() => { if (!searchQuery) setIsSearchExpanded(false) }}
+                      placeholder="식당, 메뉴 검색"
+                      className="w-full pl-8 pr-7 h-[38px] bg-white/90 border border-muted/20 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm shadow-sm"
+                    />
+                    <button
+                      onClick={() => { setSearchQuery(''); setIsSearchExpanded(false) }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground p-1.5 transition-colors cursor-pointer"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsSearchExpanded(true)}
+                    className="w-[38px] h-[38px] flex items-center justify-center bg-white/60 text-muted-foreground border border-white/80 rounded-xl shadow-sm hover:bg-white hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <Search className="size-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className={cn("relative flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:block" : "block")} ref={sortRef}>
+                <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
+                >
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+                    }}
+                    className="inline-flex cursor-pointer"
+                  >
+                    <ArrowUpDown className="size-3" />
+                  </span>
+                  <span className="hidden sm:inline">{sortOption}</span>
+                  <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
+                  <ChevronDown className="size-2.5" />
+                </button>
+
+                {showSortDropdown && (
+                  <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                    {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setSortOption(option)
+                          setShowSortDropdown(false)
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left text-sm transition-all",
+                          sortOption === option
+                            ? "bg-orange-50 text-primary font-bold"
+                            : "text-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* FAB */}
+              <button
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    window.dispatchEvent(new CustomEvent('openLoginModal'))
+                  } else {
+                    setAddModalOpen(true)
+                  }
+                }}
+                className="size-10 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
+              >
+                <Plus className="size-5" />
+              </button>
+            </div>
           </div>
 
 
@@ -3923,56 +3951,11 @@ export function FamilyPage({
 
         return (
           <div className="flex flex-col gap-4">
-            {/* 검색어 입력 및 정렬 (솔로와 동일) */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="식당, 메뉴, 장소 검색"
-                  className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
-                />
-              </div>
-
-              <div className="relative shrink-0">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
-                >
-                  <ArrowUpDown className="size-3" />
-                  <span>{sortOption}</span>
-                  <ChevronDown className="size-2.5" />
-                </button>
-
-                {showSortDropdown && (
-                  <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
-                    {(["날짜순", "별점순", "기간"] as const).map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setSortOption(option)
-                          setShowSortDropdown(false)
-                        }}
-                        className={cn(
-                          "w-full px-4 py-2.5 text-left text-sm transition-all",
-                          sortOption === option
-                            ? "bg-orange-50 text-primary font-bold"
-                            : "text-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 카테고리 필터 칩 + 수량 배지 + (+) 추가 버튼 */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {/* Sticky Search + Filter */}
+            <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+              
+              {/* Left Side: Filters */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%]">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
                   const count = f === "전체" 
                     ? wishlistItems.length + familyReservations.length 
@@ -3982,10 +3965,10 @@ export function FamilyPage({
                       key={f}
                       onClick={() => setReservationFilter(f)}
                       className={cn(
-                        "shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5",
+                        "shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1.5",
                         reservationFilter === f
-                          ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                          : "bg-white text-muted-foreground border-muted hover:border-orange-300"
+                          ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
+                          : "bg-white/70 text-muted-foreground hover:bg-white"
                       )}
                     >
                       <span>{f}</span>
@@ -4000,19 +3983,97 @@ export function FamilyPage({
                 })}
               </div>
 
-              <button
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    window.dispatchEvent(new CustomEvent('openLoginModal'))
-                  } else {
-                    setEditingPlan({ isWishlist: true })
-                    setIsAddReservationOpen(true)
-                  }
-                }}
-                className="size-9 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center shadow-md transition-all shrink-0"
-              >
-                <Plus className="size-4" />
-              </button>
+              {/* Right Side: Actions (Search, Sort, FAB) */}
+              <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
+                
+                {/* Search Bar */}
+                <div className={cn("relative transition-all duration-300 ease-in-out", isSearchExpanded || searchQuery ? "flex-1 min-w-[120px] sm:min-w-[150px]" : "w-[38px] flex-shrink-0")}>
+                  {isSearchExpanded || searchQuery ? (
+                    <>
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
+                      <input
+                        type="text"
+                        autoFocus
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onBlur={() => { if (!searchQuery) setIsSearchExpanded(false) }}
+                        placeholder="식당, 메뉴 검색"
+                        className="w-full pl-8 pr-7 h-[38px] bg-white/90 border border-muted/20 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm shadow-sm"
+                      />
+                      <button
+                        onClick={() => { setSearchQuery(''); setIsSearchExpanded(false) }}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground p-1.5 transition-colors cursor-pointer"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsSearchExpanded(true)}
+                      className="w-[38px] h-[38px] flex items-center justify-center bg-white/60 text-muted-foreground border border-white/80 rounded-xl shadow-sm hover:bg-white hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <Search className="size-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className={cn("relative flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:block" : "block")}>
+                  <button
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    className="flex items-center gap-1.5 px-3.5 bg-white/60 text-muted-foreground border border-white/80 hover:border-primary/30 rounded-xl text-sm font-medium transition-all h-[38px]"
+                  >
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+                      }}
+                      className="inline-flex cursor-pointer"
+                    >
+                      <ArrowUpDown className="size-3" />
+                    </span>
+                    <span className="hidden sm:inline">{sortOption}</span>
+                    <ChevronDown className="size-2.5" />
+                  </button>
+
+                  {showSortDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                      {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => {
+                            setSortOption(option)
+                            setShowSortDropdown(false)
+                          }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-left text-sm transition-all",
+                            sortOption === option
+                              ? "bg-orange-50 text-primary font-bold"
+                              : "text-foreground hover:bg-muted/50"
+                          )}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* FAB */}
+                <button
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      window.dispatchEvent(new CustomEvent('openLoginModal'))
+                    } else {
+                      setEditingPlan({ isWishlist: true })
+                      setIsAddReservationOpen(true)
+                    }
+                  }}
+                  className="size-10 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center shadow-md shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 z-20 shrink-0"
+                >
+                  <Plus className="size-5" strokeWidth={2.8} />
+                </button>
+              </div>
             </div>
 
             {/* 모바일 서브 탭 스위처 (md 이상에서는 숨김) */}

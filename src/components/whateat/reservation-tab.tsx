@@ -117,6 +117,7 @@ interface ReservationTabProps {
 export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackToCalendar }: ReservationTabProps) {
   const [urlInput, setUrlInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -467,31 +468,10 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   return (
     <div className="flex flex-col gap-1">
       {/* Sticky Search + Filter */}
-      <div className="sticky top-0 z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="식당, 메뉴, 장소 검색"
-            className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
-          />
-        </div>
-        <button
-          onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
-          className="flex items-center gap-1.5 px-3.5 h-[38px] bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap cursor-pointer"
-        >
-          <ArrowUpDown className="size-3.5" />
-          날짜순
-          <span className="text-[11px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-        </button>
-      </div>
-
-      {/* Meal Type Filter + Add Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+      <div className="sticky top-0 z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+        
+        {/* Left Side: Filters */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%]">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
@@ -499,39 +479,85 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 key={option.id}
                 onClick={() => setMealTypeFilter(option.id)}
                 className={cn(
-                  "relative px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1 whitespace-nowrap",
+                  "relative px-4.5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
                   mealTypeFilter === option.id
                     ? "bg-orange-500 text-white shadow-md"
-                    : "bg-white/70 text-muted-foreground hover:bg-white"
+                    : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"
                 )}
               >
-                <span className="absolute -top-2 right-0 z-10 text-[11px] leading-none font-black text-cyan-600">
+                <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-cyan-600">
                   {getOptionCount(option.id)}
                 </span>
-                {Icon && <Icon className="size-3.5" />}
+                {Icon && <Icon className="size-4" />}
                 {option.label}
               </button>
             )
           })}
         </div>
-        <div className="flex items-center gap-2">
-          {showBackToCalendar && onBackToCalendar && (
-            <button
-              onClick={onBackToCalendar}
-              className="px-3 py-1.5 rounded-full text-[12px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors"
-            >
-              ← 캘린더
-            </button>
-          )}
+
+        {/* Right Side: Actions (Search, Sort, FAB) */}
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
+          
+          {/* Search Bar */}
+          <div className={cn("relative transition-all duration-300 ease-in-out", isSearchExpanded || searchQuery ? "flex-1 min-w-[120px] sm:min-w-[150px]" : "w-[38px] flex-shrink-0")}>
+            {isSearchExpanded || searchQuery ? (
+              <>
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={() => { if (!searchQuery) setIsSearchExpanded(false) }}
+                  placeholder="식당, 메뉴 검색"
+                  className="w-full pl-8 pr-7 h-[38px] bg-white/90 border border-muted/20 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm shadow-sm"
+                />
+                <button
+                  onClick={() => { setSearchQuery(''); setIsSearchExpanded(false) }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground p-1.5 transition-colors cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsSearchExpanded(true)}
+                className="w-[38px] h-[38px] flex items-center justify-center bg-white/60 text-muted-foreground border border-white/80 rounded-xl shadow-sm hover:bg-white hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Search className="size-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Sort Button */}
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="size-10 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all"
+            onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
+            className={cn("items-center gap-1.5 px-3.5 h-[38px] bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap cursor-pointer flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:flex" : "flex")}
           >
-            <Plus className="size-5" strokeWidth={2.8} />
+            <ArrowUpDown className="size-3.5" />
+            <span className="hidden sm:inline">날짜순</span>
+            <span className="text-[11px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
           </button>
+
+          {/* FAB and Back Button */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {showBackToCalendar && onBackToCalendar && (
+              <button
+                onClick={onBackToCalendar}
+                className="px-3.5 py-2 rounded-full text-sm font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors cursor-pointer"
+              >
+                ← 캘린더
+              </button>
+            )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="size-10 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer flex-shrink-0"
+            >
+              <Plus className="size-5" strokeWidth={2.8} />
+            </button>
+          </div>
         </div>
       </div>
-      </div>{/* end sticky */}
 
       {/* Meal Plan Cards */}
       {filteredPlans.length > 0 ? (
