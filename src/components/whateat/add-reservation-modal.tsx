@@ -563,7 +563,11 @@ const handleSubmit = () => {
                     <img
                       src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
                       alt="Thumbnail"
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                      }}
                     />
                   </div>
                 )}
@@ -667,7 +671,11 @@ const handleSubmit = () => {
                               <img
                                 src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
                                 alt="URL preview"
+                                referrerPolicy="no-referrer"
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                                }}
                               />
                             </div>
                             <div className="flex-1 min-w-0 space-y-1.5">
