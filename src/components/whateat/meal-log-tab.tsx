@@ -102,6 +102,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const { isLoggedIn, user } = useHub()
   const [viewerImage, setViewerImage] = useState<string | null>(null)
   const [mealLogs, setMealLogs] = useState<any[]>([])
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
 
   // 기등록된 배달 식당 목록 추출
   const registeredDeliveryStores = useMemo(() => {
@@ -1399,137 +1400,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   return (
     <div className="flex flex-col gap-3">
       {/* Sticky Search + Filter */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-      {/* Search + Date Filter Row */}
-      <div className="flex items-center gap-2 md:flex-1 md:order-2">
-        {/* Search Input */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="식당, 메뉴, 장소 검색"
-            className="w-full pl-9 pr-4 h-[38px] bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
-          />
-        </div>
-
-        {/* Sort Dropdown */}
-        <div className="relative" ref={sortRef}>
-          <button
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 h-[38px] rounded-xl text-sm font-medium transition-all border cursor-pointer",
-              sortOption !== "날짜순" || dateRangeStart || dateRangeEnd
-                ? "bg-cyan-500 text-white border-cyan-500 shadow-sm shadow-cyan-200"
-                : "bg-white/60 text-muted-foreground border-white/80 hover:border-primary/30"
-            )}
-          >
-            <span
-              onClick={(e) => {
-                e.stopPropagation()
-                setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
-              }}
-              className="inline-flex"
-            >
-              <ArrowUpDown className="size-3" />
-            </span>
-            <span>{sortOption}</span>
-            <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
-            <ChevronDown className="size-2.5" />
-          </button>
-
-          {/* Sort Dropdown Menu */}
-          {showSortDropdown && !showDateRangePicker && (
-            <div className="absolute right-0 top-full mt-2 w-36 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
-              {(["날짜순", "별점순", "기간"] as const).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => {
-                    if (option === "기간") {
-                      setShowDateRangePicker(true)
-                    } else {
-                      setSortOption(option)
-                      setDateRangeStart(null)
-                      setDateRangeEnd(null)
-                      setShowSortDropdown(false)
-                    }
-                  }}
-                  className={cn(
-                    "w-full px-4 py-2.5 text-left text-sm transition-all",
-                    sortOption === option
-                      ? "bg-orange-50 text-primary font-bold"
-                      : "text-foreground hover:bg-muted/50"
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Date Range Picker */}
-          {showDateRangePicker && (
-            <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-muted/20 p-4 z-50">
-              <h4 className="font-bold text-sm text-foreground mb-3">기간 설정</h4>
-              
-              {/* Start Date */}
-              <div className="mb-3">
-                <label className="text-xs text-muted-foreground mb-1 block">시작 날짜</label>
-                <input
-                  type="date"
-                  value={dateRangeStart || ""}
-                  onChange={(e) => setDateRangeStart(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-muted/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                />
-              </div>
-
-              {/* End Date */}
-              <div className="mb-4">
-                <label className="text-xs text-muted-foreground mb-1 block">종료 날짜</label>
-                <input
-                  type="date"
-                  value={dateRangeEnd || ""}
-                  onChange={(e) => setDateRangeEnd(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-muted/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setDateRangeStart(null)
-                    setDateRangeEnd(null)
-                    setSortOption("날짜순")
-                    setShowDateRangePicker(false)
-                    setShowSortDropdown(false)
-                  }}
-                  className="flex-1 py-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-lg transition-all"
-                >
-                  초기화
-                </button>
-                <button
-                  onClick={() => {
-                    setSortOption("기간")
-                    setShowDateRangePicker(false)
-                    setShowSortDropdown(false)
-                  }}
-                  className="flex-1 py-2 text-sm bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all"
-                >
-                  적용
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-
-
-      {/* Meal Type Filter Buttons */}
-      <div className="flex items-center justify-between md:contents">
-        <div className="flex items-center gap-1.5 sm:gap-2.5 md:order-1">
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+        
+        {/* Left Side: Filters */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%]">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
@@ -1540,7 +1414,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   "relative px-4.5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
                   mealTypeFilter === option.id
                     ? "bg-orange-500 text-white shadow-md"
-                    : "bg-white/70 text-muted-foreground hover:bg-white"
+                    : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"
                 )}
               >
                 <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-cyan-600">
@@ -1552,27 +1426,169 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
             )
           })}
         </div>
-        <div className="flex items-center gap-2 md:order-3">
-          {showBackToCalendar && onBackToCalendar && (
+
+        {/* Right Side: Actions (Search, Sort, FAB) */}
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
+          
+          {/* Search Bar */}
+          <div className={cn("relative transition-all duration-300 ease-in-out", isSearchExpanded || searchQuery ? "flex-1 min-w-[120px] sm:min-w-[150px]" : "w-[38px] flex-shrink-0")}>
+            {isSearchExpanded || searchQuery ? (
+              <>
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={() => { if (!searchQuery) setIsSearchExpanded(false) }}
+                  placeholder="식당, 메뉴 검색"
+                  className="w-full pl-8 pr-7 h-[38px] bg-white/90 border border-muted/20 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm shadow-sm"
+                />
+                <button
+                  onClick={() => { setSearchQuery(''); setIsSearchExpanded(false) }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground p-1.5 transition-colors cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsSearchExpanded(true)}
+                className="w-[38px] h-[38px] flex items-center justify-center bg-white/60 text-muted-foreground border border-white/80 rounded-xl shadow-sm hover:bg-white hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Search className="size-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className={cn("relative flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:block" : "block")} ref={sortRef}>
             <button
-              onClick={onBackToCalendar}
-              className="px-4 py-2.5 rounded-full text-sm font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors cursor-pointer"
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 h-[38px] rounded-xl text-sm font-medium transition-all border cursor-pointer",
+                sortOption !== "날짜순" || dateRangeStart || dateRangeEnd
+                  ? "bg-cyan-500 text-white border-cyan-500 shadow-sm shadow-cyan-200"
+                  : "bg-white/60 text-muted-foreground border-white/80 hover:border-primary/30"
+              )}
             >
-              ← 캘린더
+              <span
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
+                }}
+                className="inline-flex"
+              >
+                <ArrowUpDown className="size-3" />
+              </span>
+              <span className="hidden sm:inline">{sortOption}</span>
+              <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
             </button>
-          )}
-          <button
-            onClick={() => {
-              setEditingMeal(null)
-              setEditModalOpen(true)
-            }}
-            className="size-11 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          >
-            <Plus className="size-5.5" strokeWidth={2.8} />
-          </button>
+
+            {/* Sort Dropdown Menu */}
+            {showSortDropdown && !showDateRangePicker && (
+              <div className="absolute right-0 top-full mt-2 w-36 bg-white rounded-xl shadow-xl border border-muted/20 py-2 z-50">
+                {(["날짜순", "별점순", "기간"] as const).map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      if (option === "기간") {
+                        setShowDateRangePicker(true)
+                      } else {
+                        setSortOption(option)
+                        setDateRangeStart(null)
+                        setDateRangeEnd(null)
+                        setShowSortDropdown(false)
+                      }
+                    }}
+                    className={cn(
+                      "w-full px-4 py-2.5 text-left text-sm transition-all",
+                      sortOption === option
+                        ? "bg-orange-50 text-primary font-bold"
+                        : "text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Date Range Picker */}
+            {showDateRangePicker && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-muted/20 p-4 z-50">
+                <h4 className="font-bold text-sm text-foreground mb-3">기간 설정</h4>
+                
+                <div className="mb-3">
+                  <label className="text-xs text-muted-foreground mb-1 block">시작 날짜</label>
+                  <input
+                    type="date"
+                    value={dateRangeStart || ""}
+                    onChange={(e) => setDateRangeStart(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-muted/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="text-xs text-muted-foreground mb-1 block">종료 날짜</label>
+                  <input
+                    type="date"
+                    value={dateRangeEnd || ""}
+                    onChange={(e) => setDateRangeEnd(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-muted/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setDateRangeStart(null)
+                      setDateRangeEnd(null)
+                      setSortOption("날짜순")
+                      setShowDateRangePicker(false)
+                      setShowSortDropdown(false)
+                    }}
+                    className="flex-1 py-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-lg transition-all"
+                  >
+                    초기화
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortOption("기간")
+                      setShowDateRangePicker(false)
+                      setShowSortDropdown(false)
+                    }}
+                    className="flex-1 py-2 text-sm bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all"
+                  >
+                    적용
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* FAB and Back Button */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {showBackToCalendar && onBackToCalendar && (
+              <button
+                onClick={onBackToCalendar}
+                className="px-3.5 py-2 rounded-full text-sm font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100 transition-colors cursor-pointer"
+              >
+                ← 캘린더
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setEditingMeal(null)
+                setEditModalOpen(true)
+              }}
+              className="size-10 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer flex-shrink-0"
+            >
+              <Plus className="size-5" strokeWidth={2.8} />
+            </button>
+          </div>
         </div>
       </div>
-      </div>{/* end sticky */}
 
 
       {/* Meal Cards - PC에서 2열 그리드 */}
