@@ -3014,7 +3014,7 @@ export function FamilyPage({
       </div>
 
       {/* Tab Content */}
-      <div className="pt-3 flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-3">
           {/* Sticky Search + Filter */}
