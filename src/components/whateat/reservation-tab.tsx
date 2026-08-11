@@ -471,7 +471,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       <div className="sticky top-0 z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
         
         {/* Left Side: Filters */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%]">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 pb-1 -mt-2">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
@@ -479,7 +479,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 key={option.id}
                 onClick={() => setMealTypeFilter(option.id)}
                 className={cn(
-                  "relative px-4.5 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
+                  "relative px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer",
                   mealTypeFilter === option.id
                     ? "bg-orange-500 text-white shadow-md"
                     : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"

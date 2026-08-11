@@ -3018,10 +3018,10 @@ export function FamilyPage({
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-3">
           {/* Sticky Search + Filter */}
-          <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-end justify-between gap-2">
+          <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
             
             {/* Left Side: Filters */}
-            <div className="flex items-end gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pb-1">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 pb-1 -mt-2">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
                 const displayMeals = [...activeDefaultMeals, ...meals]
@@ -3031,21 +3031,22 @@ export function FamilyPage({
                     : displayMeals.filter((meal) => getSharedMealCategory(meal) === filterTab.id).length
 
                 return (
-                  <div key={filterTab.id} className="flex flex-col items-center gap-1 shrink-0">
-                    <span className="text-[11px] font-black leading-none text-sky-500">{count}</span>
-                    <button
-                      onClick={() => setSharedMealFilter(filterTab.id)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1 whitespace-nowrap",
-                        sharedMealFilter === filterTab.id
-                          ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
-                          : "bg-white/70 text-muted-foreground hover:bg-white",
-                      )}
-                    >
-                      {Icon && <Icon className="size-3.5" />}
-                      {filterTab.label}
-                    </button>
-                  </div>
+                  <button
+                    key={filterTab.id}
+                    onClick={() => setSharedMealFilter(filterTab.id)}
+                    className={cn(
+                      "relative px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap",
+                      sharedMealFilter === filterTab.id
+                        ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
+                        : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0",
+                    )}
+                  >
+                    <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-sky-500">
+                      {count}
+                    </span>
+                    {Icon && <Icon className="size-4" />}
+                    {filterTab.label}
+                  </button>
                 )
               })}
             </div>
@@ -3955,7 +3956,7 @@ export function FamilyPage({
             <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
               
               {/* Left Side: Filters */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%]">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 -mt-2">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
                   const count = f === "전체" 
                     ? wishlistItems.length + familyReservations.length 
@@ -3965,19 +3966,16 @@ export function FamilyPage({
                       key={f}
                       onClick={() => setReservationFilter(f)}
                       className={cn(
-                        "shrink-0 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all flex items-center gap-1.5",
+                        "relative shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-1.5",
                         reservationFilter === f
                           ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
-                          : "bg-white/70 text-muted-foreground hover:bg-white"
+                          : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"
                       )}
                     >
-                      <span>{f}</span>
-                      <span className={cn(
-                        "text-[10px] px-1.5 py-0.2 rounded-full font-black",
-                        reservationFilter === f ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-                      )}>
+                      <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-sky-500">
                         {count}
                       </span>
+                      <span>{f}</span>
                     </button>
                   )
                 })}
