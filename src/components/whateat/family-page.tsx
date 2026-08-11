@@ -3021,7 +3021,7 @@ export function FamilyPage({
           <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
             
             {/* Left Side: Filters */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 pb-1 -mt-2">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
                 const displayMeals = [...activeDefaultMeals, ...meals]
@@ -3956,7 +3956,7 @@ export function FamilyPage({
             <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
               
               {/* Left Side: Filters */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 -mt-2">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
                   const count = f === "전체" 
                     ? wishlistItems.length + familyReservations.length 

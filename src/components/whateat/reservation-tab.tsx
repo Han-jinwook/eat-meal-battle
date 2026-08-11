@@ -471,7 +471,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       <div className="sticky top-0 z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
         
         {/* Left Side: Filters */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-2 pb-1 -mt-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
             return (
