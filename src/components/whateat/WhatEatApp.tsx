@@ -343,7 +343,6 @@ export default function WhatEatApp() {
 
           <main className={cn(
             "flex-1 custom-scrollbar relative",
-            bottomNavTab !== "family" && "overflow-y-auto",
             (!isLoggedIn && !isLoading && bottomNavTab !== "home" && bottomNavTab !== "talk" && !isNudgeDismissed) ? "pb-[300px]" : "pb-8"
           )}>
             {/* Home Onboarding Tab */}
