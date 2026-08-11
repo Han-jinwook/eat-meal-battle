@@ -1617,17 +1617,23 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           </div>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex items-center gap-1.5">
+        {/* Category Filter and Quick Filters moved to sticky block below */}
+      </div>
+
+      {/* Sticky Search + Filter */}
+      <div className="sticky top-[62px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+        
+        {/* Left Side: Filters */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[70%] sm:max-w-[80%] pt-1.5 pb-1">
           {categoryOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setCategoryFilter(option.id)}
               className={cn(
-                "relative px-3 py-1.5 rounded-full text-[13px] font-bold transition-all whitespace-nowrap",
+                "relative px-3 py-1.5 rounded-full text-[13px] font-bold transition-all whitespace-nowrap cursor-pointer",
                 categoryFilter === option.id
                   ? "bg-orange-500 text-white shadow-md shadow-orange-300/50"
-                  : "bg-white/70 text-muted-foreground hover:bg-white"
+                  : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"
               )}
             >
               <span className="absolute -top-2 right-0 z-10 text-[11px] leading-none font-black text-cyan-600">
@@ -1636,71 +1642,43 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               {option.label}
             </button>
           ))}
-        </div>
-
-        {/* Quick Filters */}
-        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-muted/30">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setShowOnlyNew(false)
-                setShowOnlyLiked(false)
-                setShowOnlySubscribed(false)
-              }}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-                !showOnlyNew && !showOnlyLiked && !showOnlySubscribed
-                  ? "bg-orange-50 text-orange-500 border border-orange-200"
-                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
-              )}
-            >
-              전체
-            </button>
-            <button
-              onClick={() => setShowOnlyNew(!showOnlyNew)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-                showOnlyNew
-                  ? "bg-cyan-50 text-cyan-600 border border-cyan-200"
-                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
-              )}
-            >
-              NEW
-            </button>
-            <button
-              onClick={() => setShowOnlyLiked(!showOnlyLiked)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-                showOnlyLiked
-                  ? "bg-orange-50 text-orange-500 border border-orange-200"
-                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
-              )}
-            >
-              <Heart className={cn("size-3", showOnlyLiked && "fill-current")} />
-              my 좋아요
-            </button>
-            <button
-              onClick={() => setShowOnlySubscribed(!showOnlySubscribed)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1.5",
-                showOnlySubscribed
-                  ? "bg-orange-50 text-orange-500 border border-orange-200"
-                  : "bg-white/50 text-muted-foreground border border-transparent hover:border-muted"
-              )}
-            >
-              <UserCheck className={cn("size-3")} />
-              구독중
-            </button>
-          </div>
+          
+          <div className="w-[1px] h-4 bg-muted/30 shrink-0 mx-0.5" />
 
           <button
-            onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
-            className="flex items-center gap-1 text-xs text-muted-foreground px-1"
+            onClick={() => setShowOnlyLiked(!showOnlyLiked)}
+            className={cn(
+              "px-2.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+              showOnlyLiked
+                ? "bg-orange-50 text-orange-500 border border-orange-200"
+                : "bg-white/70 text-muted-foreground border border-transparent hover:border-muted"
+            )}
           >
-            <ArrowUpDown className="size-3" />
-            {sortOrder === "latest" ? "최신순" : "오래된순"}
+            <Heart className={cn("size-3", showOnlyLiked && "fill-current")} />
+            my 좋아요
+          </button>
+          <button
+            onClick={() => setShowOnlySubscribed(!showOnlySubscribed)}
+            className={cn(
+              "px-2.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+              showOnlySubscribed
+                ? "bg-orange-50 text-orange-500 border border-orange-200"
+                : "bg-white/70 text-muted-foreground border border-transparent hover:border-muted"
+            )}
+          >
+            <UserCheck className={cn("size-3")} />
+            구독중
           </button>
         </div>
+
+        {/* Right Side: Sort */}
+        <button
+          onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
+          className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground px-2 py-1.5 bg-white/70 rounded-lg border border-muted/20 shrink-0 hover:bg-white cursor-pointer"
+        >
+          <ArrowUpDown className="size-3" />
+          {sortOrder === "latest" ? "최신순" : "과거순"}
+        </button>
       </div>
 
       {/* Posts */}
