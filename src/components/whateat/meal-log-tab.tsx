@@ -1400,7 +1400,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   return (
     <div className="flex flex-col gap-3">
       {/* Sticky Search + Filter */}
-      <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+      <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
         
         {/* Left Side: Filters */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
