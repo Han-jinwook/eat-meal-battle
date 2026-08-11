@@ -3003,7 +3003,7 @@ export function FamilyPage({
           </div>
         </div>
 
-        <div className="sticky top-[62px] z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-2 pb-1 border-b border-muted/10 -mx-5 px-5">
+        <div className="sticky top-[62px] z-40 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] pt-2 pb-1 -mx-5 px-5">
           <TabNavigation
             activeTab={activeMainTab as "log" | "reservation" | "calendar"}
             onTabChange={onTabChange || (() => {})}
