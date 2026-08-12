@@ -7,8 +7,6 @@ import {
   Heart,
   MessageCircle,
   ChevronDown,
-  UserPlus,
-  UserCheck,
   Search,
   ArrowUpDown,
   X,
@@ -59,8 +57,6 @@ interface TalkPost {
   likes: number
   isLiked: boolean
   commentCount: number
-  // 집밥만 구독 가능
-  isSubscribed?: boolean
   isSample?: boolean
   isExplicit?: boolean
   linkUrl?: string
@@ -97,7 +93,6 @@ const dummyPosts: TalkPost[] = [
     likes: 12,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false,
     linkUrl: "https://map.naver.com",
     linkThumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&fit=crop"
   },
@@ -115,7 +110,6 @@ const dummyPosts: TalkPost[] = [
     likes: 24,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false,
     linkUrl: "https://www.10000recipe.com",
     linkThumbnail: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=100&fit=crop"
   },
@@ -134,7 +128,6 @@ const dummyPosts: TalkPost[] = [
     likes: 15,
     isLiked: false,
     commentCount: 2,
-    isSubscribed: false,
     linkUrl: "https://map.naver.com",
     linkThumbnail: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=100&fit=crop"
   }
@@ -283,7 +276,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [showRegionSearch, setShowRegionSearch] = useState(false)
   const [showOnlyNew, setShowOnlyNew] = useState(false) // 전체(All)를 디폴트로 설정하기 위해 기존 true에서 false로 변경
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
-  const [showOnlySubscribed, setShowOnlySubscribed] = useState(false)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
   const [commentsTrigger, setCommentsTrigger] = useState(0)
   const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
@@ -1158,7 +1150,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             likes: mealLikesCountMap.get(img.id) || 0,
             isLiked: userLikedMealSet.has(img.id),
             commentCount: commentCountMap.get(img.id) || 0,
-            isSubscribed: false,
             isSample: false,
             isExplicit,
             linkUrl: meta.linkUrl || "",
@@ -1273,15 +1264,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     }
   }
 
-  // 구독 토글 (집밥만)
-  const toggleSubscribe = (postId: number | string) => {
-    setPosts(posts.map(p => 
-      p.id === postId && p.type === "homemade"
-        ? { ...p, isSubscribed: !p.isSubscribed }
-        : p
-    ))
-  }
-
   // 필터링된 포스트
   const toKstDateKey = (date: Date) => {
     const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000)
@@ -1379,7 +1361,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     if (categoryFilter !== "all" && post.type !== categoryFilter) return false
     if (showOnlyNew && !isTodayPost(post.createdAt)) return false
     if (showOnlyLiked && !post.isLiked) return false
-    if (showOnlySubscribed && !post.isSubscribed) return false
 
     // 지역 필터 적용
     return matchesRegionFilter(post)
@@ -1450,8 +1431,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     searchRegion,
     searchQuery,
     showOnlyNew,
-    showOnlyLiked,
-    showOnlySubscribed,
+    showOnlyLiked
   ])
 
   const visiblePosts = sortedPosts.slice(0, visibleCount)
@@ -1616,8 +1596,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             />
           </div>
         </div>
-
-        {/* Category Filter and Quick Filters moved to sticky block below */}
       </div>
 
       {/* Sticky Search + Filter */}
@@ -1657,18 +1635,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             <Heart className={cn("size-3", showOnlyLiked && "fill-current")} />
             my 좋아요
           </button>
-          <button
-            onClick={() => setShowOnlySubscribed(!showOnlySubscribed)}
-            className={cn(
-              "px-2.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
-              showOnlySubscribed
-                ? "bg-orange-50 text-orange-500 border border-orange-200"
-                : "bg-white/70 text-muted-foreground border border-transparent hover:border-muted"
-            )}
-          >
-            <UserCheck className={cn("size-3")} />
-            구독중
-          </button>
         </div>
 
         {/* Right Side: Sort */}
@@ -1704,20 +1670,6 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-foreground">{post.author.nickname}</span>
-                    {post.type === "homemade" && (
-                      <button
-                        onClick={() => toggleSubscribe(post.id)}
-                        className={cn(
-                          "px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all",
-                          post.isSubscribed
-                            ? "bg-orange-500 text-white"
-                            : "bg-muted/50 text-muted-foreground hover:bg-orange-50 hover:text-orange-500"
-                        )}
-                      >
-                        {post.isSubscribed ? <UserCheck className="size-3" /> : <UserPlus className="size-3" />}
-                        {post.isSubscribed ? "구독중" : "구독"}
-                      </button>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <MapPin className="size-3 text-muted-foreground" />
