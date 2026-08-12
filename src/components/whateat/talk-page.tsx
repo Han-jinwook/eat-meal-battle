@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Search,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   X,
   Send,
   ExternalLink,
@@ -1642,7 +1644,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
           className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground px-2 py-1.5 bg-white/70 rounded-lg border border-muted/20 shrink-0 hover:bg-white cursor-pointer"
         >
-          <ArrowUpDown className="size-3" />
+          {sortOrder === "latest" ? (
+            <ArrowDown className="size-3" />
+          ) : (
+            <ArrowUp className="size-3" />
+          )}
           {sortOrder === "latest" ? "최신순" : "과거순"}
         </button>
       </div>
