@@ -2020,37 +2020,6 @@ export function FamilyPage({
     return sortDirection === "desc" ? dateB - dateA : dateA - dateB
   })
 
-  const formatRemainingTime = (remainingMs: number) => {
-    const totalMinutes = Math.max(0, Math.ceil(remainingMs / (60 * 1000)))
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
-
-    if (hours > 0) {
-      return `${hours}시간 ${minutes}분`
-    }
-
-    return `${minutes}분`
-  }
-
-  const getMealDeadline = (meal: SharedMeal) => {
-    const deadlineMs = Date.parse(meal.sharedAtIso) + 7 * 24 * 60 * 60 * 1000
-    return new Date(deadlineMs)
-  }
-
-  const isMealRatingOpen = (meal: SharedMeal) => Date.now() <= getMealDeadline(meal).getTime()
-
-  const getMealDeadlineLabel = (meal: SharedMeal) => {
-    const deadline = getMealDeadline(meal)
-    const remaining = deadline.getTime() - Date.now()
-    const deadlineText = deadline.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
-
-    if (remaining <= 0) {
-      return `별점 마감 ${deadlineText}`
-    }
-
-    return `별점 마감 ${deadlineText} · 남은 ${formatRemainingTime(remaining)}`
-  }
-
   const getMealAverageRating = (mealId: string | number) => {
     const ratingMap = displayRatings[mealId] ?? {}
     const ratedScores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
@@ -2191,7 +2160,6 @@ export function FamilyPage({
     const targetMeal = baseMeals.find((meal) => meal.id === mealId)
     if (!targetMeal) return
     if (memberId !== currentFamilyMemberId) return
-    if (!isMealRatingOpen(targetMeal)) return
     if (!isLoggedIn || !user?.id) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))
       return
@@ -3482,64 +3450,43 @@ export function FamilyPage({
                             const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
                             const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
                             return (
-                              <div className="flex items-center gap-1.5 select-none shrink-0">
-                                {isOpen ? (
-                                  <>
-                                    {/* 5성 인터랙티브 별점 (내 별점 평가) - 클릭 전파 차단하여 모달 팝업 방지 */}
-                                    <div 
-                                      className="flex items-center gap-0.5 text-orange-500"
-                                      onClick={(e) => e.stopPropagation()}
+                              <div className="flex items-center gap-2 select-none shrink-0">
+                                {/* 5성 인터랙티브 별점 (내 별점 평가) - 클릭 전파 차단하여 팝업 방지 */}
+                                <div 
+                                  className="flex items-center gap-0.5 text-orange-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, star)
+                                      }}
+                                      className="hover:scale-125 active:scale-95 transition-transform"
+                                      title={`별점 ${star}점 남기기`}
                                     >
-                                      {[1, 2, 3, 4, 5].map((star) => (
-                                        <button
-                                          key={star}
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, star)
-                                          }}
-                                          className="hover:scale-125 active:scale-95 transition-transform"
-                                          title={`별점 ${star}점 남기기`}
-                                        >
-                                          <Star
-                                            className={cn(
-                                              "size-4",
-                                              star <= myRating ? "fill-orange-400 text-orange-400" : "text-gray-300"
-                                            )}
-                                          />
-                                        </button>
-                                      ))}
-                                    </div>
-                                    {/* 평점 텍스트: 클릭 시 부모로 전파되어 상세 평가 모달 오픈 */}
-                                    <span className="text-[11px] font-bold text-muted-foreground ml-0.5 hover:text-foreground cursor-pointer transition-colors">
-                                      ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
-                                    </span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" title="평가 진행 중" />
-                                  </>
-                                ) : (
-                                  <>
-                                    {/* 마감된 평균 별점 표시 - 클릭 전파 차단하여 모달 팝업 방지 */}
-                                    <div 
-                                      className="flex items-center gap-0.5 text-gray-400"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {[1, 2, 3, 4, 5].map((star) => (
-                                        <Star
-                                          key={star}
-                                          className={cn(
-                                            "size-3.5",
-                                            star <= Math.round(averageRating) ? "fill-gray-400 text-gray-400" : "text-gray-200"
-                                          )}
-                                        />
-                                      ))}
-                                    </div>
-                                    {/* 평점 텍스트: 클릭 시 부모로 전파되어 상세 평가 모달 오픈 */}
-                                    <span className="text-[11px] font-bold text-muted-foreground/75 ml-0.5 hover:text-foreground cursor-pointer transition-colors">
-                                      ({averageRating.toFixed(1)}점 / {totalRatedCount}명)
-                                    </span>
-                                    <span className="text-[9px] bg-gray-100 text-gray-500 font-semibold px-1 rounded">마감</span>
-                                  </>
-                                )}
+                                      <Star
+                                        className={cn(
+                                          "size-4",
+                                          star <= myRating ? "fill-orange-400 text-orange-400" : "text-gray-300"
+                                        )}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                {/* 평점 텍스트: 클릭 시에만 팝업이 뜨도록 분리 */}
+                                <button 
+                                  className="text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors py-1 px-1.5 -ml-1 rounded-md hover:bg-black/5 active:bg-black/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleOpenMealCardDetail(meal.id)
+                                  }}
+                                  title="가족 별점 자세히 보기"
+                                >
+                                  ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
+                                </button>
                               </div>
                             )
                           })()}
@@ -3617,8 +3564,6 @@ export function FamilyPage({
             </div>
 
             <div className="overflow-y-auto max-h-[calc(85vh-82px)] p-5 space-y-5">
-              <img src={selectedMeal.image || "/placeholder.svg"} alt={selectedMeal.title} className="w-full rounded-2xl aspect-[4/3] object-cover" />
-
               <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-bold text-sm text-foreground">가족 별점</h4>
@@ -3628,20 +3573,11 @@ export function FamilyPage({
                   </span>
                 </div>
 
-                <div className={cn(
-                  "mb-3 text-[11px] font-semibold rounded-lg px-2.5 py-2",
-                  isMealRatingOpen(selectedMeal)
-                    ? "bg-orange-100 text-orange-700"
-                    : "bg-gray-100 text-gray-500",
-                )}>
-                  {getMealDeadlineLabel(selectedMeal)}
-                </div>
-
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 mt-4">
                   {members.map((member) => {
                     const score = displayRatings[selectedMeal.id]?.[member.id] ?? 0
                     const isSelf = member.id === currentFamilyMemberId
-                    const canRate = isSelf && isMealRatingOpen(selectedMeal)
+                    const canRate = isSelf
 
                     return (
                       <div key={member.id} className="flex items-center justify-between gap-2">
@@ -3656,7 +3592,7 @@ export function FamilyPage({
                             >
                               <Star
                                 className={cn(
-                                  "size-4 transition-colors",
+                                  "size-5 transition-colors",
                                   value <= score ? "fill-orange-400 text-orange-400" : "text-gray-300",
                                   !canRate && "opacity-60",
                                 )}
@@ -3670,13 +3606,11 @@ export function FamilyPage({
                   })}
                 </div>
 
-                <p className="text-[11px] text-muted-foreground mt-3">별점은 본인(나) 계정으로만 입력할 수 있어요.</p>
+                <p className="text-[11px] text-muted-foreground mt-4">별점은 본인(나) 계정으로만 입력할 수 있어요.</p>
 
                 {promotedMealIds.includes(selectedMeal.id) && (
                   <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[11px] text-emerald-700 font-bold">
-                    {promotionReasonByMealId[selectedMeal.id] === "all-rated"
-                      ? "가족 전원 평가 완료! 평균 5.0 이상으로 맛통 즉시 게시 완료"
-                      : "마감 후 평균 5.0 이상 달성! 맛통 게시 완료"}
+                    가족 중 5점을 부여하여 맛통 게시 완료
                   </div>
                 )}
                 {isPromotingMealId === selectedMeal.id && (
@@ -3684,10 +3618,6 @@ export function FamilyPage({
                     맛통 게시 중...
                   </div>
                 )}
-              </div>
-
-              <div className="rounded-2xl border border-gray-100 bg-white p-4">
-                {renderMealCommentsSection(selectedMeal.id, "modal")}
               </div>
             </div>
           </div>
