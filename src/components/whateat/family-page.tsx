@@ -2231,7 +2231,6 @@ export function FamilyPage({
           table: 'meal_ratings',
           action: 'insert',
           data: {
-            id: generateUUID(),
             user_id: user.id,
             meal_id: ratingTargetId,
             rating: score
