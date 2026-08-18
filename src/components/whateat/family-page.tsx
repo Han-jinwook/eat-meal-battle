@@ -3450,43 +3450,28 @@ export function FamilyPage({
                             const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
                             const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
                             return (
-                              <div className="flex items-center gap-2 select-none shrink-0">
-                                {/* 5성 인터랙티브 별점 (내 별점 평가) - 클릭 전파 차단하여 팝업 방지 */}
-                                <div 
-                                  className="flex items-center gap-0.5 text-orange-500"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                              <div 
+                                className="flex items-center gap-1.5 select-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                                title="가족 별점 자세히 보기"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenMealCardDetail(meal.id)
+                                }}
+                              >
+                                <div className="flex items-center gap-0.5 text-orange-500">
                                   {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
+                                    <Star
                                       key={star}
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, star)
-                                      }}
-                                      className="hover:scale-125 active:scale-95 transition-transform"
-                                      title={`별점 ${star}점 남기기`}
-                                    >
-                                      <Star
-                                        className={cn(
-                                          "size-4",
-                                          star <= myRating ? "fill-orange-400 text-orange-400" : "text-gray-300"
-                                        )}
-                                      />
-                                    </button>
+                                      className={cn(
+                                        "size-3.5",
+                                        star <= Math.round(averageRating) ? "fill-orange-400 text-orange-400" : "text-gray-200"
+                                      )}
+                                    />
                                   ))}
                                 </div>
-                                {/* 평점 텍스트: 클릭 시에만 팝업이 뜨도록 분리 */}
-                                <button 
-                                  className="text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors py-1 px-1.5 -ml-1 rounded-md hover:bg-black/5 active:bg-black/10"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleOpenMealCardDetail(meal.id)
-                                  }}
-                                  title="가족 별점 자세히 보기"
-                                >
+                                <span className="text-[11px] font-bold text-muted-foreground ml-0.5">
                                   ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
-                                </button>
+                                </span>
                               </div>
                             )
                           })()}
