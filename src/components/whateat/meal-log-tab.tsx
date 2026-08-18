@@ -951,10 +951,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
       if (aIsSample && !bIsSample) return 1
       if (!aIsSample && bIsSample) return -1
 
-      const descBase =
-        sortOption === "별점순"
-          ? b.rating - a.rating
-          : parseDateString(b.date).getTime() - parseDateString(a.date).getTime()
+      // 기간 필터 적용 시 기본적으로 날짜 최신순 고정 (또는 선택된 정렬)
+      // a.date, b.date 는 "YYYY.MM.DD" 포맷이므로 문자열 비교로 안전하게 정렬
+      const descBase = sortOption === "별점순"
+        ? b.rating - a.rating
+        : b.date.localeCompare(a.date)
 
       return sortDirection === "desc" ? descBase : -descBase
     })

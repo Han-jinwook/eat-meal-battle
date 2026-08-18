@@ -1393,6 +1393,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     const hourMatch = createdAt.match(/(\d+)\s*시간\s*전/)
     if (hourMatch) return Date.now() - Number(hourMatch[1]) * 60 * 60 * 1000
 
+    const minMatch = createdAt.match(/(\d+)\s*분\s*전/)
+    if (minMatch) return Date.now() - Number(minMatch[1]) * 60 * 1000
+
+    if (createdAt.includes("방금 전")) return Date.now()
+
     const dayMatch = createdAt.match(/(\d+)\s*일\s*전/)
     if (dayMatch) return Date.now() - Number(dayMatch[1]) * 24 * 60 * 60 * 1000
 
@@ -1644,8 +1649,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
           className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground px-2 py-1.5 bg-white/70 rounded-lg border border-muted/20 shrink-0 hover:bg-white cursor-pointer"
         >
+          <span className="hidden sm:inline">날짜순</span>
           <ArrowDown className={cn("size-3 transition-transform duration-300", sortOrder === "oldest" && "rotate-180")} />
-          날짜순
         </button>
       </div>
 

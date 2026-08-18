@@ -60,6 +60,7 @@ interface SharedMeal {
   image: string
   title: string
   sharedBy: string
+  userId?: string
   sharedAt: string
   sharedAtIso: string
   mealType: "homemade" | "delivery" | "dining" | "other"
@@ -891,6 +892,7 @@ export function FamilyPage({
       image: effectiveImage,
       title: effectiveTitle,
       sharedBy: user.user_metadata?.full_name || user.email?.split("@")[0] || "나",
+      userId: user.id,
       sharedAt: formattedDate,
       sharedAtIso: nowIso,
       mealType: mappedMealType,
@@ -1293,6 +1295,7 @@ export function FamilyPage({
         .in('uploaded_by', familyUserIds)
         .eq('source', 'family-shared')
         .order('created_at', { ascending: false })
+        .limit(30)
 
       if (imgError) throw imgError
 
@@ -1375,6 +1378,7 @@ export function FamilyPage({
           image: img.image_url,
           title: img.title || meta.title || "맛있는 식사",
           sharedBy: img.uploaded_by === user?.id ? "나" : uploaderName,
+          userId: img.uploaded_by,
           sharedAt: formattedDate,
           sharedAtIso: img.created_at,
           mealType: meta.mealType || "homemade",
@@ -1996,7 +2000,7 @@ export function FamilyPage({
     // 1. 별점순
     if (sortOption === "별점순") {
       const getAvg = (mealId: number | string) => {
-        const ratingMap = displayRatings[Number(mealId)] ?? {}
+        const ratingMap = displayRatings[mealId] ?? {}
         const ratedScores = Object.values(ratingMap).filter((s): s is number => typeof s === "number")
         if (ratedScores.length === 0) return 0
         return ratedScores.reduce((sum, s) => sum + s, 0) / ratedScores.length
@@ -2046,7 +2050,7 @@ export function FamilyPage({
     return `별점 마감 ${deadlineText} · 남은 ${formatRemainingTime(remaining)}`
   }
 
-  const getMealAverageRating = (mealId: number) => {
+  const getMealAverageRating = (mealId: string | number) => {
     const ratingMap = displayRatings[mealId] ?? {}
     const ratedScores = Object.values(ratingMap).filter((score): score is number => typeof score === "number")
 
@@ -3250,9 +3254,10 @@ export function FamilyPage({
 
                         {/* 오른쪽: 식사 정보 또는 식당 링크 */}
                         <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col overflow-hidden relative">
-                          {/* 연필 수정 아이콘 - 솔로 모드와 100% 동일한 우측 상단 위치(top-1.5 right-1.5) 및 스타일 적용 */}
-                          <button
-                            type="button"
+                          {/* 연필 수정 아이콘 - 글 작성자에게만 노출 */}
+                          {meal.userId === user?.id && (
+                            <button
+                              type="button"
                             onClick={(e) => {
                               e.stopPropagation()
                               if (isSampleMeal(meal.id)) {
