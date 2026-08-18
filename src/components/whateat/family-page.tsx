@@ -3531,9 +3531,6 @@ export function FamilyPage({
                 <h3 className="font-extrabold text-foreground text-lg">{selectedMeal.title}</h3>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                   <span>{selectedMeal.sharedBy}</span>
-                  {selectedMeal.mealType === "homemade" && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-bold">홈쉐퍼</span>
-                  )}
                   <span>{selectedMeal.sharedAt}</span>
                 </p>
               </div>
@@ -3591,7 +3588,6 @@ export function FamilyPage({
                   })}
                 </div>
 
-                <p className="text-[11px] text-muted-foreground mt-4">별점은 본인(나) 계정으로만 입력할 수 있어요.</p>
 
                 {promotedMealIds.includes(selectedMeal.id) && (
                   <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[11px] text-emerald-700 font-bold">
