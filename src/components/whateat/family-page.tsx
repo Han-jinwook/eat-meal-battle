@@ -1992,6 +1992,27 @@ export function FamilyPage({
       if (!matchesSearch) return false
     }
     return true
+  }).sort((a, b) => {
+    // 1. 별점순
+    if (sortOption === "별점순") {
+      const getAvg = (mealId: number | string) => {
+        const ratingMap = displayRatings[Number(mealId)] ?? {}
+        const ratedScores = Object.values(ratingMap).filter((s): s is number => typeof s === "number")
+        if (ratedScores.length === 0) return 0
+        return ratedScores.reduce((sum, s) => sum + s, 0) / ratedScores.length
+      }
+      const scoreA = getAvg(a.id)
+      const scoreB = getAvg(b.id)
+      if (scoreA !== scoreB) {
+        return sortDirection === "desc" ? scoreB - scoreA : scoreA - scoreB
+      }
+    }
+    
+    // 2. 날짜순 (기본)
+    const dateA = a.sharedAtIso ? new Date(a.sharedAtIso).getTime() : 0
+    const dateB = b.sharedAtIso ? new Date(b.sharedAtIso).getTime() : 0
+    
+    return sortDirection === "desc" ? dateB - dateA : dateA - dateB
   })
 
   const formatRemainingTime = (remainingMs: number) => {
@@ -3674,11 +3695,21 @@ export function FamilyPage({
         const filteredWishlist = wishlistItems.filter(item => {
           if (reservationFilter === "전체") return true
           return item.mealType === reservationFilter
+        }).sort((a, b) => {
+          // 1. 날짜순 (기본) - 생성일 기준
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return sortDirection === "desc" ? dateB - dateA : dateA - dateB
         })
 
         const filteredReservations = familyReservations.filter(item => {
           if (reservationFilter === "전체") return true
           return item.mealType === reservationFilter
+        }).sort((a, b) => {
+          // 1. 날짜순 (기본) - 예약일 기준
+          const dateA = a.date ? new Date(a.date).getTime() : 0
+          const dateB = b.date ? new Date(b.date).getTime() : 0
+          return sortDirection === "desc" ? dateB - dateA : dateA - dateB
         })
 
         const renderCard = (item: any, isWishlistCard: boolean) => {
