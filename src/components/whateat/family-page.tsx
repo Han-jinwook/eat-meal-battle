@@ -22,6 +22,7 @@ import {
   MoreVertical,
   Settings,
   Star,
+  StarHalf,
   MessageCircle,
   Heart,
   Send,
@@ -3459,15 +3460,15 @@ export function FamilyPage({
                                 }}
                               >
                                 <div className="flex items-center gap-0.5 text-orange-500">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                      key={star}
-                                      className={cn(
-                                        "size-3.5",
-                                        star <= Math.round(averageRating) ? "fill-orange-400 text-orange-400" : "text-gray-200"
-                                      )}
-                                    />
-                                  ))}
+                                  {[1, 2, 3, 4, 5].map((star) => {
+                                    if (star <= averageRating) {
+                                      return <Star key={star} className="size-3.5 fill-orange-400 text-orange-400" />
+                                    } else if (star - averageRating > 0 && star - averageRating <= 0.9) {
+                                      return <StarHalf key={star} className="size-3.5 fill-orange-400 text-orange-400" />
+                                    } else {
+                                      return <Star key={star} className="size-3.5 text-gray-200" />
+                                    }
+                                  })}
                                 </div>
                                 <span className="text-[11px] font-bold text-muted-foreground ml-0.5">
                                   ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
