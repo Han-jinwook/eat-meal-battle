@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   ArrowUpDown,
+  ArrowDown,
   Calendar as CalendarIcon,
   Link2
 } from "lucide-react"
@@ -534,9 +535,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
             className={cn("items-center gap-1.5 px-3.5 h-[38px] bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap cursor-pointer flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:flex" : "flex")}
           >
-            <ArrowUpDown className="size-3.5" />
+            <ArrowDown className={cn("size-3.5 transition-transform duration-300", sortDirection === "asc" && "rotate-180")} />
             <span className="hidden sm:inline">날짜순</span>
-            <span className="text-[11px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
           </button>
 
           {/* FAB and Back Button */}

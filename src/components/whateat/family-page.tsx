@@ -14,6 +14,7 @@ import {
   Check, 
   X, 
   ArrowUpDown,
+  ArrowDown,
   ChevronDown,
   Plus,
   Clock,
@@ -3096,12 +3097,11 @@ export function FamilyPage({
                       e.stopPropagation()
                       setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
                     }}
-                    className="inline-flex cursor-pointer"
+                    className="inline-flex cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <ArrowUpDown className="size-3" />
+                    <ArrowDown className={cn("size-3 transition-transform duration-300", sortDirection === "asc" && "rotate-180")} />
                   </span>
                   <span className="hidden sm:inline">{sortOption}</span>
-                  <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
                   <ChevronDown className="size-2.5" />
                 </button>
 
@@ -4026,9 +4026,9 @@ export function FamilyPage({
                         e.stopPropagation()
                         setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
                       }}
-                      className="inline-flex cursor-pointer"
+                      className="inline-flex cursor-pointer hover:opacity-80 transition-opacity"
                     >
-                      <ArrowUpDown className="size-3" />
+                      <ArrowDown className={cn("size-3 transition-transform duration-300", sortDirection === "asc" && "rotate-180")} />
                     </span>
                     <span className="hidden sm:inline">{sortOption}</span>
                     <ChevronDown className="size-2.5" />

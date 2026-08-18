@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Search, Heart, MessageCircle, UserPlus, UserCheck, Star, Send, X, BookOpen, ChefHat, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react"
+import { Search, Heart, MessageCircle, UserPlus, UserCheck, Star, Send, X, BookOpen, ChefHat, ChevronDown, ChevronUp, ArrowUpDown, ArrowDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type FeedFilterType = "all" | "subscribed" | "liked"
@@ -340,7 +340,7 @@ export function FeedTab() {
           />
         </div>
         <button className="flex items-center gap-1.5 px-3 py-2.5 bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap">
-          <ArrowUpDown className="size-3.5" />
+          <ArrowDown className="size-3.5" />
           날짜순
         </button>
       </div>

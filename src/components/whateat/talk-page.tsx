@@ -1644,8 +1644,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
           className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground px-2 py-1.5 bg-white/70 rounded-lg border border-muted/20 shrink-0 hover:bg-white cursor-pointer"
         >
-          <ArrowDown className={cn("size-3 transition-transform", sortOrder === "oldest" && "rotate-180")} />
-          {sortOrder === "latest" ? "최신순" : "과거순"}
+          <ArrowDown className={cn("size-3 transition-transform duration-300", sortOrder === "oldest" && "rotate-180")} />
+          날짜순
         </button>
       </div>
 

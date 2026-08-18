@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin, Loader2 } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ArrowDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin, Loader2 } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
@@ -1477,12 +1477,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   e.stopPropagation()
                   setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))
                 }}
-                className="inline-flex"
+                className="inline-flex cursor-pointer hover:opacity-80 transition-opacity"
               >
-                <ArrowUpDown className="size-3" />
+                <ArrowDown className={cn("size-3 transition-transform duration-300", sortDirection === "asc" && "rotate-180")} />
               </span>
               <span className="hidden sm:inline">{sortOption}</span>
-              <span className="text-[10px] font-bold">{sortDirection === "desc" ? "↓" : "↑"}</span>
             </button>
 
             {/* Sort Dropdown Menu */}
