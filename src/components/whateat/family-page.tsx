@@ -3272,6 +3272,7 @@ export function FamilyPage({
                           >
                             <Pencil className="size-3.5" />
                           </button>
+                          )}
                           {meal.linkUrl ? (
                             (() => {
                               const isKakao = meal.linkUrl.includes("kko.to") || meal.linkUrl.includes("kakao.com")
