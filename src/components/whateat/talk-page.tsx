@@ -8,8 +8,6 @@ import {
   MessageCircle,
   ChevronDown,
   Search,
-  ArrowUpDown,
-  ArrowUp,
   ArrowDown,
   X,
   Send,
@@ -1387,7 +1385,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return rawFiltered.length
   }
 
-  const getPostTimestamp = (createdAt: string, fallbackId: number) => {
+  const getPostTimestamp = (createdAt: string | undefined | null, fallbackId: number) => {
+    if (!createdAt) return fallbackId
     const parsed = Date.parse(createdAt)
     if (!Number.isNaN(parsed)) return parsed
 
@@ -1402,7 +1401,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     return fallbackId
   }
 
-  const formatRelativeTime = (createdAt: string) => {
+  const formatRelativeTime = (createdAt: string | undefined | null) => {
+    if (!createdAt) return ""
     const parsed = Date.parse(createdAt)
     if (Number.isNaN(parsed)) return createdAt
 
@@ -1644,11 +1644,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           onClick={() => setSortOrder((prev) => (prev === "latest" ? "oldest" : "latest"))}
           className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground px-2 py-1.5 bg-white/70 rounded-lg border border-muted/20 shrink-0 hover:bg-white cursor-pointer"
         >
-          {sortOrder === "latest" ? (
-            <ArrowDown className="size-3" />
-          ) : (
-            <ArrowUp className="size-3" />
-          )}
+          <ArrowDown className={cn("size-3 transition-transform", sortOrder === "oldest" && "rotate-180")} />
           {sortOrder === "latest" ? "최신순" : "과거순"}
         </button>
       </div>
