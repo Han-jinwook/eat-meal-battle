@@ -1463,11 +1463,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="flex flex-col gap-3 pb-4">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 border border-white shadow-lg">
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-3 sm:p-4 border border-white shadow-lg">
         {/* 지역 필터 + 타이틀 + 식당/메뉴 검색 통합 한 줄 바 */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
           {/* 지역 필터 */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative z-50">
@@ -1588,20 +1588,20 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
           {/* 메인 레시피/식당 검색바 */}
           <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="음식, 식당, 별명 검색"
-              className="w-full pl-11 pr-4 py-2 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none text-xs placeholder:text-muted-foreground/50 h-9"
+              className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none text-xs placeholder:text-muted-foreground/50 h-8"
             />
           </div>
         </div>
       </div>
 
       {/* Sticky Search + Filter */}
-      <div className="sticky top-[62px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+      <div className="sticky top-[54px] z-30 -mx-4 px-4 pt-2 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
         
         {/* Left Side: Filters */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[70%] sm:max-w-[80%] pt-1.5 pb-1">
