@@ -1463,11 +1463,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 pb-4">
+    <div className="flex flex-col gap-2 pb-2">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-3 sm:p-4 border border-white shadow-lg">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-2 sm:p-3 border border-white shadow-sm">
         {/* 지역 필터 + 타이틀 + 식당/메뉴 검색 통합 한 줄 바 */}
-        <div className="flex flex-wrap items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
           {/* 지역 필터 */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative z-50">
@@ -1601,7 +1601,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       </div>
 
       {/* Sticky Search + Filter */}
-      <div className="sticky top-[54px] z-30 -mx-4 px-4 pt-2 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
+      <div className="sticky top-[54px] z-30 -mx-4 px-4 pt-1 pb-1.5 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
         
         {/* Left Side: Filters */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[70%] sm:max-w-[80%] pt-1.5 pb-1">
