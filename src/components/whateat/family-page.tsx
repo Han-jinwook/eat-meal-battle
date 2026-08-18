@@ -1477,6 +1477,7 @@ export function FamilyPage({
         .select("*")
         .in("user_id", familyUserIds)
         .order("created_at", { ascending: false })
+        .limit(50)
 
       if (error) throw error
 
