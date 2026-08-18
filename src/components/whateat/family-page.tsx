@@ -3148,10 +3148,10 @@ export function FamilyPage({
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredMeals.map((meal) => {
-                const isOpen = isMealRatingOpen(meal)
+
                 const isExpanded = expandedMealCommentsId === meal.id
                 const averageRating = getMealAverageRating(meal.id)
-                const shouldHighlight = isOpen && !dismissedMealHighlightIds.includes(meal.id)
+                const shouldHighlight = !dismissedMealHighlightIds.includes(meal.id)
 
                 const placeAddress = (() => {
                   if (meal.rawExplanation) {
