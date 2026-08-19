@@ -486,10 +486,7 @@ export function FamilyPage({
 
     try {
       let hubToken = '';
-      try {
-        const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
-        hubToken = getSessionToken() || '';
-      } catch (e) {}
+      hubToken = getSessionToken() || '';
 
       const res = await fetch('/api/family/members', {
         method: 'DELETE',
@@ -525,10 +522,7 @@ export function FamilyPage({
 
       try {
         let hubToken = ''
-        try {
-          const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client')
-          hubToken = getSessionToken() || ''
-        } catch (e) {}
+        hubToken = getSessionToken() || ''
 
         // 왓잇 전용 가족 정보 조회 (whateat_family_groups + whateat_family_members 테이블)
         const res = await fetch('/api/family/members', {
@@ -1305,6 +1299,45 @@ export function FamilyPage({
         return
       }
 
+      // 1.5 Early map and render meals to avoid blocking UI on comments/users fetch
+      const initialFormattedMeals: SharedMeal[] = imgData.map(img => {
+        let meta: any = {}
+        try {
+          meta = img.explanation ? JSON.parse(img.explanation) : {}
+        } catch (e) {
+          meta = { title: img.explanation || "식사" }
+        }
+
+        const foundMember = members.find(m => m.userId === img.uploaded_by)
+        const uploaderName = foundMember ? foundMember.name : "가족"
+        const formattedDate = new Date(img.created_at).toLocaleDateString('ko-KR', {
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+
+        return {
+          id: img.id,
+          image: img.image_url,
+          title: img.title || meta.title || "맛있는 식사",
+          sharedBy: img.uploaded_by === user?.id ? "나" : uploaderName,
+          userId: img.uploaded_by,
+          sharedAt: formattedDate,
+          sharedAtIso: img.created_at,
+          mealType: meta.mealType || "homemade",
+          mealMenuId: img.meal_id,
+          doNotPromote: meta.doNotPromote || false,
+          rawExplanation: img.explanation || '',
+          linkUrl: img.link_url || meta.linkUrl || "",
+          linkThumbnail: img.link_thumbnail || meta.linkThumbnail || "",
+          placeName: img.place_name || meta.placeName || "",
+          placeAddress: img.place_address || meta.placeAddress || "",
+          status: img.status
+        }
+      })
+      setMeals(initialFormattedMeals)
+
       // Extract mealMenuIds and mealImageIds (both can be targets for comments)
       const mealMenuIds = imgData.map(img => img.meal_id).filter(Boolean)
       const mealImageIds = imgData.map(img => img.id).filter(Boolean)
@@ -1340,7 +1373,6 @@ export function FamilyPage({
 
       // 4. Load users list to map user_id to nicknames/avatars
       const allUserIds = Array.from(new Set([
-        ...imgData.map(img => img.uploaded_by),
         ...allComments.map(c => c.user_id),
         ...allReplies.map(r => r.user_id),
         ...allRatings.map(rt => rt.user_id),
@@ -1355,44 +1387,6 @@ export function FamilyPage({
         dbUsers = usersData || []
       }
       const userMap = new Map(dbUsers.map(u => [u.id, u]))
-
-      // 5. Map to UI State structures
-      const formattedMeals: SharedMeal[] = imgData.map(img => {
-        let meta: any = {}
-        try {
-          meta = img.explanation ? JSON.parse(img.explanation) : {}
-        } catch (e) {
-          meta = { title: img.explanation || "식사" }
-        }
-
-        const u = userMap.get(img.uploaded_by)
-        const uploaderName = u?.nickname || "가족"
-        const formattedDate = new Date(img.created_at).toLocaleDateString('ko-KR', {
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-
-        return {
-          id: img.id,
-          image: img.image_url,
-          title: img.title || meta.title || "맛있는 식사",
-          sharedBy: img.uploaded_by === user?.id ? "나" : uploaderName,
-          userId: img.uploaded_by,
-          sharedAt: formattedDate,
-          sharedAtIso: img.created_at,
-          mealType: meta.mealType || "homemade",
-          mealMenuId: img.meal_id,
-          doNotPromote: meta.doNotPromote || false,
-          rawExplanation: img.explanation || '',
-          linkUrl: img.link_url || meta.linkUrl || "",
-          linkThumbnail: img.link_thumbnail || meta.linkThumbnail || "",
-          placeName: img.place_name || meta.placeName || "",
-          placeAddress: img.place_address || meta.placeAddress || "",
-          status: img.status
-        }
-      })
 
       // Map comments & replies
       const commentsByMealId: Record<string, MealComment[]> = {}
@@ -1460,7 +1454,6 @@ export function FamilyPage({
           .map(l => l.user_id)
       })
 
-      setMeals(formattedMeals)
       setMealComments(prev => ({ ...prev, ...commentsByMealId }))
       setMealRatings(prev => ({ ...prev, ...ratingsByMealId }))
       setWishlistLikes(prev => ({ ...prev, ...likesByMealId }))
@@ -4288,10 +4281,7 @@ export function FamilyPage({
 
                           try {
                             let hubToken = ''
-                            try {
-                              const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client')
-                              hubToken = getSessionToken() || ''
-                            } catch (e) {}
+                            hubToken = getSessionToken() || ''
 
                             const res = await fetch('/api/family/members', {
                               method: 'PUT',
