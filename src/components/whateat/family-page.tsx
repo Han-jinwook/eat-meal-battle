@@ -521,15 +521,64 @@ export function FamilyPage({
       }
 
       try {
-        let hubToken = ''
-        hubToken = getSessionToken() || ''
+        const supabase = createClient()
+        
+        // 1. Get my membership
+        const { data: myMembership } = await supabase
+          .from('whateat_family_members')
+          .select('family_id, role')
+          .eq('user_id', user.id)
+          .maybeSingle()
 
-        // 왓잇 전용 가족 정보 조회 (whateat_family_groups + whateat_family_members 테이블)
-        const res = await fetch('/api/family/members', {
-          headers: hubToken ? { 'x-hub-token': hubToken } : undefined
-        })
-        if (!res.ok) throw new Error(`family/members API error: ${res.status}`)
-        const result = await res.json()
+        let result: any = {}
+        
+        if (!myMembership) {
+          result._noFamily = true
+        } else {
+          const familyId = myMembership.family_id
+          
+          const { data: familyGroup } = await supabase
+            .from('whateat_family_groups')
+            .select('id, owner_id, name, family_photo, chef_id')
+            .eq('id', familyId)
+            .maybeSingle()
+
+          const ownerId = familyGroup?.owner_id || user.id
+          const chefId = familyGroup?.chef_id || ownerId
+          const isOwner = ownerId === user.id
+
+          const { data: allMembers } = await supabase
+            .from('whateat_family_members')
+            .select('user_id, role')
+            .eq('family_id', familyId)
+
+          const memberIds = (allMembers || []).map((m: any) => m.user_id).filter((id: string) => id !== ownerId)
+
+          const { data: hostUser } = await supabase
+            .from('users')
+            .select('id, nickname, profile_image')
+            .eq('id', ownerId)
+            .maybeSingle()
+
+          let membersData = []
+          if (memberIds.length > 0) {
+            const { data: usersData } = await supabase
+              .from('users')
+              .select('id, nickname, profile_image')
+              .in('id', memberIds)
+            if (usersData) membersData = usersData
+          }
+
+          result = {
+            isOwner,
+            hostId: ownerId,
+            chefId,
+            hostUser: hostUser || null,
+            refereeIds: memberIds,
+            membersData,
+            familyGroup: familyGroup ? { ...familyGroup, chef_id: chefId } : null
+          }
+        }
 
         // 가족 연결 전 (family_members에 데이터 없음) → 나 혼자 상태
         if (result._noFamily) {
