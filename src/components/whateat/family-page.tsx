@@ -3231,7 +3231,7 @@ export function FamilyPage({
       {/* Sticky Header Container */}
       <div className="sticky top-[52px] sm:top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
         {/* Family/Group Hybrid Header */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-2 sm:p-3 border border-white shadow-sm flex flex-col md:flex-row gap-4 items-stretch select-none">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm flex flex-col md:flex-row gap-3 items-center select-none">
           {/* Left: Family Sector */}
           <div 
             onClick={() => {
@@ -3241,13 +3241,12 @@ export function FamilyPage({
               }
             }}
             className={cn(
-              "transition-all duration-300 rounded-xl p-2 flex items-center gap-3 cursor-pointer",
-              activeMode === 'group' ? 'hidden md:flex md:w-[100px] md:opacity-50' : 'flex-1 md:w-[65%]',
-              activeMode === 'family' ? 'bg-orange-50/50 border border-orange-100' : 'hover:bg-gray-50'
+              "transition-all duration-300 flex items-center gap-3 cursor-pointer",
+              activeMode === 'group' ? 'hidden md:flex md:w-fit md:opacity-50' : 'flex-1'
             )}
           >
-            <div className="flex items-center gap-2 shrink-0">
-              <Users className="size-5 text-orange-500" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Users className="size-4.5 text-orange-500" />
               <span className="font-extrabold text-sm text-foreground">가족</span>
             </div>
 
@@ -3289,14 +3288,14 @@ export function FamilyPage({
                 />
 
                 <div className="shrink-0 min-w-fit pr-1">
-                  <h2 className="font-bold text-foreground text-base leading-tight">
+                  <h2 className="font-bold text-foreground text-sm leading-tight">
                     {!isLoggedIn || !user
                       ? "게스트 가족"
                       : isFamilyOwner
                         ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
                         : `${familyHostName || '가족'} 가족`}
                   </h2>
-                  <div className="flex flex-col gap-1 mt-0.5">
+                  <div className="flex flex-col gap-0.5 mt-0.5">
                     <p className="text-[9px] text-muted-foreground font-semibold">
                       {members.length}명의 구성원
                     </p>
@@ -3362,16 +3361,16 @@ export function FamilyPage({
           </div>
 
           {/* Desktop divider */}
-          <div className="hidden md:block w-[1px] bg-slate-100 shrink-0" />
+          <div className="hidden md:block w-[1px] h-8 bg-slate-100 shrink-0 mx-1" />
 
           {/* Right: Group Sector */}
           <div 
             className={cn(
-              "transition-all duration-300 rounded-xl p-2 flex flex-col gap-2",
-              activeMode === 'family' ? 'hidden md:flex md:w-[100px] md:opacity-50' : 'flex-1 md:w-[35%]'
+              "transition-all duration-300 flex items-center gap-3",
+              activeMode === 'family' ? 'hidden md:flex md:w-fit md:opacity-50' : 'flex-1'
             )}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 shrink-0">
               <div 
                 onClick={() => {
                   if (activeMode !== 'group' && groups.length > 0) {
@@ -3379,10 +3378,10 @@ export function FamilyPage({
                     setSelectedGroupId(groups[0].id)
                   }
                 }}
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-1.5 cursor-pointer"
               >
-                <FolderClosed className="size-5 text-cyan-600" />
-                <span className="font-extrabold text-sm text-foreground">모임</span>
+                <FolderClosed className="size-4.5 text-cyan-600" />
+                <span className="font-extrabold text-sm text-foreground whitespace-nowrap">모임</span>
               </div>
 
               {isLoggedIn && (
@@ -3391,16 +3390,16 @@ export function FamilyPage({
                     e.stopPropagation()
                     handleCreateGroupPrompt()
                   }}
-                  className="size-6 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
+                  className="size-5 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
                   title="새 모임 만들기"
                 >
-                  <Plus className="size-3.5" />
+                  <Plus className="size-3" />
                 </button>
               )}
             </div>
 
             {activeMode === 'group' && (
-              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1">
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
                 {groups.map((group) => {
                   const isSelected = selectedGroupId === group.id
                   return (
@@ -3411,9 +3410,9 @@ export function FamilyPage({
                           setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
                         }}
                         className={cn(
-                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+                          "px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
                           isSelected
-                            ? "bg-cyan-600 text-white shadow-md shadow-cyan-300/50"
+                            ? "bg-cyan-600 text-white shadow-xs"
                             : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
                         )}
                       >
