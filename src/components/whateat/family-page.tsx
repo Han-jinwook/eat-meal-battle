@@ -3231,7 +3231,7 @@ export function FamilyPage({
       {/* Sticky Header Container */}
       <div className="sticky top-[52px] sm:top-[62px] z-50 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
         {/* Family/Group Hybrid Header */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm flex flex-col md:flex-row gap-3 items-center select-none">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm flex flex-col md:flex-row gap-3 items-center select-none relative z-50">
           {/* Left: Family Sector */}
           <div 
             onClick={() => {
@@ -3403,52 +3403,59 @@ export function FamilyPage({
                     </button>
 
                     {showGroupMembersDropdown === group.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="px-3 py-1 text-[10px] font-black text-cyan-600 border-b border-cyan-50 mb-1">
-                          모임 구성원
+                      <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
+                        {/* Header and Buttons combined in a single line */}
+                        <div className="px-2.5 py-1.5 border-b border-cyan-50 flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-black text-cyan-600">모임 구성원</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCopyGroupInviteLink(group.id, group.name)
+                              }}
+                              className="px-1.5 py-0.5 text-[9px] font-black text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-sm cursor-pointer transition-colors"
+                            >
+                              초대 +
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleLeaveGroup(group.id, group.name, group.isOwner)
+                              }}
+                              className="px-1.5 py-0.5 text-[9px] font-black text-red-500 hover:bg-red-50 rounded-sm cursor-pointer transition-colors"
+                            >
+                              {group.isOwner ? "삭제" : "탈퇴"}
+                            </button>
+                          </div>
                         </div>
-                        <div className="max-h-40 overflow-y-auto px-2 flex flex-col gap-1">
-                          {group.members.map((m: any) => (
-                            <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <img src={m.avatar} alt={m.name} className="size-5 rounded-full object-cover" />
-                                <span className="text-xs font-bold text-gray-700">{m.name || '멤버'}</span>
-                                {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
+
+                        {/* Members List */}
+                        <div className="max-h-40 overflow-y-auto px-2 py-1 flex flex-col gap-1">
+                          {group.members.map((m: any) => {
+                            const isMe = m.userId === user?.id
+                            const displayName = isMe ? "나" : (m.name || '멤버')
+                            const displayAvatar = isMe ? (user?.avatar_url || m.avatar) : m.avatar
+                            return (
+                              <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <img src={displayAvatar} alt={displayName} className="size-5 rounded-full object-cover" />
+                                  <span className="text-xs font-bold text-gray-700">{displayName}</span>
+                                  {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
+                                </div>
+                                {group.isOwner && !isMe && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleKickGroupMember(group.id, m.userId, m.name)
+                                    }}
+                                    className="text-[9px] text-red-500 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer font-bold"
+                                  >
+                                    추방
+                                  </button>
+                                )}
                               </div>
-                              {group.isOwner && m.userId !== user?.id && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleKickGroupMember(group.id, m.userId, m.name)
-                                  }}
-                                  className="text-[9px] text-red-500 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer font-bold"
-                                >
-                                  추방
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="border-t border-cyan-50 mt-1.5 pt-1 px-2 flex justify-between gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleCopyGroupInviteLink(group.id, group.name)
-                            }}
-                            className="flex-1 flex items-center justify-center gap-1 py-1 text-[10px] font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-lg cursor-pointer transition-colors"
-                          >
-                            <UserPlus className="size-3" />
-                            초대 +
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleLeaveGroup(group.id, group.name, group.isOwner)
-                            }}
-                            className="py-1 px-2 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
-                          >
-                            {group.isOwner ? "삭제" : "탈퇴"}
-                          </button>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
