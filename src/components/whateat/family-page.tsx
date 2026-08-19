@@ -3242,7 +3242,7 @@ export function FamilyPage({
             }}
             className={cn(
               "transition-all duration-300 flex items-center gap-3 cursor-pointer",
-              activeMode === 'group' ? 'hidden md:flex md:opacity-80' : 'flex-1'
+              activeMode === 'group' ? 'hidden md:flex md:opacity-40 md:scale-95' : 'flex-1'
             )}
           >
             {/* Full Family Content: always visible on desktop, collapsed on mobile if activeMode === 'group' */}
@@ -3375,7 +3375,7 @@ export function FamilyPage({
           <div 
             className={cn(
               "transition-all duration-300 flex items-center gap-3",
-              activeMode === 'family' ? 'flex-1 md:flex-initial md:opacity-80' : 'flex-1'
+              activeMode === 'family' ? 'flex-1 md:flex-initial md:opacity-40 md:scale-95' : 'flex-1'
             )}
           >
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
@@ -3384,23 +3384,54 @@ export function FamilyPage({
               activeMode === 'family' ? 'hidden md:flex' : 'flex'
             )}>
               {groups.map((group) => {
-                const isSelected = selectedGroupId === group.id
+                const isSelected = activeMode === 'group' && selectedGroupId === group.id
                 return (
                   <div key={group.id} className="relative">
-                    <button
-                      onClick={() => {
-                        setSelectedGroupId(group.id)
-                        setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
-                      }}
+                    {/* Split Interactive Chip */}
+                    <div 
                       className={cn(
-                        "px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+                        "rounded-full text-xs font-bold transition-all flex items-center whitespace-nowrap overflow-hidden border border-transparent shadow-xs select-none",
                         isSelected
-                          ? "bg-cyan-600 text-white shadow-xs"
+                          ? "bg-cyan-600 text-white"
                           : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
                       )}
                     >
-                      {group.name} ({group.members.length})
-                    </button>
+                      {/* Left: Group Name Button (Switches mode and tab) */}
+                      <button
+                        onClick={() => {
+                          setActiveMode('group')
+                          setSelectedGroupId(group.id)
+                          // Close dropdown if switching groups
+                          if (selectedGroupId !== group.id) {
+                            setShowGroupMembersDropdown(null)
+                          }
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 transition-all cursor-pointer font-black",
+                          isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
+                        )}
+                      >
+                        {group.name}
+                      </button>
+
+                      {/* Divider inside chip */}
+                      <span className={cn("w-[1px] h-3.5 shrink-0", isSelected ? "bg-white/30" : "bg-gray-300")} />
+
+                      {/* Right: Member Count Toggle Button (Toggles members dropdown only) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
+                        }}
+                        className={cn(
+                          "px-2 py-1 flex items-center justify-center cursor-pointer font-bold",
+                          isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
+                        )}
+                        title="모임 구성원 보기"
+                      >
+                        <span>({group.members.length})</span>
+                      </button>
+                    </div>
 
                     {showGroupMembersDropdown === group.id && (
                       <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
