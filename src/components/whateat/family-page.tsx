@@ -2127,16 +2127,93 @@ export function FamilyPage({
   }
 
   const checkFamilyConsentAndRate = async (mealId: string | number, memberId: number, score: number) => {
-    // 1. 패밀리 평점 저장
-    await saveFamilyRating(mealId, memberId, score)
-
-    // 2. 가족 중 1명이라도 5점 평가 시 맛톡(TasteTalk) 피드로 자동 승격! (샘플 제외)
     const isSample = typeof mealId === "string" && mealId.startsWith("sample-")
+    
+    // 대상 식사 로그 조회
+    const targetMeal = meals.find((meal) => meal.id === mealId)
+    if (!targetMeal) return
+
     const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
-    const has5Star = score === 5 || Object.values(currentRatingMap).some((s) => s === 5)
-    if (has5Star && !isSample) {
-      await tryPromoteMealToTalk(mealId, currentRatingMap)
-      toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
+    const has5Star = Object.values(currentRatingMap).some((s) => s === 5)
+    
+    const oldScore = mealRatings[mealId]?.[memberId] ?? 0
+
+    // 5점 -> 4점 이하로 다운그레이드 시 맛톡 수거 검증
+    // (이 때, 나 혹은 다른 가족 구성원 통틀어 5점이 더이상 남지 않게 되는 경우에만 맛톡 수거 검증)
+    const was5StarAtAll = Object.values(mealRatings[mealId] ?? {}).some((s) => s === 5)
+    if (was5StarAtAll && !has5Star && targetMeal.status === 'approved' && !isSample) {
+      try {
+        const supabase = createClient()
+        const ratingTargetId = targetMeal.mealMenuId || targetMeal.id
+        
+        // 다른 이웃의 댓글이 달렸는지 확인
+        const { data: commentsData, error: commentError } = await supabase
+          .from("comments")
+          .select("id, user_id")
+          .eq("meal_id", ratingTargetId)
+          .eq("is_deleted", false)
+
+        if (commentError) throw commentError
+
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        const hasOtherComments = commentsData && commentsData.some(c => !familyUserIds.includes(c.user_id))
+
+        if (hasOtherComments) {
+          toast("'맛톡'에 올라간 후, 다른 이웃의 댓글/좋아요 활동이 발생하여 평점을 낮출 수 없습니다.", { icon: "🔒", duration: 4000 })
+          return
+        }
+
+        // 수거 성공: status -> 'pending'으로 강제 강등 및 데이터베이스 수정
+        let meta: any = {}
+        try {
+          meta = targetMeal.rawExplanation ? JSON.parse(targetMeal.rawExplanation) : {}
+        } catch (e) {
+          meta = { title: targetMeal.title }
+        }
+        meta.promotedAt = undefined // 승격 시간 삭제
+
+        await secureWrite({
+          table: 'meal_images',
+          action: 'update',
+          data: {
+            status: 'pending',
+            explanation: JSON.stringify(meta)
+          },
+          filters: { id: targetMeal.id }
+        })
+
+        // 로컬 상태에서 맛톡 수거 반영
+        setPromotedMealIds((prev) => prev.filter((id) => id !== mealId))
+        
+        toast("다른 유저의 활동이 없어 맛톡 피드에서 식사 기록을 수거했습니다.", { icon: "🧹", duration: 3000 })
+      } catch (err) {
+        console.error("Family downgrade check failed:", err)
+        toast.error("평점 변경 검증에 실패했습니다.")
+        return
+      }
+    }
+
+    // --- 5점 승격 동의 모달 연동 ---
+    if (score === 5 && targetMeal.status !== 'approved' && !isSample) {
+      const pref = localStorage.getItem("whateat_auto_share_5star")
+      if (pref === "approved") {
+        // 이미 자동 동의한 경우 바로 저장 및 맛톡 승격
+        await saveFamilyRating(mealId, memberId, score)
+        await tryPromoteMealToTalk(mealId, currentRatingMap)
+        toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
+      } else if (pref === "rejected") {
+        // 거절한 적이 있는 경우 저장만 하고 승격하지 않음
+        await saveFamilyRating(mealId, memberId, score)
+        await updateMealDoNotPromote(targetMeal.id, targetMeal.rawExplanation || '')
+      } else {
+        // 동의 이력이 없는 경우 동의 팝업 모달 띄우기
+        setPendingFamilyRating({ mealId, memberId, score })
+        setShareConsentModalOpen(true)
+        return
+      }
+    } else {
+      // 5점 신규 승격이 아닌 경우 일반 저장만 처리
+      await saveFamilyRating(mealId, memberId, score)
     }
   }
 
