@@ -3229,7 +3229,7 @@ export function FamilyPage({
   return (
     <div className="flex flex-col pb-4">
       {/* Sticky Header Container */}
-      <div className="sticky top-[52px] sm:top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
+      <div className="sticky top-[52px] sm:top-[62px] z-50 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
         {/* Family/Group Hybrid Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm flex flex-col md:flex-row gap-3 items-center select-none">
           {/* Left: Family Sector */}
@@ -3378,20 +3378,6 @@ export function FamilyPage({
               activeMode === 'family' ? 'flex-1 md:flex-initial md:opacity-80' : 'flex-1'
             )}
           >
-            {/* Title / Label */}
-            <div 
-              onClick={() => {
-                if (activeMode !== 'group' && groups.length > 0) {
-                  setActiveMode('group')
-                  setSelectedGroupId(groups[0].id)
-                }
-              }}
-              className="flex items-center gap-1.5 cursor-pointer shrink-0"
-            >
-              <FolderClosed className="size-4.5 text-cyan-600" />
-              <span className="font-extrabold text-sm text-foreground whitespace-nowrap">모임</span>
-            </div>
-
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
             <div className={cn(
               "flex-1 flex flex-wrap items-center gap-1.5 pt-0.5",
@@ -3414,11 +3400,10 @@ export function FamilyPage({
                       )}
                     >
                       {group.name} ({group.members.length})
-                      <ChevronDown className={cn("size-3 transition-transform", showGroupMembersDropdown === group.id && "rotate-180")} />
                     </button>
 
                     {showGroupMembersDropdown === group.id && (
-                      <div className="absolute left-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
                         <div className="px-3 py-1 text-[10px] font-black text-cyan-600 border-b border-cyan-50 mb-1">
                           모임 구성원
                         </div>
@@ -3427,7 +3412,7 @@ export function FamilyPage({
                             <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
                               <div className="flex items-center gap-2">
                                 <img src={m.avatar} alt={m.name} className="size-5 rounded-full object-cover" />
-                                <span className="text-xs font-bold text-gray-700">{m.name}</span>
+                                <span className="text-xs font-bold text-gray-700">{m.name || '멤버'}</span>
                                 {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
                               </div>
                               {group.isOwner && m.userId !== user?.id && (
@@ -3475,7 +3460,7 @@ export function FamilyPage({
               )}
             </div>
 
-            {/* Plus Button (Always on the far right end!) */}
+            {/* Unified Moim + Button (Always on the far right end!) */}
             {isLoggedIn && (
               <button
                 onClick={(e) => {
@@ -3483,11 +3468,12 @@ export function FamilyPage({
                   handleCreateGroupPrompt()
                 }}
                 className={cn(
-                  "size-5 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors shrink-0",
+                  "px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center gap-1 font-bold text-xs cursor-pointer transition-colors shrink-0",
                   activeMode === 'family' ? 'hidden md:flex' : 'flex'
                 )}
                 title="새 모임 만들기"
               >
+                <span>모임</span>
                 <Plus className="size-3" />
               </button>
             )}
