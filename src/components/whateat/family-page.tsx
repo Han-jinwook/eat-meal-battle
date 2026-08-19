@@ -3245,12 +3245,7 @@ export function FamilyPage({
               activeMode === 'group' ? 'hidden md:flex md:w-fit md:opacity-50' : 'flex-1'
             )}
           >
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Users className="size-4.5 text-orange-500" />
-              <span className="font-extrabold text-sm text-foreground">가족</span>
-            </div>
-
-            {activeMode === 'family' && (
+            {activeMode === 'family' ? (
               <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar animate-fade-in">
                 {isFamilyOwner ? (
                   <button
@@ -3288,7 +3283,7 @@ export function FamilyPage({
                 />
 
                 <div className="shrink-0 min-w-fit pr-1">
-                  <h2 className="font-bold text-foreground text-sm leading-tight">
+                  <h2 className="font-bold text-foreground text-base leading-tight">
                     {!isLoggedIn || !user
                       ? "게스트 가족"
                       : isFamilyOwner
@@ -3353,10 +3348,21 @@ export function FamilyPage({
                   </button>
                 </div>
               </div>
-            )}
-            
-            {activeMode === 'group' && (
-              <span className="hidden md:inline text-xs font-bold text-muted-foreground ml-auto pr-2">펼치기</span>
+            ) : (
+              <div className="flex items-center gap-2 shrink-0 animate-fade-in">
+                {familyPhoto ? (
+                  <img src={familyPhoto} alt="가족" className="size-7 rounded-lg object-cover" />
+                ) : (
+                  <span className="text-base">🏡</span>
+                )}
+                <span className="font-extrabold text-xs text-foreground whitespace-nowrap">
+                  {!isLoggedIn || !user
+                    ? "게스트 가족"
+                    : isFamilyOwner
+                      ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
+                      : `${familyHostName || '가족'} 가족`}
+                </span>
+              </div>
             )}
           </div>
 
