@@ -3242,111 +3242,116 @@ export function FamilyPage({
             }}
             className={cn(
               "transition-all duration-300 flex items-center gap-3 cursor-pointer",
-              activeMode === 'group' ? 'hidden md:flex md:w-fit md:opacity-50' : 'flex-1'
+              activeMode === 'group' ? 'hidden md:flex md:opacity-80' : 'flex-1'
             )}
           >
-            {activeMode === 'family' ? (
-              <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar animate-fade-in">
-                {isFamilyOwner ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (!isLoggedIn) {
-                        window.dispatchEvent(new CustomEvent('openLoginModal'))
-                      } else {
-                        familyPhotoInputRef.current?.click()
-                      }
-                    }}
-                    className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0 cursor-pointer"
-                  >
-                    {familyPhoto ? (
-                      <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-                    ) : (
-                      <Pencil className="size-4" />
-                    )}
-                  </button>
-                ) : (
-                  <div className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 overflow-hidden shrink-0">
-                    {familyPhoto ? (
-                      <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-lg">🏡</span>
-                    )}
-                  </div>
-                )}
-                <input
-                  ref={familyPhotoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFamilyPhotoChange}
-                  className="hidden"
-                />
-
-                <div className="shrink-0 min-w-fit pr-1">
-                  <h2 className="font-bold text-foreground text-base leading-tight">
-                    {!isLoggedIn || !user
-                      ? "게스트 가족"
-                      : isFamilyOwner
-                        ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
-                        : `${familyHostName || '가족'} 가족`}
-                  </h2>
-                  <div className="flex flex-col gap-0.5 mt-0.5">
-                    {isLoggedIn && isFamilyOwner && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setShowChefModal(true)
-                        }}
-                        className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-2 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5 cursor-pointer mt-0.5"
-                      >
-                        <Settings className="size-2" />
-                        셰프 / 가족 관리
-                      </button>
-                    )}
-                  </div>
+            {/* Full Family Content: always visible on desktop, collapsed on mobile if activeMode === 'group' */}
+            <div className={cn(
+              "flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar animate-fade-in",
+              activeMode === 'group' ? 'hidden md:flex' : 'flex'
+            )}>
+              {isFamilyOwner ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (!isLoggedIn) {
+                      window.dispatchEvent(new CustomEvent('openLoginModal'))
+                    } else {
+                      familyPhotoInputRef.current?.click()
+                    }
+                  }}
+                  className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0 cursor-pointer"
+                >
+                  {familyPhoto ? (
+                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                  ) : (
+                    <Pencil className="size-4" />
+                  )}
+                </button>
+              ) : (
+                <div className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 overflow-hidden shrink-0">
+                  {familyPhoto ? (
+                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg">🏡</span>
+                  )}
                 </div>
+              )}
+              <input
+                ref={familyPhotoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFamilyPhotoChange}
+                className="hidden"
+              />
 
-                <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
-                  {members.map((member) => (
-                    <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 pt-1">
-                      <div className="relative">
-                        <HubAvatar
-                          isLoggedIn={isLoggedIn}
-                          avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
-                          nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
-                          size="sm"
-                          className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
-                        />
-                        {member.role === "chef" && (
-                          <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족셰프-메뉴결정권자">
-                            셰
-                          </div>
-                        )}
-                        {member.isOnline && (
-                          <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-400 border-2 border-white" />
-                        )}
-                      </div>
-                      <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                        {member.name}
-                      </span>
-                    </div>
-                  ))}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setShowInviteModal(true)
-                    }}
-                    className="flex flex-col items-center gap-1 shrink-0 ml-1 cursor-pointer"
-                  >
-                    <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                      <Plus className="size-4 text-muted-foreground/50" />
-                    </div>
-                    <span className="text-[9px] font-medium text-muted-foreground">초대</span>
-                  </button>
+              <div className="shrink-0 min-w-fit pr-1">
+                <h2 className="font-bold text-foreground text-base leading-tight">
+                  {!isLoggedIn || !user
+                    ? "게스트 가족"
+                    : isFamilyOwner
+                      ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
+                      : `${familyHostName || '가족'} 가족`}
+                </h2>
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                  {isLoggedIn && isFamilyOwner && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowChefModal(true)
+                      }}
+                      className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-2 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5 cursor-pointer mt-0.5"
+                    >
+                      <Settings className="size-2" />
+                      셰프 / 가족 관리
+                    </button>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 shrink-0 animate-fade-in">
+
+              <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
+                {members.map((member) => (
+                  <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 pt-1">
+                    <div className="relative">
+                      <HubAvatar
+                        isLoggedIn={isLoggedIn}
+                        avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                        nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
+                        size="sm"
+                        className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
+                      />
+                      {member.role === "chef" && (
+                        <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족셰프-메뉴결정권자">
+                          셰
+                        </div>
+                      )}
+                      {member.isOnline && (
+                        <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-400 border-2 border-white" />
+                      )}
+                    </div>
+                    <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                      {member.name}
+                    </span>
+                  </div>
+                ))}
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowInviteModal(true)
+                  }}
+                  className="flex flex-col items-center gap-1 shrink-0 ml-1 cursor-pointer"
+                >
+                  <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                    <Plus className="size-4 text-muted-foreground/50" />
+                  </div>
+                  <span className="text-[9px] font-medium text-muted-foreground">초대</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsed Family Tab: only visible on mobile when activeMode === 'group' */}
+            {activeMode === 'group' && (
+              <div className="flex md:hidden items-center gap-2 shrink-0 animate-fade-in">
                 {familyPhoto ? (
                   <img src={familyPhoto} alt="가족" className="size-7 rounded-lg object-cover" />
                 ) : (
@@ -3370,116 +3375,121 @@ export function FamilyPage({
           <div 
             className={cn(
               "transition-all duration-300 flex items-center gap-3",
-              activeMode === 'family' ? 'hidden md:flex md:w-fit md:opacity-50' : 'flex-1'
+              activeMode === 'family' ? 'flex-1 md:flex-initial md:opacity-80' : 'flex-1'
             )}
           >
-            <div className="flex items-center gap-1.5 shrink-0">
-              <div 
-                onClick={() => {
-                  if (activeMode !== 'group' && groups.length > 0) {
-                    setActiveMode('group')
-                    setSelectedGroupId(groups[0].id)
-                  }
-                }}
-                className="flex items-center gap-1.5 cursor-pointer"
-              >
-                <FolderClosed className="size-4.5 text-cyan-600" />
-                <span className="font-extrabold text-sm text-foreground whitespace-nowrap">모임</span>
-              </div>
+            {/* Title / Label */}
+            <div 
+              onClick={() => {
+                if (activeMode !== 'group' && groups.length > 0) {
+                  setActiveMode('group')
+                  setSelectedGroupId(groups[0].id)
+                }
+              }}
+              className="flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <FolderClosed className="size-4.5 text-cyan-600" />
+              <span className="font-extrabold text-sm text-foreground whitespace-nowrap">모임</span>
+            </div>
 
-              {isLoggedIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleCreateGroupPrompt()
-                  }}
-                  className="size-5 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
-                  title="새 모임 만들기"
-                >
-                  <Plus className="size-3" />
-                </button>
+            {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
+            <div className={cn(
+              "flex-1 flex flex-wrap items-center gap-1.5 pt-0.5",
+              activeMode === 'family' ? 'hidden md:flex' : 'flex'
+            )}>
+              {groups.map((group) => {
+                const isSelected = selectedGroupId === group.id
+                return (
+                  <div key={group.id} className="relative">
+                    <button
+                      onClick={() => {
+                        setSelectedGroupId(group.id)
+                        setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
+                      }}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+                        isSelected
+                          ? "bg-cyan-600 text-white shadow-xs"
+                          : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
+                      )}
+                    >
+                      {group.name} ({group.members.length})
+                      <ChevronDown className={cn("size-3 transition-transform", showGroupMembersDropdown === group.id && "rotate-180")} />
+                    </button>
+
+                    {showGroupMembersDropdown === group.id && (
+                      <div className="absolute left-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="px-3 py-1 text-[10px] font-black text-cyan-600 border-b border-cyan-50 mb-1">
+                          모임 구성원
+                        </div>
+                        <div className="max-h-40 overflow-y-auto px-2 flex flex-col gap-1">
+                          {group.members.map((m: any) => (
+                            <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <img src={m.avatar} alt={m.name} className="size-5 rounded-full object-cover" />
+                                <span className="text-xs font-bold text-gray-700">{m.name}</span>
+                                {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
+                              </div>
+                              {group.isOwner && m.userId !== user?.id && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleKickGroupMember(group.id, m.userId, m.name)
+                                  }}
+                                  className="text-[9px] text-red-500 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer font-bold"
+                                >
+                                  추방
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t border-cyan-50 mt-1.5 pt-1 px-2 flex justify-between gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCopyGroupInviteLink(group.id, group.name)
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1 py-1 text-[10px] font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-lg cursor-pointer transition-colors"
+                          >
+                            <UserPlus className="size-3" />
+                            초대 +
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleLeaveGroup(group.id, group.name, group.isOwner)
+                            }}
+                            className="py-1 px-2 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                          >
+                            {group.isOwner ? "삭제" : "탈퇴"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {groups.length === 0 && (
+                <span className="text-xs text-muted-foreground/60 italic ml-1">아직 생성된 모임이 없습니다.</span>
               )}
             </div>
 
-            {activeMode === 'group' && (
-              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto hide-scrollbar pt-0.5">
-                {groups.map((group) => {
-                  const isSelected = selectedGroupId === group.id
-                  return (
-                    <div key={group.id} className="relative">
-                      <button
-                        onClick={() => {
-                          setSelectedGroupId(group.id)
-                          setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
-                        }}
-                        className={cn(
-                          "px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
-                          isSelected
-                            ? "bg-cyan-600 text-white shadow-xs"
-                            : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
-                        )}
-                      >
-                        {group.name} ({group.members.length})
-                        <ChevronDown className={cn("size-3 transition-transform", showGroupMembersDropdown === group.id && "rotate-180")} />
-                      </button>
-
-                      {showGroupMembersDropdown === group.id && (
-                        <div className="absolute left-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-                          <div className="px-3 py-1 text-[10px] font-black text-cyan-600 border-b border-cyan-50 mb-1">
-                            모임 구성원
-                          </div>
-                          <div className="max-h-40 overflow-y-auto px-2 flex flex-col gap-1">
-                            {group.members.map((m: any) => (
-                              <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <img src={m.avatar} alt={m.name} className="size-5 rounded-full object-cover" />
-                                  <span className="text-xs font-bold text-gray-700">{m.name}</span>
-                                  {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
-                                </div>
-                                {group.isOwner && m.userId !== user?.id && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleKickGroupMember(group.id, m.userId, m.name)
-                                    }}
-                                    className="text-[9px] text-red-500 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer font-bold"
-                                  >
-                                    추방
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <div className="border-t border-cyan-50 mt-1.5 pt-1 px-2 flex justify-between gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCopyGroupInviteLink(group.id, group.name)
-                              }}
-                              className="flex-1 flex items-center justify-center gap-1 py-1 text-[10px] font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-lg cursor-pointer transition-colors"
-                            >
-                              <UserPlus className="size-3" />
-                              초대 +
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleLeaveGroup(group.id, group.name, group.isOwner)
-                              }}
-                              className="py-1 px-2 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
-                            >
-                              {group.isOwner ? "삭제" : "탈퇴"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-                {groups.length === 0 && (
-                  <span className="text-xs text-muted-foreground/60 italic ml-1">아직 생성된 모임이 없습니다.</span>
+            {/* Plus Button (Always on the far right end!) */}
+            {isLoggedIn && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCreateGroupPrompt()
+                }}
+                className={cn(
+                  "size-5 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors shrink-0",
+                  activeMode === 'family' ? 'hidden md:flex' : 'flex'
                 )}
-              </div>
+                title="새 모임 만들기"
+              >
+                <Plus className="size-3" />
+              </button>
             )}
           </div>
         </div>

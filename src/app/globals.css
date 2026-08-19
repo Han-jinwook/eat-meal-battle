@@ -32,3 +32,12 @@ a,
 .cursor-pointer {
   cursor: pointer !important;
 }
+
+/* 스크롤바 숨기기 유틸리티 */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
