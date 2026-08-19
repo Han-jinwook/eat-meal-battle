@@ -3467,7 +3467,6 @@ export function FamilyPage({
               )}
             </div>
 
-            {/* Unified Moim + Button (Always on the far right end!) */}
             {isLoggedIn && (
               <button
                 onClick={(e) => {
@@ -3475,13 +3474,13 @@ export function FamilyPage({
                   handleCreateGroupPrompt()
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center gap-1 font-bold text-xs cursor-pointer transition-colors shrink-0",
+                  "px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0",
                   activeMode === 'family' ? 'hidden md:flex' : 'flex'
                 )}
                 title="새 모임 만들기"
               >
                 <span>모임</span>
-                <Plus className="size-3" />
+                <Plus className="size-2.5 mt-0.5" />
               </button>
             )}
           </div>
