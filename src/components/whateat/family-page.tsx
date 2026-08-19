@@ -2201,6 +2201,10 @@ export function FamilyPage({
         await saveFamilyRating(mealId, memberId, score)
         await tryPromoteMealToTalk(mealId, currentRatingMap)
         toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
+        setSelectedMealId(null) // 팝업 닫기
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("navigateToTalk"))
+        }, 1500) // 1.5초 후 이동
       } else if (pref === "rejected") {
         // 거절한 적이 있는 경우 저장만 하고 승격하지 않음
         await saveFamilyRating(mealId, memberId, score)
@@ -4642,9 +4646,11 @@ export function FamilyPage({
                       await saveFamilyRating(mealId, memberId, score)
                       const currentRatingMap = { ...(mealRatings[mealId] ?? {}), [memberId]: score }
                       await tryPromoteMealToTalk(mealId, currentRatingMap)
+                      toast("가족 5점 평가 달성! '맛톡' 피드로 등록되었습니다. 🌟", { icon: "🎉" })
+                      setSelectedMealId(null) // 팝업 닫기
                       setTimeout(() => {
                         window.dispatchEvent(new CustomEvent("navigateToTalk"))
-                      }, 100)
+                      }, 1500) // 1.5초 후 이동
                       setPendingFamilyRating(null)
                     }
                   }
