@@ -3520,7 +3520,7 @@ export function FamilyPage({
       {selectedMeal && (
         <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl border border-white">
-            <div className="p-5 border-b border-orange-100 flex items-center justify-between">
+            <div className="p-5 border-b border-orange-100 flex items-center">
               <div>
                 <h3 className="font-extrabold text-foreground text-lg">{selectedMeal.title}</h3>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
@@ -3528,15 +3528,6 @@ export function FamilyPage({
                   <span>{selectedMeal.sharedAt}</span>
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedMealId(null)
-                  setMealCommentInput("")
-                }}
-                className="size-9 rounded-full hover:bg-muted/60 flex items-center justify-center"
-              >
-                <X className="size-4" />
-              </button>
             </div>
 
             <div className="overflow-y-auto max-h-[calc(85vh-146px)] p-5 space-y-5">
