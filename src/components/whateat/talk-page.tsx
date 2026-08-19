@@ -960,7 +960,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         }
 
         const uploaderIds = Array.from(new Set(imgData.map(img => img.uploaded_by).filter(Boolean)))
-        const mealIds = imgData.map(img => img.meal_id).filter(Boolean)
+        const ratingIds = imgData.map(img => {
+          const rawSource = img.source || ""
+          return (rawSource === "family-shared" || rawSource === "group") ? img.id : img.meal_id
+        }).filter(Boolean)
         
         // Fetch users (region 컬럼 포함)
         let dbUsers: any[] = []
@@ -975,11 +978,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
         // Fetch all ratings for these meals to display real-time accumulated rating
         let dbRatings: any[] = []
-        if (mealIds.length > 0) {
+        if (ratingIds.length > 0) {
           const { data: ratingsData } = await supabase
             .from("meal_ratings")
             .select("meal_id, rating")
-            .in("meal_id", mealIds)
+            .in("meal_id", ratingIds)
           dbRatings = ratingsData || []
         }
 
@@ -1119,9 +1122,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           }
 
           // 솔로는 항상 5점 고정(박제), 가족/모임은 DB 누계 통계 활용 (디폴트 1명)
+          const targetRatingId = (mappedSource === "family" || mappedSource === "group") ? img.id : img.meal_id
           const finalRating = mappedSource === "solo"
             ? { average: 5, count: 1 }
-            : (img.meal_id ? getRatingStats(img.meal_id) : { average: 5, count: 1 })
+            : (targetRatingId ? getRatingStats(targetRatingId) : { average: 5, count: 1 })
 
           return {
             id: img.id,
