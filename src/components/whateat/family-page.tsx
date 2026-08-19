@@ -3556,27 +3556,50 @@ export function FamilyPage({
                     const canRate = isSelf
 
                     return (
-                      <div key={member.id} className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-foreground min-w-16">{member.name}</span>
+                      <div 
+                        key={member.id} 
+                        className={cn(
+                          "flex items-center justify-between gap-2 px-3 py-2 -mx-3 rounded-xl transition-colors",
+                          isSelf ? "bg-white border border-orange-100 shadow-sm" : "opacity-75"
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-16">
+                          <span className={cn("text-xs font-bold", isSelf ? "text-orange-700" : "text-foreground")}>
+                            {member.name}
+                          </span>
+                          {isSelf && (
+                            <span className="text-[9px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-sm font-semibold tracking-tight">
+                              수정 가능
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((value) => (
                             <button
                               key={value}
                               onClick={() => canRate && checkFamilyConsentAndRate(selectedMeal.id, member.id, value)}
                               disabled={!canRate}
-                              className="p-0.5"
+                              className={cn(
+                                "p-0.5",
+                                canRate ? "hover:scale-110 active:scale-95 transition-transform cursor-pointer" : "cursor-default"
+                              )}
                             >
                               <Star
                                 className={cn(
-                                  "size-5 transition-colors",
-                                  value <= score ? "fill-orange-400 text-orange-400" : "text-gray-300",
-                                  !canRate && "opacity-60",
+                                  "size-5 transition-all",
+                                  value <= score ? "fill-orange-400 text-orange-400" : "text-gray-200 fill-gray-50",
+                                  !canRate && value <= score && "fill-orange-300 text-orange-300",
                                 )}
                               />
                             </button>
                           ))}
                         </div>
-                        <span className="text-[11px] font-bold text-orange-500 w-8 text-right">{score > 0 ? `${score}점` : "-"}</span>
+                        <span className={cn(
+                          "text-[11px] font-bold w-8 text-right",
+                          isSelf ? "text-orange-600" : "text-orange-400"
+                        )}>
+                          {score > 0 ? `${score}점` : "-"}
+                        </span>
                       </div>
                     )
                   })}
