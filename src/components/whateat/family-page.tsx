@@ -521,12 +521,12 @@ export function FamilyPage({
       }
 
       try {
+        let hubToken = ''
+        hubToken = getSessionToken() || ''
+
         // 왓잇 전용 가족 정보 조회 (whateat_family_groups + whateat_family_members 테이블)
         const res = await fetch('/api/family/members', {
-          headers: { 
-            // We omit x-hub-token to avoid the double cold start penalty on Hub API.
-            // Supabase auth inside the API route will still correctly resolve the userId.
-          }
+          headers: hubToken ? { 'x-hub-token': hubToken } : undefined
         })
         if (!res.ok) throw new Error(`family/members API error: ${res.status}`)
         const result = await res.json()
