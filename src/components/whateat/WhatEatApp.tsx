@@ -16,6 +16,7 @@ import MealWrapper from "@/app/client-wrapper"
 import { useHub, HubShareSquare, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { HomeOnboarding } from "@/components/whateat/home-onboarding"
 import { HubPWAInstallPrompt } from "@/services/merlin-hub-sdk/react"
+import { createClient } from "@/lib/supabase"
 
 function LoginNudge({ 
   title, 
@@ -63,6 +64,9 @@ export default function WhatEatApp() {
   const [showFamilyJoinConfirm, setShowFamilyJoinConfirm] = useState(false)
   const [pendingRefCode, setPendingRefCode] = useState("")   // 허브 개인 코드 (ref=)
   const [pendingFamilyCode, setPendingFamilyCode] = useState("") // 왓잇 가족방 코드 (family=방장UUID)
+  const [pendingGroupCode, setPendingGroupCode] = useState("")   // 왓잇 모임방 ID (group=)
+  const [pendingGroupName, setPendingGroupName] = useState("")   // 모임 이름
+  const [showGroupJoinConfirm, setShowGroupJoinConfirm] = useState(false)
   const [isNudgeDismissed, setIsNudgeDismissed] = useState(false)
 
   // 0. 오늘 세션 동안 넛지 닫힘 상태 로드
@@ -85,16 +89,19 @@ export default function WhatEatApp() {
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref');       // 허브 개인 추천 코드
     const familyCode = urlParams.get('family'); // 왓잇 가족방 코드 (방장 user.id UUID)
+    const groupCode = urlParams.get('group');   // 왓잇 모임방 ID
 
     if (refCode) localStorage.setItem('pending_hub_ref', refCode);
     if (familyCode) localStorage.setItem('pending_family_code', familyCode);
+    if (groupCode) localStorage.setItem('pending_group_code', groupCode);
 
-    // 팝업 트리거 조건: family 코드가 있어야 가족방 합류 팝업
-    if (familyCode) {
+    // 팝업 트리거 조건
+    if (familyCode || groupCode) {
       try {
         const urlObj = new URL(window.location.href);
         urlObj.searchParams.delete('ref');
         urlObj.searchParams.delete('family');
+        urlObj.searchParams.delete('group');
         window.history.replaceState({}, '', urlObj.toString());
       } catch (e) {}
     } else if (refCode) {
@@ -106,15 +113,34 @@ export default function WhatEatApp() {
     }
   }, []);
 
-  // 2. 로그인 완료 감지 시 가족 합류 컨펌 노출
+  // 2. 로그인 완료 감지 시 가족 또는 모임 합류 컨펌 노출
   useEffect(() => {
     if (isLoggedIn && !isLoading) {
       const pendingRef = localStorage.getItem('pending_hub_ref');
       const pendingFamily = localStorage.getItem('pending_family_code');
+      const pendingGroup = localStorage.getItem('pending_group_code');
+      
       if (pendingFamily) { // 왓잇 가족방 코드가 있어야 팝업
         if (pendingRef) setPendingRefCode(pendingRef);
         setPendingFamilyCode(pendingFamily);
         setShowFamilyJoinConfirm(true);
+      } else if (pendingGroup) {
+        setPendingGroupCode(pendingGroup);
+        const fetchGroupName = async () => {
+          try {
+            const supabase = createClient();
+            const { data } = await supabase
+              .from('whateat_group_groups')
+              .select('name')
+              .eq('id', pendingGroup)
+              .maybeSingle();
+            if (data?.name) {
+              setPendingGroupName(data.name);
+            }
+          } catch (e) {}
+          setShowGroupJoinConfirm(true);
+        };
+        fetchGroupName();
       }
     }
   }, [isLoggedIn, isLoading]);
@@ -172,6 +198,48 @@ export default function WhatEatApp() {
     localStorage.removeItem('pending_hub_ref');
     localStorage.removeItem('pending_family_code');
     setShowFamilyJoinConfirm(false);
+  };
+
+  const handleAcceptGroupJoin = async () => {
+    if (!pendingGroupCode) return;
+
+    localStorage.removeItem('pending_group_code');
+    setShowGroupJoinConfirm(false);
+
+    try {
+      const { getSessionToken } = await import('@/services/merlin-hub-sdk/CoreLogic/client');
+      const hubToken = getSessionToken() || '';
+
+      const joinRes = await fetch('/api/group/members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {}),
+        },
+        body: JSON.stringify({ action: 'join', groupId: pendingGroupCode }),
+      });
+      const joinData = await joinRes.json();
+      if (!joinRes.ok || !joinData.success) {
+        console.warn('[WhatEatApp] 모임 DB 연결 실패:', joinData);
+        alert('모임 연동에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      console.log('[WhatEatApp] 모임 DB 연결 성공:', joinData);
+      alert(`'${joinData.groupName || pendingGroupName || "모임"}' 모임에 성공적으로 합류했습니다! 👥`);
+      
+      handleTabChange('family');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('joinedGroup', { detail: { groupId: pendingGroupCode } }));
+      }
+    } catch (e) {
+      console.error('[WhatEatApp] 모임 DB 연결 오류:', e);
+      alert('모임 연동에 실패했습니다. 다시 시도해 주세요.');
+    }
+  };
+
+  const handleDeclineGroupJoin = () => {
+    localStorage.removeItem('pending_group_code');
+    setShowGroupJoinConfirm(false);
   };
 
   // 1. 브라우저 뒤로가기/앞으로가기 및 마우스 뒤로가기 버튼 연동
@@ -473,6 +541,39 @@ export default function WhatEatApp() {
                 className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs cursor-pointer"
               >
                 그냥 일반 모드로 둘러보기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 모임 합류 컨펌 모달 */}
+      {showGroupJoinConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-gray-100 shadow-2xl space-y-5 transform transition-all scale-100">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="size-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-4xl animate-bounce">
+                👥
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 tracking-tight font-sans">'{pendingGroupName || "모임"}' 모임에 참가할까요?</h3>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                모임 초대 링크를 통해 방문하셨습니다.<br/>
+                수락하시면 해당 모임 멤버로 합류하여 함께 외식 기록 및 일정을 공유할 수 있습니다.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={handleAcceptGroupJoin}
+                className="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition-all text-xs cursor-pointer"
+              >
+                수락하고 모임 가입하기 💙
+              </button>
+              <button
+                onClick={handleDeclineGroupJoin}
+                className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs cursor-pointer"
+              >
+                그냥 둘러보기
               </button>
             </div>
           </div>

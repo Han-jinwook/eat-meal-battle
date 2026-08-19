@@ -81,7 +81,9 @@ export async function POST(request: Request) {
       'notification_recipients',
       'meal_likes',
       'meal_reservations',
-      'whateat_family_groups'
+      'whateat_family_groups',
+      'whateat_group_groups',
+      'whateat_group_members'
     ];
 
     if (!ALLOWED_TABLES.includes(table)) {
@@ -135,6 +137,22 @@ export async function POST(request: Request) {
           }
           if (!rec.owner_id) {
             rec.owner_id = userId;
+          }
+        }
+        if (table === 'whateat_group_groups') {
+          if (rec.owner_id && rec.owner_id !== userId) {
+            return NextResponse.json({ error: '본인의 모임 그룹만 생성할 수 있습니다.' }, { status: 403 });
+          }
+          if (!rec.owner_id) {
+            rec.owner_id = userId;
+          }
+        }
+        if (table === 'whateat_group_members') {
+          if (rec.user_id && rec.user_id !== userId) {
+            return NextResponse.json({ error: '본인의 멤버 정보만 생성할 수 있습니다.' }, { status: 403 });
+          }
+          if (!rec.user_id) {
+            rec.user_id = userId;
           }
         }
       }
@@ -205,6 +223,12 @@ export async function POST(request: Request) {
         if (table === 'whateat_family_groups' && existing.owner_id !== userId) {
           return NextResponse.json({ error: '본인의 가족 그룹만 수정할 수 있습니다.' }, { status: 403 });
         }
+        if (table === 'whateat_group_groups' && existing.owner_id !== userId) {
+          return NextResponse.json({ error: '본인의 모임 그룹만 수정할 수 있습니다.' }, { status: 403 });
+        }
+        if (table === 'whateat_group_members' && existing.user_id !== userId) {
+          return NextResponse.json({ error: '본인의 모임 멤버 정보만 수정할 수 있습니다.' }, { status: 403 });
+        }
       }
 
       // 업데이트 실행
@@ -236,10 +260,36 @@ export async function POST(request: Request) {
         if (!selectError && existing) {
           // 소유권 확인
           if (table === 'meal_images' && existing.uploaded_by !== userId) {
-            return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
+            let isGroupOwner = false;
+            if (existing.group_id) {
+              const { data: group } = await supabaseAdmin
+                .from('whateat_group_groups')
+                .select('owner_id')
+                .eq('id', existing.group_id)
+                .maybeSingle();
+              if (group && group.owner_id === userId) {
+                isGroupOwner = true;
+              }
+            }
+            if (!isGroupOwner) {
+              return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
+            }
           }
           if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
-            return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
+            let isGroupOwner = false;
+            if (table === 'meal_reservations' && existing.group_id) {
+              const { data: group } = await supabaseAdmin
+                .from('whateat_group_groups')
+                .select('owner_id')
+                .eq('id', existing.group_id)
+                .maybeSingle();
+              if (group && group.owner_id === userId) {
+                isGroupOwner = true;
+              }
+            }
+            if (!isGroupOwner) {
+              return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
+            }
           }
           if (table === 'school_infos' && existing.user_id !== userId) {
             return NextResponse.json({ error: '본인의 학교 정보만 삭제할 수 있습니다.' }, { status: 403 });
@@ -251,6 +301,25 @@ export async function POST(request: Request) {
           }
           if (table === 'whateat_family_groups' && existing.owner_id !== userId) {
             return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
+          }
+          if (table === 'whateat_group_groups' && existing.owner_id !== userId) {
+            return NextResponse.json({ error: '모임 삭제 권한이 없습니다.' }, { status: 403 });
+          }
+          if (table === 'whateat_group_members' && existing.user_id !== userId) {
+            let isGroupOwner = false;
+            if (existing.group_id) {
+              const { data: group } = await supabaseAdmin
+                .from('whateat_group_groups')
+                .select('owner_id')
+                .eq('id', existing.group_id)
+                .maybeSingle();
+              if (group && group.owner_id === userId) {
+                isGroupOwner = true;
+              }
+            }
+            if (!isGroupOwner) {
+              return NextResponse.json({ error: '모임 탈퇴/추방 권한이 없습니다.' }, { status: 403 });
+            }
           }
         }
 

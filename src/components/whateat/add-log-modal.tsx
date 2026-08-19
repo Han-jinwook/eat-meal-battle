@@ -49,9 +49,10 @@ interface AddLogModalProps {
   onClose: () => void
   editData?: MealLogData | null
   onSave?: (data: MealLogData) => void
-  onDelete?: (id: number) => void
+  onDelete?: (id: string | number) => void
   mode?: "solo" | "family"
   registeredDeliveryStores?: SelectedPlace[]
+  isGroupMode?: boolean
 }
 
 type MealType = "집밥" | "배달" | "외식"
@@ -65,9 +66,16 @@ interface SelectedPlace {
   dong?: string
   lastOrderedAt?: string
   isSample?: boolean
+  link?: string
 }
 
-export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo", registeredDeliveryStores = [] }: AddLogModalProps) {
+export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode = "solo", registeredDeliveryStores = [], isGroupMode = false }: AddLogModalProps) {
+  // If isGroupMode, force mealType to "외식"
+  useEffect(() => {
+    if (isGroupMode && isOpen) {
+      setMealType("외식")
+    }
+  }, [isGroupMode, isOpen])
   const { isLoggedIn } = useHub()
   const [mealType, setMealType] = useState<MealType>("집밥")
 
@@ -595,7 +603,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           {/* Form Fields */}
           <div className="space-y-2.5" onClickCapture={handleInteraction}>
             {/* 1. Meal Type & Date (Side-by-side) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className={cn("grid gap-2", isGroupMode ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
+              {!isGroupMode && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-foreground">식사 유형</label>
                 <div className="grid grid-cols-3 gap-1">
@@ -627,6 +636,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
                   ))}
                 </div>
               </div>
+              )}
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1.5">

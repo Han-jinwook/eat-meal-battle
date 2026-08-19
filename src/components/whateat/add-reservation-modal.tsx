@@ -57,6 +57,7 @@ interface AddReservationModalProps {
   prefillData?: ReservationPrefillData | null
   isWishlist?: boolean
   isScheduling?: boolean
+  isGroupMode?: boolean
 }
 
 type MealType = "집밥" | "외식" | "배달" | ""
@@ -142,7 +143,13 @@ function generateUUID() {
   })
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false, isScheduling = false }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false, isScheduling = false, isGroupMode = false }: AddReservationModalProps) {
+  // If isGroupMode, force mealType to "외식"
+  useEffect(() => {
+    if (isGroupMode && isOpen) {
+      setMealType("외식")
+    }
+  }, [isGroupMode, isOpen])
   const { isLoggedIn } = useHub()
   const [menuName, setMenuName] = useState("")
 
@@ -586,6 +593,7 @@ const handleSubmit = () => {
             ) : (
               <div className="flex flex-col gap-2">
                 {/* Meal Type - 유형 선택 (가장 위) */}
+                {!isGroupMode && (
                 <div className="grid grid-cols-3 gap-2">
                   {mealTypes.map((type) => {
                     const Icon = type.icon
@@ -615,6 +623,7 @@ const handleSubmit = () => {
                     )
                   })}
                 </div>
+                )}
 
                 {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
                 {mealType && (

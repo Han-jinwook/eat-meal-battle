@@ -34,6 +34,8 @@ import {
   Calendar,
   UserMinus,
   Users,
+  FolderClosed,
+  UserPlus,
 } from "lucide-react"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
@@ -71,6 +73,9 @@ interface SharedMeal {
   linkUrl?: string
   linkThumbnail?: string
   placeName?: string
+  placeAddress?: string
+  type?: string
+  date?: string
   status?: string
 }
 
@@ -349,7 +354,15 @@ const defaultFamilyReservations = [
   }
 ]
 
-const mergeWishlistWithSamples = (realWishlist: any[]) => {
+const mergeWishlistWithSamples = (realWishlist: any[], isGroupMode: boolean = false) => {
+  if (isGroupMode) {
+    const realDineout = realWishlist.filter(item => item.mealType === "외식")
+    if (realDineout.length === 0) {
+      const sample = defaultWishlistItems.find(s => s.mealType === "외식")
+      return sample ? [sample] : []
+    }
+    return realDineout
+  }
   if (!realWishlist || realWishlist.length === 0) {
     return defaultWishlistItems
   }
@@ -372,7 +385,15 @@ const mergeWishlistWithSamples = (realWishlist: any[]) => {
   return result
 }
 
-const mergeReservationsWithSamples = (realReservations: any[]) => {
+const mergeReservationsWithSamples = (realReservations: any[], isGroupMode: boolean = false) => {
+  if (isGroupMode) {
+    const realDineout = realReservations.filter(item => item.mealType === "외식")
+    if (realDineout.length === 0) {
+      const sample = defaultFamilyReservations.find(s => s.mealType === "외식")
+      return sample ? [sample] : []
+    }
+    return realDineout
+  }
   if (!realReservations || realReservations.length === 0) {
     return defaultFamilyReservations
   }
@@ -474,6 +495,25 @@ export function FamilyPage({
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
   const [showChefModal, setShowChefModal] = useState(false)
+  const [activeMode, setActiveMode] = useState<'family' | 'group'>('family')
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [groups, setGroups] = useState<any[]>([])
+  const [showGroupMembersDropdown, setShowGroupMembersDropdown] = useState<string | null>(null)
+  const [userRegion, setUserRegion] = useState<string>("")
+
+  useEffect(() => {
+    async function loadUserRegion() {
+      if (!isLoggedIn || !user?.id) return
+      try {
+        const supabase = createClient()
+        const { data } = await supabase.from('users').select('region').eq('id', user.id).maybeSingle()
+        if (data?.region) {
+          setUserRegion(data.region)
+        }
+      } catch (e) {}
+    }
+    loadUserRegion()
+  }, [isLoggedIn, user])
   const [showMemberManageModal, setShowMemberManageModal] = useState(false)
   const [isFamilyOwner, setIsFamilyOwner] = useState(true)
 
@@ -513,6 +553,7 @@ export function FamilyPage({
 
   useEffect(() => {
     async function loadRealFamily() {
+      if (activeMode === 'group') return
       if (!isLoggedIn || !user) {
         setMembers(familyMembers)
         setIsFamilyOwner(true)
@@ -631,7 +672,7 @@ export function FamilyPage({
     }
     window.addEventListener("focus", handleFocus)
     return () => window.removeEventListener("focus", handleFocus)
-  }, [isLoggedIn, user, activeMainTab])
+  }, [isLoggedIn, user, activeMainTab, activeMode])
 
   // Resolve database user UUIDs for family members
   useEffect(() => {
@@ -682,7 +723,173 @@ export function FamilyPage({
     resolveMemberUserIds()
   }, [isLoggedIn, user, getReferralHistory])
 
-  const [selectedChefId, setSelectedChefId] = useState<number | null>(null)
+  // Load groups from backend api
+  const loadGroups = async () => {
+    if (!isLoggedIn || !user?.id) return
+    try {
+      const res = await fetch('/api/group/members')
+      if (res.ok) {
+        const data = await res.json()
+        setGroups(data.groups || [])
+      }
+    } catch (e) {
+      console.error("Failed to load groups:", e)
+    }
+  }
+
+  useEffect(() => {
+    loadGroups()
+    window.addEventListener("focus", loadGroups)
+    return () => window.removeEventListener("focus", loadGroups)
+  }, [isLoggedIn, user])
+
+  // Sync group members to 'members' state when group is selected
+  useEffect(() => {
+    if (activeMode === 'group' && selectedGroupId) {
+      const activeGrp = groups.find(g => g.id === selectedGroupId)
+      if (activeGrp) {
+        const groupMemsMapped = activeGrp.members.map((m: any, idx: number) => ({
+          id: idx + 1,
+          name: m.userId === user?.id ? "나" : m.name,
+          avatar: m.userId === user?.id ? (user?.avatar_url || m.avatar) : m.avatar,
+          role: m.role === 'owner' ? ('chef' as const) : ('member' as const),
+          isOnline: m.userId === user?.id ? true : false,
+          isStudent: false,
+          userId: m.userId
+        }))
+        setMembers(groupMemsMapped)
+        setFamilyHostId(activeGrp.ownerId)
+        setFamilyHostName(activeGrp.name)
+        setFamilyGroupId(null)
+        setChefUserId(null)
+        setSelectedChefId(null)
+      }
+    }
+  }, [activeMode, selectedGroupId, groups, isLoggedIn, user])
+
+  // Listen to joinedGroup event from WhatEatApp.tsx
+  useEffect(() => {
+    const handleJoinedGroup = (e: CustomEvent) => {
+      const { groupId } = e.detail
+      if (groupId) {
+        loadGroups().then(() => {
+          setActiveMode('group')
+          setSelectedGroupId(groupId)
+        })
+      }
+    }
+    window.addEventListener('joinedGroup', handleJoinedGroup as any)
+    return () => window.removeEventListener('joinedGroup', handleJoinedGroup as any)
+  }, [])
+
+  // Group Handlers
+  const handleCreateGroupPrompt = async () => {
+    const name = prompt("새로운 모임의 이름을 입력해주세요:")
+    if (!name || !name.trim()) return
+    const createToast = toast.loading("모임을 생성하고 있습니다...")
+    try {
+      const res = await fetch('/api/group/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', name: name.trim() })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success("모임이 생성되었습니다! 👥", { id: createToast })
+        await loadGroups()
+        setActiveMode('group')
+        setSelectedGroupId(data.groupId)
+      } else {
+        toast.error(data.error || "모임 생성에 실패했습니다.", { id: createToast })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("오류가 발생했습니다.", { id: createToast })
+    }
+  }
+
+  const handleKickGroupMember = async (groupId: string, targetUserId: string, targetName: string) => {
+    if (!confirm(`'${targetName}'님을 모임에서 추방하시겠습니까?`)) return
+    const kickToast = toast.loading("추방 처리를 진행 중입니다...")
+    try {
+      const res = await fetch('/api/group/members', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kick', groupId, targetUserId })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success("모임원 추방이 완료되었습니다.", { id: kickToast })
+        await loadGroups()
+      } else {
+        toast.error(data.error || "추방 실패", { id: kickToast })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("오류가 발생했습니다.", { id: kickToast })
+    }
+  }
+
+  const handleCopyGroupInviteLink = async (groupId: string, groupName: string) => {
+    let refParam = ""
+    try {
+      const info = await getMyReferralInfo()
+      if (info?.code) {
+        refParam = `ref=${info.code}&`
+      }
+    } catch (e) {
+      console.error("Failed to get referral info for group invite:", e)
+    }
+
+    const inviteLink = `${window.location.origin}/whateat?${refParam}group=${groupId}`
+    
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink)
+      } else {
+        const textarea = document.createElement("textarea")
+        textarea.value = inviteLink
+        textarea.style.position = "fixed"
+        textarea.style.opacity = "0"
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        document.execCommand("copy")
+        document.body.removeChild(textarea)
+      }
+      toast.success(`'${groupName}' 모임 초대 링크가 복사되었습니다! 👥`)
+    } catch (err) {
+      console.error(err)
+      toast.error("초대 링크 복사에 실패했습니다.")
+    }
+  }
+
+  const handleLeaveGroup = async (groupId: string, groupName: string, isOwner: boolean) => {
+    const actionText = isOwner ? "삭제(해체)" : "탈퇴"
+    if (!confirm(`정말로 '${groupName}' 모임에서 ${actionText}하시겠습니까?`)) return
+    const leaveToast = toast.loading(`${actionText} 진행 중...`)
+    try {
+      const res = await fetch('/api/group/members', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: isOwner ? 'delete' : 'leave', groupId })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(`${actionText}되었습니다.`, { id: leaveToast })
+        await loadGroups()
+        setActiveMode('family')
+        setSelectedGroupId(null)
+      } else {
+        toast.error(data.error || `${actionText} 실패`, { id: leaveToast })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("오류가 발생했습니다.", { id: leaveToast })
+    }
+  }
+
+  const [selectedChefId, setSelectedChefId] = useState<string | number | null>(null)
 
   useEffect(() => {
     if (showChefModal) {
@@ -862,7 +1069,7 @@ export function FamilyPage({
 
     const mealUuid = generateUUID()
     let status = "pending"
-    let source = "family-shared"
+    let source = activeMode === 'group' ? "group-shared" : "family-shared"
 
     const mealTypeMap = {
       "집밥": "homemade" as const,
@@ -886,7 +1093,7 @@ export function FamilyPage({
       id: mealUuid,
       image: effectiveImage,
       title: effectiveTitle,
-      sharedBy: user.user_metadata?.full_name || user.email?.split("@")[0] || "나",
+      sharedBy: user.nickname || user.email?.split("@")[0] || "나",
       userId: user.id,
       sharedAt: formattedDate,
       sharedAtIso: nowIso,
@@ -955,12 +1162,13 @@ export function FamilyPage({
           status: status,
           title: effectiveTitle,
           rating: 0,
-          meal_type: data.mealType,
+          meal_type: activeMode === 'group' ? "외식" : data.mealType,
           link_url: data.linkUrl || "",
           link_thumbnail: data.linkThumbnail || "",
           place_name: data.place?.name || data.deliveryStoreName || "",
           place_address: data.place?.address || "",
-          description: data.description || ""
+          description: data.description || "",
+          ...(activeMode === 'group' ? { group_id: selectedGroupId } : {})
         }
       })
 
@@ -1279,16 +1487,19 @@ export function FamilyPage({
     buildInviteLink();
   }, [isLoggedIn, user, familyHostId, getMyReferralInfo])
 
-  const fetchFamilyData = async (familyUserIds: string[]) => {
+  const fetchFamilyData = async (familyUserIds: string[], targetGroupId: string | null = null) => {
     try {
       const supabase = createClient()
       
+      let query = supabase.from('meal_images').select('*')
+      if (targetGroupId) {
+        query = query.eq('group_id', targetGroupId)
+      } else {
+        query = query.in('uploaded_by', familyUserIds).eq('source', 'family-shared')
+      }
+      
       // 1. Fetch shared meals (meal_images)
-      const { data: imgData, error: imgError } = await supabase
-        .from('meal_images')
-        .select('*')
-        .in('uploaded_by', familyUserIds)
-        .eq('source', 'family-shared')
+      const { data: imgData, error: imgError } = await query
         .order('created_at', { ascending: false })
         .limit(30)
 
@@ -1463,20 +1674,23 @@ export function FamilyPage({
     }
   }
 
-  const fetchFamilyReservations = async (familyUserIds: string[]) => {
+  const fetchFamilyReservations = async (familyUserIds: string[], targetGroupId: string | null = null) => {
     try {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from("meal_reservations")
-        .select("*")
-        .in("user_id", familyUserIds)
+      let query = supabase.from("meal_reservations").select("*")
+      if (targetGroupId) {
+        query = query.eq('group_id', targetGroupId)
+      } else {
+        query = query.in("user_id", familyUserIds)
+      }
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .limit(50)
 
       if (error) throw error
 
       if (data) {
-        const rawWishlist = data.filter(r => r.source === "family_wishlist" || !r.date).map(row => ({
+        const rawWishlist = data.filter(r => (targetGroupId ? r.source === "group_wishlist" : r.source === "family_wishlist") || !r.date).map(row => ({
           id: row.id,
           date: row.date || "",
           time: row.time || "",
@@ -1490,7 +1704,7 @@ export function FamilyPage({
           createdAt: row.created_at
         }))
 
-        const rawReservations = data.filter(r => r.source === "family" && r.date).map(row => ({
+        const rawReservations = data.filter(r => (targetGroupId ? r.source === "group" : r.source === "family") && r.date).map(row => ({
           id: row.id,
           date: row.date,
           time: row.time || "",
@@ -1504,8 +1718,8 @@ export function FamilyPage({
           createdAt: row.created_at
         }))
 
-        const wishlist = mergeWishlistWithSamples(rawWishlist)
-        const reservations = mergeReservationsWithSamples(rawReservations)
+        const wishlist = mergeWishlistWithSamples(rawWishlist, targetGroupId !== null)
+        const reservations = mergeReservationsWithSamples(rawReservations, targetGroupId !== null)
 
         setWishlistItems(wishlist)
         setFamilyReservations(reservations)
@@ -1634,18 +1848,23 @@ export function FamilyPage({
           user_id: user.id,
           date: null,
           time: data.time || "",
-          meal_type: data.mealType,
+          meal_type: activeMode === 'group' ? "외식" : data.mealType,
           menu: data.menu,
           place: data.place || null,
           memo: data.memo || "",
           thumbnail: data.thumbnail || null,
           source_url: data.url || null,
-          source: "family_wishlist"
+          source: activeMode === 'group' ? "group_wishlist" : "family_wishlist",
+          ...(activeMode === 'group' ? { group_id: selectedGroupId } : {})
         }
       })
       toast.success("위시리스트에 추가되었습니다! 📋", { id: uploadToast })
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      fetchFamilyReservations(familyUserIds)
+      if (activeMode === 'group') {
+        fetchFamilyReservations([], selectedGroupId)
+      } else {
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        fetchFamilyReservations(familyUserIds)
+      }
     } catch (err) {
       console.error("Failed to save wishlist item:", err)
       toast.error("위시리스트 저장에 실패했습니다.", { id: uploadToast })
@@ -1666,8 +1885,12 @@ export function FamilyPage({
         filters: { id }
       })
       toast.success("삭제되었습니다.", { id: deleteToast })
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      fetchFamilyReservations(familyUserIds)
+      if (activeMode === 'group') {
+        fetchFamilyReservations([], selectedGroupId)
+      } else {
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        fetchFamilyReservations(familyUserIds)
+      }
     } catch (err) {
       console.error("Failed to delete wishlist item:", err)
       toast.error("삭제에 실패했습니다.", { id: deleteToast })
@@ -1686,18 +1909,23 @@ export function FamilyPage({
           user_id: user.id,
           date: data.date,
           time: data.time || "",
-          meal_type: data.mealType,
+          meal_type: activeMode === 'group' ? "외식" : data.mealType,
           menu: data.menu,
           place: data.place || null,
           memo: data.memo || "",
           thumbnail: data.thumbnail || null,
           source_url: data.url || null,
-          source: "family"
+          source: activeMode === 'group' ? "group" : "family",
+          ...(activeMode === 'group' ? { group_id: selectedGroupId } : {})
         }
       })
-      toast.success("가족 먹예약이 저장되었습니다! 📅", { id: uploadToast })
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      fetchFamilyReservations(familyUserIds)
+      toast.success("먹예약이 저장되었습니다! 📅", { id: uploadToast })
+      if (activeMode === 'group') {
+        fetchFamilyReservations([], selectedGroupId)
+      } else {
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        fetchFamilyReservations(familyUserIds)
+      }
     } catch (err) {
       console.error("Failed to save family reservation:", err)
       toast.error("예약 저장에 실패했습니다.", { id: uploadToast })
@@ -1718,8 +1946,12 @@ export function FamilyPage({
         filters: { id }
       })
       toast.success("삭제되었습니다.", { id: deleteToast })
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      fetchFamilyReservations(familyUserIds)
+      if (activeMode === 'group') {
+        fetchFamilyReservations([], selectedGroupId)
+      } else {
+        const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
+        fetchFamilyReservations(familyUserIds)
+      }
     } catch (err) {
       console.error("Failed to delete reservation:", err)
       toast.error("삭제에 실패했습니다.", { id: deleteToast })
@@ -1795,13 +2027,16 @@ export function FamilyPage({
   useEffect(() => {
     if (isLoggedIn && user?.id) {
       const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      if (familyUserIds.length > 0) {
+      if (activeMode === 'group' && selectedGroupId) {
+        fetchFamilyData([], selectedGroupId)
+        fetchFamilyReservations([], selectedGroupId)
+      } else if (familyUserIds.length > 0) {
         fetchFamilyData(familyUserIds)
         fetchFamilyReservations(familyUserIds)
       }
       fetchDecidedMenus()
     }
-  }, [members, isLoggedIn, user])
+  }, [members, isLoggedIn, user, activeMode, selectedGroupId])
 
   // Realtime subscription for family updates (meals, ratings, comments, replies, reservations, likes)
   useEffect(() => {
@@ -1816,7 +2051,11 @@ export function FamilyPage({
     const channel = supabase
       .channel(`realtime:family_sync:${ts}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_ratings' }, () => {
-        fetchFamilyData(familyUserIds)
+        if (activeMode === 'group' && selectedGroupId) {
+          fetchFamilyData([], selectedGroupId)
+        } else {
+          fetchFamilyData(familyUserIds)
+        }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, (payload) => {
         const newComment = payload.new as any;
@@ -1826,7 +2065,7 @@ export function FamilyPage({
           if (existingComments.some(c => c.id === newComment.id)) return prev;
           
           const u = members.find(m => m.userId === newComment.user_id);
-          const author = newComment.user_id === user?.id ? "나" : (u?.nickname || u?.name || "가족");
+          const author = newComment.user_id === user?.id ? "나" : (u?.name || "가족");
           
           const mappedComment = {
             id: newComment.id,
@@ -1868,7 +2107,11 @@ export function FamilyPage({
         fetchFamilyData(familyUserIds)
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'meal_reservations' }, () => {
-        fetchFamilyReservations(familyUserIds)
+        if (activeMode === 'group' && selectedGroupId) {
+          fetchFamilyReservations([], selectedGroupId)
+        } else {
+          fetchFamilyReservations(familyUserIds)
+        }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'meal_likes' }, (payload) => {
         const { meal_id, user_id } = payload.new as any;
@@ -1966,16 +2209,19 @@ export function FamilyPage({
   const hasDelivery = meals.some(m => m.mealType === "delivery")
   const hasDining = meals.some(m => m.mealType === "dining")
   
-  const activeDefaultMeals = defaultSharedMeals.filter(m => {
-    if (m.mealType === "homemade" && hasHomemade) return false
-    if (m.mealType === "delivery" && hasDelivery) return false
-    if (m.mealType === "dining" && hasDining) return false
-    return true
-  })
+  const activeDefaultMeals = activeMode === 'group'
+    ? (meals.some(m => m.mealType === "dining") ? [] : defaultSharedMeals.filter(m => m.mealType === "dining"))
+    : defaultSharedMeals.filter(m => {
+        if (m.mealType === "homemade" && hasHomemade) return false
+        if (m.mealType === "delivery" && hasDelivery) return false
+        if (m.mealType === "dining" && hasDining) return false
+        return true
+      })
   
   const baseMeals = [...activeDefaultMeals, ...meals]
   
   const filteredMeals = baseMeals.filter((meal) => {
+    if (activeMode === 'group' && meal.mealType !== "dining") return false
     if (sharedMealFilter !== "all" && getSharedMealCategory(meal) !== sharedMealFilter) {
       return false
     }
@@ -2291,7 +2537,7 @@ export function FamilyPage({
     }
   }
 
-  const handleOpenMealCardDetail = (mealId: number) => {
+  const handleOpenMealCardDetail = (mealId: string | number) => {
     setSelectedMealId(mealId)
     setDismissedMealHighlightIds((prev) => (prev.includes(mealId) ? prev : [...prev, mealId]))
   }
@@ -2967,108 +3213,265 @@ export function FamilyPage({
     <div className="flex flex-col pb-4">
       {/* Sticky Header Container */}
       <div className="sticky top-[52px] sm:top-[62px] z-30 bg-[#fffaf5] -mx-5 px-5 pt-3 pb-1 flex flex-col gap-2 border-b border-muted/10">
-        {/* Family Header */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl pt-2 pb-1.5 px-4 border border-white shadow-sm">
-          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
-            <>
-              {isFamilyOwner ? (
-                <button
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      window.dispatchEvent(new CustomEvent('openLoginModal'))
-                    } else {
-                      familyPhotoInputRef.current?.click()
-                    }
-                  }}
-                  className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0"
-                >
-                  {familyPhoto ? (
-                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-                  ) : (
-                    <Pencil className="size-4" />
-                  )}
-                </button>
-              ) : (
-                <div className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 overflow-hidden shrink-0">
-                  {familyPhoto ? (
-                    <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-lg">🏡</span>
-                  )}
-                </div>
-              )}
-              <input
-                ref={familyPhotoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFamilyPhotoChange}
-                className="hidden"
-              />
-            </>
-
-            <div className="shrink-0 min-w-fit pr-1">
-              <h2 className="font-bold text-foreground text-base leading-tight">
-                {!isLoggedIn || !user
-                  ? "게스트 가족"
-                  : isFamilyOwner
-                    ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
-                    : `${familyHostName || '가족'} 가족`}
-              </h2>
-              <div className="flex flex-col gap-1 mt-0.5">
-                <p className="text-[9px] text-muted-foreground font-semibold">
-                  {members.length}명의 구성원
-                </p>
-                {isLoggedIn && isFamilyOwner && (
-                  <button
-                    onClick={() => {
-                      setShowChefModal(true)
-                    }}
-                    className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-2 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5 cursor-pointer mt-0.5"
-                  >
-                    <Settings className="size-2" />
-                    셰프 / 가족 관리
-                  </button>
-                )}
-              </div>
+        {/* Family/Group Hybrid Header */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-2 sm:p-3 border border-white shadow-sm flex flex-col md:flex-row gap-4 items-stretch select-none">
+          {/* Left: Family Sector */}
+          <div 
+            onClick={() => {
+              if (activeMode !== 'family') {
+                setActiveMode('family')
+                setSelectedGroupId(null)
+              }
+            }}
+            className={cn(
+              "transition-all duration-300 rounded-xl p-2 flex items-center gap-3 cursor-pointer",
+              activeMode === 'group' ? 'hidden md:flex md:w-[100px] md:opacity-50' : 'flex-1 md:w-[65%]',
+              activeMode === 'family' ? 'bg-orange-50/50 border border-orange-100' : 'hover:bg-gray-50'
+            )}
+          >
+            <div className="flex items-center gap-2 shrink-0">
+              <Users className="size-5 text-orange-500" />
+              <span className="font-extrabold text-sm text-foreground">가족</span>
             </div>
 
-            <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
-              {members.map((member) => (
-                <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 pt-1">
-                  <div className="relative">
-                    <HubAvatar
-                      isLoggedIn={isLoggedIn}
-                      avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
-                      nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
-                      size="sm"
-                      className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
-                    />
-                    {member.role === "chef" && (
-                      <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족셰프-메뉴결정권자">
-                        셰
-                      </div>
+            {activeMode === 'family' && (
+              <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar animate-fade-in">
+                {isFamilyOwner ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!isLoggedIn) {
+                        window.dispatchEvent(new CustomEvent('openLoginModal'))
+                      } else {
+                        familyPhotoInputRef.current?.click()
+                      }
+                    }}
+                    className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 hover:bg-orange-100 transition-colors overflow-hidden shrink-0 cursor-pointer"
+                  >
+                    {familyPhoto ? (
+                      <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                    ) : (
+                      <Pencil className="size-4" />
                     )}
-                    {member.isOnline && (
-                      <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-400 border-2 border-white" />
+                  </button>
+                ) : (
+                  <div className="size-11 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 overflow-hidden shrink-0">
+                    {familyPhoto ? (
+                      <img src={familyPhoto} alt="가족 사진" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg">🏡</span>
                     )}
                   </div>
-                  <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
-                    {member.name}
-                  </span>
+                )}
+                <input
+                  ref={familyPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFamilyPhotoChange}
+                  className="hidden"
+                />
+
+                <div className="shrink-0 min-w-fit pr-1">
+                  <h2 className="font-bold text-foreground text-base leading-tight">
+                    {!isLoggedIn || !user
+                      ? "게스트 가족"
+                      : isFamilyOwner
+                        ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족`
+                        : `${familyHostName || '가족'} 가족`}
+                  </h2>
+                  <div className="flex flex-col gap-1 mt-0.5">
+                    <p className="text-[9px] text-muted-foreground font-semibold">
+                      {members.length}명의 구성원
+                    </p>
+                    {isLoggedIn && isFamilyOwner && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowChefModal(true)
+                        }}
+                        className="text-[8px] bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 px-2 py-0.5 rounded-full font-black transition-all flex items-center gap-0.5 cursor-pointer mt-0.5"
+                      >
+                        <Settings className="size-2" />
+                        셰프 / 가족 관리
+                      </button>
+                    )}
+                  </div>
                 </div>
-              ))}
-              <button 
+
+                <div className="flex-1 flex items-center justify-start gap-2.5 overflow-x-auto hide-scrollbar">
+                  {members.map((member) => (
+                    <div key={member.id} className="flex flex-col items-center gap-1 shrink-0 pt-1">
+                      <div className="relative">
+                        <HubAvatar
+                          isLoggedIn={isLoggedIn}
+                          avatarUrl={member.name === "나" ? user?.avatar_url : member.avatar}
+                          nickname={member.name === "나" ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나')) : member.name}
+                          size="sm"
+                          className="!w-11 !h-11 rounded-xl border-2 border-white shadow-sm"
+                        />
+                        {member.role === "chef" && (
+                          <div className="absolute -top-1 -right-1 size-4.5 rounded-full bg-orange-500 text-white font-extrabold text-[10px] leading-none flex items-center justify-center border-1.5 border-white shadow-xs z-10 select-none" title="가족셰프-메뉴결정권자">
+                            셰
+                          </div>
+                        )}
+                        {member.isOnline && (
+                          <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-400 border-2 border-white" />
+                        )}
+                      </div>
+                      <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap">
+                        {member.name}
+                      </span>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowInviteModal(true)
+                    }}
+                    className="flex flex-col items-center gap-1 shrink-0 ml-1 cursor-pointer"
+                  >
+                    <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                      <Plus className="size-4 text-muted-foreground/50" />
+                    </div>
+                    <span className="text-[9px] font-medium text-muted-foreground">초대</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {activeMode === 'group' && (
+              <span className="hidden md:inline text-xs font-bold text-muted-foreground ml-auto pr-2">펼치기</span>
+            )}
+          </div>
+
+          {/* Desktop divider */}
+          <div className="hidden md:block w-[1px] bg-slate-100 shrink-0" />
+
+          {/* Right: Group Sector */}
+          <div 
+            className={cn(
+              "transition-all duration-300 rounded-xl p-2 flex flex-col gap-2",
+              activeMode === 'family' ? 'hidden md:flex md:w-[100px] md:opacity-50' : 'flex-1 md:w-[35%]'
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div 
                 onClick={() => {
-                  setShowInviteModal(true)
+                  if (activeMode !== 'group' && groups.length > 0) {
+                    setActiveMode('group')
+                    setSelectedGroupId(groups[0].id)
+                  }
                 }}
-                className="flex flex-col items-center gap-1 shrink-0 ml-1 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer"
               >
-                <div className="size-11 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                  <Plus className="size-4 text-muted-foreground/50" />
-                </div>
-                <span className="text-[9px] font-medium text-muted-foreground">초대</span>
-              </button>
+                <FolderClosed className="size-5 text-cyan-600" />
+                <span className="font-extrabold text-sm text-foreground">모임</span>
+              </div>
+
+              {isLoggedIn && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleCreateGroupPrompt()
+                  }}
+                  className="size-6 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center font-bold text-xs cursor-pointer transition-colors"
+                  title="새 모임 만들기"
+                >
+                  <Plus className="size-3.5" />
+                </button>
+              )}
             </div>
+
+            {activeMode === 'group' ? (
+              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1">
+                {groups.map((group) => {
+                  const isSelected = selectedGroupId === group.id
+                  return (
+                    <div key={group.id} className="relative">
+                      <button
+                        onClick={() => {
+                          setSelectedGroupId(group.id)
+                          setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer",
+                          isSelected
+                            ? "bg-cyan-600 text-white shadow-md shadow-cyan-300/50"
+                            : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
+                        )}
+                      >
+                        {group.name} ({group.members.length})
+                        <ChevronDown className={cn("size-3 transition-transform", showGroupMembersDropdown === group.id && "rotate-180")} />
+                      </button>
+
+                      {showGroupMembersDropdown === group.id && (
+                        <div className="absolute left-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-cyan-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="px-3 py-1 text-[10px] font-black text-cyan-600 border-b border-cyan-50 mb-1">
+                            모임 구성원
+                          </div>
+                          <div className="max-h-40 overflow-y-auto px-2 flex flex-col gap-1">
+                            {group.members.map((m: any) => (
+                              <div key={m.userId} className="flex items-center justify-between p-1 hover:bg-slate-50 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <img src={m.avatar} alt={m.name} className="size-5 rounded-full object-cover" />
+                                  <span className="text-xs font-bold text-gray-700">{m.name}</span>
+                                  {m.role === 'owner' && <span className="text-[8px] bg-cyan-50 text-cyan-600 px-1 rounded-sm">방장</span>}
+                                </div>
+                                {group.isOwner && m.userId !== user?.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleKickGroupMember(group.id, m.userId, m.name)
+                                    }}
+                                    className="text-[9px] text-red-500 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer font-bold"
+                                  >
+                                    추방
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="border-t border-cyan-50 mt-1.5 pt-1 px-2 flex justify-between gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCopyGroupInviteLink(group.id, group.name)
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 text-[10px] font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 rounded-lg cursor-pointer transition-colors"
+                            >
+                              <UserPlus className="size-3" />
+                              초대 +
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleLeaveGroup(group.id, group.name, group.isOwner)
+                              }}
+                              className="py-1 px-2 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded-lg cursor-pointer transition-colors"
+                            >
+                              {group.isOwner ? "삭제" : "탈퇴"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {groups.length === 0 && (
+                  <span className="text-xs text-muted-foreground/60 italic ml-1">아직 생성된 모임이 없습니다.</span>
+                )}
+              </div>
+            ) : (
+              <div 
+                onClick={() => {
+                  setActiveMode('group')
+                  if (groups.length > 0) setSelectedGroupId(groups[0].id)
+                }}
+                className="hidden md:block text-xs font-bold text-muted-foreground hover:text-cyan-600 cursor-pointer pt-1"
+              >
+                모임 열기 (클릭)
+              </div>
+            )}
           </div>
         </div>
 
@@ -3090,6 +3493,7 @@ export function FamilyPage({
           <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
             
             {/* Left Side: Filters */}
+            {activeMode !== "group" && (
             <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
@@ -3119,6 +3523,7 @@ export function FamilyPage({
                 )
               })}
             </div>
+            )}
 
             {/* Right Side: Actions (Search, Sort, FAB) */}
             <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
@@ -3278,9 +3683,7 @@ export function FamilyPage({
                           className="w-1/2 relative overflow-hidden group/img cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (meal.image) {
-                              setViewerImage(meal.image)
-                            }
+                            handleOpenMealCardDetail(meal.id)
                           }}
                         >
                           <div
@@ -3325,7 +3728,7 @@ export function FamilyPage({
                               const isNaver = meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com") || meal.linkUrl.includes("naver.co.kr")
                               const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isNaver
                               
-                              const isRecipe = isGeneric && (meal.mealType === "homemade" || meal.mealType === "집밥")
+                              const isRecipe = isGeneric && (meal.mealType === "homemade")
                               const isStoreLink = isGeneric && !isRecipe
 
                               return (
@@ -3472,7 +3875,7 @@ export function FamilyPage({
                       </div>
 
                       {/* Place info bar - 외식/배달 (Row 1) */}
-                      {(meal.mealType === "dining" || meal.mealType === "delivery" || meal.mealType === "외식" || meal.mealType === "배달") && meal.placeName && (
+                      {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName && (
                         <div
                           className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
                           onClick={(e) => {
@@ -4005,6 +4408,7 @@ export function FamilyPage({
             <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
               
               {/* Left Side: Filters */}
+              {activeMode !== "group" && (
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
                   const count = f === "전체" 
@@ -4029,6 +4433,7 @@ export function FamilyPage({
                   )
                 })}
               </div>
+              )}
 
               {/* Right Side: Actions (Search, Sort, FAB) */}
               <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
@@ -4218,6 +4623,7 @@ export function FamilyPage({
       {isAddReservationOpen && (
         <AddReservationModal
           isOpen={isAddReservationOpen}
+          isGroupMode={activeMode === "group"}
           onClose={() => {
             setIsAddReservationOpen(false)
             setEditingPlan(null)
@@ -4744,6 +5150,7 @@ export function FamilyPage({
       {/* Add / Edit Meal Log Modal */}
       <AddLogModal
         isOpen={addModalOpen || editModalOpen}
+        isGroupMode={activeMode === "group"}
         onClose={() => {
           setAddModalOpen(false)
           setEditModalOpen(false)
