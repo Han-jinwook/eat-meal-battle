@@ -3539,7 +3539,7 @@ export function FamilyPage({
               </button>
             </div>
 
-            <div className="overflow-y-auto max-h-[calc(85vh-82px)] p-5 space-y-5">
+            <div className="overflow-y-auto max-h-[calc(85vh-146px)] p-5 space-y-5">
               <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-bold text-sm text-foreground">가족 별점</h4>
@@ -3617,6 +3617,18 @@ export function FamilyPage({
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-orange-100/50 flex justify-end">
+              <button
+                onClick={() => {
+                  setSelectedMealId(null)
+                  setMealCommentInput("")
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-extrabold text-sm transition-all shadow-sm"
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
