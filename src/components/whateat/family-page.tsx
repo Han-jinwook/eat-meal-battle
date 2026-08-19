@@ -727,7 +727,12 @@ export function FamilyPage({
   const loadGroups = async () => {
     if (!isLoggedIn || !user?.id) return
     try {
-      const res = await fetch('/api/group/members')
+      const hubToken = getSessionToken() || '';
+      const res = await fetch('/api/group/members', {
+        headers: {
+          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+        }
+      })
       if (res.ok) {
         const data = await res.json()
         setGroups(data.groups || [])
@@ -788,9 +793,13 @@ export function FamilyPage({
     if (!name || !name.trim()) return
     const createToast = toast.loading("모임을 생성하고 있습니다...")
     try {
+      const hubToken = getSessionToken() || '';
       const res = await fetch('/api/group/members', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+        },
         body: JSON.stringify({ action: 'create', name: name.trim() })
       })
       const data = await res.json()
@@ -812,9 +821,13 @@ export function FamilyPage({
     if (!confirm(`'${targetName}'님을 모임에서 추방하시겠습니까?`)) return
     const kickToast = toast.loading("추방 처리를 진행 중입니다...")
     try {
+      const hubToken = getSessionToken() || '';
       const res = await fetch('/api/group/members', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+        },
         body: JSON.stringify({ action: 'kick', groupId, targetUserId })
       })
       const data = await res.json()
@@ -869,9 +882,13 @@ export function FamilyPage({
     if (!confirm(`정말로 '${groupName}' 모임에서 ${actionText}하시겠습니까?`)) return
     const leaveToast = toast.loading(`${actionText} 진행 중...`)
     try {
+      const hubToken = getSessionToken() || '';
       const res = await fetch('/api/group/members', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+        },
         body: JSON.stringify({ action: isOwner ? 'delete' : 'leave', groupId })
       })
       const data = await res.json()
@@ -3382,7 +3399,7 @@ export function FamilyPage({
               )}
             </div>
 
-            {activeMode === 'group' ? (
+            {activeMode === 'group' && (
               <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto hide-scrollbar pt-1">
                 {groups.map((group) => {
                   const isSelected = selectedGroupId === group.id
@@ -3460,16 +3477,6 @@ export function FamilyPage({
                 {groups.length === 0 && (
                   <span className="text-xs text-muted-foreground/60 italic ml-1">아직 생성된 모임이 없습니다.</span>
                 )}
-              </div>
-            ) : (
-              <div 
-                onClick={() => {
-                  setActiveMode('group')
-                  if (groups.length > 0) setSelectedGroupId(groups[0].id)
-                }}
-                className="hidden md:block text-xs font-bold text-muted-foreground hover:text-cyan-600 cursor-pointer pt-1"
-              >
-                모임 열기 (클릭)
               </div>
             )}
           </div>
