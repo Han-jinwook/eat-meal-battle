@@ -551,6 +551,19 @@ export function FamilyPage({
     }
   };
 
+  // Click outside to close group members dropdown
+  useEffect(() => {
+    if (!showGroupMembersDropdown) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.group-dropdown-container') && !target.closest('.group-dropdown-trigger')) {
+        setShowGroupMembersDropdown(null);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [showGroupMembersDropdown]);
+
   useEffect(() => {
     async function loadRealFamily() {
       if (activeMode === 'group') return
@@ -3241,8 +3254,8 @@ export function FamilyPage({
               }
             }}
             className={cn(
-              "transition-all duration-300 flex items-center gap-3 cursor-pointer",
-              activeMode === 'group' ? 'hidden md:flex md:opacity-40 md:scale-95' : 'flex-1'
+              "transition-all duration-300 flex items-center gap-3 cursor-pointer flex-1 md:max-w-[60%]",
+              activeMode === 'group' && "md:opacity-40 md:scale-95"
             )}
           >
             {/* Full Family Content: always visible on desktop, collapsed on mobile if activeMode === 'group' */}
@@ -3374,8 +3387,8 @@ export function FamilyPage({
           {/* Right: Group Sector */}
           <div 
             className={cn(
-              "transition-all duration-300 flex items-center gap-3",
-              activeMode === 'family' ? 'flex-1 md:flex-initial md:opacity-40 md:scale-95' : 'flex-1'
+              "transition-all duration-300 flex items-center gap-3 flex-1 md:max-w-[40%]",
+              activeMode === 'family' && "md:opacity-40 md:scale-95"
             )}
           >
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
@@ -3396,15 +3409,18 @@ export function FamilyPage({
                           : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
                       )}
                     >
-                      {/* Left: Group Name Button (Switches mode and tab) */}
+                      {/* Left: Group Name Button (Switches mode and tab, supports toggling off) */}
                       <button
                         onClick={() => {
-                          setActiveMode('group')
-                          setSelectedGroupId(group.id)
-                          // Close dropdown if switching groups
-                          if (selectedGroupId !== group.id) {
-                            setShowGroupMembersDropdown(null)
+                          if (activeMode === 'group' && selectedGroupId === group.id) {
+                            setActiveMode('family')
+                            setSelectedGroupId(null)
+                          } else {
+                            setActiveMode('group')
+                            setSelectedGroupId(group.id)
                           }
+                          // Close dropdown if toggling/switching groups
+                          setShowGroupMembersDropdown(null)
                         }}
                         className={cn(
                           "px-2.5 py-1 transition-all cursor-pointer font-black",
@@ -3417,14 +3433,14 @@ export function FamilyPage({
                       {/* Divider inside chip */}
                       <span className={cn("w-[1px] h-3.5 shrink-0", isSelected ? "bg-white/30" : "bg-gray-300")} />
 
-                      {/* Right: Member Count Toggle Button (Toggles members dropdown only) */}
+                      {/* Right: Member Count Toggle Button (Toggles members dropdown only, has trigger class) */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
                         }}
                         className={cn(
-                          "px-2 py-1 flex items-center justify-center cursor-pointer font-bold",
+                          "group-dropdown-trigger px-2 py-1 flex items-center justify-center cursor-pointer font-bold",
                           isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
                         )}
                         title="모임 구성원 보기"
@@ -3434,7 +3450,7 @@ export function FamilyPage({
                     </div>
 
                     {showGroupMembersDropdown === group.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="group-dropdown-container absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
                         {/* Header and Buttons combined in a single line */}
                         <div className="px-2.5 py-1.5 border-b border-cyan-50 flex items-center justify-between gap-2">
                           <span className="text-[10px] font-black text-cyan-600">모임 구성원</span>
@@ -3498,6 +3514,7 @@ export function FamilyPage({
               )}
             </div>
 
+            {/* Moim + Button (Restored to original horizontal pill style!) */}
             {isLoggedIn && (
               <button
                 onClick={(e) => {
@@ -3505,13 +3522,13 @@ export function FamilyPage({
                   handleCreateGroupPrompt()
                 }}
                 className={cn(
-                  "px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0",
+                  "px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center gap-1 font-bold text-xs cursor-pointer transition-colors shrink-0",
                   activeMode === 'family' ? 'hidden md:flex' : 'flex'
                 )}
                 title="새 모임 만들기"
               >
                 <span>모임</span>
-                <Plus className="size-2.5 mt-0.5" />
+                <Plus className="size-3" />
               </button>
             )}
           </div>
@@ -3535,7 +3552,6 @@ export function FamilyPage({
           <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
             
             {/* Left Side: Filters */}
-            {activeMode !== "group" && (
             <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
               {sharedFilterTabs.map((filterTab) => {
                 const Icon = filterTab.icon
@@ -3565,7 +3581,6 @@ export function FamilyPage({
                 )
               })}
             </div>
-            )}
 
             {/* Right Side: Actions (Search, Sort, FAB) */}
             <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
@@ -4450,7 +4465,6 @@ export function FamilyPage({
             <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
               
               {/* Left Side: Filters */}
-              {activeMode !== "group" && (
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
                   const count = f === "전체" 
@@ -4475,7 +4489,6 @@ export function FamilyPage({
                   )
                 })}
               </div>
-              )}
 
               {/* Right Side: Actions (Search, Sort, FAB) */}
               <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0 pb-1">
