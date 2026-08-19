@@ -3291,9 +3291,6 @@ export function FamilyPage({
                         : `${familyHostName || '가족'} 가족`}
                   </h2>
                   <div className="flex flex-col gap-0.5 mt-0.5">
-                    <p className="text-[9px] text-muted-foreground font-semibold">
-                      {members.length}명의 구성원
-                    </p>
                     {isLoggedIn && isFamilyOwner && (
                       <button
                         onClick={(e) => {
