@@ -187,7 +187,24 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: '본인의 회원 정보만 수정할 수 있습니다.' }, { status: 403 });
         }
         if (table === 'meal_images' && existing.uploaded_by !== userId) {
-          return NextResponse.json({ error: '본인의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
+          // 가족 구성원이 올린 식사인 경우 업데이트를 허용하기 위해 같은 가족인지 검증
+          const { data: myFamily } = await supabaseAdmin
+            .from('whateat_family_members')
+            .select('family_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          const { data: ownerFamily } = await supabaseAdmin
+            .from('whateat_family_members')
+            .select('family_id')
+            .eq('user_id', existing.uploaded_by)
+            .maybeSingle();
+
+          const isSameFamily = myFamily?.family_id && ownerFamily?.family_id && myFamily.family_id === ownerFamily.family_id;
+
+          if (!isSameFamily) {
+            return NextResponse.json({ error: '본인 또는 가족 구성원의 업로드 정보만 수정할 수 있습니다.' }, { status: 403 });
+          }
         }
         if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
           if (['comments', 'comment_replies'].includes(table)) {
