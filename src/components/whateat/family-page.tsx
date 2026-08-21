@@ -3467,11 +3467,11 @@ export function FamilyPage({
                       })
                       setShowCreateGroupDropdown(prev => !prev)
                     }}
-                    className="group-dropdown-trigger px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0"
+                    className="group-dropdown-trigger px-2 py-1 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[10px] font-black leading-tight cursor-pointer transition-colors shrink-0"
                     title="새 모임 만들기"
                   >
                     <span>모임</span>
-                    <Plus className="size-2.5 mt-0.5" />
+                    <Plus className="size-5 mt-0.5" />
                   </button>
 
                   {showCreateGroupDropdown && dropdownCoords && typeof document !== 'undefined' && createPortal(
