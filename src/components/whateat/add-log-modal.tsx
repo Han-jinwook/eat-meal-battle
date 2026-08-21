@@ -536,10 +536,6 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const data = await response.json()
         if (data.menuName) {
           setMenuName(data.menuName)
-          // AI 분석 결과(메뉴명)가 나오면, 외식일 경우 해당 메뉴명으로 장소를 다시 검색합니다.
-          if (mealType === "외식") {
-            loadGpsNearbyPlaces(photoLat, photoLng, data.menuName)
-          }
         }
       } catch (error) {
         console.error("AI Analysis failed:", error)
