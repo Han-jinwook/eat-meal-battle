@@ -593,9 +593,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           {/* Header */}
           <div className="mb-2.5">
             <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-foreground">
-              {mode === "family"
-                ? (isEditMode ? "(패밀리) 먹로그 수정하기" : "(패밀리) 먹로그 기록하기")
-                : (isEditMode ? "(솔로) 먹로그 수정하기" : "(솔로) 먹로그 기록하기")
+              {isGroupMode
+                ? (isEditMode ? "(모임) 먹로그 수정하기" : "(모임) 먹로그 기록하기")
+                : mode === "family"
+                  ? (isEditMode ? "(패밀리) 먹로그 수정하기" : "(패밀리) 먹로그 기록하기")
+                  : (isEditMode ? "(솔로) 먹로그 수정하기" : "(솔로) 먹로그 기록하기")
               }
             </h2>
           </div>
