@@ -27,20 +27,40 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 1. Nominatim Reverse Geocoding to get Dong Name
-    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ko`;
-    const geoRes = await fetch(nominatimUrl, {
-      headers: {
-        'User-Agent': 'WhatEatApp/1.0 (contact@whateat.app)'
-      }
-    });
-
     let dong = '';
-    if (geoRes.ok) {
-      const geoData = await geoRes.json();
-      const addr = geoData.address || {};
-      const rawDong = addr.suburb || addr.neighbourhood || addr.city_district || addr.town || addr.village || '';
-      dong = rawDong.replace(/\d+동$/, '동').trim();
+
+    // 1. Nominatim Reverse Geocoding to get Dong Name
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ko`;
+      const geoRes = await fetch(nominatimUrl, {
+        headers: {
+          'User-Agent': 'WhatEatApp/1.0 (contact@whateat.app)'
+        }
+      });
+
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        const addr = geoData.address || {};
+        const rawDong = addr.suburb || addr.neighbourhood || addr.city_district || addr.town || addr.village || '';
+        dong = rawDong.replace(/\d+동$/, '동').trim();
+      }
+    } catch (e) {
+      console.warn("Nominatim reverse geocoding failed:", e);
+    }
+
+    // 1.5 Try BigDataCloud if Nominatim failed (since Nominatim frequently returns 403/429 on local env)
+    if (!dong) {
+      try {
+        const bigDataCloudUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`;
+        const bdcRes = await fetch(bigDataCloudUrl);
+        if (bdcRes.ok) {
+          const bdcData = await bdcRes.json();
+          const rawLocality = bdcData.locality || bdcData.city || '';
+          dong = rawLocality.replace(/\d+동$/, '동').trim();
+        }
+      } catch (e) {
+        console.warn("BigDataCloud reverse geocoding failed:", e);
+      }
     }
 
     // 2. Fetch Naver Search results for "${dong} 식당" (or just "식당" if Nominatim failed)
