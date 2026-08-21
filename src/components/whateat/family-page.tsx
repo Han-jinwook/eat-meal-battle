@@ -37,6 +37,7 @@ import {
   FolderClosed,
   UserPlus,
 } from "lucide-react"
+import { createPortal } from "react-dom"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
@@ -501,6 +502,7 @@ export function FamilyPage({
   const [showGroupMembersDropdown, setShowGroupMembersDropdown] = useState<string | null>(null)
   const [showCreateGroupDropdown, setShowCreateGroupDropdown] = useState(false)
   const [newGroupName, setNewGroupName] = useState("")
+  const [dropdownCoords, setDropdownCoords] = useState<{ top: number; left: number; width: number } | null>(null)
   const [userRegion, setUserRegion] = useState<string>("")
 
   useEffect(() => {
@@ -553,7 +555,7 @@ export function FamilyPage({
     }
   };
 
-  // Click outside to close group members / create group dropdowns
+  // Click outside / scroll / resize to close group members / create group dropdowns
   useEffect(() => {
     if (!showGroupMembersDropdown && !showCreateGroupDropdown) return;
     const handleOutsideClick = (e: MouseEvent) => {
@@ -563,8 +565,18 @@ export function FamilyPage({
         setShowCreateGroupDropdown(false);
       }
     };
+    const handleScrollOrResize = () => {
+      setShowGroupMembersDropdown(null);
+      setShowCreateGroupDropdown(false);
+    };
     document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [showGroupMembersDropdown, showCreateGroupDropdown]);
 
   useEffect(() => {
@@ -805,10 +817,6 @@ export function FamilyPage({
 
   // Group Handlers
   const handleCreateGroupSubmit = async () => {
-    if (groups.length >= 3) {
-      toast.error("모임은 최대 3개까지만 생성할 수 있습니다.")
-      return
-    }
     if (!newGroupName || !newGroupName.trim()) return
     const name = newGroupName.trim()
     setShowCreateGroupDropdown(false)
@@ -3431,15 +3439,21 @@ export function FamilyPage({
           >
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
             <div className={cn(
-              "flex-1 flex flex-row-reverse items-center justify-start gap-1.5 pt-0.5 overflow-visible",
+              "flex-1 flex flex-row-reverse items-center justify-start gap-1.5 pt-0.5 overflow-x-auto hide-scrollbar flex-nowrap",
               activeMode === 'family' ? 'hidden md:flex' : 'flex'
             )}>
               {/* 1. Moim + Button (Always far right, vertical stacked layout, fixed position, dropdown below) */}
-              {isLoggedIn && groups.length < 3 && (
+              {isLoggedIn && (
                 <div className="relative shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setDropdownCoords({
+                        top: rect.bottom + window.scrollY,
+                        left: rect.left + window.scrollX,
+                        width: rect.width
+                      })
                       setShowCreateGroupDropdown(prev => !prev)
                     }}
                     className={cn(
@@ -3452,10 +3466,15 @@ export function FamilyPage({
                     <Plus className="size-2.5 mt-0.5" />
                   </button>
 
-                  {showCreateGroupDropdown && (
+                  {showCreateGroupDropdown && dropdownCoords && typeof document !== 'undefined' && createPortal(
                     <div 
                       onClick={(e) => e.stopPropagation()}
-                      className="group-dropdown-container absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-cyan-100 p-3 z-[60] animate-in fade-in slide-in-from-top-1 duration-200"
+                      style={{
+                        position: 'absolute',
+                        top: `${dropdownCoords.top}px`,
+                        left: `${Math.max(8, dropdownCoords.left - 240 + dropdownCoords.width)}px`,
+                      }}
+                      className="group-dropdown-container w-60 bg-white rounded-xl shadow-lg border border-cyan-100 p-3 z-[9999] animate-in fade-in slide-in-from-top-1 duration-200"
                     >
                       <div className="text-[10px] font-black text-cyan-600 mb-2">새 모임 만들기</div>
                       <input
@@ -3488,7 +3507,8 @@ export function FamilyPage({
                           만들기
                         </button>
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
               )}
@@ -3535,6 +3555,12 @@ export function FamilyPage({
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          setDropdownCoords({
+                            top: rect.bottom + window.scrollY,
+                            left: rect.left + window.scrollX,
+                            width: rect.width
+                          })
                           setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
                         }}
                         className={cn(
@@ -3547,8 +3573,15 @@ export function FamilyPage({
                       </button>
                     </div>
 
-                    {showGroupMembersDropdown === group.id && (
-                      <div className="group-dropdown-container absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[60] animate-in fade-in slide-in-from-top-1 duration-200">
+                    {showGroupMembersDropdown === group.id && dropdownCoords && typeof document !== 'undefined' && createPortal(
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          top: `${dropdownCoords.top}px`,
+                          left: `${Math.max(8, dropdownCoords.left - 208 + dropdownCoords.width)}px`,
+                        }}
+                        className="group-dropdown-container w-52 bg-white rounded-xl shadow-lg border border-cyan-100 py-1 z-[9999] animate-in fade-in slide-in-from-top-1 duration-200"
+                      >
                         {/* Header and Buttons combined in a single line */}
                         <div className="px-2.5 py-1.5 border-b border-cyan-50 flex items-center justify-between gap-2">
                           <span className="text-[10px] font-black text-cyan-600">모임 구성원</span>
@@ -3602,7 +3635,8 @@ export function FamilyPage({
                             )
                           })}
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                 )
