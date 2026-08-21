@@ -1443,7 +1443,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onBlur={() => { if (!searchQuery) setIsSearchExpanded(false) }}
                   placeholder="식당, 메뉴 검색"
-                  className="w-full pl-8 pr-7 h-[38px] bg-white/90 border border-muted/20 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm shadow-sm"
+                  className="w-full pl-8 pr-7 h-[38px] bg-white border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none text-sm shadow-xs transition-all duration-300"
                 />
                 <button
                   onClick={() => { setSearchQuery(''); setIsSearchExpanded(false) }}

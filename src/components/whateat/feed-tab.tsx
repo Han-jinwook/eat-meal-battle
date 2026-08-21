@@ -334,7 +334,7 @@ export function FeedTab() {
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
           <input
-            className="w-full pl-11 pr-4 py-2.5 bg-white/60 border border-white/80 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder:text-muted-foreground/50"
+            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none text-sm placeholder:text-muted-foreground/50 shadow-xs transition-all duration-300"
             placeholder="별명, 음식, 태그 검색"
             type="text"
           />

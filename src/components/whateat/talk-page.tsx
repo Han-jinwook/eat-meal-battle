@@ -1603,7 +1603,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="음식, 식당, 별명 검색"
-              className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-300/40 focus:border-orange-300 outline-none text-xs placeholder:text-muted-foreground/50 h-8"
+              className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 outline-none text-xs placeholder:text-muted-foreground/50 h-8 transition-all duration-300"
             />
           </div>
         </div>
