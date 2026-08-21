@@ -3541,7 +3541,7 @@ export function FamilyPage({
                           setShowGroupMembersDropdown(null)
                         }}
                         className={cn(
-                          "px-2.5 py-1 transition-all cursor-pointer font-black",
+                          "pl-2.5 pr-1 py-1 transition-all cursor-pointer font-black",
                           isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
                         )}
                       >
@@ -3564,7 +3564,7 @@ export function FamilyPage({
                           setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
                         }}
                         className={cn(
-                          "group-dropdown-trigger px-2 py-1 flex items-center justify-center cursor-pointer font-bold",
+                          "group-dropdown-trigger pl-1 pr-2.5 py-1 flex items-center justify-center cursor-pointer font-bold",
                           isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
                         )}
                         title="모임 구성원 보기"
