@@ -241,12 +241,12 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
         }
       } else {
         setMenuName("")
-        setMealType("")
+        setMealType(isGroupMode ? "외식" : "")
         setSelectedPlace(null)
         setDeliveryStoreName("")
       }
     }
-  }, [editData, isOpen, initialUrl, prefillData])
+  }, [editData, isOpen, initialUrl, prefillData, isGroupMode])
 
   // URL 유효성 검사 함수
   const isValidUrl = (url: string) => {
