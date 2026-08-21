@@ -499,6 +499,8 @@ export function FamilyPage({
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [groups, setGroups] = useState<any[]>([])
   const [showGroupMembersDropdown, setShowGroupMembersDropdown] = useState<string | null>(null)
+  const [showCreateGroupDropdown, setShowCreateGroupDropdown] = useState(false)
+  const [newGroupName, setNewGroupName] = useState("")
   const [userRegion, setUserRegion] = useState<string>("")
 
   useEffect(() => {
@@ -551,18 +553,19 @@ export function FamilyPage({
     }
   };
 
-  // Click outside to close group members dropdown
+  // Click outside to close group members / create group dropdowns
   useEffect(() => {
-    if (!showGroupMembersDropdown) return;
+    if (!showGroupMembersDropdown && !showCreateGroupDropdown) return;
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.group-dropdown-container') && !target.closest('.group-dropdown-trigger')) {
         setShowGroupMembersDropdown(null);
+        setShowCreateGroupDropdown(false);
       }
     };
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
-  }, [showGroupMembersDropdown]);
+  }, [showGroupMembersDropdown, showCreateGroupDropdown]);
 
   useEffect(() => {
     async function loadRealFamily() {
@@ -801,6 +804,41 @@ export function FamilyPage({
   }, [])
 
   // Group Handlers
+  const handleCreateGroupSubmit = async () => {
+    if (groups.length >= 3) {
+      toast.error("모임은 최대 3개까지만 생성할 수 있습니다.")
+      return
+    }
+    if (!newGroupName || !newGroupName.trim()) return
+    const name = newGroupName.trim()
+    setShowCreateGroupDropdown(false)
+    setNewGroupName('')
+    const createToast = toast.loading("모임을 생성하고 있습니다...")
+    try {
+      const hubToken = getSessionToken() || '';
+      const res = await fetch('/api/group/members', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+        },
+        body: JSON.stringify({ action: 'create', name })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success("모임이 생성되었습니다! 👥", { id: createToast })
+        await loadGroups()
+        setActiveMode('group')
+        setSelectedGroupId(data.groupId)
+      } else {
+        toast.error(data.error || "모임 생성에 실패했습니다.", { id: createToast })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("오류가 발생했습니다.", { id: createToast })
+    }
+  }
+
   const handleCreateGroupPrompt = async () => {
     const name = prompt("새로운 모임의 이름을 입력해주세요:")
     if (!name || !name.trim()) return
@@ -3393,9 +3431,69 @@ export function FamilyPage({
           >
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
             <div className={cn(
-              "flex-1 flex flex-wrap items-center gap-1.5 pt-0.5",
+              "flex-1 flex flex-row-reverse items-center justify-start gap-1.5 pt-0.5 overflow-visible",
               activeMode === 'family' ? 'hidden md:flex' : 'flex'
             )}>
+              {/* 1. Moim + Button (Always far right, vertical stacked layout, fixed position, dropdown below) */}
+              {isLoggedIn && groups.length < 3 && (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowCreateGroupDropdown(prev => !prev)
+                    }}
+                    className={cn(
+                      "group-dropdown-trigger px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0",
+                      activeMode === 'family' ? 'hidden md:flex' : 'flex'
+                    )}
+                    title="새 모임 만들기"
+                  >
+                    <span>모임</span>
+                    <Plus className="size-2.5 mt-0.5" />
+                  </button>
+
+                  {showCreateGroupDropdown && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="group-dropdown-container absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-cyan-100 p-3 z-[60] animate-in fade-in slide-in-from-top-1 duration-200"
+                    >
+                      <div className="text-[10px] font-black text-cyan-600 mb-2">새 모임 만들기</div>
+                      <input
+                        type="text"
+                        value={newGroupName}
+                        onChange={(e) => setNewGroupName(e.target.value)}
+                        placeholder="모임 이름을 입력해주세요"
+                        className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500 mb-2 font-bold text-gray-700"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleCreateGroupSubmit()
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => {
+                            setShowCreateGroupDropdown(false)
+                            setNewGroupName('')
+                          }}
+                          className="px-2 py-1 text-[9px] font-bold text-gray-500 hover:bg-gray-100 rounded cursor-pointer"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={handleCreateGroupSubmit}
+                          className="px-2.5 py-1 text-[9px] font-black text-white bg-cyan-600 hover:bg-cyan-700 rounded cursor-pointer"
+                        >
+                          만들기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 2. Mapped Group Chips (rendered to the left of the Moim+ button) */}
               {groups.map((group) => {
                 const isSelected = activeMode === 'group' && selectedGroupId === group.id
                 return (
@@ -3513,24 +3611,6 @@ export function FamilyPage({
                 <span className="text-xs text-muted-foreground/60 italic ml-1">아직 생성된 모임이 없습니다.</span>
               )}
             </div>
-
-            {/* Moim + Button (Restored to original horizontal pill style!) */}
-            {isLoggedIn && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleCreateGroupPrompt()
-                }}
-                className={cn(
-                  "px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex items-center justify-center gap-1 font-bold text-xs cursor-pointer transition-colors shrink-0",
-                  activeMode === 'family' ? 'hidden md:flex' : 'flex'
-                )}
-                title="새 모임 만들기"
-              >
-                <span>모임</span>
-                <Plus className="size-3" />
-              </button>
-            )}
           </div>
         </div>
 
