@@ -298,7 +298,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setImagePreview(editData.image || null)
     } else {
       // 새 기록 모드일 때 초기화
-      setMealType("집밥")
+      setMealType(isGroupMode ? "외식" : "집밥")
       setDate(new Date().toISOString().split("T")[0])
       setMenuName("")
       setSelectedPlace(null)
