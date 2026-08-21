@@ -111,6 +111,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const [placeSearchQuery, setPlaceSearchQuery] = useState("")
   const dateInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const gpsLoadedByPhotoRef = useRef(false)  // 사진 GPS 로드 중복 방지 플래그
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return ""
@@ -218,6 +219,11 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   useEffect(() => {
     if ((mealType === "외식" || mealType === "배달") && isOpen) {
       if (mealType === "외식") {
+        // 사진 업로드에서 이미 GPS 기반 로드를 완료했으면 중복 호출 방지
+        if (gpsLoadedByPhotoRef.current) {
+          gpsLoadedByPhotoRef.current = false
+          return
+        }
         loadGpsNearbyPlaces(photoGps?.lat, photoGps?.lng)
       } else if (mealType === "배달") {
         setIsLoadingLocation(true)
@@ -241,7 +247,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         return () => clearTimeout(timer)
       }
     }
-  }, [mealType, isOpen, registeredDeliveryStores, photoGps])
+  }, [mealType, isOpen, registeredDeliveryStores])
 
   // 배달 식당 필터링
   const filteredDeliveryStores = (() => {
@@ -523,6 +529,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       }
 
       // 2. 좌표가 감지되었거나 외식일 경우 좌표 기반으로 식당 즉시 로드
+      // setMealType("외식")이 useEffect를 재트리거하므로, 중복 호출 방지 플래그 설정
+      gpsLoadedByPhotoRef.current = true
       loadGpsNearbyPlaces(photoLat, photoLng)
 
       setIsAnalyzingAi(true)
