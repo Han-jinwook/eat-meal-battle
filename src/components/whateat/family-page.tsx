@@ -579,6 +579,17 @@ export function FamilyPage({
     };
   }, [showGroupMembersDropdown, showCreateGroupDropdown]);
 
+  // Set category filters to 'dining' / '외식' automatically in Group mode
+  useEffect(() => {
+    if (activeMode === 'group') {
+      setSharedMealFilter('dining')
+      setReservationFilter('외식')
+    } else {
+      setSharedMealFilter('all')
+      setReservationFilter('전체')
+    }
+  }, [activeMode])
+
   useEffect(() => {
     async function loadRealFamily() {
       if (activeMode === 'group') return
@@ -3668,6 +3679,7 @@ export function FamilyPage({
             {/* Left Side: Filters */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
               {sharedFilterTabs.map((filterTab) => {
+                if (activeMode === 'group' && filterTab.id !== 'dining') return null
                 const Icon = filterTab.icon
                 const displayMeals = [...activeDefaultMeals, ...meals]
                 const count =
@@ -4581,6 +4593,7 @@ export function FamilyPage({
               {/* Left Side: Filters */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
+                  if (activeMode === 'group' && f !== "외식") return null
                   const count = f === "전체" 
                     ? wishlistItems.length + familyReservations.length 
                     : wishlistItems.filter(i => i.mealType === f).length + familyReservations.filter(i => i.mealType === f).length
@@ -4783,7 +4796,7 @@ export function FamilyPage({
       {/* 패밀리 먹캘린더 탭 */}
       {activeMainTab === "calendar" && (
         <div className="flex flex-col gap-4">
-          <MealCalendarTab />
+          <MealCalendarTab isGroupMode={activeMode === "group"} />
         </div>
       )}
       </div>

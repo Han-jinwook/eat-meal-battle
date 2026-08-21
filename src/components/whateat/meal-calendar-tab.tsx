@@ -11,6 +11,7 @@ import { ReservationDetailModal, DetailPlanData } from "./reservation-detail-mod
 interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
   onNavigateToReservation?: (date: string) => void
+  isGroupMode?: boolean
 }
 
 type CalendarMode = "log" | "reservation"
@@ -52,7 +53,7 @@ const generateDynamicSampleReservationData = (baseDate?: Date) => {
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
-export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: MealCalendarTabProps) {
+export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGroupMode }: MealCalendarTabProps) {
   const [mode, setMode] = useState<CalendarMode>("reservation")
   const { isLoggedIn, user } = useHub()
   const [baseDate, setBaseDate] = useState<Date | undefined>(undefined)
@@ -575,68 +576,72 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation }: Me
         {/* Progress Bars */}
         <div className="space-y-1.5">
           {/* 집밥 */}
-          <div 
-            onClick={() => handleToggleFilter("home")}
-            className={cn(
-              "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
-              typeFilter === "home" 
-                ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/50 shadow-sm" 
-                : typeFilter !== "all" 
-                ? "opacity-40 border-transparent hover:opacity-100" 
-                : "border-transparent hover:bg-gray-50"
-            )}
-          >
-            <div className="flex items-center gap-1.5 w-16">
-              <ChefHat className="size-4 text-emerald-500" />
-              <span className="text-xs font-bold">집밥</span>
-            </div>
-            <div className="relative flex-1">
-              <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.home}%` }}
-                />
+          {!isGroupMode && (
+            <div 
+              onClick={() => handleToggleFilter("home")}
+              className={cn(
+                "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
+                typeFilter === "home" 
+                  ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/50 shadow-sm" 
+                  : typeFilter !== "all" 
+                  ? "opacity-40 border-transparent hover:opacity-100" 
+                  : "border-transparent hover:bg-gray-50"
+              )}
+            >
+              <div className="flex items-center gap-1.5 w-16">
+                <ChefHat className="size-4 text-emerald-500" />
+                <span className="text-xs font-bold">집밥</span>
               </div>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="-skew-x-12 bg-white/95 border border-white shadow-sm rounded-sm px-3 py-0.5">
-                  <span className="skew-x-12 text-[11px] leading-none font-bold text-foreground/70">{stats.homeCount}건</span>
-                </span>
+              <div className="relative flex-1">
+                <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                    style={{ width: `${stats.home}%` }}
+                  />
+                </div>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="-skew-x-12 bg-white/95 border border-white shadow-sm rounded-sm px-3 py-0.5">
+                    <span className="skew-x-12 text-[11px] leading-none font-bold text-foreground/70">{stats.homeCount}건</span>
+                  </span>
+                </div>
               </div>
+              <span className="text-xs font-bold text-emerald-600 w-10 text-right">{stats.home}%</span>
             </div>
-            <span className="text-xs font-bold text-emerald-600 w-10 text-right">{stats.home}%</span>
-          </div>
+          )}
 
           {/* 배달 */}
-          <div 
-            onClick={() => handleToggleFilter("delivery")}
-            className={cn(
-              "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
-              typeFilter === "delivery" 
-                ? "bg-sky-50/90 border-sky-300 ring-2 ring-sky-400/50 shadow-sm" 
-                : typeFilter !== "all" 
-                ? "opacity-40 border-transparent hover:opacity-100" 
-                : "border-transparent hover:bg-gray-50"
-            )}
-          >
-            <div className="flex items-center gap-1.5 w-16">
-              <Bike className="size-4 text-sky-500" />
-              <span className="text-xs font-bold">배달</span>
-            </div>
-            <div className="relative flex-1">
-              <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.delivery}%` }}
-                />
+          {!isGroupMode && (
+            <div 
+              onClick={() => handleToggleFilter("delivery")}
+              className={cn(
+                "flex items-center gap-3 py-1.5 px-2 rounded-xl cursor-pointer transition-all border select-none",
+                typeFilter === "delivery" 
+                  ? "bg-sky-50/90 border-sky-300 ring-2 ring-sky-400/50 shadow-sm" 
+                  : typeFilter !== "all" 
+                  ? "opacity-40 border-transparent hover:opacity-100" 
+                  : "border-transparent hover:bg-gray-50"
+              )}
+            >
+              <div className="flex items-center gap-1.5 w-16">
+                <Bike className="size-4 text-sky-500" />
+                <span className="text-xs font-bold">배달</span>
               </div>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="-skew-x-12 bg-white/95 border border-white shadow-sm rounded-sm px-3 py-0.5">
-                  <span className="skew-x-12 text-[11px] leading-none font-bold text-foreground/70">{stats.deliveryCount}건</span>
-                </span>
+              <div className="relative flex-1">
+                <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-500"
+                    style={{ width: `${stats.delivery}%` }}
+                  />
+                </div>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="-skew-x-12 bg-white/95 border border-white shadow-sm rounded-sm px-3 py-0.5">
+                    <span className="skew-x-12 text-[11px] leading-none font-bold text-foreground/70">{stats.deliveryCount}건</span>
+                  </span>
+                </div>
               </div>
+              <span className="text-xs font-bold text-sky-500 w-10 text-right">{stats.delivery}%</span>
             </div>
-            <span className="text-xs font-bold text-sky-500 w-10 text-right">{stats.delivery}%</span>
-          </div>
+          )}
 
           {/* 외식 */}
           <div 
