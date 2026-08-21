@@ -3679,7 +3679,7 @@ export function FamilyPage({
             {/* Left Side: Filters */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
               {sharedFilterTabs.map((filterTab) => {
-                if (activeMode === 'group' && filterTab.id !== 'dining') return null
+                const isHidden = activeMode === 'group' && filterTab.id !== 'dining'
                 const Icon = filterTab.icon
                 const displayMeals = [...activeDefaultMeals, ...meals]
                 const count =
@@ -3690,12 +3690,13 @@ export function FamilyPage({
                 return (
                   <button
                     key={filterTab.id}
-                    onClick={() => setSharedMealFilter(filterTab.id)}
+                    onClick={() => !isHidden && setSharedMealFilter(filterTab.id)}
                     className={cn(
                       "relative px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 whitespace-nowrap",
                       sharedMealFilter === filterTab.id
                         ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
                         : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0",
+                      isHidden && "invisible pointer-events-none"
                     )}
                   >
                     <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-sky-500">
@@ -4593,19 +4594,20 @@ export function FamilyPage({
               {/* Left Side: Filters */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5">
                 {(["전체", "집밥", "배달", "외식"] as const).map(f => {
-                  if (activeMode === 'group' && f !== "외식") return null
+                  const isHidden = activeMode === 'group' && f !== "외식"
                   const count = f === "전체" 
                     ? wishlistItems.length + familyReservations.length 
                     : wishlistItems.filter(i => i.mealType === f).length + familyReservations.filter(i => i.mealType === f).length
                   return (
                     <button
                       key={f}
-                      onClick={() => setReservationFilter(f)}
+                      onClick={() => !isHidden && setReservationFilter(f)}
                       className={cn(
                         "relative shrink-0 px-4 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-1.5",
                         reservationFilter === f
                           ? "bg-orange-500 text-white shadow-md shadow-orange-200/70"
-                          : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0"
+                          : "bg-white/70 text-muted-foreground hover:bg-white flex-shrink-0",
+                        isHidden && "invisible pointer-events-none"
                       )}
                     >
                       <span className="absolute -top-1.5 right-1 z-10 text-xs leading-none font-black text-sky-500">
