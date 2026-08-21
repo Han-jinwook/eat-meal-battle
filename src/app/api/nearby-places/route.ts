@@ -43,12 +43,10 @@ export async function GET(request: NextRequest) {
       dong = rawDong.replace(/\d+동$/, '동').trim();
     }
 
-    if (!dong) {
-      dong = '역삼동'; // fallback
-    }
-
-    // 2. Fetch Naver Search results for "${dong} 식당"
-    const searchQuery = keyword ? `${dong} ${keyword}` : `${dong} 식당`;
+    // 2. Fetch Naver Search results for "${dong} 식당" (or just "식당" if Nominatim failed)
+    const searchQuery = keyword 
+      ? (dong ? `${dong} ${keyword}` : keyword) 
+      : (dong ? `${dong} 식당` : "식당");
     const searchUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent(searchQuery)}&lat=${lat}&lng=${lng}`;
     const searchRes = await fetch(searchUrl, {
       headers: {
@@ -158,7 +156,7 @@ export async function GET(request: NextRequest) {
 
               placesMap.set(name, {
                 name,
-                address: address.includes(' ') ? address : `${dong} ${address}`,
+                address: address.includes(' ') ? address : (dong ? `${dong} ${address}` : address),
                 category,
                 image,
                 link: id ? `https://m.place.naver.com/restaurant/${id}` : undefined,
