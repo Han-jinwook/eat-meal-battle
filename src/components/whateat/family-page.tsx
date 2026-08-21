@@ -3445,7 +3445,7 @@ export function FamilyPage({
           <div 
             className={cn(
               "transition-all duration-300 flex items-center gap-3 flex-1 md:max-w-[40%]",
-              activeMode === 'family' && "md:opacity-40 md:scale-95"
+              activeMode === 'family' && "md:scale-95"
             )}
           >
             {/* Group Chips List: on mobile, only show if group mode is active; on desktop, always show */}
@@ -3467,10 +3467,7 @@ export function FamilyPage({
                       })
                       setShowCreateGroupDropdown(prev => !prev)
                     }}
-                    className={cn(
-                      "group-dropdown-trigger px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0",
-                      activeMode === 'family' ? 'hidden md:flex' : 'flex'
-                    )}
+                    className="group-dropdown-trigger px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 flex flex-col items-center justify-center text-[9px] font-black leading-tight cursor-pointer transition-colors shrink-0"
                     title="새 모임 만들기"
                   >
                     <span>모임</span>
@@ -3528,7 +3525,13 @@ export function FamilyPage({
               {groups.map((group) => {
                 const isSelected = activeMode === 'group' && selectedGroupId === group.id
                 return (
-                  <div key={group.id} className="relative">
+                  <div 
+                    key={group.id} 
+                    className={cn(
+                      "relative transition-opacity duration-300",
+                      activeMode === 'family' && "opacity-40"
+                    )}
+                  >
                     {/* Split Interactive Chip */}
                     <div 
                       className={cn(
