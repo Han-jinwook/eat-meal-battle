@@ -3532,16 +3532,16 @@ export function FamilyPage({
                       activeMode === 'family' && "opacity-40"
                     )}
                   >
-                    {/* Split Interactive Chip */}
+                    {/* Split Interactive Chip in 2-line layout */}
                     <div 
                       className={cn(
-                        "rounded-full text-xs font-bold transition-all flex items-center whitespace-nowrap overflow-hidden border border-transparent shadow-xs select-none",
+                        "rounded-lg text-xs font-bold transition-all flex flex-col items-center whitespace-nowrap overflow-hidden border border-transparent shadow-xs select-none shrink-0",
                         isSelected
                           ? "bg-cyan-600 text-white"
                           : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
                       )}
                     >
-                      {/* Left: Group Name Button (Switches mode and tab, supports toggling off) */}
+                      {/* Top: Group Name Button (Switches mode and tab, supports toggling off) */}
                       <button
                         onClick={() => {
                           if (activeMode === 'group' && selectedGroupId === group.id) {
@@ -3555,17 +3555,16 @@ export function FamilyPage({
                           setShowGroupMembersDropdown(null)
                         }}
                         className={cn(
-                          "pl-2.5 pr-1 py-1 transition-all cursor-pointer font-black",
-                          isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
+                          "w-full px-2.5 py-0.5 text-center transition-all cursor-pointer font-black text-[11px] leading-tight border-b",
+                          isSelected 
+                            ? "border-white/10 hover:bg-cyan-700/20" 
+                            : "border-gray-200/50 hover:bg-gray-300/20"
                         )}
                       >
                         {group.name}
                       </button>
 
-                      {/* Divider inside chip */}
-                      <span className={cn("w-[1px] h-3.5 shrink-0", isSelected ? "bg-white/30" : "bg-gray-300")} />
-
-                      {/* Right: Member Count Toggle Button (Toggles members dropdown only, has trigger class) */}
+                      {/* Bottom: Member Count Toggle Button (Toggles members dropdown only, has trigger class) */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -3578,8 +3577,8 @@ export function FamilyPage({
                           setShowGroupMembersDropdown(prev => prev === group.id ? null : group.id)
                         }}
                         className={cn(
-                          "group-dropdown-trigger pl-1 pr-2.5 py-1 flex items-center justify-center cursor-pointer font-bold",
-                          isSelected ? "hover:bg-cyan-700/20" : "hover:bg-gray-300/20"
+                          "group-dropdown-trigger w-full py-0.5 text-[9px] font-bold text-center flex items-center justify-center cursor-pointer transition-colors leading-none",
+                          isSelected ? "hover:bg-cyan-700/20 text-cyan-100" : "hover:bg-gray-300/20 text-muted-foreground/80"
                         )}
                         title="모임 구성원 보기"
                       >
