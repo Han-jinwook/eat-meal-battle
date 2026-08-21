@@ -142,9 +142,25 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const res = await fetch(`/api/nearby-places?${queryParams.toString()}`)
         if (res.ok) {
           const data = await res.json()
-          setNearbyPlaces(data.places || [])
-          setVisiblePlacesCount(10)
-          if (data.places?.length === 0) {
+          if (data.places && data.places.length > 0) {
+            setNearbyPlaces(data.places)
+            setVisiblePlacesCount(10)
+          } else if (kw) {
+            // 키워드(메뉴명)로 검색했는데 0건이면, 키워드 없이 일반 '식당'으로 한 번 더 자동 폴백 조회!
+            const fallbackRes = await fetch(`/api/nearby-places?lat=${lat}&lng=${lng}`)
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json()
+              setNearbyPlaces(fallbackData.places || [])
+              setVisiblePlacesCount(10)
+              if (!fallbackData.places || fallbackData.places.length === 0) {
+                setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
+              }
+            } else {
+              setNearbyPlaces([])
+              setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
+            }
+          } else {
+            setNearbyPlaces([])
             setLocationError("해당 위치(GPS) 주변에 식당 정보가 없습니다.")
           }
         } else {
@@ -164,6 +180,12 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
     // 1. 사진 EXIF 등 명시적 좌표가 있으면 브라우저 GPS 생략
     if (paramLat !== undefined && paramLng !== undefined) {
       fetchPlaces(paramLat, paramLng, keyword)
+      return
+    }
+
+    // 1.5 만약 파라미터는 없지만 기존에 사진에서 추출해 둔 photoGps가 있으면 그것을 우선 사용!
+    if (photoGps && typeof photoGps.lat === 'number' && typeof photoGps.lng === 'number') {
+      fetchPlaces(photoGps.lat, photoGps.lng, keyword)
       return
     }
 
@@ -471,17 +493,26 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       const url = URL.createObjectURL(file)
       setImagePreview(url)
       
-      // 1. 사진에서 EXIF GPS 추출
+      // 1. 사진에서 EXIF GPS 추출 (ArrayBuffer 기반 및 직접 파싱 다중 시도)
       let photoLat: number | undefined
       let photoLng: number | undefined
       try {
-        const gps = await exifr.gps(file)
-        if (gps && gps.latitude && gps.longitude) {
+        let gps: any
+        try {
+          const buffer = await file.arrayBuffer()
+          gps = await exifr.gps(buffer)
+        } catch (e) {
+          gps = await exifr.gps(file)
+        }
+
+        if (gps && typeof gps.latitude === "number" && typeof gps.longitude === "number") {
           setPhotoGps({ lat: gps.latitude, lng: gps.longitude })
           photoLat = gps.latitude
           photoLng = gps.longitude
+          toast.success(`📍 사진 GPS 감지: (${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)})`, { duration: 3000 })
         } else {
           setPhotoGps(null)
+          toast("사진에 GPS 메타데이터가 없어 기본 위치로 검색합니다.", { icon: "ℹ️", duration: 3000 })
         }
       } catch (err) {
         console.warn("Failed to extract EXIF:", err)
