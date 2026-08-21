@@ -241,7 +241,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         return () => clearTimeout(timer)
       }
     }
-  }, [mealType, isOpen, registeredDeliveryStores])
+  }, [mealType, isOpen, registeredDeliveryStores, photoGps])
 
   // 배달 식당 필터링
   const filteredDeliveryStores = (() => {
@@ -510,6 +510,9 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
           photoLat = gps.latitude
           photoLng = gps.longitude
           toast.success(`📍 사진 GPS 감지: (${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)})`, { duration: 3000 })
+          if (mealType !== "배달") {
+            setMealType("외식")
+          }
         } else {
           setPhotoGps(null)
           toast("사진에 GPS 메타데이터가 없어 기본 위치로 검색합니다.", { icon: "ℹ️", duration: 3000 })
@@ -519,10 +522,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         setPhotoGps(null)
       }
 
-      // 2. 외식일 경우 좌표를 기반으로 식당 로드
-      if (mealType === "외식") {
-        loadGpsNearbyPlaces(photoLat, photoLng)
-      }
+      // 2. 좌표가 감지되었거나 외식일 경우 좌표 기반으로 식당 즉시 로드
+      loadGpsNearbyPlaces(photoLat, photoLng)
 
       setIsAnalyzingAi(true)
       try {

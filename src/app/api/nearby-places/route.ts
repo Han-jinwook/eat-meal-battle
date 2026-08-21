@@ -163,8 +163,8 @@ export async function GET(request: NextRequest) {
                 const numLng = parseFloat(lng);
                 if (!isNaN(numLat) && !isNaN(numLng)) {
                   rawDist = getDistance(numLat, numLng, py, px);
-                  // Filter out places completely out of bounds (e.g. > 3km)
-                  if (rawDist > 3000) continue;
+                  // Filter out places completely out of bounds (e.g. > 15km)
+                  if (rawDist > 15000) continue;
                   
                   if (rawDist < 1000) {
                     distStr = `${Math.round(rawDist)}m`;
