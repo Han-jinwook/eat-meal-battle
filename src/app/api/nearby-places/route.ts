@@ -163,15 +163,14 @@ export async function GET(request: NextRequest) {
                 const numLng = parseFloat(lng);
                 if (!isNaN(numLat) && !isNaN(numLng)) {
                   rawDist = getDistance(numLat, numLng, py, px);
-                  // Filter out places completely out of bounds (e.g. > 15km)
-                  if (rawDist > 15000) continue;
+                  // 스마트폰 GPS 오차 보정 반경(~250m) 내 초근접 식당만 필터링
+                  if (rawDist > 250) continue;
                   
-                  if (rawDist < 1000) {
-                    distStr = `${Math.round(rawDist)}m`;
-                  } else {
-                    distStr = `${(rawDist / 1000).toFixed(1)}km`;
-                  }
+                  distStr = `${Math.round(rawDist)}m`;
                 }
+              } else {
+                // 정확한 좌표가 없는 항목은 제외
+                continue;
               }
 
               placesMap.set(name, {
@@ -196,7 +195,7 @@ export async function GET(request: NextRequest) {
     // Convert map to array and sort by raw distance
     const sortedPlaces = Array.from(placesMap.values()).sort((a, b) => a.rawDist - b.rawDist);
 
-    return NextResponse.json({ places: sortedPlaces.slice(0, 25) });
+    return NextResponse.json({ places: sortedPlaces.slice(0, 8) });
   } catch (error) {
     console.error('Error fetching nearby places:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
