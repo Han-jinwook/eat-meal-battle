@@ -920,11 +920,12 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   // Filter and sort logs
   const filteredLogs = displayLogs
     .filter(log => {
-      const matchesSearch = !searchQuery || 
-        log.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.placeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.placeAddress?.toLowerCase().includes(searchQuery.toLowerCase())
+      const query = searchQuery ? searchQuery.trim().toLowerCase() : ""
+      const matchesSearch = !query || 
+        (log.title && log.title.toLowerCase().includes(query)) ||
+        (log.description && log.description.toLowerCase().includes(query)) ||
+        (log.placeName && log.placeName.toLowerCase().includes(query)) ||
+        (log.placeAddress && log.placeAddress.toLowerCase().includes(query))
       const matchesMealType = mealTypeFilter === "전체" || log.type === mealTypeFilter
       
       // Date range filter

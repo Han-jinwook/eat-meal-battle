@@ -22,6 +22,7 @@ import {
   Link2,
   Youtube,
   ExternalLink,
+  X,
 } from "lucide-react"
 import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
@@ -358,10 +359,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
   // Filter plans
   const filteredPlans = plans.filter(plan => {
-    const matchesSearch = !searchQuery || 
-      plan.menu.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.place?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.memo?.toLowerCase().includes(searchQuery.toLowerCase())
+    const query = searchQuery ? searchQuery.trim().toLowerCase() : ""
+    const matchesSearch = !query || 
+      (plan.menu && plan.menu.toLowerCase().includes(query)) ||
+      (plan.place && plan.place.toLowerCase().includes(query)) ||
+      (plan.memo && plan.memo.toLowerCase().includes(query))
     const matchesDate = !selectedDate || plan.date === selectedDate
     const matchesMealType = mealTypeFilter === "전체" || plan.mealType === mealTypeFilter
     return matchesSearch && matchesDate && matchesMealType

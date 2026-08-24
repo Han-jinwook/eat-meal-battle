@@ -2314,13 +2314,13 @@ export function FamilyPage({
       return false
     }
     if (searchQuery) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.trim().toLowerCase()
       const matchesSearch = 
-        meal.title.toLowerCase().includes(q) ||
-        meal.placeName?.toLowerCase().includes(q) ||
-        meal.placeAddress?.toLowerCase().includes(q) ||
-        meal.sharedBy.toLowerCase().includes(q) ||
-        meal.rawExplanation?.toLowerCase().includes(q)
+        (meal.title && meal.title.toLowerCase().includes(q)) ||
+        (meal.placeName && meal.placeName.toLowerCase().includes(q)) ||
+        (meal.placeAddress && meal.placeAddress.toLowerCase().includes(q)) ||
+        (meal.sharedBy && meal.sharedBy.toLowerCase().includes(q)) ||
+        (meal.rawExplanation && meal.rawExplanation.toLowerCase().includes(q))
       
       if (!matchesSearch) return false
     }
@@ -4300,8 +4300,13 @@ export function FamilyPage({
         const chef = members.find(m => m.userId === chefUserId) ?? members.find(m => m.role === "chef")
 
         const filteredWishlist = wishlistItems.filter(item => {
-          if (reservationFilter === "전체") return true
-          return item.mealType === reservationFilter
+          const query = searchQuery ? searchQuery.trim().toLowerCase() : ""
+          const matchesSearch = !query ||
+            (item.menu && item.menu.toLowerCase().includes(query)) ||
+            (item.place && item.place.toLowerCase().includes(query)) ||
+            (item.memo && item.memo.toLowerCase().includes(query))
+          const matchesFilter = reservationFilter === "전체" || item.mealType === reservationFilter
+          return matchesSearch && matchesFilter
         }).sort((a, b) => {
           // 1. 날짜순 (기본) - 생성일 기준
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
@@ -4310,8 +4315,13 @@ export function FamilyPage({
         })
 
         const filteredReservations = familyReservations.filter(item => {
-          if (reservationFilter === "전체") return true
-          return item.mealType === reservationFilter
+          const query = searchQuery ? searchQuery.trim().toLowerCase() : ""
+          const matchesSearch = !query ||
+            (item.menu && item.menu.toLowerCase().includes(query)) ||
+            (item.place && item.place.toLowerCase().includes(query)) ||
+            (item.memo && item.memo.toLowerCase().includes(query))
+          const matchesFilter = reservationFilter === "전체" || item.mealType === reservationFilter
+          return matchesSearch && matchesFilter
         }).sort((a, b) => {
           // 1. 날짜순 (기본) - 예약일 기준
           const dateA = a.date ? new Date(a.date).getTime() : 0
