@@ -72,7 +72,7 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
       buttons.push({
         id: "video-link",
         icon: Youtube,
-        label: "참고 영상 / 쇼츠 열기",
+        label: plan.mealType === "집밥" ? "참고 영상 / 숏폼 레시피 열기" : "참고 영상 / 숏폼 식당 열기",
         color: "bg-red-50 text-red-600 hover:bg-red-100 ring-red-200",
         url: videoUrl
       })

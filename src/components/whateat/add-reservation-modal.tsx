@@ -628,12 +628,16 @@ const handleSubmit = () => {
                 {/* URL 입력 + AI 메뉴 추출 (집밥/배달/외식 공통) */}
                 {mealType && (
                   <div className="mt-1 flex flex-col gap-2">
-                    {/* 1. 참고 영상 / 레시피 / 쇼츠 URL */}
+                    {/* 1. 참고 영상 / 숏폼 URL */}
                     <div className="relative">
                       <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-red-500" />
                       <input
                         className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-200 focus:border-orange-500 outline-none transition-all text-foreground text-xs placeholder:text-muted-foreground/50"
-                        placeholder="🎬 참고 영상/쇼츠/레시피 URL (예: https://youtube.com/shorts/...)"
+                        placeholder={
+                          mealType === "집밥"
+                            ? "🎬 참고 영상/숏폼 레시피 URL (예: https://youtube.com/shorts/...)"
+                            : "🎬 참고 영상/숏폼 식당 URL (예: https://youtube.com/shorts/...)"
+                        }
                         type="url"
                         value={recipeUrl}
                         onChange={(e) => setRecipeUrl(e.target.value)}
