@@ -79,7 +79,9 @@ export async function GET(request: NextRequest) {
       ? [dong ? `${dong} ${keyword}` : keyword]
       : [
           dong ? `${dong} 식당` : "식당",
-          dong ? `${dong} 맛집` : "맛집"
+          dong ? `${dong} 맛집` : "맛집",
+          dong ? `${dong} 백반` : "백반",
+          dong ? `${dong} 밥집` : "밥집"
         ];
     
     debug.queries = queries;
