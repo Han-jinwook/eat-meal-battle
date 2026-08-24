@@ -523,34 +523,41 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
 
                 {/* 마우스 오버 팝업 (해당 날짜의 모든 예약/로그 목록 노출) */}
                 {hoveredDate === dayObj.fullDate && dayObj.isCurrentMonth && hasData && activeData.length > 1 && (
-                  <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-48 bg-white rounded-2xl shadow-xl border border-orange-200/80 p-2.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto">
-                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
-                      <span className="text-[11px] font-bold text-foreground">
-                        {new Date(dayObj.fullDate).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} ({activeData.length}건)
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-                      {activeData.map((item, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleItemClick(item, dayObj.fullDate)
-                          }}
-                          className={cn(
-                            "flex items-center gap-1.5 p-1.5 rounded-xl text-left text-[11px] font-bold transition-all border hover:scale-[1.02]",
-                            getItemBadgeStyle(item.type)
-                          )}
-                        >
-                          {getItemIcon(item.type)}
-                          <span className="truncate flex-1">{"label" in item ? item.label : item.name}</span>
-                          {item.time && (
-                            <span className="text-[9px] font-medium opacity-75 shrink-0 px-1 py-0.2 bg-white/60 rounded">
-                              {item.time}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                  <div 
+                    className={cn(
+                      "absolute z-30 bottom-full pb-1.5 w-52 pointer-events-auto animate-in fade-in zoom-in-95 duration-150",
+                      dayOfWeek >= 5 ? "right-0" : (dayOfWeek === 0 ? "left-0" : "left-1/2 -translate-x-1/2")
+                    )}
+                  >
+                    <div className="bg-white rounded-2xl shadow-xl border border-orange-200/80 p-2.5">
+                      <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
+                        <span className="text-[11px] font-bold text-foreground">
+                          {new Date(dayObj.fullDate).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} ({activeData.length}건)
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto overflow-x-hidden pr-0.5">
+                        {activeData.map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleItemClick(item, dayObj.fullDate)
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-1.5 p-1.5 rounded-xl text-left text-[11px] font-bold transition-all border hover:brightness-95 active:scale-98",
+                              getItemBadgeStyle(item.type)
+                            )}
+                          >
+                            <span className="shrink-0">{getItemIcon(item.type)}</span>
+                            <span className="truncate flex-1">{"label" in item ? item.label : item.name}</span>
+                            {item.time && (
+                              <span className="text-[9px] font-medium opacity-75 shrink-0 px-1 py-0.2 bg-white/60 rounded">
+                                {item.time}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
