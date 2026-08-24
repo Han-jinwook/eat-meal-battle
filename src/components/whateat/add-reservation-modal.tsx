@@ -177,6 +177,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!editData
   const dateInputRef = useRef<HTMLInputElement>(null)
+  const lastFetchedUrlRef = useRef<string>("")
 
   // Initialize form with edit data
   useEffect(() => {
@@ -188,20 +189,26 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
       setDateOption("직접선택")
       
       const parsedUrls = parseSourceUrls(editData.url)
-      setRecipeUrl(parsedUrls.videoUrl || (!parsedUrls.placeUrl ? editData.url || "" : ""))
-      setPlaceUrlInput(parsedUrls.placeUrl)
+      const currentVideoUrl = parsedUrls.videoUrl || (!parsedUrls.placeUrl ? editData.url || "" : "")
+      const currentPlaceUrl = parsedUrls.placeUrl || ""
+      setRecipeUrl(currentVideoUrl)
+      setPlaceUrlInput(currentPlaceUrl)
       
+      // Store loaded URL into ref so debounced useEffect doesn't trigger refetch
+      lastFetchedUrlRef.current = currentPlaceUrl || currentVideoUrl || editData.url || ""
+
       if (editData.thumbnail) {
         setUrlPreview({
           thumbnail: editData.thumbnail,
           aiSuggestedName: editData.menu,
           url: editData.url || "",
-          isLoading: false
+          isLoading: false,
+          dong: editData.place || ""
         })
-      } else if (parsedUrls.placeUrl && isValidUrl(parsedUrls.placeUrl)) {
-        fetchUrlPreview(parsedUrls.placeUrl)
-      } else if (parsedUrls.videoUrl && isValidUrl(parsedUrls.videoUrl)) {
-        fetchUrlPreview(parsedUrls.videoUrl)
+      } else if (currentPlaceUrl && isValidUrl(currentPlaceUrl)) {
+        fetchUrlPreview(currentPlaceUrl)
+      } else if (currentVideoUrl && isValidUrl(currentVideoUrl)) {
+        fetchUrlPreview(currentVideoUrl)
       } else {
         setUrlPreview(null)
       }
@@ -457,19 +464,19 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
 
   // URL 입력 디바운스 처리 (영상 URL 및 장소 URL 상호 배타적 연동)
   useEffect(() => {
+    if (!recipeUrl || !isValidUrl(recipeUrl) || recipeUrl === lastFetchedUrlRef.current) return
     const timer = setTimeout(() => {
-      if (recipeUrl && isValidUrl(recipeUrl)) {
-        fetchUrlPreview(recipeUrl)
-      }
+      lastFetchedUrlRef.current = recipeUrl
+      fetchUrlPreview(recipeUrl)
     }, 500)
     return () => clearTimeout(timer)
   }, [recipeUrl])
 
   useEffect(() => {
+    if (!placeUrlInput || !isValidUrl(placeUrlInput) || placeUrlInput === lastFetchedUrlRef.current) return
     const timer = setTimeout(() => {
-      if (placeUrlInput && isValidUrl(placeUrlInput)) {
-        fetchUrlPreview(placeUrlInput)
-      }
+      lastFetchedUrlRef.current = placeUrlInput
+      fetchUrlPreview(placeUrlInput)
     }, 500)
     return () => clearTimeout(timer)
   }, [placeUrlInput])

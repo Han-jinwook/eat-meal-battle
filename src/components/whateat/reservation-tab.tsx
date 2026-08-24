@@ -621,12 +621,17 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   </div>
                 )}
 
-                {/* 1. 상단 헤더 (식사 예약 레이블 / 날짜 뱃지 / 수정 버튼) */}
+                {/* 1. 상단 헤더: 좌측 [아이콘 + 식사유형 뱃지], 우측 [📅 날짜/시간 뱃지] + [✏️ 수정] */}
                 <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
-                    <span className="text-foreground font-black">나의 예약</span>
-                    <span className="text-gray-300">·</span>
-                    <span className="text-amber-600 font-bold">{plan.mealType || "식사"}</span>
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+                    plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                    plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                    plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                    !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+                  )}>
+                    <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                    <span>{plan.mealType || "식사"}</span>
                   </div>
 
                   <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
@@ -659,24 +664,14 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   {/* 좌측 텍스트 & 정보 구역 */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
                     <div>
-                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full flex-wrap">
-                        {/* 식사 분류 배지 */}
-                        <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeBadgeClass)}>
-                          {plan.mealType || "식사"}
-                        </span>
-                        <span className="truncate flex-1 font-bold">{plan.menu}</span>
-                        {/* 숏폼 뱃지 */}
-                        {plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
-                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                            <Youtube className="size-3 text-red-500 shrink-0" />
-                            <span>숏폼</span>
-                          </span>
-                        )}
+                      {/* 둘째줄: 메뉴 제목만 시원하게 2줄까지 wrap */}
+                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
+                        {plan.menu}
                       </h4>
 
-                      {/* 장소(MapPin) */}
-                      {plan.place && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      {/* 셋째줄: 식당 주소 또는 숏폼 뱃지 */}
+                      {plan.place ? (
+                        <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
                           <MapPin className="size-3.5 text-orange-500 shrink-0" />
                           <span className="font-medium text-foreground truncate">
                             {(() => {
@@ -690,10 +685,19 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                             })()}
                           </span>
                         </div>
+                      ) : (
+                        plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                              <Youtube className="size-3 text-red-500 shrink-0" />
+                              <span>숏폼</span>
+                            </span>
+                          </div>
+                        )
                       )}
                     </div>
 
-                    {/* 메모 말풍선 */}
+                    {/* 넷째줄: 메모 말풍선 */}
                     {plan.memo && (
                       <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
                         <p className="line-clamp-2 font-medium">{plan.memo}</p>
