@@ -32,6 +32,7 @@ import {
   ExternalLink,
   BookOpen,
   Calendar,
+  CalendarDays,
   UserMinus,
   Users,
   FolderClosed,
@@ -4368,13 +4369,26 @@ export function FamilyPage({
             }
           }
 
+          const getMealTypeIcon = (type: string) => {
+            if (type === "집밥") return ChefHat
+            if (type === "배달") return Bike
+            return UtensilsCrossed
+          }
+          const TypeIcon = getMealTypeIcon(item.mealType)
+
           const formatCardDate = (dateStr: string, timeStr?: string) => {
             let formatted = dateStr
-            if (dateStr.includes("-")) {
-              const parts = dateStr.split("-")
-              if (parts.length === 3) {
-                const yy = parts[0].slice(-2)
-                formatted = `${yy}-${parts[1]}-${parts[2]}`
+            try {
+              const d = new Date(dateStr)
+              const m = d.getMonth() + 1
+              const day = d.getDate()
+              formatted = `${m}월 ${day}일`
+            } catch (e) {
+              if (dateStr.includes("-")) {
+                const parts = dateStr.split("-")
+                if (parts.length === 3) {
+                  formatted = `${parseInt(parts[1], 10)}월 ${parseInt(parts[2], 10)}일`
+                }
               }
             }
             if (timeStr) {
@@ -4392,36 +4406,22 @@ export function FamilyPage({
                 }
               } catch (e) {}
               if (mealTimeLabel) {
-                formatted += ` (${mealTimeLabel})`
+                formatted += ` · ${mealTimeLabel}`
               }
             }
             return formatted
           }
 
-          const sampleDateMap: Record<string, string> = {
-            "sample-wish-1": "26.08.03",
-            "sample-wish-2": "26.08.02",
-            "sample-wish-3": "26.08.01",
-            "sample-res-1": "26.08.03",
-            "sample-res-2": "26.08.02",
-            "sample-res-3": "26.08.01"
-          }
-          const formattedTime = isSampleItem
-            ? (sampleDateMap[item.id] || "26.08.01")
-            : formatMetaDate(item.createdAt)
-
-          // 카드 외관 스타일 (위시리스트 vs 확정 예약 차별화)
+          // 카드 외관 스타일 (위시리스트: 흑백/선만 남김 vs 확정 예약: 컬러풀)
           const borderClass = isWishlistCard
-            ? "border border-dashed border-gray-200 shadow-xs hover:shadow-sm"
+            ? "border border-gray-200 border-l-4 border-l-slate-300 shadow-2xs hover:shadow-xs"
             : cn(
                 "border border-y-gray-200/80 border-r-gray-200/80 border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5",
                 item.mealType === "집밥" && "border-l-emerald-500",
                 item.mealType === "배달" && "border-l-sky-500",
                 item.mealType === "외식" && "border-l-orange-500"
               )
-          const bgClass = isWishlistCard
-            ? "bg-white"
-            : "bg-gradient-to-br from-amber-50/15 via-white to-white"
+          const bgClass = "bg-white"
 
           return (
             <div 
@@ -4442,39 +4442,53 @@ export function FamilyPage({
                 </div>
               )}
 
-              {/* 1. 상단 프로필 헤더 (컴팩트 텍스트형으로 축소) */}
-              <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                  <span className="text-foreground font-black">{nickname}</span>
-                  <span className="text-gray-300">·</span>
-                  <span className={cn(isWishlistCard ? "text-slate-500" : "text-amber-600")}>
-                    {isWishlistCard ? "wish" : "plan"}
-                  </span>
-                  <span className="text-gray-300">·</span>
-                  <span>{formattedTime}</span>
+              {/* 1. 상단 헤더: 좌측 [식사유형 뱃지] + [작성자/날짜], 우측 [✏️ 수정] */}
+              <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  {/* 식사유형 뱃지: 위시는 흑백/모노톤, 확정은 컬러풀 */}
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+                    isWishlistCard 
+                      ? "bg-slate-100/90 text-slate-600 border-slate-200/80"
+                      : cn(
+                          item.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                          item.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                          item.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                          !item.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+                        )
+                  )}>
+                    <TypeIcon className={cn("size-3.5 shrink-0", isWishlistCard ? "text-slate-500" : undefined)} strokeWidth={2.2} />
+                    <span>{item.mealType || "식사"}</span>
+                  </div>
+
+                  {/* 헤더 텍스트: 위시는 "작성자 wish" (날짜 없음), 확정은 "작성자 · 📅 날짜" */}
+                  {isWishlistCard ? (
+                    <span className="text-xs font-bold text-slate-500 truncate">
+                      <span className="text-foreground font-black">{nickname}</span> wish
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-1 text-xs font-bold text-gray-800 min-w-0">
+                      <span className="text-foreground font-black shrink-0">{nickname}</span>
+                      <span className="text-gray-300">·</span>
+                      {item.date && (
+                        <span className="flex items-center gap-1 truncate">
+                          <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
+                          <span>{formatCardDate(item.date, item.time)}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div className={cn("flex items-center gap-2 shrink-0", isSampleItem && "mr-12")}>
-                  {/* 예약 날짜 뱃지 (헤더 우측으로 이동) */}
-                  {!isWishlistCard && item.date && (
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight flex items-center gap-1 shadow-xs border border-white/10 select-none",
-                      item.mealType === "집밥" && "bg-emerald-500 text-white",
-                      item.mealType === "배달" && "bg-sky-500 text-white",
-                      item.mealType === "외식" && "bg-orange-500 text-white"
-                    )}>
-                      <Calendar className="size-2.5 shrink-0" />
-                      <span>{formatCardDate(item.date, item.time)}</span>
-                    </span>
-                  )}
-                  {/* 수정 버튼 (모든 구성원 상시 노출) */}
+                <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
+                  {/* 수정 버튼 */}
                   {isLoggedIn && (
                     <button
                       onClick={() => {
                         setEditingPlan({ ...item, isWishlist: isWishlistCard })
                         setIsAddReservationOpen(true)
                       }}
-                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                       title="수정/삭제"
                     >
                       <Pencil className="size-3" />
@@ -4484,44 +4498,44 @@ export function FamilyPage({
               </div>
 
               {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
-              <div className="px-4 pb-3 flex items-start justify-between gap-3">
+              <div className="px-4 pb-3 pt-1 flex items-start justify-between gap-3">
                 {/* 좌측 텍스트 & 정보 구역 */}
                 <div className="flex-1 min-w-0">
-                  <div className="min-w-0 w-full">
-                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full flex-wrap">
-                      {/* 식사 분류 배지 - 메뉴명 바로 앞으로 이동 */}
-                      <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
-                        {item.mealType}
-                      </span>
-                      <span className="truncate flex-1">{item.menu}</span>
-                      {item.url && (item.url.includes("youtube.com") || item.url.includes("youtu.be") || item.url.includes("tiktok.com") || item.url.includes("instagram.com")) && (
-                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                          <Youtube className="size-3 text-red-500 shrink-0" />
-                          <span>숏폼</span>
-                        </span>
-                      )}
+                  <div>
+                    {/* 둘째줄: 메뉴 제목만 시원하게 2줄까지 wrap */}
+                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
+                      {item.menu}
                     </h4>
+
+                    {/* 셋째줄: 식당 주소 또는 숏폼 뱃지 */}
+                    {item.place ? (
+                      <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                        <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">
+                          {(() => {
+                            if (item.place.includes("/")) return item.place
+                            if (item.place.includes(" ")) {
+                              const reg = parseRegionFromAddress(item.place)
+                              const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
+                              if (formatted) return formatted
+                            }
+                            return item.place
+                          })()}
+                        </span>
+                      </div>
+                    ) : (
+                      item.url && (item.url.includes("youtube.com") || item.url.includes("youtu.be") || item.url.includes("tiktok.com") || item.url.includes("instagram.com")) && (
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                            <Youtube className="size-3 text-red-500 shrink-0" />
+                            <span>숏폼 영상</span>
+                          </span>
+                        </div>
+                      )
+                    )}
                   </div>
 
-                  {/* 장소(MapPin) */}
-                  {item.place && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <MapPin className="size-3.5 text-orange-500 shrink-0" />
-                      <span className="font-medium text-foreground truncate">
-                        {(() => {
-                          if (item.place.includes("/")) return item.place
-                          if (item.place.includes(" ")) {
-                            const reg = parseRegionFromAddress(item.place)
-                            const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
-                            if (formatted) return formatted
-                          }
-                          return item.place
-                        })()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* 메모 말풍선 (좌측 영역 내 배치) */}
+                  {/* 넷째줄: 메모 말풍선 */}
                   {item.memo && (
                     <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
                       <p className="line-clamp-2 font-medium">{item.memo}</p>
