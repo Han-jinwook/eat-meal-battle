@@ -22,7 +22,7 @@ import {
   Youtube,
 } from "lucide-react"
 import { parseSourceUrls, stringifySourceUrls } from "./reservation-detail-modal"
-import { cn } from "@/lib/utils"
+import { cn, parseRegionFromAddress } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { toast } from "react-hot-toast"
 
@@ -68,6 +68,7 @@ interface SelectedPlace {
   name: string
   address: string
   category: string
+  dong?: string
 }
 
 // 샘플 장소 데이터
@@ -169,6 +170,8 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
     aiSuggestedName: string
     url: string
     isLoading: boolean
+    address?: string
+    dong?: string
   } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!editData
@@ -340,58 +343,105 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
         return
       }
 
-      // 2. 일반 웹페이지 & 네이버 지도 / 플레이스 링크 처리 (Microlink API)
-      let response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
-      let result = await response.json()
+      // 2. 장소 / 지도 링크: 우리 내부 /api/naver-place-meta 우선 호출
+      let metaTitle = ""
+      let metaImage = ""
+      let metaAddress = ""
+      let metaDong = ""
 
-      // 네이버 지도 / shortlink (naver.me) / SPA 리다이렉트 자동 감지 및 모바일 플레이스 재조회
-      if (result.status === "success" && result.data) {
-        const finalUrl = result.data.url || url
-        const rawTitle = result.data.title || ""
-        const placeIdMatch = finalUrl.match(/\/place\/(\d+)/) || url.match(/\/place\/(\d+)/)
-        const isNaverMapGarbage = rawTitle.includes("placePath=") || rawTitle.includes("네이버지도") || rawTitle === "네이버 지도"
-
-        if (placeIdMatch && (isNaverMapGarbage || finalUrl.includes("map.naver.com"))) {
-          const placeId = placeIdMatch[1]
-          if (placeId) {
-            const placeMobileUrl = `https://m.place.naver.com/restaurant/${placeId}/home`
-            const retryResp = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(placeMobileUrl)}`)
-            const retryResult = await retryResp.json()
-            if (retryResult.status === "success" && retryResult.data && retryResult.data.title) {
-              result = retryResult
+      try {
+        const metaRes = await fetch(`/api/naver-place-meta?url=${encodeURIComponent(url)}`)
+        if (metaRes.ok) {
+          const metaData = await metaRes.json()
+          if (metaData && metaData.title && !metaData.error && metaData.title !== "웹사이트 링크" && !metaData.title.includes("페이지를 찾을 수 없습니다")) {
+            metaTitle = extractMenuName(metaData.title)
+            metaImage = metaData.image || ""
+            metaAddress = metaData.address || ""
+            if (metaAddress) {
+              const reg = parseRegionFromAddress(metaAddress)
+              metaDong = reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
             }
           }
         }
+      } catch (e) {
+        console.warn("naver-place-meta API failed, fallback to microlink", e)
       }
 
-      if (result.status === "success" && result.data) {
-        const rawTitle = result.data.title || "웹사이트 링크"
-        const title = extractMenuName(rawTitle)
-        let imageUrl = result.data.image?.url || result.data.logo?.url
+      // 3. Fallback: Microlink API
+      if (!metaTitle) {
+        let response = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`)
+        let result = await response.json()
 
-        // 네이버 지도 로고 등 기본 맵 아이콘인 경우 일반 음식 썸네일로 대체
-        if (!imageUrl || imageUrl.includes("static/maps") || imageUrl.includes("og-map") || imageUrl.includes("android-icon-512x512")) {
+        if (result.status === "success" && result.data) {
+          const finalUrl = result.data.url || url
+          const rawTitle = result.data.title || ""
+          const placeIdMatch = finalUrl.match(/\/place\/(\d+)/) || url.match(/\/place\/(\d+)/)
+          const isNaverMapGarbage = rawTitle.includes("placePath=") || rawTitle.includes("네이버지도") || rawTitle === "네이버 지도"
+
+          if (placeIdMatch && (isNaverMapGarbage || finalUrl.includes("map.naver.com"))) {
+            const placeId = placeIdMatch[1]
+            if (placeId) {
+              const placeMobileUrl = `https://m.place.naver.com/restaurant/${placeId}/home`
+              const retryResp = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(placeMobileUrl)}`)
+              const retryResult = await retryResp.json()
+              if (retryResult.status === "success" && retryResult.data && retryResult.data.title) {
+                result = retryResult
+              }
+            }
+          }
+
+          metaTitle = extractMenuName(result.data.title || "웹사이트 링크")
+          metaImage = result.data.image?.url || result.data.logo?.url || ""
+        }
+      }
+
+      if (metaTitle && metaTitle !== "웹사이트 링크" && metaTitle !== "페이지를 찾을 수 없습니다.") {
+        // 식당명으로 검색을 통해 동/주소 보강
+        if (!metaDong) {
+          try {
+            const searchMetaRes = await fetch(`/api/naver-place-meta?url=${encodeURIComponent(`https://map.naver.com/v5/search/${encodeURIComponent(metaTitle)}`)}`)
+            if (searchMetaRes.ok) {
+              const sData = await searchMetaRes.json()
+              if (sData.address) {
+                metaAddress = sData.address
+                const reg = parseRegionFromAddress(metaAddress)
+                metaDong = reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
+              }
+              if (!metaImage && sData.image) metaImage = sData.image
+            }
+          } catch (e) {}
+        }
+
+        let imageUrl = metaImage
+        if (!imageUrl || imageUrl.includes("static/maps") || imageUrl.includes("og-map") || imageUrl.includes("android-icon-512x512") || imageUrl.includes("error/lg_naver")) {
           imageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
         }
 
-        // 네이버/카카오 지도 장소 링크인 경우 식당(장소) 이름 자동 채움
-        const isPlaceUrl = url.includes("naver.me") || url.includes("map.naver.com") || url.includes("place.naver.com") || url.includes("kakao.com")
-        if (isPlaceUrl && title && title !== "웹사이트 링크" && title !== "식당/메뉴 링크") {
-          setSelectedPlace({ name: title, address: "네이버/카카오 지도 링크", category: "" })
-        }
+        const isPlaceUrl = url.includes("naver.me") || url.includes("map.naver.com") || url.includes("place.naver.com") || url.includes("kakao.com") || url.includes("google.com")
+
+        setSelectedPlace({ 
+          name: metaTitle, 
+          address: metaAddress || "장소 지도 링크", 
+          category: "",
+          dong: metaDong || ""
+        })
 
         setUrlPreview({
           thumbnail: imageUrl,
-          aiSuggestedName: title,
+          aiSuggestedName: metaTitle,
           url: url,
-          isLoading: false
+          isLoading: false,
+          address: metaAddress,
+          dong: metaDong
         })
+
         if (!menuName || isPlaceUrl) {
-          setMenuName(title)
+          setMenuName(metaTitle)
         }
-      } else {
-        throw new Error("Invalid response from microlink")
+        return
       }
+
+      throw new Error("Invalid response from microlink")
     } catch (err) {
       console.error("Failed to fetch URL preview:", err)
       // Fallback
@@ -476,12 +526,17 @@ const handleSubmit = () => {
       toast.error("집밥인 경우 식당 URL을 등록할 수 없습니다. URL을 지워주세요.")
       return
     }
-    const resolvedPlace =
-      resolvedMealType === "외식"
-        ? selectedPlace?.name || editData?.place || null
-        : resolvedMealType === "배달"
-          ? deliveryStoreName || editData?.place || null
-          : null
+    const dong = selectedPlace?.dong || urlPreview?.dong || (selectedPlace?.address ? parseRegionFromAddress(selectedPlace.address).dong : "")
+    const placeName = selectedPlace?.name || deliveryStoreName || urlPreview?.aiSuggestedName || ""
+
+    let resolvedPlace: string | null = editData?.place || null
+    if (resolvedMealType === "외식" || resolvedMealType === "배달") {
+      if (dong) {
+        resolvedPlace = dong // e.g. "행당동", "성수동", "흥업면", "한강로1가"
+      } else if (placeName) {
+        resolvedPlace = placeName
+      }
+    }
 
     const finalUrl = stringifySourceUrls(placeUrlInput, recipeUrl)
 
@@ -714,10 +769,18 @@ const handleSubmit = () => {
                               />
                             </div>
                             <div className="flex-1 min-w-0 space-y-1.5">
-                              <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                                <Sparkles className="size-3.5 text-orange-500" />
-                                AI 메뉴명 추천
-                              </label>
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-foreground flex items-center gap-1">
+                                  <Sparkles className="size-3.5 text-orange-500" />
+                                  AI 메뉴명 추천
+                                </label>
+                                {(urlPreview?.dong || selectedPlace?.dong) && (
+                                  <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-orange-200/60 shrink-0">
+                                    <MapPin className="size-3 text-orange-500 shrink-0" />
+                                    <span>{urlPreview?.dong || selectedPlace?.dong}</span>
+                                  </span>
+                                )}
+                              </div>
                               <input
                                 type="text"
                                 value={menuName}

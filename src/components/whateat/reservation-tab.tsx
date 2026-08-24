@@ -611,7 +611,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                       {plan.place && (
                         <span className="text-[11px] font-medium text-muted-foreground/90 flex items-center gap-0.5 bg-gray-100/80 px-1.5 py-0.5 rounded-md shrink-0">
                           <MapPin className="size-3 text-orange-500 shrink-0" />
-                          <span className="truncate max-w-[120px]">{plan.place}</span>
+                          <span className="truncate max-w-[140px]">
+                            {plan.place.includes("동") || plan.place.includes("읍") || plan.place.includes("면") || plan.place.includes("구") || plan.place.includes("로") || plan.place.includes("길")
+                              ? plan.place
+                              : (plan.place === plan.menu ? "식당 지도" : plan.place)}
+                          </span>
                         </span>
                       )}
                       {/* 숏폼/영상 링크인 경우 뱃지 */}
