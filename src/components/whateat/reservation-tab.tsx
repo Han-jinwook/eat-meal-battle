@@ -20,7 +20,8 @@ import {
   ArrowDown,
   Calendar as CalendarIcon,
   Link2,
-  Youtube
+  Youtube,
+  ExternalLink,
 } from "lucide-react"
 import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
@@ -562,7 +563,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
       {/* Meal Plan Cards */}
       {filteredPlans.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sortedPlans.map((plan) => {
             const isSample = plan.id === 1 || plan.id === 2 || plan.id === 3
             const borderClass =
@@ -621,7 +622,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 )}
 
                 {/* 1. 상단 헤더 (식사 예약 레이블 / 날짜 뱃지 / 수정 버튼) */}
-                <div className="flex items-center justify-between px-3.5 pt-3 pb-1">
+                <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
                     <span className="text-foreground font-black">나의 예약</span>
                     <span className="text-gray-300">·</span>
@@ -654,7 +655,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 </div>
 
                 {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
-                <div className="px-3.5 pb-3 pt-1 flex items-start justify-between gap-2.5 flex-1">
+                <div className="px-4 pb-3.5 pt-1 flex items-start justify-between gap-3 flex-1">
                   {/* 좌측 텍스트 & 정보 구역 */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
                     <div>
@@ -666,8 +667,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                         <span className="truncate flex-1 font-bold">{plan.menu}</span>
                         {/* 숏폼 뱃지 */}
                         {plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
-                          <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                            <Youtube className="size-2.5 text-red-500 shrink-0" />
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                            <Youtube className="size-3 text-red-500 shrink-0" />
                             <span>숏폼</span>
                           </span>
                         )}
@@ -676,8 +677,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                       {/* 장소(MapPin) */}
                       {plan.place && (
                         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                          <MapPin className="size-3 text-orange-500 shrink-0" />
-                          <span className="font-medium text-foreground truncate text-[11px]">
+                          <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                          <span className="font-medium text-foreground truncate">
                             {(() => {
                               if (plan.place.includes("/")) return plan.place
                               if (plan.place.includes(" ")) {
@@ -694,20 +695,43 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
                     {/* 메모 말풍선 */}
                     {plan.memo && (
-                      <div className="mt-2 p-2 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
-                        <p className="line-clamp-2 font-medium text-[11px]">{plan.memo}</p>
+                      <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                        <p className="line-clamp-2 font-medium">{plan.memo}</p>
                       </div>
                     )}
                   </div>
 
                   {/* 우측 썸네일 이미지 */}
                   {plan.thumbnail && (
-                    <div className="size-20 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm">
+                    <div 
+                      className={cn(
+                        "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
+                        plan.url && "cursor-pointer group"
+                      )}
+                      onClick={(e) => {
+                        if (plan.url) {
+                          e.stopPropagation()
+                          window.open(plan.url, '_blank')
+                        }
+                      }}
+                      title={plan.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
+                    >
                       <img 
                         src={plan.thumbnail || "/placeholder.svg"} 
                         alt={plan.menu}
-                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                        }}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+                      {plan.url && (
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
+                          <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
+                            <ExternalLink className="size-3" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
