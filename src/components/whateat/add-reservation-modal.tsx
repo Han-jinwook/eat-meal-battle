@@ -59,6 +59,7 @@ interface AddReservationModalProps {
   isWishlist?: boolean
   isScheduling?: boolean
   isGroupMode?: boolean
+  contextName?: string
 }
 
 type MealType = "집밥" | "외식" | "배달" | ""
@@ -145,7 +146,7 @@ function generateUUID() {
   })
 }
 
-export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false, isScheduling = false, isGroupMode = false }: AddReservationModalProps) {
+export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onSave, onDelete, prefillData, isWishlist = false, isScheduling = false, isGroupMode = false, contextName }: AddReservationModalProps) {
   // If isGroupMode, force mealType to "외식"
   useEffect(() => {
     if (isGroupMode && isOpen) {
@@ -526,12 +527,8 @@ const handleSubmit = () => {
     }
     const resolvedMealType = (mealType || editData?.mealType || "집밥") as "집밥" | "배달" | "외식"
 
-    if ((resolvedMealType === "외식" || resolvedMealType === "배달") && !placeUrlInput) {
-      toast.error("외식/배달의 경우 식당 URL을 입력해야 합니다.")
-      return
-    }
     if (resolvedMealType === "집밥" && placeUrlInput) {
-      toast.error("집밥인 경우 식당 URL을 등록할 수 없습니다. URL을 지워주세요.")
+      toast.error("집밥인 경우 식당 URL을 등록할 수 없습니다. 레시피 URL을 이용해주세요.")
       return
     }
     const dong = selectedPlace?.dong || urlPreview?.dong || (selectedPlace?.address ? (() => {
@@ -627,13 +624,20 @@ const handleSubmit = () => {
         <div className="p-4 sm:p-5">
           {/* Header */}
           <div className="mb-3">
-            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
-              {isScheduling 
-                ? "식사 예약 잡기"
-                : isEditMode 
-                  ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
-                  : (isWishlist ? "식사 위시리스트 추가" : "나의 식사 예약")}
-            </h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              {contextName && (
+                <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-orange-100/90 text-orange-700 border border-orange-200/80 shadow-2xs">
+                  {contextName}
+                </span>
+              )}
+              <h2 className="text-lg font-extrabold tracking-tight text-foreground">
+                {isScheduling 
+                  ? "식사 예약 잡기"
+                  : isEditMode 
+                    ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
+                    : (isWishlist ? "식사 위시리스트 추가" : "식사 예약")}
+              </h2>
+            </div>
           </div>
 
           {/* Form Fields */}

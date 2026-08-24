@@ -750,6 +750,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       {/* Reservation Modal */}
       <AddReservationModal
         isOpen={isModalOpen}
+        contextName="솔로"
         onClose={() => {
           setIsModalOpen(false)
           setUrlForModal("")

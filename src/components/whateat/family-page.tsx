@@ -4842,6 +4842,15 @@ export function FamilyPage({
         <AddReservationModal
           isOpen={isAddReservationOpen}
           isGroupMode={activeMode === "group"}
+          contextName={
+            activeMode === "group" 
+              ? (groups.find(g => g.id === selectedGroupId)?.name || "모임") 
+              : (!isLoggedIn || !user 
+                  ? "게스트 가족" 
+                  : isFamilyOwner 
+                    ? `${user?.nickname && user.nickname !== '회원' ? user.nickname : '우리'} 가족` 
+                    : `${familyHostName || '가족'} 가족`)
+          }
           onClose={() => {
             setIsAddReservationOpen(false)
             setEditingPlan(null)
