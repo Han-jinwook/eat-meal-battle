@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'lat and lng are required' }, { status: 400 });
   }
 
+  const debug: Record<string, any> = { lat, lng, keyword };
+
   try {
     let dong = '';
 
@@ -38,35 +40,46 @@ export async function GET(request: NextRequest) {
         }
       });
 
+      debug.nominatimStatus = geoRes.status;
       if (geoRes.ok) {
         const geoData = await geoRes.json();
         const addr = geoData.address || {};
         const rawDong = addr.suburb || addr.neighbourhood || addr.city_district || addr.town || addr.village || '';
         dong = rawDong.replace(/\d+동$/, '동').trim();
+        debug.nominatimDong = dong || '(empty)';
+        debug.nominatimAddr = addr;
       }
     } catch (e) {
+      debug.nominatimError = String(e);
       console.warn("Nominatim reverse geocoding failed:", e);
     }
 
-    // 1.5 Try BigDataCloud if Nominatim failed (since Nominatim frequently returns 403/429 on local env)
+    // 1.5 Try BigDataCloud if Nominatim failed
     if (!dong) {
       try {
         const bigDataCloudUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`;
         const bdcRes = await fetch(bigDataCloudUrl);
+        debug.bdcStatus = bdcRes.status;
         if (bdcRes.ok) {
           const bdcData = await bdcRes.json();
           const rawLocality = bdcData.locality || bdcData.city || '';
           dong = rawLocality.replace(/\d+동$/, '동').trim();
+          debug.bdcDong = dong || '(empty)';
         }
       } catch (e) {
+        debug.bdcError = String(e);
         console.warn("BigDataCloud reverse geocoding failed:", e);
       }
     }
 
-    // 2. Fetch Naver Search results for "${dong} 식당" (or just "식당" if Nominatim failed)
+    debug.finalDong = dong;
+
+    // 2. Fetch Naver Search results
     const searchQuery = keyword 
       ? (dong ? `${dong} ${keyword}` : keyword) 
       : (dong ? `${dong} 식당` : "식당");
+    debug.searchQuery = searchQuery;
+
     const searchUrl = `https://m.search.naver.com/search.naver?query=${encodeURIComponent(searchQuery)}&lat=${lat}&lng=${lng}`;
     const searchRes = await fetch(searchUrl, {
       headers: {
@@ -75,18 +88,31 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    debug.naverStatus = searchRes.status;
+
     if (!searchRes.ok) {
-      return NextResponse.json({ places: [] });
+      debug.naverError = `HTTP ${searchRes.status}`;
+      return NextResponse.json({ places: [], debug });
     }
 
     const html = await searchRes.text();
+    debug.htmlLength = html.length;
+
     const placesMap = new Map<string, any>();
+    let totalAddressHits = 0;
+    let totalParsed = 0;
+    let filteredByBusinessCat = 0;
+    let filteredByNoNameAddr = 0;
+    let filteredByNoCoords = 0;
+    let filteredByDistance = 0;
+    const sampleNames: string[] = [];  // 발견된 식당명 샘플
 
     // Scan for "address" to find JSON blocks containing place info
     let pos = 0;
     while (true) {
       const index = html.indexOf('"address"', pos);
       if (index === -1) break;
+      totalAddressHits++;
 
       // Extract surrounding brace matching chunk
       let start = index;
@@ -125,7 +151,7 @@ export async function GET(request: NextRequest) {
           const titleMatch = decoded.match(/"title"\s*:\s*"([^"]+)"/);
           const addressMatch = decoded.match(/"address"\s*:\s*"([^"]+)"/);
           const categoryMatch = decoded.match(/"category"\s*:\s*"([^"]+)"/);
-          const imgMatch = decoded.match(/"smartplaceImages"\s*:\s*\[\s*"([^"]+)"/);
+          const imgMatch = decoded.match(/"(?:smartplaceImages|imageUrl)"\s*:\s*(?:\[\s*")?"([^"]+)"/);
           const bCatMatch = decoded.match(/"businessCategory"\s*:\s*"([^"]+)"/);
           const xMatch = decoded.match(/"x"\s*:\s*"([^"]+)"/);
           const yMatch = decoded.match(/"y"\s*:\s*"([^"]+)"/);
@@ -139,11 +165,16 @@ export async function GET(request: NextRequest) {
 
           // 비식당 업종 제외 (모텔, 숙박, 병원 등)
           if (bCat && !['restaurant', 'cafe', 'bakery', 'pub', 'bar'].includes(bCat)) {
+            filteredByBusinessCat++;
+            pos = index + 9;
             continue;
           }
 
           // Filter out UI noise and ensure valid address
           if (name && address && name.length > 1 && address.includes(' ')) {
+            totalParsed++;
+            if (sampleNames.length < 10) sampleNames.push(name);
+
             if (image) {
               image = decodeURIComponent(image).replace(/\\/g, '');
               if (!image.startsWith('http')) {
@@ -164,12 +195,18 @@ export async function GET(request: NextRequest) {
                 if (!isNaN(numLat) && !isNaN(numLng)) {
                   rawDist = getDistance(numLat, numLng, py, px);
                   // 스마트폰 GPS 오차 보정 반경(~250m) 내 초근접 식당만 필터링
-                  if (rawDist > 250) continue;
+                  if (rawDist > 250) {
+                    filteredByDistance++;
+                    pos = index + 9;
+                    continue;
+                  }
                   
                   distStr = `${Math.round(rawDist)}m`;
                 }
               } else {
                 // 정확한 좌표가 없는 항목은 제외
+                filteredByNoCoords++;
+                pos = index + 9;
                 continue;
               }
 
@@ -183,6 +220,8 @@ export async function GET(request: NextRequest) {
                 rawDist
               });
             }
+          } else {
+            filteredByNoNameAddr++;
           }
         } catch (e) {
           // ignore parse errors
@@ -192,12 +231,22 @@ export async function GET(request: NextRequest) {
       pos = index + 9; // move past "address"
     }
 
+    debug.totalAddressHits = totalAddressHits;
+    debug.totalParsed = totalParsed;
+    debug.filteredByBusinessCat = filteredByBusinessCat;
+    debug.filteredByNoNameAddr = filteredByNoNameAddr;
+    debug.filteredByNoCoords = filteredByNoCoords;
+    debug.filteredByDistance = filteredByDistance;
+    debug.finalPlacesCount = placesMap.size;
+    debug.sampleNames = sampleNames;
+
     // Convert map to array and sort by raw distance
     const sortedPlaces = Array.from(placesMap.values()).sort((a, b) => a.rawDist - b.rawDist);
 
-    return NextResponse.json({ places: sortedPlaces.slice(0, 8) });
+    return NextResponse.json({ places: sortedPlaces.slice(0, 8), debug });
   } catch (error) {
     console.error('Error fetching nearby places:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    debug.fatalError = String(error);
+    return NextResponse.json({ error: 'Internal Server Error', debug }, { status: 500 });
   }
 }

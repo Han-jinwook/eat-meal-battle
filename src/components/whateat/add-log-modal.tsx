@@ -143,6 +143,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
         const res = await fetch(`/api/nearby-places?${queryParams.toString()}`)
         if (res.ok) {
           const data = await res.json()
+          console.log("[GPS Places] API Response:", { places: data.places?.length, debug: data.debug })
           if (data.places && data.places.length > 0) {
             setNearbyPlaces(data.places)
             setVisiblePlacesCount(10)
