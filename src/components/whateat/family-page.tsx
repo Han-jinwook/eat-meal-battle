@@ -497,6 +497,15 @@ export function FamilyPage({
   const { isLoggedIn, user } = useHub()
   const { getReferralHistory, getMyReferralInfo } = useHubReferral()
   const [members, setMembers] = useState<FamilyMember[]>(familyMembers)
+  const cachedFamilyStateRef = useRef<{
+    members: FamilyMember[]
+    isOwner: boolean
+    hostId: string | null
+    hostName: string
+    groupId: string | null
+    photo: string | null
+    chefUserId: string | null
+  } | null>(null)
   const [showChefModal, setShowChefModal] = useState(false)
   const [activeMode, setActiveMode] = useState<'family' | 'group'>('family')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -701,6 +710,15 @@ export function FamilyPage({
         }
 
         setMembers(newMemberList)
+        cachedFamilyStateRef.current = {
+          members: newMemberList,
+          isOwner,
+          hostId,
+          hostName: hostNickname,
+          groupId: familyGroup?.id || null,
+          photo: familyGroup?.family_photo || null,
+          chefUserId: effectiveChefId
+        }
 
       } catch (err) {
         console.error("loadRealFamily error:", err)
@@ -812,6 +830,21 @@ export function FamilyPage({
       }
     }
   }, [activeMode, selectedGroupId, groups, isLoggedIn, user])
+
+  // Synchronously restore cached family state when switching back to family mode (eliminates 1s flicker)
+  useEffect(() => {
+    if (activeMode === 'family' && cachedFamilyStateRef.current) {
+      const c = cachedFamilyStateRef.current
+      setMembers(c.members)
+      setIsFamilyOwner(c.isOwner)
+      setFamilyHostId(c.hostId)
+      setFamilyHostName(c.hostName)
+      setFamilyGroupId(c.groupId)
+      setFamilyPhoto(c.photo)
+      setChefUserId(c.chefUserId)
+      setSelectedChefId(c.chefUserId)
+    }
+  }, [activeMode])
 
   // Listen to joinedGroup event from WhatEatApp.tsx
   useEffect(() => {
@@ -4297,7 +4330,9 @@ export function FamilyPage({
       )}
 
       {activeMainTab === "reservation" && (() => {
-        const isChef = chefUserId ? user?.id === chefUserId : isFamilyOwner
+        const isChef = activeMode === 'group'
+          ? (groups.find(g => g.id === selectedGroupId)?.ownerId === user?.id)
+          : (chefUserId ? user?.id === chefUserId : isFamilyOwner)
         const chef = members.find(m => m.userId === chefUserId) ?? members.find(m => m.role === "chef")
 
         const filteredWishlist = wishlistItems.filter(item => {
