@@ -192,7 +192,11 @@ export async function GET(request: NextRequest) {
                 if (sampleNames.length < 10 && !sampleNames.includes(rawName)) sampleNames.push(rawName);
 
                 if (image) {
-                  image = decodeURIComponent(image).replace(/\\/g, '');
+                  try {
+                    image = decodeURIComponent(image).replace(/\\/g, '');
+                  } catch (e) {
+                    image = image.replace(/\\/g, '');
+                  }
                   if (!image.startsWith('http')) {
                     image = 'https:' + image;
                   }

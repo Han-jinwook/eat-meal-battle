@@ -112,6 +112,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const dateInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const gpsLoadedByPhotoRef = useRef(false)  // 사진 GPS 로드 중복 방지 플래그
+  const lastFetchedKeyRef = useRef<string>("") // 동일 좌표 중복 호출 방지 플래그
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return ""
@@ -137,6 +138,13 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
   const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
     const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
+      const fetchKey = `${lat.toFixed(4)},${lng.toFixed(4)},${kw || ''}`
+      if (fetchKey === lastFetchedKeyRef.current && nearbyPlaces.length > 0) {
+        setIsLoadingLocation(false)
+        return
+      }
+      lastFetchedKeyRef.current = fetchKey
+
       try {
         const queryParams = new URLSearchParams({ lat: String(lat), lng: String(lng) })
         if (kw) queryParams.append('keyword', kw)
@@ -578,6 +586,8 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       setPhotoGps(null)
       setLocationError("")
       setIsLoadingLocation(true)
+      lastFetchedKeyRef.current = ""
+      gpsLoadedByPhotoRef.current = false
     }
     return () => {
       document.body.classList.remove("modal-open")
