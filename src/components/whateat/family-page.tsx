@@ -36,6 +36,7 @@ import {
   Users,
   FolderClosed,
   UserPlus,
+  Youtube,
 } from "lucide-react"
 import { createPortal } from "react-dom"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
@@ -4477,12 +4478,18 @@ export function FamilyPage({
                 {/* 좌측 텍스트 & 정보 구역 */}
                 <div className="flex-1 min-w-0">
                   <div className="min-w-0 w-full">
-                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full">
+                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full flex-wrap">
                       {/* 식사 분류 배지 - 메뉴명 바로 앞으로 이동 */}
                       <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeColor[item.mealType] ?? "bg-muted text-muted-foreground")}>
                         {item.mealType}
                       </span>
                       <span className="truncate flex-1">{item.menu}</span>
+                      {item.url && (item.url.includes("youtube.com") || item.url.includes("youtu.be") || item.url.includes("tiktok.com") || item.url.includes("instagram.com")) && (
+                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                          <Youtube className="size-3 text-red-500 shrink-0" />
+                          <span>숏폼</span>
+                        </span>
+                      )}
                     </h4>
                   </div>
 

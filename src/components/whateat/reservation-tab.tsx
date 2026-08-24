@@ -19,7 +19,8 @@ import {
   ArrowUpDown,
   ArrowDown,
   Calendar as CalendarIcon,
-  Link2
+  Link2,
+  Youtube
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
@@ -586,41 +587,57 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   </div>
                 )}
                 <div className="flex items-start gap-3">
-                  {/* Meal Type Badge */}
-                  <div className="size-11 rounded-xl bg-orange-50 flex flex-col items-center justify-center shrink-0">
-                    <TypeIcon className="size-5 text-primary" />
+                  {/* Meal Type Badge with colored border and icon + text label underneath */}
+                  <div className={cn(
+                    "w-12 h-13 rounded-2xl bg-white flex flex-col items-center justify-center shrink-0 border-2 transition-colors",
+                    plan.mealType === "집밥" && "border-emerald-400 text-emerald-600 shadow-xs",
+                    plan.mealType === "배달" && "border-sky-400 text-sky-600 shadow-xs",
+                    plan.mealType === "외식" && "border-orange-400 text-orange-600 shadow-xs",
+                    !plan.mealType && "border-gray-200 text-gray-500"
+                  )}>
+                    <TypeIcon className="size-5 mb-0.5" strokeWidth={2.2} />
+                    <span className="text-[10px] font-black tracking-tight leading-none">
+                      {plan.mealType || "식사"}
+                    </span>
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    {/* Menu Name & Time */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-foreground">{plan.menu}</h4>
-                      {plan.time && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
-                          {plan.time}
+                    {/* Menu Name + Place Dong or Video Badge */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-tight">
+                        {plan.menu}
+                      </h4>
+                      {/* 식당 지도를 넣은 경우: 동/주소 표시 */}
+                      {plan.place && (
+                        <span className="text-[11px] font-medium text-muted-foreground/90 flex items-center gap-0.5 bg-gray-100/80 px-1.5 py-0.5 rounded-md shrink-0">
+                          <MapPin className="size-3 text-orange-500 shrink-0" />
+                          <span className="truncate max-w-[120px]">{plan.place}</span>
+                        </span>
+                      )}
+                      {/* 숏폼/영상 링크인 경우 뱃지 */}
+                      {plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
+                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                          <Youtube className="size-3 text-red-500 shrink-0" />
+                          <span>숏폼</span>
                         </span>
                       )}
                     </div>
                     
-                    {/* Date */}
+                    {/* Date & Lunch/Dinner Time */}
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                       <CalendarDays className="size-3.5" />
                       <span>{new Date(plan.date).getMonth() + 1}월 {new Date(plan.date).getDate()}일</span>
-                      <span className="text-muted-foreground/50">|</span>
-                      <span className="text-primary font-medium">{plan.mealType}</span>
+                      {plan.time && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="font-bold text-foreground/80">{plan.time}</span>
+                        </>
+                      )}
                     </div>
-                    
-                    {/* Place */}
-                    {plan.place && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <MapPin className="size-3.5 text-primary" />
-                        <span>{plan.place}</span>
-                      </div>
-                    )}
                     
                     {/* Memo */}
                     {plan.memo && (
-                      <div className="mt-1.5 rounded-md border border-orange-100 bg-orange-50/60 px-2.5 py-1.5">
+                      <div className="mt-1.5 rounded-xl border border-orange-100 bg-orange-50/60 px-2.5 py-1.5">
                         <p className="text-[11px] leading-4 text-muted-foreground/80 line-clamp-2">
                           {plan.memo}
                         </p>
