@@ -250,12 +250,13 @@ export async function GET(request: NextRequest) {
     // Convert map to array and sort by distance
     let sortedPlaces = Array.from(placesMap.values()).sort((a, b) => a.rawDist - b.rawDist);
 
-    // 거리 필터: 기본 250m, 만약 250m 이내 식당이 2개 이하이면 최대 400m까지 허용 (실내 GPS 오차 보정)
-    const within250 = sortedPlaces.filter(p => p.rawDist <= 250);
-    if (within250.length >= 2) {
-      sortedPlaces = within250;
+    // 스마트폰 실내 GPS 오차 보정 반경: 기본 120m (초근접 식당만 핀포인트 표시)
+    // 만약 120m 이내 식당이 1개 미만이면 최대 200m까지 자동 보정
+    const within120 = sortedPlaces.filter(p => p.rawDist <= 120);
+    if (within120.length >= 1) {
+      sortedPlaces = within120;
     } else {
-      sortedPlaces = sortedPlaces.filter(p => p.rawDist <= 400);
+      sortedPlaces = sortedPlaces.filter(p => p.rawDist <= 200);
     }
 
     debug.totalAddressHits = totalAddressHits;
