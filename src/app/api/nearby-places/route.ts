@@ -176,8 +176,12 @@ export async function GET(request: NextRequest) {
                 rawName = rawName.replace(/<[^>]*>/g, '').trim();
               }
 
-              // 비식당 업종 제외
-              if (bCat && !['restaurant', 'cafe', 'bakery', 'pub', 'bar'].includes(bCat)) {
+              // 식사/음식과 무관한 비식음료 업종만 명시적으로 제외 (숙박, 병원, 미용, 학원, 부동산, 주유소 등)
+              const nonFoodKeywords = ['hotel', 'motel', 'pension', 'guesthouse', 'hospital', 'clinic', 'pharmacy', 'beauty', 'hair', 'nail', 'laundry', 'clean', 'realestate', 'gas_station', 'car', 'parking', 'academy', 'school', 'bank', 'gym', 'fitness', 'cinema', 'theater'];
+              const isNonFood = (bCat && nonFoodKeywords.some(kw => bCat.toLowerCase().includes(kw))) ||
+                                (category && ['숙박', '모텔', '호텔', '펜션', '병원', '의원', '약국', '미용', '헤어', '네일', '세탁', '부동산', '주유소', '정비', '주차장', '학원', '은행', '헬스', '영화관'].some(kw => category.includes(kw)));
+
+              if (isNonFood) {
                 filteredByBusinessCat++;
                 pos = index + 9;
                 continue;
