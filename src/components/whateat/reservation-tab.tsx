@@ -574,20 +574,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   ? "border-l-4 border-l-sky-500 border-y-gray-200/80 border-r-gray-200/80"
                   : "border-l-4 border-l-orange-500 border-y-gray-200/80 border-r-gray-200/80"
 
-            const mealTypeBadgeClass =
-              plan.mealType === "집밥"
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
-                : plan.mealType === "배달"
-                  ? "bg-sky-50 text-sky-700 border border-sky-200/60"
-                  : "bg-orange-50 text-orange-700 border border-orange-200/60"
-
-            const datePillClass =
-              plan.mealType === "집밥"
-                ? "bg-emerald-500 text-white"
-                : plan.mealType === "배달"
-                  ? "bg-sky-500 text-white"
-                  : "bg-orange-500 text-white"
-
             const dateStr = (() => {
               try {
                 const d = new Date(plan.date)
@@ -622,30 +608,31 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                   </div>
                 )}
 
-                {/* 1. 상단 헤더: 좌측 [아이콘 + 식사유형 뱃지], 우측 [📅 날짜/시간 뱃지] + [✏️ 수정] */}
+                {/* 1. 상단 헤더: 좌측 [아이콘 + 식사유형 뱃지] + [📅 날짜/시간 (검정글자)], 우측 [✏️ 수정] */}
                 <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-                    plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                    plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                    plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-                    !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
-                  )}>
-                    <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
-                    <span>{plan.mealType || "식사"}</span>
+                  <div className="flex items-center gap-2">
+                    {/* 식사유형 뱃지 */}
+                    <div className={cn(
+                      "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+                      plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                      plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                      plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                      !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+                    )}>
+                      <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                      <span>{plan.mealType || "식사"}</span>
+                    </div>
+
+                    {/* 예약 날짜 & 시간 (컬러 배경 제거, 검정 글자색으로 배치) */}
+                    {plan.date && (
+                      <div className="flex items-center gap-1 text-xs font-bold text-gray-800">
+                        <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
+                        <span>{dateStr}{plan.time ? ` · ${plan.time}` : ""}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
-                    {/* 예약 날짜 뱃지 */}
-                    {plan.date && (
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight flex items-center gap-1 shadow-xs border border-white/10 select-none",
-                        datePillClass
-                      )}>
-                        <CalendarDays className="size-2.5 shrink-0" />
-                        <span>{dateStr}{plan.time ? ` · ${plan.time}` : ""}</span>
-                      </span>
-                    )}
                     {/* 수정 버튼 */}
                     <button
                       onClick={(e) => {
