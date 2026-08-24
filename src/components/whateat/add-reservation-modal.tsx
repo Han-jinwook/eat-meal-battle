@@ -404,7 +404,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
     }
   }
 
-  // URL 입력 디바운스 처리
+  // URL 입력 디바운스 처리 (영상 URL 및 장소 URL 상호 배타적 연동)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (recipeUrl && isValidUrl(recipeUrl)) {
@@ -413,6 +413,15 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
     }, 500)
     return () => clearTimeout(timer)
   }, [recipeUrl])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (placeUrlInput && isValidUrl(placeUrlInput)) {
+        fetchUrlPreview(placeUrlInput)
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [placeUrlInput])
 
   // initialUrl이 있을 때 처리
   useEffect(() => {
@@ -640,7 +649,16 @@ const handleSubmit = () => {
                         }
                         type="url"
                         value={recipeUrl}
-                        onChange={(e) => setRecipeUrl(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setRecipeUrl(val)
+                          if (val) {
+                            // 장소/지도 URL에 기존 입력된 값이 있다면 자동 삭제 및 리셋
+                            if (placeUrlInput) setPlaceUrlInput("")
+                          } else if (!placeUrlInput) {
+                            setUrlPreview(null)
+                          }
+                        }}
                       />
                     </div>
 
@@ -654,9 +672,13 @@ const handleSubmit = () => {
                           type="url"
                           value={placeUrlInput}
                           onChange={(e) => {
-                            setPlaceUrlInput(e.target.value)
-                            if (e.target.value && isValidUrl(e.target.value) && !recipeUrl) {
-                              fetchUrlPreview(e.target.value)
+                            const val = e.target.value
+                            setPlaceUrlInput(val)
+                            if (val) {
+                              // 영상/숏폼 URL에 기존 입력된 값이 있다면 자동 삭제 및 리셋
+                              if (recipeUrl) setRecipeUrl("")
+                            } else if (!recipeUrl) {
+                              setUrlPreview(null)
                             }
                           }}
                         />
