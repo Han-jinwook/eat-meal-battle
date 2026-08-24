@@ -20,6 +20,7 @@ import {
   Moon,
   Trash2,
   Youtube,
+  Utensils,
 } from "lucide-react"
 import { parseSourceUrls, stringifySourceUrls } from "./reservation-detail-modal"
 import { cn, parseRegionFromAddress, formatRegionStr } from "@/lib/utils"
@@ -751,7 +752,9 @@ const handleSubmit = () => {
                             <div className="flex-1 space-y-1">
                               <div className="flex items-center gap-1.5 text-orange-500">
                                 <Loader2 className="size-3.5 animate-spin" />
-                                <span className="text-xs font-bold">AI가 메뉴명을 분석 중...</span>
+                                <span className="text-xs font-bold">
+                                  {placeUrlInput ? "식당 정보를 불러오는 중..." : (recipeUrl ? "영상 메뉴명을 분석 중..." : "정보를 불러오는 중...")}
+                                </span>
                               </div>
                               <div className="h-2.5 bg-muted rounded animate-pulse w-2/3" />
                             </div>
@@ -774,8 +777,14 @@ const handleSubmit = () => {
                             <div className="flex-1 min-w-0 space-y-1.5">
                               <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                                  <Sparkles className="size-3.5 text-orange-500" />
-                                  AI 메뉴명 추천
+                                  {placeUrlInput ? (
+                                    <MapPin className="size-3.5 text-orange-500" />
+                                  ) : recipeUrl ? (
+                                    <Youtube className="size-3.5 text-red-500" />
+                                  ) : (
+                                    <Utensils className="size-3.5 text-orange-500" />
+                                  )}
+                                  {placeUrlInput ? "식당명 / 먹을 메뉴" : (recipeUrl ? "추천 메뉴명" : "식사 메뉴 / 식당명")}
                                 </label>
                                 {(urlPreview?.dong || selectedPlace?.dong) && (
                                   <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-orange-200/60 shrink-0">
@@ -789,7 +798,11 @@ const handleSubmit = () => {
                                 value={menuName}
                                 onChange={(e) => setMenuName(e.target.value)}
                                 className="w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
-                                placeholder="AI가 추출한 메뉴명 (수정 가능)"
+                                placeholder={
+                                  placeUrlInput
+                                    ? "식당명 또는 먹을 메뉴 (예: 파브, 파스타 맛남)"
+                                    : (recipeUrl ? "영상에서 추출한 메뉴명 (수정 가능)" : "드실 메뉴 또는 식당명을 입력하세요")
+                                }
                               />
                             </div>
                           </div>
@@ -799,15 +812,15 @@ const handleSubmit = () => {
                     {(!recipeUrl && !placeUrlInput && !urlPreview?.thumbnail && !editData?.thumbnail) && (
                       <div className="bg-white rounded-xl border border-gray-200 p-2.5 space-y-1">
                         <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Sparkles className="size-3.5 text-orange-500" />
-                          AI 메뉴명 추천
+                          <Utensils className="size-3.5 text-orange-500" />
+                          식사 메뉴 / 식당명
                         </label>
                         <input
                           type="text"
                           value={menuName}
                           onChange={(e) => setMenuName(e.target.value)}
                           className="w-full px-3 py-1.5 bg-gray-50 border border-transparent rounded-lg text-xs font-bold text-foreground focus:border-orange-500 focus:bg-white outline-none transition-all"
-                          placeholder="URL 입력 후 추출되며, 직접 수정 가능"
+                          placeholder="드실 메뉴 또는 식당명을 입력하세요"
                         />
                       </div>
                     )}
