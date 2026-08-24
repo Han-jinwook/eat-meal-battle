@@ -4796,10 +4796,14 @@ export function FamilyPage({
         )
       })()}
 
-      {/* 패밀리 먹캘린더 탭 */}
+      {/* 패밀리/모임 먹캘린더 탭 */}
       {activeMainTab === "calendar" && (
         <div className="flex flex-col gap-4">
-          <MealCalendarTab isGroupMode={activeMode === "group"} />
+          <MealCalendarTab 
+            modeType={activeMode === "group" ? "group" : "family"}
+            familyUserIds={members.map(m => m.userId).filter(Boolean) as string[]}
+            groupId={selectedGroupId}
+          />
         </div>
       )}
       </div>

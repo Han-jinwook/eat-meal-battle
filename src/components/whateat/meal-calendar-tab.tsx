@@ -12,6 +12,9 @@ interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
   onNavigateToReservation?: (date: string) => void
   isGroupMode?: boolean
+  modeType?: "solo" | "family" | "group"
+  familyUserIds?: string[]
+  groupId?: string | null
 }
 
 type CalendarMode = "log" | "reservation"
@@ -53,7 +56,14 @@ const generateDynamicSampleReservationData = (baseDate?: Date) => {
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 
-export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGroupMode }: MealCalendarTabProps) {
+export function MealCalendarTab({ 
+  onNavigateToLog, 
+  onNavigateToReservation, 
+  isGroupMode,
+  modeType,
+  familyUserIds,
+  groupId
+}: MealCalendarTabProps) {
   const [mode, setMode] = useState<CalendarMode>("reservation")
   const { isLoggedIn, user } = useHub()
   const [baseDate, setBaseDate] = useState<Date | undefined>(undefined)
@@ -61,6 +71,8 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
   const [realLogs, setRealLogs] = useState<Record<string, any[]>>({})
   const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<DetailPlanData | null>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | "home" | "delivery" | "out">("all")
+
+  const effectiveMode = modeType || (isGroupMode ? "group" : "solo")
 
   const handleToggleFilter = (type: "home" | "delivery" | "out") => {
     setTypeFilter(prev => prev === type ? "all" : type)
@@ -85,12 +97,26 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
         setBaseDate(userBaseDate)
       }
 
-      // 2. 실제 먹예약 (meal_reservations) DB 조회
-      const { data: resData } = await supabase
-        .from("meal_reservations")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("source", "solo")
+      // 2. 실제 먹예약 (meal_reservations) DB 조회 - 모드별 격리
+      let resQuery = supabase.from("meal_reservations").select("*")
+      if (effectiveMode === "group") {
+        if (groupId) {
+          resQuery = resQuery.eq("group_id", groupId).eq("source", "group")
+        } else {
+          resQuery = resQuery.eq("source", "group")
+        }
+      } else if (effectiveMode === "family") {
+        if (familyUserIds && familyUserIds.length > 0) {
+          resQuery = resQuery.in("user_id", familyUserIds).eq("source", "family")
+        } else {
+          resQuery = resQuery.eq("user_id", user.id).eq("source", "family")
+        }
+      } else {
+        // solo
+        resQuery = resQuery.eq("user_id", user.id).eq("source", "solo")
+      }
+
+      const { data: resData } = await resQuery
 
       const resMap: Record<string, any[]> = {}
       const hasType = { home: false, delivery: false, out: false }
@@ -119,39 +145,56 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
         })
       }
 
-      // 등록 안 한 유형의 샘플 예약 추가
-      const samples = getDynamicDefaultPlans(userBaseDate)
-      samples.forEach(sample => {
-        let type: "home" | "delivery" | "out" = "home"
-        if (sample.mealType === "배달") type = "delivery"
-        else if (sample.mealType === "외식") type = "out"
-        else type = "home"
+      // 솔로 모드에서만 미등록 유형에 대해 샘플 예약 보충
+      if (effectiveMode === "solo") {
+        const samples = getDynamicDefaultPlans(userBaseDate)
+        samples.forEach(sample => {
+          let type: "home" | "delivery" | "out" = "home"
+          if (sample.mealType === "배달") type = "delivery"
+          else if (sample.mealType === "외식") type = "out"
+          else type = "home"
 
-        if (!hasType[type]) {
-          if (!resMap[sample.date]) resMap[sample.date] = []
-          resMap[sample.date].push({
-            id: sample.id,
-            name: sample.menu,
-            menu: sample.menu,
-            mealType: sample.mealType,
-            type,
-            time: sample.time || "",
-            place: sample.place || "",
-            memo: sample.memo || "",
-            thumbnail: sample.thumbnail,
-            url: sample.url,
-            isSample: true
-          })
-        }
-      })
+          if (!hasType[type]) {
+            if (!resMap[sample.date]) resMap[sample.date] = []
+            resMap[sample.date].push({
+              id: sample.id,
+              name: sample.menu,
+              menu: sample.menu,
+              mealType: sample.mealType,
+              type,
+              time: sample.time || "",
+              place: sample.place || "",
+              memo: sample.memo || "",
+              thumbnail: sample.thumbnail,
+              url: sample.url,
+              isSample: true
+            })
+          }
+        })
+      }
+
       setRealReservations(resMap)
 
-      // 3. 실제 먹로그 (meal_images) DB 조회
-      const { data: logData } = await supabase
-        .from("meal_images")
-        .select("*")
-        .eq("uploaded_by", user.id)
-        .order("created_at", { ascending: false })
+      // 3. 실제 먹로그 (meal_images) DB 조회 - 모드별 격리
+      let logQuery = supabase.from("meal_images").select("*").order("created_at", { ascending: false })
+      if (effectiveMode === "group") {
+        if (groupId) {
+          logQuery = logQuery.eq("group_id", groupId)
+        } else {
+          logQuery = logQuery.eq("source", "group")
+        }
+      } else if (effectiveMode === "family") {
+        if (familyUserIds && familyUserIds.length > 0) {
+          logQuery = logQuery.in("uploaded_by", familyUserIds).eq("source", "family-shared")
+        } else {
+          logQuery = logQuery.eq("uploaded_by", user.id).eq("source", "family-shared")
+        }
+      } else {
+        // solo
+        logQuery = logQuery.eq("uploaded_by", user.id)
+      }
+
+      const { data: logData } = await logQuery
 
       const logMap: Record<string, any[]> = {}
       const hasLogType = { home: false, delivery: false, out: false }
@@ -176,20 +219,23 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
         })
       }
 
-      // 등록 안 한 유형의 샘플 먹로그 추가
-      Object.entries(sampleLogData).forEach(([dateKey, items]) => {
-        items.forEach(item => {
-          if (!hasLogType[item.type]) {
-            if (!logMap[dateKey]) logMap[dateKey] = []
-            logMap[dateKey].push({ ...item, isSample: true })
-          }
+      // 솔로 모드에서만 미등록 유형 샘플 먹로그 보충
+      if (effectiveMode === "solo") {
+        Object.entries(sampleLogData).forEach(([dateKey, items]) => {
+          items.forEach(item => {
+            if (!hasLogType[item.type]) {
+              if (!logMap[dateKey]) logMap[dateKey] = []
+              logMap[dateKey].push({ ...item, isSample: true })
+            }
+          })
         })
-      })
+      }
+
       setRealLogs(logMap)
     } catch (e) {
       console.error("Failed to load calendar data", e)
     }
-  }, [isLoggedIn, user?.id])
+  }, [isLoggedIn, user?.id, effectiveMode, groupId, JSON.stringify(familyUserIds)])
 
   useEffect(() => {
     fetchData()
@@ -198,8 +244,10 @@ export function MealCalendarTab({ onNavigateToLog, onNavigateToReservation, isGr
       fetchData()
     }
     window.addEventListener("whateat:reservation-updated", handleUpdate)
+    window.addEventListener("whateat:meal-updated", handleUpdate)
     return () => {
       window.removeEventListener("whateat:reservation-updated", handleUpdate)
+      window.removeEventListener("whateat:meal-updated", handleUpdate)
     }
   }, [fetchData])
 

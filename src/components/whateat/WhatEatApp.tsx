@@ -446,6 +446,7 @@ export default function WhatEatApp() {
                 </div>
                 <div className={cn(activeTab !== "calendar" && "hidden")}>
                   <MealCalendarTab
+                    modeType="solo"
                     onNavigateToLog={(date) => {
                       setActiveTab("log")
                       setLogJumpRequest({ date, key: Date.now() })
