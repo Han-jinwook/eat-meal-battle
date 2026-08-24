@@ -562,9 +562,41 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
       {/* Meal Plan Cards */}
       {filteredPlans.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {sortedPlans.map((plan) => {
-            const TypeIcon = getMealTypeIcon(plan.mealType)
+            const isSample = plan.id === 1 || plan.id === 2 || plan.id === 3
+            const borderClass =
+              plan.mealType === "집밥"
+                ? "border-l-4 border-l-emerald-500 border-y-gray-200/80 border-r-gray-200/80"
+                : plan.mealType === "배달"
+                  ? "border-l-4 border-l-sky-500 border-y-gray-200/80 border-r-gray-200/80"
+                  : "border-l-4 border-l-orange-500 border-y-gray-200/80 border-r-gray-200/80"
+
+            const mealTypeBadgeClass =
+              plan.mealType === "집밥"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                : plan.mealType === "배달"
+                  ? "bg-sky-50 text-sky-700 border border-sky-200/60"
+                  : "bg-orange-50 text-orange-700 border border-orange-200/60"
+
+            const datePillClass =
+              plan.mealType === "집밥"
+                ? "bg-emerald-500 text-white"
+                : plan.mealType === "배달"
+                  ? "bg-sky-500 text-white"
+                  : "bg-orange-500 text-white"
+
+            const dateStr = (() => {
+              try {
+                const d = new Date(plan.date)
+                const m = d.getMonth() + 1
+                const day = d.getDate()
+                return `${m}월 ${day}일`
+              } catch (e) {
+                return plan.date
+              }
+            })()
+
             return (
               <div 
                 key={plan.id} 
@@ -573,45 +605,79 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 }}
                 onClick={() => setSelectedDetailPlan(plan)}
                 className={cn(
-                  "bg-white rounded-2xl p-4 shadow-sm border border-white/80 transition-all hover:ring-2 hover:ring-cyan-300 hover:shadow-cyan-100 relative overflow-hidden cursor-pointer",
-                  focusedPlanId === plan.id && "ring-2 ring-cyan-400 shadow-cyan-100",
-                  (plan.id === 1 || plan.id === 2 || plan.id === 3) && "opacity-90"
+                  "rounded-3xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between",
+                  borderClass,
+                  focusedPlanId === plan.id && "ring-2 ring-orange-400 shadow-orange-100",
+                  isSample && "opacity-95"
                 )}
               >
                 {/* 샘플 리본 */}
-                {(plan.id === 1 || plan.id === 2 || plan.id === 3) && (
+                {isSample && (
                   <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
                     <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
                       💡 SAMPLE
                     </div>
                   </div>
                 )}
-                <div className="flex items-start gap-3">
-                  {/* Meal Type Badge with colored border and icon + text label underneath */}
-                  <div className={cn(
-                    "w-12 h-13 rounded-2xl bg-white flex flex-col items-center justify-center shrink-0 border-2 transition-colors",
-                    plan.mealType === "집밥" && "border-emerald-400 text-emerald-600 shadow-xs",
-                    plan.mealType === "배달" && "border-sky-400 text-sky-600 shadow-xs",
-                    plan.mealType === "외식" && "border-orange-400 text-orange-600 shadow-xs",
-                    !plan.mealType && "border-gray-200 text-gray-500"
-                  )}>
-                    <TypeIcon className="size-5 mb-0.5" strokeWidth={2.2} />
-                    <span className="text-[10px] font-black tracking-tight leading-none">
-                      {plan.mealType || "식사"}
-                    </span>
+
+                {/* 1. 상단 헤더 (식사 예약 레이블 / 날짜 뱃지 / 수정 버튼) */}
+                <div className="flex items-center justify-between px-3.5 pt-3 pb-1">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                    <span className="text-foreground font-black">나의 예약</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-amber-600 font-bold">{plan.mealType || "식사"}</span>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    {/* Menu Name + Place Dong or Video Badge */}
-                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-tight">
-                        {plan.menu}
+
+                  <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
+                    {/* 예약 날짜 뱃지 */}
+                    {plan.date && (
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-tight flex items-center gap-1 shadow-xs border border-white/10 select-none",
+                        datePillClass
+                      )}>
+                        <CalendarDays className="size-2.5 shrink-0" />
+                        <span>{dateStr}{plan.time ? ` · ${plan.time}` : ""}</span>
+                      </span>
+                    )}
+                    {/* 수정 버튼 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditClick(plan)
+                      }}
+                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+                      title="수정/삭제"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
+                <div className="px-3.5 pb-3 pt-1 flex items-start justify-between gap-2.5 flex-1">
+                  {/* 좌측 텍스트 & 정보 구역 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <div>
+                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug flex items-center gap-1.5 min-w-0 w-full flex-wrap">
+                        {/* 식사 분류 배지 */}
+                        <span className={cn("px-1.5 py-0.5 rounded-md text-[9px] font-extrabold shrink-0", mealTypeBadgeClass)}>
+                          {plan.mealType || "식사"}
+                        </span>
+                        <span className="truncate flex-1 font-bold">{plan.menu}</span>
+                        {/* 숏폼 뱃지 */}
+                        {plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
+                          <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                            <Youtube className="size-2.5 text-red-500 shrink-0" />
+                            <span>숏폼</span>
+                          </span>
+                        )}
                       </h4>
-                      {/* 식당 지도를 넣은 경우: 3개 항목 약식 주소 표시 */}
+
+                      {/* 장소(MapPin) */}
                       {plan.place && (
-                        <span className="text-[11px] font-medium text-muted-foreground/90 flex items-center gap-0.5 bg-gray-100/80 px-1.5 py-0.5 rounded-md shrink-0">
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                           <MapPin className="size-3 text-orange-500 shrink-0" />
-                          <span className="truncate max-w-[160px]">
+                          <span className="font-medium text-foreground truncate text-[11px]">
                             {(() => {
                               if (plan.place.includes("/")) return plan.place
                               if (plan.place.includes(" ")) {
@@ -622,59 +688,28 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                               return plan.place === plan.menu ? "식당 지도" : plan.place
                             })()}
                           </span>
-                        </span>
-                      )}
-                      {/* 숏폼/영상 링크인 경우 뱃지 */}
-                      {plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
-                        <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                          <Youtube className="size-3 text-red-500 shrink-0" />
-                          <span>숏폼</span>
-                        </span>
+                        </div>
                       )}
                     </div>
-                    
-                    {/* Date & Lunch/Dinner Time */}
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                      <CalendarDays className="size-3.5" />
-                      <span>{new Date(plan.date).getMonth() + 1}월 {new Date(plan.date).getDate()}일</span>
-                      {plan.time && (
-                        <>
-                          <span className="text-muted-foreground/40">·</span>
-                          <span className="font-bold text-foreground/80">{plan.time}</span>
-                        </>
-                      )}
-                    </div>
-                    
-                    {/* Memo */}
+
+                    {/* 메모 말풍선 */}
                     {plan.memo && (
-                      <div className="mt-1.5 rounded-xl border border-orange-100 bg-orange-50/60 px-2.5 py-1.5">
-                        <p className="text-[11px] leading-4 text-muted-foreground/80 line-clamp-2">
-                          {plan.memo}
-                        </p>
+                      <div className="mt-2 p-2 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                        <p className="line-clamp-2 font-medium text-[11px]">{plan.memo}</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="shrink-0 relative">
-                    {plan.thumbnail && (
-                      <div className="size-20 rounded-xl overflow-hidden">
-                        <img 
-                          src={plan.thumbnail || "/placeholder.svg"} 
-                          alt={plan.menu}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditClick(plan)
-                      }}
-                      className="absolute -top-1.5 -right-1.5 size-6 flex items-center justify-center bg-white text-muted-foreground hover:text-primary rounded-full shadow-md border border-gray-100 transition-all z-10"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                  </div>
+                  {/* 우측 썸네일 이미지 */}
+                  {plan.thumbnail && (
+                    <div className="size-20 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm">
+                      <img 
+                        src={plan.thumbnail || "/placeholder.svg"} 
+                        alt={plan.menu}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )
