@@ -2614,9 +2614,8 @@ export function FamilyPage({
         })
       }
 
-      // 저장 성공 후 서버 데이터 동기화
-      const familyUserIds = members.map(m => m.userId).filter(Boolean) as string[]
-      await fetchFamilyData(familyUserIds)
+      // 로컬 낙관적 업데이트(setMealRatings) 및 DB(secureWrite) 저장이 완료되었으므로
+      // 전체 페이지를 재조회(fetchFamilyData)하여 화면이 번쩍거리는 현상을 방지
     } catch (err: any) {
       // 실패 시 낙관적 업데이트 롤백
       setMealRatings(prevRatings)
