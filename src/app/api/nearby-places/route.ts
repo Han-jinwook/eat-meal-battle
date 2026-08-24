@@ -78,7 +78,11 @@ export async function GET(request: NextRequest) {
     const queries = keyword 
       ? [dong ? `${dong} ${keyword}` : keyword]
       : [
-          dong ? `${dong} 식당` : "식당"
+          dong ? `${dong} 식당` : "식당",
+          dong ? `${dong} 음식점` : "음식점",
+          dong ? `${dong} 한식` : "한식",
+          dong ? `${dong} 백반` : "백반",
+          dong ? `${dong} 밥집` : "밥집"
         ];
     
     debug.queries = queries;

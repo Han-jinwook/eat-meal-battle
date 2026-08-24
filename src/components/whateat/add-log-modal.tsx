@@ -139,8 +139,7 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
   const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
     const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
       const fetchKey = `${lat.toFixed(4)},${lng.toFixed(4)},${kw || ''}`
-      if (fetchKey === lastFetchedKeyRef.current && nearbyPlaces.length > 0) {
-        setIsLoadingLocation(false)
+      if (fetchKey === lastFetchedKeyRef.current) {
         return
       }
       lastFetchedKeyRef.current = fetchKey
