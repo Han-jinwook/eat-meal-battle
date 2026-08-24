@@ -15,6 +15,8 @@ interface MealCalendarTabProps {
   modeType?: "solo" | "family" | "group"
   familyUserIds?: string[]
   groupId?: string | null
+  initialReservations?: any[]
+  initialLogs?: any[]
 }
 
 type CalendarMode = "log" | "reservation"
@@ -62,7 +64,9 @@ export function MealCalendarTab({
   isGroupMode,
   modeType,
   familyUserIds,
-  groupId
+  groupId,
+  initialReservations,
+  initialLogs
 }: MealCalendarTabProps) {
   const [mode, setMode] = useState<CalendarMode>("reservation")
   const { isLoggedIn, user } = useHub()
@@ -97,145 +101,193 @@ export function MealCalendarTab({
         setBaseDate(userBaseDate)
       }
 
-      // 2. 실제 먹예약 (meal_reservations) DB 조회 - 모드별 격리
-      let resQuery = supabase.from("meal_reservations").select("*")
-      if (effectiveMode === "group") {
-        if (groupId) {
-          resQuery = resQuery.eq("group_id", groupId).eq("source", "group")
-        } else {
-          resQuery = resQuery.eq("source", "group")
-        }
-      } else if (effectiveMode === "family") {
-        if (familyUserIds && familyUserIds.length > 0) {
-          resQuery = resQuery.in("user_id", familyUserIds).eq("source", "family")
-        } else {
-          resQuery = resQuery.eq("user_id", user.id).eq("source", "family")
-        }
-      } else {
-        // solo
-        resQuery = resQuery.eq("user_id", user.id).eq("source", "solo")
-      }
-
-      const { data: resData } = await resQuery
-
+      // 2. 먹예약 데이터 구성
       const resMap: Record<string, any[]> = {}
       const hasType = { home: false, delivery: false, out: false }
 
-      if (resData && resData.length > 0) {
-        resData.forEach(row => {
+      if (initialReservations && initialReservations.length > 0) {
+        // 상위 패밀리/모임 컴포넌트에서 전달된 실데이터(또는 모드별 샘플) 사용
+        initialReservations.forEach(row => {
+          if (!row.date) return
           let type: "home" | "delivery" | "out" = "home"
-          if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
-          else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
+          if (row.mealType === "배달") { type = "delivery"; hasType.delivery = true }
+          else if (row.mealType === "외식") { type = "out"; hasType.out = true }
           else { type = "home"; hasType.home = true }
 
           if (!resMap[row.date]) resMap[row.date] = []
           resMap[row.date].push({
             id: row.id,
-            name: row.menu,
-            menu: row.menu,
-            mealType: row.meal_type,
+            name: row.menu || row.title,
+            menu: row.menu || row.title,
+            mealType: row.mealType,
             type,
             time: row.time || "",
             place: row.place || "",
             memo: row.memo || "",
             thumbnail: row.thumbnail,
             url: row.source_url || row.url,
-            isSample: false
+            isSample: row.isSample || false
           })
         })
-      }
-
-      // 솔로 모드에서만 미등록 유형에 대해 샘플 예약 보충
-      if (effectiveMode === "solo") {
-        const samples = getDynamicDefaultPlans(userBaseDate)
-        samples.forEach(sample => {
-          let type: "home" | "delivery" | "out" = "home"
-          if (sample.mealType === "배달") type = "delivery"
-          else if (sample.mealType === "외식") type = "out"
-          else type = "home"
-
-          if (!hasType[type]) {
-            if (!resMap[sample.date]) resMap[sample.date] = []
-            resMap[sample.date].push({
-              id: sample.id,
-              name: sample.menu,
-              menu: sample.menu,
-              mealType: sample.mealType,
-              type,
-              time: sample.time || "",
-              place: sample.place || "",
-              memo: sample.memo || "",
-              thumbnail: sample.thumbnail,
-              url: sample.url,
-              isSample: true
-            })
+      } else if (!initialReservations) {
+        // 직접 Supabase DB 조회
+        let resQuery = supabase.from("meal_reservations").select("*")
+        if (effectiveMode === "group") {
+          if (groupId) {
+            resQuery = resQuery.eq("group_id", groupId).eq("source", "group")
+          } else {
+            resQuery = resQuery.eq("source", "group")
           }
-        })
+        } else if (effectiveMode === "family") {
+          if (familyUserIds && familyUserIds.length > 0) {
+            resQuery = resQuery.in("user_id", familyUserIds).eq("source", "family")
+          } else {
+            resQuery = resQuery.eq("user_id", user.id).eq("source", "family")
+          }
+        } else {
+          // solo
+          resQuery = resQuery.eq("user_id", user.id).eq("source", "solo")
+        }
+
+        const { data: resData } = await resQuery
+
+        if (resData && resData.length > 0) {
+          resData.forEach(row => {
+            let type: "home" | "delivery" | "out" = "home"
+            if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
+            else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
+            else { type = "home"; hasType.home = true }
+
+            if (!resMap[row.date]) resMap[row.date] = []
+            resMap[row.date].push({
+              id: row.id,
+              name: row.menu,
+              menu: row.menu,
+              mealType: row.meal_type,
+              type,
+              time: row.time || "",
+              place: row.place || "",
+              memo: row.memo || "",
+              thumbnail: row.thumbnail,
+              url: row.source_url || row.url,
+              isSample: false
+            })
+          })
+        }
+
+        // 솔로 모드에서만 미등록 유형에 대해 샘플 예약 보충
+        if (effectiveMode === "solo") {
+          const samples = getDynamicDefaultPlans(userBaseDate)
+          samples.forEach(sample => {
+            let type: "home" | "delivery" | "out" = "home"
+            if (sample.mealType === "배달") type = "delivery"
+            else if (sample.mealType === "외식") type = "out"
+            else type = "home"
+
+            if (!hasType[type]) {
+              if (!resMap[sample.date]) resMap[sample.date] = []
+              resMap[sample.date].push({
+                id: sample.id,
+                name: sample.menu,
+                menu: sample.menu,
+                mealType: sample.mealType,
+                type,
+                time: sample.time || "",
+                place: sample.place || "",
+                memo: sample.memo || "",
+                thumbnail: sample.thumbnail,
+                url: sample.url,
+                isSample: true
+              })
+            }
+          })
+        }
       }
 
       setRealReservations(resMap)
 
-      // 3. 실제 먹로그 (meal_images) DB 조회 - 모드별 격리
-      let logQuery = supabase.from("meal_images").select("*").order("created_at", { ascending: false })
-      if (effectiveMode === "group") {
-        if (groupId) {
-          logQuery = logQuery.eq("group_id", groupId)
-        } else {
-          logQuery = logQuery.eq("source", "group")
-        }
-      } else if (effectiveMode === "family") {
-        if (familyUserIds && familyUserIds.length > 0) {
-          logQuery = logQuery.in("uploaded_by", familyUserIds).eq("source", "family-shared")
-        } else {
-          logQuery = logQuery.eq("uploaded_by", user.id).eq("source", "family-shared")
-        }
-      } else {
-        // solo
-        logQuery = logQuery.eq("uploaded_by", user.id)
-      }
-
-      const { data: logData } = await logQuery
-
+      // 3. 먹로그 데이터 구성
       const logMap: Record<string, any[]> = {}
       const hasLogType = { home: false, delivery: false, out: false }
 
-      if (logData && logData.length > 0) {
-        logData.forEach(row => {
+      if (initialLogs && initialLogs.length > 0) {
+        // 상위 패밀리/모임 컴포넌트에서 전달된 공유 먹로그 목록 사용
+        initialLogs.forEach(row => {
+          const dateKey = row.sharedAtIso ? row.sharedAtIso.split("T")[0] : (row.created_at ? row.created_at.split("T")[0] : "")
+          if (!dateKey) return
           let type: "home" | "delivery" | "out" = "home"
-          if (row.meal_type === "배달" || row.meal_type === "delivery") { type = "delivery"; hasLogType.delivery = true }
-          else if (row.meal_type === "외식" || row.meal_type === "dineout" || row.meal_type === "out") { type = "out"; hasLogType.out = true }
+          if (row.mealType === "배달" || row.mealType === "delivery") { type = "delivery"; hasLogType.delivery = true }
+          else if (row.mealType === "외식" || row.mealType === "dining" || row.mealType === "dineout" || row.mealType === "out") { type = "out"; hasLogType.out = true }
           else { type = "home"; hasLogType.home = true }
 
-          const dateKey = row.created_at ? row.created_at.split("T")[0] : ""
-          if (dateKey) {
-            if (!logMap[dateKey]) logMap[dateKey] = []
-            logMap[dateKey].push({
-              id: row.id,
-              label: row.title || row.explanation || "맛있는 식사",
-              type,
-              isSample: false
-            })
-          }
-        })
-      }
-
-      // 솔로 모드에서만 미등록 유형 샘플 먹로그 보충
-      if (effectiveMode === "solo") {
-        Object.entries(sampleLogData).forEach(([dateKey, items]) => {
-          items.forEach(item => {
-            if (!hasLogType[item.type]) {
-              if (!logMap[dateKey]) logMap[dateKey] = []
-              logMap[dateKey].push({ ...item, isSample: true })
-            }
+          if (!logMap[dateKey]) logMap[dateKey] = []
+          logMap[dateKey].push({
+            id: row.id,
+            label: row.title || "맛있는 식사",
+            type,
+            isSample: false
           })
         })
+      } else if (!initialLogs) {
+        // 직접 Supabase DB 조회
+        let logQuery = supabase.from("meal_images").select("*").order("created_at", { ascending: false })
+        if (effectiveMode === "group") {
+          if (groupId) {
+            logQuery = logQuery.eq("group_id", groupId)
+          } else {
+            logQuery = logQuery.eq("source", "group")
+          }
+        } else if (effectiveMode === "family") {
+          if (familyUserIds && familyUserIds.length > 0) {
+            logQuery = logQuery.in("uploaded_by", familyUserIds).eq("source", "family-shared")
+          } else {
+            logQuery = logQuery.eq("uploaded_by", user.id).eq("source", "family-shared")
+          }
+        } else {
+          // solo
+          logQuery = logQuery.eq("uploaded_by", user.id)
+        }
+
+        const { data: logData } = await logQuery
+
+        if (logData && logData.length > 0) {
+          logData.forEach(row => {
+            let type: "home" | "delivery" | "out" = "home"
+            if (row.meal_type === "배달" || row.meal_type === "delivery") { type = "delivery"; hasLogType.delivery = true }
+            else if (row.meal_type === "외식" || row.meal_type === "dineout" || row.meal_type === "out") { type = "out"; hasLogType.out = true }
+            else { type = "home"; hasLogType.home = true }
+
+            const dateKey = row.created_at ? row.created_at.split("T")[0] : ""
+            if (dateKey) {
+              if (!logMap[dateKey]) logMap[dateKey] = []
+              logMap[dateKey].push({
+                id: row.id,
+                label: row.title || row.explanation || "맛있는 식사",
+                type,
+                isSample: false
+              })
+            }
+          })
+        }
+
+        // 솔로 모드에서만 미등록 유형 샘플 먹로그 보충
+        if (effectiveMode === "solo") {
+          Object.entries(sampleLogData).forEach(([dateKey, items]) => {
+            items.forEach(item => {
+              if (!hasLogType[item.type]) {
+                if (!logMap[dateKey]) logMap[dateKey] = []
+                logMap[dateKey].push({ ...item, isSample: true })
+              }
+            })
+          })
+        }
       }
 
       setRealLogs(logMap)
     } catch (e) {
       console.error("Failed to load calendar data", e)
     }
-  }, [isLoggedIn, user?.id, effectiveMode, groupId, JSON.stringify(familyUserIds)])
+  }, [isLoggedIn, user?.id, effectiveMode, groupId, JSON.stringify(familyUserIds), initialReservations, initialLogs])
 
   useEffect(() => {
     fetchData()
@@ -328,8 +380,8 @@ export function MealCalendarTab({
     let activeDays = 0
 
     const activeDataMap = mode === "log" 
-      ? (Object.keys(realLogs).length > 0 ? realLogs : sampleLogData)
-      : (Object.keys(realReservations).length > 0 ? realReservations : dynamicSampleReservationData)
+      ? (Object.keys(realLogs).length > 0 ? realLogs : (effectiveMode === "solo" ? sampleLogData : {}))
+      : (Object.keys(realReservations).length > 0 ? realReservations : (effectiveMode === "solo" ? dynamicSampleReservationData : {}))
 
     Object.entries(activeDataMap).forEach(([dateKey, dayData]) => {
       const [year, month] = dateKey.split("-").map(Number)
@@ -389,11 +441,11 @@ export function MealCalendarTab({
   }
 
   const getLogIndicators = (date: string) => {
-    return realLogs[date] || (Object.keys(realLogs).length === 0 ? (sampleLogData[date] || []) : [])
+    return realLogs[date] || (effectiveMode === "solo" && Object.keys(realLogs).length === 0 ? (sampleLogData[date] || []) : [])
   }
 
   const getReservationIndicators = (date: string) => {
-    return realReservations[date] || (Object.keys(realReservations).length === 0 ? (dynamicSampleReservationData[date] || []) : [])
+    return realReservations[date] || (effectiveMode === "solo" && Object.keys(realReservations).length === 0 ? (dynamicSampleReservationData[date] || []) : [])
   }
 
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)

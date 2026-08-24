@@ -4803,6 +4803,8 @@ export function FamilyPage({
             modeType={activeMode === "group" ? "group" : "family"}
             familyUserIds={members.map(m => m.userId).filter(Boolean) as string[]}
             groupId={selectedGroupId}
+            initialReservations={familyReservations}
+            initialLogs={meals}
           />
         </div>
       )}
