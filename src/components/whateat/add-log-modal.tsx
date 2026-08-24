@@ -137,9 +137,22 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
   const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
+    const targetLat = paramLat ?? photoGps?.lat
+    const targetLng = paramLng ?? photoGps?.lng
+
+    // 이미 동일 좌표로 식당 목록이 로드되어 있다면 로딩 스피너도 띄우지 않고 즉시 반환
+    if (targetLat !== undefined && targetLng !== undefined) {
+      const targetKey = `${targetLat.toFixed(4)},${targetLng.toFixed(4)},${keyword || ''}`
+      if (targetKey === lastFetchedKeyRef.current && nearbyPlaces.length > 0) {
+        setIsLoadingLocation(false)
+        return
+      }
+    }
+
     const fetchPlaces = async (lat: number, lng: number, kw?: string) => {
       const fetchKey = `${lat.toFixed(4)},${lng.toFixed(4)},${kw || ''}`
-      if (fetchKey === lastFetchedKeyRef.current) {
+      if (fetchKey === lastFetchedKeyRef.current && nearbyPlaces.length > 0) {
+        setIsLoadingLocation(false)
         return
       }
       lastFetchedKeyRef.current = fetchKey
