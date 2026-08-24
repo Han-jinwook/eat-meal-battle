@@ -566,6 +566,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sortedPlans.map((plan) => {
             const isSample = plan.id === 1 || plan.id === 2 || plan.id === 3
+            const TypeIcon = getMealTypeIcon(plan.mealType)
             const borderClass =
               plan.mealType === "집밥"
                 ? "border-l-4 border-l-emerald-500 border-y-gray-200/80 border-r-gray-200/80"
