@@ -4497,7 +4497,17 @@ export function FamilyPage({
                   {item.place && (
                     <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                       <MapPin className="size-3.5 text-orange-500 shrink-0" />
-                      <span className="font-medium text-foreground truncate">{item.place}</span>
+                      <span className="font-medium text-foreground truncate">
+                        {(() => {
+                          if (item.place.includes("/")) return item.place
+                          if (item.place.includes(" ")) {
+                            const reg = parseRegionFromAddress(item.place)
+                            const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
+                            if (formatted) return formatted
+                          }
+                          return item.place
+                        })()}
+                      </span>
                     </div>
                   )}
 

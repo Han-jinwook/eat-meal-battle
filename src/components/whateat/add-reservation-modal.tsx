@@ -22,7 +22,7 @@ import {
   Youtube,
 } from "lucide-react"
 import { parseSourceUrls, stringifySourceUrls } from "./reservation-detail-modal"
-import { cn, parseRegionFromAddress } from "@/lib/utils"
+import { cn, parseRegionFromAddress, formatRegionStr } from "@/lib/utils"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { toast } from "react-hot-toast"
 
@@ -359,7 +359,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
             metaAddress = metaData.address || ""
             if (metaAddress) {
               const reg = parseRegionFromAddress(metaAddress)
-              metaDong = reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
+              metaDong = formatRegionStr(reg.city, reg.gu, reg.dong) || reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
             }
           }
         }
@@ -405,7 +405,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
               if (sData.address) {
                 metaAddress = sData.address
                 const reg = parseRegionFromAddress(metaAddress)
-                metaDong = reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
+                metaDong = formatRegionStr(reg.city, reg.gu, reg.dong) || reg.dong || (metaAddress.match(/\s([가-힣]+(?:동|읍|면|가|리))(?:\s|\d|$)/)?.[1] ?? "")
               }
               if (!metaImage && sData.image) metaImage = sData.image
             }
@@ -526,7 +526,10 @@ const handleSubmit = () => {
       toast.error("집밥인 경우 식당 URL을 등록할 수 없습니다. URL을 지워주세요.")
       return
     }
-    const dong = selectedPlace?.dong || urlPreview?.dong || (selectedPlace?.address ? parseRegionFromAddress(selectedPlace.address).dong : "")
+    const dong = selectedPlace?.dong || urlPreview?.dong || (selectedPlace?.address ? (() => {
+      const reg = parseRegionFromAddress(selectedPlace.address)
+      return formatRegionStr(reg.city, reg.gu, reg.dong) || reg.dong
+    })() : "")
     const placeName = selectedPlace?.name || deliveryStoreName || urlPreview?.aiSuggestedName || ""
 
     let resolvedPlace: string | null = editData?.place || null

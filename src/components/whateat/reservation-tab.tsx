@@ -22,7 +22,7 @@ import {
   Link2,
   Youtube
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 import { ReservationDetailModal, type DetailPlanData } from "@/components/whateat/reservation-detail-modal"
 import { toast } from "react-hot-toast"
@@ -607,14 +607,20 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                       <h4 className="font-bold text-foreground text-sm sm:text-base leading-tight">
                         {plan.menu}
                       </h4>
-                      {/* 식당 지도를 넣은 경우: 동/주소 표시 */}
+                      {/* 식당 지도를 넣은 경우: 3개 항목 약식 주소 표시 */}
                       {plan.place && (
                         <span className="text-[11px] font-medium text-muted-foreground/90 flex items-center gap-0.5 bg-gray-100/80 px-1.5 py-0.5 rounded-md shrink-0">
                           <MapPin className="size-3 text-orange-500 shrink-0" />
-                          <span className="truncate max-w-[140px]">
-                            {plan.place.includes("동") || plan.place.includes("읍") || plan.place.includes("면") || plan.place.includes("구") || plan.place.includes("로") || plan.place.includes("길")
-                              ? plan.place
-                              : (plan.place === plan.menu ? "식당 지도" : plan.place)}
+                          <span className="truncate max-w-[160px]">
+                            {(() => {
+                              if (plan.place.includes("/")) return plan.place
+                              if (plan.place.includes(" ")) {
+                                const reg = parseRegionFromAddress(plan.place)
+                                const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
+                                if (formatted) return formatted
+                              }
+                              return plan.place === plan.menu ? "식당 지도" : plan.place
+                            })()}
                           </span>
                         </span>
                       )}
