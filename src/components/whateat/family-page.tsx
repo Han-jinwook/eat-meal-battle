@@ -1760,7 +1760,7 @@ export function FamilyPage({
       if (targetGroupId) {
         query = query.eq('group_id', targetGroupId)
       } else {
-        query = query.in("user_id", familyUserIds)
+        query = query.in("user_id", familyUserIds).is("group_id", null)
       }
       const { data, error } = await query
         .order("created_at", { ascending: false })
@@ -1769,7 +1769,7 @@ export function FamilyPage({
       if (error) throw error
 
       if (data) {
-        const rawWishlist = data.filter(r => (targetGroupId ? r.source === "group_wishlist" : r.source === "family_wishlist") || !r.date).map(row => ({
+        const rawWishlist = data.filter(r => !r.date || (r.source && r.source.includes("wishlist"))).map(row => ({
           id: row.id,
           date: row.date || "",
           time: row.time || "",
@@ -1783,7 +1783,7 @@ export function FamilyPage({
           createdAt: row.created_at
         }))
 
-        const rawReservations = data.filter(r => (targetGroupId ? r.source === "group" : r.source === "family") && r.date).map(row => ({
+        const rawReservations = data.filter(r => !!r.date && (!r.source || !r.source.includes("wishlist"))).map(row => ({
           id: row.id,
           date: row.date,
           time: row.time || "",

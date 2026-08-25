@@ -276,19 +276,35 @@ export async function POST(request: Request) {
             }
           }
           if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
-            let isGroupOwner = false;
-            if (table === 'meal_reservations' && existing.group_id) {
-              const { data: group } = await supabaseAdmin
-                .from('whateat_group_groups')
-                .select('owner_id')
-                .eq('id', existing.group_id)
-                .maybeSingle();
-              if (group && group.owner_id === userId) {
-                isGroupOwner = true;
+            let isAuthorized = false;
+            if (table === 'meal_reservations') {
+              if (existing.group_id) {
+                const { data: member } = await supabaseAdmin
+                  .from('whateat_group_members')
+                  .select('user_id')
+                  .eq('group_id', existing.group_id)
+                  .eq('user_id', userId)
+                  .maybeSingle();
+                if (member) isAuthorized = true;
+              } else {
+                const { data: myFam } = await supabaseAdmin
+                  .from('whateat_family_members')
+                  .select('family_id')
+                  .eq('user_id', userId)
+                  .maybeSingle();
+                if (myFam?.family_id) {
+                  const { data: targetFam } = await supabaseAdmin
+                    .from('whateat_family_members')
+                    .select('family_id')
+                    .eq('user_id', existing.user_id)
+                    .eq('family_id', myFam.family_id)
+                    .maybeSingle();
+                  if (targetFam) isAuthorized = true;
+                }
               }
             }
-            if (!isGroupOwner) {
-              return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
+            if (!isAuthorized) {
+              return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
             }
           }
           if (table === 'school_infos' && existing.user_id !== userId) {
