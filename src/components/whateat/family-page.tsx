@@ -3303,6 +3303,9 @@ export function FamilyPage({
   }
 
   const renderCard = (item: any, isWishlistCard: boolean, isPopupCard = false, onClosePopup?: () => void) => {
+    const isChef = activeMode === 'group'
+      ? (groups.find(g => g.id === selectedGroupId)?.ownerId === user?.id)
+      : (chefUserId ? user?.id === chefUserId : isFamilyOwner)
     const likedUsers = wishlistLikes[item.id] || []
     const hasLiked = user?.id ? likedUsers.includes(user.id) : false
     const commentList = mealComments[item.id] || []
