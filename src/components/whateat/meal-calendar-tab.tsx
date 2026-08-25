@@ -7,6 +7,7 @@ import { getDynamicDefaultPlans } from "./reservation-tab"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { createClient } from "@/lib/supabase"
 import { ReservationDetailModal, DetailPlanData } from "./reservation-detail-modal"
+import { LogDetailModal, DetailLogData } from "./log-detail-modal"
 
 interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
@@ -23,11 +24,63 @@ interface MealCalendarTabProps {
 
 type CalendarMode = "log" | "reservation"
 
-// 실제 먹로그 데이터와 연동
-const sampleLogData: Record<string, { type: "home" | "delivery" | "out"; label: string; id: number }[]> = {
-  "2026-04-10": [{ type: "out", label: "채끝 스테이크", id: 1 }],
-  "2026-03-25": [{ type: "home", label: "바질 페스토", id: 2 }],
-  "2026-03-18": [{ type: "delivery", label: "양념치킨", id: 3 }],
+// 실제 먹로그 데이터와 연동 (동적 샘플 데이터 생성)
+const generateDynamicSampleLogData = (baseDate?: Date) => {
+  const ref = baseDate || new Date()
+  const d1 = new Date(ref)
+  d1.setDate(ref.getDate() - 2)
+  const d2 = new Date(ref)
+  d2.setDate(ref.getDate() - 5)
+  const d3 = new Date(ref)
+  d3.setDate(ref.getDate() - 9)
+
+  const fmt = (d: Date) => d.toISOString().split("T")[0]
+
+  const data: Record<string, any[]> = {}
+  data[fmt(d1)] = [{
+    id: "sample-solo-log-1",
+    label: "채끝 스테이크",
+    title: "채끝 스테이크",
+    menu: "채끝 스테이크",
+    type: "out",
+    mealType: "외식",
+    date: fmt(d1),
+    isSample: true,
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&fit=crop",
+    placeName: "아웃백 스테이크하우스",
+    placeAddress: "경기 부천시 원미구 신흥로 190",
+    rating: 5,
+    memo: "부드럽고 육즙 가득한 채끝 스테이크 외식"
+  }]
+  data[fmt(d2)] = [{
+    id: "sample-solo-log-2",
+    label: "바질 페스토",
+    title: "바질 페스토",
+    menu: "바질 페스토",
+    type: "home",
+    mealType: "집밥",
+    date: fmt(d2),
+    isSample: true,
+    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&fit=crop",
+    placeName: "",
+    rating: 5,
+    memo: "향긋한 생바질과 올리브오일로 만든 홈메이드 페스토 파스타"
+  }]
+  data[fmt(d3)] = [{
+    id: "sample-solo-log-3",
+    label: "양념치킨",
+    title: "양념치킨",
+    menu: "양념치킨",
+    type: "delivery",
+    mealType: "배달",
+    date: fmt(d3),
+    isSample: true,
+    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=600&fit=crop",
+    placeName: "교촌치킨",
+    rating: 4,
+    memo: "바삭하고 달콤매콤한 오리지널 양념치킨 배달 주문"
+  }]
+  return data
 }
 
 // 실제 먹예약 데이터 연동을 위한 함수형 변환 (임시 하드코딩 제거)
@@ -78,6 +131,7 @@ export function MealCalendarTab({
   const [realReservations, setRealReservations] = useState<Record<string, any[]>>({})
   const [realLogs, setRealLogs] = useState<Record<string, any[]>>({})
   const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<DetailPlanData | null>(null)
+  const [selectedLogForDetail, setSelectedLogForDetail] = useState<DetailLogData | null>(null)
   const [typeFilter, setTypeFilter] = useState<"all" | "home" | "delivery" | "out">("all")
 
   const effectiveMode = modeType || (isGroupMode ? "group" : "solo")
@@ -465,7 +519,7 @@ export function MealCalendarTab({
   }
 
   const getLogIndicators = (date: string) => {
-    return realLogs[date] || (effectiveMode === "solo" && Object.keys(realLogs).length === 0 ? (sampleLogData[date] || []) : [])
+    return realLogs[date] || (effectiveMode === "solo" && Object.keys(realLogs).length === 0 ? (generateDynamicSampleLogData(baseDate)[date] || []) : [])
   }
 
   const getReservationIndicators = (date: string) => {
