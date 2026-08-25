@@ -369,23 +369,7 @@ const mergeWishlistWithSamples = (realWishlist: any[], isGroupMode: boolean = fa
   if (!realWishlist || realWishlist.length === 0) {
     return defaultWishlistItems
   }
-  const hasDelivery = realWishlist.some(item => item.mealType === "배달")
-  const hasHomemade = realWishlist.some(item => item.mealType === "집밥")
-  const hasDineout = realWishlist.some(item => item.mealType === "외식")
-  const result = [...realWishlist]
-  if (!hasDelivery) {
-    const sample = defaultWishlistItems.find(s => s.mealType === "배달")
-    if (sample) result.push(sample)
-  }
-  if (!hasHomemade) {
-    const sample = defaultWishlistItems.find(s => s.mealType === "집밥")
-    if (sample) result.push(sample)
-  }
-  if (!hasDineout) {
-    const sample = defaultWishlistItems.find(s => s.mealType === "외식")
-    if (sample) result.push(sample)
-  }
-  return result
+  return realWishlist
 }
 
 const mergeReservationsWithSamples = (realReservations: any[], isGroupMode: boolean = false) => {
@@ -400,23 +384,7 @@ const mergeReservationsWithSamples = (realReservations: any[], isGroupMode: bool
   if (!realReservations || realReservations.length === 0) {
     return defaultFamilyReservations
   }
-  const hasDelivery = realReservations.some(item => item.mealType === "배달")
-  const hasHomemade = realReservations.some(item => item.mealType === "집밥")
-  const hasDineout = realReservations.some(item => item.mealType === "외식")
-  const result = [...realReservations]
-  if (!hasDelivery) {
-    const sample = defaultFamilyReservations.find(s => s.mealType === "배달")
-    if (sample) result.push(sample)
-  }
-  if (!hasHomemade) {
-    const sample = defaultFamilyReservations.find(s => s.mealType === "집밥")
-    if (sample) result.push(sample)
-  }
-  if (!hasDineout) {
-    const sample = defaultFamilyReservations.find(s => s.mealType === "외식")
-    if (sample) result.push(sample)
-  }
-  return result
+  return realReservations
 }
 
 const sharedMeals: SharedMeal[] = []
