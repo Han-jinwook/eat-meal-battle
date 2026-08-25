@@ -2081,6 +2081,15 @@ export function FamilyPage({
   }
 
   const handleToggleWishlistLike = async (itemId: string | number) => {
+    if (typeof itemId === "string" && (itemId.startsWith("sample-") || itemId === "1" || itemId === "2" || itemId === "3")) {
+      toast("샘플이라 좋아요 저장이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+    if (typeof itemId === "number" && (itemId === 1 || itemId === 2 || itemId === 3)) {
+      toast("샘플이라 좋아요 저장이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+
     if (!isLoggedIn || !user) {
       window.dispatchEvent(new CustomEvent('openLoginModal'))
       return
@@ -2787,8 +2796,12 @@ export function FamilyPage({
     const content = mealCommentInput.trim()
     if (!content) return
 
-    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+    if (typeof mealId === "string" && (mealId.startsWith("sample-") || mealId === "1" || mealId === "2" || mealId === "3")) {
+      toast("샘플이라 댓글 작성이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+    if (typeof mealId === "number" && (mealId === 1 || mealId === 2 || mealId === 3)) {
+      toast("샘플이라 댓글 작성이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
@@ -2850,8 +2863,12 @@ export function FamilyPage({
     const content = mealReplyInput.trim()
     if (!content) return
 
-    if (typeof mealId === "string" && mealId.startsWith("sample-")) {
-      toast("샘플이라 메모 작성 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+    if (typeof mealId === "string" && (mealId.startsWith("sample-") || mealId === "1" || mealId === "2" || mealId === "3")) {
+      toast("샘플이라 댓글 작성이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+      return
+    }
+    if (typeof mealId === "number" && (mealId === 1 || mealId === 2 || mealId === 3)) {
+      toast("샘플이라 댓글 작성이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
       return
     }
 
