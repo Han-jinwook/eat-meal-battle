@@ -205,7 +205,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: '본인의 회원 정보만 수정할 수 있습니다.' }, { status: 403 });
         }
 
-        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
+        if (['comments', 'comment_replies', 'comment_likes', 'reply_likes', 'meal_ratings', 'interest_schools'].includes(table) && existing.user_id !== userId) {
           if (['comments', 'comment_replies'].includes(table)) {
             const keys = Object.keys(data);
             if (keys.length === 1 && keys[0] === 'likes_count') {
@@ -215,6 +215,38 @@ export async function POST(request: Request) {
             }
           } else {
             return NextResponse.json({ error: '본인의 데이터만 수정할 수 있습니다.' }, { status: 403 });
+          }
+        }
+        if (table === 'meal_reservations' && existing.user_id !== userId) {
+          let isAuthorized = false;
+          if (existing.group_id) {
+            const { data: group } = await supabaseAdmin
+              .from('whateat_group_groups')
+              .select('owner_id')
+              .eq('id', existing.group_id)
+              .maybeSingle();
+            if (group && group.owner_id === userId) {
+              isAuthorized = true;
+            }
+          } else {
+            const { data: myFam } = await supabaseAdmin
+              .from('whateat_family_members')
+              .select('family_id, role')
+              .eq('user_id', userId)
+              .maybeSingle();
+            if (myFam?.family_id) {
+              const { data: famGroup } = await supabaseAdmin
+                .from('whateat_family_groups')
+                .select('owner_id, chef_id')
+                .eq('id', myFam.family_id)
+                .maybeSingle();
+              if (famGroup && (famGroup.owner_id === userId || famGroup.chef_id === userId || myFam.role === 'chef')) {
+                isAuthorized = true;
+              }
+            }
+          }
+          if (!isAuthorized) {
+            return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
           }
         }
         if (table === 'school_infos' && existing.user_id !== userId) {
@@ -275,36 +307,44 @@ export async function POST(request: Request) {
               return NextResponse.json({ error: '본인의 업로드 정보만 삭제할 수 있습니다.' }, { status: 403 });
             }
           }
-          if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes', 'meal_reservations'].includes(table) && existing.user_id !== userId) {
+          if (['comments', 'comment_replies', 'meal_ratings', 'interest_schools', 'meal_likes'].includes(table) && existing.user_id !== userId) {
+            return NextResponse.json({ error: '본인의 데이터만 삭제할 수 있습니다.' }, { status: 403 });
+          }
+          if (table === 'meal_reservations' && existing.user_id !== userId) {
             let isAuthorized = false;
-            if (table === 'meal_reservations') {
+            const isWishlist = !existing.date || (existing.source && existing.source.includes('wishlist'));
+            if (!isWishlist) {
               if (existing.group_id) {
-                const { data: member } = await supabaseAdmin
-                  .from('whateat_group_members')
-                  .select('user_id')
-                  .eq('group_id', existing.group_id)
-                  .eq('user_id', userId)
+                const { data: group } = await supabaseAdmin
+                  .from('whateat_group_groups')
+                  .select('owner_id')
+                  .eq('id', existing.group_id)
                   .maybeSingle();
-                if (member) isAuthorized = true;
+                if (group && group.owner_id === userId) {
+                  isAuthorized = true;
+                }
               } else {
                 const { data: myFam } = await supabaseAdmin
                   .from('whateat_family_members')
-                  .select('family_id')
+                  .select('family_id, role')
                   .eq('user_id', userId)
                   .maybeSingle();
                 if (myFam?.family_id) {
-                  const { data: targetFam } = await supabaseAdmin
-                    .from('whateat_family_members')
-                    .select('family_id')
-                    .eq('user_id', existing.user_id)
-                    .eq('family_id', myFam.family_id)
+                  const { data: famGroup } = await supabaseAdmin
+                    .from('whateat_family_groups')
+                    .select('owner_id, chef_id')
+                    .eq('id', myFam.family_id)
                     .maybeSingle();
-                  if (targetFam) isAuthorized = true;
+                  if (famGroup && (famGroup.owner_id === userId || famGroup.chef_id === userId || myFam.role === 'chef')) {
+                    isAuthorized = true;
+                  }
                 }
               }
             }
             if (!isAuthorized) {
-              return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
+              return NextResponse.json({ 
+                error: isWishlist ? '위시리스트는 작성자 본인만 삭제할 수 있습니다.' : '확정 예약은 셰프/방장만 삭제할 수 있습니다.' 
+              }, { status: 403 });
             }
           }
           if (table === 'school_infos' && existing.user_id !== userId) {

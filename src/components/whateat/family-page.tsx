@@ -4497,8 +4497,10 @@ export function FamilyPage({
                 </div>
 
                 <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
-                  {/* 수정 버튼 */}
-                  {isLoggedIn && (
+                  {/* 수정 버튼:
+                      - 위시리스트 카드: 최초 등록자(item.userId === user?.id)에게만 노출
+                      - 확정 예약 카드: 날짜잡기 권한이 있는 셰프/방장(isChef)에게만 노출 */}
+                  {isLoggedIn && (isWishlistCard ? (item.userId === user?.id) : isChef) && (
                     <button
                       onClick={() => {
                         if (isSampleItem) {
