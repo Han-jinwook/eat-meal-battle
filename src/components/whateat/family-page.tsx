@@ -4587,9 +4587,15 @@ export function FamilyPage({
       )}
 
       {selectedMeal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl border border-white">
-            <div className="p-5 border-b border-orange-100 flex items-center">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-pointer animate-in fade-in duration-200"
+          onClick={() => setSelectedMealId(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden shadow-2xl border border-white cursor-default animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-orange-100 flex items-center justify-between">
               <div>
                 <h3 className="font-extrabold text-foreground text-lg">{selectedMeal.title}</h3>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
@@ -4597,6 +4603,13 @@ export function FamilyPage({
                   <span>{selectedMeal.sharedAt}</span>
                 </p>
               </div>
+              <button
+                onClick={() => setSelectedMealId(null)}
+                className="size-7.5 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-foreground transition-colors cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X className="size-4" />
+              </button>
             </div>
 
             <div className="overflow-y-auto max-h-[calc(85vh-146px)] p-5 space-y-5">
