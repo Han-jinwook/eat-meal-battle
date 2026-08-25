@@ -11,6 +11,7 @@ import { ReservationDetailModal, DetailPlanData } from "./reservation-detail-mod
 interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
   onNavigateToReservation?: (date: string) => void
+  onSelectReservation?: (item: any) => void
   isGroupMode?: boolean
   modeType?: "solo" | "family" | "group"
   familyUserIds?: string[]
@@ -61,6 +62,7 @@ const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
 export function MealCalendarTab({ 
   onNavigateToLog, 
   onNavigateToReservation, 
+  onSelectReservation,
   isGroupMode,
   modeType,
   familyUserIds,
@@ -424,17 +426,30 @@ export function MealCalendarTab({
 
   const handleItemClick = (item: any, date: string) => {
     if (mode === "reservation") {
-      setSelectedPlanForDetail({
-        id: item.id,
-        date: item.date || date,
-        time: item.time || "",
-        mealType: item.mealType || (item.type === "delivery" ? "배달" : item.type === "out" ? "외식" : "집밥"),
-        menu: item.menu || item.name || "식사 예약",
-        place: item.place || "",
-        memo: item.memo || "",
-        thumbnail: item.thumbnail,
-        url: item.url
-      })
+      if (onSelectReservation) {
+        onSelectReservation({
+          ...item,
+          date: item.date || date
+        })
+      } else {
+        setSelectedPlanForDetail({
+          id: item.id,
+          date: item.date || date,
+          time: item.time || "",
+          mealType: item.mealType || (item.type === "delivery" ? "배달" : item.type === "out" ? "외식" : "집밥"),
+          menu: item.menu || item.name || "식사 예약",
+          place: item.place || "",
+          memo: item.memo || "",
+          thumbnail: item.thumbnail,
+          url: item.url,
+          userId: item.userId,
+          nickname: item.nickname,
+          author: item.author,
+          sharedBy: item.sharedBy,
+          createdAt: item.createdAt,
+          isSample: item.isSample
+        })
+      }
     } else {
       onNavigateToLog?.(date)
     }

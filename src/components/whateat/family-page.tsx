@@ -1517,6 +1517,7 @@ export function FamilyPage({
   const [isReservationsLoaded, setIsReservationsLoaded] = useState(false)
   const [isAddReservationOpen, setIsAddReservationOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
+  const [selectedReservationForPopup, setSelectedReservationForPopup] = useState<any | null>(null)
   const [wishlistLikes, setWishlistLikes] = useState<Record<string | number, string[]>>({})
   const [reservationFilter, setReservationFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
@@ -3301,7 +3302,317 @@ export function FamilyPage({
     )
   }
 
+  const renderCard = (item: any, isWishlistCard: boolean, isPopupCard = false, onClosePopup?: () => void) => {
+    const likedUsers = wishlistLikes[item.id] || []
+    const hasLiked = user?.id ? likedUsers.includes(user.id) : false
+    const commentList = mealComments[item.id] || []
+    const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
 
+    // 작성자 메타데이터 (헤더 노출)
+    const isSampleUser = String(item.userId).startsWith("sample-")
+    const sampleNameMap: Record<string, string> = {
+      "sample-user-1": "엄마",
+      "sample-user-2": "아빠",
+      "sample-user-3": "동생"
+    }
+
+    const cardUser = displayMembers.find(m => m.userId === item.userId)
+    const nickname = isSampleUser
+      ? sampleNameMap[item.userId] || "가족"
+      : (item.userId === user?.id
+        ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
+        : (cardUser?.name || "가족"))
+
+    const getMealTypeIcon = (type: string) => {
+      if (type === "집밥") return ChefHat
+      if (type === "배달") return Bike
+      return UtensilsCrossed
+    }
+    const TypeIcon = getMealTypeIcon(item.mealType)
+
+    const formatCardDate = (dateStr: string, timeStr?: string) => {
+      let formatted = dateStr
+      try {
+        const d = new Date(dateStr)
+        const m = d.getMonth() + 1
+        const day = d.getDate()
+        formatted = `${m}월 ${day}일`
+      } catch (e) {
+        if (dateStr.includes("-")) {
+          const parts = dateStr.split("-")
+          if (parts.length === 3) {
+            formatted = `${parseInt(parts[1], 10)}월 ${parseInt(parts[2], 10)}일`
+          }
+        }
+      }
+      if (timeStr) {
+        let mealTimeLabel = ""
+        try {
+          const hour = parseInt(timeStr.split(":")[0], 10)
+          if (!isNaN(hour)) {
+            if (hour < 11) {
+              mealTimeLabel = "아침"
+            } else if (hour < 16) {
+              mealTimeLabel = "점심"
+            } else {
+              mealTimeLabel = "저녁"
+            }
+          }
+        } catch (e) {}
+        if (mealTimeLabel) {
+          formatted += ` · ${mealTimeLabel}`
+        }
+      }
+      return formatted
+    }
+
+    // 카드 외관 스타일 (위시리스트: 흑백/선만 남김 vs 확정 예약: 컬러풀)
+    const borderClass = isWishlistCard
+      ? "border border-gray-200 border-l-4 border-l-slate-300 shadow-2xs hover:shadow-xs"
+      : cn(
+          "border border-y-gray-200/80 border-r-gray-200/80 border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5",
+          item.mealType === "집밥" && "border-l-emerald-500",
+          item.mealType === "배달" && "border-l-sky-500",
+          item.mealType === "외식" && "border-l-orange-500"
+        )
+    const bgClass = "bg-white"
+
+    return (
+      <div 
+        key={item.id} 
+        className={cn(
+          "rounded-3xl overflow-hidden relative transition-all duration-200",
+          borderClass,
+          bgClass,
+          isSampleItem && "opacity-95"
+        )}
+      >
+        {/* 샘플 리본 */}
+        {isSampleItem && (
+          <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+            <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
+              💡 SAMPLE
+            </div>
+          </div>
+        )}
+
+        {/* 1. 상단 헤더: 좌측 [식사유형 뱃지] + [작성자/날짜], 우측 [✏️ 수정 / 닫기] */}
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            {/* 식사유형 뱃지: 위시는 흑백/모노톤, 확정은 컬러풀 */}
+            <div className={cn(
+              "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+              isWishlistCard 
+                ? "bg-slate-100/90 text-slate-600 border-slate-200/80"
+                : cn(
+                    item.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                    item.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                    item.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                    !item.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+                  )
+            )}>
+              <TypeIcon className={cn("size-3.5 shrink-0", isWishlistCard ? "text-slate-500" : undefined)} strokeWidth={2.2} />
+              <span>{item.mealType || "식사"}</span>
+            </div>
+
+            {/* 헤더 텍스트: 위시는 "작성자 wish" (날짜 없음), 확정은 "작성자 · 📅 날짜" */}
+            {isWishlistCard ? (
+              <span className="text-xs font-bold text-slate-500 truncate">
+                <span className="text-foreground font-black">{nickname}</span> wish
+              </span>
+            ) : (
+              <div className="flex items-center gap-1 text-xs font-bold text-gray-800 min-w-0">
+                <span className="text-foreground font-black shrink-0">{nickname}</span>
+                <span className="text-gray-300">·</span>
+                {item.date && (
+                  <span className="flex items-center gap-1 truncate">
+                    <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
+                    <span>{formatCardDate(item.date, item.time)}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
+            {/* 수정 버튼:
+                - 위시리스트 카드: 최초 등록자(item.userId === user?.id)에게만 노출
+                - 확정 예약 카드: 날짜잡기 권한이 있는 셰프/방장(isChef)에게만 노출 */}
+            {isLoggedIn && (isWishlistCard ? (item.userId === user?.id) : isChef) && (
+              <button
+                onClick={() => {
+                  if (isSampleItem) {
+                    toast("샘플이라 수정/삭제가 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
+                      icon: "💡",
+                      duration: 3000
+                    })
+                    return
+                  }
+                  if (isPopupCard && onClosePopup) {
+                    onClosePopup()
+                  }
+                  setEditingPlan({ ...item, isWishlist: isWishlistCard })
+                  setIsAddReservationOpen(true)
+                }}
+                className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                title="수정/삭제"
+              >
+                <Pencil className="size-3" />
+              </button>
+            )}
+
+            {/* 팝업 모달일 때 닫기(X) 버튼 */}
+            {isPopupCard && onClosePopup && (
+              <button
+                onClick={onClosePopup}
+                className="size-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-foreground transition-colors cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
+        <div className="px-4 pb-3 pt-1 flex items-start justify-between gap-3">
+          {/* 좌측 텍스트 & 정보 구역 */}
+          <div className="flex-1 min-w-0">
+            <div>
+              {/* 둘째줄: 메뉴 제목 */}
+              <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
+                {item.menu}
+              </h4>
+
+              {/* 셋째줄: 식당 주소 또는 숏폼 뱃지 */}
+              {item.place ? (
+                <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                  <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                  <span className="font-medium text-foreground truncate">
+                    {(() => {
+                      if (item.place.includes("/")) return item.place
+                      if (item.place.includes(" ")) {
+                        const reg = parseRegionFromAddress(item.place)
+                        const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
+                        if (formatted) return formatted
+                      }
+                      return item.place
+                    })()}
+                  </span>
+                </div>
+              ) : (
+                item.url && (item.url.includes("youtube.com") || item.url.includes("youtu.be") || item.url.includes("tiktok.com") || item.url.includes("instagram.com")) && (
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                      <Youtube className="size-3 text-red-500 shrink-0" />
+                      <span>숏폼 영상</span>
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* 넷째줄: 메모 말풍선 */}
+            {item.memo && (
+              <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                <p className="line-clamp-2 font-medium">{item.memo}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 우측 영역 */}
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {item.thumbnail ? (
+              <div 
+                className={cn(
+                  "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
+                  item.url && "cursor-pointer group"
+                )}
+                onClick={() => {
+                  if (item.url) window.open(item.url, '_blank')
+                }}
+                title={item.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
+              >
+                <img 
+                  src={item.thumbnail} 
+                  alt={item.menu} 
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                  }}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                />
+                {item.url && (
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
+                    <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
+                      <ExternalLink className="size-3" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* 5. 맛톡 느낌의 하단 액션 바 (좋아요, 댓글, 셰프 날짜 잡기) */}
+        <div className="flex items-center justify-between border-t border-muted/30 px-4 py-2.5 bg-gray-50/30">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => handleToggleWishlistLike(item.id)}
+              className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"}`}
+            >
+              <Heart className={`size-4 ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
+              <span>좋아요 {likedUsers.length > 0 ? likedUsers.length : ""}</span>
+            </button>
+            <button
+              onClick={() => {
+                setExpandedMealCommentsId(expandedMealCommentsId === item.id ? null : item.id)
+                if (expandedMealCommentsId === item.id) {
+                  setActiveReplyTarget(null)
+                  setMealReplyInput("")
+                }
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <MessageCircle className="size-4" />
+              <span>댓글 {commentList.length > 0 ? commentList.length : ""}</span>
+            </button>
+          </div>
+
+          {/* 셰프 전용 날짜 잡기 버튼 */}
+          {isWishlistCard && isChef && (
+            <button
+              onClick={() => {
+                if (isSampleItem) {
+                  toast("샘플이라 날짜잡기가 안 되며, 새 식사를 등록하면 샘플은 사라집니다.", {
+                    icon: "💡",
+                    duration: 3000
+                  })
+                  return
+                }
+                if (isPopupCard && onClosePopup) {
+                  onClosePopup()
+                }
+                setEditingPlan({ ...item, authorNickname: nickname, isWishlistToSchedule: true })
+                setIsAddReservationOpen(true)
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95"
+            >
+              <Calendar className="size-3.5" />
+              <span>날짜 잡기</span>
+            </button>
+          )}
+        </div>
+
+        {/* 댓글 섹션 추가 (인라인 전개) */}
+        {expandedMealCommentsId === item.id && (
+          <div className="border-t border-muted/20 bg-white p-4">
+            {renderMealCommentsSection(item.id, "card")}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const handleInteraction = (e: React.MouseEvent) => {
     if (!isLoggedIn) {
@@ -4346,320 +4657,6 @@ export function FamilyPage({
           return sortDirection === "desc" ? dateB - dateA : dateA - dateB
         })
 
-        const renderCard = (item: any, isWishlistCard: boolean) => {
-          const likedUsers = wishlistLikes[item.id] || []
-          const hasLiked = user?.id ? likedUsers.includes(user.id) : false
-          const commentList = mealComments[item.id] || []
-          const mealTypeColor: Record<string, string> = {
-            "집밥": "bg-green-100 text-green-700",
-            "배달": "bg-blue-100 text-blue-700",
-            "외식": "bg-orange-100 text-orange-700",
-          }
-          const isSampleItem = item.isSample || String(item.id).startsWith("sample-")
-
-          // 작성자 메타데이터 (헤더 노출)
-          const isSampleUser = String(item.userId).startsWith("sample-")
-          const sampleNameMap: Record<string, string> = {
-            "sample-user-1": "엄마",
-            "sample-user-2": "아빠",
-            "sample-user-3": "동생"
-          }
-
-          const cardUser = displayMembers.find(m => m.userId === item.userId)
-          const nickname = isSampleUser
-            ? sampleNameMap[item.userId] || "가족"
-            : (item.userId === user?.id
-              ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
-              : (cardUser?.name || "가족"))
-
-          const formatMetaDate = (dateStr?: string) => {
-            if (!dateStr) return "26.08.04"
-            try {
-              const d = new Date(dateStr)
-              const yy = String(d.getFullYear()).slice(-2)
-              const mm = String(d.getMonth() + 1).padStart(2, '0')
-              const dd = String(d.getDate()).padStart(2, '0')
-              return `${yy}.${mm}.${dd}`
-            } catch (e) {
-              return "26.08.04"
-            }
-          }
-
-          const getMealTypeIcon = (type: string) => {
-            if (type === "집밥") return ChefHat
-            if (type === "배달") return Bike
-            return UtensilsCrossed
-          }
-          const TypeIcon = getMealTypeIcon(item.mealType)
-
-          const formatCardDate = (dateStr: string, timeStr?: string) => {
-            let formatted = dateStr
-            try {
-              const d = new Date(dateStr)
-              const m = d.getMonth() + 1
-              const day = d.getDate()
-              formatted = `${m}월 ${day}일`
-            } catch (e) {
-              if (dateStr.includes("-")) {
-                const parts = dateStr.split("-")
-                if (parts.length === 3) {
-                  formatted = `${parseInt(parts[1], 10)}월 ${parseInt(parts[2], 10)}일`
-                }
-              }
-            }
-            if (timeStr) {
-              let mealTimeLabel = ""
-              try {
-                const hour = parseInt(timeStr.split(":")[0], 10)
-                if (!isNaN(hour)) {
-                  if (hour < 11) {
-                    mealTimeLabel = "아침"
-                  } else if (hour < 16) {
-                    mealTimeLabel = "점심"
-                  } else {
-                    mealTimeLabel = "저녁"
-                  }
-                }
-              } catch (e) {}
-              if (mealTimeLabel) {
-                formatted += ` · ${mealTimeLabel}`
-              }
-            }
-            return formatted
-          }
-
-          // 카드 외관 스타일 (위시리스트: 흑백/선만 남김 vs 확정 예약: 컬러풀)
-          const borderClass = isWishlistCard
-            ? "border border-gray-200 border-l-4 border-l-slate-300 shadow-2xs hover:shadow-xs"
-            : cn(
-                "border border-y-gray-200/80 border-r-gray-200/80 border-l-4 shadow-sm hover:shadow-md hover:-translate-y-0.5",
-                item.mealType === "집밥" && "border-l-emerald-500",
-                item.mealType === "배달" && "border-l-sky-500",
-                item.mealType === "외식" && "border-l-orange-500"
-              )
-          const bgClass = "bg-white"
-
-          return (
-            <div 
-              key={item.id} 
-              className={cn(
-                "rounded-3xl overflow-hidden relative transition-all duration-200",
-                borderClass,
-                bgClass,
-                isSampleItem && "opacity-95"
-              )}
-            >
-              {/* 샘플 리본 */}
-              {isSampleItem && (
-                <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-                  <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
-                    💡 SAMPLE
-                  </div>
-                </div>
-              )}
-
-              {/* 1. 상단 헤더: 좌측 [식사유형 뱃지] + [작성자/날짜], 우측 [✏️ 수정] */}
-              <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-                <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  {/* 식사유형 뱃지: 위시는 흑백/모노톤, 확정은 컬러풀 */}
-                  <div className={cn(
-                    "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-                    isWishlistCard 
-                      ? "bg-slate-100/90 text-slate-600 border-slate-200/80"
-                      : cn(
-                          item.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                          item.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                          item.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-                          !item.mealType && "bg-gray-50 text-gray-700 border-gray-200"
-                        )
-                  )}>
-                    <TypeIcon className={cn("size-3.5 shrink-0", isWishlistCard ? "text-slate-500" : undefined)} strokeWidth={2.2} />
-                    <span>{item.mealType || "식사"}</span>
-                  </div>
-
-                  {/* 헤더 텍스트: 위시는 "작성자 wish" (날짜 없음), 확정은 "작성자 · 📅 날짜" */}
-                  {isWishlistCard ? (
-                    <span className="text-xs font-bold text-slate-500 truncate">
-                      <span className="text-foreground font-black">{nickname}</span> wish
-                    </span>
-                  ) : (
-                    <div className="flex items-center gap-1 text-xs font-bold text-gray-800 min-w-0">
-                      <span className="text-foreground font-black shrink-0">{nickname}</span>
-                      <span className="text-gray-300">·</span>
-                      {item.date && (
-                        <span className="flex items-center gap-1 truncate">
-                          <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
-                          <span>{formatCardDate(item.date, item.time)}</span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
-                  {/* 수정 버튼:
-                      - 위시리스트 카드: 최초 등록자(item.userId === user?.id)에게만 노출
-                      - 확정 예약 카드: 날짜잡기 권한이 있는 셰프/방장(isChef)에게만 노출 */}
-                  {isLoggedIn && (isWishlistCard ? (item.userId === user?.id) : isChef) && (
-                    <button
-                      onClick={() => {
-                        if (isSampleItem) {
-                          toast("샘플이라 수정/삭제가 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
-                            icon: "💡",
-                            duration: 3000
-                          })
-                          return
-                        }
-                        setEditingPlan({ ...item, isWishlist: isWishlistCard })
-                        setIsAddReservationOpen(true)
-                      }}
-                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                      title="수정/삭제"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
-              <div className="px-4 pb-3 pt-1 flex items-start justify-between gap-3">
-                {/* 좌측 텍스트 & 정보 구역 */}
-                <div className="flex-1 min-w-0">
-                  <div>
-                    {/* 둘째줄: 메뉴 제목만 시원하게 2줄까지 wrap */}
-                    <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
-                      {item.menu}
-                    </h4>
-
-                    {/* 셋째줄: 식당 주소 또는 숏폼 뱃지 */}
-                    {item.place ? (
-                      <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-                        <MapPin className="size-3.5 text-orange-500 shrink-0" />
-                        <span className="font-medium text-foreground truncate">
-                          {(() => {
-                            if (item.place.includes("/")) return item.place
-                            if (item.place.includes(" ")) {
-                              const reg = parseRegionFromAddress(item.place)
-                              const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
-                              if (formatted) return formatted
-                            }
-                            return item.place
-                          })()}
-                        </span>
-                      </div>
-                    ) : (
-                      item.url && (item.url.includes("youtube.com") || item.url.includes("youtu.be") || item.url.includes("tiktok.com") || item.url.includes("instagram.com")) && (
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                            <Youtube className="size-3 text-red-500 shrink-0" />
-                            <span>숏폼 영상</span>
-                          </span>
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  {/* 넷째줄: 메모 말풍선 */}
-                  {item.memo && (
-                    <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
-                      <p className="line-clamp-2 font-medium">{item.memo}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 우측 영역 (이미지만 남겨두어 세로 두께 최소화) */}
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  {item.thumbnail ? (
-                    <div 
-                      className={cn(
-                        "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
-                        item.url && "cursor-pointer group"
-                      )}
-                      onClick={() => {
-                        if (item.url) window.open(item.url, '_blank')
-                      }}
-                      title={item.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
-                    >
-                      <img 
-                        src={item.thumbnail} 
-                        alt={item.menu} 
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
-                        }}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                      />
-                      {item.url && (
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
-                          <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
-                            <ExternalLink className="size-3" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* 5. 맛톡 느낌의 하단 액션 바 (좋아요, 댓글, 셰프 날짜 잡기) */}
-              <div className="flex items-center justify-between border-t border-muted/30 px-4 py-2.5 bg-gray-50/30">
-                <div className="flex items-center gap-4">
-                  {/* 좋아요 버튼 (위시리스트와 예약 모두 노출하여 선호도 표시 유지) */}
-                  <button
-                    onClick={() => handleToggleWishlistLike(item.id)}
-                    className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"}`}
-                  >
-                    <Heart className={`size-4 ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
-                    <span>좋아요 {likedUsers.length > 0 ? likedUsers.length : ""}</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setExpandedMealCommentsId(expandedMealCommentsId === item.id ? null : item.id)
-                      if (expandedMealCommentsId === item.id) {
-                        setActiveReplyTarget(null)
-                        setMealReplyInput("")
-                      }
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <MessageCircle className="size-4" />
-                    <span>댓글 {commentList.length > 0 ? commentList.length : ""}</span>
-                  </button>
-                </div>
-
-                {/* 셰프 전용 날짜 잡기 버튼 (셰프에게만 표시!) */}
-                {isWishlistCard && isChef && (
-                  <button
-                    onClick={() => {
-                      if (isSampleItem) {
-                        toast("샘플이라 날짜잡기가 안 되며, 새 식사를 등록하면 샘플은 사라집니다.", {
-                          icon: "💡",
-                          duration: 3000
-                        })
-                        return
-                      }
-                      setEditingPlan({ ...item, authorNickname: nickname, isWishlistToSchedule: true })
-                      setIsAddReservationOpen(true)
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95"
-                  >
-                    <Calendar className="size-3.5" />
-                    <span>날짜 잡기</span>
-                  </button>
-                )}
-              </div>
-
-              {/* 댓글 섹션 추가 (인라인 전개) */}
-              {expandedMealCommentsId === item.id && (
-                <div className="border-t border-muted/20 bg-white p-4">
-                  {renderMealCommentsSection(item.id, "card")}
-                </div>
-              )}
-            </div>
-          )
-        }
-
         return (
           <div className="flex flex-col gap-4">
             {/* Sticky Search + Filter */}
@@ -4882,10 +4879,37 @@ export function FamilyPage({
             groupId={selectedGroupId}
             initialReservations={familyReservations}
             initialLogs={meals}
+            onSelectReservation={(item) => {
+              const fullItem = familyReservations.find(r => r.id === item.id) 
+                || wishlistItems.find(w => w.id === item.id) 
+                || item
+              setSelectedReservationForPopup(fullItem)
+              setExpandedMealCommentsId(fullItem.id)
+            }}
           />
         </div>
       )}
       </div>
+
+      {/* 달력 등에서 예약 클릭 시: 추가 UI 설계 없이 기존 먹예약 카드를 그대로 모달로 팝업 */}
+      {selectedReservationForPopup && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedReservationForPopup(null)}
+        >
+          <div 
+            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const liveItem = familyReservations.find(r => r.id === selectedReservationForPopup.id) 
+                || wishlistItems.find(w => w.id === selectedReservationForPopup.id) 
+                || selectedReservationForPopup
+              return renderCard(liveItem, !liveItem.date, true, () => setSelectedReservationForPopup(null))
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* AddReservationModal - 위시리스트 및 예약 추가/수정 */}
       {isAddReservationOpen && (
