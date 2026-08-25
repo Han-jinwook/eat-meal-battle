@@ -592,7 +592,7 @@ const handleSubmit = () => {
       <div className="relative w-full max-w-lg bg-orange-50/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.2)] border border-white/80 overflow-hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto hide-scrollbar my-auto">
         {/* Close Button & Delete Button in Edit Mode */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          {isEditMode && editData?.id && (
+          {!isScheduling && isEditMode && editData?.id && (
             <button
               onClick={() => {
                 if (editData.id === 1 || editData.id === 2 || editData.id === 3) {
@@ -643,30 +643,84 @@ const handleSubmit = () => {
           {/* Form Fields */}
           <div className="space-y-3" onClickCapture={handleInteraction}>
             {isScheduling ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-                {(urlPreview?.thumbnail || editData?.thumbnail) && (
-                  <div className="relative w-16 h-16 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-gray-100">
-                    <img
-                      src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
-                      alt="Thumbnail"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
-                      }}
-                    />
+              <div className="bg-orange-50/50 rounded-2xl border border-orange-200/70 p-3.5 shadow-2xs space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  {/* Left: Info */}
+                  <div className="flex-1 min-w-0">
+                    {/* 1행: [식사유형 뱃지] + [작성자 wish · 등록일] */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[11px] font-bold shrink-0 bg-slate-100/90 text-slate-700 border-slate-200/80">
+                        {mealType === "집밥" && <ChefHat className="size-3 text-slate-600" />}
+                        {mealType === "배달" && <Bike className="size-3 text-slate-600" />}
+                        {mealType === "외식" && <UtensilsCrossed className="size-3 text-slate-600" />}
+                        <span>{mealType || "식사"}</span>
+                      </span>
+                      <span className="text-xs font-bold text-slate-500 truncate">
+                        <span className="text-foreground font-black">{editData?.authorNickname || editData?.nickname || editData?.sharedBy || "가족"}</span> wish
+                        {editData?.createdAt && (() => {
+                          try {
+                            const d = new Date(editData.createdAt)
+                            const m = d.getMonth() + 1
+                            const day = d.getDate()
+                            return (
+                              <>
+                                <span className="text-slate-300 mx-1">·</span>
+                                <span className="text-[11px] font-medium text-slate-400">{m}월 {day}일</span>
+                              </>
+                            )
+                          } catch (e) {
+                            return null
+                          }
+                        })()}
+                      </span>
+                    </div>
+
+                    {/* 2행: 메뉴 제목 */}
+                    <h4 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mt-1.5">
+                      {menuName || editData?.menu || "식사 메뉴"}
+                    </h4>
+
+                    {/* 3행: 식당 주소 또는 숏폼 */}
+                    {(selectedPlace?.name || selectedPlace?.dong || urlPreview?.dong || editData?.place) ? (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <MapPin className="size-3 text-orange-500 shrink-0" />
+                        <span className="font-medium text-foreground truncate">
+                          {selectedPlace?.name || selectedPlace?.dong || urlPreview?.dong || editData?.place}
+                        </span>
+                      </div>
+                    ) : (
+                      recipeUrl && (recipeUrl.includes("youtube.com") || recipeUrl.includes("youtu.be") || recipeUrl.includes("tiktok.com") || recipeUrl.includes("instagram.com")) && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                            <Youtube className="size-3 text-red-500 shrink-0" />
+                            <span>숏폼 영상</span>
+                          </span>
+                        </div>
+                      )
+                    )}
+
+                    {/* 4행: 원본 메모 말풍선 */}
+                    {(memo || editData?.memo) && (
+                      <div className="mt-2 p-2 bg-white/90 rounded-xl border border-orange-100/80 text-xs text-foreground/90 leading-relaxed">
+                        <p className="line-clamp-2 font-medium">{memo || editData?.memo}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {mealType === "집밥" && <ChefHat className="size-3.5 text-orange-500" />}
-                    {mealType === "배달" && <Bike className="size-3.5 text-orange-500" />}
-                    {mealType === "외식" && <UtensilsCrossed className="size-3.5 text-orange-500" />}
-                    <span className="text-xs font-bold text-orange-600">{mealType}</span>
-                  </div>
-                  <div className="text-sm font-extrabold text-foreground truncate">
-                    {menuName || "메뉴 이름 없음"}
-                  </div>
+
+                  {/* Right: Thumbnail image */}
+                  {(urlPreview?.thumbnail || editData?.thumbnail) && (
+                    <div className="relative size-20 sm:size-22 rounded-xl bg-muted overflow-hidden shrink-0 shadow-xs border border-gray-100">
+                      <img
+                        src={urlPreview?.thumbnail || editData?.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
+                        alt="Thumbnail"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -956,7 +1010,7 @@ const handleSubmit = () => {
               onClick={handleSubmit}
               className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-500 text-white rounded-xl shadow-md shadow-orange-300/40 hover:bg-orange-600 hover:scale-[1.02] active:scale-95 transition-all font-bold text-xs"
             >
-              {isEditMode ? "수정 완료" : (isWishlist ? "위시리스트 추가" : "예약 저장하기")}
+              {isScheduling ? "예약 확정하기" : (isEditMode ? "수정 완료" : (isWishlist ? "위시리스트 추가" : "예약 저장하기"))}
             </button>
           </div>
         </div>

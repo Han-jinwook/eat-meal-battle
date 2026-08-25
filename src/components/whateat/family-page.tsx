@@ -4648,7 +4648,7 @@ export function FamilyPage({
                 {isWishlistCard && isChef && (
                   <button
                     onClick={() => {
-                      setEditingPlan({ ...item, isWishlistToSchedule: true })
+                      setEditingPlan({ ...item, authorNickname: nickname, isWishlistToSchedule: true })
                       setIsAddReservationOpen(true)
                     }}
                     className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95"
@@ -4936,6 +4936,7 @@ export function FamilyPage({
           }}
           editData={editingPlan && editingPlan.id ? editingPlan : null}
           isWishlist={!editingPlan?.isWishlistToSchedule && (editingPlan?.isWishlist === true || !editingPlan?.date)}
+          isScheduling={!!editingPlan?.isWishlistToSchedule}
         />
       )}
 
