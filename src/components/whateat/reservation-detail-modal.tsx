@@ -393,53 +393,62 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
       onClick={onClose}
     >
       <div 
-        className={cn(
-          "w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border border-gray-200/80 border-l-4",
-          plan.mealType === "집밥" && "border-l-emerald-500",
-          plan.mealType === "배달" && "border-l-sky-500",
-          plan.mealType === "외식" && "border-l-orange-500",
-          !plan.mealType && "border-l-orange-500"
-        )}
+        className="w-full max-w-lg bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] p-3.5 sm:p-4 rounded-[28px] sm:rounded-[32px] shadow-2xl border border-white/80 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 1. 상단 헤더: 좌측 [식사유형 뱃지] + [작성자 · 날짜], 우측 [X 닫기] */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b border-gray-100/80 bg-white">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            {/* 식사유형 뱃지 */}
-            <div className={cn(
-              "px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-              plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-              plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-              plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-              !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
-            )}>
-              <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
-              <span>{plan.mealType || "식사"}</span>
-            </div>
-
-            {/* 헤더 텍스트: 작성자 · 📅 날짜 */}
-            <div className="flex items-center gap-1 text-xs font-bold text-gray-800 min-w-0">
-              <span className="text-foreground font-black shrink-0">{authorName}</span>
-              <span className="text-gray-300">·</span>
-              {plan.date && (
-                <span className="truncate text-muted-foreground">
-                  📅 {formatHeaderDate(plan.date, plan.time)}
-                </span>
-              )}
-            </div>
+        {/* 상단 팝업 헤더 */}
+        <div className="flex items-center justify-between px-2 pb-2.5">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-orange-950">
+            <TypeIcon className="size-4 text-orange-500" strokeWidth={2.2} />
+            <span>식사 예약 상세</span>
           </div>
-
           <button 
             onClick={onClose}
-            className="size-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-foreground transition-colors cursor-pointer shrink-0"
+            className="size-7.5 flex items-center justify-center rounded-full bg-white/90 shadow-xs border border-gray-200/80 text-gray-600 hover:text-foreground hover:bg-white transition-colors cursor-pointer shrink-0"
             title="닫기"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        {/* 2. 스크롤 가능한 본문 영역 */}
-        <div className="flex-1 overflow-y-auto">
+        {/* 카드 컨테이너 (배경 위에 떠 있는 카드) */}
+        <div className={cn(
+          "flex-1 overflow-y-auto rounded-2xl sm:rounded-3xl shadow-sm bg-white border border-gray-200/80 border-l-4 flex flex-col",
+          plan.mealType === "집밥" && "border-l-emerald-500",
+          plan.mealType === "배달" && "border-l-sky-500",
+          plan.mealType === "외식" && "border-l-orange-500",
+          !plan.mealType && "border-l-orange-500"
+        )}>
+          {/* 1. 상단 카드 헤더 */}
+          <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b border-gray-100/80 bg-white">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              {/* 식사유형 뱃지 */}
+              <div className={cn(
+                "px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+                plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+              )}>
+                <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                <span>{plan.mealType || "식사"}</span>
+              </div>
+
+              {/* 헤더 텍스트: 작성자 · 📅 날짜 */}
+              <div className="flex items-center gap-1 text-xs font-bold text-gray-800 min-w-0">
+                <span className="text-foreground font-black shrink-0">{authorName}</span>
+                <span className="text-gray-300">·</span>
+                {plan.date && (
+                  <span className="truncate text-muted-foreground">
+                    📅 {formatHeaderDate(plan.date, plan.time)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 2. 스크롤 가능한 본문 영역 */}
+          <div className="flex-1 overflow-y-auto">
           {/* 2-1. 카드 본문 2단 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
           <div className="p-4 flex items-start justify-between gap-3 bg-white">
             {/* 좌측 텍스트 & 정보 구역 */}
@@ -745,6 +754,7 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
             <Send className="size-3.5" />
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

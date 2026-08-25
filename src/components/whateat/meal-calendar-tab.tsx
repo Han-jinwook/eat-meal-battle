@@ -12,6 +12,7 @@ interface MealCalendarTabProps {
   onNavigateToLog?: (date: string) => void
   onNavigateToReservation?: (date: string) => void
   onSelectReservation?: (item: any) => void
+  onSelectLog?: (item: any) => void
   isGroupMode?: boolean
   modeType?: "solo" | "family" | "group"
   familyUserIds?: string[]
@@ -63,6 +64,7 @@ export function MealCalendarTab({
   onNavigateToLog, 
   onNavigateToReservation, 
   onSelectReservation,
+  onSelectLog,
   isGroupMode,
   modeType,
   familyUserIds,
@@ -451,7 +453,14 @@ export function MealCalendarTab({
         })
       }
     } else {
-      onNavigateToLog?.(date)
+      if (onSelectLog) {
+        onSelectLog({
+          ...item,
+          date: item.date || date
+        })
+      } else {
+        onNavigateToLog?.(date)
+      }
     }
   }
 

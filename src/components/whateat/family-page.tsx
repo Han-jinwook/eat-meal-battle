@@ -1518,6 +1518,7 @@ export function FamilyPage({
   const [isAddReservationOpen, setIsAddReservationOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
   const [selectedReservationForPopup, setSelectedReservationForPopup] = useState<any | null>(null)
+  const [selectedLogMealForPopup, setSelectedLogMealForPopup] = useState<any | null>(null)
   const [wishlistLikes, setWishlistLikes] = useState<Record<string | number, string[]>>({})
   const [reservationFilter, setReservationFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
@@ -3617,6 +3618,442 @@ export function FamilyPage({
     )
   }
 
+  const renderMealCard = (meal: any, isPopupCard = false, onClosePopup?: () => void) => {
+    const isExpanded = expandedMealCommentsId === meal.id || isPopupCard
+    const averageRating = getMealAverageRating(meal.id)
+    const shouldHighlight = !dismissedMealHighlightIds.includes(meal.id)
+
+    const placeAddress = (() => {
+      if (meal.rawExplanation) {
+        try {
+          const meta = JSON.parse(meal.rawExplanation)
+          return meta.placeAddress || ""
+        } catch (e) {}
+      }
+      return ""
+    })()
+
+    const getCleanDate = (m: any) => {
+      if (m.sharedAtIso) {
+        const d = new Date(m.sharedAtIso)
+        if (!isNaN(d.getTime())) {
+          const y = d.getFullYear()
+          const mStr = String(d.getMonth() + 1).padStart(2, "0")
+          const dateVal = String(d.getDate()).padStart(2, "0")
+          return `${y}.${mStr}.${dateVal}`
+        }
+      }
+      return m.sharedAt || ""
+    }
+    const cleanDate = getCleanDate(meal)
+
+    return (
+      <div
+        key={meal.id}
+        className={cn(
+          "relative bg-white rounded-3xl overflow-hidden border border-gray-200/80 shadow-md",
+          shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
+        )}
+      >
+        {/* 샘플 리본 - 샘플 카드에 100% 지속 노출 */}
+        {isSampleMeal(meal.id) && (
+          <div className="absolute top-4 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
+            💡 SAMPLE
+          </div>
+        )}
+
+        {/* 좌우 분할 카드 */}
+        <div
+          onClick={() => handleOpenMealCardDetail(meal.id)}
+          className="w-full text-left block hover:opacity-95 transition-opacity cursor-pointer"
+        >
+          <div className="flex h-[190px]">
+            {/* 왼쪽: 이미지 */}
+            <div 
+              className="w-1/2 relative overflow-hidden group/img cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenMealCardDetail(meal.id)
+              }}
+            >
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover/img:scale-105"
+                style={{ backgroundImage: `url("${meal.image || '/placeholder.svg'}")` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <div className="absolute top-3 left-3 z-10">
+                <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
+                  {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
+                </span>
+              </div>
+            </div>
+
+            {/* 오른쪽: 식사 정보 또는 식당 링크 */}
+            <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col overflow-hidden relative">
+              {/* 연필 수정 아이콘 - 글 작성자에게만 노출 */}
+              {meal.userId === user?.id && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isSampleMeal(meal.id)) {
+                      toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
+                      return
+                    }
+                    if (isPopupCard && onClosePopup) {
+                      onClosePopup()
+                    }
+                    handleEditMealClick(meal)
+                  }}
+                  className="absolute top-1.5 right-1.5 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
+                  title="수정"
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              )}
+              {meal.linkUrl ? (
+                (() => {
+                  const isKakao = meal.linkUrl.includes("kko.to") || meal.linkUrl.includes("kakao.com")
+                  const isGoogle = meal.linkUrl.includes("google.com") || meal.linkUrl.includes("google.co.kr") || meal.linkUrl.includes("goo.gl")
+                  const isYoutube = meal.linkUrl.includes("youtube.com") || meal.linkUrl.includes("youtu.be")
+                  const isInstagram = meal.linkUrl.includes("instagram.com")
+                  const isTiktok = meal.linkUrl.includes("tiktok.com")
+                  const isNaver = meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com") || meal.linkUrl.includes("naver.co.kr")
+                  const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isNaver
+                  
+                  const isRecipe = isGeneric && (meal.mealType === "homemade")
+                  const isStoreLink = isGeneric && !isRecipe
+
+                  return (
+                    <a
+                      href={meal.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full h-full relative group overflow-hidden block cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {meal.linkThumbnail ? (
+                        <div
+                          className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover/scale-105"
+                          style={{ backgroundImage: `url("${meal.linkThumbnail.startsWith('http') ? `/api/image-proxy?url=${encodeURIComponent(meal.linkThumbnail)}` : meal.linkThumbnail}")` }}
+                        />
+                      ) : (
+                        <div className={cn(
+                          "absolute inset-0 flex flex-col items-center justify-center p-3 text-center",
+                          isKakao && "bg-gradient-to-br from-amber-50 to-amber-100/70",
+                          isGoogle && "bg-gradient-to-br from-blue-50 to-indigo-50/80",
+                          isYoutube && "bg-gradient-to-br from-red-50 to-red-100/70",
+                          isInstagram && "bg-gradient-to-br from-pink-50 to-purple-50",
+                          isTiktok && "bg-gradient-to-br from-slate-50 to-slate-100",
+                          isNaver && "bg-gradient-to-br from-green-50 to-emerald-100",
+                          isRecipe && "bg-gradient-to-br from-orange-50 to-orange-100/60",
+                          isStoreLink && "bg-gradient-to-br from-slate-50 to-slate-100"
+                        )}>
+                          <div className={cn(
+                            "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm text-sm font-black",
+                            isKakao && "bg-[#FEE500] border border-amber-200 text-[#3C1E1E]",
+                            isGoogle && "bg-[#4285F4] text-white",
+                            isYoutube && "bg-[#FF0000] text-white",
+                            isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
+                            isTiktok && "bg-[#010101] text-white border border-slate-700",
+                            isNaver && "bg-[#03C75A] text-white",
+                            isRecipe && "bg-orange-500 text-white",
+                            isStoreLink && "bg-slate-600 text-white"
+                          )}>
+                            <span className="text-sm font-black">
+                              {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isNaver ? "N" : isRecipe ? "R" : "P"}
+                            </span>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-bold",
+                            isKakao && "text-amber-800",
+                            isGoogle && "text-blue-800",
+                            isYoutube && "text-red-800",
+                            isInstagram && "text-pink-800",
+                            isTiktok && "text-slate-800",
+                            isNaver && "text-emerald-800",
+                            isRecipe && "text-orange-800",
+                            isStoreLink && "text-slate-800"
+                          )}>
+                            {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isNaver ? "네이버 플레이스" : isRecipe ? "레시피" : "식당 링크"}
+                          </span>
+                          <span className={cn(
+                            "text-[9px] truncate max-w-full px-2 mt-0.5",
+                            isKakao && "text-amber-700/80",
+                            isGoogle && "text-blue-700/80",
+                            isYoutube && "text-red-700/80",
+                            isInstagram && "text-pink-700/80",
+                            isTiktok && "text-slate-700/80",
+                            isNaver && "text-emerald-700/80",
+                            isRecipe && "text-orange-700/80",
+                            isStoreLink && "text-slate-700/80"
+                          )}>{meal.placeName || "상세 보기"}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                        {(meal.mealType === "dining" || meal.mealType === "delivery") ? (
+                          <>
+                            <div className={cn(
+                              "size-4 rounded-full flex items-center justify-center",
+                              isKakao && "bg-[#FEE500] text-[#3C1E1E]",
+                              isGoogle && "bg-[#4285F4] text-white",
+                              !isKakao && !isGoogle && "bg-[#03C75A] text-white"
+                            )}>
+                              <span className="text-[7px] font-black">
+                                {isKakao ? "K" : isGoogle ? "G" : "N"}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-foreground">
+                              {isKakao ? "Map" : isGoogle ? "Map" : "Place"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div className={cn(
+                              "size-4 rounded-full flex items-center justify-center text-[7px] font-black shadow-sm",
+                              isYoutube && "bg-[#FF0000] text-white",
+                              isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
+                              isTiktok && "bg-[#010101] text-white",
+                              !isYoutube && !isInstagram && !isTiktok && "bg-orange-500 text-white"
+                            )}>
+                              <span>
+                                {isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : "R"}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-foreground">
+                              {isYoutube ? "YouTube" : isInstagram ? "Reels" : isTiktok ? "TikTok" : "Recipe"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </a>
+                  )
+                })()
+              ) : (meal.mealType === "dining" || meal.mealType === "delivery") && meal.linkUrl && meal.placeName ? (
+                <a
+                  href={meal.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] hover:bg-gray-100 transition-colors p-3 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="size-10 rounded-full bg-[#03C75A]/10 flex items-center justify-center mb-2">
+                    <MapPin className="size-5 text-[#03C75A]" />
+                  </div>
+                  <span className="text-[11px] font-bold text-foreground text-center line-clamp-2 leading-tight">
+                    {meal.placeName}
+                  </span>
+                </a>
+              ) : (meal.mealType === "dining" || meal.mealType === "delivery") ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
+                  <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
+                    <ExternalLink className="size-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
+                    등록된 식당/배달 정보가<br/>없습니다.
+                  </span>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
+                  <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
+                    <BookOpen className="size-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
+                    등록된 레시피/조리 팁이<br/>없습니다.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Place info bar */}
+          {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName && (
+            <div
+              className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
+              }}
+            >
+              {meal.linkUrl && (meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com")) ? (
+                <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                  <span className="text-white text-[8px] font-black">N</span>
+                </div>
+              ) : (
+                <div className="size-5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
+                  <MapPin className="size-3 text-orange-500" />
+                </div>
+              )}
+              <span className="text-[11px] font-bold text-foreground truncate flex items-center">
+                <span className="truncate">{meal.placeName}</span>
+                {placeAddress && (
+                  <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
+                    {(() => {
+                      let defaultCity = ""
+                      let defaultGu = ""
+                      let defaultDong = ""
+                      if (userRegion) {
+                        try {
+                          const parsedReg = JSON.parse(userRegion)
+                          defaultCity = parsedReg.city || ""
+                          defaultGu = parsedReg.gu || ""
+                          defaultDong = parsedReg.dong || ""
+                        } catch (ex) {}
+                      }
+                      const parsed = parseRegionFromAddress(placeAddress, defaultCity, defaultGu, defaultDong)
+                      return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
+                    })()}
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+
+          {/* Card Footer: Title, Date, Average Rating */}
+          <div className="px-5 pt-2.5 pb-3 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
+                {cleanDate}
+              </p>
+              {(() => {
+                const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
+                const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
+                return (
+                  <div 
+                    className="flex items-center gap-1.5 select-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                    title="가족 별점 자세히 보기"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenMealCardDetail(meal.id)
+                    }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <Star className="size-3.5 fill-orange-400 text-orange-400" />
+                      <span className="text-xs font-black text-foreground">
+                        {averageRating > 0 ? averageRating.toFixed(1) : "-"}
+                      </span>
+                    </div>
+                    {myRating > 0 ? (
+                      <span className="text-[10px] font-black text-orange-600 bg-orange-100/90 border border-orange-200/90 px-1.5 py-0.5 rounded-full">
+                        내평점 {myRating}점
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                        <Star className="size-2.5 fill-amber-400 text-amber-400" />
+                        평가 대기
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 mt-0.5">
+              <h3 className="font-extrabold text-foreground text-sm tracking-tight truncate flex-1 min-w-0">
+                {meal.title}
+              </h3>
+              <p className="text-[10px] text-muted-foreground font-medium shrink-0">
+                by {meal.sharedBy}
+              </p>
+            </div>
+
+            {/* 별점 평가 버튼 영역 (직관적인 5개 별 UI) */}
+            <div 
+              className="mt-3 pt-2.5 border-t border-muted/30 flex items-center justify-between gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[11px] font-bold text-muted-foreground">내 평가</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((score) => {
+                  const myScore = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
+                  const isFilled = score <= myScore
+                  return (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => {
+                        if (isSampleMeal(meal.id)) {
+                          toast("샘플이라 별점 저장이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                          return
+                        }
+                        if (!isLoggedIn) {
+                          window.dispatchEvent(new CustomEvent('openLoginModal'))
+                          return
+                        }
+                        checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, score)
+                      }}
+                      className="p-1 hover:scale-125 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <Star 
+                        className={cn(
+                          "size-5 transition-colors",
+                          isFilled 
+                            ? "fill-orange-400 text-orange-400 drop-shadow-xs" 
+                            : "text-gray-300 hover:text-orange-300"
+                        )} 
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {promotedMealIds.includes(meal.id) && (
+              <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-[10px] text-emerald-700 font-bold flex items-center gap-1.5">
+                <Sparkles className="size-3 shrink-0" />
+                <span>가족 5점 만점 달성으로 맛통에 게시된 식사입니다!</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 액션 버튼 영역: 좋아요 & 댓글 */}
+        <div className="border-t border-muted/30 px-5 py-2.5 flex items-center justify-between bg-gray-50/40">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => handleToggleWishlistLike(meal.id)}
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer",
+                wishlistLikes[meal.id]?.includes(user?.id ?? "")
+                  ? "text-red-500"
+                  : "text-muted-foreground hover:text-red-500"
+              )}
+            >
+              <Heart
+                className={cn(
+                  "size-4 transition-transform active:scale-125",
+                  wishlistLikes[meal.id]?.includes(user?.id ?? "") && "fill-current"
+                )}
+              />
+              <span>좋아요 {wishlistLikes[meal.id]?.length ? wishlistLikes[meal.id]?.length : ""}</span>
+            </button>
+            <button
+              onClick={() => {
+                setExpandedMealCommentsId(expandedMealCommentsId === meal.id ? null : meal.id)
+                if (expandedMealCommentsId === meal.id) {
+                  setActiveReplyTarget(null)
+                  setMealReplyInput("")
+                }
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <MessageCircle className="size-4" />
+              <span>댓글 {(displayComments[meal.id] ?? []).length ? (displayComments[meal.id] ?? []).length : ""}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 댓글 섹션 추가 (인라인 전개) */}
+        {isExpanded && (
+          <div className="border-t border-muted/20 bg-white p-4">
+            {renderMealCommentsSection(meal.id, "card")}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const handleInteraction = (e: React.MouseEvent) => {
     if (!isLoggedIn) {
       e.preventDefault()
@@ -4001,6 +4438,7 @@ export function FamilyPage({
       </div>
 
       {/* Tab Content */}
+{/* Tab Content */}
       <div className="flex flex-col gap-3">
       {activeMainTab === "log" && (
         <div className="flex flex-col gap-3">
@@ -4142,375 +4580,7 @@ export function FamilyPage({
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredMeals.map((meal) => {
-
-                const isExpanded = expandedMealCommentsId === meal.id
-                const averageRating = getMealAverageRating(meal.id)
-                const shouldHighlight = !dismissedMealHighlightIds.includes(meal.id)
-
-                const placeAddress = (() => {
-                  if (meal.rawExplanation) {
-                    try {
-                      const meta = JSON.parse(meal.rawExplanation)
-                      return meta.placeAddress || ""
-                    } catch (e) {}
-                  }
-                  return ""
-                })()
-
-                const getCleanDate = (m: SharedMeal) => {
-                  if (m.sharedAtIso) {
-                    const d = new Date(m.sharedAtIso)
-                    if (!isNaN(d.getTime())) {
-                      const y = d.getFullYear()
-                      const mStr = String(d.getMonth() + 1).padStart(2, "0")
-                      const dateVal = String(d.getDate()).padStart(2, "0")
-                      return `${y}.${mStr}.${dateVal}`
-                    }
-                  }
-                  return m.sharedAt
-                }
-                const cleanDate = getCleanDate(meal)
-
-                return (
-                  <div
-                    key={meal.id}
-                    className={cn(
-                      "relative bg-white/80 rounded-[2rem] overflow-hidden border border-white shadow-md",
-                      shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
-                    )}
-                  >
-                    {/* 샘플 리본 - 샘플 카드에 100% 지속 노출 */}
-                    {isSampleMeal(meal.id) && (
-                      <div className="absolute top-4 -right-10 w-52 bg-yellow-400 text-yellow-900 text-[10px] font-black py-1 text-center rotate-45 shadow-md z-10 pointer-events-none">
-                        💡 SAMPLE
-                      </div>
-                    )}
-
-                    {/* 좌우 분할 카드 - 솔로 스타일 동일 적용 */}
-                    <div
-                      onClick={() => handleOpenMealCardDetail(meal.id)}
-                      className="w-full text-left block hover:opacity-95 transition-opacity cursor-pointer"
-                    >
-                      <div className="flex h-[190px]">
-                        {/* 왼쪽: 이미지 (클릭 시 솔로 모드처럼 크게 확대) */}
-                        <div 
-                          className="w-1/2 relative overflow-hidden group/img cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenMealCardDetail(meal.id)
-                          }}
-                        >
-                          <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover/img:scale-105"
-                            style={{ backgroundImage: `url("${meal.image || '/placeholder.svg'}")` }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                          <div className="absolute top-3 left-3 z-10">
-                            <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
-                              {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* 오른쪽: 식사 정보 또는 식당 링크 */}
-                        <div className="w-1/2 bg-gray-50/80 border-l border-muted flex flex-col overflow-hidden relative">
-                          {/* 연필 수정 아이콘 - 글 작성자에게만 노출 */}
-                          {meal.userId === user?.id && (
-                            <button
-                              type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (isSampleMeal(meal.id)) {
-                                toast("샘플이라 수정이 되지 않습니다.", { icon: "💡", duration: 3000 })
-                                return
-                              }
-                              handleEditMealClick(meal)
-                            }}
-                            className="absolute top-1.5 right-1.5 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
-                            title="수정"
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          )}
-                          {meal.linkUrl ? (
-                            (() => {
-                              const isKakao = meal.linkUrl.includes("kko.to") || meal.linkUrl.includes("kakao.com")
-                              const isGoogle = meal.linkUrl.includes("google.com") || meal.linkUrl.includes("google.co.kr") || meal.linkUrl.includes("goo.gl")
-                              const isYoutube = meal.linkUrl.includes("youtube.com") || meal.linkUrl.includes("youtu.be")
-                              const isInstagram = meal.linkUrl.includes("instagram.com")
-                              const isTiktok = meal.linkUrl.includes("tiktok.com")
-                              const isNaver = meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com") || meal.linkUrl.includes("naver.co.kr")
-                              const isGeneric = !isKakao && !isGoogle && !isYoutube && !isInstagram && !isTiktok && !isNaver
-                              
-                              const isRecipe = isGeneric && (meal.mealType === "homemade")
-                              const isStoreLink = isGeneric && !isRecipe
-
-                              return (
-                                <a
-                                  href={meal.linkUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="w-full h-full relative group overflow-hidden block cursor-pointer"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {meal.linkThumbnail ? (
-                                    <div
-                                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                                      style={{ backgroundImage: `url("${meal.linkThumbnail.startsWith('http') ? `/api/image-proxy?url=${encodeURIComponent(meal.linkThumbnail)}` : meal.linkThumbnail}")` }}
-                                    />
-                                  ) : (
-                                    <div className={cn(
-                                      "absolute inset-0 flex flex-col items-center justify-center p-3 text-center",
-                                      isKakao && "bg-gradient-to-br from-amber-50 to-amber-100/70",
-                                      isGoogle && "bg-gradient-to-br from-blue-50 to-indigo-50/80",
-                                      isYoutube && "bg-gradient-to-br from-red-50 to-red-100/70",
-                                      isInstagram && "bg-gradient-to-br from-pink-50 to-purple-50",
-                                      isTiktok && "bg-gradient-to-br from-slate-50 to-slate-100",
-                                      isNaver && "bg-gradient-to-br from-green-50 to-emerald-100",
-                                      isRecipe && "bg-gradient-to-br from-orange-50 to-orange-100/60",
-                                      isStoreLink && "bg-gradient-to-br from-slate-50 to-slate-100"
-                                    )}>
-                                      <div className={cn(
-                                        "size-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm text-sm font-black",
-                                        isKakao && "bg-[#FEE500] border border-amber-200 text-[#3C1E1E]",
-                                        isGoogle && "bg-[#4285F4] text-white",
-                                        isYoutube && "bg-[#FF0000] text-white",
-                                        isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
-                                        isTiktok && "bg-[#010101] text-white border border-slate-700",
-                                        isNaver && "bg-[#03C75A] text-white",
-                                        isRecipe && "bg-orange-500 text-white",
-                                        isStoreLink && "bg-slate-600 text-white"
-                                      )}>
-                                        <span className="text-sm font-black">
-                                          {isKakao ? "K" : isGoogle ? "G" : isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : isNaver ? "N" : isRecipe ? "R" : "P"}
-                                        </span>
-                                      </div>
-                                      <span className={cn(
-                                        "text-[10px] font-bold",
-                                        isKakao && "text-amber-800",
-                                        isGoogle && "text-blue-800",
-                                        isYoutube && "text-red-800",
-                                        isInstagram && "text-pink-800",
-                                        isTiktok && "text-slate-800",
-                                        isNaver && "text-emerald-800",
-                                        isRecipe && "text-orange-800",
-                                        isStoreLink && "text-slate-800"
-                                      )}>
-                                        {isKakao ? "카카오맵" : isGoogle ? "구글 지도" : isYoutube ? "유튜브" : isInstagram ? "인스타그램" : isTiktok ? "틱톡" : isNaver ? "네이버 플레이스" : isRecipe ? "레시피" : "식당 링크"}
-                                      </span>
-                                      <span className={cn(
-                                        "text-[9px] truncate max-w-full px-2 mt-0.5",
-                                        isKakao && "text-amber-700/80",
-                                        isGoogle && "text-blue-700/80",
-                                        isYoutube && "text-red-700/80",
-                                        isInstagram && "text-pink-700/80",
-                                        isTiktok && "text-slate-700/80",
-                                        isNaver && "text-emerald-700/80",
-                                        isRecipe && "text-orange-700/80",
-                                        isStoreLink && "text-slate-700/80"
-                                      )}>{meal.placeName || "상세 보기"}</span>
-                                    </div>
-                                  )}
-                                  <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
-                                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
-                                    {(meal.mealType === "dining" || meal.mealType === "delivery") ? (
-                                      <>
-                                        <div className={cn(
-                                          "size-4 rounded-full flex items-center justify-center",
-                                          isKakao && "bg-[#FEE500] text-[#3C1E1E]",
-                                          isGoogle && "bg-[#4285F4] text-white",
-                                          !isKakao && !isGoogle && "bg-[#03C75A] text-white"
-                                        )}>
-                                          <span className="text-[7px] font-black">
-                                            {isKakao ? "K" : isGoogle ? "G" : "N"}
-                                          </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-foreground">
-                                          {isKakao ? "Map" : isGoogle ? "Map" : "Place"}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className={cn(
-                                          "size-4 rounded-full flex items-center justify-center text-[7px] font-black shadow-sm",
-                                          isYoutube && "bg-[#FF0000] text-white",
-                                          isInstagram && "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white",
-                                          isTiktok && "bg-[#010101] text-white",
-                                          !isYoutube && !isInstagram && !isTiktok && "bg-orange-500 text-white"
-                                        )}>
-                                          <span>
-                                            {isYoutube ? "Y" : isInstagram ? "I" : isTiktok ? "T" : "R"}
-                                          </span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-foreground">
-                                          {isYoutube ? "YouTube" : isInstagram ? "Reels" : isTiktok ? "TikTok" : "Recipe"}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </a>
-                              )
-                            })()
-                          ) : (meal.mealType === "dining" || meal.mealType === "delivery") && meal.linkUrl && meal.placeName ? (
-                            <a
-                              href={meal.linkUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] hover:bg-gray-100 transition-colors p-3 cursor-pointer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="size-10 rounded-full bg-[#03C75A]/10 flex items-center justify-center mb-2">
-                                <MapPin className="size-5 text-[#03C75A]" />
-                              </div>
-                              <span className="text-[11px] font-bold text-foreground text-center line-clamp-2 leading-tight">
-                                {meal.placeName}
-                              </span>
-                            </a>
-                          ) : (meal.mealType === "dining" || meal.mealType === "delivery") ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
-                              <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
-                                <ExternalLink className="size-5" />
-                              </div>
-                              <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
-                                등록된 식당/배달 정보가<br/>없습니다.
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F9F9F9] p-3 text-center">
-                              <div className="size-10 rounded-full bg-orange-100 flex items-center justify-center mb-2 text-orange-400">
-                                <BookOpen className="size-5" />
-                              </div>
-                              <span className="text-[11px] font-bold text-muted-foreground/70 leading-tight">
-                                등록된 레시피/조리 팁이<br/>없습니다.
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Place info bar - 외식/배달 (Row 1) */}
-                      {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName && (
-                        <div
-                          className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
-                          }}
-                        >
-                          {meal.linkUrl && (meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com")) ? (
-                            <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
-                              <span className="text-white text-[8px] font-black">N</span>
-                            </div>
-                          ) : (
-                            <div className="size-5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
-                              <MapPin className="size-3 text-orange-500" />
-                            </div>
-                          )}
-                          <span className="text-[11px] font-bold text-foreground truncate flex items-center">
-                            <span className="truncate">{meal.placeName}</span>
-                            {placeAddress && (
-                              <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
-                                {(() => {
-                                  let defaultCity = ""
-                                  let defaultGu = ""
-                                  let defaultDong = ""
-                                  if (userRegion) {
-                                    try {
-                                      const parsedReg = JSON.parse(userRegion)
-                                      defaultCity = parsedReg.city || ""
-                                      defaultGu = parsedReg.gu || ""
-                                      defaultDong = parsedReg.dong || ""
-                                    } catch (ex) {}
-                                  }
-                                  const parsed = parseRegionFromAddress(placeAddress, defaultCity, defaultGu, defaultDong)
-                                  return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
-                                })()}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Card Footer: Title, Date, Average Rating */}
-                      <div className="px-5 pt-2.5 pb-3 flex flex-col">
-                        {/* Row 2 (Date & Rating) */}
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
-                            {cleanDate}
-                          </p>
-                          {(() => {
-                            const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
-                            const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
-                            return (
-                              <div 
-                                className="flex items-center gap-1.5 select-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
-                                title="가족 별점 자세히 보기"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleOpenMealCardDetail(meal.id)
-                                }}
-                              >
-                                <div className="flex items-center gap-0.5 text-orange-500">
-                                  {[1, 2, 3, 4, 5].map((star) => {
-                                    if (star <= averageRating) {
-                                      return <Star key={star} className="size-3.5 fill-orange-400 text-orange-400" />
-                                    } else if (star - averageRating > 0 && star - averageRating <= 0.9) {
-                                      return <StarHalf key={star} className="size-3.5 fill-orange-400 text-orange-400" />
-                                    } else {
-                                      return <Star key={star} className="size-3.5 text-gray-200" />
-                                    }
-                                  })}
-                                </div>
-                                <span className="text-[11px] font-bold text-muted-foreground ml-0.5">
-                                  ({averageRating > 0 ? averageRating.toFixed(1) : "-"}점 / {totalRatedCount}명)
-                                </span>
-                              </div>
-                            )
-                          })()}
-                        </div>
-                        {/* Row 3 (Menu Name & Type Badge) */}
-                        <div className="flex items-center justify-between mb-0.5 gap-2">
-                          <h3 className="font-bold text-foreground text-[16px] leading-snug truncate flex items-center" title={`(by ${meal.sharedBy}) ${meal.title}`}>
-                            <span className="text-muted-foreground font-medium text-xs mr-1.5 shrink-0">(by {meal.sharedBy})</span>
-                            <span className="truncate">{meal.title}</span>
-                          </h3>
-                          <span className={cn(
-                            "shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold",
-                            meal.mealType === "homemade" ? "bg-green-50 text-green-600" :
-                            meal.mealType === "delivery" ? "bg-blue-50 text-blue-600" :
-                            "bg-purple-50 text-purple-600"
-                          )}>
-                            {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : "외식"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="px-4 pb-3 pt-2">
-                      <button
-                        onClick={() => {
-                          setExpandedMealCommentsId(isExpanded ? null : meal.id)
-                          if (isExpanded) {
-                            setActiveReplyTarget(null)
-                            setMealReplyInput("")
-                          }
-                        }}
-                        className="w-full rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-2 text-[11px] font-bold text-orange-600 flex items-center justify-center gap-1 hover:bg-orange-100/70 transition-colors cursor-pointer"
-                      >
-                        <MessageCircle className="size-3.5" />
-                        댓글 {(displayComments[meal.id] ?? []).length}개
-                      </button>
-
-                      {isExpanded && (
-                        <div className="mt-2 rounded-xl border border-orange-100 bg-white p-3">
-                          {renderMealCommentsSection(meal.id, "card")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+              {filteredMeals.map((meal) => renderMealCard(meal))}
             </div>
           )}
         </div>
@@ -4889,27 +4959,86 @@ export function FamilyPage({
               setSelectedReservationForPopup(fullItem)
               setExpandedMealCommentsId(fullItem.id)
             }}
+            onSelectLog={(item) => {
+              const fullMeal = [...activeDefaultMeals, ...meals].find(m => m.id === item.id) || item
+              setSelectedLogMealForPopup(fullMeal)
+              setExpandedMealCommentsId(fullMeal.id)
+            }}
           />
         </div>
       )}
       </div>
 
-      {/* 달력 등에서 예약 클릭 시: 추가 UI 설계 없이 기존 먹예약 카드를 그대로 모달로 팝업 */}
+      {/* 달력에서 예약 클릭 시: 따뜻한 배경 위에 떠 있는 단일 카드 팝업 모달 */}
       {selectedReservationForPopup && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedReservationForPopup(null)}
         >
           <div 
-            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] p-3.5 sm:p-4 rounded-[28px] sm:rounded-[32px] shadow-2xl border border-white/80 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {(() => {
-              const liveItem = familyReservations.find(r => r.id === selectedReservationForPopup.id) 
-                || wishlistItems.find(w => w.id === selectedReservationForPopup.id) 
-                || selectedReservationForPopup
-              return renderCard(liveItem, !liveItem.date, true, () => setSelectedReservationForPopup(null))
-            })()}
+            {/* 상단 팝업 헤더 */}
+            <div className="flex items-center justify-between px-2 pb-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-orange-950">
+                <Calendar className="size-4 text-orange-500" />
+                <span>식사 예약 상세</span>
+              </div>
+              <button
+                onClick={() => setSelectedReservationForPopup(null)}
+                className="size-7.5 flex items-center justify-center rounded-full bg-white/90 shadow-xs border border-gray-200/80 text-gray-600 hover:text-foreground hover:bg-white transition-colors cursor-pointer"
+                title="닫기"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* 카드 컨테이너 (배경 위에 깔끔하게 떠 있는 카드) */}
+            <div className="flex-1 overflow-y-auto rounded-2xl sm:rounded-3xl shadow-sm">
+              {(() => {
+                const liveItem = familyReservations.find(r => r.id === selectedReservationForPopup.id) 
+                  || wishlistItems.find(w => w.id === selectedReservationForPopup.id) 
+                  || selectedReservationForPopup
+                return renderCard(liveItem, !liveItem.date, true, () => setSelectedReservationForPopup(null))
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 달력에서 먹로그 클릭 시: 따뜻한 배경 위에 떠 있는 먹로그 카드 팝업 모달 */}
+      {selectedLogMealForPopup && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedLogMealForPopup(null)}
+        >
+          <div 
+            className="w-full max-w-lg bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] p-3.5 sm:p-4 rounded-[28px] sm:rounded-[32px] shadow-2xl border border-white/80 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 상단 팝업 헤더 */}
+            <div className="flex items-center justify-between px-2 pb-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-orange-950">
+                <Utensils className="size-4 text-orange-500" />
+                <span>공유 먹로그 상세</span>
+              </div>
+              <button
+                onClick={() => setSelectedLogMealForPopup(null)}
+                className="size-7.5 flex items-center justify-center rounded-full bg-white/90 shadow-xs border border-gray-200/80 text-gray-600 hover:text-foreground hover:bg-white transition-colors cursor-pointer"
+                title="닫기"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* 카드 컨테이너 */}
+            <div className="flex-1 overflow-y-auto rounded-2xl sm:rounded-3xl shadow-sm">
+              {(() => {
+                const liveMeal = [...activeDefaultMeals, ...meals].find(m => m.id === selectedLogMealForPopup.id) || selectedLogMealForPopup
+                return renderMealCard(liveMeal, true, () => setSelectedLogMealForPopup(null))
+              })()}
+            </div>
           </div>
         </div>
       )}
