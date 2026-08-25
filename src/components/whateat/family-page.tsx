@@ -4932,6 +4932,7 @@ export function FamilyPage({
           editData={editingPlan && editingPlan.id ? editingPlan : null}
           isWishlist={!editingPlan?.isWishlistToSchedule && (editingPlan?.isWishlist === true || !editingPlan?.date)}
           isScheduling={!!editingPlan?.isWishlistToSchedule}
+          isGroupMode={activeMode === "group"}
         />
       )}
 

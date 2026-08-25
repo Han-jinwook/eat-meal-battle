@@ -630,12 +630,19 @@ const handleSubmit = () => {
                   {contextName}
                 </span>
               )}
-              <h2 className="text-lg font-extrabold tracking-tight text-foreground">
-                {isScheduling 
-                  ? "식사 예약 잡기"
-                  : isEditMode 
-                    ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
-                    : (isWishlist ? "식사 위시리스트 추가" : "식사 예약")}
+              <h2 className="text-lg font-extrabold tracking-tight text-foreground flex items-center gap-1.5 flex-wrap">
+                <span>
+                  {isScheduling 
+                    ? "식사 예약 잡기"
+                    : isEditMode 
+                      ? (isWishlist ? "식사 위시 수정" : "식사 예약 수정") 
+                      : (isWishlist ? "식사 위시리스트 추가" : "식사 예약")}
+                </span>
+                {isScheduling && (
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {isGroupMode ? "(날짜잡기는 방장 권한입니다)" : "(날짜잡기는 쉐프권한입니다)"}
+                  </span>
+                )}
               </h2>
             </div>
           </div>
