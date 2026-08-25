@@ -2010,6 +2010,13 @@ export function FamilyPage({
 
   const handleSaveFamilyReservation = async (data: any) => {
     if (!isLoggedIn || !user) return
+    if (data?.isSample || String(data?.id).startsWith("sample-") || data?.id === 1 || data?.id === 2 || data?.id === 3) {
+      toast("샘플이라 저장이 안 되며, 새 식사를 등록하면 샘플은 사라집니다.", {
+        icon: "💡",
+        duration: 3000
+      })
+      return
+    }
     const uploadToast = toast.loading("가족 예약을 저장하고 있습니다...")
     try {
       await secureWrite({
@@ -4526,6 +4533,13 @@ export function FamilyPage({
                   {isLoggedIn && (
                     <button
                       onClick={() => {
+                        if (isSampleItem) {
+                          toast("샘플이라 수정/삭제가 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
+                            icon: "💡",
+                            duration: 3000
+                          })
+                          return
+                        }
                         setEditingPlan({ ...item, isWishlist: isWishlistCard })
                         setIsAddReservationOpen(true)
                       }}
@@ -4648,6 +4662,13 @@ export function FamilyPage({
                 {isWishlistCard && isChef && (
                   <button
                     onClick={() => {
+                      if (isSampleItem) {
+                        toast("샘플이라 날짜잡기가 안 되며, 새 식사를 등록하면 샘플은 사라집니다.", {
+                          icon: "💡",
+                          duration: 3000
+                        })
+                        return
+                      }
                       setEditingPlan({ ...item, authorNickname: nickname, isWishlistToSchedule: true })
                       setIsAddReservationOpen(true)
                     }}
@@ -4825,13 +4846,17 @@ export function FamilyPage({
             <div className="md:hidden flex flex-col gap-3">
               {reservationSubTab === "wishlist" && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="font-bold text-foreground text-sm">📋 가족 위시리스트 ({filteredWishlist.length})</h3>
+                  <h3 className="font-bold text-foreground text-sm">
+                    {activeMode === 'group' ? '👥 모임 위시리스트' : '📋 가족 위시리스트'} ({filteredWishlist.length})
+                  </h3>
                   {filteredWishlist.map(item => renderCard(item, true))}
                 </div>
               )}
               {reservationSubTab === "list" && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="font-bold text-foreground text-sm">📅 가족 먹예약 목록 ({filteredReservations.length})</h3>
+                  <h3 className="font-bold text-foreground text-sm">
+                    {activeMode === 'group' ? '📅 모임 먹예약 목록' : '📅 가족 먹예약 목록'} ({filteredReservations.length})
+                  </h3>
                   {filteredReservations.map(item => renderCard(item, false))}
                 </div>
               )}
@@ -4843,7 +4868,7 @@ export function FamilyPage({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between pb-1 border-b border-muted/40">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <span>📋 가족 위시리스트</span>
+                    <span>{activeMode === 'group' ? '👥 모임 위시리스트' : '📋 가족 위시리스트'}</span>
                     <span className="text-xs text-orange-500 font-bold">({filteredWishlist.length})</span>
                   </h3>
                   <button
@@ -4867,7 +4892,7 @@ export function FamilyPage({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between pb-1 border-b border-muted/40">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <span>📅 확정 예약 목록</span>
+                    <span>{activeMode === 'group' ? '📅 모임 확정 예약' : '📅 확정 예약 목록'}</span>
                     <span className="text-xs text-orange-500 font-bold">({filteredReservations.length})</span>
                   </h3>
                 </div>
