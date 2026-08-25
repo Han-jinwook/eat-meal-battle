@@ -807,31 +807,7 @@ export function FamilyPage({
     return () => window.removeEventListener("focus", loadGroups)
   }, [isLoggedIn, user])
 
-  // Sync group members to 'members' state when group is selected
-  useEffect(() => {
-    if (activeMode === 'group' && selectedGroupId) {
-      const activeGrp = groups.find(g => g.id === selectedGroupId)
-      if (activeGrp) {
-        const groupMemsMapped = activeGrp.members.map((m: any, idx: number) => ({
-          id: idx + 1,
-          name: m.userId === user?.id ? "나" : m.name,
-          avatar: m.userId === user?.id ? (user?.avatar_url || m.avatar) : m.avatar,
-          role: m.role === 'owner' ? ('chef' as const) : ('member' as const),
-          isOnline: m.userId === user?.id ? true : false,
-          isStudent: false,
-          userId: m.userId
-        }))
-        setMembers(groupMemsMapped)
-        setFamilyHostId(activeGrp.ownerId)
-        setFamilyHostName(activeGrp.name)
-        setFamilyGroupId(null)
-        setChefUserId(null)
-        setSelectedChefId(null)
-      }
-    }
-  }, [activeMode, selectedGroupId, groups, isLoggedIn, user])
-
-  // Synchronously restore cached family state when switching back to family mode (eliminates 1s flicker)
+  // When switching between family and group modes, family state is never corrupted
   useEffect(() => {
     if (activeMode === 'family' && cachedFamilyStateRef.current) {
       const c = cachedFamilyStateRef.current
@@ -1577,6 +1553,19 @@ export function FamilyPage({
   const [reservationFilter, setReservationFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const familyPhotoInputRef = useRef<HTMLInputElement | null>(null)
 
+  const activeGroup = activeMode === 'group' ? groups.find(g => g.id === selectedGroupId) : null
+  const displayMembers = (activeMode === 'group' && activeGroup)
+    ? activeGroup.members.map((m: any, idx: number) => ({
+        id: idx + 1,
+        name: m.userId === user?.id ? "나" : (m.nickname || m.name),
+        avatar: m.userId === user?.id ? (user?.avatar_url || m.avatar) : m.avatar,
+        role: m.role === 'owner' ? ('chef' as const) : ('member' as const),
+        isOnline: m.userId === user?.id ? true : false,
+        isStudent: false,
+        userId: m.userId
+      }))
+    : members
+
   const [inviteLink, setInviteLink] = useState("")
 
   useEffect(() => {
@@ -1641,7 +1630,7 @@ export function FamilyPage({
           meta = { title: img.explanation || "식사" }
         }
 
-        const foundMember = members.find(m => m.userId === img.uploaded_by)
+        const foundMember = displayMembers.find(m => m.userId === img.uploaded_by)
         const uploaderName = foundMember ? foundMember.name : "가족"
         const formattedDate = new Date(img.created_at).toLocaleDateString('ko-KR', {
           month: 'long',
@@ -1774,7 +1763,7 @@ export function FamilyPage({
         allRatings
           .filter(rt => rt.meal_id === targetId)
           .forEach(rt => {
-            const foundMember = members.find(m => m.userId === rt.user_id)
+            const foundMember = displayMembers.find(m => m.userId === rt.user_id)
             if (foundMember) {
               mealRatingsMap[foundMember.id] = rt.rating
             }
@@ -4401,7 +4390,7 @@ export function FamilyPage({
             "sample-user-3": "동생"
           }
 
-          const cardUser = members.find(m => m.userId === item.userId)
+          const cardUser = displayMembers.find(m => m.userId === item.userId)
           const nickname = isSampleUser
             ? sampleNameMap[item.userId] || "가족"
             : (item.userId === user?.id
