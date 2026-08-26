@@ -175,36 +175,41 @@ export function MealCalendarTab({
           if (!resMap[row.date]) resMap[row.date] = []
           resMap[row.date].push({
             id: row.id,
-            name: row.menu || row.title,
-            menu: row.menu || row.title,
+            name: row.name || row.menu,
+            menu: row.menu || row.name,
             mealType: row.mealType,
             type,
             time: row.time || "",
             place: row.place || "",
             memo: row.memo || "",
             thumbnail: row.thumbnail,
-            url: row.source_url || row.url,
+            url: row.url,
+            userId: row.userId,
+            nickname: row.nickname,
+            author: row.author,
+            sharedBy: row.sharedBy,
+            createdAt: row.createdAt,
             isSample: row.isSample || false
           })
         })
       } else if (!initialReservations) {
         // 직접 Supabase DB 조회
-        let resQuery = supabase.from("meal_reservations").select("*")
+        let resQuery = supabase.from("meal_reservations").select("*").order("date", { ascending: true })
         if (effectiveMode === "group") {
           if (groupId) {
-            resQuery = resQuery.eq("group_id", groupId).eq("source", "group")
+            resQuery = resQuery.eq("group_id", groupId)
           } else {
             resQuery = resQuery.eq("source", "group")
           }
         } else if (effectiveMode === "family") {
           if (familyUserIds && familyUserIds.length > 0) {
-            resQuery = resQuery.in("user_id", familyUserIds).eq("source", "family")
+            resQuery = resQuery.in("created_by", familyUserIds).eq("source", "family")
           } else {
-            resQuery = resQuery.eq("user_id", user.id).eq("source", "family")
+            resQuery = resQuery.eq("created_by", user.id).eq("source", "family")
           }
         } else {
           // solo
-          resQuery = resQuery.eq("user_id", user.id).eq("source", "solo")
+          resQuery = resQuery.eq("created_by", user.id)
         }
 
         const { data: resData } = await resQuery
@@ -219,14 +224,14 @@ export function MealCalendarTab({
             if (!resMap[row.date]) resMap[row.date] = []
             resMap[row.date].push({
               id: row.id,
-              name: row.menu,
-              menu: row.menu,
+              name: row.menu_name || row.title,
+              menu: row.menu_name || row.title,
               mealType: row.meal_type,
               type,
-              time: row.time || "",
-              place: row.place || "",
+              time: row.meal_time || "",
+              place: row.place_name || "",
               memo: row.memo || "",
-              thumbnail: row.thumbnail,
+              thumbnail: row.thumbnail_url,
               url: row.source_url || row.url,
               isSample: false
             })
@@ -282,7 +287,19 @@ export function MealCalendarTab({
           logMap[dateKey].push({
             id: row.id,
             label: row.title || "맛있는 식사",
+            title: row.title || "맛있는 식사",
             type,
+            mealType: row.mealType || (type === "delivery" ? "배달" : type === "out" ? "외식" : "집밥"),
+            date: dateKey,
+            image: row.image || row.image_url || row.thumbnail,
+            placeName: row.placeName || row.place_name,
+            placeAddress: row.placeAddress || row.place_address,
+            linkUrl: row.linkUrl || row.link_url,
+            rating: row.rating || 5,
+            memo: row.memo || row.explanation || "",
+            userId: row.userId || row.uploaded_by,
+            author: row.author || row.sharedBy || row.nickname || "가족",
+            createdAt: row.createdAt || row.created_at,
             isSample: false
           })
         })
@@ -321,7 +338,20 @@ export function MealCalendarTab({
               logMap[dateKey].push({
                 id: row.id,
                 label: row.title || row.explanation || "맛있는 식사",
+                title: row.title || row.explanation || "맛있는 식사",
                 type,
+                mealType: row.meal_type === "homemade" ? "집밥" : row.meal_type === "delivery" ? "배달" : "외식",
+                date: dateKey,
+                image: row.image_url || row.image,
+                placeName: row.place_name,
+                placeAddress: row.place_address,
+                linkUrl: row.link_url,
+                linkThumbnail: row.link_thumbnail,
+                rating: row.rating || 5,
+                memo: row.memo || row.explanation || "",
+                userId: row.uploaded_by || row.user_id,
+                author: row.user_nickname || "나",
+                createdAt: row.created_at,
                 isSample: false
               })
             }
@@ -330,7 +360,8 @@ export function MealCalendarTab({
 
         // 솔로 모드에서만 미등록 유형 샘플 먹로그 보충
         if (effectiveMode === "solo") {
-          Object.entries(sampleLogData).forEach(([dateKey, items]) => {
+          const sampleLogs = generateDynamicSampleLogData(userBaseDate)
+          Object.entries(sampleLogs).forEach(([dateKey, items]) => {
             items.forEach(item => {
               if (!hasLogType[item.type]) {
                 if (!logMap[dateKey]) logMap[dateKey] = []
@@ -437,8 +468,9 @@ export function MealCalendarTab({
     let total = 0
     let activeDays = 0
 
+    const dynamicSampleLogs = generateDynamicSampleLogData(baseDate)
     const activeDataMap = mode === "log" 
-      ? (Object.keys(realLogs).length > 0 ? realLogs : (effectiveMode === "solo" ? sampleLogData : {}))
+      ? (Object.keys(realLogs).length > 0 ? realLogs : (effectiveMode === "solo" ? dynamicSampleLogs : {}))
       : (Object.keys(realReservations).length > 0 ? realReservations : (effectiveMode === "solo" ? dynamicSampleReservationData : {}))
 
     Object.entries(activeDataMap).forEach(([dateKey, dayData]) => {
