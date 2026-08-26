@@ -9,6 +9,7 @@ interface HubUser {
   email: string;
   nickname?: string;
   avatar_url?: string;
+  profile_image?: string;
   notification_settings?: any;
   registered_apps?: string[];
 }

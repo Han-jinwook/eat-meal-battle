@@ -5,7 +5,7 @@ import sundreamerLogo from '../assets/logos/sundreamer.png';
 import whateatLogo from '../assets/logos/whateat.png';
 import aggrofilterLogo from '../assets/logos/aggrofilter.png';
 
-const LOCAL_LOGOS: Record<string, string> = {
+const LOCAL_LOGOS: Record<string, any> = {
   sundreamer: sundreamerLogo,
   whateat: whateatLogo,
   aggrofilter: aggrofilterLogo
