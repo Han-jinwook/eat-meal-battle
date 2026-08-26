@@ -474,9 +474,19 @@ export function MealCalendarTab({
 
   const handleDateClick = (date: string) => {
     if (mode === "log") {
-      onNavigateToLog?.(date)
+      const logsOnDate = getLogIndicators(date)
+      if (logsOnDate && logsOnDate.length > 0) {
+        handleItemClick(logsOnDate[0], date)
+      } else if (onNavigateToLog) {
+        onNavigateToLog(date)
+      }
     } else {
-      onNavigateToReservation?.(date)
+      const resOnDate = getReservationIndicators(date)
+      if (resOnDate && resOnDate.length > 0) {
+        handleItemClick(resOnDate[0], date)
+      } else if (onNavigateToReservation) {
+        onNavigateToReservation(date)
+      }
     }
   }
 
@@ -513,7 +523,22 @@ export function MealCalendarTab({
           date: item.date || date
         })
       } else {
-        onNavigateToLog?.(date)
+        setSelectedLogForDetail({
+          id: item.id,
+          date: item.date || date,
+          mealType: item.mealType || (item.type === "delivery" ? "배달" : item.type === "out" ? "외식" : "집밥"),
+          title: item.title || item.label || item.menu || "식사 기록",
+          placeName: item.placeName || item.place || "",
+          placeAddress: item.placeAddress || "",
+          memo: item.memo || item.explanation || "",
+          image: item.image || item.image_url || item.thumbnail,
+          linkUrl: item.linkUrl || item.link_url,
+          rating: item.rating || 5,
+          userId: item.userId || item.uploaded_by,
+          author: item.author || item.nickname || "나",
+          createdAt: item.createdAt || item.created_at,
+          isSample: item.isSample
+        })
       }
     }
   }
@@ -865,6 +890,13 @@ export function MealCalendarTab({
         isOpen={!!selectedPlanForDetail} 
         onClose={() => setSelectedPlanForDetail(null)} 
         plan={selectedPlanForDetail} 
+      />
+
+      {/* Log Detail Modal (Solo mode or standalone calendar) */}
+      <LogDetailModal
+        isOpen={!!selectedLogForDetail}
+        onClose={() => setSelectedLogForDetail(null)}
+        log={selectedLogForDetail}
       />
     </div>
   )

@@ -847,7 +847,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     return `${y}. ${m}. ${d}`
   }
 
-  const toIsoDate = (date: Date) => {
+  const toIsoDate = (date: any) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return ""
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, "0")
     const d = String(date.getDate()).padStart(2, "0")
@@ -855,7 +856,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   }
 
   useEffect(() => {
-    if (!jumpToDate) return
+    if (!jumpToDate?.date) return
 
     setMealTypeFilter("전체")
     setSearchQuery("")
@@ -864,7 +865,15 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     setDateRangeStart(null)
     setDateRangeEnd(null)
 
-    const target = mealLogs.find((meal) => toIsoDate(parseDateString(meal.date)) === jumpToDate.date)
+    const target = mealLogs.find((meal) => {
+      if (!meal?.date) return false
+      try {
+        const parsed = parseDateString(meal.date)
+        return toIsoDate(parsed) === jumpToDate.date
+      } catch (e) {
+        return false
+      }
+    })
     if (!target) return
 
     setFocusedMealId(target.id)
