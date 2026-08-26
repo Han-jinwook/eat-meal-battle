@@ -238,13 +238,13 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
       if (hasLiked) {
         await secureWrite({
           table: "meal_likes",
-          action: "DELETE",
-          match: { meal_id: logId, user_id: user.id }
+          action: "delete",
+          filters: { meal_id: logId, user_id: user.id }
         })
       } else {
         await secureWrite({
           table: "meal_likes",
-          action: "INSERT",
+          action: "insert",
           data: { meal_id: logId, user_id: user.id }
         })
       }
@@ -283,7 +283,7 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
     try {
       await secureWrite({
         table: "comments",
-        action: "INSERT",
+        action: "insert",
         data: {
           meal_id: logId,
           user_id: user.id,
@@ -331,7 +331,7 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
     try {
       await secureWrite({
         table: "comment_replies",
-        action: "INSERT",
+        action: "insert",
         data: {
           comment_id: commentId,
           user_id: user.id,
@@ -354,8 +354,8 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
     try {
       await secureWrite({
         table: "comments",
-        action: "UPDATE",
-        match: { id: commentId },
+        action: "update",
+        filters: { id: commentId },
         data: { is_deleted: true }
       })
       fetchCardData()
@@ -375,8 +375,8 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
     try {
       await secureWrite({
         table: "comment_replies",
-        action: "UPDATE",
-        match: { id: replyId },
+        action: "update",
+        filters: { id: replyId },
         data: { is_deleted: true }
       })
       fetchCardData()
@@ -397,8 +397,8 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
     try {
       await secureWrite({
         table: "comments",
-        action: "UPDATE",
-        match: { id: commentId },
+        action: "update",
+        filters: { id: commentId },
         data: { content }
       })
       fetchCardData()

@@ -65,7 +65,11 @@ export async function POST(request: Request) {
     const userId = user.userId || user.id;
 
     // 2. 요청 바디 데이터 파싱
-    const { table, action, data, filters } = await request.json();
+    const body = await request.json();
+    const table = body.table;
+    const action = String(body.action || '').toLowerCase();
+    const data = body.data;
+    const filters = body.filters || body.match;
     
     // 허용된 테이블 목록 정의
     const ALLOWED_TABLES = [

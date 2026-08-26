@@ -1695,16 +1695,24 @@ export function FamilyPage({
               .filter(r => r.comment_id === c.id)
               .map(r => {
                 const ru = userMap.get(r.user_id)
+                const isReplyLiked = typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
+                const savedReplyCount = typeof window !== 'undefined' ? localStorage.getItem(`reply_likes_count_${r.id}`) : null
+                const replyLikes = savedReplyCount !== null ? parseInt(savedReplyCount, 10) : (r.likes_count || (isReplyLiked ? 1 : 0))
+
                 return {
                   id: r.id,
                   userId: r.user_id,
                   author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
                   content: r.content,
                   createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                  likes: r.likes_count || 0,
-                  isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
+                  likes: replyLikes,
+                  isLiked: isReplyLiked
                 }
               })
+
+            const isCommentLiked = typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false
+            const savedCommentCount = typeof window !== 'undefined' ? localStorage.getItem(`comment_likes_count_${c.id}`) : null
+            const commentLikes = savedCommentCount !== null ? parseInt(savedCommentCount, 10) : (c.likes_count || (isCommentLiked ? 1 : 0))
 
             return {
               id: c.id,
@@ -1712,8 +1720,8 @@ export function FamilyPage({
               author: cAuthor,
               content: c.content,
               createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-              likes: c.likes_count || 0,
-              isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false,
+              likes: commentLikes,
+              isLiked: isCommentLiked,
               replies: cReplies
             }
           })
@@ -1857,25 +1865,33 @@ export function FamilyPage({
                   .filter(r => r.comment_id === c.id)
                   .map(r => {
                     const ru = userMap.get(r.user_id)
+                    const isReplyLiked = typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
+                    const savedReplyCount = typeof window !== 'undefined' ? localStorage.getItem(`reply_likes_count_${r.id}`) : null
+                    const replyLikes = savedReplyCount !== null ? parseInt(savedReplyCount, 10) : (r.likes_count || (isReplyLiked ? 1 : 0))
+
                     return {
                       id: r.id,
                       userId: r.user_id,
                       author: r.user_id === user?.id ? "나" : (ru?.nickname || "가족"),
                       content: r.content,
                       createdAt: new Date(r.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                      likes: r.likes_count || 0,
-                      isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_reply_${user?.id}_${r.id}`) === 'true' : false
+                      likes: replyLikes,
+                      isLiked: isReplyLiked
                     }
                   })
                 
+                const isCommentLiked = typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false
+                const savedCommentCount = typeof window !== 'undefined' ? localStorage.getItem(`comment_likes_count_${c.id}`) : null
+                const commentLikes = savedCommentCount !== null ? parseInt(savedCommentCount, 10) : (c.likes_count || (isCommentLiked ? 1 : 0))
+
                 return {
                   id: c.id,
                   userId: c.user_id,
                   author: cAuthor,
                   content: c.content,
                   createdAt: new Date(c.created_at).toLocaleDateString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                  likes: c.likes_count || 0,
-                  isLiked: typeof window !== 'undefined' ? localStorage.getItem(`liked_comment_${user?.id}_${c.id}`) === 'true' : false,
+                  likes: commentLikes,
+                  isLiked: isCommentLiked,
                   replies: cReplies
                 }
               })
@@ -2645,51 +2661,37 @@ export function FamilyPage({
     }
 
     const storageKey = `liked_comment_${user.id}_${commentId}`
+    const countKey = `comment_likes_count_${commentId}`
     const alreadyLiked = localStorage.getItem(storageKey) === 'true'
 
-    const comments = mealComments[mealId] || []
+    const comments = displayComments[mealId] || mealComments[mealId] || []
     const targetComment = comments.find(c => c.id === commentId)
     if (!targetComment) return
 
     const newLikesCount = alreadyLiked ? Math.max(0, targetComment.likes - 1) : targetComment.likes + 1
 
-    setMealComments((prev) => ({
-      ...prev,
-      [mealId]: (prev[mealId] ?? []).map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              isLiked: !alreadyLiked,
-              likes: newLikesCount,
-            }
-          : comment,
-      ),
-    }))
-
-    if (alreadyLiked) localStorage.removeItem(storageKey)
-    else localStorage.setItem(storageKey, 'true')
-
-    try {
-      await secureWrite({
-        table: 'comments',
-        action: 'update',
-        data: { likes_count: newLikesCount },
-        filters: { id: commentId }
-      })
-    } catch (err) {
-      console.error("Failed to update comment like:", err)
-      setMealComments((prev) => ({
+    setMealComments((prev) => {
+      const currentList = prev[mealId] || displayComments[mealId] || []
+      return {
         ...prev,
-        [mealId]: (prev[mealId] ?? []).map((comment) =>
+        [mealId]: currentList.map((comment) =>
           comment.id === commentId
-            ? { ...comment, isLiked: alreadyLiked, likes: targetComment.likes }
+            ? {
+                ...comment,
+                isLiked: !alreadyLiked,
+                likes: newLikesCount,
+              }
             : comment,
         ),
-      }))
-      if (alreadyLiked) localStorage.setItem(storageKey, 'true')
-      else localStorage.removeItem(storageKey)
-      toast.error("좋아요 처리에 실패했습니다.")
+      }
+    })
+
+    if (alreadyLiked) {
+      localStorage.removeItem(storageKey)
+    } else {
+      localStorage.setItem(storageKey, 'true')
     }
+    localStorage.setItem(countKey, String(newLikesCount))
   }
 
   const toggleMealReplyLike = async (mealId: string | number, commentId: string | number, replyId: string | number) => {
@@ -2699,63 +2701,42 @@ export function FamilyPage({
     }
 
     const storageKey = `liked_reply_${user.id}_${replyId}`
+    const countKey = `reply_likes_count_${replyId}`
     const alreadyLiked = localStorage.getItem(storageKey) === 'true'
 
-    const comments = mealComments[mealId] || []
+    const comments = displayComments[mealId] || mealComments[mealId] || []
     const targetComment = comments.find(c => c.id === commentId)
     if (!targetComment) return
-    const targetReply = targetComment.replies.find(r => r.id === replyId)
+    const targetReply = (targetComment.replies || []).find(r => r.id === replyId)
     if (!targetReply) return
 
     const newLikesCount = alreadyLiked ? Math.max(0, targetReply.likes - 1) : targetReply.likes + 1
 
-    setMealComments((prev) => ({
-      ...prev,
-      [mealId]: (prev[mealId] ?? []).map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              replies: comment.replies.map((reply) =>
-                reply.id === replyId
-                  ? { ...reply, isLiked: !alreadyLiked, likes: newLikesCount }
-                  : reply
-              ),
-            }
-          : comment,
-      ),
-    }))
-
-    if (alreadyLiked) localStorage.removeItem(storageKey)
-    else localStorage.setItem(storageKey, 'true')
-
-    try {
-      await secureWrite({
-        table: 'comment_replies',
-        action: 'update',
-        data: { likes_count: newLikesCount },
-        filters: { id: replyId }
-      })
-    } catch (err) {
-      console.error("Failed to update reply like:", err)
-      setMealComments((prev) => ({
+    setMealComments((prev) => {
+      const currentList = prev[mealId] || displayComments[mealId] || []
+      return {
         ...prev,
-        [mealId]: (prev[mealId] ?? []).map((comment) =>
+        [mealId]: currentList.map((comment) =>
           comment.id === commentId
             ? {
                 ...comment,
-                replies: comment.replies.map((reply) =>
+                replies: (comment.replies || []).map((reply) =>
                   reply.id === replyId
-                    ? { ...reply, isLiked: alreadyLiked, likes: targetReply.likes }
+                    ? { ...reply, isLiked: !alreadyLiked, likes: newLikesCount }
                     : reply
                 ),
               }
             : comment,
         ),
-      }))
-      if (alreadyLiked) localStorage.setItem(storageKey, 'true')
-      else localStorage.removeItem(storageKey)
-      toast.error("좋아요 처리에 실패했습니다.")
+      }
+    })
+
+    if (alreadyLiked) {
+      localStorage.removeItem(storageKey)
+    } else {
+      localStorage.setItem(storageKey, 'true')
     }
+    localStorage.setItem(countKey, String(newLikesCount))
   }
 
   const handleAddMealComment = async (mealId: string | number) => {
