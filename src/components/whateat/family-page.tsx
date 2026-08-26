@@ -3857,8 +3857,8 @@ export function FamilyPage({
             </div>
           </div>
 
-          {/* Place info bar */}
-          {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName && (
+          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 */}
+          {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName ? (
             <div
               className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
               onClick={(e) => {
@@ -3898,6 +3898,8 @@ export function FamilyPage({
                 )}
               </span>
             </div>
+          ) : (
+            <div className="h-[37px] px-5 py-2 bg-gray-50/50 border-t border-muted/20" />
           )}
 
           {/* Card Footer: Title, Date, Average Rating */}
