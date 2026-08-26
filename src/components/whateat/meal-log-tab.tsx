@@ -1860,14 +1860,18 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               </div>
               <div className="flex items-center justify-between mb-0.5 gap-2">
                 <h3 className="font-bold text-foreground text-lg truncate">{meal.title}</h3>
-                <span className={cn(
-                  "shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold",
-                  meal.type === "집밥" ? "bg-green-50 text-green-600" :
-                  meal.type === "배달" ? "bg-blue-50 text-blue-600" :
-                  "bg-purple-50 text-purple-600"
+                <div className={cn(
+                  "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+                  meal.type === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                  meal.type === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                  meal.type === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                  !meal.type && "bg-gray-50 text-gray-700 border-gray-200"
                 )}>
-                  {meal.type}
-                </span>
+                  {meal.type === "집밥" ? <ChefHat className="size-3.5 shrink-0" strokeWidth={2.2} /> :
+                   meal.type === "배달" ? <Bike className="size-3.5 shrink-0" strokeWidth={2.2} /> :
+                   <UtensilsCrossed className="size-3.5 shrink-0" strokeWidth={2.2} />}
+                  <span>{meal.type || "식사"}</span>
+                </div>
               </div>
               {/* Comment Section (기존 Memo Section 전면 대체) */}
               <div className="mt-0.5">

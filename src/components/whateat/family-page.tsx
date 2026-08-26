@@ -3663,9 +3663,18 @@ export function FamilyPage({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               <div className="absolute top-3 left-3 z-10">
-                <span className="w-fit px-2 py-0.5 bg-white/20 backdrop-blur-md text-white text-[8px] font-bold rounded-md border border-white/30">
-                  {meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : "기타"}
-                </span>
+                <div className={cn(
+                  "px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[10px] font-bold shadow-xs",
+                  (meal.mealType === "homemade" || meal.mealType === "집밥") && "bg-emerald-50/95 text-emerald-700 border-emerald-200/80 backdrop-blur-sm",
+                  (meal.mealType === "delivery" || meal.mealType === "배달") && "bg-sky-50/95 text-sky-700 border-sky-200/80 backdrop-blur-sm",
+                  (meal.mealType === "dining" || meal.mealType === "외식") && "bg-orange-50/95 text-orange-700 border-orange-200/80 backdrop-blur-sm",
+                  !meal.mealType && "bg-white/90 text-gray-700 border-gray-200"
+                )}>
+                  {(meal.mealType === "homemade" || meal.mealType === "집밥") ? <ChefHat className="size-3 shrink-0" strokeWidth={2.2} /> :
+                   (meal.mealType === "delivery" || meal.mealType === "배달") ? <Bike className="size-3 shrink-0" strokeWidth={2.2} /> :
+                   <UtensilsCrossed className="size-3 shrink-0" strokeWidth={2.2} />}
+                  <span>{meal.mealType === "homemade" ? "집밥" : meal.mealType === "delivery" ? "배달" : meal.mealType === "dining" ? "외식" : (meal.mealType || "식사")}</span>
+                </div>
               </div>
             </div>
 
@@ -3899,32 +3908,36 @@ export function FamilyPage({
               </p>
               {(() => {
                 const myRating = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
-                const totalRatedCount = Object.keys(displayRatings[meal.id] || {}).length
+                const ratingsObj = displayRatings[meal.id] || {}
+                const ratedCount = Object.keys(ratingsObj).filter(k => (ratingsObj as any)[k] > 0).length
+                const totalMembersCount = members?.length || 2
+                const hasMyRating = myRating > 0
+
                 return (
                   <div 
-                    className="flex items-center gap-1.5 select-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
-                    title="가족 별점 자세히 보기"
+                    className="flex items-center gap-1 select-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                    title="가족 별점 자세히 보기 및 평가하기"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenMealCardDetail(meal.id)
                     }}
                   >
                     <div className="flex items-center gap-1">
-                      <Star className="size-3.5 fill-orange-400 text-orange-400" />
+                      <Star 
+                        className={cn(
+                          "size-3.5 transition-colors",
+                          hasMyRating 
+                            ? "fill-red-500 text-red-500" 
+                            : "text-gray-300 fill-none stroke-[1.5]"
+                        )} 
+                      />
                       <span className="text-xs font-black text-foreground">
-                        {averageRating > 0 ? averageRating.toFixed(1) : "-"}
+                        {averageRating > 0 ? averageRating.toFixed(1) : "0.0"}
+                      </span>
+                      <span className="text-[11px] font-bold text-muted-foreground">
+                        ({ratedCount}/{totalMembersCount})
                       </span>
                     </div>
-                    {myRating > 0 ? (
-                      <span className="text-[10px] font-black text-orange-600 bg-orange-100/90 border border-orange-200/90 px-1.5 py-0.5 rounded-full">
-                        내평점 {myRating}점
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                        <Star className="size-2.5 fill-amber-400 text-amber-400" />
-                        평가 대기
-                      </span>
-                    )}
                   </div>
                 )
               })()}
@@ -3937,47 +3950,6 @@ export function FamilyPage({
               <p className="text-[10px] text-muted-foreground font-medium shrink-0">
                 by {meal.sharedBy}
               </p>
-            </div>
-
-            {/* 별점 평가 버튼 영역 (직관적인 5개 별 UI) */}
-            <div 
-              className="mt-3 pt-2.5 border-t border-muted/30 flex items-center justify-between gap-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[11px] font-bold text-muted-foreground">내 평가</span>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((score) => {
-                  const myScore = displayRatings[meal.id]?.[currentFamilyMemberId] ?? 0
-                  const isFilled = score <= myScore
-                  return (
-                    <button
-                      key={score}
-                      type="button"
-                      onClick={() => {
-                        if (isSampleMeal(meal.id)) {
-                          toast("샘플이라 별점 저장이 안 되며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                          return
-                        }
-                        if (!isLoggedIn) {
-                          window.dispatchEvent(new CustomEvent('openLoginModal'))
-                          return
-                        }
-                        checkFamilyConsentAndRate(meal.id, currentFamilyMemberId, score)
-                      }}
-                      className="p-1 hover:scale-125 active:scale-95 transition-transform cursor-pointer"
-                    >
-                      <Star 
-                        className={cn(
-                          "size-5 transition-colors",
-                          isFilled 
-                            ? "fill-orange-400 text-orange-400 drop-shadow-xs" 
-                            : "text-gray-300 hover:text-orange-300"
-                        )} 
-                      />
-                    </button>
-                  )
-                })}
-              </div>
             </div>
 
             {promotedMealIds.includes(meal.id) && (
