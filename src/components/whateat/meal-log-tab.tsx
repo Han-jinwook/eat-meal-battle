@@ -1633,7 +1633,19 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   style={{ backgroundImage: `url("${meal.image}")` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[10px] font-bold shadow-xs",
+                    meal.type === "집밥" && "bg-emerald-50/95 text-emerald-700 border-emerald-200/80 backdrop-blur-sm",
+                    meal.type === "배달" && "bg-sky-50/95 text-sky-700 border-sky-200/80 backdrop-blur-sm",
+                    meal.type === "외식" && "bg-orange-50/95 text-orange-700 border-orange-200/80 backdrop-blur-sm",
+                    !meal.type && "bg-white/90 text-gray-700 border-gray-200"
+                  )}>
+                    {meal.type === "집밥" ? <ChefHat className="size-3 shrink-0" strokeWidth={2.2} /> :
+                     meal.type === "배달" ? <Bike className="size-3 shrink-0" strokeWidth={2.2} /> :
+                     <UtensilsCrossed className="size-3 shrink-0" strokeWidth={2.2} />}
+                    <span>{meal.type || "식사"}</span>
+                  </div>
                   {meal.aiTag && (
                     <span className="w-fit px-2 py-0.5 bg-primary text-white text-[8px] font-black rounded-md">AI TAG</span>
                   )}
@@ -1859,24 +1871,11 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 </div>
               </div>
               <div className="flex items-center justify-between mb-0.5 gap-2">
-                <h3 className="font-bold text-foreground text-lg truncate">{meal.title}</h3>
-                <div className={cn(
-                  "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-                  meal.type === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                  meal.type === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                  meal.type === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-                  !meal.type && "bg-gray-50 text-gray-700 border-gray-200"
-                )}>
-                  {meal.type === "집밥" ? <ChefHat className="size-3.5 shrink-0" strokeWidth={2.2} /> :
-                   meal.type === "배달" ? <Bike className="size-3.5 shrink-0" strokeWidth={2.2} /> :
-                   <UtensilsCrossed className="size-3.5 shrink-0" strokeWidth={2.2} />}
-                  <span>{meal.type || "식사"}</span>
-                </div>
-              </div>
-              {/* Comment Section (기존 Memo Section 전면 대체) */}
-              <div className="mt-0.5">
+                <h3 className="font-bold text-foreground text-lg truncate flex-1 min-w-0">{meal.title}</h3>
+                
+                {/* 메모 버튼 (식사명 줄 우측 끝으로 이동) */}
                 <div 
-                  className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mx-1 rounded-md transition-colors"
+                  className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mr-1 rounded-md transition-colors shrink-0"
                   onClick={() => setVisibleMemoInputs(prev => {
                     const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
                     return { ...prev, [meal.id]: !isCurrentlyVisible }
@@ -1888,9 +1887,10 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     {(meal.comments || []).length}
                   </span>
                 </div>
-
-                {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
-                  <div className="animate-in fade-in slide-in-from-top-1 duration-200 pt-2">
+              </div>
+              {/* Comment Section (기존 Memo Section 전면 대체) */}
+              {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200 pt-2">
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {(meal.comments || []).length === 0 ? null : (
                         (meal.comments || []).map((comment: any) => (
@@ -1989,7 +1989,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 )}
               </div>
             </div>
-          </div>
         ))}
       </div>
 
