@@ -83,7 +83,8 @@ export function HubProvider({ children, appId }: { children: React.ReactNode; ap
         }
         // 세션 확인 성공 시 잔액도 업데이트
         refreshBalance();
-      } else {
+      } else if (session.status === 401 || session.status === 403) {
+        // 서버의 명시적인 인증 거부(401/403)일 때만 세션 클리어
         setUser(null);
         setIsLoggedIn(false);
         setBalance(null);
@@ -92,6 +93,7 @@ export function HubProvider({ children, appId }: { children: React.ReactNode; ap
           localStorage.removeItem('merlin_cached_balance');
         }
       }
+      // 일시적인 네트워크 오류(status 0, 502 등)일 때는 기존 캐시된 로그인 상태를 유지!
     } catch (err) {
       console.error('[HubProvider] Failed to sync session:', err);
     } finally {
@@ -204,14 +206,20 @@ export function HubProvider({ children, appId }: { children: React.ReactNode; ap
       localStorage.removeItem('merlin_cached_balance');
     };
 
-    // 3. 멀티 탭 실시간 동기화: 다른 탭에서 로그인/로그아웃하거나 탭 활성화 시 세션 즉시 갱신
+    // 3. 멀티 탭 실시간 동기화: 다른 탭에서 로그인/로그아웃하거나 탭 활성화 시 세션 갱신 (5분 스마트 스로틀링)
+    let lastCheckTime = Date.now();
     const handleVisibilityOrFocus = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         const currentToken = getSessionToken();
+        const now = Date.now();
         if (currentToken) {
-          refreshSession();
+          // 탭 전환 시 과도한 API 연타 방지: 최소 5분(300,000ms) 경과 시에만 백그라운드 갱신
+          if (now - lastCheckTime > 5 * 60 * 1000) {
+            lastCheckTime = now;
+            refreshSession();
+          }
         } else if (isLoggedIn) {
-          // 다른 탭에서 로그아웃된 경우
+          // 다른 탭에서 명시적으로 로그아웃되어 토큰이 소멸된 경우
           handleSessionExpired();
         }
       }

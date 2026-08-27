@@ -20,10 +20,8 @@ export function GlobalLoginModal() {
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("openLoginModal", handler)
-    window.addEventListener("merlinSessionExpired", handler)
     return () => {
       window.removeEventListener("openLoginModal", handler)
-      window.removeEventListener("merlinSessionExpired", handler)
     }
   }, [])
 
