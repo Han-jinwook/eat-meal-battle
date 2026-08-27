@@ -161,37 +161,37 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
   const getDisplayImage = () => isEditing ? tempProfileImage : profileImage;
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 ${className}`}>
+    <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5 ${className}`}>
       
       {/* 🚀 상단 코인 배너 (모바일 등에서 헤더 코인 UI를 대체/보완) */}
       {isLoggedIn && showCoin && (
         <a 
           href="/payment/purchase"
-          className="flex items-center justify-between p-4 mb-8 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border border-amber-100 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer no-underline"
+          className="flex items-center justify-between p-3 mb-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border border-amber-100 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer no-underline"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-amber-100 group-hover:scale-110 transition-transform">
-              <span className="text-amber-500 font-black text-xl">C</span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-amber-100 group-hover:scale-110 transition-transform">
+              <span className="text-amber-500 font-black text-lg">C</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-amber-600/80 mb-1">내 잔여 코인</span>
-              <span className="text-xl font-black text-amber-600 leading-none tracking-tight">
+              <span className="text-[11px] font-bold text-amber-600/80 mb-0.5">내 잔여 코인</span>
+              <span className="text-lg font-black text-amber-600 leading-none tracking-tight">
                 {balance !== null ? balance.toLocaleString() : '...'} 코인
               </span>
             </div>
           </div>
-          <div className="text-amber-600 font-bold text-sm flex items-center gap-1 bg-white/60 px-3 py-1.5 rounded-full border border-amber-200/50 group-hover:bg-white transition-colors">
-            충전·내역 <span className="text-lg leading-none mb-0.5">›</span>
+          <div className="text-amber-600 font-bold text-xs flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-full border border-amber-200/50 group-hover:bg-white transition-colors">
+            충전·내역 <span className="text-sm leading-none mb-0.5">›</span>
           </div>
         </a>
       )}
 
-      <div className="flex items-start justify-between mb-6">
-        <h2 className="text-xl font-bold text-slate-900">프로필 정보</h2>
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900">프로필 정보</h2>
         {!isEditing && (
           <button
             onClick={handleEdit}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mt-0.5 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs sm:text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
           >
             <Edit2 className="h-3.5 w-3.5" />
             수정하기
@@ -199,20 +199,20 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3.5">
         {/* 프로필 이미지 및 닉네임 */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3.5 sm:gap-4">
           <div className="relative flex-shrink-0">
             <HubAvatar 
               isLoggedIn={isLoggedIn}
               avatarUrl={getDisplayImage()}
               nickname={getDisplayNickname()}
               size="lg"
-              className="border border-slate-200 shadow-sm"
+              className="w-12 h-12 sm:w-14 sm:h-14 border border-slate-200 shadow-sm"
             />
             {isEditing && (
-              <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-md border-2 border-white">
-                <Camera className="h-4 w-4" />
+              <label className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-md border-2 border-white">
+                <Camera className="h-3 w-3" />
                 <input
                   type="file"
                   accept="image/*"
@@ -224,9 +224,9 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
           </div>
           
           {/* 닉네임 */}
-          <div className="flex-1">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-500 mb-2">
-              <User className="h-4 w-4 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 mb-1.5">
+              <User className="h-3.5 w-3.5 shrink-0" />
               {nicknameLabel || '닉네임'}
             </label>
             <input
@@ -234,7 +234,7 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
               value={isEditing ? tempNickname : nickname}
               onChange={(e) => setTempNickname(e.target.value)}
               disabled={!isEditing}
-              className={`w-full px-4 py-3 border rounded-xl text-sm font-medium transition-colors h-[46px] ${
+              className={`w-full px-3.5 py-2 border rounded-xl text-xs sm:text-sm font-medium transition-colors h-[40px] ${
                 isEditing
                   ? 'bg-white border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900'
                   : 'bg-slate-50 border-slate-200 text-slate-700 cursor-not-allowed'
@@ -245,21 +245,21 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
 
         {/* 이메일 */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-bold text-slate-500 mb-2">
-            <Mail className="h-4 w-4" />
+          <label className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 mb-1.5">
+            <Mail className="h-3.5 w-3.5" />
             이메일
           </label>
           {!isLoggedIn ? (
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('openLoginModal'))}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors cursor-pointer overflow-hidden group h-[46px]"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors cursor-pointer overflow-hidden group h-[40px]"
             >
-              <div className="flex items-center gap-3 px-4 h-full">
-                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600 group-hover:scale-110 transition-transform">
-                  <Mail className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2.5 px-3.5 h-full">
+                <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600 group-hover:scale-110 transition-transform">
+                  <Mail className="h-3 w-3" />
                 </div>
                 <div className="text-left flex-1 flex items-center justify-between">
-                  <p className="text-sm font-bold text-blue-800">이메일 등록/로그인 👋</p>
+                  <p className="text-xs sm:text-sm font-bold text-blue-800">이메일 등록/로그인 👋</p>
                 </div>
               </div>
             </button>
@@ -268,25 +268,25 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
               type="email"
               value={email}
               disabled
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 cursor-not-allowed text-sm font-medium h-[46px]"
+              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 cursor-not-allowed text-xs sm:text-sm font-medium h-[40px]"
             />
           )}
         </div>
 
         {/* 편집 모드 버튼들 */}
         {isEditing && (
-          <div className="flex gap-3 pt-4 border-t border-slate-100 mt-6">
+          <div className="flex gap-2.5 pt-3 border-t border-slate-100 mt-4">
             <button
               onClick={handleCancel}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-200 text-slate-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
             >
               취소
             </button>
             <button
               onClick={handleSave}
-              className="flex-[2] flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 cursor-pointer"
+              className="flex-[2] flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 cursor-pointer"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               저장하기
             </button>
           </div>
@@ -347,22 +347,22 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
 
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden ${className}`}>
-      <div className="p-6 sm:p-8">
-        <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 mb-6">
-          <Bell className="h-5 w-5" />
+      <div className="p-4 sm:p-5">
+        <h2 className="flex items-center gap-1.5 text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">
+          <Bell className="h-4 w-4" />
           {title}
         </h2>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="min-w-0 pr-4">
-              <p className="text-sm font-bold text-slate-900">{toggleLabel}</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="min-w-0 pr-3">
+              <p className="text-xs sm:text-sm font-bold text-slate-900">{toggleLabel}</p>
               {typeof description === 'string' ? (
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
                   {description}
                 </p>
               ) : (
-                <div className="text-xs text-slate-500 mt-1 leading-relaxed">
+                <div className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
                   {description}
                 </div>
               )}
@@ -370,21 +370,21 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
             <button
               onClick={handleToggle}
               disabled={!isLoggedIn}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors flex-shrink-0 ${
                 !isLoggedIn ? 'bg-slate-200 cursor-not-allowed opacity-50' :
                 isToggled ? 'bg-blue-600 cursor-pointer' : 'bg-slate-200 cursor-pointer'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isToggled ? 'translate-x-6' : 'translate-x-1'
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                  isToggled ? 'translate-x-5' : 'translate-x-1'
                 }`}
               />
             </button>
           </div>
 
           {children && (
-            <div className="pt-4 border-t border-slate-100 mt-4">
+            <div className="pt-3 border-t border-slate-100 mt-3">
               {children}
             </div>
           )}
@@ -491,24 +491,24 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
 
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
-      <div className="p-6 sm:p-8 flex flex-col gap-4">
-        <p className="text-sm text-slate-500 text-center mb-2">
+      <div className="p-4 sm:p-5 flex flex-col gap-2.5">
+        <p className="text-xs sm:text-sm text-slate-500 text-center mb-1">
           계정 관리에 대한 상세 작업입니다.
         </p>
 
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3.5 w-3.5" />
           로그아웃
         </button>
 
         <button
           onClick={handleWithdraw}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-rose-50 border border-rose-200 text-rose-600 font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-sm mt-2 cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-xs cursor-pointer"
         >
-          <UserX className="h-4 w-4" />
+          <UserX className="h-3.5 w-3.5" />
           앱 탈퇴하기
         </button>
       </div>
