@@ -46,15 +46,15 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
         <Image 
           src={whatEatLogo}
           alt="뭐먹지?" 
-          width={100}
-          height={48}
-          className="h-7.5 sm:h-9 w-auto shrink-0 object-contain cursor-pointer"
+          width={90}
+          height={42}
+          className="h-7 sm:h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
           priority
         />
-        {/* Main Nav - 4개 메뉴 1줄 완벽 핏팅 (Fit-to-Width) */}
-        <nav className="flex-1 flex items-center justify-center min-w-0 px-0.5 sm:px-2">
-          <div className="flex items-center justify-center gap-0.5 sm:gap-2 w-full max-w-[240px] sm:max-w-none">
+        {/* Main Nav - 4개 메뉴 1줄 완벽 핏팅 (Fit-to-Width & 균등 분할) */}
+        <nav className="flex-1 min-w-0 flex items-center justify-center px-1 sm:px-3">
+          <div className="flex items-center justify-around sm:justify-center gap-0.5 sm:gap-2 w-full">
             {navItems.map((item) => {
               const isHovered = hoveredTab === item.id;
               const isActive = activeNavTab === item.id;
@@ -63,9 +63,9 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                   key={item.id}
                   onClick={() => onNavTabChange?.(item.id)}
                   className={cn(
-                    "inline-flex items-center justify-center gap-1 rounded-full px-2 sm:px-3.5 py-1.5 sm:py-2 text-[12.5px] sm:text-[14px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer shrink-0",
+                    "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 rounded-full py-1.5 sm:py-2 px-1 sm:px-3.5 text-[13px] sm:text-[14px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer text-center",
                     isActive
-                      ? "text-cyan-600 bg-cyan-50 shadow-xs ring-1 ring-cyan-200/60"
+                      ? "text-cyan-600 bg-cyan-50 shadow-2xs ring-1 ring-cyan-200/70"
                       : isHovered
                         ? "text-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-400/30 scale-105"
                         : "text-gray-600 hover:text-cyan-500 hover:scale-105"
@@ -95,7 +95,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                 avatarUrl={user?.avatar_url}
                 nickname={(user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '회원')}
                 size="sm"
-                className="w-full h-full rounded-full"
+                className="!w-7 !h-7 sm:!w-8 sm:!h-8 !rounded-full"
               />
             </div>
             {/* 텍스트 닉네임 - 모바일에서는 숨기고 PC(sm 이상)에서만 노출 */}
@@ -106,8 +106,8 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             </span>
           </button>
           
-          {/* F 스위처 버튼 (여백 없이 초밀착) */}
-          <div className="ml-0.5 sm:ml-1.5 shrink-0 flex items-center justify-center [&_button]:w-7 [&_button]:h-7 sm:[&_button]:w-8 sm:[&_button]:h-8 [&_img]:w-5.5 [&_img]:h-5.5 sm:[&_img]:w-6.5 sm:[&_img]:h-6.5">
+          {/* F 스위처 버튼 (여백 없이 초밀착 28px) */}
+          <div className="shrink-0 flex items-center justify-center [&_button]:!w-7 [&_button]:!h-7 sm:[&_button]:!w-8 sm:[&_button]:!h-8 [&_img]:!w-5 [&_img]:!h-5 sm:[&_img]:!w-6 sm:[&_img]:!h-6">
             <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
           </div>
         </div>
