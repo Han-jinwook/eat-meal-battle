@@ -1153,7 +1153,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             } : undefined,
             author: {
               id: img.uploaded_by,
-              nickname: meta.familyName || u?.nickname || "익명 회원",
+              nickname: u?.nickname || meta.authorName || meta.userName || meta.sharedBy || "익명 회원",
               avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
               region: formatRegionStr(parsedCity, parsedGu, parsedDong)
             },
