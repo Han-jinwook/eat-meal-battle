@@ -3857,25 +3857,25 @@ export function FamilyPage({
             </div>
           </div>
 
-          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (우측 오프셋 및 상하 여백 최적화) */}
+          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (우측 오프셋 및 상하 여백 슬림화) */}
           {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName ? (
             <div
-              className={`flex items-center gap-2 pl-24 pr-5 py-1.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[32px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+              className={`flex items-center gap-2 pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[25px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
               onClick={(e) => {
                 e.stopPropagation()
                 if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
               }}
             >
               {meal.linkUrl && (meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com")) ? (
-                <div className="size-4.5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
-                  <span className="text-white text-[8px] font-black">N</span>
+                <div className="size-4 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                  <span className="text-white text-[7.5px] font-black">N</span>
                 </div>
               ) : (
-                <div className="size-4.5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
-                  <MapPin className="size-3 text-orange-500" />
+                <div className="size-4 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
+                  <MapPin className="size-2.5 text-orange-500" />
                 </div>
               )}
-              <span className="text-[11px] font-bold text-foreground truncate flex items-center">
+              <span className="text-[11px] font-bold text-foreground truncate flex items-center leading-tight">
                 <span className="truncate">{meal.placeName}</span>
                 {placeAddress && (
                   <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
@@ -3899,11 +3899,11 @@ export function FamilyPage({
               </span>
             </div>
           ) : (
-            <div className="h-[32px] pl-24 pr-5 py-1.5 bg-gray-50/50 border-t border-muted/20" />
+            <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20" />
           )}
 
           {/* Card Footer: Title, Date, Average Rating */}
-          <div className="px-5 pt-1.5 pb-3 flex flex-col">
+          <div className="px-5 pt-1 pb-3 flex flex-col">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
                 {cleanDate}
