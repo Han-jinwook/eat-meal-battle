@@ -94,21 +94,27 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
     loadConfig();
   }, []);
 
-  // 외부 클릭/터치 시 닫기 (이벤트 레이스 컨디션 방어)
+  // 외부 클릭/터치 시 닫기 (Radix/Shadcn 표준: isOpen 일 때만 지연 등록하여 버튼 터치 이벤트와의 충돌 100% 방어)
   useEffect(() => {
+    if (!isOpen) return;
+
     function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    // mousedown 대신 click / touchend로 바인딩하여 버튼 터치 이벤트와의 충돌 원천 차단
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('touchend', handleClickOutside);
+
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('touchend', handleClickOutside);
+    }, 10);
+
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('touchend', handleClickOutside);
     };
-  }, []);
+  }, [isOpen]);
 
   // 🚀 설정이 로드되지 않았거나, 중앙 스위치가 꺼져있으면 렌더링하지 않음
   if (!config || !config.isFeatureLive) {
@@ -160,15 +166,13 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
 
   return (
     <div className="relative inline-block text-left shrink-0" ref={containerRef}>
-      {/* 트리거 버튼 (터치 감도 극대화 & stopPropagation) */}
+      {/* 트리거 버튼 */}
       <button
         type="button"
         onClick={(e) => {
+          e.preventDefault();
           e.stopPropagation();
           setIsOpen(prev => !prev);
-        }}
-        onTouchEnd={(e) => {
-          e.stopPropagation();
         }}
         className="flex items-center justify-center w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full hover:bg-slate-100/90 active:bg-slate-200 transition-all group active:scale-95 cursor-pointer shrink-0"
         aria-label="패밀리 앱 열기"
@@ -191,11 +195,11 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
         />
       </button>
 
-      {/* 드롭다운 메뉴 (최고 우선순위 z-index) */}
+      {/* 드롭다운 메뉴 (헤더 아래로 시원하게 펼쳐지는 최상위 팝업) */}
       {isOpen && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.18)] p-4 z-[9999] transform origin-top-right transition-all animate-in fade-in zoom-in duration-200"
+          className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.22)] p-4 z-[99999] transform origin-top-right transition-all animate-in fade-in zoom-in duration-200"
         >
           
           {/* My Apps (가입된 앱) */}
