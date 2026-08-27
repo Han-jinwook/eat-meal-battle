@@ -94,15 +94,20 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
     loadConfig();
   }, []);
 
-  // 외부 클릭 시 닫기
+  // 외부 클릭/터치 시 닫기 (이벤트 레이스 컨디션 방어)
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // mousedown 대신 click / touchend로 바인딩하여 버튼 터치 이벤트와의 충돌 원천 차단
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('touchend', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchend', handleClickOutside);
+    };
   }, []);
 
   // 🚀 설정이 로드되지 않았거나, 중앙 스위치가 꺼져있으면 렌더링하지 않음
@@ -155,10 +160,17 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
 
   return (
     <div className="relative inline-block text-left shrink-0" ref={containerRef}>
-      {/* 트리거 버튼 */}
+      {/* 트리거 버튼 (터치 감도 극대화 & stopPropagation) */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-slate-100 transition-all duration-300 group hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(prev => !prev);
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+        }}
+        className="flex items-center justify-center w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full hover:bg-slate-100/90 active:bg-slate-200 transition-all group active:scale-95 cursor-pointer shrink-0"
         aria-label="패밀리 앱 열기"
       >
         <img 
@@ -175,13 +187,16 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
               parent.appendChild(fallback);
             }
           }}
-          className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 object-contain opacity-80 group-hover:opacity-100 drop-shadow-xs transition-all"
+          className="w-5 h-5 sm:w-5.5 sm:h-5.5 object-contain opacity-85 group-hover:opacity-100 drop-shadow-xs transition-all pointer-events-none"
         />
       </button>
 
-      {/* 드롭다운 메뉴 */}
+      {/* 드롭다운 메뉴 (최고 우선순위 z-index) */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.12)] p-4 z-50 transform origin-top-right transition-all animate-in fade-in zoom-in duration-200">
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.18)] p-4 z-[9999] transform origin-top-right transition-all animate-in fade-in zoom-in duration-200"
+        >
           
           {/* My Apps (가입된 앱) */}
           {joinedApps.length > 0 && (
