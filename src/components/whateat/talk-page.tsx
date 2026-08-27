@@ -14,7 +14,10 @@ import {
   ExternalLink,
   Pin,
   Pencil,
-  Trash2
+  Trash2,
+  ChefHat,
+  Bike,
+  UtensilsCrossed
 } from "lucide-react"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -1721,14 +1724,19 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               </div>
               {/* Type Badge */}
               <div className={cn(
-                "px-2.5 py-1 rounded-full text-[10px] font-bold",
-                post.type === "homemade" && "bg-green-50 text-green-600",
-                post.type === "delivery" && "bg-blue-50 text-blue-600",
-                post.type === "dineout" && "bg-purple-50 text-purple-600"
+                "px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[10px] font-bold shadow-2xs shrink-0",
+                post.type === "homemade" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                post.type === "delivery" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                post.type === "dineout" && "bg-orange-50 text-orange-700 border-orange-200/80"
               )}>
-                {post.type === "homemade" && "집밥"}
-                {post.type === "delivery" && "배달"}
-                {post.type === "dineout" && "외식"}
+                {post.type === "homemade" ? <ChefHat className="size-3 shrink-0" strokeWidth={2.2} /> :
+                 post.type === "delivery" ? <Bike className="size-3 shrink-0" strokeWidth={2.2} /> :
+                 <UtensilsCrossed className="size-3 shrink-0" strokeWidth={2.2} />}
+                <span>
+                  {post.type === "homemade" && "집밥"}
+                  {post.type === "delivery" && "배달"}
+                  {post.type === "dineout" && "외식"}
+                </span>
               </div>
             </div>
 
