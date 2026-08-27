@@ -2424,7 +2424,7 @@ export function FamilyPage({
       meta.mealType = meta.mealType || targetMeal.mealType
       if (user?.id) {
         meta.promotedBy = user.id
-        meta.promotedByNickname = user.nickname || (user as any).name || "멀린"
+        meta.promotedByNickname = user.nickname || (user as any).name || ""
       }
 
       // 패밀리 공유 식사인 경우 가족 이름 연동 처리
