@@ -965,32 +965,25 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           return (rawSource === "family-shared" || rawSource === "group") ? img.id : img.meal_id
         }).filter(Boolean)
         
-        // Fetch users (region 컬럼 포함)
-        let dbUsers: any[] = []
-        if (uploaderIds.length > 0) {
-          const { data: usersData } = await supabase
-            .from("users")
-            .select("id, nickname, profile_image, region")
-            .in("id", uploaderIds)
-          dbUsers = usersData || []
-        }
-        const userMap = new Map(dbUsers.map(u => [u.id, u]))
-
-        // Fetch all ratings for these meals to display real-time accumulated rating
+        // Fetch all ratings for these meals to display real-time accumulated rating and identify 5-star promoters
         let dbRatings: any[] = []
         if (ratingIds.length > 0) {
           const { data: ratingsData } = await supabase
             .from("meal_ratings")
-            .select("meal_id, rating")
+            .select("meal_id, user_id, rating")
             .in("meal_id", ratingIds)
           dbRatings = ratingsData || []
         }
 
-        // Aggregate ratings by meal_id
+        // Aggregate ratings & map 5-star raters by meal_id
         const mealRatingStatsMap = new Map<string, { sum: number; count: number }>()
         const fiveStarCountMap = new Map<string, number>()
+        const fiveStarUsersMap = new Map<string, string[]>()
+        const ratingUserIds: string[] = []
+
         dbRatings.forEach((rt) => {
           const mId = rt.meal_id
+          if (rt.user_id) ratingUserIds.push(rt.user_id)
           const current = mealRatingStatsMap.get(mId) || { sum: 0, count: 0 }
           mealRatingStatsMap.set(mId, {
             sum: current.sum + rt.rating,
@@ -998,8 +991,25 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           })
           if (rt.rating === 5) {
             fiveStarCountMap.set(mId, (fiveStarCountMap.get(mId) || 0) + 1)
+            const list = fiveStarUsersMap.get(mId) || []
+            if (rt.user_id && !list.includes(rt.user_id)) {
+              list.push(rt.user_id)
+              fiveStarUsersMap.set(mId, list)
+            }
           }
         })
+
+        // Fetch all relevant users (uploaders + raters, region 컬럼 포함)
+        const allUserIds = Array.from(new Set([...uploaderIds, ...ratingUserIds].filter(Boolean)))
+        let dbUsers: any[] = []
+        if (allUserIds.length > 0) {
+          const { data: usersData } = await supabase
+            .from("users")
+            .select("id, nickname, profile_image, region")
+            .in("id", allUserIds)
+          dbUsers = usersData || []
+        }
+        const userMap = new Map(dbUsers.map(u => [u.id, u]))
 
         const getRatingStats = (mId: string) => {
           const stats = mealRatingStatsMap.get(mId)
@@ -1135,6 +1145,15 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           const fiveStarCount = targetRatingId ? (fiveStarCountMap.get(targetRatingId) || 0) : 0
           const bonusLikes = (mappedSource === "family" || mappedSource === "group") ? Math.max(0, fiveStarCount - 1) : 0
 
+          // 가족/모임에서 맛톡으로 5점을 주어 승격시킨 사람(5점 평가자)을 게시글 작성자로 우선 지정
+          const fiveStarUserList = targetRatingId ? (fiveStarUsersMap.get(targetRatingId) || []) : []
+          const promoterUserId = meta.promotedBy || (fiveStarUserList.length > 0 ? fiveStarUserList[0] : null)
+          const promoterUser = promoterUserId ? userMap.get(promoterUserId) : null
+
+          const postUser = (mappedSource === "family" || mappedSource === "group") && promoterUser
+            ? promoterUser
+            : u
+
           return {
             id: img.id,
             type: mappedType,
@@ -1152,9 +1171,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               address: actualPlaceAddress
             } : undefined,
             author: {
-              id: img.uploaded_by,
-              nickname: u?.nickname || meta.authorName || meta.userName || meta.sharedBy || "익명 회원",
-              avatar: u?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
+              id: postUser?.id || img.uploaded_by,
+              nickname: postUser?.nickname || meta.promotedByNickname || meta.authorName || meta.userName || meta.sharedBy || "익명 회원",
+              avatar: postUser?.profile_image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=face",
               region: formatRegionStr(parsedCity, parsedGu, parsedDong)
             },
             createdAt: meta.promotedAt || img.created_at,

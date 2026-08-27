@@ -2419,9 +2419,13 @@ export function FamilyPage({
         meta = { title: targetMeal.title }
       }
       
-      // 맛톡 승격 일시 기록
+      // 맛톡 승격 일시 및 5점 부여 승격자 정보 기록
       meta.promotedAt = new Date().toISOString()
       meta.mealType = meta.mealType || targetMeal.mealType
+      if (user?.id) {
+        meta.promotedBy = user.id
+        meta.promotedByNickname = user.nickname || (user as any).name || "멀린"
+      }
 
       // 패밀리 공유 식사인 경우 가족 이름 연동 처리
       if (!meta.familyName) {
