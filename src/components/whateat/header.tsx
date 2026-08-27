@@ -41,7 +41,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
       className="fixed top-0 left-0 right-0 w-full bg-white/70 backdrop-blur-md border-b border-gray-100/60 flex justify-center z-50"
       style={{ '--app-header-height': '54px' } as React.CSSProperties}
     >
-      <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] flex min-h-[54px] items-center px-2.5 sm:px-4 py-1.5 justify-between gap-1 sm:gap-2">
+      <div className="w-full max-w-[430px] md:max-w-[640px] lg:max-w-[800px] flex min-h-[54px] items-center px-4 sm:px-5 py-1.5 justify-between gap-1.5 sm:gap-3">
         {/* Logo */}
         <Image 
           src={whatEatLogo}
@@ -52,9 +52,9 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           onClick={() => onNavTabChange?.("home")}
           priority
         />
-        {/* Main Nav - 4개 메뉴 1줄 완벽 핏팅 (Fit-to-Width & 균등 분할) */}
-        <nav className="flex-1 min-w-0 flex items-center justify-center px-1 sm:px-3">
-          <div className="flex items-center justify-around sm:justify-center gap-0.5 sm:gap-2 w-full">
+        {/* Main Nav - 4개 메뉴 1줄 완벽 핏팅 (Fit-to-Width & 4열 그리드 균등 분할) */}
+        <nav className="flex-1 min-w-0 flex items-center justify-center px-1 sm:px-2">
+          <div className="grid grid-cols-4 w-full gap-1 sm:flex sm:items-center sm:justify-center sm:gap-2">
             {navItems.map((item) => {
               const isHovered = hoveredTab === item.id;
               const isActive = activeNavTab === item.id;
@@ -63,7 +63,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                   key={item.id}
                   onClick={() => onNavTabChange?.(item.id)}
                   className={cn(
-                    "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 rounded-full py-1.5 sm:py-2 px-1 sm:px-3.5 text-[13px] sm:text-[14px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer text-center",
+                    "w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded-full py-1 sm:py-2 px-1 sm:px-3.5 text-[13px] sm:text-[14px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer text-center",
                     isActive
                       ? "text-cyan-600 bg-cyan-50 shadow-2xs ring-1 ring-cyan-200/70"
                       : isHovered
@@ -81,7 +81,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           </div>
         </nav>
         {/* 우측 프로필 & 패밀리앱 스위처(F) [🥳F] 마이크로 캡슐 표준 규격 */}
-        <div className="flex items-center bg-slate-50/80 sm:bg-slate-50/60 rounded-full sm:rounded-2xl p-0.5 sm:p-1 border border-slate-200/60 sm:border-slate-100/50 shrink-0 shadow-2xs">
+        <div className="flex items-center bg-slate-50/90 sm:bg-slate-50/60 rounded-full sm:rounded-2xl p-0.5 sm:p-1 border border-slate-200/80 sm:border-slate-100/50 shrink-0 shadow-2xs">
           <button
             type="button"
             onClick={handleProfileClick}
@@ -89,7 +89,7 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             aria-label="프로필 설정 열기"
           >
             {/* 28px(w-7 h-7) 원형 아바타 (모바일 28px 초밀착 원형 규격) */}
-            <div className="size-7 sm:size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-1.5 sm:ring-2 ring-cyan-200 transition-all group-hover:ring-cyan-400 flex items-center justify-center">
+            <div className="size-7 sm:size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-1.5 sm:ring-2 ring-cyan-200 transition-all group-hover:ring-cyan-400 flex items-center justify-center bg-orange-50">
               <HubAvatar
                 isLoggedIn={isLoggedIn}
                 avatarUrl={user?.avatar_url}
