@@ -76,16 +76,16 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
             })}
           </div>
         </div>
-        {/* 프로필과 패밀리 앱 스위처(F)를 바짝 붙인 그룹 */}
+        {/* 프로필과 패밀리 앱 스위처(F)를 바짝 붙인 그룹 — 모바일: 아바타(28px)+F(28px) 마이크로 캡슐 */}
         <div className="flex items-center bg-slate-50/50 rounded-2xl p-1 border border-slate-100/50 shrink-0">
           <button
             type="button"
             onClick={handleProfileClick}
-            className="flex items-center gap-2 cursor-pointer group"
+            className="flex items-center gap-1.5 cursor-pointer group"
             aria-label="프로필 설정 열기"
           >
-            {/* 프로필 이미지 - 모바일에서는 숨기고 PC(sm 이상)에서만 노출 */}
-            <div className="hidden sm:flex size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors group-hover:ring-cyan-300 items-center justify-center">
+            {/* 아바타 — 모바일 28px, sm 이상 32px */}
+            <div className="size-7 sm:size-8 shrink-0 rounded-full overflow-hidden border border-cyan-100 ring-2 ring-cyan-200 transition-colors group-hover:ring-cyan-300 flex items-center justify-center">
               <HubAvatar
                 isLoggedIn={isLoggedIn}
                 avatarUrl={user?.avatar_url}
@@ -94,15 +94,16 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
                 className="w-full h-full rounded-full"
               />
             </div>
-            {/* 닉네임 - 모바일과 PC 모두 노출 (모바일에서는 텍스트만 노출) */}
-            <span className="text-[13px] sm:text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[80px] sm:max-w-[120px] truncate ml-1 sm:ml-0">
+            {/* 닉네임 — 모바일에서는 숨기고 sm 이상에서만 표시 */}
+            <span className="hidden sm:inline-block text-[14px] font-bold text-gray-700 group-hover:text-cyan-600 transition-colors max-w-[120px] truncate">
               {isLoggedIn 
                 ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || ''))
                 : '게스트'}
             </span>
           </button>
           
-          <div className="ml-2 shrink-0">
+          {/* F 버튼 — 모바일 28px, sm 이상 40px */}
+          <div className="ml-1 sm:ml-2 shrink-0 [&_button]:!size-7 sm:[&_button]:!size-10 [&_img]:!w-5 [&_img]:!h-5 sm:[&_img]:!w-7 sm:[&_img]:!h-7">
             <HubAppSwitcher currentAppId="whateat" joinedAppIds={[]} />
           </div>
         </div>
