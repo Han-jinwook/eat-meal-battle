@@ -347,22 +347,22 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
 
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden ${className}`}>
-      <div className="p-4 sm:p-5">
-        <h2 className="flex items-center gap-1.5 text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">
+      <div className="p-3.5 sm:p-4">
+        <h2 className="flex items-center gap-1.5 text-sm sm:text-base font-bold text-slate-900 mb-2">
           <Bell className="h-4 w-4" />
           {title}
         </h2>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-2.5 sm:p-3 bg-slate-50 rounded-xl border border-slate-100">
             <div className="min-w-0 pr-3">
               <p className="text-xs sm:text-sm font-bold text-slate-900">{toggleLabel}</p>
               {typeof description === 'string' ? (
-                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                   {description}
                 </p>
               ) : (
-                <div className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">
+                <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">
                   {description}
                 </div>
               )}
@@ -384,7 +384,7 @@ export const HubNotificationCard: React.FC<HubNotificationCardProps> = ({
           </div>
 
           {children && (
-            <div className="pt-3 border-t border-slate-100 mt-3">
+            <div className="pt-2 border-t border-slate-100 mt-2">
               {children}
             </div>
           )}
@@ -491,14 +491,14 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
 
   return (
     <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
-      <div className="p-4 sm:p-5 flex flex-col gap-2.5">
-        <p className="text-xs sm:text-sm text-slate-500 text-center mb-1">
+      <div className="p-3.5 sm:p-4 flex flex-col gap-2">
+        <p className="text-[11px] sm:text-xs text-slate-500 text-center mb-0.5">
           계정 관리에 대한 상세 작업입니다.
         </p>
 
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-xs cursor-pointer"
         >
           <LogOut className="h-3.5 w-3.5" />
           로그아웃
@@ -506,7 +506,7 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
 
         <button
           onClick={handleWithdraw}
-          className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-rose-50 border border-rose-200 text-rose-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-xs cursor-pointer"
         >
           <UserX className="h-3.5 w-3.5" />
           앱 탈퇴하기
