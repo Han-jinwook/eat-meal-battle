@@ -24,6 +24,7 @@ import {
   Star,
   StarHalf,
   MessageCircle,
+  MessageSquare,
   Heart,
   Send,
   Sparkles,
@@ -3946,56 +3947,43 @@ export function FamilyPage({
             </div>
 
             <div className="flex items-center justify-between gap-2 mt-0.5">
-              <h3 className="font-extrabold text-foreground text-sm tracking-tight truncate flex-1 min-w-0">
-                {meal.title}
-              </h3>
-              <p className="text-[10px] text-muted-foreground font-medium shrink-0">
-                by {meal.sharedBy}
-              </p>
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                {meal.sharedBy && (
+                  <span className="text-[10px] text-muted-foreground font-semibold shrink-0">
+                    by {meal.sharedBy}
+                  </span>
+                )}
+                <h3 className="font-extrabold text-foreground text-sm tracking-tight truncate">
+                  {meal.title}
+                </h3>
+              </div>
+
+              {/* 댓글 버튼 (식사명 줄 우측 끝으로 이동) */}
+              <div 
+                className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mr-1 rounded-md transition-colors shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setExpandedMealCommentsId(expandedMealCommentsId === meal.id ? null : meal.id)
+                  if (expandedMealCommentsId === meal.id) {
+                    setActiveReplyTarget(null)
+                    setMealReplyInput("")
+                  }
+                }}
+              >
+                <MessageSquare className="size-3.5 text-orange-500" />
+                <span className="text-xs font-bold text-foreground select-none">댓글</span>
+                <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
+                  {(displayComments[meal.id] ?? []).length}
+                </span>
+              </div>
             </div>
 
             {promotedMealIds.includes(meal.id) && (
               <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-[10px] text-emerald-700 font-bold flex items-center gap-1.5">
                 <Sparkles className="size-3 shrink-0" />
-                <span>가족 5점 만점 달성으로 맛통에 게시된 식사입니다!</span>
+                <span>가족 5점 만점 달성으로 맛톡에 게시된 식사입니다!</span>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* 액션 버튼 영역: 좋아요 & 댓글 */}
-        <div className="border-t border-muted/30 px-5 py-2.5 flex items-center justify-between bg-gray-50/40">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => handleToggleWishlistLike(meal.id)}
-              className={cn(
-                "flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer",
-                wishlistLikes[meal.id]?.includes(user?.id ?? "")
-                  ? "text-red-500"
-                  : "text-muted-foreground hover:text-red-500"
-              )}
-            >
-              <Heart
-                className={cn(
-                  "size-4 transition-transform active:scale-125",
-                  wishlistLikes[meal.id]?.includes(user?.id ?? "") && "fill-current"
-                )}
-              />
-              <span>좋아요 {wishlistLikes[meal.id]?.length ? wishlistLikes[meal.id]?.length : ""}</span>
-            </button>
-            <button
-              onClick={() => {
-                setExpandedMealCommentsId(expandedMealCommentsId === meal.id ? null : meal.id)
-                if (expandedMealCommentsId === meal.id) {
-                  setActiveReplyTarget(null)
-                  setMealReplyInput("")
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <MessageCircle className="size-4" />
-              <span>댓글 {(displayComments[meal.id] ?? []).length ? (displayComments[meal.id] ?? []).length : ""}</span>
-            </button>
           </div>
         </div>
 

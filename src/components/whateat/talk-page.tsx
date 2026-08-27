@@ -988,6 +988,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
 
         // Aggregate ratings by meal_id
         const mealRatingStatsMap = new Map<string, { sum: number; count: number }>()
+        const fiveStarCountMap = new Map<string, number>()
         dbRatings.forEach((rt) => {
           const mId = rt.meal_id
           const current = mealRatingStatsMap.get(mId) || { sum: 0, count: 0 }
@@ -995,6 +996,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             sum: current.sum + rt.rating,
             count: current.count + 1
           })
+          if (rt.rating === 5) {
+            fiveStarCountMap.set(mId, (fiveStarCountMap.get(mId) || 0) + 1)
+          }
         })
 
         const getRatingStats = (mId: string) => {
@@ -1127,6 +1131,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             ? { average: 5, count: 1 }
             : (targetRatingId ? getRatingStats(targetRatingId) : { average: 5, count: 1 })
 
+          // 가족/모임 식사 중 5점을 준 구성원이 2명 이상인 경우, 추가 5점 수만큼 맛톡 초기 '좋아요'로 반영 (+1, +2...)
+          const fiveStarCount = targetRatingId ? (fiveStarCountMap.get(targetRatingId) || 0) : 0
+          const bonusLikes = (mappedSource === "family" || mappedSource === "group") ? Math.max(0, fiveStarCount - 1) : 0
+
           return {
             id: img.id,
             type: mappedType,
@@ -1151,7 +1159,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             },
             createdAt: meta.promotedAt || img.created_at,
             rating: finalRating,
-            likes: mealLikesCountMap.get(img.id) || 0,
+            likes: (mealLikesCountMap.get(img.id) || 0) + bonusLikes,
             isLiked: userLikedMealSet.has(img.id),
             commentCount: commentCountMap.get(img.id) || 0,
             isSample: false,
