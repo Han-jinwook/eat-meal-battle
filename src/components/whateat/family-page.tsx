@@ -3857,21 +3857,21 @@ export function FamilyPage({
             </div>
           </div>
 
-          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 */}
+          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (우측 오프셋 및 상하 여백 최적화) */}
           {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName ? (
             <div
-              className={`flex items-center gap-2.5 px-5 py-2 bg-gray-50/50 border-t border-muted/20 transition-all ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+              className={`flex items-center gap-2 pl-24 pr-5 py-1.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[32px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
               onClick={(e) => {
                 e.stopPropagation()
                 if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
               }}
             >
               {meal.linkUrl && (meal.linkUrl.includes("naver.me") || meal.linkUrl.includes("naver.com")) ? (
-                <div className="size-5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                <div className="size-4.5 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
                   <span className="text-white text-[8px] font-black">N</span>
                 </div>
               ) : (
-                <div className="size-5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
+                <div className="size-4.5 rounded-md bg-orange-100 flex items-center justify-center shrink-0">
                   <MapPin className="size-3 text-orange-500" />
                 </div>
               )}
@@ -3899,11 +3899,11 @@ export function FamilyPage({
               </span>
             </div>
           ) : (
-            <div className="h-[37px] px-5 py-2 bg-gray-50/50 border-t border-muted/20" />
+            <div className="h-[32px] pl-24 pr-5 py-1.5 bg-gray-50/50 border-t border-muted/20" />
           )}
 
           {/* Card Footer: Title, Date, Average Rating */}
-          <div className="px-5 pt-2.5 pb-3 flex flex-col">
+          <div className="px-5 pt-1.5 pb-3 flex flex-col">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
                 {cleanDate}
