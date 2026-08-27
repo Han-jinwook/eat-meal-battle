@@ -40,22 +40,55 @@ export interface HubAppSwitcherProps {
 }
 
 
+const DEFAULT_FAMILY_CONFIG: FamilyConfig = {
+  isFeatureLive: true,
+  apps: [
+    {
+      id: 'sundreamer',
+      name: '썬드리머',
+      url: 'https://sundreamer.app',
+      icon: '☀️',
+      description: '11년차 비타민D 자외선조사기 회원 전용 멤버십',
+      isActive: true,
+      sortOrder: 1
+    },
+    {
+      id: 'whateat',
+      name: '뭐먹지?',
+      url: 'https://whateat.sundreamer.app',
+      icon: '🍱',
+      description: '학교 급식과 식생활 기록 플랫폼',
+      isActive: true,
+      sortOrder: 2
+    },
+    {
+      id: 'aggrofilter',
+      name: '어그로필터',
+      url: 'https://aggrofilter.com',
+      icon: '🛡️',
+      description: '유튜브 영상 팩트 신뢰도 분석기',
+      isActive: true,
+      sortOrder: 3
+    }
+  ]
+};
+
 export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [config, setConfig] = useState<FamilyConfig | null>(null);
+  const [config, setConfig] = useState<FamilyConfig>(DEFAULT_FAMILY_CONFIG);
   const containerRef = useRef<HTMLDivElement>(null);
   const { user } = useHub();
 
-  // 중앙 통제 설정 불러오기
+  // 중앙 통제 설정 불러오기 (비동기 갱신)
   useEffect(() => {
     const loadConfig = async () => {
       try {
         const res = await hubFetch<{ isFeatureLive: boolean; apps: FamilyApp[] }>('/api/family/config');
-        if (res.ok && res.data) {
+        if (res.ok && res.data && res.data.isFeatureLive) {
           setConfig(res.data);
         }
       } catch (err) {
-        console.error('[HubAppSwitcher] Failed to load config', err);
+        console.warn('[HubAppSwitcher] Using default config fallback:', err);
       }
     };
     loadConfig();
@@ -121,17 +154,28 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
   };
 
   return (
-    <div className="relative inline-block text-left" ref={containerRef}>
+    <div className="relative inline-block text-left shrink-0" ref={containerRef}>
       {/* 트리거 버튼 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 transition-all duration-300 group hover:scale-105 active:scale-95"
+        className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-slate-100 transition-all duration-300 group hover:scale-105 active:scale-95 cursor-pointer shrink-0"
         aria-label="패밀리 앱 열기"
       >
         <img 
           src={`${getConfig().hubUrl}/family-icon.png`} 
           alt="Family Apps" 
-          className="w-7 h-7 object-contain opacity-80 group-hover:opacity-100 drop-shadow-sm transition-all"
+          onError={(e) => {
+            // 이미지 로드 실패 시 깔끔한 SVG/텍스트 Fallback 렌더링
+            e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent && !parent.querySelector('.fallback-f')) {
+              const fallback = document.createElement('span');
+              fallback.className = 'fallback-f font-black text-xs sm:text-sm text-indigo-600';
+              fallback.innerText = 'F';
+              parent.appendChild(fallback);
+            }
+          }}
+          className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 object-contain opacity-80 group-hover:opacity-100 drop-shadow-xs transition-all"
         />
       </button>
 

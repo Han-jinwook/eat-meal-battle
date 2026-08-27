@@ -1,3 +1,8 @@
+/**
+ * Version: v2.1.0
+ * Last Updated: 2026-08-27
+ * Merlin Hub SDK — 프로필/알림/로그아웃/탈퇴 카드
+ */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,9 +17,11 @@ import { useHub } from '../HubProvider';
 export interface HubProfileCardProps {
   onSuccess?: (nickname: string, avatarUrl: string) => void;
   className?: string;
+  showCoin?: boolean; // 코인이 없는 무료/회원용 앱(썬드리머 등)을 위한 분기 플래그 (기본값: true)
+  nicknameLabel?: React.ReactNode; // 커스텀 닉네임 라벨 (예: 앱 닉네임 (카페 별명 권장))
 }
 
-export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, className = '' }) => {
+export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, className = '', showCoin = true, nicknameLabel }) => {
   const { user, isLoggedIn, balance } = useHub();
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState('');
@@ -157,7 +164,7 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
     <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 ${className}`}>
       
       {/* 🚀 상단 코인 배너 (모바일 등에서 헤더 코인 UI를 대체/보완) */}
-      {isLoggedIn && (
+      {isLoggedIn && showCoin && (
         <a 
           href="/payment/purchase"
           className="flex items-center justify-between p-4 mb-8 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border border-amber-100 hover:shadow-md hover:-translate-y-0.5 transition-all group cursor-pointer no-underline"
@@ -219,8 +226,8 @@ export const HubProfileCard: React.FC<HubProfileCardProps> = ({ onSuccess, class
           {/* 닉네임 */}
           <div className="flex-1">
             <label className="flex items-center gap-2 text-sm font-bold text-slate-500 mb-2">
-              <User className="h-4 w-4" />
-              닉네임
+              <User className="h-4 w-4 shrink-0" />
+              {nicknameLabel || '닉네임'}
             </label>
             <input
               type="text"
@@ -399,19 +406,33 @@ export interface HubLogoutCardProps {
 export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, className = '' }) => {
   const { isLoggedIn } = useHub();
 
-  const handleLogout = () => {
-    fetch('/api/auth/logout', { method: 'POST' })
-      .catch(() => {})
-      .finally(() => {
-        localStorage.clear();
-        window.dispatchEvent(new Event('profileUpdated'));
-        if (onLogout) onLogout();
-      });
+  const handleLogout = async () => {
+    try {
+      const { clearSessionToken } = await import('../CoreLogic/client');
+      clearSessionToken();
+    } catch (e) {}
+
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+      // .sundreamer.app 공용 도메인 쿠키 삭제
+      document.cookie = 'merlin_session_token=; path=/; max-age=0; domain=.sundreamer.app';
+      document.cookie = 'merlin_session_token=; path=/; max-age=0;';
+      window.dispatchEvent(new CustomEvent('merlinSessionExpired'));
+      window.dispatchEvent(new Event('profileUpdated'));
+      if (onLogout) {
+        onLogout();
+      }
+      window.location.href = window.location.origin + '/';
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
+    }
   };
 
   const handleWithdraw = async () => {
     const configModule = await import('../CoreLogic/config');
-    const { hubFetch } = await import('../CoreLogic/client');
+    const { hubFetch, clearSessionToken } = await import('../CoreLogic/client');
     const appId = configModule.getConfig().appId;
 
     if (!appId) {
@@ -446,7 +467,16 @@ export const HubLogoutCard: React.FC<HubLogoutCardProps> = ({ onLogout, classNam
         
         if (res.ok && res.data?.success) {
           alert('정상적으로 탈퇴 처리되었습니다.');
-          handleLogout();
+          clearSessionToken();
+          localStorage.clear();
+          sessionStorage.clear();
+          document.cookie = 'merlin_session_token=; path=/; max-age=0; domain=.sundreamer.app';
+          document.cookie = 'merlin_session_token=; path=/; max-age=0;';
+          window.dispatchEvent(new CustomEvent('merlinSessionExpired'));
+          window.location.href = window.location.origin + '/';
+          setTimeout(() => {
+            window.location.reload();
+          }, 50);
         } else {
           alert(res.data?.message || '탈퇴에 실패했습니다.');
         }
