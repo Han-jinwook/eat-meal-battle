@@ -600,11 +600,11 @@ export function FeedTab() {
                     </span>
                   </button>
                 </div>
-                <div className="flex items-center gap-0.5 text-primary">
+                <div className="flex items-center gap-0.5 text-orange-500">
                   {[...Array(5)].map((_, i) => (
                     <Star 
                       key={i} 
-                      className={`size-3.5 ${i < post.rating ? 'fill-current' : ''}`}
+                      className={`size-4 ${i < post.rating ? 'fill-current' : ''}`}
                     />
                   ))}
                 </div>

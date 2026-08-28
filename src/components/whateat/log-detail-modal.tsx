@@ -544,7 +544,7 @@ export function LogDetailModal({ isOpen, onClose, log }: LogDetailModalProps) {
                         key={s} 
                         className={cn(
                           "size-4",
-                          s <= currentRating ? "fill-orange-400 text-orange-400" : "text-gray-200 fill-gray-100"
+                          s <= currentRating ? "fill-orange-500 text-orange-500" : "text-gray-200 fill-gray-100"
                         )} 
                       />
                     ))}

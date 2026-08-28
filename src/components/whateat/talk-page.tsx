@@ -1488,11 +1488,11 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
           <Star 
             key={i} 
             className={cn(
-              "size-3",
+              "size-4",
               i < fullStars 
-                ? "fill-yellow-400 text-yellow-400" 
+                ? "fill-orange-500 text-orange-500" 
                 : i === fullStars && hasHalf 
-                  ? "fill-yellow-400/50 text-yellow-400"
+                  ? "fill-orange-500/50 text-orange-500"
                   : "text-muted-foreground/30"
             )} 
           />
@@ -1903,7 +1903,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                 </div>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">
-                    <Star className="size-3 fill-orange-400 text-orange-400" />
+                    <Star className="size-4 fill-orange-500 text-orange-500" />
                     <span className="text-[11px] font-bold text-orange-500">
                       {post.rating.average.toFixed(1)}
                     </span>

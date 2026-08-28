@@ -3932,9 +3932,9 @@ export function FamilyPage({
                     <div className="flex items-center gap-1">
                       <Star 
                         className={cn(
-                          "size-3.5 transition-colors",
-                          hasMyRating 
-                            ? "fill-red-500 text-red-500" 
+                          "size-4 transition-colors",
+                          (hasMyRating || averageRating > 0) 
+                            ? "fill-orange-500 text-orange-500" 
                             : "text-gray-300 fill-none stroke-[1.5]"
                         )} 
                       />
@@ -4607,8 +4607,8 @@ export function FamilyPage({
                               <Star
                                 className={cn(
                                   "size-5 transition-all",
-                                  value <= score ? "fill-orange-400 text-orange-400" : "text-gray-200 fill-gray-50",
-                                  !canRate && value <= score && "fill-orange-300 text-orange-300",
+                                  value <= score ? "fill-orange-500 text-orange-500" : "text-gray-200 fill-gray-50",
+                                  !canRate && value <= score && "fill-orange-400 text-orange-400",
                                 )}
                               />
                             </button>
