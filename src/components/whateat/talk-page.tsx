@@ -1702,7 +1702,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             )}
             {/* Author Header */}
             <div className="flex items-center justify-between p-4 pb-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pl-1">
                 <img
                   src={post.author.avatar}
                   alt={post.author.nickname}
@@ -1722,31 +1722,33 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   </div>
                 </div>
               </div>
-              {/* Type Badge */}
-              <div className={cn(
-                "px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[10px] font-bold shadow-2xs shrink-0",
-                post.type === "homemade" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                post.type === "delivery" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                post.type === "dineout" && "bg-orange-50 text-orange-700 border-orange-200/80"
-              )}>
-                {post.type === "homemade" ? <ChefHat className="size-3 shrink-0" strokeWidth={2.2} /> :
-                 post.type === "delivery" ? <Bike className="size-3 shrink-0" strokeWidth={2.2} /> :
-                 <UtensilsCrossed className="size-3 shrink-0" strokeWidth={2.2} />}
-                <span>
-                  {post.type === "homemade" && "집밥"}
-                  {post.type === "delivery" && "배달"}
-                  {post.type === "dineout" && "외식"}
-                </span>
-              </div>
             </div>
 
             {/* Card Content — 좌우 분할 (좌: 음식사진, 우: 레시피/Place 썸네일) */}
             <div className="flex h-[200px]">
               {/* Left: 음식 대표 사진 */}
               <div
-                className="w-1/2 relative overflow-hidden cursor-zoom-in"
+                className="w-1/2 relative overflow-hidden cursor-zoom-in group/img"
                 onClick={() => setViewerImage(post.image)}
               >
+                {/* Type Badge - 먹로그 표준에 맞춰 사진 좌상단으로 이동 */}
+                <div className="absolute top-3 left-3 z-10">
+                  <div className={cn(
+                    "px-2 py-0.5 rounded-lg flex items-center gap-1 border text-[10px] font-bold shadow-xs backdrop-blur-sm",
+                    post.type === "homemade" && "bg-emerald-50/95 text-emerald-700 border-emerald-200/80",
+                    post.type === "delivery" && "bg-sky-50/95 text-sky-700 border-sky-200/80",
+                    post.type === "dineout" && "bg-orange-50/95 text-orange-700 border-orange-200/80"
+                  )}>
+                    {post.type === "homemade" ? <ChefHat className="size-3 shrink-0" strokeWidth={2.2} /> :
+                     post.type === "delivery" ? <Bike className="size-3 shrink-0" strokeWidth={2.2} /> :
+                     <UtensilsCrossed className="size-3 shrink-0" strokeWidth={2.2} />}
+                    <span>
+                      {post.type === "homemade" && "집밥"}
+                      {post.type === "delivery" && "배달"}
+                      {post.type === "dineout" && "외식"}
+                    </span>
+                  </div>
+                </div>
                 {post.image ? (
                   <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
@@ -1892,14 +1894,20 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
               {/* 식당명 + 별점 한 줄 */}
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {post.linkUrl && (
-                    <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
-                      <span className="text-white text-[8px] font-black leading-none">N</span>
-                    </div>
+                  {post.restaurant?.name ? (
+                    <>
+                      {post.linkUrl && (
+                        <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
+                          <span className="text-white text-[8px] font-black leading-none">N</span>
+                        </div>
+                      )}
+                      <span className="text-[11px] text-muted-foreground font-medium truncate">
+                        {post.restaurant.name}
+                      </span>
+                    </>
+                  ) : (
+                    <div className="h-[18px]" />
                   )}
-                  <span className="text-[11px] text-muted-foreground font-medium truncate">
-                    {post.restaurant?.name || (post.type === "homemade" ? "집밥" : "")}
-                  </span>
                 </div>
                 {post.rating.count > 0 && (
                   <div className="flex items-center gap-1 shrink-0">
