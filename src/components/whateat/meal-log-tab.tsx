@@ -144,6 +144,33 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [editCommentText, setEditCommentText] = useState<string>("")
   const [userRegion, setUserRegion] = useState<string | null>(null)
 
+  // 메모/댓글 창 외부 클릭 시 닫기
+  useEffect(() => {
+    const hasAnyVisibleMemo = Object.values(visibleMemoInputs).some(Boolean)
+    if (!hasAnyVisibleMemo) return
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      const cardEl = target.closest('[data-solo-meal-card-id]')
+      if (cardEl) {
+        const cardId = cardEl.getAttribute('data-solo-meal-card-id')
+        if (cardId && visibleMemoInputs[cardId]) {
+          return
+        }
+      }
+      setVisibleMemoInputs({})
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick)
+    document.addEventListener("touchstart", handleOutsideClick)
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.removeEventListener("touchstart", handleOutsideClick)
+    }
+  }, [visibleMemoInputs])
+
   // Supabase Storage에 파일 업로드하는 함수
   const uploadImageToStorage = async (base64Image: string): Promise<string> => {
     if (!user?.id) throw new Error("User not logged in")
@@ -1606,6 +1633,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         {filteredLogs.map((meal) => (
           <div
             key={meal.id}
+            data-solo-meal-card-id={meal.id}
             ref={(el) => {
               cardRefs.current[meal.id] = el
             }}
@@ -1878,10 +1906,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                 {/* 메모 버튼 (식사명 줄 우측 끝으로 이동) */}
                 <div 
                   className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mr-1 rounded-md transition-colors shrink-0"
-                  onClick={() => setVisibleMemoInputs(prev => {
-                    const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
-                    return { ...prev, [meal.id]: !isCurrentlyVisible }
-                  })}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setVisibleMemoInputs(prev => {
+                      const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
+                      return { ...prev, [meal.id]: !isCurrentlyVisible }
+                    })
+                  }}
                 >
                   <MessageSquare className="size-3.5 text-orange-500" />
                   <span className="text-xs font-bold text-foreground select-none">메모</span>

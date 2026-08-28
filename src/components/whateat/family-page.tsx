@@ -1034,6 +1034,30 @@ export function FamilyPage({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // 댓글 창 외부 클릭 시 댓글 창 닫기
+  useEffect(() => {
+    if (!expandedMealCommentsId) return
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      if (target.closest(`[data-meal-card-id="${expandedMealCommentsId}"]`)) {
+        return
+      }
+      setExpandedMealCommentsId(null)
+      setActiveReplyTarget(null)
+      setMealReplyInput("")
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick)
+    document.addEventListener("touchstart", handleOutsideClick)
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.removeEventListener("touchstart", handleOutsideClick)
+    }
+  }, [expandedMealCommentsId])
+
   const [promotedMealIds, setPromotedMealIds] = useState<any[]>([])
   const [promotionReasonByMealId, setPromotionReasonByMealId] = useState<Record<string | number, "all-rated" | "deadline">>({})
   const [isPromotingMealId, setIsPromotingMealId] = useState<string | number | null>(null)
@@ -3636,6 +3660,7 @@ export function FamilyPage({
     return (
       <div
         key={meal.id}
+        data-meal-card-id={meal.id}
         className={cn(
           "relative bg-white rounded-3xl overflow-hidden border border-gray-200/80 shadow-md",
           shouldHighlight && "ring-2 ring-cyan-400 shadow-[0_0_0_2px_rgba(34,211,238,0.18),0_0_22px_rgba(34,211,238,0.38)]",
@@ -4526,7 +4551,7 @@ export function FamilyPage({
               <p className="text-xs text-muted-foreground/70 mt-1">먹로그에서 가족에게 공유해보세요!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
               {filteredMeals.map((meal) => renderMealCard(meal))}
             </div>
           )}
