@@ -280,6 +280,30 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [showOnlyNew, setShowOnlyNew] = useState(false) // 전체(All)를 디폴트로 설정하기 위해 기존 true에서 false로 변경
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
+
+  // 맛톡 댓글창 외부 클릭 시 자동 닫기
+  useEffect(() => {
+    if (!expandedComments) return
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      if (target.closest(`[data-talk-card-id="${expandedComments}"]`)) {
+        return
+      }
+      setExpandedComments(null)
+      setActiveReplyTarget(null)
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick)
+    document.addEventListener("touchstart", handleOutsideClick)
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.removeEventListener("touchstart", handleOutsideClick)
+    }
+  }, [expandedComments])
+
   const [commentsTrigger, setCommentsTrigger] = useState(0)
   const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
   const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
@@ -1689,9 +1713,9 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
       </div>
 
       {/* Posts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {visiblePosts.map((post) => (
-          <div key={post.id} className="relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
+          <div key={post.id} data-talk-card-id={post.id} className="relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white shadow-lg">
             {/* 샘플 리본 */}
             {post.isSample && (
               <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
