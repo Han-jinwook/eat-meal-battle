@@ -51,31 +51,29 @@ export function Header({ activeNavTab = "solo", onNavTabChange, hoveredTab = nul
           className="h-9 w-auto shrink-0 object-contain cursor-pointer"
           onClick={() => onNavTabChange?.("home")}
         />
-        {/* Main Nav - 수평 스크롤 가능하게 변경 (모바일에서 넘칠 때 스와이프, 세로 스크롤 화살표 방지) */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden no-scrollbar mx-2 sm:mx-4">
-          <div className="flex items-center justify-start sm:justify-center gap-3 sm:gap-4 min-w-max px-2">
-            {navItems.map((item) => {
-              const isHovered = hoveredTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavTabChange?.(item.id)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-2 text-[14px] sm:text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
-                    activeNavTab === item.id
-                      ? "text-cyan-600 bg-cyan-50 shadow-sm"
-                      : isHovered
-                        ? "text-cyan-500 bg-cyan-50/70 animate-pulse ring-2 ring-cyan-400/30 scale-105"
-                        : "text-gray-500 hover:text-cyan-500 hover:scale-105"
-                  )}
-                >
-                  <item.icon className="hidden size-3.5 md:inline-block" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Main Nav — 3개 메뉴, 스크롤 없이 1줄 핏팅 */}
+        <nav className="flex items-center justify-center gap-1 sm:gap-3 mx-2 sm:mx-4">
+          {navItems.map((item) => {
+            const isHovered = hoveredTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavTabChange?.(item.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-2 text-[14px] sm:text-[15px] font-bold leading-none transition-all whitespace-nowrap cursor-pointer",
+                  activeNavTab === item.id
+                    ? "text-cyan-600 bg-cyan-50 shadow-sm"
+                    : isHovered
+                      ? "text-cyan-500 bg-cyan-50/70 animate-pulse ring-2 ring-cyan-400/30 scale-105"
+                      : "text-gray-500 hover:text-cyan-500 hover:scale-105"
+                )}
+              >
+                <item.icon className="hidden size-3.5 md:inline-block" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
         {/* 프로필과 패밀리 앱 스위처(F)를 바짝 붙인 그룹 — 모바일: 아바타(28px)+F(28px) 마이크로 캡슐 */}
         <div className="flex items-center bg-slate-50/50 rounded-2xl p-1 border border-slate-100/50 shrink-0">
           <button
