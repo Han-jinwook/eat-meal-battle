@@ -137,6 +137,12 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
 
   // GPS 위치 기반 주변 장소 로드 함수 (외식용)
   const loadGpsNearbyPlaces = (paramLat?: number, paramLng?: number, keyword?: string) => {
+    // GPS 및 주변 장소 검색은 오직 '외식' 식사 유형일 때만 수행 (집밥/배달 시 GPS 호출 완전 차단)
+    if (mealType !== "외식") {
+      setIsLoadingLocation(false)
+      return
+    }
+
     const targetLat = paramLat ?? photoGps?.lat
     const targetLng = paramLng ?? photoGps?.lng
 
@@ -533,39 +539,41 @@ export function AddLogModal({ isOpen, onClose, editData, onSave, onDelete, mode 
       const url = URL.createObjectURL(file)
       setImagePreview(url)
       
-      // 1. 사진에서 EXIF GPS 추출 (ArrayBuffer 기반 및 직접 파싱 다중 시도)
-      let photoLat: number | undefined
-      let photoLng: number | undefined
-      try {
-        let gps: any
+      // 1. GPS 관련 메타데이터 추출 및 주변 위치 검색은 오직 '외식' 식사 유형일 때만 수행 (집밥/배달 제외)
+      if (mealType === "외식") {
+        let photoLat: number | undefined
+        let photoLng: number | undefined
         try {
-          const buffer = await file.arrayBuffer()
-          gps = await exifr.gps(buffer)
-        } catch (e) {
-          gps = await exifr.gps(file)
-        }
-
-        if (gps && typeof gps.latitude === "number" && typeof gps.longitude === "number") {
-          setPhotoGps({ lat: gps.latitude, lng: gps.longitude })
-          photoLat = gps.latitude
-          photoLng = gps.longitude
-          toast.success(`📍 사진 GPS 감지: (${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)})`, { duration: 3000 })
-          if (mealType !== "배달") {
-            setMealType("외식")
+          let gps: any
+          try {
+            const buffer = await file.arrayBuffer()
+            gps = await exifr.gps(buffer)
+          } catch (e) {
+            gps = await exifr.gps(file)
           }
-        } else {
-          setPhotoGps(null)
-          toast("사진에 GPS 메타데이터가 없어 기본 위치로 검색합니다.", { icon: "ℹ️", duration: 3000 })
-        }
-      } catch (err) {
-        console.warn("Failed to extract EXIF:", err)
-        setPhotoGps(null)
-      }
 
-      // 2. 좌표가 감지되었거나 외식일 경우 좌표 기반으로 식당 즉시 로드
-      // setMealType("외식")이 useEffect를 재트리거하므로, 중복 호출 방지 플래그 설정
-      gpsLoadedByPhotoRef.current = true
-      loadGpsNearbyPlaces(photoLat, photoLng)
+          if (gps && typeof gps.latitude === "number" && typeof gps.longitude === "number") {
+            setPhotoGps({ lat: gps.latitude, lng: gps.longitude })
+            photoLat = gps.latitude
+            photoLng = gps.longitude
+            toast.success(`📍 사진 GPS 감지: (${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)})`, { duration: 3000 })
+          } else {
+            setPhotoGps(null)
+            toast("사진에 GPS 메타데이터가 없어 기본 위치로 검색합니다.", { icon: "ℹ️", duration: 3000 })
+          }
+        } catch (err) {
+          console.warn("Failed to extract EXIF:", err)
+          setPhotoGps(null)
+        }
+
+        // 2. 외식일 경우 좌표 기반으로 식당 즉시 로드
+        gpsLoadedByPhotoRef.current = true
+        loadGpsNearbyPlaces(photoLat, photoLng)
+      } else {
+        // 집밥/배달인 경우에는 GPS 감지 및 주변 위치 조회를 완전히 생략함
+        setPhotoGps(null)
+        gpsLoadedByPhotoRef.current = false
+      }
 
       setIsAnalyzingAi(true)
       try {
