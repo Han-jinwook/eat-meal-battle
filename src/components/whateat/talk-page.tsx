@@ -367,29 +367,73 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     const source = target === "solo" ? "solo_wishlist" : target === "family" ? "family_wishlist" : "group_wishlist"
     const targetLabel = target === "solo" ? "솔로" : target === "family" ? "가족" : "모임"
 
-    // 4. DB 1-Click 위시리스트 즉시 저장 (DB 컬럼명: thumbnail, source_url)
+    let finalGroupId: string | null = null
+    if (target === "group") {
+      finalGroupId = targetGroupId || (userGroups.length > 0 ? userGroups[0].id : null)
+      if (!finalGroupId && isLoggedIn && user?.id) {
+        try {
+          const supabase = createClient()
+          const { data: gData } = await supabase
+            .from("whateat_group_members")
+            .select("group_id")
+            .eq("user_id", user.id)
+            .limit(1)
+            .maybeSingle()
+          if (gData?.group_id) {
+            finalGroupId = gData.group_id
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 4. DB 1-Click 위시리스트 저장 및 중복 검사
     if (isLoggedIn && user?.id) {
       try {
-        const wishId = generateUUID()
-        await secureWrite({
-          table: "meal_reservations",
-          action: "insert",
-          data: {
-            id: wishId,
-            user_id: user.id,
-            date: null,
-            time: null,
-            meal_type: mealType,
-            menu: menu,
-            place: place,
-            memo: `[맛톡 담기] ${post.author?.nickname ? post.author.nickname + '의 추천' : ''}`,
-            thumbnail: image || null,
-            source_url: url || null,
-            source: source,
-            group_id: target === "group" ? (targetGroupId || selectedGroupId || null) : null
+        const supabase = createClient()
+        // 중복 검사: 같은 target/source 및 같은 메뉴명이 이미 위시리스트(date가 null)에 담겨있는지 확인
+        let duplicateQuery = supabase
+          .from("meal_reservations")
+          .select("id")
+          .eq("menu", menu)
+          .is("date", null)
+
+        if (target === "solo") {
+          duplicateQuery = duplicateQuery.eq("user_id", user.id).eq("source", "solo_wishlist")
+        } else if (target === "family") {
+          duplicateQuery = duplicateQuery.eq("source", "family_wishlist")
+        } else if (target === "group") {
+          duplicateQuery = duplicateQuery.eq("source", "group_wishlist")
+          if (finalGroupId) {
+            duplicateQuery = duplicateQuery.eq("group_id", finalGroupId)
           }
-        })
-        toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+        }
+
+        const { data: existingWish } = await duplicateQuery
+
+        if (existingWish && existingWish.length > 0) {
+          toast(`💡 '${menu}' 메뉴는 이미 ${targetLabel} 위시리스트에 담겨 있습니다!`, { icon: "💡", duration: 3000 })
+        } else {
+          const wishId = generateUUID()
+          await secureWrite({
+            table: "meal_reservations",
+            action: "insert",
+            data: {
+              id: wishId,
+              user_id: user.id,
+              date: null,
+              time: null,
+              meal_type: mealType,
+              menu: menu,
+              place: place,
+              memo: `[맛톡 담기] ${post.author?.nickname ? post.author.nickname + '의 추천' : ''}`,
+              thumbnail: image || null,
+              source_url: url || null,
+              source: source,
+              group_id: finalGroupId
+            }
+          })
+          toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+        }
       } catch (err: any) {
         console.error("1-click wish save failed", err)
         toast.error("위시리스트 저장 중 오류가 발생했습니다.")
