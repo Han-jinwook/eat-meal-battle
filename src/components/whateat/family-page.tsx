@@ -498,6 +498,24 @@ export function FamilyPage({
     }
     loadUserRegion()
   }, [isLoggedIn, user])
+
+  useEffect(() => {
+    const handleOpenFromTalk = (e: Event) => {
+      const ev = e as CustomEvent
+      if (!ev.detail) return
+      const { target, targetGroupId } = ev.detail
+      if (target === "group") {
+        setActiveMode("group")
+        if (targetGroupId) {
+          setSelectedGroupId(targetGroupId)
+        }
+      } else if (target === "family") {
+        setActiveMode("family")
+      }
+    }
+    window.addEventListener("openReservationFromTalk", handleOpenFromTalk)
+    return () => window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+  }, [])
   const [showMemberManageModal, setShowMemberManageModal] = useState(false)
   const [isFamilyOwner, setIsFamilyOwner] = useState(true)
   const [editingMemoId, setEditingMemoId] = useState<string | number | null>(null)

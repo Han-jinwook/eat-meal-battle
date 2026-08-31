@@ -255,14 +255,37 @@ const categoryOptions = [
   { id: "dineout", label: "외식" },
 ]
 
-export function TalkPage({ isActive }: { isActive?: boolean }) {
+function generateUUID(): string {
+  if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
+export function TalkPage({ isActive = true, initialTab = "all", initialSearch = "", onSwitchTab }: { isActive?: boolean, initialTab?: string, initialSearch?: string, onSwitchTab?: (tab: string) => void }) {
   const { isLoggedIn, user } = useHub()
-  const PAGE_SIZE = 12
-  const [posts, setPosts] = useState<TalkPost[]>(() => dummyPosts.map(p => ({ ...p, isSample: true })))
+  const [activeTab, setActiveTab] = useState<"all" | "homemade" | "delivery" | "dineout" | "liked">(
+    (initialTab as any) || "all"
+  )
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest")
-  const [userRegion, setUserRegion] = useState<string>("청라동") // 사용자 기본 지역
-  const [viewerImage, setViewerImage] = useState<string | null>(null) // 이미지 뷰어 상태 추가
+  const [viewerImage, setViewerImage] = useState<string | null>(null)
+  const [posts, setPosts] = useState<TalkPost[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
+  const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
+  const [commentsTrigger, setCommentsTrigger] = useState(0)
+  const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
+  const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
+  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null)
+  const [editCommentText, setEditCommentText] = useState("")
+  const [editingReplyId, setEditingReplyId] = useState<string | number | null>(null)
+  const [editReplyText, setEditReplyText] = useState("")
   const [userAddressState, setUserAddressState] = useState<{
     city: string
     gu: string
@@ -272,57 +295,26 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     gu: "서구",
     dong: "청라동"
   })
-  const [scopeFilter, setScopeFilter] = useState<string>("all") // 범위: dong/gu/city/all
-  const [scopeLabel, setScopeLabel] = useState<string>("전국") // 드롭다운 버튼 표시 레이블
-  const [searchRegion, setSearchRegion] = useState<string>("") // 검색 지역
+  const [scopeFilter, setScopeFilter] = useState<string>("all")
+  const [scopeLabel, setScopeLabel] = useState<string>("전국")
+  const [searchRegion, setSearchRegion] = useState<string>("")
   const [showScopeDropdown, setShowScopeDropdown] = useState(false)
   const [showRegionSearch, setShowRegionSearch] = useState(false)
-  const [showOnlyNew, setShowOnlyNew] = useState(false) // 전체(All)를 디폴트로 설정하기 위해 기존 true에서 false로 변경
+  const [showOnlyNew, setShowOnlyNew] = useState(false)
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
-  const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
+  const [sortOption, setSortOption] = useState<"latest" | "likes">("latest")
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(12)
 
-  // 맛톡 댓글창 외부 클릭 시 자동 닫기
-  useEffect(() => {
-    if (!expandedComments) return
-
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement | null
-      if (!target) return
-      if (target.closest(`[data-talk-card-id="${expandedComments}"]`)) {
-        return
-      }
-      setExpandedComments(null)
-      setActiveReplyTarget(null)
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick)
-    document.addEventListener("touchstart", handleOutsideClick)
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick)
-      document.removeEventListener("touchstart", handleOutsideClick)
-    }
-  }, [expandedComments])
-
-  const [commentsTrigger, setCommentsTrigger] = useState(0)
-  const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
-  const [commentInputs, setCommentInputs] = useState<Record<string | number, string>>({})
-  const likesChannelRef = useRef<any>(null)
-  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({})
-  const [activeReplyTarget, setActiveReplyTarget] = useState<{ mealId: any; commentId: string } | null>(null)
-  const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null)
-  const [editCommentText, setEditCommentText] = useState("")
-  const [editingReplyId, setEditingReplyId] = useState<string | number | null>(null)
-  const [editReplyText, setEditReplyText] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
-
-  // 사용자 속한 모임 목록 상태
+  // 사용자 속한 모임 목록 & 가족 멤버 ID 목록 상태
   const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
+  const [familyUserIds, setFamilyUserIds] = useState<string[]>([])
 
   useEffect(() => {
     if (!isLoggedIn || !user?.id) return
+
+    // 1. 모임 목록 로드
     const fetchUserGroups = async () => {
       try {
         const res = await fetch(`/api/group/members?userId=${user.id}`)
@@ -336,10 +328,35 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
         console.error("Failed to load user groups", e)
       }
     }
+
+    // 2. 가족 멤버 user_id 목록 로드 (가족 위시 중복 검사용)
+    const fetchFamilyMembers = async () => {
+      try {
+        const token = getSessionToken() || ""
+        const res = await fetch("/api/family/members", {
+          headers: token ? { "x-hub-token": token } : {}
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.members && Array.isArray(json.members)) {
+            const ids = json.members.map((m: any) => m.userId).filter(Boolean)
+            setFamilyUserIds(ids.length > 0 ? ids : [user.id])
+          } else {
+            setFamilyUserIds([user.id])
+          }
+        } else {
+          setFamilyUserIds([user.id])
+        }
+      } catch (e) {
+        setFamilyUserIds([user.id])
+      }
+    }
+
     fetchUserGroups()
+    fetchFamilyMembers()
   }, [isLoggedIn, user?.id])
 
-  // 맛톡 담기: 1-Click 위시리스트 DB 저장 + 좋아요 자동 처리 + 탭 이동
+  // 맛톡 담기: 1-Click 위시리스트 DB 저장 + 전 가족/모임 중복 검사 + 좋아요 자동 처리 + 탭 이동
   const handleSaveToReservation = async (post: TalkPost, target: "solo" | "family" | "group", targetGroupId?: string) => {
     // 1. 좋아요 자동 처리 (아직 누르지 않은 경우)
     if (!post.isLiked) {
@@ -390,11 +407,10 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     if (isLoggedIn && user?.id) {
       try {
         const supabase = createClient()
-        // 중복 검사: 같은 target/source 및 같은 메뉴명이 이미 위시리스트(date가 null)에 담겨있는지 확인
+        // 중복 검사: 식사(date가 null) 및 같은 menu명이 동일 타겟(솔로/가족/모임)에 존재하는지 검사
         let duplicateQuery = supabase
           .from("meal_reservations")
-          .select("id")
-          .eq("menu", menu)
+          .select("id, menu, user_id, group_id")
           .is("date", null)
 
         if (target === "solo") {
