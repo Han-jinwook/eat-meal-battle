@@ -205,7 +205,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           .from("meal_reservations")
           .select("*")
           .eq("user_id", user.id)
-          .in("source", ["solo", "solo_wishlist"])
         
         if (error) throw error
 
@@ -219,11 +218,13 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         const samples = getDynamicDefaultPlans(baseDateObj)
         const defaultWishes = getDynamicDefaultWishlist()
 
-        if (data && data.length > 0) {
+        const soloData = (data || []).filter(row => !row.group_id && (row.source === "solo" || row.source === "solo_wishlist" || !row.source))
+
+        if (soloData && soloData.length > 0) {
           const realConfirmed: any[] = []
           const realWishes: any[] = []
 
-          data.forEach(row => {
+          soloData.forEach(row => {
             const mapped = {
               id: row.id,
               date: row.date || "",
@@ -234,17 +235,17 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               memo: row.memo || "",
               thumbnail: row.thumbnail || row.image || "",
               url: row.source_url || row.url || "",
-              source: row.source
+              source: row.source || (row.date ? "solo" : "solo_wishlist")
             }
-            if (row.source === "solo_wishlist" || !row.date) {
+            if (mapped.source === "solo_wishlist" || !mapped.date) {
               realWishes.push(mapped)
             } else {
               realConfirmed.push(mapped)
             }
           })
 
-          setPlans(realConfirmed.length > 0 ? realConfirmed : samples)
-          setWishlistPlans(realWishes.length > 0 ? realWishes : defaultWishes)
+          setPlans(realConfirmed)
+          setWishlistPlans(realWishes)
         } else {
           setPlans(samples)
           setWishlistPlans(defaultWishes)
@@ -417,11 +418,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           .from("meal_reservations")
           .select("*")
           .eq("user_id", user.id)
-          .in("source", ["solo", "solo_wishlist"])
         if (data && data.length > 0) {
+          const soloData = data.filter(row => !row.group_id && (row.source === "solo" || row.source === "solo_wishlist" || !row.source))
           const realConfirmed: any[] = []
           const realWishes: any[] = []
-          data.forEach(row => {
+          soloData.forEach(row => {
             const mapped = {
               id: row.id,
               date: row.date || "",
@@ -432,9 +433,9 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               memo: row.memo || "",
               thumbnail: row.thumbnail || row.image || "",
               url: row.source_url || row.url || "",
-              source: row.source
+              source: row.source || (row.date ? "solo" : "solo_wishlist")
             }
-            if (row.source === "solo_wishlist" || !row.date) {
+            if (mapped.source === "solo_wishlist" || !mapped.date) {
               realWishes.push(mapped)
             } else {
               realConfirmed.push(mapped)
@@ -594,8 +595,9 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const renderCard = (plan: any, isWishlist = false) => {
     const isSample = plan.isSample || plan.id === 1 || plan.id === 2 || plan.id === 3 || String(plan.id).startsWith("sample-")
     const TypeIcon = getMealTypeIcon(plan.mealType)
-    const borderClass =
-      plan.mealType === "집밥"
+    const borderClass = isWishlist
+      ? "border border-slate-200/80 shadow-2xs"
+      : plan.mealType === "집밥"
         ? "border-l-4 border-l-emerald-500 border-y-gray-200/80 border-r-gray-200/80"
         : plan.mealType === "배달"
           ? "border-l-4 border-l-sky-500 border-y-gray-200/80 border-r-gray-200/80"
