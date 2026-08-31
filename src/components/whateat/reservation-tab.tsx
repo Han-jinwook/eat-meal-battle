@@ -881,17 +881,23 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       </div>
 
       {/* 2열 Split-View (PC: 2열 나란히 노출, 모바일: 서브탭 토글) */}
-      <div className="hidden md:grid md:grid-cols-2 gap-6 items-start">
+      <div className="hidden md:grid md:grid-cols-2 gap-4 items-start mt-2">
         {/* 좌측: 📋 나의 위시리스트 */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between px-1 mb-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-              <span>📋</span> 나의 위시리스트
-              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-black">
-                {filteredWishlist.length}
-              </span>
+              <span>📋 나의 위시리스트</span>
+              <span className="text-xs text-orange-500 font-bold">({filteredWishlist.length})</span>
             </h3>
-            <span className="text-xs text-muted-foreground">날짜 미정 식사</span>
+            <button
+              onClick={() => {
+                setEditingPlan({ isWishlist: true })
+                setIsModalOpen(true)
+              }}
+              className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline cursor-pointer"
+            >
+              <Plus className="size-3" /> 추가
+            </button>
           </div>
 
           {filteredWishlist.length > 0 ? (
@@ -906,14 +912,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
 
         {/* 우측: 📅 확정 예약 목록 */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between px-1 mb-2">
+          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
             <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-              <span>📅</span> 확정 예약 목록
-              <span className="text-xs bg-cyan-100 text-cyan-600 px-2 py-0.5 rounded-full font-black">
-                {sortedPlans.length}
-              </span>
+              <span>📅 확정 예약 목록</span>
+              <span className="text-xs text-orange-500 font-bold">({sortedPlans.length})</span>
             </h3>
-            <span className="text-xs text-muted-foreground">일정 확정 식사</span>
           </div>
 
           {sortedPlans.length > 0 ? (

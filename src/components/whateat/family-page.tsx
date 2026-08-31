@@ -4716,7 +4716,7 @@ export function FamilyPage({
         })
 
         return (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             {/* Sticky Search + Filter */}
             <div className="sticky top-[116px] z-30 -mx-4 px-4 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
               
@@ -4888,10 +4888,10 @@ export function FamilyPage({
             </div>
 
             {/* 데스크톱/태블릿 2열 Split-View (md 이상에서 활성화) */}
-            <div className="hidden md:grid md:grid-cols-2 gap-4 items-start">
+            <div className="hidden md:grid md:grid-cols-2 gap-4 items-start mt-2">
               {/* 좌측: 위시리스트 */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-1 border-b border-muted/40">
+                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
                     <span>{activeMode === 'group' ? '👥 모임 위시리스트' : '📋 가족 위시리스트'}</span>
                     <span className="text-xs text-orange-500 font-bold">({filteredWishlist.length})</span>
@@ -4905,7 +4905,7 @@ export function FamilyPage({
                         setIsAddReservationOpen(true)
                       }
                     }}
-                    className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline"
+                    className="text-xs text-orange-500 font-bold flex items-center gap-0.5 hover:underline cursor-pointer"
                   >
                     <Plus className="size-3" /> 추가
                   </button>
@@ -4915,7 +4915,7 @@ export function FamilyPage({
 
               {/* 우측: 확정 예약 목록 */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-1 border-b border-muted/40">
+                <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/80">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
                     <span>{activeMode === 'group' ? '📅 모임 확정 예약' : '📅 확정 예약 목록'}</span>
                     <span className="text-xs text-orange-500 font-bold">({filteredReservations.length})</span>
