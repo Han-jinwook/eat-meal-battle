@@ -854,6 +854,106 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         </div>
       </div>
 
+      {/* 모바일 서브탭 스위처 (위시리스트 ↔ 확정 예약) */}
+      <div className="md:hidden flex items-center gap-2 mb-3 bg-orange-50/60 p-1 rounded-2xl border border-orange-100">
+        <button
+          onClick={() => setMobileSubTab("wishlist")}
+          className={cn(
+            "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer",
+            mobileSubTab === "wishlist"
+              ? "bg-white text-orange-600 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          📋 나의 위시리스트 ({filteredWishlist.length})
+        </button>
+        <button
+          onClick={() => setMobileSubTab("confirmed")}
+          className={cn(
+            "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer",
+            mobileSubTab === "confirmed"
+              ? "bg-white text-orange-600 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          📅 확정 예약 목록 ({filteredPlans.length})
+        </button>
+      </div>
+
+      {/* 2열 Split-View (PC: 2열 나란히 노출, 모바일: 서브탭 토글) */}
+      <div className="hidden md:grid md:grid-cols-2 gap-6 items-start">
+        {/* 좌측: 📋 나의 위시리스트 */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+              <span>📋</span> 나의 위시리스트
+              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-black">
+                {filteredWishlist.length}
+              </span>
+            </h3>
+            <span className="text-xs text-muted-foreground">날짜 미정 식사</span>
+          </div>
+
+          {filteredWishlist.length > 0 ? (
+            filteredWishlist.map(plan => renderCard(plan, true))
+          ) : (
+            <div className="bg-white/60 rounded-2xl p-6 text-center border border-muted/30">
+              <p className="text-xs text-muted-foreground">위시리스트가 비어있어요.</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-1">맛톡에서 담거나 + 버튼으로 추가해보세요!</p>
+            </div>
+          )}
+        </div>
+
+        {/* 우측: 📅 확정 예약 목록 */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+              <span>📅</span> 확정 예약 목록
+              <span className="text-xs bg-cyan-100 text-cyan-600 px-2 py-0.5 rounded-full font-black">
+                {sortedPlans.length}
+              </span>
+            </h3>
+            <span className="text-xs text-muted-foreground">일정 확정 식사</span>
+          </div>
+
+          {sortedPlans.length > 0 ? (
+            sortedPlans.map(plan => renderCard(plan, false))
+          ) : (
+            <div className="bg-white/60 rounded-2xl p-6 text-center border border-muted/30">
+              <p className="text-xs text-muted-foreground">확정된 식사 예약이 없어요.</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-1">위시리스트에서 [날짜 잡기]로 일정을 확정해보세요!</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 모바일 뷰 (단일 영역 선택적 노출) */}
+      <div className="md:hidden">
+        {mobileSubTab === "wishlist" ? (
+          <div className="space-y-3">
+            {filteredWishlist.length > 0 ? (
+              filteredWishlist.map(plan => renderCard(plan, true))
+            ) : (
+              <div className="bg-white/60 rounded-2xl p-6 text-center border border-muted/30">
+                <p className="text-xs text-muted-foreground">위시리스트가 비어있어요.</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">맛톡에서 담거나 + 버튼으로 추가해보세요!</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sortedPlans.length > 0 ? (
+              sortedPlans.map(plan => renderCard(plan, false))
+            ) : (
+              <div className="bg-white/60 rounded-2xl p-6 text-center border border-muted/30">
+                <p className="text-xs text-muted-foreground">확정된 식사 예약이 없어요.</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">위시리스트에서 [날짜 잡기]로 일정을 확정해보세요!</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Reservation Modal */}
       <AddReservationModal
         isOpen={isModalOpen}
