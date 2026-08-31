@@ -176,7 +176,7 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
     dong?: string
   } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const isEditMode = !!editData
+  const isEditMode = !!(editData && editData.id)
   const dateInputRef = useRef<HTMLInputElement>(null)
   const lastFetchedUrlRef = useRef<string>("")
 
@@ -740,9 +740,7 @@ const handleSubmit = () => {
                     return (
                       <button
                         key={type.id}
-                        disabled={isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥")}
                         onClick={() => {
-                          if (isEditMode && mealType === type.id) return // 수정 모드에서는 선택 해제 불가
                           setMealType(mealType === type.id ? "" : type.id)
                           if (type.id !== "외식") setSelectedPlace(null)
                           if (type.id !== "배달") {
@@ -750,11 +748,10 @@ const handleSubmit = () => {
                           }
                         }}
                         className={cn(
-                          "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                          "py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
                           mealType === type.id
                             ? "bg-orange-500 text-white shadow-md shadow-orange-300/40"
-                            : "bg-white border border-gray-200 text-foreground hover:border-orange-300",
-                          isEditMode && (editData?.mealType === "집밥" ? type.id !== "집밥" : type.id === "집밥") && "opacity-40 cursor-not-allowed hover:border-gray-200 bg-gray-50 text-gray-400"
+                            : "bg-white border border-gray-200 text-foreground hover:border-orange-300"
                         )}
                       >
                         <Icon className="size-3.5" />

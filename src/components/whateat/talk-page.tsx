@@ -318,8 +318,29 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
 
+  // 사용자 속한 모임 목록 상태
+  const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return
+    const fetchUserGroups = async () => {
+      try {
+        const res = await fetch(`/api/group/members?userId=${user.id}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.groups && Array.isArray(json.groups)) {
+            setUserGroups(json.groups.map((g: any) => ({ id: g.id || g.group_id, name: g.name || g.group_name || "모임" })))
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load user groups", e)
+      }
+    }
+    fetchUserGroups()
+  }, [isLoggedIn, user?.id])
+
   // 맛톡 담기: 1-Click 위시리스트 DB 저장 + 좋아요 자동 처리 + 탭 이동
-  const handleSaveToReservation = async (post: TalkPost, target: "solo" | "family" | "group") => {
+  const handleSaveToReservation = async (post: TalkPost, target: "solo" | "family" | "group", targetGroupId?: string) => {
     // 1. 좋아요 자동 처리 (아직 누르지 않은 경우)
     if (!post.isLiked) {
       setPosts(prev => prev.map(p =>
@@ -346,7 +367,7 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     const source = target === "solo" ? "solo_wishlist" : target === "family" ? "family_wishlist" : "group_wishlist"
     const targetLabel = target === "solo" ? "솔로" : target === "family" ? "가족" : "모임"
 
-    // 4. DB 1-Click 위시리스트 즉시 저장
+    // 4. DB 1-Click 위시리스트 즉시 저장 (DB 컬럼명: thumbnail, source_url)
     if (isLoggedIn && user?.id) {
       try {
         const wishId = generateUUID()
@@ -362,22 +383,28 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
             menu: menu,
             place: place,
             memo: `[맛톡 담기] ${post.author?.nickname ? post.author.nickname + '의 추천' : ''}`,
-            url: url,
-            image: image,
+            thumbnail: image || null,
+            source_url: url || null,
             source: source,
-            group_id: target === "group" ? (selectedGroupId || null) : null
+            group_id: target === "group" ? (targetGroupId || selectedGroupId || null) : null
           }
         })
         toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
       } catch (err: any) {
         console.error("1-click wish save failed", err)
-        toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+        toast.error("위시리스트 저장 중 오류가 발생했습니다.")
+        return
       }
     } else {
       toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
     }
 
-    // 5. WhatEatApp으로 이벤트 발신 (해당 탭 위시리스트로 이동)
+    // 5. 전체 탭 실시간 리로드 이벤트 발신
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("whateat:reservation-updated"))
+    }
+
+    // 6. WhatEatApp으로 이벤트 발신 (해당 탭 위시리스트로 이동)
     window.dispatchEvent(new CustomEvent("openReservationFromTalk", {
       detail: {
         target,
@@ -2058,12 +2085,25 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                       <span>👨‍👩‍👧</span> 가족 위시로 담기
                     </button>
                     <div className="h-px bg-orange-50" />
-                    <button
-                      onClick={() => handleSaveToReservation(post, "group")}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
-                    >
-                      <span>👥</span> 모임 위시로 담기
-                    </button>
+                    {userGroups.length > 1 ? (
+                      userGroups.map((g) => (
+                        <button
+                          key={g.id}
+                          onClick={() => handleSaveToReservation(post, "group", g.id)}
+                          className="w-full text-left px-4 py-2 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors truncate"
+                          title={`${g.name} 위시로 담기`}
+                        >
+                          <span>👥</span> [{g.name}] 위시로
+                        </button>
+                      ))
+                    ) : (
+                      <button
+                        onClick={() => handleSaveToReservation(post, "group")}
+                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                      >
+                        <span>👥</span> 모임 위시로 담기
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
