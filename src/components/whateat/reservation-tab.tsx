@@ -177,27 +177,20 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const { isLoggedIn, user } = useHub()
 
   const handleSilentSaveMemo = async (id: string | number, newMemo: string) => {
-    setEditingMemoId(null)
-    const trimmed = newMemo.trim()
-
-    setPlans(prev => prev.map(p => p.id === id ? { ...p, memo: trimmed } : p))
-    setWishlistPlans(prev => prev.map(p => p.id === id ? { ...p, memo: trimmed } : p))
+    setPlans(prev => prev.map(p => p.id === id ? { ...p, memo: newMemo } : p))
+    setWishlistPlans(prev => prev.map(p => p.id === id ? { ...p, memo: newMemo } : p))
 
     if (isLoggedIn && user?.id) {
       try {
         await secureWrite({
           table: "meal_reservations",
           action: "update",
-          data: { memo: trimmed },
+          data: { memo: newMemo },
           filters: { id }
         })
       } catch (err) {
         console.error("Failed to save inline memo silently", err)
       }
-    }
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("whateat:reservation-updated"))
     }
   }
 
@@ -743,44 +736,32 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               )}
             </div>
 
-            {editingMemoId === plan.id ? (
-              <div 
-                className="mt-2.5 p-1 bg-white rounded-xl border-2 border-orange-400/90 shadow-2xs flex items-center animate-in fade-in duration-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="text"
-                  autoFocus
-                  value={editingMemoText}
-                  onChange={(e) => setEditingMemoText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.currentTarget.blur()
-                    }
-                  }}
-                  onBlur={() => handleSilentSaveMemo(plan.id, editingMemoText)}
-                  placeholder="한줄 메모 입력..."
-                  className="w-full bg-transparent text-xs font-medium outline-none text-foreground px-1.5 py-0.5"
-                />
-              </div>
-            ) : (
-              (plan.memo || !isSample) && (
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (isSample) return
-                    setEditingMemoId(plan.id)
-                    setEditingMemoText(plan.memo || "")
-                  }}
-                  className="mt-2.5 p-2 bg-orange-50/60 hover:bg-orange-100/80 rounded-xl border border-orange-100/80 text-xs text-foreground/90 leading-relaxed cursor-text transition-all"
-                  title="클릭하여 메모 바로 수정"
-                >
-                  <p className="line-clamp-2 font-medium">
-                    {plan.memo || <span className="text-muted-foreground/60 italic">+ 메모 입력</span>}
-                  </p>
-                </div>
-              )
-            )}
+            {/* 한줄 메모 (항시 커서 진입 가능, 0ms 레이아웃 시프트 & 조용한 자동 저장) */}
+            <div 
+              className="mt-2.5 p-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="text"
+                key={plan.memo || "empty"}
+                defaultValue={plan.memo || ""}
+                readOnly={isSample}
+                placeholder={isSample ? "" : "+ 메모 입력"}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur()
+                  }
+                }}
+                onBlur={(e) => {
+                  if (isSample) return
+                  const val = e.target.value.trim()
+                  if (val !== (plan.memo || "")) {
+                    handleSilentSaveMemo(plan.id, val)
+                  }
+                }}
+                className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic"
+              />
+            </div>
           </div>
 
           {plan.thumbnail && (
