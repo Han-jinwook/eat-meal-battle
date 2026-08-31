@@ -171,8 +171,36 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [focusedPlanId, setFocusedPlanId] = useState<string | number | null>(null)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
   const [selectedDetailPlan, setSelectedDetailPlan] = useState<DetailPlanData | null>(null)
+  const [editingMemoId, setEditingMemoId] = useState<string | number | null>(null)
+  const [editingMemoText, setEditingMemoText] = useState("")
   const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
   const { isLoggedIn, user } = useHub()
+
+  const handleSaveMemoInline = async (id: string | number) => {
+    if (isLoggedIn && user?.id) {
+      try {
+        await secureWrite({
+          table: "meal_reservations",
+          action: "update",
+          data: { memo: editingMemoText },
+          filters: { id }
+        })
+      } catch (err) {
+        console.error("Failed to save inline memo", err)
+        toast.error("메모 저장 실패")
+        return
+      }
+    }
+
+    setPlans(prev => prev.map(p => p.id === id ? { ...p, memo: editingMemoText } : p))
+    setWishlistPlans(prev => prev.map(p => p.id === id ? { ...p, memo: editingMemoText } : p))
+    setEditingMemoId(null)
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("whateat:reservation-updated"))
+    }
+    toast.success("✨ 메모가 수정되었습니다!")
+  }
 
   const mergeRealAndSamplePlans = (realPlans: any[], bDate: Date) => {
     const samples = getDynamicDefaultPlans(bDate)
@@ -706,10 +734,63 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               )}
             </div>
 
-            {plan.memo && (
-              <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
-                <p className="line-clamp-2 font-medium">{plan.memo}</p>
+            {editingMemoId === plan.id ? (
+              <div 
+                className="mt-2.5 p-1.5 bg-white rounded-xl border-2 border-orange-400 shadow-md flex items-center gap-1.5 animate-in fade-in duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="text"
+                  autoFocus
+                  value={editingMemoText}
+                  onChange={(e) => setEditingMemoText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveMemoInline(plan.id)
+                    if (e.key === "Escape") setEditingMemoId(null)
+                  }}
+                  placeholder="한줄 메모 입력"
+                  className="flex-1 bg-transparent text-xs font-medium outline-none text-foreground px-1"
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSaveMemoInline(plan.id)
+                  }}
+                  className="px-2.5 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold shrink-0 transition-colors cursor-pointer"
+                >
+                  저장
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditingMemoId(null)
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-lg shrink-0 cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
               </div>
+            ) : (
+              (plan.memo || !isSample) && (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isSample) {
+                      toast("샘플이라 메모 수정이 되지 않으며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                      return
+                    }
+                    setEditingMemoId(plan.id)
+                    setEditingMemoText(plan.memo || "")
+                  }}
+                  className="mt-2.5 p-2 bg-orange-50/70 hover:bg-orange-100/90 rounded-xl border border-orange-200/80 text-xs text-foreground/90 leading-relaxed cursor-pointer transition-all group/memo relative"
+                  title="클릭하여 메모 바로 수정"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="line-clamp-2 font-medium flex-1">{plan.memo || <span className="text-muted-foreground/60 italic">+ 메모 입력</span>}</p>
+                    <Pencil className="size-3 text-orange-400 opacity-0 group-hover/memo:opacity-100 transition-opacity shrink-0 ml-1" />
+                  </div>
+                </div>
+              )
             )}
           </div>
 
