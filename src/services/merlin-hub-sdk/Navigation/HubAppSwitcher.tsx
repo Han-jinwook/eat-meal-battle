@@ -84,7 +84,7 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
     const loadConfig = async () => {
       try {
         const res = await hubFetch<{ isFeatureLive: boolean; apps: FamilyApp[] }>('/api/family/config');
-        if (res.ok && res.data && res.data.isFeatureLive) {
+        if (res.ok && res.data) {
           setConfig(res.data);
         }
       } catch (err) {
@@ -201,86 +201,92 @@ export function HubAppSwitcher({ currentAppId, joinedAppIds = [] }: HubAppSwitch
           onClick={(e) => e.stopPropagation()}
           className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.22)] p-4 z-[99999] transform origin-top-right transition-all animate-in fade-in zoom-in duration-200"
         >
-          
-          {/* My Apps (가입된 앱) */}
+          {/* My Apps (가입된 앱) - 3열 콤팩트 그리드 */}
           {joinedApps.length > 0 && (
             <div className="mb-4">
               <div className="grid grid-cols-3 gap-2">
                 {joinedApps.map((app) => {
                   const Wrapper = app.isLinkActive !== false ? 'a' : 'div';
                   return (
-                  <Wrapper 
-                    key={app.id}
-                    href={app.isLinkActive !== false ? getSsoUrl(app.url) : undefined} 
-                    target={app.isLinkActive !== false ? '_blank' : undefined}
-                    rel={app.isLinkActive !== false ? 'noopener noreferrer' : undefined}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ${app.isLinkActive !== false ? 'hover:bg-slate-100/60 hover:shadow-sm cursor-pointer active:scale-95' : 'opacity-80 cursor-default'}`}
-                  >
-                    <div className={`text-3xl mb-2 flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl bg-white shadow-sm border border-slate-100 ${app.isLinkActive !== false ? 'transition-transform duration-300 hover:scale-110' : ''}`}>
-                      {LOCAL_LOGOS[app.id] ? (
-                        <img src={typeof LOCAL_LOGOS[app.id] === 'string' ? LOCAL_LOGOS[app.id] : (LOCAL_LOGOS[app.id] as any)?.src} alt={app.name} className="w-full h-full object-cover" />
-                      ) : typeof app.icon === 'string' && (app.icon.startsWith('http') || app.icon.startsWith('/') || app.icon.includes('.')) ? (
-                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-                      ) : (
-                        app.icon
-                      )}
-                    </div>
-                    <span className="text-xs font-bold whitespace-nowrap text-slate-800">
-                      {app.name}
-                    </span>
-                  </Wrapper>
+                    <Wrapper 
+                      key={app.id}
+                      href={app.isLinkActive !== false ? getSsoUrl(app.url) : undefined} 
+                      target={app.isLinkActive !== false ? '_blank' : undefined}
+                      rel={app.isLinkActive !== false ? 'noopener noreferrer' : undefined}
+                      className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 ${
+                        app.isLinkActive !== false ? 'hover:bg-slate-100/60 hover:shadow-sm cursor-pointer active:scale-95' : 'opacity-80 cursor-default'
+                      }`}
+                    >
+                      <div className={`text-3xl mb-2 flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl bg-white shadow-sm border border-slate-100 ${
+                        app.isLinkActive !== false ? 'transition-transform duration-300 hover:scale-110' : ''
+                      }`}>
+                        {LOCAL_LOGOS[app.id] ? (
+                          <img src={typeof LOCAL_LOGOS[app.id] === 'string' ? LOCAL_LOGOS[app.id] : (LOCAL_LOGOS[app.id] as any)?.src} alt={app.name} className="w-full h-full object-cover" />
+                        ) : typeof app.icon === 'string' && (app.icon.startsWith('http') || app.icon.startsWith('/') || app.icon.includes('.')) ? (
+                          <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+                        ) : (
+                          app.icon
+                        )}
+                      </div>
+                      <span className="text-xs font-bold whitespace-nowrap text-slate-800">
+                        {app.name}
+                      </span>
+                    </Wrapper>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {/* Discovery (미가입 앱) */}
+          {/* Discovery (미가입 앱) - 상세 설명 리스트 */}
           {unjoinedApps.length > 0 && (
             <div className={`pt-4 ${joinedApps.length > 0 ? 'border-t border-slate-200/60' : ''}`}>
               <h3 className="text-[11px] font-black text-indigo-600/90 tracking-widest mb-3 px-2 flex items-center gap-2">
-                멀린 패밀리 앱 <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[9px] px-1.5 py-0.5 rounded-full shadow-sm">New</span>
+                썬드리머 패밀리 앱 <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[9px] px-1.5 py-0.5 rounded-full shadow-sm">New</span>
               </h3>
               <div className="space-y-1">
                 {unjoinedApps.map((app) => {
                   const Wrapper = app.isLinkActive !== false ? 'a' : 'div';
                   return (
-                  <Wrapper 
-                    key={app.id}
-                    href={app.isLinkActive !== false ? getSsoUrl(app.url) : undefined} 
-                    target={app.isLinkActive !== false ? '_blank' : undefined}
-                    rel={app.isLinkActive !== false ? 'noopener noreferrer' : undefined}
-                    className={`flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 group ${app.isLinkActive !== false ? 'hover:bg-slate-100/60 cursor-pointer active:scale-[0.98]' : 'opacity-80 cursor-default'}`}
-                  >
-                    <div className={`text-3xl bg-white w-12 h-12 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 ${app.isLinkActive !== false ? 'group-hover:scale-110 transition-transform duration-300' : ''}`}>
-                      {LOCAL_LOGOS[app.id] ? (
-                        <img src={typeof LOCAL_LOGOS[app.id] === 'string' ? LOCAL_LOGOS[app.id] : (LOCAL_LOGOS[app.id] as any)?.src} alt={app.name} className="w-full h-full object-cover" />
-                      ) : typeof app.icon === 'string' && (app.icon.startsWith('http') || app.icon.startsWith('/') || app.icon.includes('.')) ? (
-                        <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-                      ) : (
-                        app.icon
-                      )}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-black text-slate-900 whitespace-normal break-keep">{app.name}</span>
-                        {app.openSchedule && (
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 shadow-sm">
-                            {app.openSchedule}
-                          </span>
+                    <Wrapper 
+                      key={app.id}
+                      href={app.isLinkActive !== false ? getSsoUrl(app.url) : undefined} 
+                      target={app.isLinkActive !== false ? '_blank' : undefined}
+                      rel={app.isLinkActive !== false ? 'noopener noreferrer' : undefined}
+                      className={`flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 group ${
+                        app.isLinkActive !== false ? 'hover:bg-slate-100/60 cursor-pointer active:scale-[0.98]' : 'opacity-80 cursor-default'
+                      }`}
+                    >
+                      <div className={`text-3xl bg-white w-12 h-12 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center overflow-hidden shrink-0 ${
+                        app.isLinkActive !== false ? 'group-hover:scale-110 transition-transform duration-300' : ''
+                      }`}>
+                        {LOCAL_LOGOS[app.id] ? (
+                          <img src={typeof LOCAL_LOGOS[app.id] === 'string' ? LOCAL_LOGOS[app.id] : (LOCAL_LOGOS[app.id] as any)?.src} alt={app.name} className="w-full h-full object-cover" />
+                        ) : typeof app.icon === 'string' && (app.icon.startsWith('http') || app.icon.startsWith('/') || app.icon.includes('.')) ? (
+                          <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+                        ) : (
+                          app.icon
                         )}
                       </div>
-                      <span className="text-xs font-medium text-slate-500 mt-0.5 whitespace-normal break-keep">
-                        {app.description}
-                      </span>
-                    </div>
-                  </Wrapper>
+                      <div className="flex-1 flex flex-col justify-center min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-black text-slate-900 whitespace-normal break-keep">{app.name}</span>
+                          {app.openSchedule && (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0 shadow-sm">
+                              {app.openSchedule}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-slate-500 mt-0.5 whitespace-normal break-keep">
+                          {app.description}
+                        </span>
+                      </div>
+                    </Wrapper>
                   );
                 })}
               </div>
             </div>
           )}
-
         </div>
       )}
     </div>

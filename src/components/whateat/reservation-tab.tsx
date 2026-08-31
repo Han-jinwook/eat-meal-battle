@@ -99,6 +99,38 @@ export const getDynamicDefaultPlans = (baseDate?: Date) => {
   ]
 }
 
+export const getDynamicDefaultWishlist = () => [
+  {
+    id: "sample-wish-1",
+    mealType: "집밥",
+    menu: "알리오 올리오 파스타",
+    place: "집",
+    memo: "유튜브 백종원 알리오 올리오 레시피 참고해서 해먹기",
+    thumbnail: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=100&h=100&fit=crop",
+    url: "https://www.youtube.com/results?search_query=파스타",
+    isSample: true
+  },
+  {
+    id: "sample-wish-2",
+    mealType: "배달",
+    menu: "뿌링클 치킨",
+    place: "BHC 치킨 역삼점",
+    memo: "이번 주말 야식으로 배달 주문하기",
+    thumbnail: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=100&h=100&fit=crop",
+    isSample: true
+  },
+  {
+    id: "sample-wish-3",
+    mealType: "외식",
+    menu: "숙성 삼겹살",
+    place: "우미학 청담점",
+    memo: "주말 저녁 친구들과 외식 모임",
+    thumbnail: "https://images.unsplash.com/photo-1544025162-d76694265947?w=100&h=100&fit=crop",
+    url: "https://m.place.naver.com/restaurant/37166160",
+    isSample: true
+  }
+]
+
 const defaultMealPlans = getDynamicDefaultPlans()
 
 const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"]
@@ -131,10 +163,12 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [urlForModal, setUrlForModal] = useState("")
   const [plans, setPlans] = useState<any[]>(defaultMealPlans)
+  const [wishlistPlans, setWishlistPlans] = useState<any[]>(getDynamicDefaultWishlist())
+  const [mobileSubTab, setMobileSubTab] = useState<"wishlist" | "confirmed">("wishlist")
   const [isLoaded, setIsLoaded] = useState(false)
   const [mealTypeFilter, setMealTypeFilter] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null)
+  const [focusedPlanId, setFocusedPlanId] = useState<string | number | null>(null)
   const [editingPlan, setEditingPlan] = useState<any | null>(null)
   const [selectedDetailPlan, setSelectedDetailPlan] = useState<DetailPlanData | null>(null)
   const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
@@ -161,6 +195,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     const fetchPlans = async () => {
       if (!isLoggedIn || !user?.id) {
         setPlans(defaultMealPlans)
+        setWishlistPlans(getDynamicDefaultWishlist())
         setIsLoaded(true)
         return
       }
@@ -170,7 +205,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           .from("meal_reservations")
           .select("*")
           .eq("user_id", user.id)
-          .eq("source", "solo")
+          .in("source", ["solo", "solo_wishlist"])
         
         if (error) throw error
 
@@ -182,27 +217,42 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         }
         
         const samples = getDynamicDefaultPlans(baseDateObj)
+        const defaultWishes = getDynamicDefaultWishlist()
 
         if (data && data.length > 0) {
-          const mapped = data.map(row => ({
-            id: row.id,
-            date: row.date,
-            time: row.time || "",
-            mealType: row.meal_type,
-            menu: row.menu,
-            place: row.place || "",
-            memo: row.memo || "",
-            thumbnail: row.thumbnail || "",
-            url: row.source_url || ""
-          }))
-          
-          setPlans(mergeRealAndSamplePlans(mapped, baseDateObj))
+          const realConfirmed: any[] = []
+          const realWishes: any[] = []
+
+          data.forEach(row => {
+            const mapped = {
+              id: row.id,
+              date: row.date || "",
+              time: row.time || "",
+              mealType: row.meal_type,
+              menu: row.menu,
+              place: row.place || "",
+              memo: row.memo || "",
+              thumbnail: row.thumbnail || row.image || "",
+              url: row.source_url || row.url || "",
+              source: row.source
+            }
+            if (row.source === "solo_wishlist" || !row.date) {
+              realWishes.push(mapped)
+            } else {
+              realConfirmed.push(mapped)
+            }
+          })
+
+          setPlans(realConfirmed.length > 0 ? realConfirmed : samples)
+          setWishlistPlans(realWishes.length > 0 ? realWishes : defaultWishes)
         } else {
           setPlans(samples)
+          setWishlistPlans(defaultWishes)
         }
       } catch (err) {
         console.error("Failed to fetch reservations", err)
         setPlans(defaultMealPlans)
+        setWishlistPlans(getDynamicDefaultWishlist())
       } finally {
         setIsLoaded(true)
       }
@@ -354,45 +404,111 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       case "집밥": return ChefHat
       case "배달": return Bike
       case "외식": return UtensilsCrossed
+      default: return Utensils
     }
   }
 
-  // Filter plans
-  const filteredPlans = plans.filter(plan => {
-    const query = searchQuery ? searchQuery.trim().toLowerCase() : ""
-    const matchesSearch = !query || 
-      (plan.menu && plan.menu.toLowerCase().includes(query)) ||
-      (plan.place && plan.place.toLowerCase().includes(query)) ||
-      (plan.memo && plan.memo.toLowerCase().includes(query))
-    const matchesDate = !selectedDate || plan.date === selectedDate
-    const matchesMealType = mealTypeFilter === "전체" || plan.mealType === mealTypeFilter
-    return matchesSearch && matchesDate && matchesMealType
+  useEffect(() => {
+    const handleUpdated = () => {
+      if (!isLoggedIn || !user?.id) return
+      const fetchPlans = async () => {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from("meal_reservations")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("source", ["solo", "solo_wishlist"])
+        if (data && data.length > 0) {
+          const realConfirmed: any[] = []
+          const realWishes: any[] = []
+          data.forEach(row => {
+            const mapped = {
+              id: row.id,
+              date: row.date || "",
+              time: row.time || "",
+              mealType: row.meal_type,
+              menu: row.menu,
+              place: row.place || "",
+              memo: row.memo || "",
+              thumbnail: row.thumbnail || row.image || "",
+              url: row.source_url || row.url || "",
+              source: row.source
+            }
+            if (row.source === "solo_wishlist" || !row.date) {
+              realWishes.push(mapped)
+            } else {
+              realConfirmed.push(mapped)
+            }
+          })
+          setPlans(realConfirmed)
+          setWishlistPlans(realWishes)
+        }
+      }
+      fetchPlans()
+    }
+    window.addEventListener("whateat:reservation-updated", handleUpdated)
+    return () => window.removeEventListener("whateat:reservation-updated", handleUpdated)
+  }, [isLoggedIn, user?.id])
+
+  const mealPlans = plans
+  const filteredPlans = mealPlans.filter((plan) => {
+    if (mealTypeFilter !== "전체" && plan.mealType !== mealTypeFilter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const matchesMenu = plan.menu.toLowerCase().includes(q)
+      const matchesPlace = plan.place.toLowerCase().includes(q)
+      const matchesMemo = plan.memo ? plan.memo.toLowerCase().includes(q) : false
+      if (!matchesMenu && !matchesPlace && !matchesMemo) return false
+    }
+    return true
+  })
+
+  const filteredWishlist = wishlistPlans.filter((item) => {
+    if (mealTypeFilter !== "전체" && item.mealType !== mealTypeFilter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const matchesMenu = item.menu.toLowerCase().includes(q)
+      const matchesPlace = item.place.toLowerCase().includes(q)
+      const matchesMemo = item.memo ? item.memo.toLowerCase().includes(q) : false
+      if (!matchesMenu && !matchesPlace && !matchesMemo) return false
+    }
+    return true
   })
 
   const sortedPlans = [...filteredPlans].sort((a, b) => {
-    const descBase = new Date(b.date).getTime() - new Date(a.date).getTime()
-    return sortDirection === "desc" ? descBase : -descBase
+    const timeA = new Date(a.date).getTime()
+    const timeB = new Date(b.date).getTime()
+    return sortDirection === "desc" ? timeB - timeA : timeA - timeB
   })
 
-  const mealTypeOptions = [
-  { id: "전체", label: "전체", icon: null },
-  { id: "집밥", label: "집밥", icon: ChefHat },
-  { id: "배달", label: "배달", icon: Bike },
-  { id: "외식", label: "외식", icon: UtensilsCrossed },
-] as const
-
-  const getOptionCount = (optionId: (typeof mealTypeOptions)[number]["id"]) => {
-    if (optionId === "전체") return plans.length
-    return plans.filter((plan) => plan.mealType === optionId).length
+  const getOptionCount = (optionId: "전체" | "집밥" | "배달" | "외식") => {
+    const all = [...mealPlans, ...wishlistPlans]
+    if (optionId === "전체") return all.length
+    return all.filter(p => p.mealType === optionId).length
   }
 
+  const mealTypeOptions = [
+    { id: "전체" as const, label: "전체", icon: null },
+    { id: "집밥" as const, label: "집밥", icon: ChefHat },
+    { id: "배달" as const, label: "배달", icon: Bike },
+    { id: "외식" as const, label: "외식", icon: UtensilsCrossed },
+  ]
+
   const handleModalSave = async (saved: EditData) => {
-    if (saved.id === 1 || saved.id === 2 || saved.id === 3) {
-      return
-    }
+    const isWish = !saved.date || saved.isWishlist
+    const targetSource = isWish ? "solo_wishlist" : "solo"
+
     const nextPlan = {
-      ...saved,
-      thumbnail: saved.thumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop",
+      id: saved.id || (typeof window !== "undefined" && window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now()),
+      date: saved.date || "",
+      time: saved.time || "",
+      mealType: saved.mealType,
+      menu: saved.menuName,
+      place: saved.place?.name || saved.deliveryStoreName || saved.placeName || "",
+      memo: saved.recipe || "",
+      thumbnail: saved.linkThumbnail || saved.recipeThumbnail || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
+      url: saved.recipe || saved.source_url || "",
+      source: targetSource
     }
 
     if (isLoggedIn && user?.id) {
@@ -401,44 +517,51 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           table: "meal_reservations",
           action: "upsert",
           data: {
-            id: saved.id,
+            id: nextPlan.id,
             user_id: user.id,
-            date: saved.date,
-            time: saved.time,
-            meal_type: saved.mealType,
-            menu: saved.menu,
-            place: saved.place,
-            memo: saved.memo,
+            date: nextPlan.date || null,
+            time: nextPlan.time || null,
+            meal_type: nextPlan.mealType,
+            menu: nextPlan.menu,
+            place: nextPlan.place,
+            memo: nextPlan.memo,
             thumbnail: nextPlan.thumbnail,
-            source_url: saved.url || null,
-            source: "solo"
+            source_url: nextPlan.url || null,
+            source: targetSource
           }
         })
       } catch (err) {
         console.error("Failed to save reservation", err)
-        toast.error("예약 저장에 실패했습니다.")
+        toast.error("저장에 실패했습니다.")
         return
       }
     }
 
-    setPlans((prev) => {
-      const realPlans = prev.filter(p => p.id !== 1 && p.id !== 2 && p.id !== 3)
-      const exists = realPlans.some((plan) => plan.id === saved.id)
-      const updatedRealPlans = exists
-        ? realPlans.map((plan) => (plan.id === saved.id ? { ...plan, ...nextPlan } : plan))
-        : [nextPlan, ...realPlans]
-
-      return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
-    })
+    if (isWish) {
+      setWishlistPlans(prev => {
+        const realWishes = prev.filter(p => !p.isSample && !String(p.id).startsWith("sample-"))
+        const exists = realWishes.some(p => p.id === nextPlan.id)
+        return exists ? realWishes.map(p => p.id === nextPlan.id ? nextPlan : p) : [nextPlan, ...realWishes]
+      })
+    } else {
+      setPlans(prev => {
+        const realPlans = prev.filter(p => !p.isSample && p.id !== 1 && p.id !== 2 && p.id !== 3)
+        const exists = realPlans.some(p => p.id === nextPlan.id)
+        const updated = exists ? realPlans.map(p => p.id === nextPlan.id ? nextPlan : p) : [nextPlan, ...realPlans]
+        return updated.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      })
+      setWishlistPlans(prev => prev.filter(p => p.id !== nextPlan.id))
+    }
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("whateat:reservation-updated"))
     }
+    toast.success(isWish ? "위시리스트에 저장되었습니다!" : "식사 예약이 확정되었습니다!")
   }
 
   const handleDeleteClick = async (id: string | number) => {
-    if (id === 1 || id === 2 || id === 3) {
-      toast("샘플이라 삭제 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
+    if (id === 1 || id === 2 || id === 3 || String(id).startsWith("sample-")) {
+      toast("샘플이라 삭제가 안 되며, 식사를 등록하면 샘플은 사라집니다.", {
         icon: "💡",
         duration: 3000,
       })
@@ -454,28 +577,200 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         })
       } catch (err) {
         console.error("Failed to delete reservation", err)
-        toast.error("예약 삭제에 실패했습니다.")
+        toast.error("삭제에 실패했습니다.")
         return
       }
     }
 
-    setPlans((prev) => {
-      const updatedRealPlans = prev.filter((plan) => plan.id !== id && plan.id !== 1 && plan.id !== 2 && plan.id !== 3)
-      return mergeRealAndSamplePlans(updatedRealPlans, userBaseDate)
-    })
+    setPlans(prev => prev.filter(p => p.id !== id))
+    setWishlistPlans(prev => prev.filter(p => p.id !== id))
     
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("whateat:reservation-updated"))
     }
-    toast.success("예약 일정이 삭제되었습니다.")
+    toast.success("삭제되었습니다.")
+  }
+
+  const renderCard = (plan: any, isWishlist = false) => {
+    const isSample = plan.isSample || plan.id === 1 || plan.id === 2 || plan.id === 3 || String(plan.id).startsWith("sample-")
+    const TypeIcon = getMealTypeIcon(plan.mealType)
+    const borderClass =
+      plan.mealType === "집밥"
+        ? "border-l-4 border-l-emerald-500 border-y-gray-200/80 border-r-gray-200/80"
+        : plan.mealType === "배달"
+          ? "border-l-4 border-l-sky-500 border-y-gray-200/80 border-r-gray-200/80"
+          : "border-l-4 border-l-orange-500 border-y-gray-200/80 border-r-gray-200/80"
+
+    const dateStr = (() => {
+      if (!plan.date) return ""
+      try {
+        const d = new Date(plan.date)
+        const m = d.getMonth() + 1
+        const day = d.getDate()
+        return `${m}월 ${day}일`
+      } catch (e) {
+        return plan.date
+      }
+    })()
+
+    return (
+      <div 
+        key={plan.id} 
+        ref={(el) => {
+          cardRefs.current[plan.id] = el
+        }}
+        onClick={() => setSelectedDetailPlan(plan)}
+        className={cn(
+          "rounded-3xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between mb-4",
+          borderClass,
+          focusedPlanId === plan.id && "ring-2 ring-orange-400 shadow-orange-100",
+          isSample && "opacity-95"
+        )}
+      >
+        {isSample && (
+          <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
+            <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
+              💡 SAMPLE
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
+              plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+              plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+              plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+              !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+            )}>
+              <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+              <span>{plan.mealType || "식사"}</span>
+            </div>
+
+            {plan.date && (
+              <div className="flex items-center gap-1 text-xs font-bold text-gray-800">
+                <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
+                <span>{dateStr}{plan.time ? ` · ${plan.time}` : ""}</span>
+              </div>
+            )}
+          </div>
+
+          <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEditClick(plan)
+              }}
+              className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+              title="수정/삭제"
+            >
+              <Pencil className="size-3" />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4 pb-3.5 pt-1 flex items-start justify-between gap-3 flex-1">
+          <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+            <div>
+              <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
+                {plan.menu}
+              </h4>
+
+              {plan.place ? (
+                <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                  <MapPin className="size-3.5 text-orange-500 shrink-0" />
+                  <span className="font-medium text-foreground truncate">
+                    {(() => {
+                      if (plan.place.includes("/")) return plan.place
+                      if (plan.place.includes(" ")) {
+                        const reg = parseRegionFromAddress(plan.place)
+                        const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
+                        if (formatted) return formatted
+                      }
+                      return plan.place === plan.menu ? "식당 지도" : plan.place
+                    })()}
+                  </span>
+                </div>
+              ) : (
+                plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
+                      <Youtube className="size-3 text-red-500 shrink-0" />
+                      <span>숏폼</span>
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {plan.memo && (
+              <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
+                <p className="line-clamp-2 font-medium">{plan.memo}</p>
+              </div>
+            )}
+          </div>
+
+          {plan.thumbnail && (
+            <div 
+              className={cn(
+                "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
+                plan.url && "cursor-pointer group"
+              )}
+              onClick={(e) => {
+                if (plan.url) {
+                  e.stopPropagation()
+                  window.open(plan.url, '_blank')
+                }
+              }}
+              title={plan.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
+            >
+              <img 
+                src={plan.thumbnail || "/placeholder.svg"} 
+                alt={plan.menu}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                }}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              {plan.url && (
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
+                  <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
+                    <ExternalLink className="size-3" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isWishlist && (
+          <div className="px-4 py-2 bg-orange-50/40 border-t border-orange-100/60 flex items-center justify-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (isSample) {
+                  toast("샘플이라 날짜 잡기가 안 되며, 위시를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                  return
+                }
+                setEditingPlan({ ...plan, isWishlistToSchedule: true })
+                setIsModalOpen(true)
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-orange-500/20 active:scale-95 cursor-pointer"
+            >
+              <CalendarIcon className="size-3.5" />
+              <span>날짜 잡기</span>
+            </button>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Sticky Search + Filter */}
       <div className="sticky top-[116px] z-30 -mx-5 px-5 pt-3 pb-2 bg-gradient-to-b from-[#fffaf5] via-[#fff7ed] to-[#fffbf2] flex items-center justify-between gap-2">
-        
-        {/* Left Side: Filters */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto no-scrollbar flex-shrink-0 max-w-[50%] sm:max-w-[60%] pt-1.5 pb-1">
           {mealTypeOptions.map((option) => {
             const Icon = option.icon
@@ -500,10 +795,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           })}
         </div>
 
-        {/* Right Side: Actions (Search, Sort, FAB) */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 min-w-0">
-          
-          {/* Search Bar */}
           <div className={cn("relative transition-all duration-300 ease-in-out", isSearchExpanded || searchQuery ? "flex-1 min-w-[120px] sm:min-w-[150px]" : "w-[38px] flex-shrink-0")}>
             {isSearchExpanded || searchQuery ? (
               <>
@@ -534,7 +826,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             )}
           </div>
 
-          {/* Sort Button */}
           <button
             onClick={() => setSortDirection((prev) => (prev === "desc" ? "asc" : "desc"))}
             className={cn("items-center gap-1.5 px-3.5 h-[38px] bg-white/60 border border-white/80 rounded-xl text-sm font-medium text-muted-foreground hover:border-primary/30 transition-all whitespace-nowrap cursor-pointer flex-shrink-0", (isSearchExpanded || searchQuery) ? "hidden lg:flex" : "flex")}
@@ -543,7 +834,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             <span className="hidden sm:inline">날짜순</span>
           </button>
 
-          {/* FAB and Back Button */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {showBackToCalendar && onBackToCalendar && (
               <button
@@ -556,196 +846,13 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
             <button
               onClick={() => setIsModalOpen(true)}
               className="size-10 bg-orange-500 text-white rounded-full border-2 border-orange-100 shadow-md shadow-orange-300/60 flex items-center justify-center hover:bg-orange-600 hover:scale-105 active:scale-95 transition-all cursor-pointer flex-shrink-0"
+              title="새 식사 예약/위시 추가"
             >
               <Plus className="size-5" strokeWidth={2.8} />
             </button>
           </div>
         </div>
       </div>
-
-      {/* Meal Plan Cards */}
-      {filteredPlans.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sortedPlans.map((plan) => {
-            const isSample = plan.id === 1 || plan.id === 2 || plan.id === 3
-            const TypeIcon = getMealTypeIcon(plan.mealType)
-            const borderClass =
-              plan.mealType === "집밥"
-                ? "border-l-4 border-l-emerald-500 border-y-gray-200/80 border-r-gray-200/80"
-                : plan.mealType === "배달"
-                  ? "border-l-4 border-l-sky-500 border-y-gray-200/80 border-r-gray-200/80"
-                  : "border-l-4 border-l-orange-500 border-y-gray-200/80 border-r-gray-200/80"
-
-            const dateStr = (() => {
-              try {
-                const d = new Date(plan.date)
-                const m = d.getMonth() + 1
-                const day = d.getDate()
-                return `${m}월 ${day}일`
-              } catch (e) {
-                return plan.date
-              }
-            })()
-
-            return (
-              <div 
-                key={plan.id} 
-                ref={(el) => {
-                  cardRefs.current[plan.id] = el
-                }}
-                onClick={() => setSelectedDetailPlan(plan)}
-                className={cn(
-                  "rounded-3xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 relative overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between",
-                  borderClass,
-                  focusedPlanId === plan.id && "ring-2 ring-orange-400 shadow-orange-100",
-                  isSample && "opacity-95"
-                )}
-              >
-                {/* 샘플 리본 */}
-                {isSample && (
-                  <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-10 pointer-events-none">
-                    <div className="absolute top-3 -right-6 w-24 bg-yellow-400 text-yellow-900 text-[8px] font-black py-0.5 text-center rotate-45 shadow-sm">
-                      💡 SAMPLE
-                    </div>
-                  </div>
-                )}
-
-                {/* 1. 상단 헤더: 좌측 [아이콘 + 식사유형 뱃지] + [📅 날짜/시간 (검정글자)], 우측 [✏️ 수정] */}
-                <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-                  <div className="flex items-center gap-2">
-                    {/* 식사유형 뱃지 */}
-                    <div className={cn(
-                      "px-2 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-                      plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                      plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                      plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-                      !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
-                    )}>
-                      <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
-                      <span>{plan.mealType || "식사"}</span>
-                    </div>
-
-                    {/* 예약 날짜 & 시간 (컬러 배경 제거, 검정 글자색으로 배치) */}
-                    {plan.date && (
-                      <div className="flex items-center gap-1 text-xs font-bold text-gray-800">
-                        <CalendarDays className="size-3.5 text-gray-400 shrink-0" />
-                        <span>{dateStr}{plan.time ? ` · ${plan.time}` : ""}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
-                    {/* 수정 버튼 */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleEditClick(plan)
-                      }}
-                      className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
-                      title="수정/삭제"
-                    >
-                      <Pencil className="size-3" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. 카드 본문 - 공간 최적화 2열 구조 (좌: 메뉴명/장소/메모, 우: 썸네일) */}
-                <div className="px-4 pb-3.5 pt-1 flex items-start justify-between gap-3 flex-1">
-                  {/* 좌측 텍스트 & 정보 구역 */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                    <div>
-                      {/* 둘째줄: 메뉴 제목만 시원하게 2줄까지 wrap */}
-                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
-                        {plan.menu}
-                      </h4>
-
-                      {/* 셋째줄: 식당 주소 또는 숏폼 뱃지 */}
-                      {plan.place ? (
-                        <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-                          <MapPin className="size-3.5 text-orange-500 shrink-0" />
-                          <span className="font-medium text-foreground truncate">
-                            {(() => {
-                              if (plan.place.includes("/")) return plan.place
-                              if (plan.place.includes(" ")) {
-                                const reg = parseRegionFromAddress(plan.place)
-                                const formatted = formatRegionStr(reg.city, reg.gu, reg.dong)
-                                if (formatted) return formatted
-                              }
-                              return plan.place === plan.menu ? "식당 지도" : plan.place
-                            })()}
-                          </span>
-                        </div>
-                      ) : (
-                        plan.url && (plan.url.includes("youtube.com") || plan.url.includes("youtu.be") || plan.url.includes("tiktok.com") || plan.url.includes("instagram.com")) && (
-                          <div className="flex items-center gap-1 mt-1.5">
-                            <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shrink-0">
-                              <Youtube className="size-3 text-red-500 shrink-0" />
-                              <span>숏폼</span>
-                            </span>
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* 넷째줄: 메모 말풍선 */}
-                    {plan.memo && (
-                      <div className="mt-2.5 p-2.5 bg-orange-50/60 rounded-xl border border-orange-100/70 text-xs text-foreground/90 leading-relaxed">
-                        <p className="line-clamp-2 font-medium">{plan.memo}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 우측 썸네일 이미지 */}
-                  {plan.thumbnail && (
-                    <div 
-                      className={cn(
-                        "size-24 sm:size-28 rounded-2xl overflow-hidden shrink-0 relative bg-muted border border-muted/40 shadow-sm",
-                        plan.url && "cursor-pointer group"
-                      )}
-                      onClick={(e) => {
-                        if (plan.url) {
-                          e.stopPropagation()
-                          window.open(plan.url, '_blank')
-                        }
-                      }}
-                      title={plan.url ? "클릭 시 해당 링크로 이동합니다" : undefined}
-                    >
-                      <img 
-                        src={plan.thumbnail || "/placeholder.svg"} 
-                        alt={plan.menu}
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
-                        }}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      {plan.url && (
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
-                          <div className="size-5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white">
-                            <ExternalLink className="size-3" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="bg-white/60 rounded-2xl p-8 text-center">
-          <div className="size-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
-            <Utensils className="size-8 text-primary/50" />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {searchQuery || selectedDate ? "검색 결과가 없어요" : "식사 계획이 없어요"}
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            + 버튼을 눌러 계획을 세워보세요
-          </p>
-        </div>
-      )}
 
       {/* Reservation Modal */}
       <AddReservationModal

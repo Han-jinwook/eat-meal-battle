@@ -318,8 +318,8 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
 
-  // 맛톡 담기: 좋아요 자동 처리 + WhatEatApp으로 이벤트 발신
-  const handleSaveToReservation = (post: TalkPost, target: "solo" | "family") => {
+  // 맛톡 담기: 1-Click 위시리스트 DB 저장 + 좋아요 자동 처리 + 탭 이동
+  const handleSaveToReservation = async (post: TalkPost, target: "solo" | "family" | "group") => {
     // 1. 좋아요 자동 처리 (아직 누르지 않은 경우)
     if (!post.isLiked) {
       setPosts(prev => prev.map(p =>
@@ -331,21 +331,60 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
     // 2. 담기 드롭다운 닫기
     setSaveDropdownPostId(null)
 
-    // 3. 식사유형 매핑
+    // 3. 식사유형 및 정보 매핑
     const mealTypeMap: Record<string, "집밥" | "배달" | "외식"> = {
       homemade: "집밥",
       delivery: "배달",
       dineout: "외식",
     }
     const mealType = mealTypeMap[post.type] ?? "외식"
+    const menu = post.title || "맛톡 추천 메뉴"
+    const place = post.restaurant?.name || (mealType === "집밥" ? "집" : "")
+    const url = post.linkUrl || ""
+    const image = post.image || ""
 
-    // 4. WhatEatApp으로 이벤트 발신
+    const source = target === "solo" ? "solo_wishlist" : target === "family" ? "family_wishlist" : "group_wishlist"
+    const targetLabel = target === "solo" ? "솔로" : target === "family" ? "가족" : "모임"
+
+    // 4. DB 1-Click 위시리스트 즉시 저장
+    if (isLoggedIn && user?.id) {
+      try {
+        const wishId = generateUUID()
+        await secureWrite({
+          table: "meal_reservations",
+          action: "insert",
+          data: {
+            id: wishId,
+            user_id: user.id,
+            date: null,
+            time: null,
+            meal_type: mealType,
+            menu: menu,
+            place: place,
+            memo: `[맛톡 담기] ${post.author?.nickname ? post.author.nickname + '의 추천' : ''}`,
+            url: url,
+            image: image,
+            source: source,
+            group_id: target === "group" ? (selectedGroupId || null) : null
+          }
+        })
+        toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+      } catch (err: any) {
+        console.error("1-click wish save failed", err)
+        toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+      }
+    } else {
+      toast.success(`✨ ${menu}가 ${targetLabel} 위시리스트에 담겼습니다!`)
+    }
+
+    // 5. WhatEatApp으로 이벤트 발신 (해당 탭 위시리스트로 이동)
     window.dispatchEvent(new CustomEvent("openReservationFromTalk", {
       detail: {
         target,
-        menuName: post.title,
+        menuName: menu,
         mealType,
-        placeName: post.restaurant?.name ?? "",
+        placeName: place,
+        savedToWishlist: true
       }
     }))
   }
@@ -2004,19 +2043,26 @@ export function TalkPage({ isActive }: { isActive?: boolean }) {
                   )}>담기</span>
                 </button>
                 {saveDropdownPostId === post.id && (
-                  <div className="absolute bottom-8 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute bottom-8 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
                     <button
                       onClick={() => handleSaveToReservation(post, "solo")}
-                      className="w-full text-left px-4 py-3 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
                     >
-                      <span>👤</span> 솔로 먹예약
+                      <span>👤</span> 솔로 위시로 담기
                     </button>
                     <div className="h-px bg-orange-50" />
                     <button
                       onClick={() => handleSaveToReservation(post, "family")}
-                      className="w-full text-left px-4 py-3 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
                     >
-                      <span>👨‍👩‍👧</span> 가족 먹예약
+                      <span>👨‍👩‍👧</span> 가족 위시로 담기
+                    </button>
+                    <div className="h-px bg-orange-50" />
+                    <button
+                      onClick={() => handleSaveToReservation(post, "group")}
+                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                    >
+                      <span>👥</span> 모임 위시로 담기
                     </button>
                   </div>
                 )}

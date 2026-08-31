@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { checkSession, getBalance, getUserId, getSessionToken, setSessionToken, clearSessionToken } from './CoreLogic/index';
 import { configureMerlinHub } from './CoreLogic/config';
+import { HubOfflineBanner } from './UI/HubOfflineBanner';
 
 interface HubUser {
   id: string;
@@ -80,6 +81,13 @@ export function HubProvider({ children, appId }: { children: React.ReactNode; ap
         setIsLoggedIn(true);
         if (typeof window !== 'undefined') {
           localStorage.setItem('merlin_cached_user', JSON.stringify(freshUser));
+          if (freshUser.id) {
+            localStorage.setItem('merlin_user_id', freshUser.id);
+          }
+          if (freshUser.email) {
+            localStorage.setItem('userEmail', freshUser.email);
+          }
+          window.dispatchEvent(new CustomEvent('merlinLoggedIn', { detail: freshUser }));
         }
         // 세션 확인 성공 시 잔액도 업데이트
         refreshBalance();
@@ -259,6 +267,7 @@ export function HubProvider({ children, appId }: { children: React.ReactNode; ap
       updateNotificationSettings
     }}>
       {children}
+      <HubOfflineBanner />
     </HubContext.Provider>
   );
 }

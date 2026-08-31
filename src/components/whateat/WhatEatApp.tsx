@@ -342,12 +342,11 @@ export default function WhatEatApp() {
   const [reservationJumpRequest, setReservationJumpRequest] = useState<{ date: string; key: number } | null>(null)
   const [showBackToCalendar, setShowBackToCalendar] = useState(false)
 
-  // 맛톡 담기 이벤트 수신: 솔로 or 가족 먹예약으로 탭 전환 + 모달 오픈
+  // 맛톡 담기 이벤트 수신: 솔로/가족/모임 먹예약(위시리스트)으로 탭 전환
   useEffect(() => {
     const handler = (e: Event) => {
       const ev = e as CustomEvent
-      const { target, menuName, mealType, placeName } = ev.detail
-      setReservationPrefill({ menuName, mealType, placeName: placeName || undefined })
+      const { target, menuName, mealType, placeName, savedToWishlist } = ev.detail
       if (target === "solo") {
         handleTabChange("solo")
         setActiveTab("reservation")
@@ -355,8 +354,10 @@ export default function WhatEatApp() {
         handleTabChange("family")
         setFamilyActiveTab("reservation")
       }
-      // 조금 다음 틱에 모달 오픈 (탭 전환 애니메이션 뒤)
-      setTimeout(() => setIsReservationModalOpen(true), 200)
+      if (!savedToWishlist) {
+        setReservationPrefill({ menuName, mealType, placeName: placeName || undefined })
+        setTimeout(() => setIsReservationModalOpen(true), 200)
+      }
     }
     window.addEventListener("openReservationFromTalk", handler)
     return () => window.removeEventListener("openReservationFromTalk", handler)

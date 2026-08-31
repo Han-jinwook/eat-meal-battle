@@ -77,9 +77,21 @@ export function clearSessionToken() {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(SESSION_TOKEN_KEY);
+    localStorage.removeItem('merlin_cached_user');
+    localStorage.removeItem('merlin_cached_balance');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userNickname');
+    localStorage.removeItem('userProfileImage');
+    sessionStorage.clear();
+
+    const expireStr = '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0';
     const domainPart = getCookieDomain();
-    document.cookie = `${SESSION_TOKEN_KEY}=; path=/; max-age=0${domainPart}`;
-    document.cookie = `${SESSION_TOKEN_KEY}=; path=/; max-age=0`;
+    
+    // 도메인 쿠키 및 호스트 쿠키 완벽 소멸 (WebKit/Safari 호환)
+    document.cookie = `${SESSION_TOKEN_KEY}${expireStr}${domainPart}; SameSite=Lax; Secure`;
+    document.cookie = `${SESSION_TOKEN_KEY}${expireStr}${domainPart}`;
+    document.cookie = `${SESSION_TOKEN_KEY}${expireStr}; SameSite=Lax; Secure`;
+    document.cookie = `${SESSION_TOKEN_KEY}${expireStr}`;
   } catch (e) {
     console.warn('[MerlinHub] Failed to clear session token/cookie:', e);
   }

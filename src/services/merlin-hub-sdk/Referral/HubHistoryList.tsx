@@ -1,6 +1,6 @@
 /**
- * Version: v1.2.0
- * Last Updated: 2026-06-12
+ * Version: v1.2.1
+ * Last Updated: 2026-08-31
  */
 import React from 'react';
 
