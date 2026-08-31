@@ -503,30 +503,29 @@ export function FamilyPage({
   const [editingMemoId, setEditingMemoId] = useState<string | number | null>(null)
   const [editingMemoText, setEditingMemoText] = useState("")
 
-  const handleSaveFamilyMemoInline = async (id: string | number) => {
+  const handleSilentSaveFamilyMemo = async (id: string | number, newMemo: string) => {
+    setEditingMemoId(null)
+    const trimmed = newMemo.trim()
+
+    setFamilyReservations(prev => prev.map(p => p.id === id ? { ...p, memo: trimmed } : p))
+    setWishlistItems(prev => prev.map(p => p.id === id ? { ...p, memo: trimmed } : p))
+
     if (isLoggedIn && user?.id) {
       try {
         await secureWrite({
           table: "meal_reservations",
           action: "update",
-          data: { memo: editingMemoText },
+          data: { memo: trimmed },
           filters: { id }
         })
       } catch (err) {
-        console.error("Failed to save family inline memo", err)
-        toast.error("메모 저장 실패")
-        return
+        console.error("Failed to save family inline memo silently", err)
       }
     }
 
-    setFamilyReservations(prev => prev.map(p => p.id === id ? { ...p, memo: editingMemoText } : p))
-    setWishlistItems(prev => prev.map(p => p.id === id ? { ...p, memo: editingMemoText } : p))
-    setEditingMemoId(null)
-    
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("whateat:reservation-updated"))
     }
-    toast.success("✨ 메모가 수정되었습니다!")
   }
 
   const handleRemoveMember = async (targetUserId: string, memberName: string) => {
@@ -3554,10 +3553,10 @@ export function FamilyPage({
               )}
             </div>
 
-            {/* 넷째줄: 메모 말풍선 (클릭 시 원터치 인라인 바로 수정) */}
+            {/* 넷째줄: 메모 말풍선 (클릭 시 원터치 조용한 자동저장 인라인 입력) */}
             {editingMemoId === item.id ? (
               <div 
-                className="mt-2.5 p-1.5 bg-white rounded-xl border-2 border-orange-400 shadow-md flex items-center gap-1.5 animate-in fade-in duration-150"
+                className="mt-2.5 p-1 bg-white rounded-xl border-2 border-orange-400/90 shadow-2xs flex items-center animate-in fade-in duration-100"
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
@@ -3566,50 +3565,30 @@ export function FamilyPage({
                   value={editingMemoText}
                   onChange={(e) => setEditingMemoText(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSaveFamilyMemoInline(item.id)
-                    if (e.key === "Escape") setEditingMemoId(null)
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur()
+                    }
                   }}
-                  placeholder="한줄 메모 입력"
-                  className="flex-1 bg-transparent text-xs font-medium outline-none text-foreground px-1"
+                  onBlur={() => handleSilentSaveFamilyMemo(item.id, editingMemoText)}
+                  placeholder="한줄 메모 입력..."
+                  className="w-full bg-transparent text-xs font-medium outline-none text-foreground px-1.5 py-0.5"
                 />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleSaveFamilyMemoInline(item.id)
-                  }}
-                  className="px-2.5 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold shrink-0 transition-colors cursor-pointer"
-                >
-                  저장
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setEditingMemoId(null)
-                  }}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-lg shrink-0 cursor-pointer"
-                >
-                  <X className="size-3.5" />
-                </button>
               </div>
             ) : (
               (item.memo || !String(item.id).startsWith("sample-")) && (
                 <div 
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (String(item.id).startsWith("sample-")) {
-                      toast("샘플이라 메모 수정이 되지 않으며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                      return
-                    }
+                    if (String(item.id).startsWith("sample-")) return
                     setEditingMemoId(item.id)
                     setEditingMemoText(item.memo || "")
                   }}
-                  className="mt-2.5 p-2 bg-orange-50/70 hover:bg-orange-100/90 rounded-xl border border-orange-200/80 text-xs text-foreground/90 leading-relaxed cursor-pointer transition-all group/memo relative"
+                  className="mt-2.5 p-2 bg-orange-50/60 hover:bg-orange-100/80 rounded-xl border border-orange-100/80 text-xs text-foreground/90 leading-relaxed cursor-text transition-all"
                   title="클릭하여 메모 바로 수정"
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <p className="line-clamp-2 font-medium flex-1">{item.memo || <span className="text-muted-foreground/60 italic">+ 메모 입력</span>}</p>
-                    <Pencil className="size-3 text-orange-400 opacity-0 group-hover/memo:opacity-100 transition-opacity shrink-0 ml-1" />
-                  </div>
+                  <p className="line-clamp-2 font-medium">
+                    {item.memo || <span className="text-muted-foreground/60 italic">+ 메모 입력</span>}
+                  </p>
                 </div>
               )
             )}
