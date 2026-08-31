@@ -970,6 +970,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         }}
         initialUrl={urlForModal}
         editData={editingPlan}
+        isWishlist={editingPlan?.isWishlist}
         onSave={handleModalSave}
         onDelete={handleDeleteClick}
       />
