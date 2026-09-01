@@ -736,19 +736,20 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               )}
             </div>
 
-            {/* 한줄 메모 (항시 커서 진입 가능, 0ms 레이아웃 시프트 & 조용한 자동 저장) */}
+            {/* 2줄 메모 (항시 커서 진입 가능, 0ms 레이아웃 시프트 & 조용한 자동 저장) */}
             <div 
-              className="mt-2.5 p-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all"
+              className="mt-2 p-1.5 px-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all"
               onClick={(e) => e.stopPropagation()}
             >
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 key={plan.memo || "empty"}
                 defaultValue={plan.memo || ""}
                 readOnly={isSample}
                 placeholder={isSample ? "" : "+ 메모 입력"}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
                     e.currentTarget.blur()
                   }
                 }}
@@ -759,7 +760,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                     handleSilentSaveMemo(plan.id, val)
                   }
                 }}
-                className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic"
+                className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic resize-none leading-snug h-[36px] overflow-hidden block"
               />
             </div>
           </div>
