@@ -698,14 +698,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         <div className="px-4 pb-3.5 pt-1 flex items-stretch justify-between gap-3 flex-1">
           <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
-              <h4 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (!isSample) setSelectedDetailPlan(plan)
-                }}
-                className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2 cursor-pointer hover:text-orange-600 transition-colors"
-                title="클릭하여 상세 보기"
-              >
+              <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug line-clamp-2">
                 {plan.menu}
               </h4>
 
