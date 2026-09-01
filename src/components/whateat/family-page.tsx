@@ -3437,6 +3437,7 @@ export function FamilyPage({
     const bgClass = "bg-white"
 
     const isHighlighted = highlightedMenu && item.menu && item.menu.trim().toLowerCase() === highlightedMenu.trim().toLowerCase()
+    const isCardAuthor = !isSampleItem && isLoggedIn && user?.id ? (item.userId ? item.userId === user.id : true) : false
 
     return (
       <div 
@@ -3574,35 +3575,46 @@ export function FamilyPage({
               )}
             </div>
 
-            {/* 넷째줄: 2줄 메모 (하단 썸네일 라인 밀착 정렬 & 항시 2줄 공간 확보) */}
-            <div 
-              className="mt-auto pt-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-1.5 px-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all">
-                <textarea
-                  rows={2}
-                  key={item.memo || "empty"}
-                  defaultValue={item.memo || ""}
-                  readOnly={isSampleItem}
-                  placeholder={isSampleItem ? "" : "+ 메모 입력"}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      e.currentTarget.blur()
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (isSampleItem) return
-                    const val = e.target.value.trim()
-                    if (val !== (item.memo || "")) {
-                      handleSilentSaveFamilyMemo(item.id, val)
-                    }
-                  }}
-                  className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic resize-none leading-snug h-[38px] overflow-hidden block"
-                />
+            {/* 넷째줄: 2줄 메모 (작성자 본인만 인라인 수정 가능) */}
+            {(item.memo || isCardAuthor) && (
+              <div 
+                className="mt-auto pt-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={cn(
+                  "p-1.5 px-2 rounded-xl border transition-all",
+                  isCardAuthor 
+                    ? "bg-orange-50/60 border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300"
+                    : "bg-orange-50/30 border-orange-100/40"
+                )}>
+                  <textarea
+                    rows={2}
+                    key={item.memo || "empty"}
+                    defaultValue={item.memo || ""}
+                    readOnly={!isCardAuthor}
+                    placeholder={isCardAuthor ? "+ 메모 입력" : ""}
+                    onKeyDown={(e) => {
+                      if (!isCardAuthor) return
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        e.currentTarget.blur()
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!isCardAuthor) return
+                      const val = e.target.value.trim()
+                      if (val !== (item.memo || "")) {
+                        handleSilentSaveFamilyMemo(item.id, val)
+                      }
+                    }}
+                    className={cn(
+                      "w-full bg-transparent text-xs font-medium text-foreground/90 outline-none resize-none leading-snug h-[38px] overflow-hidden block",
+                      !isCardAuthor ? "cursor-default select-text" : "placeholder:text-muted-foreground/50 placeholder:italic"
+                    )}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* 우측 영역 */}
