@@ -255,6 +255,8 @@ const categoryOptions = [
   { id: "dineout", label: "외식" },
 ]
 
+const PAGE_SIZE = 12
+
 function generateUUID(): string {
   if (typeof window !== "undefined" && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID()
