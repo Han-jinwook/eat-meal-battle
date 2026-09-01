@@ -695,8 +695,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           </div>
         </div>
 
-        <div className="px-4 pb-3.5 pt-1 flex items-start justify-between gap-3 flex-1">
-          <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+        <div className="px-4 pb-3.5 pt-1 flex items-stretch justify-between gap-3 flex-1">
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
               <h4 
                 onClick={(e) => {
@@ -736,32 +736,34 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
               )}
             </div>
 
-            {/* 2줄 메모 (항시 커서 진입 가능, 0ms 레이아웃 시프트 & 조용한 자동 저장) */}
+            {/* 2줄 메모 (하단 썸네일 라인 밀착 정렬 & 항시 2줄 공간 확보) */}
             <div 
-              className="mt-2 p-1.5 px-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all"
+              className="mt-auto pt-2"
               onClick={(e) => e.stopPropagation()}
             >
-              <textarea
-                rows={2}
-                key={plan.memo || "empty"}
-                defaultValue={plan.memo || ""}
-                readOnly={isSample}
-                placeholder={isSample ? "" : "+ 메모 입력"}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    e.currentTarget.blur()
-                  }
-                }}
-                onBlur={(e) => {
-                  if (isSample) return
-                  const val = e.target.value.trim()
-                  if (val !== (plan.memo || "")) {
-                    handleSilentSaveMemo(plan.id, val)
-                  }
-                }}
-                className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic resize-none leading-snug h-[36px] overflow-hidden block"
-              />
+              <div className="p-1.5 px-2 bg-orange-50/60 rounded-xl border border-orange-100/80 focus-within:border-orange-400 focus-within:bg-white focus-within:ring-1 focus-within:ring-orange-300 transition-all">
+                <textarea
+                  rows={2}
+                  key={plan.memo || "empty"}
+                  defaultValue={plan.memo || ""}
+                  readOnly={isSample}
+                  placeholder={isSample ? "" : "+ 메모 입력"}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      e.currentTarget.blur()
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (isSample) return
+                    const val = e.target.value.trim()
+                    if (val !== (plan.memo || "")) {
+                      handleSilentSaveMemo(plan.id, val)
+                    }
+                  }}
+                  className="w-full bg-transparent text-xs font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/50 placeholder:italic resize-none leading-snug h-[38px] overflow-hidden block"
+                />
+              </div>
             </div>
           </div>
 
