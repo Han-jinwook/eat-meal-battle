@@ -23,10 +23,12 @@ import {
   Youtube,
   ExternalLink,
   X,
+  Bookmark,
 } from "lucide-react"
 import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 import { ReservationDetailModal, type DetailPlanData } from "@/components/whateat/reservation-detail-modal"
+import { UniversalSaveModal, type SourceCardData } from "@/components/whateat/universal-save-modal"
 import { toast } from "react-hot-toast"
 
 export const getDynamicDefaultPlans = (baseDate?: Date) => {
@@ -175,7 +177,33 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [editingMemoText, setEditingMemoText] = useState("")
   const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
   const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
+  const [saveModalSourceCard, setSaveModalSourceCard] = useState<SourceCardData | null>(null)
+  const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
   const { isLoggedIn, user } = useHub()
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      if (!isLoggedIn || !user?.id) return
+      try {
+        const { data: memberRows } = await supabase
+          .from("group_members")
+          .select("group_id, groups(id, name)")
+          .eq("user_id", user.id)
+
+        if (memberRows) {
+          const list = memberRows
+            .map((m: any) => m.groups)
+            .filter((g: any) => g && g.id && g.name)
+          setUserGroups(list)
+        }
+      } catch (err) {
+        console.error("Failed to fetch user groups for save modal", err)
+      }
+    }
+    fetchUserGroups()
+  }, [isLoggedIn, user])
 
   useEffect(() => {
     const handleOpenFromTalk = (e: Event) => {
@@ -699,6 +727,28 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           </div>
 
           <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
+            {!isSample && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSaveModalSourceCard({
+                    id: plan.id,
+                    menu: plan.menu,
+                    place: plan.place,
+                    url: plan.url,
+                    thumbnail: plan.thumbnail,
+                    mealType: plan.mealType,
+                    source: isWishlist ? "solo_wish" : "solo_schedule"
+                  })
+                }}
+                className="p-1 px-1.5 text-orange-500 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-orange-200/60 bg-orange-50/40"
+                title="다른 곳으로 담기"
+              >
+                <Bookmark className="size-3 text-orange-500 fill-orange-500/20" />
+                <span>담기</span>
+              </button>
+            )}
+
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -1049,6 +1099,14 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         isOpen={!!selectedDetailPlan}
         onClose={() => setSelectedDetailPlan(null)}
         plan={selectedDetailPlan}
+      />
+
+      {/* Universal Save Modal */}
+      <UniversalSaveModal
+        isOpen={!!saveModalSourceCard}
+        onClose={() => setSaveModalSourceCard(null)}
+        sourceCard={saveModalSourceCard}
+        groups={userGroups}
       />
     </div>
   )

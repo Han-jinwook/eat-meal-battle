@@ -39,10 +39,12 @@ import {
   FolderClosed,
   UserPlus,
   Youtube,
+  Bookmark,
 } from "lucide-react"
 import { createPortal } from "react-dom"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
+import { UniversalSaveModal, type SourceCardData } from "@/components/whateat/universal-save-modal"
 import { createClient } from "@/lib/supabase"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { secureWrite } from "@/lib/supabase-safe"
@@ -500,6 +502,7 @@ export function FamilyPage({
   }, [isLoggedIn, user])
 
   const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
+  const [saveModalSourceCard, setSaveModalSourceCard] = useState<SourceCardData | null>(null)
 
   useEffect(() => {
     const handleOpenFromTalk = (e: Event) => {
@@ -3498,6 +3501,32 @@ export function FamilyPage({
           </div>
 
           <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
+            {!isSampleItem && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (isPopupCard && onClosePopup) onClosePopup()
+                  setSaveModalSourceCard({
+                    id: item.id,
+                    menu: item.menu,
+                    place: item.place,
+                    url: item.url,
+                    thumbnail: item.thumbnail,
+                    mealType: item.mealType,
+                    source: activeMode === "group" 
+                      ? (isWishlistCard ? "group_wish" : "group_schedule")
+                      : (isWishlistCard ? "family_wish" : "family_schedule"),
+                    groupId: activeMode === "group" ? selectedGroupId : undefined
+                  })
+                }}
+                className="p-1 px-1.5 text-orange-500 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-orange-200/60 bg-orange-50/40"
+                title="다른 곳으로 담기"
+              >
+                <Bookmark className="size-3 text-orange-500 fill-orange-500/20" />
+                <span>담기</span>
+              </button>
+            )}
+
             {/* 수정 버튼:
                 - 위시리스트 카드: 최초 등록자(item.userId === user?.id)에게만 노출
                 - 확정 예약 카드: 날짜잡기 권한이 있는 셰프/방장(isChef)에게만 노출 */}
@@ -5664,6 +5693,14 @@ export function FamilyPage({
         onDelete={editingMeal && editingMeal.id ? () => handleDeleteMealClick(editingMeal.id!) : undefined}
         mode="family"
         registeredDeliveryStores={registeredDeliveryStores}
+      />
+
+      {/* Universal Save Modal */}
+      <UniversalSaveModal
+        isOpen={!!saveModalSourceCard}
+        onClose={() => setSaveModalSourceCard(null)}
+        sourceCard={saveModalSourceCard}
+        groups={groups}
       />
     </div>
   )
