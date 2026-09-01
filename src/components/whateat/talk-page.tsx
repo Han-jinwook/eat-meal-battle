@@ -276,6 +276,7 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
   const [posts, setPosts] = useState<TalkPost[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [saveDropdownPostId, setSaveDropdownPostId] = useState<string | number | null>(null)
+  const likesChannelRef = useRef<any>(null)
   const [expandedComments, setExpandedComments] = useState<string | number | null>(null)
   const [commentsTrigger, setCommentsTrigger] = useState(0)
   const [postComments, setPostComments] = useState<Record<string | number, any[]>>({})
