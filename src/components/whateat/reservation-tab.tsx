@@ -174,7 +174,25 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [editingMemoId, setEditingMemoId] = useState<string | number | null>(null)
   const [editingMemoText, setEditingMemoText] = useState("")
   const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
+  const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
   const { isLoggedIn, user } = useHub()
+
+  useEffect(() => {
+    const handleOpenFromTalk = (e: Event) => {
+      const ev = e as CustomEvent
+      if (!ev.detail) return
+      const { target, menuName, highlightMenu } = ev.detail
+      if (target === "solo") {
+        const targetMenu = highlightMenu || menuName
+        if (targetMenu) {
+          setHighlightedMenu(targetMenu)
+          setTimeout(() => setHighlightedMenu(null), 3500)
+        }
+      }
+    }
+    window.addEventListener("openReservationFromTalk", handleOpenFromTalk)
+    return () => window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+  }, [])
 
   const handleSilentSaveMemo = async (id: string | number, newMemo: string) => {
     setPlans(prev => prev.map(p => p.id === id ? { ...p, memo: newMemo } : p))
@@ -635,6 +653,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       }
     })()
 
+    const isHighlighted = highlightedMenu && plan.menu && plan.menu.trim().toLowerCase() === highlightedMenu.trim().toLowerCase()
+
     return (
       <div 
         key={plan.id} 
@@ -645,7 +665,8 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           "rounded-3xl bg-white shadow-sm hover:shadow-md relative overflow-hidden transition-all duration-200 flex flex-col justify-between mb-4",
           borderClass,
           focusedPlanId === plan.id && "ring-2 ring-orange-400 shadow-orange-100",
-          isSample && "opacity-95"
+          isSample && "opacity-95",
+          isHighlighted && "ring-2 ring-orange-400 border-orange-400 shadow-xl bg-orange-50/40 animate-[bounce_1s_ease-in-out_3] z-20"
         )}
       >
         {isSample && (

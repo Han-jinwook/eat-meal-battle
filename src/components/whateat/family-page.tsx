@@ -499,11 +499,13 @@ export function FamilyPage({
     loadUserRegion()
   }, [isLoggedIn, user])
 
+  const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
+
   useEffect(() => {
     const handleOpenFromTalk = (e: Event) => {
       const ev = e as CustomEvent
       if (!ev.detail) return
-      const { target, targetGroupId } = ev.detail
+      const { target, targetGroupId, menuName, highlightMenu } = ev.detail
       if (target === "group") {
         setActiveMode("group")
         if (targetGroupId) {
@@ -511,6 +513,11 @@ export function FamilyPage({
         }
       } else if (target === "family") {
         setActiveMode("family")
+      }
+      const targetMenu = highlightMenu || menuName
+      if (targetMenu) {
+        setHighlightedMenu(targetMenu)
+        setTimeout(() => setHighlightedMenu(null), 3500)
       }
     }
     window.addEventListener("openReservationFromTalk", handleOpenFromTalk)
@@ -3429,6 +3436,8 @@ export function FamilyPage({
         )
     const bgClass = "bg-white"
 
+    const isHighlighted = highlightedMenu && item.menu && item.menu.trim().toLowerCase() === highlightedMenu.trim().toLowerCase()
+
     return (
       <div 
         key={item.id} 
@@ -3436,7 +3445,8 @@ export function FamilyPage({
           "rounded-3xl overflow-hidden relative transition-all duration-200",
           borderClass,
           bgClass,
-          isSampleItem && "opacity-95"
+          isSampleItem && "opacity-95",
+          isHighlighted && "ring-2 ring-orange-400 border-orange-400 shadow-xl bg-orange-50/40 animate-[bounce_1s_ease-in-out_3] z-20"
         )}
       >
         {/* 샘플 리본 */}

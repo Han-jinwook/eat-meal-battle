@@ -467,14 +467,16 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
       window.dispatchEvent(new Event("whateat:reservation-updated"))
     }
 
-    // 6. WhatEatApp으로 이벤트 발신 (해당 탭 위시리스트로 이동)
+    // 6. WhatEatApp으로 이벤트 발신 (해당 탭 위시리스트로 이동 및 하이라이트 애니메이션)
     window.dispatchEvent(new CustomEvent("openReservationFromTalk", {
       detail: {
         target,
+        targetGroupId: finalGroupId,
         menuName: menu,
         mealType,
         placeName: place,
-        savedToWishlist: true
+        savedToWishlist: true,
+        highlightMenu: menu
       }
     }))
   }
