@@ -24,6 +24,14 @@ import {
   ExternalLink,
   X,
   Bookmark,
+  Clock,
+  Trash2,
+  User,
+  Users,
+  CheckCircle2,
+  ChevronRight,
+  Share2,
+  Pin,
 } from "lucide-react"
 import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
@@ -157,6 +165,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(() => {
     const today = new Date()
@@ -218,8 +227,21 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         }
       }
     }
+    const handleCardSaved = (e: any) => {
+      if (e.detail?.id) {
+        setSavedCardIds(prev => {
+          const newSet = new Set(prev)
+          newSet.add(e.detail.id)
+          return newSet
+        })
+      }
+    }
     window.addEventListener("openReservationFromTalk", handleOpenFromTalk)
-    return () => window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+    window.addEventListener("whateat:card-saved", handleCardSaved)
+    return () => {
+      window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+      window.removeEventListener("whateat:card-saved", handleCardSaved)
+    }
   }, [])
 
   const handleSilentSaveMemo = async (id: string | number, newMemo: string) => {
@@ -727,7 +749,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           </div>
 
           <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
-            {!isSample && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -741,11 +762,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                     source: isWishlist ? "solo_wish" : "solo_schedule"
                   })
                 }}
-                className="p-1 px-1.5 text-orange-500 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-orange-200/60 bg-orange-50/40"
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
                 title="다른 곳으로 담기"
               >
-                <Bookmark className="size-3 text-orange-500 fill-orange-500/20" />
-                <span>담기</span>
+                <Pin className={cn("size-4 rotate-45 transition-colors", savedCardIds.has(plan.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                <span className={cn("text-xs font-bold", savedCardIds.has(plan.id) ? "text-red-500" : "")}>담기</span>
               </button>
             )}
 

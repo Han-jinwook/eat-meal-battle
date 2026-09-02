@@ -40,6 +40,8 @@ import {
   UserPlus,
   Youtube,
   Bookmark,
+  Video, 
+  Pin 
 } from "lucide-react"
 import { createPortal } from "react-dom"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
@@ -503,6 +505,7 @@ export function FamilyPage({
 
   const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
   const [saveModalSourceCard, setSaveModalSourceCard] = useState<SourceCardData | null>(null)
+  const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
 
   useEffect(() => {
     const handleOpenFromTalk = (e: Event) => {
@@ -523,8 +526,21 @@ export function FamilyPage({
         setTimeout(() => setHighlightedMenu(null), 3500)
       }
     }
+    const handleCardSaved = (e: any) => {
+      if (e.detail?.id) {
+        setSavedCardIds(prev => {
+          const newSet = new Set(prev)
+          newSet.add(e.detail.id)
+          return newSet
+        })
+      }
+    }
     window.addEventListener("openReservationFromTalk", handleOpenFromTalk)
-    return () => window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+    window.addEventListener("whateat:card-saved", handleCardSaved)
+    return () => {
+      window.removeEventListener("openReservationFromTalk", handleOpenFromTalk)
+      window.removeEventListener("whateat:card-saved", handleCardSaved)
+    }
   }, [])
   const [showMemberManageModal, setShowMemberManageModal] = useState(false)
   const [isFamilyOwner, setIsFamilyOwner] = useState(true)
@@ -3519,11 +3535,11 @@ export function FamilyPage({
                     groupId: activeMode === "group" ? selectedGroupId : undefined
                   })
                 }}
-                className="p-1 px-1.5 text-orange-500 hover:text-orange-600 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-orange-200/60 bg-orange-50/40"
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
                 title="다른 곳으로 담기"
               >
-                <Bookmark className="size-3 text-orange-500 fill-orange-500/20" />
-                <span>담기</span>
+                <Pin className={cn("size-4 rotate-45 transition-colors", savedCardIds.has(item.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                <span className={cn("text-xs font-bold", savedCardIds.has(item.id) ? "text-red-500" : "")}>담기</span>
               </button>
             )}
 

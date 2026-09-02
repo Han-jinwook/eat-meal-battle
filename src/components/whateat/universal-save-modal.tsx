@@ -139,7 +139,15 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
       // 전체 탭 실시간 리로드 이벤트 발신
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("whateat:reservation-updated"))
-        
+        // 좋아요 자동 연동: 먹로그 혹은 확정예약 등 타 식사 기록을 담을 때 해당 카드를 '좋아요(meal_likes)' 처리 (백그라운드)
+        if (sourceCard.id) {
+          secureWrite({
+            table: "meal_likes",
+            action: "insert",
+            data: { meal_id: sourceCard.id, user_id: user.id }
+          }).catch(console.error)
+        }
+
         // 해당 탭으로 이동 및 하이라이팅 발신
         window.dispatchEvent(new CustomEvent("openReservationFromTalk", {
           detail: {
@@ -151,6 +159,11 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
             savedToWishlist: true,
             highlightMenu: sourceCard.menu
           }
+        }))
+        
+        // 담기 성공 상태 발신 (Pin 아이콘 색상 변경용)
+        window.dispatchEvent(new CustomEvent("whateat:card-saved", {
+          detail: { id: sourceCard.id }
         }))
       }
 

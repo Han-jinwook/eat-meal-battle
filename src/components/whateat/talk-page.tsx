@@ -305,6 +305,7 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
   const [showRegionSearch, setShowRegionSearch] = useState(false)
   const [showOnlyNew, setShowOnlyNew] = useState(false)
   const [showOnlyLiked, setShowOnlyLiked] = useState(false)
+  const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
   const [sortOption, setSortOption] = useState<"latest" | "likes">("latest")
   const [searchQuery, setSearchQuery] = useState(initialSearch)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
@@ -362,13 +363,25 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
   // 맛톡 담기: 1-Click 위시리스트 DB 저장 + 전 가족/모임 중복 검사 + 좋아요 자동 처리 + 탭 이동
   const handleSaveToReservation = async (post: TalkPost, target: "solo" | "family" | "group", targetGroupId?: string) => {
     // 1. 좋아요 자동 처리 (아직 누르지 않은 경우)
-    if (!post.isLiked) {
+    if (!post.isLiked && isLoggedIn && user?.id) {
       setPosts(prev => prev.map(p =>
         p.id === post.id
           ? { ...p, isLiked: true, likes: p.likes + 1 }
           : p
       ))
+      secureWrite({
+        table: "meal_likes",
+        action: "insert",
+        data: { meal_id: post.id, user_id: user.id }
+      }).catch(console.error)
     }
+
+    // 담은 항목 ID 기록 (Pin 색상 변경용)
+    setSavedCardIds(prev => {
+      const newSet = new Set(prev)
+      newSet.add(post.id)
+      return newSet
+    })
     // 2. 담기 드롭다운 닫기
     setSaveDropdownPostId(null)
 
@@ -2125,13 +2138,13 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                 >
                   <Pin className={cn(
                     "size-4 transition-all rotate-45",
-                    saveDropdownPostId === post.id
+                    saveDropdownPostId === post.id || savedCardIds.has(post.id)
                       ? "fill-red-500 text-red-500 scale-110"
                       : "text-muted-foreground"
                   )} />
                   <span className={cn(
                     "text-xs font-bold",
-                    saveDropdownPostId === post.id ? "text-red-500" : ""
+                    (saveDropdownPostId === post.id || savedCardIds.has(post.id)) ? "text-red-500" : ""
                   )}>담기</span>
                 </button>
                 {saveDropdownPostId === post.id && (

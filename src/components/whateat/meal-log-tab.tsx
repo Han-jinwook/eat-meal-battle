@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ArrowDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin, Loader2 } from "lucide-react"
+import { Lightbulb, BookOpen, Star, MessageSquare, Pencil, Search, ChevronDown, ArrowUpDown, ArrowDown, ChefHat, Bike, UtensilsCrossed, ExternalLink, Plus, Trash2, Heart, Send, X, MapPin, Loader2, Pin } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
+import { LogDetailModal } from "@/components/whateat/log-detail-modal"
+import { UniversalSaveModal } from "@/components/whateat/universal-save-modal"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
@@ -134,6 +136,46 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [addressSearchQuery, setAddressSearchQuery] = useState("")
   const [filteredRegions, setFilteredRegions] = useState<string[]>([])
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+
+  const [activeTab, setActiveTab] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
+  const [saveModalSourceCard, setSaveModalSourceCard] = useState<any>(null)
+  const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
+  const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
+
+  useEffect(() => {
+    const handleCardSaved = (e: any) => {
+      if (e.detail?.id) {
+        setSavedCardIds(prev => {
+          const newSet = new Set(prev)
+          newSet.add(e.detail.id)
+          return newSet
+        })
+      }
+    }
+    window.addEventListener("whateat:card-saved", handleCardSaved)
+    return () => window.removeEventListener("whateat:card-saved", handleCardSaved)
+  }, [])
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return
+    const fetchUserGroups = async () => {
+      try {
+        const { data } = await supabase
+          .from("group_members")
+          .select("group_id, groups(id, name)")
+          .eq("user_id", user.id)
+        if (data) {
+          const uniqueGroups = data
+            .map((m: any) => m.groups)
+            .filter(Boolean)
+          setUserGroups(uniqueGroups)
+        }
+      } catch (err) {
+        console.error("Failed to fetch user groups", err)
+      }
+    }
+    fetchUserGroups()
+  }, [isLoggedIn, user?.id])
 
   // 댓글 및 대댓글 관련 상태
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
@@ -1685,14 +1727,36 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
 
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
-                {/* Edit Button - 항상 노출 (배경 상시 활성화하여 시인성 확보, 샘플 띠와 겹치지 않게 top-1.5 right-1.5에 배치) */}
-                <button 
-                  onClick={() => handleEditClick(meal)}
-                  className="absolute top-1.5 right-1.5 size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all z-20 cursor-pointer"
-                  title="수정"
-                >
-                  <Pencil className="size-3.5" />
-                </button>
+                <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-20">
+                  <button
+                    onClick={() => {
+                      if (isSampleMeal) {
+                        toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                        return
+                      }
+                      setSaveModalSourceCard({
+                        id: meal.id,
+                        menu: meal.menu,
+                        place: meal.place_name,
+                        url: meal.linkUrl,
+                        thumbnail: meal.imageUrl,
+                        mealType: mealTypeStr,
+                        source: "solo_log"
+                      })
+                    }}
+                    className="size-7.5 flex items-center justify-center bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all cursor-pointer"
+                    title="다른 곳으로 담기"
+                  >
+                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500")} />
+                  </button>
+                  <button 
+                    onClick={() => handleEditClick(meal)}
+                    className="size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all cursor-pointer"
+                    title="수정"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </div>
 
                  {/* Case 1: linkUrl 있음 -> 썸네일 혹은 기본 템플릿 표시 */}
                 {meal.linkUrl ? (
@@ -2220,6 +2284,13 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
           </div>
         </div>
       )}
+      
+      <UniversalSaveModal
+        isOpen={!!saveModalSourceCard}
+        onClose={() => setSaveModalSourceCard(null)}
+        sourceCard={saveModalSourceCard}
+        groups={userGroups}
+      />
     </div>
   )
 }
