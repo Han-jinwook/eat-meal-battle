@@ -185,57 +185,61 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
         className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold">
-              <Sparkles className="size-4" />
-            </div>
-            <h3 className="font-bold text-gray-900 text-base">어디로 담으시겠어요?</h3>
-          </div>
-          <button 
-            onClick={onClose}
-            className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        {/* 선택된 식사 요약 카드 */}
-        <div className="px-5 pb-4">
-          <div className="p-3 bg-orange-50/70 rounded-2xl border border-orange-100 flex items-center gap-3">
+        {/* 선택된 식사 요약 카드 (상단 배치) */}
+        <div className="p-4 bg-orange-50/70 border-b border-orange-100 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {sourceCard.thumbnail ? (
               <img 
                 src={sourceCard.thumbnail} 
                 alt={sourceCard.menu} 
                 referrerPolicy="no-referrer"
-                className="size-12 rounded-xl object-cover shrink-0 border border-orange-200/50"
+                className="size-12 rounded-xl object-cover shrink-0 border border-orange-200/50 shadow-xs"
               />
             ) : (
               <div className="size-12 rounded-xl bg-orange-200/40 flex items-center justify-center text-orange-600 font-bold text-xs shrink-0">
                 🍽️
               </div>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold text-orange-600 bg-orange-100/80 px-1.5 py-0.2 rounded-md inline-block mb-0.5">
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold text-orange-600 bg-orange-100/90 px-1.5 py-0.5 rounded-md inline-block mb-1">
                 {sourceCard.mealType || "식사"}
               </div>
-              <h4 className="font-bold text-gray-900 text-sm truncate">{sourceCard.menu}</h4>
-              {sourceCard.place && (
-                <p className="text-xs text-gray-500 truncate mt-0.5">📍 {sourceCard.place}</p>
-              )}
+              <h4 className="font-extrabold text-gray-900 text-sm truncate">{sourceCard.menu}</h4>
             </div>
+          </div>
+
+          {/* 우측: 식당명 및 닫기 버튼 */}
+          <div className="flex flex-col items-end justify-between self-stretch shrink-0">
+            <button 
+              onClick={onClose}
+              className="size-7 rounded-full hover:bg-black/5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+            {sourceCard.place && (
+              <span className="text-[11px] font-bold text-muted-foreground truncate max-w-[120px] flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-lg border border-orange-100/80 mb-0.5">
+                📍 {sourceCard.place}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* 담기 선택 옵션 목록 */}
-        <div className="px-5 pb-6 space-y-2.5">
+        {/* 타이틀 안내 헤더 */}
+        <div className="flex items-center gap-2 px-6 pt-4 pb-2">
+          <div className="size-7 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold shrink-0">
+            <Sparkles className="size-3.5" />
+          </div>
+          <h3 className="font-bold text-gray-900 text-sm">어디로 담으시겠어요?</h3>
+        </div>
+
+        {/* 담기 선택 옵션 목록 (좌우 여백을 주어 썸네일보다 들여쓰기된 폭) */}
+        <div className="px-6 pb-6 space-y-2.5">
           {/* 1. 솔로 위시 */}
           <button
             disabled={!canSaveToSolo || isSaving}
             onClick={() => handleSaveToTarget("solo")}
             className={cn(
-              "w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between group",
+              "w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between group",
               canSaveToSolo
                 ? "border-gray-200 hover:border-orange-400 hover:bg-orange-50/50 hover:shadow-xs cursor-pointer"
                 : "border-gray-100 bg-gray-50/80 opacity-50 cursor-not-allowed"
@@ -243,14 +247,14 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
           >
             <div className="flex items-center gap-3">
               <div className={cn(
-                "size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                "size-8 rounded-xl flex items-center justify-center shrink-0 transition-colors",
                 canSaveToSolo ? "bg-amber-50 text-amber-600 group-hover:bg-amber-100" : "bg-gray-200 text-gray-400"
               )}>
                 <User className="size-4" />
               </div>
               <div>
                 <p className="font-bold text-sm text-gray-800">💡 솔로 위시리스트</p>
-                <p className="text-[11px] text-gray-500">나 혼자 먹고 싶은 메뉴로 저장</p>
+                <p className="text-[10px] text-gray-500">나 혼자 먹고 싶은 메뉴로 저장</p>
               </div>
             </div>
             {!canSaveToSolo && (
@@ -265,7 +269,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
             disabled={!canSaveToFamily || isSaving}
             onClick={() => handleSaveToTarget("family")}
             className={cn(
-              "w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between group",
+              "w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between group",
               canSaveToFamily
                 ? "border-gray-200 hover:border-orange-400 hover:bg-orange-50/50 hover:shadow-xs cursor-pointer"
                 : "border-gray-100 bg-gray-50/80 opacity-50 cursor-not-allowed"
@@ -273,14 +277,14 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
           >
             <div className="flex items-center gap-3">
               <div className={cn(
-                "size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                "size-8 rounded-xl flex items-center justify-center shrink-0 transition-colors",
                 canSaveToFamily ? "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100" : "bg-gray-200 text-gray-400"
               )}>
                 <Home className="size-4" />
               </div>
               <div>
                 <p className="font-bold text-sm text-gray-800">🏠 우리 가족 위시리스트</p>
-                <p className="text-[11px] text-gray-500">가족 전체와 함께 먹을 메뉴로 저장</p>
+                <p className="text-[10px] text-gray-500">가족 전체와 함께 먹을 메뉴로 저장</p>
               </div>
             </div>
             {!canSaveToFamily && (
@@ -291,15 +295,15 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
           </button>
 
           {/* 3. 모임 위시 */}
-          <div className="p-3.5 rounded-2xl border border-gray-200 bg-white hover:border-sky-300 transition-all">
-            <div className="flex items-center justify-between mb-2">
+          <div className="p-3 rounded-2xl border border-gray-200 bg-white hover:border-sky-300 transition-all">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                <div className="size-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
                   <Users className="size-4" />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-gray-800">👥 모임 위시리스트</p>
-                  <p className="text-[11px] text-gray-500">지정한 모임방의 먹예약으로 저장</p>
+                  <p className="text-[10px] text-gray-500">지정한 모임방의 먹예약으로 저장</p>
                 </div>
               </div>
             </div>
@@ -309,7 +313,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
                 <select
                   value={selectedGroupId}
                   onChange={(e) => setSelectedGroupId(e.target.value)}
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-medium text-gray-800 outline-none focus:border-sky-400 cursor-pointer"
+                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:border-sky-400 cursor-pointer"
                 >
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>
@@ -326,7 +330,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-[11px] text-gray-400 italic mt-1 pl-12">가입된 모임방이 없습니다.</p>
+              <p className="text-[11px] text-gray-400 italic mt-1 pl-11">가입된 모임방이 없습니다.</p>
             )}
           </div>
         </div>
