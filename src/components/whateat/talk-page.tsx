@@ -5,7 +5,7 @@ import {
   MapPin, 
   Star,
   Heart,
-  MessageCircle,
+  MessageSquare,
   ChevronDown,
   Search,
   ArrowDown,
@@ -2113,12 +2113,12 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                     post.isLiked ? "text-red-500" : "text-muted-foreground"
                   )}>{post.likes}</span>
                 </button>
-                {/* 댓글 */}
+                {/* 댓글/메모 */}
                 <button 
                   onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
                   className="flex items-center gap-1.5"
                 >
-                  <MessageCircle className={cn(
+                  <MessageSquare className={cn(
                     "size-5 transition-all",
                     expandedComments === post.id ? "text-orange-500" : "text-muted-foreground"
                   )} />
