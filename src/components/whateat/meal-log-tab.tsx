@@ -986,12 +986,14 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const hasDelivery = mealLogs.some(log => log.type === "배달")
   const hasOutMeal = mealLogs.some(log => log.type === "외식")
 
-  const activeDefaultLogs = defaultMealLogs.filter(log => {
-    if (log.type === "집밥" && hasHomeMeal) return false
-    if (log.type === "배달" && hasDelivery) return false
-    if (log.type === "외식" && hasOutMeal) return false
-    return true
-  })
+  const activeDefaultLogs = (isLoggedIn && !isLoaded)
+    ? []
+    : defaultMealLogs.filter(log => {
+        if (log.type === "집밥" && hasHomeMeal) return false
+        if (log.type === "배달" && hasDelivery) return false
+        if (log.type === "외식" && hasOutMeal) return false
+        return true
+      })
 
   const displayLogs = [...activeDefaultLogs, ...mealLogs]
 

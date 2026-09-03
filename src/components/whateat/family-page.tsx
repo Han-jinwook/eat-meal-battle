@@ -1032,6 +1032,7 @@ export function FamilyPage({
   }, [showChefModal, members])
 
   const [meals, setMeals] = useState<SharedMeal[]>(sharedMeals)
+  const [isMealsLoaded, setIsMealsLoaded] = useState(false)
 
   // 기등록된 배달 식당 목록 추출
   const registeredDeliveryStores = useMemo(() => {
@@ -1677,6 +1678,7 @@ export function FamilyPage({
 
       if (!imgData || imgData.length === 0) {
         setMeals([])
+        setIsMealsLoaded(true)
         return
       }
 
@@ -1849,6 +1851,8 @@ export function FamilyPage({
 
     } catch (e) {
       console.error("Failed to fetch family shared data:", e)
+    } finally {
+      setIsMealsLoaded(true)
     }
   }
 
@@ -2411,14 +2415,16 @@ export function FamilyPage({
   const hasDelivery = meals.some(m => m.mealType === "delivery")
   const hasDining = meals.some(m => m.mealType === "dining")
   
-  const activeDefaultMeals = activeMode === 'group'
-    ? (meals.some(m => m.mealType === "dining") ? [] : defaultSharedMeals.filter(m => m.mealType === "dining"))
-    : defaultSharedMeals.filter(m => {
-        if (m.mealType === "homemade" && hasHomemade) return false
-        if (m.mealType === "delivery" && hasDelivery) return false
-        if (m.mealType === "dining" && hasDining) return false
-        return true
-      })
+  const activeDefaultMeals = (isLoggedIn && !isMealsLoaded)
+    ? []
+    : activeMode === 'group'
+      ? (meals.some(m => m.mealType === "dining") ? [] : defaultSharedMeals.filter(m => m.mealType === "dining"))
+      : defaultSharedMeals.filter(m => {
+          if (m.mealType === "homemade" && hasHomemade) return false
+          if (m.mealType === "delivery" && hasDelivery) return false
+          if (m.mealType === "dining" && hasDining) return false
+          return true
+        })
   
   const baseMeals = [...activeDefaultMeals, ...meals]
   
