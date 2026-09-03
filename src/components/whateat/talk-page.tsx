@@ -1881,15 +1881,6 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                     <span className="font-bold text-sm text-foreground truncate">{post.author.nickname}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    {post.type === "homemade" && post.author.region && (
-                      <>
-                        <MapPin className="size-3 text-muted-foreground shrink-0" />
-                        <span className="text-[11px] text-muted-foreground truncate">
-                          {post.author.region}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/50 shrink-0">·</span>
-                      </>
-                    )}
                     <span className="text-[10px] text-muted-foreground shrink-0">{formatRelativeTime(post.createdAt)}</span>
                   </div>
                 </div>
@@ -2074,20 +2065,27 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               </div>
             </div>
 
-            {/* 하단 정보 영역: 식당명 / 메뉴명 */}
-            <div className="px-4 pt-3 pb-1">
-              {/* 식당명 한 줄 */}
-              {post.restaurant?.name && (
-                <div className="flex items-center gap-1.5 min-w-0 mb-1">
+            {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 정보 바 (먹로그 표준과 100% 동일) */}
+            <div className="flex items-center gap-2 px-4 py-0.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[25px]">
+              {(post.type === "dineout" || post.type === "delivery") && post.restaurant?.name ? (
+                <div 
+                  className={`flex items-center gap-1.5 min-w-0 flex-1 ${post.linkUrl ? 'cursor-pointer hover:opacity-80' : ''}`}
+                  onClick={(e) => {
+                    if (post.linkUrl) {
+                      e.stopPropagation()
+                      window.open(post.linkUrl, '_blank', 'noopener,noreferrer')
+                    }
+                  }}
+                >
                   {post.linkUrl && (
-                    <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
-                      <span className="text-white text-[8px] font-black leading-none">N</span>
+                    <div className="size-4 rounded-md bg-[#03C75A] flex items-center justify-center shrink-0">
+                      <span className="text-white text-[7.5px] font-black leading-none">N</span>
                     </div>
                   )}
-                  <span className="text-[11px] text-muted-foreground font-medium truncate flex items-center">
+                  <span className="text-[11px] font-bold text-foreground truncate flex items-center leading-tight">
                     <span className="truncate">{post.restaurant.name}</span>
                     {post.restaurant.address && (
-                      <span className="text-[10px] font-normal text-muted-foreground/80 ml-1.5 shrink-0">
+                      <span className="text-[10px] font-normal text-muted-foreground ml-1.5 shrink-0">
                         {(() => {
                           const parsed = parseRegionFromAddress(
                             post.restaurant.address,
@@ -2101,64 +2099,43 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                     )}
                   </span>
                 </div>
+              ) : (
+                /* 집밥인 경우: 유저 주소 표시 (식당명 없음) */
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {post.author.region && (
+                    <span className="text-[10px] font-normal text-muted-foreground shrink-0">
+                      {post.author.region}
+                    </span>
+                  )}
+                </div>
               )}
-              {/* 메뉴명 */}
-              <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-2">{post.title}</h4>
-            </div>
 
-            {/* Stats & Actions */}
-            <div className="px-4 pb-3 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* 좋아요 */}
-                <button 
-                  onClick={() => toggleLike(post.id)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Heart className={cn(
-                    "size-5 transition-all",
-                    post.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                  )} />
-                  <span className={cn(
-                    "text-sm font-bold",
-                    post.isLiked ? "text-red-500" : "text-muted-foreground"
-                  )}>{post.likes}</span>
-                </button>
-                {/* 댓글/메모 */}
-                <button 
-                  onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
-                  className="flex items-center gap-1.5"
-                >
-                  <MessageSquare className={cn(
-                    "size-5 transition-all",
-                    expandedComments === post.id ? "text-orange-500" : "text-muted-foreground"
-                  )} />
-                  <span className="text-sm font-bold text-muted-foreground">{post.commentCount}</span>
-                </button>
-              </div>
-              {/* 담기 버튼 (별점 자리 대체) */}
-              <div className="relative">
+              {/* 우측 끝: 담기 버튼 (먹로그와 동일 위치/규격) */}
+              <div className="relative shrink-0 ml-auto">
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation()
                     setSaveDropdownPostId(
                       saveDropdownPostId === post.id ? null : post.id
                     )
                   }}
-                  className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                  title="다른 곳으로 담기"
                 >
                   <Pin className={cn(
-                    "size-4 transition-all rotate-45",
+                    "size-3.5 rotate-45 transition-colors",
                     saveDropdownPostId === post.id || savedCardIds.has(post.id)
                       ? "fill-red-500 text-red-500 scale-110"
-                      : "text-muted-foreground"
+                      : ""
                   )} />
                   <span className={cn(
-                    "text-xs font-bold",
+                    "text-[11px] font-bold",
                     (saveDropdownPostId === post.id || savedCardIds.has(post.id)) ? "text-red-500" : ""
                   )}>담기</span>
                 </button>
                 {saveDropdownPostId === post.id && (
-                  <div className="absolute bottom-8 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute bottom-7 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
                     <button
                       onClick={() => handleSaveToReservation(post, "solo")}
                       className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
@@ -2195,6 +2172,40 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* 하단 정보 영역: 메뉴명 */}
+            <div className="px-4 pt-2.5 pb-1">
+              <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-1.5">{post.title}</h4>
+            </div>
+
+            {/* Stats (좋아요, 댓글) */}
+            <div className="px-4 pb-3 flex items-center gap-4">
+              {/* 좋아요 */}
+              <button 
+                onClick={() => toggleLike(post.id)}
+                className="flex items-center gap-1.5"
+              >
+                <Heart className={cn(
+                  "size-5 transition-all",
+                  post.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                )} />
+                <span className={cn(
+                  "text-sm font-bold",
+                  post.isLiked ? "text-red-500" : "text-muted-foreground"
+                )}>{post.likes}</span>
+              </button>
+              {/* 댓글/메모 */}
+              <button 
+                onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
+                className="flex items-center gap-1.5"
+              >
+                <MessageSquare className={cn(
+                  "size-5 transition-all",
+                  expandedComments === post.id ? "text-orange-500" : "text-muted-foreground"
+                )} />
+                <span className="text-sm font-bold text-muted-foreground">{post.commentCount}</span>
+              </button>
             </div>
 
             {/* Comments Section */}
