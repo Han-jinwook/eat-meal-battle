@@ -2174,38 +2174,42 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               </div>
             </div>
 
-            {/* 하단 정보 영역: 메뉴명 */}
-            <div className="px-4 pt-2.5 pb-1">
-              <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-1.5">{post.title}</h4>
-            </div>
+            {/* 하단 정보 영역: 메뉴명 & 좋아요/댓글(메모) 우측 끝 배치 (먹로그 표준과 100% 일치) */}
+            <div className="px-4 pt-2.5 pb-2.5 flex items-center justify-between gap-2">
+              <h4 className="font-bold text-sm text-foreground line-clamp-1 flex-1 min-w-0">{post.title}</h4>
 
-            {/* Stats (좋아요, 댓글) */}
-            <div className="px-4 pb-3 flex items-center gap-4">
-              {/* 좋아요 */}
-              <button 
-                onClick={() => toggleLike(post.id)}
-                className="flex items-center gap-1.5"
-              >
-                <Heart className={cn(
-                  "size-5 transition-all",
-                  post.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                )} />
-                <span className={cn(
-                  "text-sm font-bold",
-                  post.isLiked ? "text-red-500" : "text-muted-foreground"
-                )}>{post.likes}</span>
-              </button>
-              {/* 댓글/메모 */}
-              <button 
-                onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
-                className="flex items-center gap-1.5"
-              >
-                <MessageSquare className={cn(
-                  "size-5 transition-all",
-                  expandedComments === post.id ? "text-orange-500" : "text-muted-foreground"
-                )} />
-                <span className="text-sm font-bold text-muted-foreground">{post.commentCount}</span>
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                {/* 좋아요 */}
+                <button 
+                  type="button"
+                  onClick={() => toggleLike(post.id)}
+                  className="flex items-center gap-1 group hover:opacity-80 transition-opacity"
+                >
+                  <Heart className={cn(
+                    "size-4 transition-all",
+                    post.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground/80"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-bold",
+                    post.isLiked ? "text-red-500" : "text-muted-foreground"
+                  )}>{post.likes}</span>
+                </button>
+
+                {/* 댓글/메모 버튼 (먹로그 표준: 주황색 아이콘 + 텍스트 + 카운트 뱃지) */}
+                <div 
+                  className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mr-1 rounded-md transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setExpandedComments(expandedComments === post.id ? null : post.id)
+                  }}
+                >
+                  <MessageSquare className="size-3.5 text-orange-500" />
+                  <span className="text-xs font-bold text-foreground select-none">메모</span>
+                  <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-bold">
+                    {post.commentCount}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Comments Section */}
