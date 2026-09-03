@@ -2080,8 +2080,21 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                       <span className="text-white text-[8px] font-black leading-none">N</span>
                     </div>
                   )}
-                  <span className="text-[11px] text-muted-foreground font-medium truncate">
-                    {post.restaurant.name}
+                  <span className="text-[11px] text-muted-foreground font-medium truncate flex items-center">
+                    <span className="truncate">{post.restaurant.name}</span>
+                    {post.restaurant.address && (
+                      <span className="text-[10px] font-normal text-muted-foreground/80 ml-1.5 shrink-0">
+                        {(() => {
+                          const parsed = parseRegionFromAddress(
+                            post.restaurant.address,
+                            userAddressState.city,
+                            userAddressState.gu,
+                            userAddressState.dong
+                          )
+                          return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
+                        })()}
+                      </span>
+                    )}
                   </span>
                 </div>
               )}
