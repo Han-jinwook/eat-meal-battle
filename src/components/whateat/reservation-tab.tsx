@@ -768,7 +768,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                 <Pin className={cn("size-4 rotate-45 transition-colors", savedCardIds.has(plan.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
                 <span className={cn("text-xs font-bold", savedCardIds.has(plan.id) ? "text-red-500" : "")}>담기</span>
               </button>
-            )}
 
             <button
               onClick={(e) => {
