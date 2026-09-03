@@ -1881,11 +1881,15 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                     <span className="font-bold text-sm text-foreground truncate">{post.author.nickname}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="size-3 text-muted-foreground shrink-0" />
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {post.author.region}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/50 shrink-0">·</span>
+                    {post.type === "homemade" && post.author.region && (
+                      <>
+                        <MapPin className="size-3 text-muted-foreground shrink-0" />
+                        <span className="text-[11px] text-muted-foreground truncate">
+                          {post.author.region}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/50 shrink-0">·</span>
+                      </>
+                    )}
                     <span className="text-[10px] text-muted-foreground shrink-0">{formatRelativeTime(post.createdAt)}</span>
                   </div>
                 </div>
