@@ -1891,14 +1891,14 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                 </div>
               </div>
 
-              {/* 우측 끝 별점 표시 (블랙 채움 별 + 2px 커진 size-5) */}
+              {/* 우측 끝 별점 표시 (멀린과 인천/서구 중간 크기: 별 size-3.5/14px, 점수 12.5px) */}
               {post.rating.count > 0 && (
                 <div className="flex items-center gap-1 shrink-0 ml-2 select-none">
-                  <Star className="size-5 fill-slate-800 text-slate-800" />
-                  <span className="text-xs font-black text-slate-800">
+                  <Star className="size-3.5 fill-slate-800 text-slate-800" />
+                  <span className="text-[12.5px] font-bold text-slate-800 leading-none">
                     {post.rating.average.toFixed(1)}
                   </span>
-                  <span className="text-[10px] font-bold text-muted-foreground">
+                  <span className="text-[10px] font-medium text-muted-foreground leading-none">
                     ({post.rating.count}명 {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"})
                   </span>
                 </div>
