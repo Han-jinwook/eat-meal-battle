@@ -1887,6 +1887,20 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                     </span>
                     <span className="text-[10px] text-muted-foreground/50">·</span>
                     <span className="text-[10px] text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
+                    {post.rating.count > 0 && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground/50">·</span>
+                        <div className="flex items-center gap-0.5 text-muted-foreground">
+                          <Star className="size-3 fill-muted-foreground/40 text-muted-foreground/40" />
+                          <span className="text-[10px] font-bold text-muted-foreground">
+                            {post.rating.average.toFixed(1)}
+                          </span>
+                          <span className="text-[9.5px] text-muted-foreground/80">
+                            ({post.rating.count}명 {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"})
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2057,41 +2071,21 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               </div>
             </div>
 
-            {/* 하단 정보 영역: 식당명 + 별점 / 메뉴명 */}
+            {/* 하단 정보 영역: 식당명 / 메뉴명 */}
             <div className="px-4 pt-3 pb-1">
-              {/* 식당명 + 별점 한 줄 */}
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {post.restaurant?.name ? (
-                    <>
-                      {post.linkUrl && (
-                        <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
-                          <span className="text-white text-[8px] font-black leading-none">N</span>
-                        </div>
-                      )}
-                      <span className="text-[11px] text-muted-foreground font-medium truncate">
-                        {post.restaurant.name}
-                      </span>
-                    </>
-                  ) : (
-                    <div className="h-[18px]" />
+              {/* 식당명 한 줄 */}
+              {post.restaurant?.name && (
+                <div className="flex items-center gap-1.5 min-w-0 mb-1">
+                  {post.linkUrl && (
+                    <div className="size-[18px] rounded-sm bg-[#03C75A] flex items-center justify-center shrink-0">
+                      <span className="text-white text-[8px] font-black leading-none">N</span>
+                    </div>
                   )}
+                  <span className="text-[11px] text-muted-foreground font-medium truncate">
+                    {post.restaurant.name}
+                  </span>
                 </div>
-                {post.rating.count > 0 && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Star className="size-4 fill-orange-500 text-orange-500" />
-                    <span className="text-[11px] font-bold text-orange-500">
-                      {post.rating.average.toFixed(1)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      ({post.rating.count}명)
-                    </span>
-                    <span className="text-[10px] font-bold text-orange-500">
-                      {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"}
-                    </span>
-                  </div>
-                )}
-              </div>
+              )}
               {/* 메뉴명 */}
               <h4 className="font-bold text-sm text-foreground line-clamp-1 mb-2">{post.title}</h4>
             </div>
