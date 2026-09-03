@@ -1924,17 +1924,17 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (isSampleMeal) {
+                      if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
                         toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                         return
                       }
                       setSaveModalSourceCard({
                         id: meal.id,
-                        menu: meal.menu,
-                        place: meal.place_name,
+                        menu: meal.title,
+                        place: meal.placeName,
                         url: meal.linkUrl,
-                        thumbnail: meal.imageUrl,
-                        mealType: mealTypeStr,
+                        thumbnail: meal.image,
+                        mealType: meal.type,
                         source: "solo_log"
                       })
                     }}
@@ -1952,17 +1952,17 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (isSampleMeal) {
+                    if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
                       toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                       return
                     }
                     setSaveModalSourceCard({
                       id: meal.id,
-                      menu: meal.menu,
-                      place: meal.place_name,
+                      menu: meal.title,
+                      place: meal.placeName,
                       url: meal.linkUrl,
-                      thumbnail: meal.imageUrl,
-                      mealType: mealTypeStr,
+                      thumbnail: meal.image,
+                      mealType: meal.type,
                       source: "solo_log"
                     })
                   }}
