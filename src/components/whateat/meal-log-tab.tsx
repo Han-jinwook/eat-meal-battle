@@ -2004,10 +2004,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   className="flex items-center gap-1.5 cursor-pointer group hover:bg-muted/10 p-1 -mr-1 rounded-md transition-colors shrink-0"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setVisibleMemoInputs(prev => {
-                      const isCurrentlyVisible = prev[meal.id] ?? ((meal.comments || []).length > 0)
-                      return { ...prev, [meal.id]: !isCurrentlyVisible }
-                    })
+                    setVisibleMemoInputs(prev => ({ ...prev, [meal.id]: !prev[meal.id] }))
                   }}
                 >
                   <MessageSquare className="size-3.5 text-orange-500" />
@@ -2017,8 +2014,8 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                   </span>
                 </div>
               </div>
-              {/* Comment Section (기존 Memo Section 전면 대체) */}
-              {(visibleMemoInputs[meal.id] ?? ((meal.comments || []).length > 0)) && (
+              {/* Comment Section (기본 접힘, 클릭 시 토글 전개) */}
+              {!!visibleMemoInputs[meal.id] && (
                 <div className="animate-in fade-in slide-in-from-top-1 duration-200 pt-2">
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {(meal.comments || []).length === 0 ? null : (
