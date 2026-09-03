@@ -4021,10 +4021,10 @@ export function FamilyPage({
             </div>
           </div>
 
-          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (우측 오프셋 및 상하 여백 슬림화) */}
+          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (좌우 px-5 일치) */}
           {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName ? (
             <div
-              className={`flex items-center gap-2 pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[25px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
+              className={`flex items-center gap-2 px-5 py-0.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[25px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
               onClick={(e) => {
                 e.stopPropagation()
                 if (meal.linkUrl) window.open(meal.linkUrl, '_blank', 'noopener,noreferrer')
@@ -4090,7 +4090,7 @@ export function FamilyPage({
                 </div>
               </div>
             ) : (
-              <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
+              <div className="h-[25px] px-5 py-0.5 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={(e) => {
