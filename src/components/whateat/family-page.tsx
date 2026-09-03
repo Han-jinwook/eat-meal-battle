@@ -4052,13 +4052,66 @@ export function FamilyPage({
                       const parsed = parseRegionFromAddress(placeAddress, defaultCity, defaultGu, defaultDong)
                       return formatRegionStr(parsed.city, parsed.gu, parsed.dong)
                     })()}
-                  </span>
-                )}
-              </span>
-            </div>
-          ) : (
-            <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20" />
-          )}
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center gap-2 ml-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (isSampleMeal(meal.id)) {
+                        toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                        return
+                      }
+                      setSaveModalSourceCard({
+                        id: meal.id,
+                        menu: meal.title,
+                        place: meal.placeName,
+                        url: meal.linkUrl,
+                        thumbnail: meal.imageUrl,
+                        mealType: meal.mealType,
+                        source: activeMode === "group" ? "group_log" : "family_log",
+                        groupId: activeMode === "group" ? selectedGroupId : undefined
+                      })
+                    }}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                    title="다른 곳으로 담기"
+                  >
+                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                    <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isSampleMeal(meal.id)) {
+                      toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                      return
+                    }
+                    setSaveModalSourceCard({
+                      id: meal.id,
+                      menu: meal.title,
+                      place: meal.placeName,
+                      url: meal.linkUrl,
+                      thumbnail: meal.imageUrl,
+                      mealType: meal.mealType,
+                      source: activeMode === "group" ? "group_log" : "family_log",
+                      groupId: activeMode === "group" ? selectedGroupId : undefined
+                    })
+                  }}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                  title="다른 곳으로 담기"
+                >
+                  <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                  <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
+                </button>
+              </div>
+            )}
 
           {/* Card Footer: Title, Date, Average Rating */}
           <div className="px-5 pt-1 pb-3 flex flex-col">

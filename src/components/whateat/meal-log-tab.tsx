@@ -1728,27 +1728,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
               {/* Right Section */}
               <div className="w-1/2 bg-gray-50/80 border-l border-muted flex overflow-hidden relative">
                 <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-20">
-                  <button
-                    onClick={() => {
-                      if (isSampleMeal) {
-                        toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                        return
-                      }
-                      setSaveModalSourceCard({
-                        id: meal.id,
-                        menu: meal.menu,
-                        place: meal.place_name,
-                        url: meal.linkUrl,
-                        thumbnail: meal.imageUrl,
-                        mealType: mealTypeStr,
-                        source: "solo_log"
-                      })
-                    }}
-                    className="size-7.5 flex items-center justify-center bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all cursor-pointer"
-                    title="다른 곳으로 담기"
-                  >
-                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500")} />
-                  </button>
                   <button 
                     onClick={() => handleEditClick(meal)}
                     className="size-7.5 flex items-center justify-center text-foreground bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-sm hover:bg-white active:scale-95 transition-all cursor-pointer"
@@ -1932,15 +1911,66 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                     </span>
                   )}
                 </span>
-                {meal.placeRating && (
-                  <div className="flex items-center gap-0.5 shrink-0 ml-auto">
-                    <Star className="size-2.5 text-[#03C75A] fill-[#03C75A]" />
-                    <span className="text-[10px] font-bold text-[#03C75A]">{meal.placeRating}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 ml-auto shrink-0">
+                  {meal.placeRating && (
+                    <div className="flex items-center gap-0.5">
+                      <Star className="size-2.5 text-[#03C75A] fill-[#03C75A]" />
+                      <span className="text-[10px] font-bold text-[#03C75A]">{meal.placeRating}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (isSampleMeal) {
+                        toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                        return
+                      }
+                      setSaveModalSourceCard({
+                        id: meal.id,
+                        menu: meal.menu,
+                        place: meal.place_name,
+                        url: meal.linkUrl,
+                        thumbnail: meal.imageUrl,
+                        mealType: mealTypeStr,
+                        source: "solo_log"
+                      })
+                    }}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                    title="다른 곳으로 담기"
+                  >
+                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                    <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20" />
+              <div className="h-[25px] pl-24 pr-5 py-0.5 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isSampleMeal) {
+                      toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                      return
+                    }
+                    setSaveModalSourceCard({
+                      id: meal.id,
+                      menu: meal.menu,
+                      place: meal.place_name,
+                      url: meal.linkUrl,
+                      thumbnail: meal.imageUrl,
+                      mealType: mealTypeStr,
+                      source: "solo_log"
+                    })
+                  }}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                  title="다른 곳으로 담기"
+                >
+                  <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                  <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
+                </button>
+              </div>
             )}
 
             {/* Card Footer */}
