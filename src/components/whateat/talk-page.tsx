@@ -2065,8 +2065,8 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               </div>
             </div>
 
-            {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 정보 바 (먹로그 표준과 100% 동일) */}
-            <div className="flex items-center gap-2 px-4 py-0.5 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[25px]">
+            {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 정보 바 (위 사진과 간격 조절 pt-1.5 pb-1) */}
+            <div className="flex items-center gap-2 px-4 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[28px]">
               {(post.type === "dineout" || post.type === "delivery") && post.restaurant?.name ? (
                 <div 
                   className={`flex items-center gap-1.5 min-w-0 flex-1 ${post.linkUrl ? 'cursor-pointer hover:opacity-80' : ''}`}
@@ -2174,8 +2174,8 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               </div>
             </div>
 
-            {/* 하단 정보 영역: 메뉴명 & 좋아요/댓글(메모) 우측 끝 배치 (먹로그 표준과 100% 일치) */}
-            <div className="px-4 pt-2.5 pb-2.5 flex items-center justify-between gap-2">
+            {/* 하단 정보 영역: 메뉴명 & 좋아요/댓글(메모) 우측 끝 배치 (먹로그 표준과 100% 일치, 상하 균형 pt-1.5 pb-2) */}
+            <div className="px-4 pt-1.5 pb-2 flex items-center justify-between gap-2">
               <h4 className="font-bold text-sm text-foreground line-clamp-1 flex-1 min-w-0">{post.title}</h4>
 
               <div className="flex items-center gap-3 shrink-0">
