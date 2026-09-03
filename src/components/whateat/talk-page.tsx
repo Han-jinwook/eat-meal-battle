@@ -1870,40 +1870,39 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
             )}
             {/* Author Header */}
             <div className="flex items-center justify-between p-4 pb-3">
-              <div className="flex items-center gap-3 pl-1">
+              <div className="flex items-center gap-3 pl-1 min-w-0 flex-1">
                 <img
                   src={post.author.avatar}
                   alt={post.author.nickname}
-                  className="size-10 rounded-xl object-cover border-2 border-white shadow-sm"
+                  className="size-10 rounded-xl object-cover border-2 border-white shadow-sm shrink-0"
                 />
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-foreground">{post.author.nickname}</span>
+                    <span className="font-bold text-sm text-foreground truncate">{post.author.nickname}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="size-3 text-muted-foreground" />
-                    <span className="text-[11px] text-muted-foreground">
+                    <MapPin className="size-3 text-muted-foreground shrink-0" />
+                    <span className="text-[11px] text-muted-foreground truncate">
                       {post.author.region}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/50">·</span>
-                    <span className="text-[10px] text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
-                    {post.rating.count > 0 && (
-                      <>
-                        <span className="text-[10px] text-muted-foreground/50">·</span>
-                        <div className="flex items-center gap-0.5 text-muted-foreground">
-                          <Star className="size-3 fill-muted-foreground/40 text-muted-foreground/40" />
-                          <span className="text-[10px] font-bold text-muted-foreground">
-                            {post.rating.average.toFixed(1)}
-                          </span>
-                          <span className="text-[9.5px] text-muted-foreground/80">
-                            ({post.rating.count}명 {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"})
-                          </span>
-                        </div>
-                      </>
-                    )}
+                    <span className="text-[10px] text-muted-foreground/50 shrink-0">·</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{formatRelativeTime(post.createdAt)}</span>
                   </div>
                 </div>
               </div>
+
+              {/* 우측 끝 별점 표시 (블랙 채움 별 + 2px 커진 size-5) */}
+              {post.rating.count > 0 && (
+                <div className="flex items-center gap-1 shrink-0 ml-2 select-none">
+                  <Star className="size-5 fill-slate-800 text-slate-800" />
+                  <span className="text-xs font-black text-slate-800">
+                    {post.rating.average.toFixed(1)}
+                  </span>
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    ({post.rating.count}명 {post.source === "solo" ? "솔로" : post.source === "family" ? "가족" : "모임"})
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Card Content — 좌우 분할 (좌: 음식사진, 우: 레시피/Place 썸네일) */}
