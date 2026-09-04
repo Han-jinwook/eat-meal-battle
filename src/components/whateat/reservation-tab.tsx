@@ -317,16 +317,27 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           const realConfirmed: any[] = []
           const realWishes: any[] = []
 
+          const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+            homemade: "집밥",
+            home: "집밥",
+            delivery: "배달",
+            dining: "외식",
+            dineout: "외식",
+            집밥: "집밥",
+            배달: "배달",
+            외식: "외식"
+          }
+
           soloData.forEach(row => {
             const mapped = {
               id: row.id,
               date: row.date || "",
               time: row.time || "",
-              mealType: row.meal_type,
+              mealType: typeMap[row.meal_type] || (row.meal_type as any) || "외식",
               menu: row.menu,
               place: row.place || "",
               memo: row.memo || "",
-              thumbnail: row.thumbnail || row.image || "",
+              thumbnail: row.thumbnail || row.thumbnail_url || row.image || row.image_url || "",
               url: row.source_url || row.url || "",
               source: row.source || (row.date ? "solo" : "solo_wishlist")
             }
@@ -493,13 +504,11 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     return `${date.getMonth() + 1}/${date.getDate()}`
   }
 
-  const getMealTypeIcon = (type: "집밥" | "배달" | "외식") => {
-    switch (type) {
-      case "집밥": return ChefHat
-      case "배달": return Bike
-      case "외식": return UtensilsCrossed
-      default: return Utensils
-    }
+  const getMealTypeIcon = (type?: string) => {
+    if (type === "집밥" || type === "homemade" || type === "home") return ChefHat
+    if (type === "배달" || type === "delivery") return Bike
+    if (type === "외식" || type === "dining" || type === "dineout") return UtensilsCrossed
+    return Utensils
   }
 
   useEffect(() => {
@@ -515,16 +524,26 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           const soloData = data.filter(row => !row.group_id && (row.source === "solo" || row.source === "solo_wishlist" || !row.source))
           const realConfirmed: any[] = []
           const realWishes: any[] = []
+          const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+            homemade: "집밥",
+            home: "집밥",
+            delivery: "배달",
+            dining: "외식",
+            dineout: "외식",
+            집밥: "집밥",
+            배달: "배달",
+            외식: "외식"
+          }
           soloData.forEach(row => {
             const mapped = {
               id: row.id,
               date: row.date || "",
               time: row.time || "",
-              mealType: row.meal_type,
+              mealType: typeMap[row.meal_type] || (row.meal_type as any) || "외식",
               menu: row.menu,
               place: row.place || "",
               memo: row.memo || "",
-              thumbnail: row.thumbnail || row.image || "",
+              thumbnail: row.thumbnail || row.thumbnail_url || row.image || row.image_url || "",
               url: row.source_url || row.url || "",
               source: row.source || (row.date ? "solo" : "solo_wishlist")
             }

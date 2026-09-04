@@ -381,9 +381,21 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
     ? "나" 
     : (plan.nickname || plan.author || plan.sharedBy || "가족")
 
-  const TypeIcon = plan.mealType === "집밥" 
+  const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+    homemade: "집밥",
+    home: "집밥",
+    delivery: "배달",
+    dining: "외식",
+    dineout: "외식",
+    집밥: "집밥",
+    배달: "배달",
+    외식: "외식"
+  }
+  const displayMealType = typeMap[plan.mealType] || plan.mealType || "외식"
+
+  const TypeIcon = displayMealType === "집밥" 
     ? ChefHat 
-    : plan.mealType === "배달" 
+    : displayMealType === "배달" 
       ? Bike 
       : UtensilsCrossed
 
@@ -414,10 +426,10 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
         {/* 카드 컨테이너 (배경 위에 떠 있는 카드) */}
         <div className={cn(
           "flex-1 overflow-y-auto rounded-2xl sm:rounded-3xl shadow-sm bg-white border border-gray-200/80 border-l-4 flex flex-col",
-          plan.mealType === "집밥" && "border-l-emerald-500",
-          plan.mealType === "배달" && "border-l-sky-500",
-          plan.mealType === "외식" && "border-l-orange-500",
-          !plan.mealType && "border-l-orange-500"
+          displayMealType === "집밥" && "border-l-emerald-500",
+          displayMealType === "배달" && "border-l-sky-500",
+          displayMealType === "외식" && "border-l-orange-500",
+          !displayMealType && "border-l-orange-500"
         )}>
           {/* 1. 상단 카드 헤더 */}
           <div className="flex items-center justify-between px-4 pt-3.5 pb-2 border-b border-gray-100/80 bg-white">
@@ -425,13 +437,13 @@ export function ReservationDetailModal({ isOpen, onClose, plan }: ReservationDet
               {/* 식사유형 뱃지 */}
               <div className={cn(
                 "px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 border text-xs font-bold shrink-0 shadow-2xs",
-                plan.mealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
-                plan.mealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
-                plan.mealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
-                !plan.mealType && "bg-gray-50 text-gray-700 border-gray-200"
+                displayMealType === "집밥" && "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+                displayMealType === "배달" && "bg-sky-50 text-sky-700 border-sky-200/80",
+                displayMealType === "외식" && "bg-orange-50 text-orange-700 border-orange-200/80",
+                !displayMealType && "bg-gray-50 text-gray-700 border-gray-200"
               )}>
                 <TypeIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
-                <span>{plan.mealType || "식사"}</span>
+                <span>{displayMealType || "식사"}</span>
               </div>
 
               {/* 헤더 텍스트: 작성자 · 📅 날짜 */}

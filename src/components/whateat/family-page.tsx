@@ -1875,6 +1875,17 @@ export function FamilyPage({
       if (data) {
         const isGroup = targetGroupId !== null
 
+        const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+          homemade: "집밥",
+          home: "집밥",
+          delivery: "배달",
+          dining: "외식",
+          dineout: "외식",
+          집밥: "집밥",
+          배달: "배달",
+          외식: "외식"
+        }
+
         const rawWishlist = data.filter(r => {
           if (isGroup) {
             if (r.source?.startsWith("solo") || r.source?.startsWith("family")) return false
@@ -1888,11 +1899,11 @@ export function FamilyPage({
           id: row.id,
           date: row.date || "",
           time: row.time || "",
-          mealType: row.meal_type as "집밥" | "배달" | "외식",
+          mealType: typeMap[row.meal_type] || (row.meal_type as any) || "외식",
           menu: row.menu,
           place: row.place || "",
           memo: row.memo || "",
-          thumbnail: row.thumbnail || "",
+          thumbnail: row.thumbnail || row.thumbnail_url || row.image || row.image_url || "",
           url: row.source_url || "",
           userId: row.user_id,
           createdAt: row.created_at
@@ -1912,11 +1923,11 @@ export function FamilyPage({
           id: row.id,
           date: row.date,
           time: row.time || "",
-          mealType: row.meal_type as "집밥" | "배달" | "외식",
+          mealType: typeMap[row.meal_type] || (row.meal_type as any) || "외식",
           menu: row.menu,
           place: row.place || "",
           memo: row.memo || "",
-          thumbnail: row.thumbnail || "",
+          thumbnail: row.thumbnail || row.thumbnail_url || row.image || row.image_url || "",
           url: row.source_url || "",
           userId: row.user_id,
           createdAt: row.created_at
@@ -3429,9 +3440,10 @@ export function FamilyPage({
         ? ((user?.nickname && user?.nickname !== '회원' && user?.nickname !== '가족회원') ? user.nickname : (user?.email?.split('@')[0] || '나'))
         : (cardUser?.name || "가족"))
 
-    const getMealTypeIcon = (type: string) => {
-      if (type === "집밥") return ChefHat
-      if (type === "배달") return Bike
+    const getMealTypeIcon = (type?: string) => {
+      if (type === "집밥" || type === "homemade" || type === "home") return ChefHat
+      if (type === "배달" || type === "delivery") return Bike
+      if (type === "외식" || type === "dining" || type === "dineout") return UtensilsCrossed
       return UtensilsCrossed
     }
     const TypeIcon = getMealTypeIcon(item.mealType)
@@ -3550,13 +3562,22 @@ export function FamilyPage({
                 onClick={(e) => {
                   e.stopPropagation()
                   if (isPopupCard && onClosePopup) onClosePopup()
+                  const typeMap: Record<string, string> = {
+                    homemade: "집밥",
+                    home: "집밥",
+                    delivery: "배달",
+                    dining: "외식",
+                    집밥: "집밥",
+                    배달: "배달",
+                    외식: "외식"
+                  }
                   setSaveModalSourceCard({
                     id: item.id,
                     menu: item.menu,
                     place: item.place,
                     url: item.url,
-                    thumbnail: item.thumbnail,
-                    mealType: item.mealType,
+                    thumbnail: item.thumbnail || null,
+                    mealType: typeMap[item.mealType] || item.mealType || "외식",
                     source: activeMode === "group" 
                       ? (isWishlistCard ? "group_wish" : "group_schedule")
                       : (isWishlistCard ? "family_wish" : "family_schedule"),
@@ -4092,13 +4113,22 @@ export function FamilyPage({
                         toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                         return
                       }
+                      const typeMap: Record<string, string> = {
+                        homemade: "집밥",
+                        home: "집밥",
+                        delivery: "배달",
+                        dining: "외식",
+                        집밥: "집밥",
+                        배달: "배달",
+                        외식: "외식"
+                      }
                       setSaveModalSourceCard({
                         id: meal.id,
                         menu: meal.title,
                         place: meal.placeName,
                         url: meal.linkUrl,
-                        thumbnail: meal.imageUrl,
-                        mealType: meal.mealType,
+                        thumbnail: meal.image || (meal as any).linkThumbnail || null,
+                        mealType: typeMap[meal.mealType] || "외식",
                         source: activeMode === "group" ? "group_log" : "family_log",
                         groupId: activeMode === "group" ? selectedGroupId : undefined
                       })
@@ -4132,13 +4162,22 @@ export function FamilyPage({
                       toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                       return
                     }
+                    const typeMap: Record<string, string> = {
+                      homemade: "집밥",
+                      home: "집밥",
+                      delivery: "배달",
+                      dining: "외식",
+                      집밥: "집밥",
+                      배달: "배달",
+                      외식: "외식"
+                    }
                     setSaveModalSourceCard({
                       id: meal.id,
                       menu: meal.title,
                       place: meal.placeName,
                       url: meal.linkUrl,
-                      thumbnail: meal.imageUrl,
-                      mealType: meal.mealType,
+                      thumbnail: meal.image || (meal as any).linkThumbnail || null,
+                      mealType: typeMap[meal.mealType] || "집밥",
                       source: activeMode === "group" ? "group_log" : "family_log",
                       groupId: activeMode === "group" ? selectedGroupId : undefined
                     })

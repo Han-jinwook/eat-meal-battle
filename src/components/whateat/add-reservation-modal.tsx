@@ -182,11 +182,23 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
 
   // Initialize form with edit data
   useEffect(() => {
+    const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+      homemade: "집밥",
+      home: "집밥",
+      delivery: "배달",
+      dining: "외식",
+      dineout: "외식",
+      집밥: "집밥",
+      배달: "배달",
+      외식: "외식"
+    }
+
     if (editData && isOpen) {
+      const normalizedType = typeMap[editData.mealType] || editData.mealType || (isGroupMode ? "외식" : "")
       setMenuName(editData.menu)
       setDate(editData.date)
       setMemo(editData.memo)
-      setMealType(editData.mealType)
+      setMealType(normalizedType)
       setDateOption("직접선택")
       
       const parsedUrls = parseSourceUrls(editData.url)
@@ -214,9 +226,9 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
         setUrlPreview(null)
       }
       if (editData.place) {
-        if (editData.mealType === "외식") {
+        if (normalizedType === "외식") {
           setSelectedPlace({ name: editData.place, address: "", category: "" })
-        } else if (editData.mealType === "배달") {
+        } else if (normalizedType === "배달") {
           setDeliveryStoreName(editData.place)
         }
       }
@@ -239,12 +251,13 @@ export function AddReservationModal({ isOpen, onClose, initialUrl, editData, onS
 
       if (prefillData) {
         // 맛톡 담기 — 메뉴명/식사유형/장소 자동 채움
+        const normalizedPrefillType = typeMap[prefillData.mealType] || prefillData.mealType || (isGroupMode ? "외식" : "")
         setMenuName(prefillData.menuName)
-        setMealType(prefillData.mealType)
+        setMealType(normalizedPrefillType)
         if (prefillData.placeName) {
-          if (prefillData.mealType === "외식") {
+          if (normalizedPrefillType === "외식") {
             setSelectedPlace({ name: prefillData.placeName, address: "", category: "" })
-          } else if (prefillData.mealType === "배달") {
+          } else if (normalizedPrefillType === "배달") {
             setDeliveryStoreName(prefillData.placeName)
           }
         } else {

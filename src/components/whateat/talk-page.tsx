@@ -398,8 +398,13 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
     // 3. 식사유형 및 정보 매핑
     const mealTypeMap: Record<string, "집밥" | "배달" | "외식"> = {
       homemade: "집밥",
+      home: "집밥",
       delivery: "배달",
       dineout: "외식",
+      dining: "외식",
+      집밥: "집밥",
+      배달: "배달",
+      외식: "외식",
     }
     const mealType = mealTypeMap[post.type] ?? "외식"
     const menu = post.title || "맛톡 추천 메뉴"
@@ -467,7 +472,7 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
               meal_type: mealType,
               menu: menu,
               place: place,
-              memo: `[맛톡 담기] ${post.author?.nickname ? post.author.nickname + '의 추천' : ''}`,
+              memo: null,
               thumbnail: image || null,
               source_url: url || null,
               source: source,

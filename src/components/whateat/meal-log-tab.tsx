@@ -1933,13 +1933,22 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                         toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                         return
                       }
+                      const typeMap: Record<string, string> = {
+                        homemade: "집밥",
+                        home: "집밥",
+                        delivery: "배달",
+                        dining: "외식",
+                        집밥: "집밥",
+                        배달: "배달",
+                        외식: "외식"
+                      }
                       setSaveModalSourceCard({
                         id: meal.id,
                         menu: meal.title,
                         place: meal.placeName,
                         url: meal.linkUrl,
-                        thumbnail: meal.image,
-                        mealType: meal.type,
+                        thumbnail: meal.image || null,
+                        mealType: typeMap[meal.type] || meal.type || "외식",
                         source: "solo_log"
                       })
                     }}
@@ -1961,13 +1970,22 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                       toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                       return
                     }
+                    const typeMap: Record<string, string> = {
+                      homemade: "집밥",
+                      home: "집밥",
+                      delivery: "배달",
+                      dining: "외식",
+                      집밥: "집밥",
+                      배달: "배달",
+                      외식: "외식"
+                    }
                     setSaveModalSourceCard({
                       id: meal.id,
                       menu: meal.title,
                       place: meal.placeName,
                       url: meal.linkUrl,
-                      thumbnail: meal.image,
-                      mealType: meal.type,
+                      thumbnail: meal.image || null,
+                      mealType: typeMap[meal.type] || meal.type || "외식",
                       source: "solo_log"
                     })
                   }}

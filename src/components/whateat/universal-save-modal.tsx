@@ -163,6 +163,16 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
         toast(`💡 '${sourceCard.menu}' 메뉴는 이미 ${targetLabel} 위시리스트에 담겨 있습니다!`, { icon: "💡", duration: 3000 })
       } else {
         const wishId = generateUUID()
+        const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+          homemade: "집밥",
+          home: "집밥",
+          delivery: "배달",
+          dining: "외식",
+          집밥: "집밥",
+          배달: "배달",
+          외식: "외식"
+        }
+        const finalMealType = typeMap[sourceCard.mealType || ""] || (sourceCard.mealType === "집밥" || sourceCard.mealType === "배달" || sourceCard.mealType === "외식" ? sourceCard.mealType : "외식")
         await secureWrite({
           table: "meal_reservations",
           action: "insert",
@@ -171,7 +181,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
             user_id: user.id,
             date: null,
             time: null,
-            meal_type: sourceCard.mealType || "외식",
+            meal_type: finalMealType,
             menu: sourceCard.menu,
             place: sourceCard.place || null,
             source_url: sourceCard.url || null,
@@ -257,7 +267,18 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
             )}
             <div className="min-w-0">
               <div className="text-[10px] font-bold text-orange-600 bg-orange-100/90 px-1.5 py-0.5 rounded-md inline-block mb-1">
-                {sourceCard.mealType || "식사"}
+                {(() => {
+                  const typeMap: Record<string, string> = {
+                    homemade: "집밥",
+                    home: "집밥",
+                    delivery: "배달",
+                    dining: "외식",
+                    집밥: "집밥",
+                    배달: "배달",
+                    외식: "외식"
+                  }
+                  return typeMap[sourceCard.mealType || ""] || sourceCard.mealType || "식사"
+                })()}
               </div>
               <h4 className="font-extrabold text-gray-900 text-sm truncate">{sourceCard.menu}</h4>
             </div>

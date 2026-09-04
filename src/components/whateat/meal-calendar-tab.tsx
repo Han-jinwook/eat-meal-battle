@@ -215,24 +215,36 @@ export function MealCalendarTab({
         const { data: resData } = await resQuery
 
         if (resData && resData.length > 0) {
+          const typeMap: Record<string, "집밥" | "배달" | "외식"> = {
+            homemade: "집밥",
+            home: "집밥",
+            delivery: "배달",
+            dining: "외식",
+            dineout: "외식",
+            집밥: "집밥",
+            배달: "배달",
+            외식: "외식"
+          }
           resData.forEach(row => {
+            const normType = typeMap[row.meal_type] || (row.meal_type as any) || "외식"
             let type: "home" | "delivery" | "out" = "home"
-            if (row.meal_type === "배달") { type = "delivery"; hasType.delivery = true }
-            else if (row.meal_type === "외식") { type = "out"; hasType.out = true }
+            if (normType === "배달") { type = "delivery"; hasType.delivery = true }
+            else if (normType === "외식") { type = "out"; hasType.out = true }
             else { type = "home"; hasType.home = true }
 
+            const menuName = row.menu || row.menu_name || row.title || "식사"
             if (!resMap[row.date]) resMap[row.date] = []
             resMap[row.date].push({
               id: row.id,
-              name: row.menu_name || row.title,
-              menu: row.menu_name || row.title,
-              mealType: row.meal_type,
+              name: menuName,
+              menu: menuName,
+              mealType: normType,
               type,
-              time: row.meal_time || "",
-              place: row.place_name || "",
+              time: row.meal_time || row.time || "",
+              place: row.place_name || row.place || "",
               memo: row.memo || "",
-              thumbnail: row.thumbnail_url,
-              url: row.source_url || row.url,
+              thumbnail: row.thumbnail || row.thumbnail_url || row.image || row.image_url || "",
+              url: row.source_url || row.url || "",
               isSample: false
             })
           })
