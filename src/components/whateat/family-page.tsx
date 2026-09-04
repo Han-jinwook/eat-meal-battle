@@ -1872,7 +1872,18 @@ export function FamilyPage({
       if (error) throw error
 
       if (data) {
-        const rawWishlist = data.filter(r => !r.date || (r.source && r.source.includes("wishlist"))).map(row => ({
+        const isGroup = targetGroupId !== null
+
+        const rawWishlist = data.filter(r => {
+          if (isGroup) {
+            if (r.source?.startsWith("solo") || r.source?.startsWith("family")) return false
+            return !r.date || (r.source && r.source.includes("wishlist"))
+          } else {
+            // 가족 모드: 솔로(solo_wishlist, solo 등) 및 모임(group 등) 제외, 가족 위시리스트만 포함
+            if (r.source?.startsWith("solo") || r.source?.startsWith("group")) return false
+            return r.source === "family_wishlist" || r.source === "family" || (!r.source && !r.date) || (r.source && r.source.includes("family"))
+          }
+        }).map(row => ({
           id: row.id,
           date: row.date || "",
           time: row.time || "",
@@ -1886,7 +1897,17 @@ export function FamilyPage({
           createdAt: row.created_at
         }))
 
-        const rawReservations = data.filter(r => !!r.date && (!r.source || !r.source.includes("wishlist"))).map(row => ({
+        const rawReservations = data.filter(r => {
+          if (!r.date) return false
+          if (isGroup) {
+            if (r.source?.startsWith("solo") || r.source?.startsWith("family")) return false
+            return !r.source || !r.source.includes("wishlist")
+          } else {
+            // 가족 모드: 솔로 및 모임 제외, 가족 확정 예약만 포함
+            if (r.source?.startsWith("solo") || r.source?.startsWith("group")) return false
+            return r.source === "family" || r.source === "family_schedule" || !r.source || r.source.includes("family")
+          }
+        }).map(row => ({
           id: row.id,
           date: row.date,
           time: row.time || "",

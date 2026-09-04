@@ -203,13 +203,13 @@ export function MealCalendarTab({
           }
         } else if (effectiveMode === "family") {
           if (familyUserIds && familyUserIds.length > 0) {
-            resQuery = resQuery.in("created_by", familyUserIds).eq("source", "family")
+            resQuery = resQuery.in("user_id", familyUserIds).eq("source", "family")
           } else {
-            resQuery = resQuery.eq("created_by", user.id).eq("source", "family")
+            resQuery = resQuery.eq("user_id", user.id).eq("source", "family")
           }
         } else {
           // solo
-          resQuery = resQuery.eq("created_by", user.id)
+          resQuery = resQuery.eq("user_id", user.id).eq("source", "solo")
         }
 
         const { data: resData } = await resQuery
