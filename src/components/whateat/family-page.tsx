@@ -4021,7 +4021,7 @@ export function FamilyPage({
             </div>
           </div>
 
-          {/* Place info bar - 외식/배달 혹은 집밥 높이 일치용 빈 줄 (좌우 px-5 일치) */}
+          {/* Place info bar - 외식/배달(식당명) 혹은 집밥(패밀리 셰프) */}
           {(meal.mealType === "dining" || meal.mealType === "delivery") && meal.placeName ? (
             <div
               className={`flex items-center gap-2 px-5 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 transition-all min-h-[28px] ${meal.linkUrl ? 'hover:bg-gray-100/60 group cursor-pointer' : ''}`}
@@ -4090,7 +4090,18 @@ export function FamilyPage({
                 </div>
               </div>
             ) : (
-              <div className="min-h-[28px] px-5 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
+              <div className="min-h-[28px] px-5 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 flex items-center justify-between gap-2">
+                {/* 집밥일 때: 패밀리 셰프 표시 */}
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <ChefHat className="size-3.5 text-emerald-600 shrink-0" strokeWidth={2.2} />
+                  <span className="text-[11px] font-bold text-foreground truncate">
+                    패밀리 셰프: <span className="text-emerald-700 font-extrabold">{(() => {
+                      const chef = displayMembers.find(m => m.role === "chef")
+                      const chefName = chef ? chef.name : (familyHostName || user?.nickname || "멀린")
+                      return chefName === "나" ? (user?.nickname || "멀린") : chefName
+                    })()}</span>
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -4110,7 +4121,7 @@ export function FamilyPage({
                       groupId: activeMode === "group" ? selectedGroupId : undefined
                     })
                   }}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5 ml-auto shrink-0"
                   title="다른 곳으로 담기"
                 >
                   <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
@@ -4163,16 +4174,9 @@ export function FamilyPage({
             </div>
 
             <div className="flex items-center justify-between gap-2 mt-0.5">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                {meal.sharedBy && (
-                  <span className="text-[10px] text-muted-foreground font-semibold shrink-0">
-                    by {meal.sharedBy}
-                  </span>
-                )}
-                <h3 className="font-extrabold text-foreground text-sm tracking-tight truncate">
-                  {meal.title}
-                </h3>
-              </div>
+              <h3 className="font-extrabold text-foreground text-sm tracking-tight truncate flex-1 min-w-0">
+                {meal.title}
+              </h3>
 
               {/* 댓글 버튼 (식사명 줄 우측 끝으로 이동) */}
               <div 
