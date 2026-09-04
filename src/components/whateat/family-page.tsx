@@ -820,9 +820,10 @@ export function FamilyPage({
     if (!isLoggedIn || !user?.id) return
     try {
       const hubToken = getSessionToken() || '';
-      const res = await fetch('/api/group/members', {
+      const res = await fetch(`/api/group/members?userId=${user.id}`, {
         headers: {
-          ...(hubToken ? { 'x-hub-token': hubToken } : {})
+          ...(hubToken ? { 'x-hub-token': hubToken } : {}),
+          'x-user-id': user.id
         }
       })
       if (res.ok) {

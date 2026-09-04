@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { secureWrite } from "@/lib/supabase-safe"
 import { createClient } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
@@ -45,16 +46,51 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
 }) => {
   const { isLoggedIn, user } = useHub()
   const supabase = createClient()
+  const [internalGroups, setInternalGroups] = useState<{ id: string; name: string }[]>(groups || [])
   const [selectedGroupId, setSelectedGroupId] = useState<string>("")
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (groups && groups.length > 0) {
-      // Default to first group that is not the source group
-      const available = groups.find(g => g.id !== sourceCard?.groupId)
-      setSelectedGroupId(available ? available.id : groups[0].id)
+      setInternalGroups(groups)
     }
-  }, [groups, sourceCard])
+  }, [groups])
+
+  useEffect(() => {
+    if (!isOpen || !isLoggedIn || !user?.id) return
+    if (groups && groups.length > 0) return
+
+    const fetchGroups = async () => {
+      try {
+        const hubToken = getSessionToken() || ""
+        const res = await fetch(`/api/group/members?userId=${user.id}`, {
+          headers: {
+            ...(hubToken ? { "x-hub-token": hubToken } : {}),
+            "x-user-id": user.id
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.groups && Array.isArray(json.groups)) {
+            setInternalGroups(json.groups.map((g: any) => ({ id: g.id || g.group_id, name: g.name || g.group_name || "모임" })))
+          }
+        }
+      } catch (err) {
+        console.error("UniversalSaveModal self group fetch error", err)
+      }
+    }
+    fetchGroups()
+  }, [isOpen, isLoggedIn, user?.id, groups])
+
+  const effectiveGroups = (groups && groups.length > 0) ? groups : internalGroups
+
+  useEffect(() => {
+    if (effectiveGroups && effectiveGroups.length > 0) {
+      // Default to first group that is not the source group
+      const available = effectiveGroups.find(g => g.id !== sourceCard?.groupId)
+      setSelectedGroupId(available ? available.id : effectiveGroups[0].id)
+    }
+  }, [effectiveGroups, sourceCard])
 
   if (!isOpen || !sourceCard) return null
 
@@ -100,7 +136,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
           setIsSaving(false)
           return
         }
-        const grp = groups.find(g => g.id === selectedGroupId)
+        const grp = effectiveGroups.find(g => g.id === selectedGroupId)
         targetLabel = grp ? grp.name : "모임"
         source = "group_wishlist"
         finalGroupId = selectedGroupId
@@ -327,14 +363,14 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
               </div>
             </div>
 
-            {groups && groups.length > 0 ? (
+            {effectiveGroups && effectiveGroups.length > 0 ? (
               <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2">
                 <select
                   value={selectedGroupId}
                   onChange={(e) => setSelectedGroupId(e.target.value)}
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-medium text-gray-800 outline-none focus:border-sky-400 cursor-pointer"
                 >
-                  {groups.map(g => (
+                  {effectiveGroups.map(g => (
                     <option key={g.id} value={g.id}>
                       {g.name} {g.id === sourceCard.groupId ? "(현재 모임방)" : ""}
                     </option>

@@ -161,13 +161,16 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     const fetchUserGroups = async () => {
       try {
         const hubToken = getSessionToken() || ""
-        const res = await fetch("/api/group/members", {
-          headers: hubToken ? { "x-hub-token": hubToken } : undefined
+        const res = await fetch(`/api/group/members?userId=${user.id}`, {
+          headers: {
+            ...(hubToken ? { "x-hub-token": hubToken } : {}),
+            "x-user-id": user.id
+          }
         })
         if (res.ok) {
           const json = await res.json()
           if (json.groups && Array.isArray(json.groups)) {
-            setUserGroups(json.groups.map((g: any) => ({ id: g.id, name: g.name })))
+            setUserGroups(json.groups.map((g: any) => ({ id: g.id || g.group_id, name: g.name || g.group_name || "모임" })))
           }
         }
       } catch (err) {

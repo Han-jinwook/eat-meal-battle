@@ -4,6 +4,7 @@ import React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import {
@@ -197,13 +198,16 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
       if (!isLoggedIn || !user?.id) return
       try {
         const hubToken = getSessionToken() || ""
-        const res = await fetch("/api/group/members", {
-          headers: hubToken ? { "x-hub-token": hubToken } : undefined
+        const res = await fetch(`/api/group/members?userId=${user.id}`, {
+          headers: {
+            ...(hubToken ? { "x-hub-token": hubToken } : {}),
+            "x-user-id": user.id
+          }
         })
         if (res.ok) {
           const json = await res.json()
           if (json.groups && Array.isArray(json.groups)) {
-            setUserGroups(json.groups.map((g: any) => ({ id: g.id, name: g.name })))
+            setUserGroups(json.groups.map((g: any) => ({ id: g.id || g.group_id, name: g.name || g.group_name || "모임" })))
           }
         }
       } catch (err) {
@@ -213,7 +217,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     fetchUserGroups()
     window.addEventListener("focus", fetchUserGroups)
     return () => window.removeEventListener("focus", fetchUserGroups)
-  }, [isLoggedIn, user])
+  }, [isLoggedIn, user?.id])
 
   useEffect(() => {
     const handleOpenFromTalk = (e: Event) => {

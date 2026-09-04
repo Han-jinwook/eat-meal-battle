@@ -11,7 +11,8 @@ async function resolveUserId(req: NextRequest): Promise<string | null> {
   const supabaseAdmin = createAdminClient();
   let userId: string | null = null;
 
-  const hubToken = req.headers.get('x-hub-token') || '';
+  const authHeader = req.headers.get('authorization') || '';
+  const hubToken = req.headers.get('x-hub-token') || (authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '');
   if (hubToken) {
     try {
       const meRes = await fetch(`${HUB_URL}/api/auth/me`, {
@@ -44,6 +45,16 @@ async function resolveUserId(req: NextRequest): Promise<string | null> {
     } catch (e) {
       console.warn('[group/members] hub token lookup error:', e);
     }
+  }
+
+  if (!userId) {
+    const headerUserId = req.headers.get('x-user-id');
+    if (headerUserId) userId = headerUserId;
+  }
+
+  if (!userId) {
+    const qUserId = req.nextUrl.searchParams.get('userId');
+    if (qUserId) userId = qUserId;
   }
 
   if (!userId) {

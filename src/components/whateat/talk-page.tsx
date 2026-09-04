@@ -23,6 +23,7 @@ import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress 
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { toast } from "react-hot-toast"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 
@@ -321,7 +322,13 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
     // 1. 모임 목록 로드
     const fetchUserGroups = async () => {
       try {
-        const res = await fetch(`/api/group/members?userId=${user.id}`)
+        const hubToken = getSessionToken() || ""
+        const res = await fetch(`/api/group/members?userId=${user.id}`, {
+          headers: {
+            ...(hubToken ? { "x-hub-token": hubToken } : {}),
+            "x-user-id": user.id
+          }
+        })
         if (res.ok) {
           const json = await res.json()
           if (json.groups && Array.isArray(json.groups)) {
@@ -337,8 +344,11 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
     const fetchFamilyMembers = async () => {
       try {
         const token = getSessionToken() || ""
-        const res = await fetch("/api/family/members", {
-          headers: token ? { "x-hub-token": token } : {}
+        const res = await fetch(`/api/family/members?userId=${user.id}`, {
+          headers: {
+            ...(token ? { "x-hub-token": token } : {}),
+            "x-user-id": user.id
+          }
         })
         if (res.ok) {
           const json = await res.json()
