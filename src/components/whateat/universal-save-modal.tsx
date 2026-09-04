@@ -2,10 +2,22 @@
 
 import React, { useState, useEffect } from "react"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { secureWrite } from "@/lib/supabase-safe"
 import { createClient } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
 import { X, Sparkles, User, Home, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === "x" ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
 
 export interface SourceCardData {
   id?: string | number
@@ -14,7 +26,7 @@ export interface SourceCardData {
   url?: string
   thumbnail?: string
   mealType?: string
-  source: "solo_log" | "solo_wish" | "solo_schedule" | "family_wish" | "family_schedule" | "group_wish" | "group_schedule"
+  source: "solo_log" | "solo_wish" | "solo_schedule" | "family_wish" | "family_schedule" | "group_wish" | "group_schedule" | "family_log" | "group_log"
   groupId?: string
 }
 
@@ -31,7 +43,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
   sourceCard,
   groups = []
 }) => {
-  const { isLoggedIn, user, secureWrite } = useHub()
+  const { isLoggedIn, user } = useHub()
   const supabase = createClient()
   const [selectedGroupId, setSelectedGroupId] = useState<string>("")
   const [isSaving, setIsSaving] = useState(false)
@@ -114,7 +126,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
       if (existing && existing.length > 0) {
         toast(`💡 '${sourceCard.menu}' 메뉴는 이미 ${targetLabel} 위시리스트에 담겨 있습니다!`, { icon: "💡", duration: 3000 })
       } else {
-        const wishId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `wish-${Date.now()}`
+        const wishId = generateUUID()
         await secureWrite({
           table: "meal_reservations",
           action: "insert",
@@ -126,7 +138,7 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
             meal_type: sourceCard.mealType || "외식",
             menu: sourceCard.menu,
             place: sourceCard.place || null,
-            url: sourceCard.url || null,
+            source_url: sourceCard.url || null,
             thumbnail: sourceCard.thumbnail || null,
             memo: null,
             source: source,
@@ -139,8 +151,15 @@ export const UniversalSaveModal: React.FC<UniversalSaveModalProps> = ({
       // 전체 탭 실시간 리로드 이벤트 발신
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("whateat:reservation-updated"))
-        // 좋아요 자동 연동: 먹로그 혹은 확정예약 등 타 식사 기록을 담을 때 해당 카드를 '좋아요(meal_likes)' 처리 (백그라운드)
-        if (sourceCard.id) {
+        
+        // 먹로그(meal_images) 카드인 경우 좋아요 자동 연동 (백그라운드)
+        if (
+          sourceCard.id &&
+          (sourceCard.source === "solo_log" || sourceCard.source === "family_log" || (sourceCard.source as any) === "group_log") &&
+          typeof sourceCard.id === "string" &&
+          sourceCard.id.length > 10 &&
+          !sourceCard.id.startsWith("sample-")
+        ) {
           secureWrite({
             table: "meal_likes",
             action: "insert",
