@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useHub } from "@/services/merlin-hub-sdk/react"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { secureWrite } from "@/lib/supabase-safe"
@@ -53,13 +53,16 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
   const supabase = createClient()
   const [internalGroups, setInternalGroups] = useState<{ id: string; name: string }[]>(groups || [])
   const [isSaving, setIsSaving] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // 1. 모임 목록 동기화
   useEffect(() => {
     if (groups && groups.length > 0) {
       setInternalGroups(groups)
     }
   }, [groups])
 
+  // 2. 모임 목록 미전달 시 자체 조회
   useEffect(() => {
     if (!isOpen || !isLoggedIn || !user?.id) return
     if (groups && groups.length > 0) return
@@ -85,6 +88,25 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
     }
     fetchGroups()
   }, [isOpen, isLoggedIn, user?.id, groups])
+
+  // 3. 글로벌 바깥 터치/클릭 감지 (모바일 및 전역 터치 100% 닫기 보장)
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleOutsideClick = (e: MouseEvent | TouchEvent | PointerEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+
+    // Capture phase로 등록하여 어떤 상위/하위 요소가 버블링을 막아도 무조건 닫기 실행
+    window.addEventListener("pointerdown", handleOutsideClick, true)
+    window.addEventListener("touchstart", handleOutsideClick, true)
+    return () => {
+      window.removeEventListener("pointerdown", handleOutsideClick, true)
+      window.removeEventListener("touchstart", handleOutsideClick, true)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen || !sourceCard) return null
 
@@ -260,9 +282,10 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
 
       {/* 맛톡 규격 표준 플로팅 드롭다운 */}
       <div 
+        ref={dropdownRef}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "absolute bg-white/95 backdrop-blur-md border border-orange-200/80 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[145px] max-w-[210px] animate-in fade-in zoom-in-95 duration-150 text-left",
+          "absolute bg-white/95 backdrop-blur-md border border-orange-200/90 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[155px] max-w-[220px] animate-in fade-in zoom-in-95 duration-150 text-left",
           direction === "up" ? "bottom-7 mb-0.5" : "top-full mt-1.5",
           align === "right" ? "right-0" : "left-0",
           className
@@ -274,10 +297,10 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
             type="button"
             disabled={isSaving}
             onClick={() => handleSaveToTarget("solo")}
-            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 active:bg-orange-100 flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:bg-orange-500 hover:text-white active:bg-orange-600 flex items-center gap-2.5 transition-all duration-150 cursor-pointer group"
           >
-            <span className="text-sm">👤</span>
-            <span>솔로 위시로 담기</span>
+            <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">👤</span>
+            <span className="font-extrabold tracking-tight">솔로 위시로 담기</span>
           </button>
         )}
 
@@ -289,10 +312,10 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
             type="button"
             disabled={isSaving}
             onClick={() => handleSaveToTarget("family")}
-            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 active:bg-orange-100 flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:bg-orange-500 hover:text-white active:bg-orange-600 flex items-center gap-2.5 transition-all duration-150 cursor-pointer group"
           >
-            <span className="text-sm">👨‍👩‍👧</span>
-            <span>가족 위시로 담기</span>
+            <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">👨‍👩‍👧</span>
+            <span className="font-extrabold tracking-tight">가족 위시로 담기</span>
           </button>
         )}
 
@@ -307,11 +330,11 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
                 type="button"
                 disabled={isSaving}
                 onClick={() => handleSaveToTarget("group", g.id)}
-                className="w-full text-left px-3.5 py-2 text-xs font-bold text-foreground hover:bg-orange-50 active:bg-orange-100 flex items-center gap-2 transition-colors truncate cursor-pointer"
+                className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:bg-orange-500 hover:text-white active:bg-orange-600 flex items-center gap-2.5 transition-all duration-150 truncate cursor-pointer group"
                 title={`${g.name} 위시로 담기`}
               >
-                <span className="text-sm shrink-0">👥</span>
-                <span className="truncate">[{g.name}] 위시로</span>
+                <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">👥</span>
+                <span className="truncate font-extrabold tracking-tight">[{g.name}] 위시로</span>
               </button>
             </React.Fragment>
           ))
@@ -320,23 +343,37 @@ export const SaveDropdown: React.FC<SaveDropdownProps> = ({
             type="button"
             disabled={isSaving}
             onClick={() => handleSaveToTarget("group", availableGroups[0].id)}
-            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 active:bg-orange-100 flex items-center gap-2 transition-colors truncate cursor-pointer"
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:bg-orange-500 hover:text-white active:bg-orange-600 flex items-center gap-2.5 transition-all duration-150 truncate cursor-pointer group"
             title={`${availableGroups[0].name} 위시로 담기`}
           >
-            <span className="text-sm shrink-0">👥</span>
-            <span className="truncate">[{availableGroups[0].name}] 위시로</span>
+            <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">👥</span>
+            <span className="truncate font-extrabold tracking-tight">[{availableGroups[0].name}] 위시로</span>
           </button>
         ) : (
           <button
             type="button"
             disabled={isSaving}
             onClick={() => handleSaveToTarget("group")}
-            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 active:bg-orange-100 flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-gray-800 hover:bg-orange-500 hover:text-white active:bg-orange-600 flex items-center gap-2.5 transition-all duration-150 cursor-pointer group"
           >
-            <span className="text-sm">👥</span>
-            <span>모임 위시로 담기</span>
+            <span className="text-sm shrink-0 group-hover:scale-110 transition-transform">👥</span>
+            <span className="font-extrabold tracking-tight">모임 위시로 담기</span>
           </button>
         )}
+
+        {/* 4. 명시적 취소 버튼 */}
+        <div className="h-px bg-orange-100/70" />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
+          className="w-full text-center py-2 text-[11px] font-bold text-gray-400 hover:text-gray-700 hover:bg-gray-100/80 active:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <span className="text-xs">✕</span>
+          <span>취소</span>
+        </button>
       </div>
     </>
   )
