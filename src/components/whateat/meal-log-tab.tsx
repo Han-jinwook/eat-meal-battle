@@ -160,21 +160,23 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
     if (!isLoggedIn || !user?.id) return
     const fetchUserGroups = async () => {
       try {
-        const { data } = await supabase
-          .from("group_members")
-          .select("group_id, groups(id, name)")
-          .eq("user_id", user.id)
-        if (data) {
-          const uniqueGroups = data
-            .map((m: any) => m.groups)
-            .filter(Boolean)
-          setUserGroups(uniqueGroups)
+        const hubToken = getSessionToken() || ""
+        const res = await fetch("/api/group/members", {
+          headers: hubToken ? { "x-hub-token": hubToken } : undefined
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.groups && Array.isArray(json.groups)) {
+            setUserGroups(json.groups.map((g: any) => ({ id: g.id, name: g.name })))
+          }
         }
       } catch (err) {
         console.error("Failed to fetch user groups", err)
       }
     }
     fetchUserGroups()
+    window.addEventListener("focus", fetchUserGroups)
+    return () => window.removeEventListener("focus", fetchUserGroups)
   }, [isLoggedIn, user?.id])
 
   // 댓글 및 대댓글 관련 상태

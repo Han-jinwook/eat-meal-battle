@@ -196,22 +196,23 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
     const fetchUserGroups = async () => {
       if (!isLoggedIn || !user?.id) return
       try {
-        const { data: memberRows } = await supabase
-          .from("group_members")
-          .select("group_id, groups(id, name)")
-          .eq("user_id", user.id)
-
-        if (memberRows) {
-          const list = memberRows
-            .map((m: any) => m.groups)
-            .filter((g: any) => g && g.id && g.name)
-          setUserGroups(list)
+        const hubToken = getSessionToken() || ""
+        const res = await fetch("/api/group/members", {
+          headers: hubToken ? { "x-hub-token": hubToken } : undefined
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.groups && Array.isArray(json.groups)) {
+            setUserGroups(json.groups.map((g: any) => ({ id: g.id, name: g.name })))
+          }
         }
       } catch (err) {
         console.error("Failed to fetch user groups for save modal", err)
       }
     }
     fetchUserGroups()
+    window.addEventListener("focus", fetchUserGroups)
+    return () => window.removeEventListener("focus", fetchUserGroups)
   }, [isLoggedIn, user])
 
   useEffect(() => {
