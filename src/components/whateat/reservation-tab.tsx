@@ -37,7 +37,7 @@ import {
 import { cn, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddReservationModal, type EditData } from "@/components/whateat/add-reservation-modal"
 import { ReservationDetailModal, type DetailPlanData } from "@/components/whateat/reservation-detail-modal"
-import { UniversalSaveModal, type SourceCardData } from "@/components/whateat/universal-save-modal"
+import { SaveDropdown } from "@/components/whateat/save-dropdown"
 import { toast } from "react-hot-toast"
 
 export const getDynamicDefaultPlans = (baseDate?: Date) => {
@@ -187,7 +187,7 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
   const [editingMemoText, setEditingMemoText] = useState("")
   const [userBaseDate, setUserBaseDate] = useState<Date>(new Date())
   const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
-  const [saveModalSourceCard, setSaveModalSourceCard] = useState<SourceCardData | null>(null)
+  const [activeSaveDropdownId, setActiveSaveDropdownId] = useState<string | number | null>(null)
   const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
   const { isLoggedIn, user } = useHub()
 
@@ -773,10 +773,23 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
           </div>
 
           <div className={cn("flex items-center gap-1.5 shrink-0", isSample && "mr-10")}>
+            <div className="relative shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  setSaveModalSourceCard({
+                  setActiveSaveDropdownId(activeSaveDropdownId === plan.id ? null : plan.id)
+                }}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
+                title="다른 곳으로 담기"
+              >
+                <Pin className={cn("size-4 rotate-45 transition-colors", (activeSaveDropdownId === plan.id || savedCardIds.has(plan.id)) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                <span className={cn("text-xs font-bold", (activeSaveDropdownId === plan.id || savedCardIds.has(plan.id)) ? "text-red-500" : "")}>담기</span>
+              </button>
+              {activeSaveDropdownId === plan.id && (
+                <SaveDropdown
+                  isOpen={true}
+                  onClose={() => setActiveSaveDropdownId(null)}
+                  sourceCard={{
                     id: plan.id,
                     menu: plan.menu,
                     place: plan.place,
@@ -784,14 +797,12 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
                     thumbnail: plan.thumbnail,
                     mealType: plan.mealType,
                     source: isWishlist ? "solo_wish" : "solo_schedule"
-                  })
-                }}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
-                title="다른 곳으로 담기"
-              >
-                <Pin className={cn("size-4 rotate-45 transition-colors", savedCardIds.has(plan.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                <span className={cn("text-xs font-bold", savedCardIds.has(plan.id) ? "text-red-500" : "")}>담기</span>
-              </button>
+                  }}
+                  groups={userGroups}
+                  direction="down"
+                />
+              )}
+            </div>
 
             <button
               onClick={(e) => {
@@ -1145,13 +1156,6 @@ export function ReservationTab({ jumpToDate, showBackToCalendar = false, onBackT
         plan={selectedDetailPlan}
       />
 
-      {/* Universal Save Modal */}
-      <UniversalSaveModal
-        isOpen={!!saveModalSourceCard}
-        onClose={() => setSaveModalSourceCard(null)}
-        sourceCard={saveModalSourceCard}
-        groups={userGroups}
-      />
     </div>
   )
 }

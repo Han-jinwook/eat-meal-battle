@@ -46,7 +46,7 @@ import {
 import { createPortal } from "react-dom"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { useHub, HubAvatar, useHubReferral } from "@/services/merlin-hub-sdk/react"
-import { UniversalSaveModal, type SourceCardData } from "@/components/whateat/universal-save-modal"
+import { SaveDropdown } from "@/components/whateat/save-dropdown"
 import { createClient } from "@/lib/supabase"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { secureWrite } from "@/lib/supabase-safe"
@@ -504,7 +504,7 @@ export function FamilyPage({
   }, [isLoggedIn, user])
 
   const [highlightedMenu, setHighlightedMenu] = useState<string | null>(null)
-  const [saveModalSourceCard, setSaveModalSourceCard] = useState<SourceCardData | null>(null)
+  const [activeSaveDropdownId, setActiveSaveDropdownId] = useState<string | number | null>(null)
   const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
 
   useEffect(() => {
@@ -3558,38 +3558,40 @@ export function FamilyPage({
 
           <div className={cn("flex items-center gap-1.5 shrink-0", isSampleItem && "mr-10")}>
             {!isSampleItem && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (isPopupCard && onClosePopup) onClosePopup()
-                  const typeMap: Record<string, string> = {
-                    homemade: "집밥",
-                    home: "집밥",
-                    delivery: "배달",
-                    dining: "외식",
-                    집밥: "집밥",
-                    배달: "배달",
-                    외식: "외식"
-                  }
-                  setSaveModalSourceCard({
-                    id: item.id,
-                    menu: item.menu,
-                    place: item.place,
-                    url: item.url,
-                    thumbnail: item.thumbnail || null,
-                    mealType: typeMap[item.mealType] || item.mealType || "외식",
-                    source: activeMode === "group" 
-                      ? (isWishlistCard ? "group_wish" : "group_schedule")
-                      : (isWishlistCard ? "family_wish" : "family_schedule"),
-                    groupId: activeMode === "group" ? selectedGroupId : undefined
-                  })
-                }}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
-                title="다른 곳으로 담기"
-              >
-                <Pin className={cn("size-4 rotate-45 transition-colors", savedCardIds.has(item.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                <span className={cn("text-xs font-bold", savedCardIds.has(item.id) ? "text-red-500" : "")}>담기</span>
-              </button>
+              <div className="relative shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isPopupCard && onClosePopup) onClosePopup()
+                    setActiveSaveDropdownId(activeSaveDropdownId === item.id ? null : item.id)
+                  }}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-red-500 transition-colors px-1"
+                  title="다른 곳으로 담기"
+                >
+                  <Pin className={cn("size-4 rotate-45 transition-colors", (activeSaveDropdownId === item.id || savedCardIds.has(item.id)) ? "fill-red-500 text-red-500 scale-110" : "")} />
+                  <span className={cn("text-xs font-bold", (activeSaveDropdownId === item.id || savedCardIds.has(item.id)) ? "text-red-500" : "")}>담기</span>
+                </button>
+                {activeSaveDropdownId === item.id && (
+                  <SaveDropdown
+                    isOpen={true}
+                    onClose={() => setActiveSaveDropdownId(null)}
+                    sourceCard={{
+                      id: item.id,
+                      menu: item.menu,
+                      place: item.place,
+                      url: item.url,
+                      thumbnail: item.thumbnail || null,
+                      mealType: item.mealType || "외식",
+                      source: activeMode === "group" 
+                        ? (isWishlistCard ? "group_wish" : "group_schedule")
+                        : (isWishlistCard ? "family_wish" : "family_schedule"),
+                      groupId: activeMode === "group" ? selectedGroupId : undefined
+                    }}
+                    groups={groups}
+                    direction="down"
+                  />
+                )}
+              </div>
             )}
 
             {/* 수정 버튼:
@@ -4105,40 +4107,45 @@ export function FamilyPage({
                   )}
                 </span>
                 <div className="flex items-center gap-2 ml-auto shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (isSampleMeal(meal.id)) {
-                        toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                        return
-                      }
-                      const typeMap: Record<string, string> = {
-                        homemade: "집밥",
-                        home: "집밥",
-                        delivery: "배달",
-                        dining: "외식",
-                        집밥: "집밥",
-                        배달: "배달",
-                        외식: "외식"
-                      }
-                      setSaveModalSourceCard({
-                        id: meal.id,
-                        menu: meal.title,
-                        place: meal.placeName,
-                        url: meal.linkUrl,
-                        thumbnail: meal.image || (meal as any).linkThumbnail || null,
-                        mealType: typeMap[meal.mealType] || "외식",
-                        source: activeMode === "group" ? "group_log" : "family_log",
-                        groupId: activeMode === "group" ? selectedGroupId : undefined
-                      })
-                    }}
-                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
-                    title="다른 곳으로 담기"
-                  >
-                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                    <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
-                  </button>
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (isSampleMeal(meal.id)) {
+                          toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                          return
+                        }
+                        setActiveSaveDropdownId(activeSaveDropdownId === meal.id ? null : meal.id)
+                      }}
+                      className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                      title="다른 곳으로 담기"
+                    >
+                      <Pin className={cn(
+                        "size-3.5 rotate-45 transition-colors", 
+                        (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "fill-red-500 text-red-500 scale-110" : ""
+                      )} />
+                      <span className={cn("text-[11px] font-bold", (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "text-red-500" : "")}>담기</span>
+                    </button>
+                    {activeSaveDropdownId === meal.id && (
+                      <SaveDropdown
+                        isOpen={true}
+                        onClose={() => setActiveSaveDropdownId(null)}
+                        sourceCard={{
+                          id: meal.id,
+                          menu: meal.title,
+                          place: meal.placeName,
+                          url: meal.linkUrl,
+                          thumbnail: meal.image || (meal as any).linkThumbnail || null,
+                          mealType: meal.mealType || "외식",
+                          source: activeMode === "group" ? "group_log" : "family_log",
+                          groupId: activeMode === "group" ? selectedGroupId : undefined
+                        }}
+                        groups={groups}
+                        direction="up"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -4154,40 +4161,45 @@ export function FamilyPage({
                     })()}</span>
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (isSampleMeal(meal.id)) {
-                      toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                      return
-                    }
-                    const typeMap: Record<string, string> = {
-                      homemade: "집밥",
-                      home: "집밥",
-                      delivery: "배달",
-                      dining: "외식",
-                      집밥: "집밥",
-                      배달: "배달",
-                      외식: "외식"
-                    }
-                    setSaveModalSourceCard({
-                      id: meal.id,
-                      menu: meal.title,
-                      place: meal.placeName,
-                      url: meal.linkUrl,
-                      thumbnail: meal.image || (meal as any).linkThumbnail || null,
-                      mealType: typeMap[meal.mealType] || "집밥",
-                      source: activeMode === "group" ? "group_log" : "family_log",
-                      groupId: activeMode === "group" ? selectedGroupId : undefined
-                    })
-                  }}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5 ml-auto shrink-0"
-                  title="다른 곳으로 담기"
-                >
-                  <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                  <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
-                </button>
+                <div className="relative shrink-0 ml-auto">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (isSampleMeal(meal.id)) {
+                        toast("샘플이라 담기가 불가하며, 새 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                        return
+                      }
+                      setActiveSaveDropdownId(activeSaveDropdownId === meal.id ? null : meal.id)
+                    }}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                    title="다른 곳으로 담기"
+                  >
+                    <Pin className={cn(
+                      "size-3.5 rotate-45 transition-colors", 
+                      (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "fill-red-500 text-red-500 scale-110" : ""
+                    )} />
+                    <span className={cn("text-[11px] font-bold", (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "text-red-500" : "")}>담기</span>
+                  </button>
+                  {activeSaveDropdownId === meal.id && (
+                    <SaveDropdown
+                      isOpen={true}
+                      onClose={() => setActiveSaveDropdownId(null)}
+                      sourceCard={{
+                        id: meal.id,
+                        menu: meal.title,
+                        place: meal.placeName,
+                        url: meal.linkUrl,
+                        thumbnail: meal.image || (meal as any).linkThumbnail || null,
+                        mealType: meal.mealType || "집밥",
+                        source: activeMode === "group" ? "group_log" : "family_log",
+                        groupId: activeMode === "group" ? selectedGroupId : undefined
+                      }}
+                      groups={groups}
+                      direction="up"
+                    />
+                  )}
+                </div>
               </div>
             )}
 
@@ -5835,13 +5847,6 @@ export function FamilyPage({
         registeredDeliveryStores={registeredDeliveryStores}
       />
 
-      {/* Universal Save Modal */}
-      <UniversalSaveModal
-        isOpen={!!saveModalSourceCard}
-        onClose={() => setSaveModalSourceCard(null)}
-        sourceCard={saveModalSourceCard}
-        groups={groups}
-      />
     </div>
   )
 }

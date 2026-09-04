@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast"
 import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress } from "@/lib/utils"
 import { AddLogModal, type MealLogData } from "@/components/whateat/add-log-modal"
 import { LogDetailModal } from "@/components/whateat/log-detail-modal"
-import { UniversalSaveModal } from "@/components/whateat/universal-save-modal"
+import { SaveDropdown } from "@/components/whateat/save-dropdown"
 import { ImageViewer } from "@/components/whateat/image-viewer"
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
@@ -138,7 +138,7 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
 
   const [activeTab, setActiveTab] = useState<"전체" | "집밥" | "배달" | "외식">("전체")
-  const [saveModalSourceCard, setSaveModalSourceCard] = useState<any>(null)
+  const [activeSaveDropdownId, setActiveSaveDropdownId] = useState<string | number | null>(null)
   const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([])
   const [savedCardIds, setSavedCardIds] = useState<Set<string | number>>(new Set())
 
@@ -1925,6 +1925,49 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                       <span className="text-[10px] font-bold text-[#03C75A]">{meal.placeRating}</span>
                     </div>
                   )}
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
+                          toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
+                          return
+                        }
+                        setActiveSaveDropdownId(activeSaveDropdownId === meal.id ? null : meal.id)
+                      }}
+                      className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                      title="다른 곳으로 담기"
+                    >
+                      <Pin className={cn(
+                        "size-3.5 rotate-45 transition-colors", 
+                        (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "fill-red-500 text-red-500 scale-110" : ""
+                      )} />
+                      <span className={cn("text-[11px] font-bold", (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "text-red-500" : "")}>담기</span>
+                    </button>
+                    {activeSaveDropdownId === meal.id && (
+                      <SaveDropdown
+                        isOpen={true}
+                        onClose={() => setActiveSaveDropdownId(null)}
+                        sourceCard={{
+                          id: meal.id,
+                          menu: meal.title,
+                          place: meal.placeName,
+                          url: meal.linkUrl,
+                          thumbnail: meal.image || null,
+                          mealType: meal.type || "외식",
+                          source: "solo_log"
+                        }}
+                        groups={userGroups}
+                        direction="up"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="min-h-[28px] px-5 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
+                <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1933,68 +1976,35 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
                         toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
                         return
                       }
-                      const typeMap: Record<string, string> = {
-                        homemade: "집밥",
-                        home: "집밥",
-                        delivery: "배달",
-                        dining: "외식",
-                        집밥: "집밥",
-                        배달: "배달",
-                        외식: "외식"
-                      }
-                      setSaveModalSourceCard({
+                      setActiveSaveDropdownId(activeSaveDropdownId === meal.id ? null : meal.id)
+                    }}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
+                    title="다른 곳으로 담기"
+                  >
+                    <Pin className={cn(
+                      "size-3.5 rotate-45 transition-colors", 
+                      (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "fill-red-500 text-red-500 scale-110" : ""
+                    )} />
+                    <span className={cn("text-[11px] font-bold", (activeSaveDropdownId === meal.id || savedCardIds.has(meal.id)) ? "text-red-500" : "")}>담기</span>
+                  </button>
+                  {activeSaveDropdownId === meal.id && (
+                    <SaveDropdown
+                      isOpen={true}
+                      onClose={() => setActiveSaveDropdownId(null)}
+                      sourceCard={{
                         id: meal.id,
                         menu: meal.title,
                         place: meal.placeName,
                         url: meal.linkUrl,
                         thumbnail: meal.image || null,
-                        mealType: typeMap[meal.type] || meal.type || "외식",
+                        mealType: meal.type || "집밥",
                         source: "solo_log"
-                      })
-                    }}
-                    className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
-                    title="다른 곳으로 담기"
-                  >
-                    <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                    <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
-                  </button>
+                      }}
+                      groups={userGroups}
+                      direction="up"
+                    />
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="min-h-[28px] px-5 pt-1.5 pb-1 bg-gray-50/50 border-t border-muted/20 flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (meal.id === 1 || meal.id === 2 || meal.id === 3) {
-                      toast("샘플이라 담기가 불가하며, 식사를 등록하면 샘플은 사라집니다.", { icon: "💡", duration: 3000 })
-                      return
-                    }
-                    const typeMap: Record<string, string> = {
-                      homemade: "집밥",
-                      home: "집밥",
-                      delivery: "배달",
-                      dining: "외식",
-                      집밥: "집밥",
-                      배달: "배달",
-                      외식: "외식"
-                    }
-                    setSaveModalSourceCard({
-                      id: meal.id,
-                      menu: meal.title,
-                      place: meal.placeName,
-                      url: meal.linkUrl,
-                      thumbnail: meal.image || null,
-                      mealType: typeMap[meal.type] || meal.type || "외식",
-                      source: "solo_log"
-                    })
-                  }}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors px-1 py-0.5"
-                  title="다른 곳으로 담기"
-                >
-                  <Pin className={cn("size-3.5 rotate-45 transition-colors", savedCardIds.has(meal.id) ? "fill-red-500 text-red-500 scale-110" : "")} />
-                  <span className={cn("text-[11px] font-bold", savedCardIds.has(meal.id) ? "text-red-500" : "")}>담기</span>
-                </button>
               </div>
             )}
 
@@ -2337,12 +2347,6 @@ export function MealLogTab({ jumpToDate, showBackToCalendar = false, onBackToCal
         </div>
       )}
       
-      <UniversalSaveModal
-        isOpen={!!saveModalSourceCard}
-        onClose={() => setSaveModalSourceCard(null)}
-        sourceCard={saveModalSourceCard}
-        groups={userGroups}
-      />
     </div>
   )
 }

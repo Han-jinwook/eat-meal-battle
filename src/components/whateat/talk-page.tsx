@@ -23,6 +23,7 @@ import { cn, formatPlaceNameWithRegion, formatRegionStr, parseRegionFromAddress 
 import { createClient } from "@/lib/supabase"
 import { secureWrite } from "@/lib/supabase-safe"
 import { useHub } from "@/services/merlin-hub-sdk/react"
+import { SaveDropdown } from "@/components/whateat/save-dropdown"
 import { getSessionToken } from "@/services/merlin-hub-sdk/CoreLogic/client"
 import { toast } from "react-hot-toast"
 import { ImageViewer } from "@/components/whateat/image-viewer"
@@ -2150,41 +2151,21 @@ export function TalkPage({ isActive = true, initialTab = "all", initialSearch = 
                   )}>담기</span>
                 </button>
                 {saveDropdownPostId === post.id && (
-                  <div className="absolute bottom-7 right-0 bg-white border border-orange-100 rounded-2xl shadow-xl z-50 overflow-hidden min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
-                    <button
-                      onClick={() => handleSaveToReservation(post, "solo")}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
-                    >
-                      <span>👤</span> 솔로 위시로 담기
-                    </button>
-                    <div className="h-px bg-orange-50" />
-                    <button
-                      onClick={() => handleSaveToReservation(post, "family")}
-                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
-                    >
-                      <span>👨‍👩‍👧</span> 가족 위시로 담기
-                    </button>
-                    <div className="h-px bg-orange-50" />
-                    {userGroups.length > 1 ? (
-                      userGroups.map((g) => (
-                        <button
-                          key={g.id}
-                          onClick={() => handleSaveToReservation(post, "group", g.id)}
-                          className="w-full text-left px-4 py-2 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors truncate"
-                          title={`${g.name} 위시로 담기`}
-                        >
-                          <span>👥</span> [{g.name}] 위시로
-                        </button>
-                      ))
-                    ) : (
-                      <button
-                        onClick={() => handleSaveToReservation(post, "group")}
-                        className="w-full text-left px-4 py-2.5 text-xs font-bold text-foreground hover:bg-orange-50 flex items-center gap-2 transition-colors"
-                      >
-                        <span>👥</span> 모임 위시로 담기
-                      </button>
-                    )}
-                  </div>
+                  <SaveDropdown
+                    isOpen={true}
+                    onClose={() => setSaveDropdownPostId(null)}
+                    sourceCard={{
+                      id: post.id,
+                      menu: post.title || "맛톡 추천 메뉴",
+                      place: post.restaurant?.name,
+                      url: post.linkUrl,
+                      thumbnail: post.image,
+                      mealType: post.type,
+                      source: "talk"
+                    }}
+                    groups={userGroups}
+                    direction="up"
+                  />
                 )}
               </div>
             </div>
